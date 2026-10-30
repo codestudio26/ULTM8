@@ -283,6 +283,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeRefundCardBody: "تم رد {amount} إلى بطاقتك.",
     chargeRefundMoneyBackBody: "تمت إعادة {amount} إليك.",
     chargeRefundCreditBody: "تمت إضافة {amount} إلى رصيدك كرصيد دائن.",
+    chargeRefundRefusedBody: "تم رد {amount} إلى بطاقتك: تعذر شراء {plan}.",
     lateFeeAddedTitle: "تمت إضافة رسوم تأخير",
     lateFeeAddedChargeBody: "تمت إضافة رسوم تأخير بقيمة {fee} إلى رصيدك لأن الفاتورة {invoice} ({description}) متأخرة السداد. ادفعها في التطبيق أو في مكتب الاستقبال.",
     lateFeeAddedRenewalBody: "تمت إضافة رسوم تأخير بقيمة {fee} إلى رصيدك لأن دفعة اشتراك {plan} بقيمة {amount} متأخرة. ادفعها في التطبيق أو في مكتب الاستقبال.",

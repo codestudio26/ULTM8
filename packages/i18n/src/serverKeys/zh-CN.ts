@@ -213,6 +213,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeRefundCardBody: "{amount} 已退回你的银行卡。",
     chargeRefundMoneyBackBody: "{amount} 已退还给你。",
     chargeRefundCreditBody: "{amount} 已作为预存款计入你的余额。",
+    chargeRefundRefusedBody: "{amount} 已退回你的银行卡：无法购买 {plan}。",
     lateFeeAddedTitle: "已添加滞纳金",
     lateFeeAddedChargeBody: "由于发票 {invoice}（{description}）已逾期，已在你的余额中添加 {fee} 的滞纳金。请在应用内或前台支付。",
     lateFeeAddedRenewalBody: "由于你的 {plan} 会员费 {amount} 已逾期，已在你的余额中添加 {fee} 的滞纳金。请在应用内或前台支付。",

@@ -227,6 +227,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeRefundCardBody: "{amount} kartınıza iade edildi.",
     chargeRefundMoneyBackBody: "{amount} size geri verildi.",
     chargeRefundCreditBody: "{amount} bakiyenize alacak olarak eklendi.",
+    chargeRefundRefusedBody: "{amount} kartınıza iade edildi: {plan} satın alınamadı.",
     lateFeeAddedTitle: "Gecikme ücreti eklendi",
     lateFeeAddedChargeBody: "{invoice} numaralı fatura ({description}) gecikmiş olduğu için bakiyenize {fee} gecikme ücreti eklendi. Uygulamadan veya resepsiyonda ödeyin.",
     lateFeeAddedRenewalBody: "{plan} üyelik ödemeniz ({amount}) gecikmiş olduğu için bakiyenize {fee} gecikme ücreti eklendi. Uygulamadan veya resepsiyonda ödeyin.",

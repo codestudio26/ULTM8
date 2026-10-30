@@ -19921,7 +19921,7 @@
           },
           "chargeNoticeRefund": {
             "type": "boolean",
-            "description": "Decision 414 item 4: tell the member when a payment toward charges is refunded (default on)."
+            "description": "Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on)."
           },
           "heardFromOptions": {
             "nullable": true,
@@ -20242,7 +20242,7 @@
           },
           "chargeNoticeRefund": {
             "type": "boolean",
-            "description": "Decision 414 item 4: \"Refund\" notices to the member (default on)."
+            "description": "Decisions 414 and 415 item 4: \"Refund\" notices to the member, for every refund (default on)."
           },
           "visitorPeriodDays": {
             "type": "number",
@@ -20596,7 +20596,7 @@
           },
           "chargeNoticeRefund": {
             "type": "boolean",
-            "description": "Decision 414 item 4: tell the member when a payment toward charges is refunded (default on)."
+            "description": "Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on)."
           },
           "heardFromOptions": {
             "nullable": true,

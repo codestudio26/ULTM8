@@ -15,14 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Refund notice** (backlog 3.6; Decision 414 item 4) — when a payment
-  toward charges is refunded, the member is sent a "Refund" notice with the
-  amount and where it went: refunded to the card, given back, or added to the
-  balance as credit (a Guardian gets the usual copy). A refund made in the
-  Stripe dashboard sends it too; a lost card dispute does not (the dispute
-  notice already says the money goes back). The owner's notes are never
-  included. New switch "A refund of a payment" among the payment
-  notifications on the School page, on by default. 15 languages.
+- **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
+  — every refund sends the member a "Refund" notice with the amount and where
+  it went: refunded to the card, given back, or added to the balance as credit
+  (a Guardian gets the usual copy). That covers refunds of payments toward
+  charges, a Class Pack's share when a booking is cancelled (to the card, or
+  cash marked paid out), a payment refunded in the Stripe dashboard, and a
+  membership purchase that couldn't go through and was refunded ("… was
+  refunded to your card: {plan} couldn't be bought."). A lost card dispute
+  sends none (the dispute notice already says the money goes back). The
+  owner's notes are never included. New switch "A refund of a payment" among
+  the payment notifications on the School page, on by default. 15 languages.
 - **Cancelling a cash or bank-transfer membership payment works like
   cancelling a charge** (backlog 3.6; Decision 338 item 1, Decision 414 item 7)
   — a membership payment waiting at the desk is cancelled by the owner, and

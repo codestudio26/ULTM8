@@ -255,6 +255,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeRefundCardBody: "{amount} zwrócono na twoją kartę.",
     chargeRefundMoneyBackBody: "{amount} zwrócono ci.",
     chargeRefundCreditBody: "{amount} dodano do twojego salda jako nadpłatę.",
+    chargeRefundRefusedBody: "{amount} zwrócono na twoją kartę: nie udało się kupić {plan}.",
     lateFeeAddedTitle: "Dodano opłatę za zwłokę",
     lateFeeAddedChargeBody: "Do Twojego salda dodano opłatę za zwłokę w wysokości {fee}, ponieważ faktura {invoice} ({description}) jest przeterminowana. Zapłać w aplikacji lub w recepcji.",
     lateFeeAddedRenewalBody: "Do Twojego salda dodano opłatę za zwłokę w wysokości {fee}, ponieważ płatność za karnet {plan} w kwocie {amount} jest przeterminowana. Zapłać w aplikacji lub w recepcji.",

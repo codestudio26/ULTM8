@@ -255,6 +255,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeRefundCardBody: "{amount} возвращено на вашу карту.",
     chargeRefundMoneyBackBody: "Вам вернули {amount}.",
     chargeRefundCreditBody: "{amount} зачислено на ваш баланс как аванс.",
+    chargeRefundRefusedBody: "{amount} возвращено на вашу карту: не удалось купить {plan}.",
     lateFeeAddedTitle: "Начислена пеня за просрочку",
     lateFeeAddedChargeBody: "На ваш баланс начислена пеня за просрочку {fee}, потому что счёт {invoice} ({description}) просрочен. Оплатите её в приложении или на ресепшене.",
     lateFeeAddedRenewalBody: "На ваш баланс начислена пеня за просрочку {fee}, потому что платёж за абонемент {plan} на сумму {amount} просрочен. Оплатите её в приложении или на ресепшене.",

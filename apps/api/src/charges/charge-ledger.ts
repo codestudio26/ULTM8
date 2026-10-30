@@ -139,6 +139,27 @@ export function refundNotice(refundId: string, kind: ChargeRefundKindValue, amou
   return text ? { key: `charge-refund-${refundId}`, title: 'Refund', body: text } : null;
 }
 
+export type RefundNotice = { key: string; title: string; body: string };
+
+/**
+ * The same "Refund" notice for a refund outside charges (Decision 415 item 4:
+ * every refund): a Class Pack's share refunded to the card or given back when
+ * a booking is cancelled, a membership payment refunded in the Stripe
+ * dashboard. Same texts as refundNotice(). `key` is the caller's, one per
+ * refund, so a retry or a webhook redelivery sends it once.
+ */
+export function paymentRefundNotice(key: string, way: 'CARD' | 'GIVEN_BACK', amount: number, currency: string): RefundNotice {
+  const money = noticeMoney(amount, currency);
+  return { key, title: 'Refund', body: way === 'CARD' ? `${money} was refunded to your card.` : `${money} was given back to you.` };
+}
+
+/** A membership purchase refused after the card was charged (one active
+ * general-access membership, or the School closed) and refunded in full: the
+ * notice says why, as the member may not have seen it happen. */
+export function refusedPurchaseRefundNotice(key: string, amount: number, currency: string, plan: string): RefundNotice {
+  return { key, title: 'Refund', body: `${noticeMoney(amount, currency)} was refunded to your card: ${plan} couldn't be bought.` };
+}
+
 // ---------------------------------------------------------------------------
 // Step 4: refunds and owner-given credit (Decision 338 item 3, Decision 303
 // item 3: owner only).

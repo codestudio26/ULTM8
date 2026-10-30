@@ -213,6 +213,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeRefundCardBody: "{amount} がカードに返金されました。",
     chargeRefundMoneyBackBody: "{amount} をお返ししました。",
     chargeRefundCreditBody: "{amount} が残高にクレジットとして追加されました。",
+    chargeRefundRefusedBody: "{amount} がカードに返金されました: {plan} を購入できませんでした。",
     lateFeeAddedTitle: "延滞料が追加されました",
     lateFeeAddedChargeBody: "請求書 {invoice}（{description}）の支払期限が過ぎているため、延滞料 {fee} が残高に追加されました。アプリまたは受付でお支払いください。",
     lateFeeAddedRenewalBody: "{plan} の会費 {amount} の支払期限が過ぎているため、延滞料 {fee} が残高に追加されました。アプリまたは受付でお支払いください。",

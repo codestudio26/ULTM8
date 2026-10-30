@@ -435,6 +435,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [/^([\d.]+) ([A-Z]{3}) was refunded to your card\.$/s, (m, { t, locale }) => n(t, 'chargeRefundCardBody', { amount: formatAmount(m[1], m[2], locale) })],
   [/^([\d.]+) ([A-Z]{3}) was given back to you\.$/s, (m, { t, locale }) => n(t, 'chargeRefundMoneyBackBody', { amount: formatAmount(m[1], m[2], locale) })],
   [/^([\d.]+) ([A-Z]{3}) was added to your balance as credit\.$/s, (m, { t, locale }) => n(t, 'chargeRefundCreditBody', { amount: formatAmount(m[1], m[2], locale) })],
+  // Decision 415 item 4 — a refused membership purchase, refunded in full (refusedPurchaseRefundNotice).
+  [
+    /^([\d.]+) ([A-Z]{3}) was refunded to your card: (.+) couldn't be bought\.$/s,
+    (m, { t, locale }) => n(t, 'chargeRefundRefusedBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),
+  ],
   [
     /^We couldn't charge your saved card for invoice (#\d+) \((.+), ([\d.]+) ([A-Z]{3})\)\. Pay it in the app or at the front desk\.$/s,
     (m, { t, locale }) => n(t, 'chargeAutoPayFailedBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale) }),

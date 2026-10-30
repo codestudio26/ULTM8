@@ -213,6 +213,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeRefundCardBody: "คืนเงิน {amount} เข้าบัตรของคุณแล้ว",
     chargeRefundMoneyBackBody: "คืนเงิน {amount} ให้คุณแล้ว",
     chargeRefundCreditBody: "เพิ่ม {amount} เข้ายอดคงเหลือของคุณเป็นเครดิตแล้ว",
+    chargeRefundRefusedBody: "คืนเงิน {amount} เข้าบัตรของคุณแล้ว: ไม่สามารถซื้อ {plan} ได้",
     lateFeeAddedTitle: "เพิ่มค่าปรับล่าช้าแล้ว",
     lateFeeAddedChargeBody: "มีการเพิ่มค่าปรับล่าช้า {fee} ในยอดคงเหลือของคุณ เนื่องจากใบแจ้งหนี้ {invoice} ({description}) เกินกำหนดชำระ ชำระได้ในแอปหรือที่เคาน์เตอร์",
     lateFeeAddedRenewalBody: "มีการเพิ่มค่าปรับล่าช้า {fee} ในยอดคงเหลือของคุณ เนื่องจากการชำระค่าสมาชิก {plan} จำนวน {amount} เกินกำหนด ชำระได้ในแอปหรือที่เคาน์เตอร์",

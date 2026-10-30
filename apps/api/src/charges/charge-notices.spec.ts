@@ -1,5 +1,5 @@
 import { SERVER_KEY_LOADERS, createServerTextTranslator, serverKeys } from '@ultm8/i18n';
-import { refundNotice } from './charge-ledger';
+import { paymentRefundNotice, refundNotice, refusedPurchaseRefundNotice } from './charge-ledger';
 
 /**
  * The charge notices (ChargesService.notify) are written in English and
@@ -96,5 +96,21 @@ describe('the refund notice (Decision 414 item 4)', () => {
     expect(refundNotice('r1', 'CREDIT', 2500, 'brl')?.body).toBe('25.00 BRL was added to your balance as credit.');
     // The member already has the dispute notice ("The money goes back to your card").
     expect(refundNotice('r1', 'DISPUTE_LOST', 2500, 'brl')).toBeNull();
+  });
+
+  it('refunds outside charges use the same texts; a refused purchase says why (Decision 415 item 4)', async () => {
+    expect(paymentRefundNotice('k', 'CARD', 1200, 'gbp')).toEqual({ key: 'k', title: 'Refund', body: '12.00 GBP was refunded to your card.' });
+    expect(paymentRefundNotice('k', 'GIVEN_BACK', 1200, 'gbp').body).toBe('12.00 GBP was given back to you.');
+    const refused = refusedPurchaseRefundNotice('k', 5000, 'brl', 'Kids: 10 classes');
+    expect(refused.body).toBe("50.00 BRL was refunded to your card: Kids: 10 classes couldn't be bought.");
+
+    const ptKeys = await SERVER_KEY_LOADERS['pt-BR']();
+    const pt = translatorFor({ ...serverKeys, notifications: { ...serverKeys.notifications, ...ptKeys.notifications } });
+    const out = pt.notification({ ...refused, type: 'REFUND' });
+    expect(out.title).toBe('Reembolso');
+    expect(out.body).toMatch(/^.*50,00 foi reembolsado no seu cartão: não foi possível comprar Kids: 10 classes\.$/);
+    const forChild = pt.notification({ title: 'Refund', body: `For Kai: ${refused.body}`, type: 'REFUND' });
+    expect(forChild.body).toContain('Kai');
+    expect(forChild.body).toContain('não foi possível comprar Kids: 10 classes');
   });
 });

@@ -241,6 +241,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeRefundCardBody: "{amount} sono stati rimborsati sulla tua carta.",
     chargeRefundMoneyBackBody: "{amount} ti sono stati restituiti.",
     chargeRefundCreditBody: "{amount} sono stati aggiunti al tuo saldo come credito.",
+    chargeRefundRefusedBody: "{amount} sono stati rimborsati sulla tua carta: non è stato possibile acquistare {plan}.",
     lateFeeAddedTitle: "Penale di ritardo aggiunta",
     lateFeeAddedChargeBody: "Una penale di ritardo di {fee} è stata aggiunta al tuo saldo perché la fattura {invoice} ({description}) è scaduta. Pagala nell'app o alla reception.",
     lateFeeAddedRenewalBody: "Una penale di ritardo di {fee} è stata aggiunta al tuo saldo perché il pagamento dell'abbonamento {plan} di {amount} è scaduto. Pagala nell'app o alla reception.",

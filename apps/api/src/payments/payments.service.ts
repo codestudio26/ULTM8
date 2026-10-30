@@ -16,6 +16,7 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { chargeAbilities } from '../charges/charge-abilities';
+import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 
 /** Decision 406: the name of the card-surcharge line on a hosted Checkout
@@ -1267,6 +1268,28 @@ export class PaymentsService {
       }
     } catch (err) {
       this.logger.warn(`Failed to enqueue the ${event} cash-payment notices for Transaction ${transaction.id}: ${err}`);
+    }
+  }
+
+  /**
+   * Decision 415 item 4 (every refund tells the member, Decision 414 item 4's
+   * "Refund" notice): sends one refund notice to the student who paid, unless
+   * the School switched refund notices off (School.chargeNoticeRefund). Called
+   * after the refund has committed. Best-effort: a failure is logged, never
+   * thrown, so it never undoes the refund. The notice's key is one per refund
+   * (and the job id), so a retry sends it once; a Guardian gets the usual copy
+   * from the fanout job.
+   */
+  async sendRefundNotice(notice: RefundNotice, studentId: string, schoolId: string): Promise<void> {
+    try {
+      if (!(await chargeNoticeSwitches(this.prismaJobs, schoolId)).refund) return;
+      await this.notificationFanoutQueue.add(
+        'notify',
+        { notificationId: notice.key, userId: studentId, title: notice.title, body: notice.body, type: 'REFUND', schoolId, targetType: 'PAYMENT' } satisfies NotificationFanoutJobData,
+        { jobId: notice.key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the refund notice ${notice.key}: ${err}`);
     }
   }
 }
