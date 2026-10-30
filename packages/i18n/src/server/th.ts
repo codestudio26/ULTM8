@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "ไม่มียอดที่ต้องชำระ",
   "Only the member can set automatic payment, with their own saved card.": "เฉพาะสมาชิกเท่านั้นที่ตั้งค่าการชำระอัตโนมัติด้วยบัตรที่บันทึกไว้ของตนเองได้",
   "Save a card for this School first.": "บันทึกบัตรสำหรับโรงเรียนนี้ก่อน",
+  "Set a late fee amount above 0.": "กำหนดค่าปรับล่าช้าให้มากกว่า 0",
+  "Set a late fee percentage above 0%, up to 100%.": "กำหนดเปอร์เซ็นต์ค่าปรับล่าช้าให้มากกว่า 0% และไม่เกิน 100%",
+  "Confirm that late fees are legal where your School operates.": "ยืนยันว่าค่าปรับล่าช้าถูกกฎหมายในพื้นที่ที่โรงเรียนของคุณดำเนินการ",
+  "Only a late fee can be waived.": "ยกเว้นได้เฉพาะค่าปรับล่าช้าเท่านั้น",
 };

@@ -19,11 +19,13 @@ import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { ChargeMathsError, computeCharge, formatInvoiceNumber } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
 import { allocate, freeCredit, lockBalance, receiptNotice } from './charge-ledger';
+import { lateFeeWaivedNotice } from '../late-fees/late-fee-notices';
 import { PaymentsService } from '../payments/payments.service';
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
 import { StepUpService } from '../auth/step-up.service';
 import {
   CancelChargeDto,
+  LateFeeDetails,
   ChargePaymentChannelValue,
   ChargePaymentMethod,
   ChargePaymentStatus,
@@ -268,16 +270,26 @@ export class ChargesService {
     return (await this.shapeCharges([charge], school.timezone, true))[0];
   }
 
-  /** POST /schools/{schoolId}/charges/{chargeId}/cancel (Decision 338 item 1). */
-  async cancel(callerId: string, schoolId: string, chargeId: string, dto: CancelChargeDto) {
+  /**
+   * POST /schools/{schoolId}/charges/{chargeId}/cancel (Decision 338 item 1),
+   * and POST .../waive-late-fee (Decision 413 item 4, `waive`): waiving a late
+   * fee is cancelling it, by the same people (the owner, and covering staff
+   * with "Can cancel charges"), through the same ledger writes, with no reason
+   * asked for; the charge is marked waived instead.
+   */
+  async cancel(callerId: string, schoolId: string, chargeId: string, dto: CancelChargeDto, waive = false) {
     this.assertUuid(chargeId);
-    const found = await this.prismaJobs.charge.findFirst({ where: { id: chargeId, schoolId }, select: { studentId: true } });
+    const found = await this.prismaJobs.charge.findFirst({ where: { id: chargeId, schoolId }, select: { studentId: true, lateFeeOverdueAmount: true } });
     if (!found) throw new NotFoundException({ code: 'CHARGE_NOT_FOUND', message: 'Charge not found' });
     await this.assertMay(callerId, schoolId, found.studentId, 'cancel');
+    const isLateFee = found.lateFeeOverdueAmount !== null;
+    if (waive && !isLateFee) {
+      throw new BadRequestException({ code: 'CHARGE_NOT_A_LATE_FEE', message: 'Only a late fee can be waived.' });
+    }
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const school = await this.loadSchool(schoolId);
-    const reason = dto.reason?.trim() || null;
-    if (!reason && school.chargeCancelReasonRequired) {
+    const reason = waive ? null : dto.reason?.trim() || null;
+    if (!waive && !reason && school.chargeCancelReasonRequired) {
       throw new BadRequestException({ code: 'CHARGE_CANCEL_REASON_REQUIRED', message: 'Give a reason for cancelling this charge.' });
     }
 
@@ -287,7 +299,7 @@ export class ChargesService {
       const now = new Date();
       const updated = await tx.charge.updateMany({
         where: { id: chargeId, schoolId, cancelledAt: null },
-        data: { cancelledAt: now, cancelledById: callerId, cancelReason: reason },
+        data: { cancelledAt: now, cancelledById: callerId, cancelReason: reason, lateFeeWaived: waive },
       });
       if (updated.count === 0) {
         throw new ConflictException({ code: 'CHARGE_ALREADY_CANCELLED', message: 'This charge has already been cancelled.' });
@@ -301,10 +313,17 @@ export class ChargesService {
       return { charge: row, paid: row.allocations.reduce((n, a) => n + a.amount, 0) };
     });
 
-    const body =
-      `Your charge '${charge.description}, ${money(charge.grossAmount, charge.currency)}' was cancelled. Nothing to pay.` +
-      (paid > 0 ? ` The ${money(paid, charge.currency)} already paid is now credit on your balance.` : '');
-    await this.notify(charge.studentId, schoolId, `charge-cancelled-${chargeId}`, 'Charge cancelled', body, chargeId);
+    if (isLateFee) {
+      // Decision 413: the member is told in their own language, not with the
+      // late fee's stored English description.
+      const notice = lateFeeWaivedNotice(charge.grossAmount, charge.currency, paid);
+      await this.notify(charge.studentId, schoolId, `charge-cancelled-${chargeId}`, notice.title, notice.body, chargeId);
+    } else {
+      const body =
+        `Your charge '${charge.description}, ${money(charge.grossAmount, charge.currency)}' was cancelled. Nothing to pay.` +
+        (paid > 0 ? ` The ${money(paid, charge.currency)} already paid is now credit on your balance.` : '');
+      await this.notify(charge.studentId, schoolId, `charge-cancelled-${chargeId}`, 'Charge cancelled', body, chargeId);
+    }
     const reread = await this.prismaJobs.charge.findUniqueOrThrow({ where: { id: chargeId }, include: { allocations: { select: { amount: true } } } });
     return (await this.shapeCharges([reread], school.timezone, true))[0];
   }
@@ -795,6 +814,7 @@ export class ChargesService {
       const n = forStaff && id ? names.get(id) : undefined;
       return n ? `${n.firstName} ${n.surname}`.trim() : null;
     };
+    const lateFees = await this.lateFeeDetails(rows, timezone);
     return rows.map((c) => {
       const paid = c.allocations.reduce((n, a) => n + a.amount, 0);
       const cancelled = !!c.cancelledAt;
@@ -830,8 +850,57 @@ export class ChargesService {
         cancelledByName: nameOf(c.cancelledById),
         cancelReason: forStaff ? c.cancelReason : null,
         cardSurchargeAmount: 0,
+        lateFee: lateFees.get(c.id) ?? null,
       };
     });
+  }
+
+  /**
+   * Decision 413: what each late fee is for, so both apps can label it "Late
+   * fee" with the overdue charge or membership payment in the reader's own
+   * language. Read on the jobs connection after the caller's access to these
+   * charges was checked: a late fee and what it is for always belong to the
+   * same student at the same School (the late-fee job writes them so).
+   */
+  private async lateFeeDetails(rows: ChargeRow[], timezone: string | null): Promise<Map<string, LateFeeDetails>> {
+    const out = new Map<string, LateFeeDetails>();
+    const fees = rows.filter((c) => c.lateFeeOverdueAmount !== null);
+    if (fees.length === 0) return out;
+    const chargeIds = fees.map((c) => c.lateFeeForChargeId).filter((id): id is string => !!id);
+    const transactionIds = fees.map((c) => c.lateFeeForTransactionId).filter((id): id is string => !!id);
+    const [charges, renewals] = await Promise.all([
+      this.prismaJobs.charge.findMany({ where: { id: { in: chargeIds } }, select: { id: true, invoiceNumber: true, description: true, dueDate: true, currency: true } }),
+      this.prismaJobs.transaction.findMany({ where: { id: { in: transactionIds } }, select: { id: true, billingDate: true, currency: true, membershipPlan: { select: { title: true } } } }),
+    ]);
+    const chargeOf = new Map(charges.map((c) => [c.id, c]));
+    const renewalOf = new Map(renewals.map((r) => [r.id, r]));
+    for (const fee of fees) {
+      const base = { overdueAmount: fee.lateFeeOverdueAmount!, percentBps: fee.lateFeePercentBps, waived: fee.lateFeeWaived };
+      const forCharge = fee.lateFeeForChargeId ? chargeOf.get(fee.lateFeeForChargeId) : undefined;
+      const forRenewal = fee.lateFeeForTransactionId ? renewalOf.get(fee.lateFeeForTransactionId) : undefined;
+      if (forCharge) {
+        out.set(fee.id, {
+          ...base,
+          forType: 'CHARGE',
+          forInvoiceLabel: formatInvoiceNumber(forCharge.invoiceNumber),
+          forDescription: forCharge.description,
+          forPlanTitle: null,
+          forDueDate: dayString(forCharge.dueDate),
+          overdueCurrency: forCharge.currency,
+        });
+      } else if (forRenewal) {
+        out.set(fee.id, {
+          ...base,
+          forType: 'RENEWAL',
+          forInvoiceLabel: null,
+          forDescription: null,
+          forPlanTitle: forRenewal.membershipPlan?.title ?? null,
+          forDueDate: dayIn(forRenewal.billingDate, timezone),
+          overdueCurrency: (forRenewal.currency ?? fee.currency).toUpperCase(),
+        });
+      }
+    }
+    return out;
   }
 
   // ---------------------------------------------------------------------------

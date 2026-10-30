@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "لا يوجد ما تدفعه.",
   "Only the member can set automatic payment, with their own saved card.": "لا يمكن إعداد الدفع التلقائي إلا للعضو نفسه، ببطاقته المحفوظة.",
   "Save a card for this School first.": "احفظ بطاقة لهذه المدرسة أولًا.",
+  "Set a late fee amount above 0.": "حدّد مبلغ رسوم تأخير أكبر من 0.",
+  "Set a late fee percentage above 0%, up to 100%.": "حدّد نسبة رسوم تأخير أكبر من 0% وحتى 100%.",
+  "Confirm that late fees are legal where your School operates.": "أكّد أن رسوم التأخير قانونية حيث تعمل مدرستك.",
+  "Only a late fee can be waived.": "لا يمكن الإعفاء إلا من رسوم التأخير.",
 };

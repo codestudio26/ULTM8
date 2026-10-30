@@ -279,9 +279,10 @@ function ChargeRow({ charge: c, payInApp, paying, busy, onPay }: { charge: Charg
   return (
     <View testID={`charge-${c.id}`} style={{ paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border, opacity: cancelled ? 0.55 : 1 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Text style={{ fontWeight: '600', flex: 1, marginRight: spacing[2] }}>{c.description}</Text>
+        <Text style={{ fontWeight: '600', flex: 1, marginRight: spacing[2] }}>{c.lateFee ? t('charges.lateFee.label') : c.description}</Text>
         <Text style={{ color: statusColor, fontWeight: '600' }}>{t(`charges.status.${c.status}` as TranslationKey)}</Text>
       </View>
+      <LateFeeFor charge={c} />
       <Muted>
         {t('charges.invoice', { invoice: c.invoiceLabel })} · {t('charges.due', { date: formatDay(c.dueDate) })}
       </Muted>
@@ -290,7 +291,7 @@ function ChargeRow({ charge: c, payInApp, paying, busy, onPay }: { charge: Charg
       <Line label={t('charges.tax', { rate: rate(c.taxRateBasisPoints) })} value={formatMoney(c.taxAmount, c.currency)} />
       <Line label={t('charges.incTax')} value={formatMoney(c.grossAmount, c.currency)} strong />
       {cancelled ? (
-        <Muted>{t('charges.cancelledOn', { date: formatDay(c.cancelledAt ?? c.createdAt) })}</Muted>
+        <Muted>{t(c.lateFee?.waived ? 'charges.lateFee.waivedOn' : 'charges.cancelledOn', { date: formatDay(c.cancelledAt ?? c.createdAt) })}</Muted>
       ) : (
         <>
           {c.paidAmount > 0 ? <Line label={t('charges.paid')} value={formatMoney(c.paidAmount, c.currency)} /> : null}
@@ -311,6 +312,21 @@ function ChargeRow({ charge: c, payInApp, paying, busy, onPay }: { charge: Charg
         </>
       )}
     </View>
+  );
+}
+
+/** Decision 413: a late fee says what it is for (its stored description is
+ * the API's English, so the app writes its own line). */
+function LateFeeFor({ charge: c }: { charge: Charge }) {
+  const t = useT();
+  const f = c.lateFee;
+  if (!f) return null;
+  return (
+    <Muted>
+      {f.forType === 'CHARGE'
+        ? t('charges.lateFee.forInvoice', { invoice: f.forInvoiceLabel ?? '', description: f.forDescription ?? '', date: formatDay(f.forDueDate) })
+        : t('charges.lateFee.forRenewal', { plan: f.forPlanTitle ?? '', amount: formatMoney(f.overdueAmount, f.overdueCurrency), date: formatDay(f.forDueDate) })}
+    </Muted>
   );
 }
 

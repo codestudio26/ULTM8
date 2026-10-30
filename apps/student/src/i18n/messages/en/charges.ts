@@ -64,4 +64,11 @@ export const charges = {
     item: 'Payment: {invoice} {description}',
     itemBalance: 'Payment toward your balance',
   },
+  // Decision 413 — late fees.
+  lateFee: {
+    label: "Late fee",
+    forInvoice: "For invoice {invoice} ({description}), due {date}",
+    forRenewal: "For your {plan} membership payment of {amount}, due {date}",
+    waivedOn: "Waived on {date}. Nothing to pay.",
+  },
 };

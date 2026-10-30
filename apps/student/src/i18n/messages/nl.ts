@@ -1008,5 +1008,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "Betaling: {invoice} {description}",
       itemBalance: "Betaling op je saldo",
     },
+    lateFee: {
+      label: "Te-laatvergoeding",
+      forInvoice: "Voor factuur {invoice} ({description}), vervallen op {date}",
+      forRenewal: "Voor je lidmaatschapsbetaling {plan} van {amount}, vervallen op {date}",
+      waivedOn: "Kwijtgescholden op {date}. Niets te betalen.",
+    },
   },
 };

@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Платить нечего.",
   "Only the member can set automatic payment, with their own saved card.": "Включить автоплатёж может только сам участник, своей сохранённой картой.",
   "Save a card for this School first.": "Сначала сохраните карту для этой школы.",
+  "Set a late fee amount above 0.": "Укажите сумму пени за просрочку больше 0.",
+  "Set a late fee percentage above 0%, up to 100%.": "Укажите процент пени за просрочку больше 0% и не выше 100%.",
+  "Confirm that late fees are legal where your School operates.": "Подтвердите, что пени за просрочку законны там, где работает ваша школа.",
+  "Only a late fee can be waived.": "Списать можно только пеню за просрочку.",
 };

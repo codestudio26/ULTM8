@@ -1008,5 +1008,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "Zahlung: {invoice} {description}",
       itemBalance: "Zahlung auf dein Guthabenkonto",
     },
+    lateFee: {
+      label: "Säumnisgebühr",
+      forInvoice: "Für Rechnung {invoice} ({description}), fällig am {date}",
+      forRenewal: "Für deine Mitgliedszahlung {plan} über {amount}, fällig am {date}",
+      waivedOn: "Erlassen am {date}. Nichts zu zahlen.",
+    },
   },
 };

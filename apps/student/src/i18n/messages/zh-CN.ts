@@ -1000,5 +1000,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "付款：{invoice} {description}",
       itemBalance: "余额付款",
     },
+    lateFee: {
+      label: "滞纳金",
+      forInvoice: "针对发票 {invoice}（{description}），到期日 {date}",
+      forRenewal: "针对你的 {plan} 会员费 {amount}，到期日 {date}",
+      waivedOn: "已于 {date} 免除，无需支付。",
+    },
   },
 };

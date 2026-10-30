@@ -22,6 +22,7 @@ import {
   FRANCHISE_FEE_RATE_MIGRATION_QUEUE,
   WAIVER_RENEWAL_SWEEP_QUEUE,
   CHARGE_AUTO_PAY_QUEUE,
+  LATE_FEE_QUEUE,
 } from './queue.constants';
 
 const logger = new Logger('QueueModule');
@@ -93,6 +94,7 @@ export {
   FRANCHISE_FEE_RATE_MIGRATION_QUEUE,
   WAIVER_RENEWAL_SWEEP_QUEUE,
   CHARGE_AUTO_PAY_QUEUE,
+  LATE_FEE_QUEUE,
 };
 
 @Module({
@@ -118,6 +120,7 @@ export {
       { name: FRANCHISE_FEE_RATE_MIGRATION_QUEUE },
       { name: WAIVER_RENEWAL_SWEEP_QUEUE },
       { name: CHARGE_AUTO_PAY_QUEUE },
+      { name: LATE_FEE_QUEUE },
     ),
   ],
   exports: [BullModule],

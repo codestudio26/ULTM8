@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Il n'y a rien à payer.",
   "Only the member can set automatic payment, with their own saved card.": "Seul le membre lui-même peut activer le paiement automatique, avec sa propre carte enregistrée.",
   "Save a card for this School first.": "Enregistrez d'abord une carte pour cette école.",
+  "Set a late fee amount above 0.": "Indiquez un montant de frais de retard supérieur à 0.",
+  "Set a late fee percentage above 0%, up to 100%.": "Indiquez un pourcentage de frais de retard supérieur à 0 %, jusqu'à 100 %.",
+  "Confirm that late fees are legal where your School operates.": "Confirmez que les frais de retard sont légaux là où votre école exerce.",
+  "Only a late fee can be waived.": "Seuls des frais de retard peuvent être annulés.",
 };

@@ -18559,6 +18559,49 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/charges/{chargeId}/waive-late-fee": {
+      "post": {
+        "operationId": "ChargesController_waiveLateFee",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "chargeId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/{studentId}/charge-payments": {
       "post": {
         "operationId": "ChargesController_recordPayment",
@@ -18826,6 +18869,84 @@
         },
         "tags": [
           "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/late-fees": {
+      "get": {
+        "operationId": "LateFeesController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LateFeeSettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "late-fees"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "LateFeesController_update",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLateFeeSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LateFeeSettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "late-fees"
         ],
         "security": [
           {
@@ -36145,6 +36266,63 @@
           "cardSurchargeAmount"
         ]
       },
+      "LateFeeDetailsDto": {
+        "type": "object",
+        "properties": {
+          "forType": {
+            "type": "string",
+            "enum": [
+              "CHARGE",
+              "RENEWAL"
+            ],
+            "description": "CHARGE: an overdue charge. RENEWAL: a card membership renewal Stripe could not collect."
+          },
+          "forInvoiceLabel": {
+            "type": "string",
+            "nullable": true,
+            "example": "#0000003",
+            "description": "CHARGE only."
+          },
+          "forDescription": {
+            "type": "string",
+            "nullable": true,
+            "description": "CHARGE only: the overdue charge's description."
+          },
+          "forPlanTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "RENEWAL only: the membership plan's title."
+          },
+          "forDueDate": {
+            "type": "string",
+            "example": "2026-11-01",
+            "description": "The overdue payment's due day (a renewal's invoice date, in the School's time zone)."
+          },
+          "overdueAmount": {
+            "type": "number",
+            "description": "What was still owed on it when the late fee was added (minor units)."
+          },
+          "overdueCurrency": {
+            "type": "string"
+          },
+          "percentBps": {
+            "type": "number",
+            "nullable": true,
+            "description": "The % used, in hundredths of a percent; null for a fixed fee."
+          },
+          "waived": {
+            "type": "boolean",
+            "description": "Staff waived it (it is then Cancelled)."
+          }
+        },
+        "required": [
+          "forType",
+          "forDueDate",
+          "overdueAmount",
+          "overdueCurrency",
+          "waived"
+        ]
+      },
       "ChargeResponseDto": {
         "type": "object",
         "properties": {
@@ -36262,6 +36440,15 @@
           "cardSurchargeAmount": {
             "type": "number",
             "description": "Decision 406: the card surcharge on what is still owed when paid by card in the app (0 = none). Member's view only; 0 for staff."
+          },
+          "lateFee": {
+            "nullable": true,
+            "description": "Decision 413: set when this charge is a late fee, with what it is for.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LateFeeDetailsDto"
+              }
+            ]
           }
         },
         "required": [
@@ -36846,6 +37033,97 @@
         "required": [
           "canCreateCharges",
           "canCancelCharges"
+        ]
+      },
+      "LateFeeSettingsDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Off by default."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "FIXED",
+              "PERCENT"
+            ]
+          },
+          "fixedAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "FIXED: the fee in minor units of the School's currency. Kept while off."
+          },
+          "percentBps": {
+            "type": "number",
+            "nullable": true,
+            "description": "PERCENT: hundredths of a percent of what is still owed (250 = 2.5%), 1 to 10000. Kept while off."
+          },
+          "graceDays": {
+            "type": "number",
+            "description": "Days after the due date before a late fee is added, 0 to 30. Default 3."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School's currency, for a fixed fee. Null until it is set on the School page."
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the owner last confirmed late fees are legal where the School operates."
+          },
+          "enabledAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When late fees were last switched on. Only a payment whose grace period ends on or after that day gets a late fee."
+          }
+        },
+        "required": [
+          "enabled",
+          "type",
+          "graceDays"
+        ]
+      },
+      "UpdateLateFeeSettingsDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "FIXED",
+              "PERCENT"
+            ]
+          },
+          "fixedAmount": {
+            "type": "number",
+            "nullable": true,
+            "description": "FIXED: minor units of the School's currency, more than 0. Required to switch a fixed fee on."
+          },
+          "percentBps": {
+            "type": "number",
+            "nullable": true,
+            "description": "PERCENT: hundredths of a percent (250 = 2.5%), 1 to 10000. Required to switch a % fee on."
+          },
+          "graceDays": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 30
+          },
+          "legalConfirmed": {
+            "type": "boolean",
+            "description": "\"I confirm late fees are legal where my School operates.\" Required (true) to switch late fees on, or to save them while on."
+          }
+        },
+        "required": [
+          "enabled",
+          "type",
+          "graceDays"
         ]
       }
     }

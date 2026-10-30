@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Er is niets te betalen.",
   "Only the member can set automatic payment, with their own saved card.": "Alleen het lid zelf kan automatisch betalen instellen, met zijn eigen opgeslagen kaart.",
   "Save a card for this School first.": "Sla eerst een kaart op voor deze school.",
+  "Set a late fee amount above 0.": "Stel een bedrag voor de te-laatvergoeding in boven 0.",
+  "Set a late fee percentage above 0%, up to 100%.": "Stel een percentage voor de te-laatvergoeding in boven 0%, tot 100%.",
+  "Confirm that late fees are legal where your School operates.": "Bevestig dat te-laatvergoedingen wettelijk zijn toegestaan waar je school actief is.",
+  "Only a late fee can be waived.": "Alleen een te-laatvergoeding kan worden kwijtgescholden.",
 };

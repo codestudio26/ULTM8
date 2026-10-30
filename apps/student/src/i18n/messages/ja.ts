@@ -1001,5 +1001,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       item: "支払い：{invoice} {description}",
       itemBalance: "残高への支払い",
     },
+    lateFee: {
+      label: "延滞料",
+      forInvoice: "請求書 {invoice}（{description}）、期限 {date}",
+      forRenewal: "{plan} の会費 {amount}、期限 {date}",
+      waivedOn: "{date} に免除されました。お支払いは不要です。",
+    },
   },
 };

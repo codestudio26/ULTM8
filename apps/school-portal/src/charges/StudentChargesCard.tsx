@@ -20,6 +20,7 @@ import {
   type ChargePayment,
   type StudentCharges,
 } from './chargeQueries';
+import { useWaiveLateFee } from './lateFeeQueries';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
   OPEN: 'warning',
@@ -38,6 +39,31 @@ function formatDay(day: string): string {
 }
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
+
+/** A charge's name: its description, or "Late fee" for a late fee (Decision
+ * 413), whose stored description is the API's English. */
+function chargeTitle(t: ReturnType<typeof useT>, c: Charge): string {
+  return c.lateFee ? t('charges.lateFee.badge') : c.description;
+}
+
+/** Decision 413: what a late fee is for, and how it was worked out. */
+function LateFeeLines({ charge: c }: { charge: Charge }) {
+  const t = useT();
+  const f = c.lateFee;
+  if (!f) return null;
+  return (
+    <>
+      <div className="ultm8-field__hint">
+        {f.forType === 'CHARGE'
+          ? t('charges.lateFee.forInvoice', { invoice: f.forInvoiceLabel ?? '', description: f.forDescription ?? '', date: formatDay(f.forDueDate) })
+          : t('charges.lateFee.forRenewal', { plan: f.forPlanTitle ?? '', amount: formatMoney(f.overdueAmount, f.overdueCurrency), date: formatDay(f.forDueDate) })}
+      </div>
+      {f.percentBps ? (
+        <div className="ultm8-field__hint">{t('charges.lateFee.percent', { percent: rateText(f.percentBps), amount: formatMoney(f.overdueAmount, f.overdueCurrency) })}</div>
+      ) : null}
+    </>
+  );
+}
 
 /** How a payment was made: a desk method, or a card paid in the app or
  * charged automatically (backlog §3.6 step 2). */
@@ -60,6 +86,7 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
   const charges = useStudentCharges(schoolId, studentId);
   const [dialog, setDialog] = useState<'create' | { pay: string | null } | null>(null);
   const [cancelling, setCancelling] = useState<Charge | null>(null);
+  const [waiving, setWaiving] = useState<Charge | null>(null);
 
   if (charges.error instanceof ApiError && charges.error.status === 403) return null;
 
@@ -90,7 +117,7 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
         ) : charges.error ? (
           <ErrorBanner message={errorText(charges.error, t('charges.card.loadFailed'))} />
         ) : charges.data ? (
-          <ChargesBody data={charges.data} onPay={(id) => setDialog({ pay: id })} onCancel={setCancelling} />
+          <ChargesBody data={charges.data} onPay={(id) => setDialog({ pay: id })} onCancel={setCancelling} onWaive={setWaiving} />
         ) : null}
       </Card>
       {dialog === 'create' && charges.data ? (
@@ -115,6 +142,7 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
           onClose={() => setCancelling(null)}
         />
       ) : null}
+      {waiving ? <WaiveLateFeeModal schoolId={schoolId} studentId={studentId} charge={waiving} onClose={() => setWaiving(null)} /> : null}
     </div>
   );
 }
@@ -145,7 +173,17 @@ function BalanceLine({ balances }: { balances: ChargeBalance[] }) {
   );
 }
 
-function ChargesBody({ data, onPay, onCancel }: { data: StudentCharges; onPay: (chargeId: string) => void; onCancel: (charge: Charge) => void }) {
+function ChargesBody({
+  data,
+  onPay,
+  onCancel,
+  onWaive,
+}: {
+  data: StudentCharges;
+  onPay: (chargeId: string) => void;
+  onCancel: (charge: Charge) => void;
+  onWaive: (charge: Charge) => void;
+}) {
   const t = useT();
   if (data.charges.length === 0 && data.payments.length === 0) {
     return <EmptyState title={t('charges.card.emptyTitle')} description={t('charges.card.emptyDescription')} />;
@@ -165,9 +203,14 @@ function ChargesBody({ data, onPay, onCancel }: { data: StudentCharges; onPay: (
                 header: t('charges.card.columnDescription'),
                 render: (c) => (
                   <div style={c.status === 'CANCELLED' ? { opacity: 0.6 } : undefined}>
-                    <div>{c.description}</div>
+                    <div>
+                      {c.lateFee ? <Badge variant="warning">{t('charges.lateFee.badge')}</Badge> : c.description}
+                    </div>
+                    <LateFeeLines charge={c} />
                     {c.discountAmount > 0 ? <div className="ultm8-field__hint">{t('charges.card.discountLine', { amount: formatMoney(c.discountAmount, c.currency) })}</div> : null}
-                    {c.status === 'CANCELLED' && c.cancelledAt ? (
+                    {c.status === 'CANCELLED' && c.cancelledAt && c.lateFee?.waived ? (
+                      <div className="ultm8-field__hint">{t('charges.lateFee.waivedLine', { date: formatDay(c.cancelledAt.slice(0, 10)), name: c.cancelledByName ?? '' })}</div>
+                    ) : c.status === 'CANCELLED' && c.cancelledAt ? (
                       <div className="ultm8-field__hint">
                         {c.cancelReason
                           ? t('charges.card.cancelledLine', { date: formatDay(c.cancelledAt.slice(0, 10)), name: c.cancelledByName ?? '', reason: c.cancelReason })
@@ -198,7 +241,11 @@ function ChargesBody({ data, onPay, onCancel }: { data: StudentCharges; onPay: (
                           {t('charges.card.pay')}
                         </Button>
                       ) : null}
-                      {data.can.cancel ? (
+                      {data.can.cancel && c.lateFee ? (
+                        <Button variant="danger" onClick={() => onWaive(c)}>
+                          {t('charges.lateFee.waive')}
+                        </Button>
+                      ) : data.can.cancel ? (
                         <Button variant="danger" onClick={() => onCancel(c)}>
                           {t('charges.card.cancel')}
                         </Button>
@@ -433,7 +480,7 @@ function RecordPaymentModal({
               { value: '', label: t('charges.pay.towardBalance') },
               ...open.map((c) => ({
                 value: c.id,
-                label: t('charges.pay.towardCharge', { invoice: c.invoiceLabel, description: c.description, owed: formatMoney(c.owedAmount, c.currency) }),
+                label: t('charges.pay.towardCharge', { invoice: c.invoiceLabel, description: chargeTitle(t, c), owed: formatMoney(c.owedAmount, c.currency) }),
               })),
             ]}
           />
@@ -515,6 +562,43 @@ function CancelChargeModal({
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('charges.cancelDialog.keep')}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Decision 413: waiving a late fee cancels it, with no reason asked for; the member is told. */
+function WaiveLateFeeModal({ schoolId, studentId, charge, onClose }: { schoolId: string; studentId: string; charge: Charge; onClose: () => void }) {
+  const t = useT();
+  const waive = useWaiveLateFee(schoolId, studentId);
+  const [error, setError] = useState<string | null>(null);
+
+  async function confirm(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await waive.mutateAsync(charge.id);
+      onClose();
+    } catch (err) {
+      setError(errorText(err, t('charges.lateFee.waiveFailed')));
+    }
+  }
+
+  return (
+    <Modal title={t('charges.lateFee.waiveTitle', { invoice: charge.invoiceLabel })} onClose={onClose}>
+      <form onSubmit={confirm} data-testid="waive-late-fee-form">
+        <p>{t('charges.lateFee.waiveBody', { amount: formatMoney(charge.grossAmount, charge.currency) })}</p>
+        <LateFeeLines charge={charge} />
+        {charge.paidAmount > 0 ? <p>{t('charges.lateFee.waivePaidNote', { amount: formatMoney(charge.paidAmount, charge.currency) })}</p> : null}
+        {error ? <ErrorBanner message={error} /> : null}
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <Button type="submit" variant="danger" loading={waive.isPending}>
+            {t('charges.lateFee.waiveConfirm')}
+          </Button>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t('charges.lateFee.waiveKeep')}
           </Button>
         </div>
       </form>

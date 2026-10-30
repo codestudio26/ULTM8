@@ -698,4 +698,9 @@ export const SERVER_PATTERNS: string[] = [
  "There is nothing to pay.",
  "Only the member can set automatic payment, with their own saved card.",
  "Save a card for this School first.",
+ // Late fees (Decision 413).
+ "Set a late fee amount above 0.",
+ "Set a late fee percentage above 0%, up to 100%.",
+ "Confirm that late fees are legal where your School operates.",
+ "Only a late fee can be waived.",
 ];

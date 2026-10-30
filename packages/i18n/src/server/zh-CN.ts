@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "没有需要支付的款项。",
   "Only the member can set automatic payment, with their own saved card.": "只有会员本人可以用自己保存的卡设置自动付款。",
   "Save a card for this School first.": "请先为这所学校保存一张卡。",
+  "Set a late fee amount above 0.": "请设置大于 0 的滞纳金金额。",
+  "Set a late fee percentage above 0%, up to 100%.": "请设置大于 0% 且不超过 100% 的滞纳金比例。",
+  "Confirm that late fees are legal where your School operates.": "请确认在你的学校所在地收取滞纳金是合法的。",
+  "Only a late fee can be waived.": "只能免除滞纳金。",
 };

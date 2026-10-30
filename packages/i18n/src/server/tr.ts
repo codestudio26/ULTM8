@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Ödenecek bir şey yok.",
   "Only the member can set automatic payment, with their own saved card.": "Otomatik ödemeyi yalnızca üyenin kendisi, kendi kayıtlı kartıyla ayarlayabilir.",
   "Save a card for this School first.": "Önce bu okul için bir kart kaydedin.",
+  "Set a late fee amount above 0.": "0'dan büyük bir gecikme ücreti tutarı belirleyin.",
+  "Set a late fee percentage above 0%, up to 100%.": "%0'dan büyük, en fazla %100 bir gecikme ücreti yüzdesi belirleyin.",
+  "Confirm that late fees are legal where your School operates.": "Okulunuzun faaliyet gösterdiği yerde gecikme ücretlerinin yasal olduğunu onaylayın.",
+  "Only a late fee can be waived.": "Yalnızca bir gecikme ücreti silinebilir.",
 };

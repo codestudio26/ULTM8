@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "결제할 금액이 없습니다.",
   "Only the member can set automatic payment, with their own saved card.": "자동 결제는 회원 본인만 본인의 저장된 카드로 설정할 수 있습니다.",
   "Save a card for this School first.": "먼저 이 학원용 카드를 저장하세요.",
+  "Set a late fee amount above 0.": "연체료 금액을 0보다 크게 설정하세요.",
+  "Set a late fee percentage above 0%, up to 100%.": "연체료 비율을 0%보다 크고 100% 이하로 설정하세요.",
+  "Confirm that late fees are legal where your School operates.": "학원이 운영되는 지역에서 연체료가 합법인지 확인하세요.",
+  "Only a late fee can be waived.": "연체료만 면제할 수 있습니다.",
 };

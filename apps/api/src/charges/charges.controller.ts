@@ -69,6 +69,13 @@ export class ChargesController {
     return this.charges.cancel(user.sub, schoolId, chargeId, dto);
   }
 
+  /** Waive a late fee (Decision 413): cancels it, by the owner or staff with "Can cancel charges", with no reason asked for. */
+  @ApiCreatedResponse({ type: ChargeResponseDto })
+  @Post('schools/:schoolId/charges/:chargeId/waive-late-fee')
+  waiveLateFee(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Param('chargeId', ParseUUIDPipe) chargeId: string) {
+    return this.charges.cancel(user.sub, schoolId, chargeId, {}, true);
+  }
+
   @ApiCreatedResponse({ type: RecordChargePaymentResponseDto })
   @Post('schools/:schoolId/students/:studentId/charge-payments')
   recordPayment(

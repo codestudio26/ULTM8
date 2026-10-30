@@ -242,4 +242,47 @@ describe('MyChargesScreen: paying in the app (backlog 3.6 step 2)', () => {
     expect(getByText(/£50.00 card payment processing/)).toBeTruthy();
     expect(getByText(/Automatic payment of £50.00 failed on/)).toBeTruthy();
   });
+
+  it('labels a late fee "Late fee", with what it is for, and a waived one (Decision 413)', async () => {
+    const lateFee = (over: Record<string, unknown>) => ({
+      forType: 'CHARGE',
+      forInvoiceLabel: '#0000001',
+      forDescription: 'Rash guard',
+      forPlanTitle: null,
+      forDueDate: '2026-11-15',
+      overdueAmount: 7000,
+      overdueCurrency: 'GBP',
+      percentBps: null,
+      waived: false,
+      ...over,
+    });
+    mocked(q.useMemberCharges).mockReturnValue(
+      ok({
+        schools: [
+          {
+            ...SCHOOL,
+            charges: [
+              charge({ id: 'f1', invoiceLabel: '#0000003', description: 'Late fee: invoice #0000001', grossAmount: 1500, owedAmount: 1500, paidAmount: 0, status: 'OPEN', lateFee: lateFee({}) }),
+              charge({
+                id: 'f2',
+                invoiceLabel: '#0000004',
+                description: 'Late fee: Monthly membership payment',
+                status: 'CANCELLED',
+                cancelledAt: '2026-11-20T10:00:00.000Z',
+                owedAmount: 0,
+                paidAmount: 0,
+                lateFee: lateFee({ forType: 'RENEWAL', forInvoiceLabel: null, forDescription: null, forPlanTitle: 'Monthly', overdueAmount: 6000, waived: true }),
+              }),
+            ],
+          },
+        ],
+      }),
+    );
+    const { getAllByText, getByText, queryByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getAllByText('Late fee')).toHaveLength(2);
+    expect(queryByText('Late fee: invoice #0000001')).toBeNull();
+    expect(getByText(/^For invoice #0000001 \(Rash guard\), due /)).toBeTruthy();
+    expect(getByText(/^For your Monthly membership payment of £60.00, due /)).toBeTruthy();
+    expect(getByText(/^Waived on .*\. Nothing to pay\.$/)).toBeTruthy();
+  });
 });

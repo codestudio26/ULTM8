@@ -1159,6 +1159,22 @@ model School {
   taxId                          String?
   /// Decision 338 item 1: a reason must be typed when cancelling a charge (default on).
   chargeCancelReasonRequired     Boolean                         @default(true)
+  /// Decision 413: late fees, the School's choice. Off by default; switching
+  /// them on needs the owner's tick "I confirm late fees are legal where my
+  /// School operates" (when and by whom: lateFeeConfirmedAt/ById). A fixed
+  /// amount (minor units of the School's currency) or a % of what is still
+  /// owed (hundredths of a percent, 1-10000), and the grace days after the
+  /// due date (0-30, default 3). lateFeeEnabledAt is when they were last
+  /// switched on: only a payment whose grace period ends on or after that day
+  /// gets a late fee, never one that was already late before.
+  lateFeeEnabled                 Boolean                         @default(false)
+  lateFeeType                    LateFeeType                     @default(FIXED)
+  lateFeeFixedAmount             Int?
+  lateFeePercentBps              Int?
+  lateFeeGraceDays               Int                             @default(3)
+  lateFeeEnabledAt               DateTime?
+  lateFeeConfirmedAt             DateTime?
+  lateFeeConfirmedById           String?
   /// Check-in closes this many minutes after a Class starts (0 = at the start).
   /// Null: when the Class ends (or its own QR end time), as before.
   checkInClosesMinutesAfterStart Int?
@@ -2411,7 +2427,7 @@ model Transaction {
   /// CHARGE_PAYMENT only: the charge the desk recorded it against; null when
   /// it was paid toward the balance as a whole (Decision 338 item 9).
   chargeId String?
-  charge   Charge? @relation(fields: [chargeId], references: [id])
+  charge   Charge? @relation("TransactionCharge", fields: [chargeId], references: [id])
 
   /// CHARGE_PAYMENT only: taken at the desk, paid by the member in the app
   /// (hosted Checkout) or charged automatically to their saved card (backlog
@@ -2419,6 +2435,10 @@ model Transaction {
   /// partial unique index Transaction_one_auto_pay_attempt_per_charge
   /// (migration 20270113000000_charges_pay_in_app).
   chargePaymentChannel ChargePaymentChannel?
+
+  /// RENEWAL only: the late fee added because this renewal stayed unpaid past
+  /// the School's grace days (Decision 413). At most one.
+  lateFee Charge? @relation("LateFeeForRenewal")
 
   balanceEntries    BalanceEntry[]
   chargeAllocations ChargeAllocation[]
@@ -5270,6 +5290,12 @@ model CardSurchargeCountry {
   createdAt   DateTime @default(now())
 }
 
+/// Decision 413: a School's late fee is a fixed amount or a % of what is owed.
+enum LateFeeType {
+  FIXED
+  PERCENT
+}
+
 /// How a charge's discount was typed (Decision 303 item 1).
 enum ChargeDiscountType {
   PERCENT
@@ -5342,7 +5368,25 @@ model Charge {
 
   allocations    ChargeAllocation[]
   balanceEntries BalanceEntry[]
-  transactions   Transaction[]
+  transactions   Transaction[]     @relation("TransactionCharge")
+
+  /// Decision 413: a late fee is a Charge like any other, linked to the one
+  /// payment it is for: an overdue charge (lateFeeForChargeId) or a card
+  /// renewal Stripe could not collect (lateFeeForTransactionId, a RENEWAL
+  /// Transaction). Each is unique, so the daily late-fee job never adds two
+  /// for one payment. A late fee never gets its own late fee, and is never
+  /// charged to a card automatically (charge-auto-pay skips it).
+  /// lateFeeOverdueAmount: what was still owed when the fee was worked out;
+  /// lateFeePercentBps: the % used (null for a fixed fee). lateFeeWaived:
+  /// staff waived it (it is cancelled, as any charge is).
+  lateFeeForChargeId      String?      @unique
+  lateFeeForCharge        Charge?      @relation("LateFeeForCharge", fields: [lateFeeForChargeId], references: [id], onDelete: Restrict)
+  lateFee                 Charge?      @relation("LateFeeForCharge")
+  lateFeeForTransactionId String?      @unique
+  lateFeeForTransaction   Transaction? @relation("LateFeeForRenewal", fields: [lateFeeForTransactionId], references: [id], onDelete: Restrict)
+  lateFeeOverdueAmount    Int?
+  lateFeePercentBps       Int?
+  lateFeeWaived           Boolean      @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

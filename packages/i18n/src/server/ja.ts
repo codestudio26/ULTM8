@@ -687,4 +687,8 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "支払うものはありません。",
   "Only the member can set automatic payment, with their own saved card.": "自動支払いを設定できるのは、本人の保存済みカードを使う会員本人だけです。",
   "Save a card for this School first.": "先にこのスクール用のカードを保存してください。",
+  "Set a late fee amount above 0.": "延滞料の金額を0より大きく設定してください。",
+  "Set a late fee percentage above 0%, up to 100%.": "延滞料の割合を0%より大きく、100%以下で設定してください。",
+  "Confirm that late fees are legal where your School operates.": "スクールの所在地で延滞料が合法であることを確認してください。",
+  "Only a late fee can be waived.": "免除できるのは延滞料のみです。",
 };
