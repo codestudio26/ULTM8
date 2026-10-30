@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, Table, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { useSearchParams } from 'react-router-dom';
+import { formatMoney } from '../lib/money';
+import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -12,9 +15,13 @@ import {
   useLeaveFranchise,
   useRegenerateJoinCode,
   useSchool,
+  useSchoolFeeCharges,
   useSchoolFranchiseBranding,
+  useSchoolFranchiseFeeCard,
   useSchoolFranchiseJoinRequest,
+  useStartFranchiseFeeCardSetup,
   useUpdateSchool,
+  type FranchiseFeeCharge,
   type SchoolResponse,
 } from './schoolQueries';
 import { HeardFromCard } from './HeardFromCard';
@@ -22,6 +29,9 @@ import { useT } from '../i18n/I18nProvider';
 import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
 import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, isCancellationSettingsValid } from '../cancellations/CancellationSettingsFields';
+
+/** Stripe's card brand ("visa", "mastercard") as shown: "Visa", "Mastercard". */
+const cardBrand = (brand: string) => brand.charAt(0).toUpperCase() + brand.slice(1);
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
@@ -732,6 +742,91 @@ export function withHttps(url: string): string {
 }
 
 /**
+ * Decision 407 — the School pays its franchise fee by card. "Add card" opens
+ * Stripe's own secure card form (hosted Checkout), which returns here with
+ * `?franchiseCard=added` or `=cancelled`; the card is charged each month, and a
+ * failed charge is retried by Stripe while the Owner gets a notice. Below it,
+ * the School's fee charges: period, amount, and whether each was paid or failed.
+ */
+function FranchiseFeeSection({ schoolId, closed }: { schoolId: string; closed: boolean }) {
+  const t = useT();
+  const [searchParams] = useSearchParams();
+  const returned = searchParams.get('franchiseCard');
+  const { data: card, isLoading: cardLoading, error: cardError } = useSchoolFranchiseFeeCard(schoolId);
+  const { data: chargeData, error: chargesError } = useSchoolFeeCharges(schoolId);
+  const startSetup = useStartFranchiseFeeCardSetup(schoolId);
+  const [error, setError] = useState<string | null>(null);
+  const charges = [...(chargeData?.items ?? [])].sort((a, b) => b.billingPeriodStart.localeCompare(a.billingPeriodStart));
+
+  async function handleAddCard() {
+    setError(null);
+    try {
+      window.location.assign(await startSetup.mutateAsync());
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <div style={{ marginTop: 24 }} data-testid="franchise-fee">
+      <h3 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
+        {t('schools.franchise.feeTitle')}
+      </h3>
+      {returned === 'added' ? <SuccessBanner message={t('schools.franchise.cardAdded')} /> : null}
+      {returned === 'cancelled' ? <p className="ultm8-field__hint">{t('schools.franchise.cardCancelled')}</p> : null}
+      {error ? <ErrorBanner message={error} /> : null}
+      {cardLoading ? (
+        <Spinner />
+      ) : cardError ? (
+        <ErrorBanner message={cardError instanceof ApiError ? cardError.message : t('schools.franchise.cardLoadFailed')} />
+      ) : card ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+          <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13, margin: 0 }}>{t('schools.franchise.feeExplanation')}</p>
+          <p style={{ margin: 0 }} data-testid="franchise-fee-card">
+            {card.hasCard
+              ? card.brand && card.last4
+                ? t('schools.franchise.cardOnFile', { brand: cardBrand(card.brand), last4: card.last4 })
+                : t('schools.franchise.cardSaved')
+              : t('schools.franchise.noCard')}
+          </p>
+          {!card.canAddCard ? (
+            <p className="ultm8-field__hint" data-testid="franchise-fee-not-connected">
+              {t('schools.franchise.franchiseNotConnected')}
+            </p>
+          ) : closed ? null : (
+            <Button variant="secondary" onClick={handleAddCard} loading={startSetup.isPending}>
+              {card.hasCard ? t('schools.franchise.updateCard') : t('schools.franchise.addCard')}
+            </Button>
+          )}
+        </div>
+      ) : null}
+
+      <h3 className="ultm8-page-header__title" style={{ fontSize: 15, margin: '16px 0 8px' }}>
+        {t('schools.franchise.chargesTitle')}
+      </h3>
+      {chargesError ? (
+        <ErrorBanner message={chargesError instanceof ApiError ? chargesError.message : t('schools.franchise.chargesLoadFailed')} />
+      ) : charges.length === 0 ? (
+        <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.franchise.noCharges')}</p>
+      ) : (
+        <Table<FranchiseFeeCharge>
+          rows={charges}
+          columns={[
+            {
+              key: 'period',
+              header: t('schools.franchise.columnPeriod'),
+              render: (c) => `${new Date(c.billingPeriodStart).toLocaleDateString(formatLocale())} – ${new Date(c.billingPeriodEnd).toLocaleDateString(formatLocale())}`,
+            },
+            { key: 'amount', header: t('schools.franchise.columnAmount'), render: (c) => formatMoney(c.amount, c.currency) },
+            { key: 'status', header: t('schools.franchise.columnStatus'), render: (c) => paymentStatusBadge(c.status) },
+          ]}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
  * Decision 232 — leave/switch-Franchise, on top of Decision 98's own one-way-only
  * join-franchise endpoint. "Switch" is deliberately not a separate action here
  * either — leaving, then joining a different Franchise, same as the backend
@@ -851,6 +946,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId, closed }: { schoolId:
               {t('schools.franchise.leave')}
             </Button>
           )}
+          <FranchiseFeeSection schoolId={schoolId} closed={closed} />
           {confirmingLeave ? (
             <Modal title={t('schools.franchise.leaveConfirmTitle')} onClose={() => setConfirmingLeave(false)}>
               <p>{t('schools.franchise.leaveConfirmBody')}</p>

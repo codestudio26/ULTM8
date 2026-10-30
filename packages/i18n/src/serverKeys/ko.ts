@@ -199,6 +199,8 @@ export const server: PartialMessages<ServerKeys> = {
     studentAddedBody: "{school}에 추가되었습니다.",
     openMatTitle: "오픈 매트",
     openMatBody: "{place}에서 {when}부터 {minutes}분간 오픈 매트가 열립니다. 참여하려면 앱에서 예약하세요.",
+    franchiseFeeFailedTitle: "프랜차이즈 수수료 결제 실패",
+    franchiseFeeFailedBody: "{school}의 프랜차이즈 수수료 {amount}을(를) 청구하지 못했습니다. Stripe가 다시 시도합니다. 학교 페이지에서 카드를 추가하거나 업데이트하세요.",
     openMatStyleBody: "{place}에서 {when}부터 {minutes}분간 오픈 매트({style})가 열립니다. 참여하려면 앱에서 예약하세요.",
     toDecideBody: "{name}님의 {rank}({style}) 승급이 결정을 기다리고 있습니다. 승급하거나 하지 않기로 결정하세요.",
     promotionFeeBody: "{rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",

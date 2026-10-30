@@ -1892,6 +1892,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/franchises/{franchiseId}/payment-account/connect-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PaymentsController_getFranchiseConnectStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/payment-accounts/{id}/connect/onboard": {
         parameters: {
             query?: never;
@@ -4606,6 +4622,38 @@ export interface paths {
         get: operations["FranchiseFeesController_findAllForSchool"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/franchise-fee/card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchiseFeesController_getCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{id}/franchise-fee/card/setup-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["FranchiseFeesController_createCardSetupSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7593,6 +7641,10 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
+        ConnectStatusResponseDto: {
+            /** @enum {string} */
+            status: "CONNECTED" | "ACTION_NEEDED" | "NOT_CONNECTED";
+        };
         ConnectOnboardingResponseDto: {
             /** @description Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics. */
             onboardingUrl: string;
@@ -10127,6 +10179,13 @@ export interface components {
             items: components["schemas"]["FranchiseFeeChargeResponseDto"][];
             /** @description Cursor for the next page, or null if this is the last page. */
             nextCursor?: string | null;
+        };
+        FranchiseFeeCardResponseDto: {
+            /** @description False while the School's Franchise hasn't connected Stripe: no card can be added yet. */
+            canAddCard: boolean;
+            hasCard: boolean;
+            brand?: string;
+            last4?: string;
         };
         RefundFranchiseFeeChargeDto: {
             /** @description Minor-unit (e.g. cents). Omit to refund the full remaining unrefunded balance. */
@@ -14005,6 +14064,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentAccountResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_getFranchiseConnectStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                franchiseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectStatusResponseDto"];
                 };
             };
         };
@@ -18596,6 +18676,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseFeeChargeListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchiseFeesController_getCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseFeeCardResponseDto"];
+                };
+            };
+        };
+    };
+    FranchiseFeesController_createCardSetupSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupSessionResponseDto"];
                 };
             };
         };

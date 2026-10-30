@@ -227,7 +227,7 @@ export class FranchisesService {
     }
     const { count } = await this.prismaJobs.school.updateMany({
       where: { id: schoolId, franchiseId },
-      data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, franchiseFeeSubscriptionStatus: null, showFranchiseBranding: false },
+      data: { franchiseId: null, stripeFranchiseFeeSubscriptionId: null, stripeFranchiseFeeCustomerId: null, franchiseFeeSubscriptionStatus: null, showFranchiseBranding: false },
     });
     if (count === 0) {
       throw new NotFoundException('This School is not a member of this Franchise.');
