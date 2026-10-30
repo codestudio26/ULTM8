@@ -23,9 +23,12 @@ import {
   type Charge,
   type ChargeBalance,
   type ChargePayment,
+  type DeskMembershipPayment,
   type StudentCharges,
 } from './chargeQueries';
 import { useWaiveLateFee } from './lateFeeQueries';
+import { CancelPaymentModal } from '../transactions/CancelPaymentModal';
+import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
@@ -124,6 +127,7 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
   const [dialog, setDialog] = useState<'create' | 'recurring' | { pay: string | null } | null>(null);
   const [cancelling, setCancelling] = useState<Charge | null>(null);
   const [waiving, setWaiving] = useState<Charge | null>(null);
+  const [cancellingPayment, setCancellingPayment] = useState<DeskMembershipPayment | null>(null);
   const [refunding, setRefunding] = useState<ChargePayment | null>(null);
   const [crediting, setCrediting] = useState(false);
   const resend = useResendInvoice(schoolId);
@@ -190,6 +194,9 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
               onResend={(c) => void resendInvoice(c)}
               resending={resend.isPending}
             />
+            {charges.data.deskMembershipPayments.length > 0 ? (
+              <DeskMembershipPayments payments={charges.data.deskMembershipPayments} canCancel={charges.data.can.cancel} onCancel={setCancellingPayment} />
+            ) : null}
             {recurring.data ? <RecurringChargesList schoolId={schoolId} studentId={studentId} data={recurring.data} /> : null}
           </>
         ) : null}
@@ -238,6 +245,93 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
         />
       ) : null}
       {waiving ? <WaiveLateFeeModal schoolId={schoolId} studentId={studentId} charge={waiving} onClose={() => setWaiving(null)} /> : null}
+      {cancellingPayment && charges.data ? (
+        <CancelPaymentModal
+          schoolId={schoolId}
+          payment={{ id: cancellingPayment.id, amount: cancellingPayment.amount, currency: cancellingPayment.currency ?? null, planTitle: deskPaymentTitle(t, cancellingPayment) }}
+          studentName={studentName}
+          reasonRequired={charges.data.settings.cancelReasonRequired}
+          onClose={() => setCancellingPayment(null)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/** What a membership's desk payment is for: the plan, a renewal of it, or a
+ * freeze fee (the Transactions page's labels). */
+function deskPaymentTitle(t: ReturnType<typeof useT>, p: DeskMembershipPayment): string {
+  const plan = p.membershipPlanTitle ?? '';
+  if (p.kind === 'FREEZE_FEE') return plan ? t('transactions.itemFreezeFee', { plan }) : t('transactions.kindFreezeFee');
+  if (p.kind === 'LATE_CANCEL_FEE') return t('transactions.kindLateFee');
+  return p.kind === 'RENEWAL' ? t('transactions.itemRenewal', { plan }) : plan;
+}
+
+/**
+ * Decision 338 item 1 (last point): the student's membership payments by cash
+ * or bank transfer waiting at the desk, and the ones cancelled. Shown to the
+ * owner and staff with "Can cancel charges" (the API sends none to anyone
+ * else); Cancel asks for a reason, as for a charge. Marking one as paid stays
+ * on the owner's Transactions page.
+ */
+function DeskMembershipPayments({
+  payments,
+  canCancel,
+  onCancel,
+}: {
+  payments: DeskMembershipPayment[];
+  canCancel: boolean;
+  onCancel: (payment: DeskMembershipPayment) => void;
+}) {
+  const t = useT();
+  return (
+    <div data-testid="desk-membership-payments" style={{ marginTop: 24 }}>
+      <h3 style={{ fontSize: 14, margin: '0 0 4px' }}>{t('charges.deskPayments.heading')}</h3>
+      <p className="ultm8-field__hint" style={{ margin: '0 0 8px' }}>
+        {t('charges.deskPayments.hint')}
+      </p>
+      <Table<DeskMembershipPayment>
+        rows={payments}
+        columns={[
+          { key: 'billingDate', header: t('transactions.columnDate'), render: (p) => formatDay(p.billingDate.slice(0, 10)) },
+          { key: 'plan', header: t('transactions.columnPlan'), render: (p) => deskPaymentTitle(t, p) },
+          { key: 'amount', header: t('transactions.columnAmount'), render: (p) => formatMoney(p.amount, p.currency ?? null) },
+          {
+            key: 'method',
+            header: t('transactions.columnMethod'),
+            render: (p) => (PAYMENT_METHOD_LABELS[p.paymentMethod] ? t(PAYMENT_METHOD_LABELS[p.paymentMethod]) : p.paymentMethod),
+          },
+          {
+            key: 'status',
+            header: t('transactions.columnStatus'),
+            render: (p) =>
+              p.status === 'CANCELLED' && p.cancelledAt ? (
+                <div>
+                  {paymentStatusBadge('CANCELLED')}
+                  <div className="ultm8-field__hint">
+                    {p.cancelReason
+                      ? t('charges.card.cancelledLine', { date: formatDay(p.cancelledAt.slice(0, 10)), name: p.cancelledByName ?? '', reason: p.cancelReason })
+                      : t('charges.card.cancelledNoReason', { date: formatDay(p.cancelledAt.slice(0, 10)), name: p.cancelledByName ?? '' })}
+                  </div>
+                </div>
+              ) : (
+                paymentStatusBadge('PENDING')
+              ),
+          },
+          {
+            key: 'actions',
+            header: t('transactions.columnActions'),
+            render: (p) =>
+              p.status === 'PENDING' && canCancel ? (
+                <Button variant="danger" onClick={() => onCancel(p)}>
+                  {t('transactions.cancelPayment')}
+                </Button>
+              ) : (
+                '—'
+              ),
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -8283,6 +8283,10 @@ export interface components {
             brand?: string;
             last4?: string;
         };
+        CancelTransactionDto: {
+            /** @description For staff only; never sent to the member. Required unless the School's owner made it optional. */
+            reason?: string;
+        };
         CreateTimetableSlotDto: {
             /** @description Branch to scope this slot to. Omit for a School-wide slot. */
             branchId?: string;
@@ -9363,6 +9367,14 @@ export interface components {
             paymentMethod: string;
             disputedAmount?: number | null;
             refundedAmount?: number | null;
+            /** @description Set when the payment was cancelled: shown as Cancelled (status stays FAILED). */
+            cancelledAt?: string | null;
+            /** @description Staff only; null in the member's own list. */
+            cancelledById?: string | null;
+            /** @description Who cancelled it. Staff only; null in the member's own list. */
+            cancelledByName?: string | null;
+            /** @description Why it was cancelled. Staff only; never sent to the member. */
+            cancelReason?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -9379,7 +9391,10 @@ export interface components {
             total: number;
             successful: number;
             pending: number;
+            /** @description Failed (not cancelled) or disputed. */
             failedOrDisputed: number;
+            /** @description Cancelled cash or bank-transfer payments (Decision 338 item 1). */
+            cancelled: number;
             /** @description Successful rows only, one entry per currency. */
             revenue: components["schemas"]["TransactionRevenueDto"][];
         };
@@ -12020,6 +12035,28 @@ export interface components {
             /** @description Staff only. */
             givenByName?: string | null;
         };
+        DeskMembershipPaymentDto: {
+            /** @description The Transaction id. */
+            id: string;
+            /** @enum {string} */
+            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE";
+            /** @description The plan it is for (a freeze fee: the frozen membership's plan). */
+            membershipPlanTitle?: string | null;
+            amount: number;
+            currency?: string | null;
+            /** @description CASH, BANK_TRANSFER, PIX or CARD_TERMINAL. */
+            paymentMethod: string;
+            billingDate: string;
+            /**
+             * @description CANCELLED is stored as FAILED with cancelledAt set.
+             * @enum {string}
+             */
+            status: "PENDING" | "CANCELLED";
+            cancelledAt?: string | null;
+            cancelledByName?: string | null;
+            /** @description Staff only. */
+            cancelReason?: string | null;
+        };
         ChargeAbilitiesDto: {
             create: boolean;
             cancel: boolean;
@@ -12053,6 +12090,8 @@ export interface components {
             payments: components["schemas"]["ChargePaymentResponseDto"][];
             /** @description Credit the owner gave, newest first. */
             credits: components["schemas"]["BalanceCreditResponseDto"][];
+            /** @description Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them. */
+            deskMembershipPayments: components["schemas"]["DeskMembershipPaymentDto"][];
             /** @description What the caller may do here. */
             can: components["schemas"]["ChargeAbilitiesDto"];
             settings: components["schemas"]["ChargeSettingsDto"];
@@ -15611,7 +15650,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelTransactionDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -17383,7 +17426,7 @@ export interface operations {
                 /** @description Opaque cursor from a previous page's nextCursor. */
                 cursor?: string;
                 limit?: number;
-                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "CANCELLED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
@@ -17413,7 +17456,7 @@ export interface operations {
     TransactionsController_summaryForSchool: {
         parameters: {
             query?: {
-                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
+                status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "CANCELLED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;

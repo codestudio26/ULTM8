@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "该收费项已被取消。",
   "This charge is already paid.": "该收费项已付清。",
   "Give a reason for cancelling this charge.": "请填写取消该收费项的原因。",
+  "Give a reason for cancelling this payment.": "请填写取消这笔付款的原因。",
   "Only the student, or their Guardian, can see their charges.": "只有学员本人或其监护人可以查看其收费项。",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "“可以创建收费项”和“可以取消收费项”适用于本学校的分馆员工和教练。",
   "This School doesn't take card payments in the app. Pay at the front desk.": "这所学校不接受在 App 中刷卡付款。请到前台付款。",

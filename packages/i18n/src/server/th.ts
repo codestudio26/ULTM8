@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "รายการเรียกเก็บนี้ถูกยกเลิกไปแล้ว",
   "This charge is already paid.": "รายการเรียกเก็บนี้ชำระครบแล้ว",
   "Give a reason for cancelling this charge.": "โปรดระบุเหตุผลในการยกเลิกรายการเรียกเก็บนี้",
+  "Give a reason for cancelling this payment.": "โปรดระบุเหตุผลในการยกเลิกการชำระเงินนี้",
   "Only the student, or their Guardian, can see their charges.": "เฉพาะนักเรียนหรือผู้ปกครองเท่านั้นที่ดูรายการเรียกเก็บได้",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"สร้างรายการเรียกเก็บได้\" และ \"ยกเลิกรายการเรียกเก็บได้\" ใช้กับเจ้าหน้าที่สาขาและโค้ชของโรงเรียนนี้",
   "This School doesn't take card payments in the app. Pay at the front desk.": "โรงเรียนนี้ไม่รับชำระด้วยบัตรในแอป โปรดชำระที่เคาน์เตอร์",

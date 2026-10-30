@@ -679,6 +679,7 @@ export const serverMessages: Record<string, string> = {
   "This charge has already been cancelled.": "تم إلغاء هذا الرسم بالفعل.",
   "This charge is already paid.": "تم دفع هذا الرسم بالفعل.",
   "Give a reason for cancelling this charge.": "اذكر سببًا لإلغاء هذا الرسم.",
+  "Give a reason for cancelling this payment.": "اذكر سببًا لإلغاء هذه الدفعة.",
   "Only the student, or their Guardian, can see their charges.": "لا يرى رسوم الطالب إلا الطالب نفسه أو وليّ أمره.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"يمكنه إنشاء الرسوم\" و\"يمكنه إلغاء الرسوم\" مخصّصان لموظفي الفروع والمدرّبين في هذه المدرسة.",
   "This School doesn't take card payments in the app. Pay at the front desk.": "لا تقبل هذه المدرسة الدفع بالبطاقة في التطبيق. ادفع في مكتب الاستقبال.",

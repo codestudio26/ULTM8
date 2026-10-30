@@ -167,7 +167,7 @@ describeIfDb('Billing stress-test fixes', () => {
   it('confirming a cancelled or failed payment is refused (409); confirming a paid one again is still fine', async () => {
     const confirm = (id: string) => http().patch(`/v1/transactions/${id}/confirm`).set('Authorization', `Bearer ${owner.token}`);
     const cancelled = await pending(students[23].id);
-    expect((await http().patch(`/v1/transactions/${cancelled.id}/cancel`).set('Authorization', `Bearer ${owner.token}`)).status).toBe(200);
+    expect((await http().patch(`/v1/transactions/${cancelled.id}/cancel`).set('Authorization', `Bearer ${owner.token}`).send({ reason: 'Never paid' })).status).toBe(200);
     expect((await confirm(cancelled.id)).status).toBe(409);
     const failed = await pending(students[24].id, { status: 'FAILED' });
     expect((await confirm(failed.id)).status).toBe(409);

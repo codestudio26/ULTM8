@@ -3,7 +3,7 @@ import { Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Select
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { formatMoney } from '../lib/money';
-import { PAYMENT_STATUS_LABELS, paymentStatusBadge } from '../lib/paymentStatusBadge';
+import { PAYMENT_STATUS_LABELS, paymentStatusBadge, transactionStatus } from '../lib/paymentStatusBadge';
 import { fetchAllPages, ALL_PAGES_LIMIT } from '../lib/fetchAllPages';
 import { useSchool } from '../schools/schoolQueries';
 import {
@@ -12,7 +12,7 @@ import {
   useDeskPaymentOptions,
   NO_FILTERS,
   useRecordDeskPayment,
-  useSettleTransaction,
+  useConfirmTransaction,
   useTransactionReceiptUrl,
   useTransactions,
   useTransactionSummary,
@@ -20,6 +20,7 @@ import {
   type TransactionResponse,
 } from './transactionQueries';
 import { downloadCsv, transactionsCsv } from './transactionsCsv';
+import { CancelPaymentModal } from './CancelPaymentModal';
 import { useT } from '../i18n/I18nProvider';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
@@ -89,31 +90,20 @@ function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-type SettleAction = 'confirm' | 'cancel';
-
-/** "Mark as paid" / "Cancel" for one Pending Cash/Bank Transfer payment
- * (Decision 339, G1). Asks first, naming the Student, plan and amount, since
- * marking it paid creates their Membership and neither can be undone here. */
-function SettleDialog({
-  row,
-  action,
-  schoolId,
-  onClose,
-}: {
-  row: TransactionResponse;
-  action: SettleAction;
-  schoolId: string;
-  onClose: () => void;
-}) {
+/** "Mark as paid" for one Pending Cash/Bank Transfer payment (Decision 339,
+ * G1). Asks first, naming the Student, plan and amount, since marking it paid
+ * creates their Membership and can't be undone here. Cancelling has its own
+ * dialog, which asks for a reason (CancelPaymentModal, Decision 338 item 1). */
+function MarkPaidDialog({ row, schoolId, onClose }: { row: TransactionResponse; schoolId: string; onClose: () => void }) {
   const t = useT();
-  const settle = useSettleTransaction(schoolId);
+  const settle = useConfirmTransaction(schoolId);
   const [error, setError] = useState<string | null>(null);
   const vars = { student: studentName(row), plan: row.membershipPlanTitle ?? '', amount: formatMoney(row.amount, row.currency) };
 
   async function handleConfirm() {
     setError(null);
     try {
-      await settle.mutateAsync({ id: row.id, action });
+      await settle.mutateAsync(row.id);
       onClose();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('transactions.settleFailed'));
@@ -121,19 +111,28 @@ function SettleDialog({
   }
 
   return (
-    <Modal title={t(action === 'confirm' ? 'transactions.markPaidTitle' : 'transactions.cancelTitle')} onClose={onClose}>
+    <Modal title={t('transactions.markPaidTitle')} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ margin: '0 0 16px' }}>{t(action === 'confirm' ? 'transactions.markPaidBody' : 'transactions.cancelBody', vars)}</p>
+      <p style={{ margin: '0 0 16px' }}>{t('transactions.markPaidBody', vars)}</p>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <Button variant="secondary" onClick={onClose}>
           {t('transactions.back')}
         </Button>
-        <Button variant={action === 'cancel' ? 'danger' : 'primary'} loading={settle.isPending} onClick={handleConfirm}>
-          {t(action === 'confirm' ? 'transactions.markPaid' : 'transactions.cancelPayment')}
+        <Button variant="primary" loading={settle.isPending} onClick={handleConfirm}>
+          {t('transactions.markPaid')}
         </Button>
       </div>
     </Modal>
   );
+}
+
+/** A cancelled payment's line under its status (Decision 338 item 1): when,
+ * who, and the staff-only reason. */
+function cancelledLine(t: ReturnType<typeof useT>, row: TransactionResponse): string | null {
+  if (!row.cancelledAt) return null;
+  const date = new Date(row.cancelledAt).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
+  const name = row.cancelledByName ?? '';
+  return row.cancelReason ? t('charges.card.cancelledLine', { date, name, reason: row.cancelReason }) : t('charges.card.cancelledNoReason', { date, name });
 }
 
 function studentName(row: TransactionResponse): string {
@@ -295,7 +294,9 @@ export function TransactionsPage() {
   const { data, isLoading, error } = useTransactions(schoolId, cursorStack[pageIndex], filters);
   const { data: summary } = useTransactionSummary(schoolId, filters);
   const { data: planData } = useAllMembershipPlans(schoolId);
-  const [settling, setSettling] = useState<{ row: TransactionResponse; action: SettleAction } | null>(null);
+  const [settling, setSettling] = useState<{ row: TransactionResponse; action: 'confirm' | 'cancel' } | null>(null);
+  // The School's "reason required" setting for cancelling (Decision 338 item 1).
+  const { data: school } = useSchool(schoolId);
   const [recording, setRecording] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -315,7 +316,10 @@ export function TransactionsPage() {
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
   const setFilter = <K extends keyof TransactionFilters>(key: K, value: TransactionFilters[K]) => setFilters((f) => ({ ...f, [key]: value }));
   const methodLabel = (row: TransactionResponse) => (PAYMENT_METHOD_LABELS[row.paymentMethod] ? t(PAYMENT_METHOD_LABELS[row.paymentMethod]!) : row.paymentMethod);
-  const statusLabel = (row: TransactionResponse) => (PAYMENT_STATUS_LABELS[row.status] ? t(PAYMENT_STATUS_LABELS[row.status]!) : row.status);
+  const statusLabel = (row: TransactionResponse) => {
+    const status = transactionStatus(row);
+    return PAYMENT_STATUS_LABELS[status] ? t(PAYMENT_STATUS_LABELS[status]!) : status;
+  };
 
   function goToNextPage(nextCursor: string | null) {
     setCursorStack((stack) => [...stack.slice(0, pageIndex + 1), nextCursor]);
@@ -341,6 +345,9 @@ export function TransactionsPage() {
           t('transactions.columnRefunded'),
           t('transactions.columnDisputed'),
           t('transactions.columnId'),
+          t('transactions.columnCancelledAt'),
+          t('transactions.columnCancelledBy'),
+          t('transactions.columnCancelReason'),
         ],
         item: itemLabel,
         student: studentName,
@@ -449,6 +456,7 @@ export function TransactionsPage() {
         <StatTile label={t('transactions.statSuccessful')} value={summary?.successful ?? '—'} />
         <StatTile label={t('transactions.statPending')} value={summary?.pending ?? '—'} />
         <StatTile label={t('transactions.statFailedOrDisputed')} value={summary?.failedOrDisputed ?? '—'} />
+        <StatTile label={t('transactions.statCancelled')} value={summary?.cancelled ?? '—'} />
         <StatTile label={t('transactions.statRevenue')} value={summary ? revenueLabel || formatMoney(0, null) : '—'} />
       </div>
 
@@ -484,7 +492,21 @@ export function TransactionsPage() {
                     formatMoney(row.amount, row.currency)
                   ),
               },
-              { key: 'status', header: t('transactions.columnStatus'), render: (row) => paymentStatusBadge(row.status) },
+              {
+                key: 'status',
+                header: t('transactions.columnStatus'),
+                // Decision 338 item 1: a cancelled payment reads Cancelled,
+                // with when, who and why underneath.
+                render: (row) =>
+                  row.cancelledAt ? (
+                    <div>
+                      {paymentStatusBadge(transactionStatus(row))}
+                      <div className="ultm8-field__hint">{cancelledLine(t, row)}</div>
+                    </div>
+                  ) : (
+                    paymentStatusBadge(row.status)
+                  ),
+              },
               {
                 key: 'paymentMethod',
                 header: t('transactions.columnMethod'),
@@ -527,7 +549,16 @@ export function TransactionsPage() {
         </div>
       ) : null}
 
-      {settling ? <SettleDialog row={settling.row} action={settling.action} schoolId={schoolId} onClose={() => setSettling(null)} /> : null}
+      {settling?.action === 'confirm' ? <MarkPaidDialog row={settling.row} schoolId={schoolId} onClose={() => setSettling(null)} /> : null}
+      {settling?.action === 'cancel' ? (
+        <CancelPaymentModal
+          schoolId={schoolId}
+          payment={{ id: settling.row.id, amount: settling.row.amount, currency: settling.row.currency ?? null, planTitle: settling.row.membershipPlanTitle ?? '' }}
+          studentName={studentName(settling.row)}
+          reasonRequired={school?.chargeCancelReasonRequired ?? true}
+          onClose={() => setSettling(null)}
+        />
+      ) : null}
       {recording ? <RecordPaymentDialog schoolId={schoolId} onClose={() => setRecording(false)} /> : null}
     </>
   );
