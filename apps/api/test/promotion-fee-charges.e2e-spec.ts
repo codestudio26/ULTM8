@@ -23,6 +23,7 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
+import { checkoutPaymentJob, fakePaymentCheckoutSession } from './stripe-fakes';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { ChargeAutoPayProcessor } from '../src/jobs/charge-auto-pay.processor';
 import { LateFeeProcessor } from '../src/jobs/late-fee.processor';
@@ -65,10 +66,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
     scopedClient: jest.fn(() => ({
       checkout: {
         sessions: {
-          create: jest.fn(async () => {
-            const id = `pi_${randomUUID()}`;
-            return { url: `https://checkout.example.test/${id}`, payment_intent: { id } };
-          }),
+          create: jest.fn(async (params: { metadata?: Record<string, string> }) => fakePaymentCheckoutSession(params)),
         },
       },
       paymentIntents: { create: jest.fn(async () => ({ id: `pi_${randomUUID()}`, status: 'succeeded' })) },
@@ -340,10 +338,11 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
     expect(started.status).toBe(201);
     expect(started.body.amount).toBe(1800);
     expect((await requestRow(id)).status).toBe('ACCEPTED');
-    const pi = (await su.transaction.findUniqueOrThrow({ where: { id: started.body.transactionId } })).stripePaymentIntentId!;
-    const stripeEventId = `evt_${randomUUID()}`;
-    eventIds.push(stripeEventId);
-    await webhook.process({ data: { stripeEventId, eventType: 'payment_intent.succeeded', objectId: pi, stripeAccountId: acct }, attemptsMade: 1, opts: { attempts: 3 } } as never);
+    // The member pays: Stripe makes the PaymentIntent then, carrying the
+    // Transaction id the Session gave it in its metadata.
+    const job = checkoutPaymentJob('payment_intent.succeeded', started.body.transactionId, acct, `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`);
+    eventIds.push(job.stripeEventId);
+    await webhook.process({ data: job, attemptsMade: 1, opts: { attempts: 3 } } as never);
     expect((await requestRow(id)).status).toBe('PAID');
     expect(await stripeOf('cat')).toBe(rung['white-1'].id);
     expect(await promotionsOf('cat')).toBe(1);

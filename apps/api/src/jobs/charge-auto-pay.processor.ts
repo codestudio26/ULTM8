@@ -259,6 +259,7 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         a.currency,
         `Invoice ${a.invoiceLabel}: ${a.description}`,
         `charge-auto-pay-${a.transactionId}`,
+        a.surcharge,
       );
     } catch (err) {
       // No card any more, or Stripe could not be reached: one attempt only, so

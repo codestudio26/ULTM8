@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
+import { fakePaymentCheckoutSession } from './stripe-fakes';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { ChargeAutoPayProcessor } from '../src/jobs/charge-auto-pay.processor';
 
@@ -19,7 +20,7 @@ import { ChargeAutoPayProcessor } from '../src/jobs/charge-auto-pay.processor';
  * - one charge, or the whole balance (oldest due first), by hosted Checkout;
  *   the amount asked is what is owed after credit;
  * - Pending until the payment_intent.succeeded webhook, Failed on
- *   payment_intent.canceled; two sessions never over-pay a charge;
+ *   payment_intent.canceled or an expired Checkout; two sessions never over-pay a charge;
  * - a Guardian pays for a child; strangers, another School and a restricted
  *   account are refused;
  * - the card surcharge as its own line, kept off the balance;
@@ -42,7 +43,12 @@ const day = (offset: number) => new Date(Date.now() + offset * DAY).toISOString(
 /** A country no other suite lists for card surcharges. */
 const COUNTRY = 'BO';
 
-type Session = { line_items: Array<{ price_data: { unit_amount: number; product_data: { name: string } } }>; success_url: string; payment_intent_data?: unknown };
+type Session = {
+  line_items: Array<{ price_data: { unit_amount: number; product_data: { name: string } } }>;
+  success_url: string;
+  metadata?: Record<string, string>;
+  payment_intent_data?: { metadata?: Record<string, string> };
+};
 type Intent = { amount: number; off_session?: boolean; customer?: string };
 
 describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
@@ -64,7 +70,7 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
   // The fake Stripe: what was sent, and how the next off-session charge ends.
   const sessions: Session[] = [];
   const intents: Intent[] = [];
-  const sessionByKey = new Map<string, string>();
+  const sessionByKey = new Map<string, ReturnType<typeof fakePaymentCheckoutSession>>();
   let offSessionStatus: 'succeeded' | 'requires_payment_method' = 'succeeded';
   const fakeStripeClient = {
     scopedClient: jest.fn(() => ({
@@ -73,11 +79,11 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
           create: jest.fn(async (params: Session, opts?: { idempotencyKey?: string }) => {
             const key = opts?.idempotencyKey;
             const known = key ? sessionByKey.get(key) : undefined;
-            if (known) return { url: `https://checkout.example.test/${known}`, payment_intent: { id: known } };
+            if (known) return known;
             sessions.push(params);
-            const id = `pi_${randomUUID()}`;
-            if (key) sessionByKey.set(key, id);
-            return { url: `https://checkout.example.test/${id}`, payment_intent: { id } };
+            const session = fakePaymentCheckoutSession(params);
+            if (key) sessionByKey.set(key, session);
+            return session;
           }),
         },
       },
@@ -148,12 +154,26 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
   const charge = (id: string) => su.charge.findUniqueOrThrow({ where: { id }, include: { allocations: true } });
   const paid = async (id: string) => (await charge(id)).allocations.reduce((n, a) => n + a.amount, 0);
 
-  async function event(eventType: string, paymentIntentId: string) {
+  // `transactionId`: what the intake reads from the event object's metadata.
+  async function event(eventType: string, objectId: string, transactionId?: string) {
     const stripeEventId = `evt_${randomUUID()}`;
     eventIds.push(stripeEventId);
-    await webhook.process({ data: { stripeEventId, eventType, objectId: paymentIntentId, stripeAccountId: acct }, attemptsMade: 1, opts: { attempts: 3 } } as never);
+    await webhook.process({ data: { stripeEventId, eventType, objectId, stripeAccountId: acct, transactionId }, attemptsMade: 1, opts: { attempts: 3 } } as never);
   }
-  const succeed = async (transactionId: string) => event('payment_intent.succeeded', (await tx(transactionId)).stripePaymentIntentId!);
+  /** The PaymentIntent Stripe makes when the member pays a Checkout (one per
+   * Session), with the metadata the app gave the Session for it. */
+  const intentOf = new Map<string, string>();
+  function checkoutIntent(transactionId: string) {
+    const session = sessions.find((s) => s.payment_intent_data?.metadata?.transactionId === transactionId);
+    expect(session?.metadata?.transactionId).toBe(transactionId);
+    if (!intentOf.has(transactionId)) intentOf.set(transactionId, `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`);
+    return { id: intentOf.get(transactionId)!, transactionId: session!.payment_intent_data!.metadata!.transactionId };
+  }
+  const paymentEvent = (eventType: string, transactionId: string) => {
+    const intent = checkoutIntent(transactionId);
+    return event(eventType, intent.id, intent.transactionId);
+  };
+  const succeed = (transactionId: string) => paymentEvent('payment_intent.succeeded', transactionId);
 
   async function notices(userId: string, expected: number) {
     for (let i = 0; i < 60; i++) {
@@ -219,7 +239,7 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
       const res = await checkout('one', student.id, { chargeId: c.id });
       expect(res.status).toBe(201);
       expect(res.body).toMatchObject({ amount: 10000, surchargeAmount: 0, currency: 'BRL' });
-      expect(res.body.checkoutUrl).toMatch(/^https:\/\/checkout\.example\.test\//);
+      expect(res.body.checkoutUrl).toMatch(/^https:\/\/checkout\.stripe\.com\/c\/pay\/cs_test_/);
       const session = sessions[sessions.length - 1];
       expect(session.line_items.map((l) => l.price_data.unit_amount)).toEqual([10000]);
       expect(session.line_items[0].price_data.product_data.name).toBe(`Invoice ${c.invoiceLabel}: Item ${seq}`);
@@ -291,14 +311,15 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
       const student = await mkStudent('abandon');
       const c = await createCharge(student.id, 2500);
       const res = await checkout('abandon', student.id, { chargeId: c.id });
-      await event('payment_intent.canceled', (await tx(res.body.transactionId)).stripePaymentIntentId!);
+      // Abandoned before paying: the Session expires, with no PaymentIntent.
+      await event('checkout.session.expired', `cs_test_${randomUUID()}`, res.body.transactionId);
       expect((await tx(res.body.transactionId)).status).toBe('FAILED');
       const view = await memberView('abandon', student.id);
       expect(view.payments).toEqual([]);
       expect(view.balances[0].net).toBe(2500);
 
       const again = await checkout('abandon', student.id, { chargeId: c.id });
-      await event('payment_intent.payment_failed', (await tx(again.body.transactionId)).stripePaymentIntentId!);
+      await paymentEvent('payment_intent.payment_failed', again.body.transactionId);
       expect((await tx(again.body.transactionId)).status).toBe('FAILED');
       await succeed(again.body.transactionId);
       expect((await tx(again.body.transactionId)).status).toBe('SUCCESSFUL');

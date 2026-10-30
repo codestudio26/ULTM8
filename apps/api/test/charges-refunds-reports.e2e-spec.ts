@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
+import { fakePaymentCheckoutSession } from './stripe-fakes';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { ChargeAutoPayProcessor } from '../src/jobs/charge-auto-pay.processor';
 import { ChargeOverdueNoticeProcessor } from '../src/jobs/charge-overdue-notice.processor';
@@ -77,10 +78,7 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     scopedClient: jest.fn(() => ({
       checkout: {
         sessions: {
-          create: jest.fn(async () => {
-            const id = `pi_${randomUUID()}`;
-            return { url: `https://checkout.example.test/${id}`, payment_intent: { id } };
-          }),
+          create: jest.fn(async (params: { metadata?: Record<string, string> }) => fakePaymentCheckoutSession(params)),
         },
       },
       paymentIntents: { create: jest.fn(async () => ({ id: `pi_${randomUUID()}`, status: offSessionStatus })) },
@@ -149,7 +147,9 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
   async function cardPay(label: string, studentId: string, chargeId: string) {
     const res = await as(tokens[label]).post(`/v1/students/${studentId}/charges/checkout`, { schoolId: school.id, chargeId });
     expect(res.status).toBe(201);
-    await event('payment_intent.succeeded', (await tx(res.body.transactionId)).stripePaymentIntentId!);
+    // Stripe makes the PaymentIntent when the member pays, with the
+    // Transaction id the Session gave it in its metadata.
+    await event('payment_intent.succeeded', `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`, res.body.transactionId);
     expect((await tx(res.body.transactionId)).status).toBe('SUCCESSFUL');
     return res.body.transactionId as string;
   }
@@ -168,10 +168,10 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
   const tx = (id: string) => su.transaction.findUniqueOrThrow({ where: { id } });
   const balanceSum = async (studentId: string) => (await su.balanceEntry.aggregate({ where: { schoolId: school.id, studentId }, _sum: { amount: true } }))._sum.amount ?? 0;
 
-  async function event(eventType: string, objectId: string) {
+  async function event(eventType: string, objectId: string, transactionId?: string) {
     const stripeEventId = `evt_${randomUUID()}`;
     eventIds.push(stripeEventId);
-    await webhook.process({ data: { stripeEventId, eventType, objectId, stripeAccountId: acct }, attemptsMade: 1, opts: { attempts: 3 } } as never);
+    await webhook.process({ data: { stripeEventId, eventType, objectId, stripeAccountId: acct, transactionId }, attemptsMade: 1, opts: { attempts: 3 } } as never);
   }
 
   async function notices(userId: string, expected: number, title?: string) {

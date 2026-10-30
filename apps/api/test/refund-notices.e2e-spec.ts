@@ -319,13 +319,16 @@ describeIfDb('The "Refund" notice for every refund (Decision 415 item 4)', () =>
     it('by the webhook: the member is told why, once', async () => {
       const c = await collision(a, 'refused');
       const evt = await event(a, 'payment_intent.succeeded', c.pi);
-      expect(await su.transaction.findUniqueOrThrow({ where: { id: c.transaction.id } })).toMatchObject({ status: 'REFUNDED', refundedAmount: 3000 });
+      // The whole card payment went back, surcharge included, and is recorded so.
+      expect(await su.transaction.findUniqueOrThrow({ where: { id: c.transaction.id } })).toMatchObject({ status: 'REFUNDED', refundedAmount: 3090 });
       await event(a, 'payment_intent.succeeded', c.pi, evt); // redelivered
       await event(a, 'payment_intent.succeeded', c.pi); // a duplicate event
-      // Stripe's own charge.refunded for that refund adds nothing.
+      // Stripe's own charge.refunded for that refund adds nothing, and its
+      // sync of the refunded total agrees.
       const chargeId = `ch_${randomUUID()}`;
       charges.set(chargeId, { id: chargeId, object: 'charge', amount: 3090, amount_refunded: 3090, payment_intent: c.pi });
       await event(a, 'charge.refunded', chargeId);
+      expect(await su.transaction.findUniqueOrThrow({ where: { id: c.transaction.id } })).toMatchObject({ status: 'REFUNDED', refundedAmount: 3090 });
       expect(await refundNotices(c.student.id, 1)).toEqual(["30.90 GBP was refunded to your card: Unlimited couldn't be bought."]);
       await settle();
       expect(await countRefundNotices(c.student.id)).toBe(1);

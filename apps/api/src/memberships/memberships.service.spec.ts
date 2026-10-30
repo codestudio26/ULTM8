@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { MembershipsService, stripePurchaseKey } from './memberships.service';
-import { NoSavedPaymentMethodError } from '../payments/payments.service';
+import { NoSavedPaymentMethodError, checkoutTransactionId } from '../payments/payments.service';
 
 /**
  * Decision 236's own follow-up — MembershipsService.purchase()'s
@@ -87,7 +87,10 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
     title: 'Pack',
   };
 
-  function callPurchaseWithSavedCard(service: MembershipsService, stepUpToken?: string, fixturePlan: FixturePlan = plan) {
+  // `surcharge` sits before `stepUpToken` in purchaseWithSavedCard()'s own
+  // signature (Decision 406); an earlier version of this helper left it out,
+  // so the token was passed as the surcharge.
+  function callPurchaseWithSavedCard(service: MembershipsService, stepUpToken?: string, fixturePlan: FixturePlan = plan, surcharge = 0) {
     return (
       service as unknown as {
         purchaseWithSavedCard: (
@@ -96,10 +99,11 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
           plan: FixturePlan,
           paymentAccountId: string,
           currency: string,
+          surcharge: number,
           stepUpToken?: string,
         ) => Promise<unknown>;
       }
-    ).purchaseWithSavedCard('student-1', 'student-1', fixturePlan, 'account-1', 'usd', stepUpToken);
+    ).purchaseWithSavedCard('student-1', 'student-1', fixturePlan, 'account-1', 'usd', surcharge, stepUpToken);
   }
 
   it('checks step-up BEFORE ever calling chargeOffSession', async () => {
@@ -166,12 +170,34 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
       where: { id: createdTransactionId, status: 'SUCCESSFUL' },
       data: { status: 'REFUNDED', refundedAmount: plan.price },
     });
+    expect(chargeOffSession).toHaveBeenCalledWith('student-1', 'school-1', plan.price, 'usd', plan.title, undefined, 0);
     // Decision 415 item 4: the member is told why the card was refunded.
     expect(paymentsService.sendRefundNotice).toHaveBeenCalledWith(
       expect.objectContaining({ key: `refund-refused-${createdTransactionId}`, title: 'Refund', body: expect.stringMatching(/was refunded to your card: .+ couldn't be bought\.$/) }),
       'student-1',
       'school-1',
     );
+  });
+
+  // Stripe refunds the whole card payment, surcharge included (seen on the
+  // real test-mode sandbox: 1530 refunded for a 1500 plan with a 30 surcharge);
+  // the recorded refund says the same.
+  it('records the whole card payment as refunded, surcharge included, when a surcharged purchase loses the race', async () => {
+    const chargeOffSession = jest.fn().mockResolvedValue({ succeeded: true, paymentIntentId: 'pi_collision' });
+    const tx = makeTx({ membershipFindMany: jest.fn().mockResolvedValue([{ status: 'ACTIVE', expiryDate: null, classesRemaining: null }]) });
+    const { service, paymentsService } = makeService({ tx, chargeOffSession, refundOffSessionCharge: jest.fn().mockResolvedValue(undefined) });
+    const weeklyPass: FixturePlan = { ...plan, type: 'WEEKLY_PASS', classesIncluded: null, expiryDurationDays: 7, price: 1500 };
+
+    await expect(callPurchaseWithSavedCard(service, 'valid-token', weeklyPass, 30)).rejects.toBeInstanceOf(ConflictException);
+
+    expect(chargeOffSession).toHaveBeenCalledWith('student-1', 'school-1', 1530, 'usd', weeklyPass.title, undefined, 30);
+    const created = tx.transaction.create.mock.calls[0][0].data;
+    expect(created).toMatchObject({ amount: 1500, surchargeAmount: 30, status: 'SUCCESSFUL' });
+    expect(tx.transaction.updateMany).toHaveBeenCalledWith({
+      where: { id: created.id, status: 'SUCCESSFUL' },
+      data: { status: 'REFUNDED', refundedAmount: 1530 },
+    });
+    expect(paymentsService.sendRefundNotice).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('15.30') }), 'student-1', 'school-1');
   });
 });
 
@@ -189,10 +215,9 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
  * (e2e cannot exercise a real Checkout Session create against a fixture
  * `acct_fixture_...` connected account id, so this Transaction-creation
  * logic is unit-tested here instead). The webhook-settlement half (once
- * payment_intent.succeeded fires for the Session's own PaymentIntent) is
- * NOT re-tested here — it is the exact same Transaction shape, and the exact
- * same handler, `charge()`'s own requires_payment path already produces and
- * stripe-webhook-processing.e2e-spec.ts already covers end-to-end.
+ * payment_intent.succeeded fires for the PaymentIntent the Session makes when
+ * the member pays, matched by the Transaction id in its metadata) is covered by
+ * stripe-webhook-processing.e2e-spec.ts's hosted Checkout block.
  */
 describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
   function makeTx(overrides: { transactionCreate?: jest.Mock } = {}) {
@@ -233,19 +258,21 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
     ).purchaseViaHostedCheckout('student-1', hostedCheckoutPlan, 'account-1', 'usd', 0);
   }
 
-  it("creates a PENDING Transaction carrying the Checkout Session's own synchronously-created PaymentIntent id, and returns the hosted checkoutUrl", async () => {
+  // On the API version the installed SDK pins, the Session has no
+  // PaymentIntent until the member pays: the row is linked to it by its own id,
+  // which goes in the PaymentIntent's metadata (the webhook matches by it).
+  it('creates a PENDING Transaction with no PaymentIntent yet, sends its id (derived from the idempotency key) to Stripe, and returns the hosted checkoutUrl', async () => {
     const tx = makeTx();
-    const createPurchaseCheckoutSession = jest
-      .fn()
-      .mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_1', paymentIntentId: 'pi_checkout_1' });
+    const createPurchaseCheckoutSession = jest.fn().mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_test_1' });
     const { service } = makeService({ tx, createPurchaseCheckoutSession });
 
     const result = (await callPurchaseViaHostedCheckout(service)) as { outcome: string; checkoutUrl: string; transactionId: string };
 
-    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', 3000, 'usd', 'Pack', expect.stringMatching(/^membership-purchase-checkout-student-1-plan-1-[0-9a-f]{12}-\d+$/), 0);
+    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', result.transactionId, 3000, 'usd', 'Pack', expect.stringMatching(/^membership-purchase-checkout-student-1-plan-1-[0-9a-f]{12}-\d+$/), 0);
+    const key = createPurchaseCheckoutSession.mock.calls[0][6] as string;
+    expect(result.transactionId).toBe(checkoutTransactionId(key));
     expect(result.outcome).toBe('requires_checkout');
-    expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
-    expect(typeof result.transactionId).toBe('string');
+    expect(result.checkoutUrl).toBe('https://checkout.stripe.com/c/pay/cs_test_1');
     expect(tx.transaction.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -258,10 +285,23 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
           currency: 'USD', // stored in capitals (Decision 339, T3)
           status: 'PENDING',
           paymentMethod: 'STRIPE',
-          stripePaymentIntentId: 'pi_checkout_1',
         }),
       }),
     );
+    expect(tx.transaction.create.mock.calls[0][0].data).not.toHaveProperty('stripePaymentIntentId');
+  });
+
+  it('a double click (same key, so the same Session and id) returns the row the first click wrote', async () => {
+    const duplicate = Object.assign(new Error('Unique constraint failed'), { code: 'P2002' });
+    const tx = { transaction: { create: jest.fn().mockRejectedValue(duplicate), findUnique: jest.fn(({ where }: { where: { id: string } }) => Promise.resolve({ id: where.id })) } };
+    const createPurchaseCheckoutSession = jest.fn().mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_test_1' });
+    const { service } = makeService({ tx: tx as never, createPurchaseCheckoutSession });
+
+    const result = (await callPurchaseViaHostedCheckout(service)) as { transactionId: string };
+
+    const id = createPurchaseCheckoutSession.mock.calls[0][2] as string;
+    expect(tx.transaction.findUnique).toHaveBeenCalledWith({ where: { id }, select: { id: true } });
+    expect(result.transactionId).toBe(id);
   });
 });
 
@@ -301,7 +341,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
     const paymentsService = {
       createPurchaseCheckoutSession:
         opts.createPurchaseCheckoutSession ??
-        jest.fn().mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_1', paymentIntentId: 'pi_checkout_1' }),
+        jest.fn().mockResolvedValue({ checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_test_1' }),
     };
     const guardiansService = { assertGuardianOfStudent: jest.fn().mockResolvedValue(undefined) };
     const subscriptionGate = { assertNotDegraded: jest.fn().mockResolvedValue(undefined) };
@@ -334,8 +374,8 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
 
     expect(guardiansService.assertGuardianOfStudent).toHaveBeenCalledWith('guardian-1', 'minor-1');
     expect(result.outcome).toBe('requires_checkout');
-    expect(result.checkoutUrl).toBe('https://checkout.stripe.com/pay/cs_1');
-    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/), 0);
+    expect(result.checkoutUrl).toBe('https://checkout.stripe.com/c/pay/cs_test_1');
+    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', expect.any(String), 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/), 0);
     expect(tx.transaction.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ studentId: 'minor-1', paymentAccountId: 'account-1' }) }),
     );

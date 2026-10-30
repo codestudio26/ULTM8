@@ -5,6 +5,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from '../payments/stripe-client.service';
+import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from '../payments/stripe-first-invoice';
 import { AuditLogService, AuditAction } from '../platform-admin/audit-log.service';
 import { cursorPaginate } from '../common/pagination/cursor-paginate';
 import { CreateSubscriptionPlanDto } from './dto/create-subscription-plan.dto';
@@ -41,7 +42,7 @@ type TenantKind = 'SCHOOL' | 'FRANCHISE';
  * the Franchise resells onward", Decision 106), not a tenant's own Connected
  * Account. Mirrors PaymentsService.subscribe()'s exact Stripe Subscription shape
  * (throwaway Customer + Product, inline `price_data`, `payment_behavior:
- * 'default_incomplete'`, `expand: ['latest_invoice.payment_intent']`) — same
+ * 'default_incomplete'`, `expand: FIRST_INVOICE_PAYMENT_EXPAND`) — same
  * known-limitation disclosure that method's own header comment already gives
  * (throwaway Customer/Product per subscription, no saved-payment-method reuse;
  * out of scope to build here for the same reason).
@@ -184,13 +185,10 @@ export class SubscriptionPlansService {
       ],
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription' },
-      expand: ['latest_invoice.payment_intent'],
+      // The first invoice's PaymentIntent: see stripe-first-invoice.ts.
+      expand: FIRST_INVOICE_PAYMENT_EXPAND,
     });
-    const invoice = subscription.latest_invoice as { payment_intent?: { id: string; client_secret: string } };
-    const paymentIntent = invoice?.payment_intent;
-    if (!paymentIntent) {
-      throw new Error('Stripe Subscription did not return an expandable latest_invoice.payment_intent');
-    }
+    const paymentIntent = firstInvoicePayment(subscription);
 
     // FOUND ON REVIEW (V1 Stress Test Round 3) — the check above (`current.
     // platformSubscriptionStatus === 'ACTIVE' || 'PAST_DUE'`) and this write are
@@ -225,7 +223,7 @@ export class SubscriptionPlansService {
       );
     }
 
-    return { subscriptionId: subscription.id, clientSecret: paymentIntent.client_secret };
+    return { subscriptionId: subscription.id, clientSecret: paymentIntent.clientSecret };
   }
 
   private async cancel(kind: TenantKind, callerId: string, tenantId: string) {
