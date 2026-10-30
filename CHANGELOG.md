@@ -15,6 +15,28 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Charges and member balance, step 1** (backlog 3.6; Decisions 303, 338,
+  411) — staff can charge a student for something outside a membership plan,
+  such as a rash guard, from a new **Payments** card on the student's page:
+  a price, an optional discount (% or fixed) and a due date. Tax is set by the
+  School on the School page (**Charges and tax**: its country, which fills in
+  ULTM8's standard rate, the rate itself, and whether prices include tax), and
+  each charge keeps the tax it was created with, showing the price excluding
+  tax, the tax and the price including tax. Charges get a running invoice
+  number per School (#0000001). The desk records payments (cash, Pix, bank
+  transfer or card terminal) against a charge or the balance; part payments
+  leave the rest owed, and an overpayment becomes credit that pays the next
+  charge. A charge is cancelled, never deleted, with a reason (required unless
+  the owner turns that off); anything already paid becomes credit. The
+  student's balance shows what they owe, their credit and what's overdue.
+  Who: the owner; Branch Staff (on by default) and coaches (off) with "Can
+  create charges", and anyone with "Can cancel charges" (off), set on the
+  Staff page; desk payments follow the "Let Branch Staff record payments"
+  switch. Desk payments appear on the Transactions page. In the student app,
+  **Invoices** (and a child's, for a Guardian) lists each invoice and receipt,
+  read-only; the member is notified of a new invoice, a receipt and a
+  cancelled charge. **Needs a database migration**
+  (`20270111000000_charges_and_balance`).
 - **Schools set their own trial limits** (Decision 410) — a Trial plan can
   last any number of days the School chooses (at least 1), no longer 1-30, and
   a Student can have another trial straight after the first: the limit of 30

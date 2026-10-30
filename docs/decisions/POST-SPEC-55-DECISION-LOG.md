@@ -7089,3 +7089,27 @@ The two limits were there to stop a School chaining trials so that a regular mem
 ### Recorded by
 
 User (Code), 30 Oct 2026: "school has to decided not us".
+
+---
+
+## Decision 411 — Tax on staff-created charges: set by the School
+
+**Date:** 30 Oct 2026. **Changes:** Decision 316 item 8 ("Platform Admin keeps a tax rate per country") and Decision 338 item 7 ("set per country by Platform Admin, with the per-country rate"). **Answers:** the open point in Decision 405 ("is tax fixed per country, and who sets it?") and the last open point of v1.3 backlog §3.6. Decision 303 item 1's "tax fixed per country, never typed per charge" now reads: one rate per School, set by the School, never typed per charge.
+
+### Decision
+
+1. **The School sets its tax, not Platform Admin. One rate per School.**
+2. **The School picks the country it is in.** ULTM8 pre-fills that country's standard VAT, GST or sales-tax rate from a list ULTM8 ships in code. **The School can change the rate**: classes are often taxed at a reduced or zero rate, and a small School may not be registered at all. Countries with no single national rate (for example the United States, with state sales taxes) get no pre-fill: 0, and the School types its own.
+3. **The School chooses whether its prices include tax, or have tax added on top.**
+4. **Every charge, invoice and receipt shows the price excluding tax, the tax, and the price including tax.**
+5. **A charge keeps the tax it was created with.** Changing the School's settings later never rewrites an existing charge.
+
+### How it is built (step 1 of 6 of §3.6)
+
+- `School.taxCountry`, `taxRateBasisPoints` (hundredths of a percent, 0 to 10000, default 0), `taxInclusive` (default true), set by the owner on the School page ("Charges and tax"). The list is `apps/api/src/charges/standard-tax-rates.ts`, served by `GET /tax-rates`; its rates could not be checked against the official sources when it was written and are marked "unverified — check before launch".
+- The sums are in `apps/api/src/charges/charge-maths.ts`: the discount comes off first, tax is worked out on what is left, rounded half up to the minor unit; for an inclusive price, tax = price − round(price ÷ (1 + rate)).
+- Each `Charge` keeps its country, rate, inclusive flag, price excluding tax, tax and price including tax. Migration `20270111000000_charges_and_balance`.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: "My mistake, the school should set the tax per country not the platform admin"; "rate per school, they will choose the country they are in and the right tax will be applied"; "yes it should display price ex tax, the tax and the price inc tax"; and chose "ULTM8 list, School can edit".
