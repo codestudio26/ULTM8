@@ -711,4 +711,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Tekrarlayan ücret bulunamadı",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Bu bir terfi ücretidir. Okul sahibi öğrencinin kuşak sayfasından bu ücreti affeder veya iptal eder; bu da bu ödemeyi iptal eder.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Bu okul henüz para birimini ayarlamadı, bu yüzden ücret ödenemiyor. Okula sor.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Bu ücret ödendi, ancak terfi artık uygulanamıyor. Ücreti iptal edin (ödenen tutar krediye dönüşür) ya da öğrenciyi yeniden terfi ettirin.",
 };

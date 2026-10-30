@@ -4910,6 +4910,14 @@ model PromotionFeeRequest {
   closedBy      User?     @relation("PromotionFeeRequestClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
   waivedAt      DateTime?
   cancelledAt   DateTime?
+  /// The fee's charge was paid in full but the promotion that waited for it
+  /// can no longer apply as made (the student's rank or the belt ladder changed
+  /// since the grade). Set once, when first found; the School's owner(s) are
+  /// told once, and decide: cancel the fee (what was paid becomes credit) or
+  /// grade the student again (the request then closes as PAID, its money left
+  /// as paid). The request stays ACCEPTED until then; nothing happens to the
+  /// money on its own (Decision 414 item 1).
+  promotionBlockedAt DateTime?
 
   toDecideAt           DateTime?
   toDecideRemindedAt   DateTime?

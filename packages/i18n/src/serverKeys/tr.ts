@@ -272,6 +272,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name} için {rank} ({style}) terfisi kararınızı bekliyor. Terfi ettirin ya da etmemeye karar verin.",
     promotionFeeBody: "{rank} ({style}) terfinizin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",
     childPromotionFeeBody: "{name} için {rank} ({style}) terfisinin {amount} ücreti var. Kabul etmek veya reddetmek için uygulamayı açın.",
+    promotionFeeBlockedTitle: "Terfi uygulanamıyor",
+    promotionFeeBlockedBody: "{name} adlı öğrencinin {rank} ({style}) ücreti ödendi, ancak terfi uygulanamıyor: derecesi ya da kuşak sıralaması terfiden bu yana değişti. Ücreti iptal edin (ödenen tutar krediye dönüşür) ya da yeniden terfi ettirin.",
     forChild: "{name} için: {body}",
     disputeStatus: {
       warning_needs_response: "bilgi talebi, yanıt gerekiyor",

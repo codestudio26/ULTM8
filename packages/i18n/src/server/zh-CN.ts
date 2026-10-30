@@ -711,4 +711,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "未找到定期收费项",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "这是晋级费。学校所有者可在学员的晋级页面免除或取消它，这会同时取消这笔费用。",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "这所学校尚未设置货币，因此无法支付该费用。请咨询学校。",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "此费用已支付，但晋级已无法执行。请取消费用（已付款项将转为余额抵扣），或重新为学员晋级。",
 };

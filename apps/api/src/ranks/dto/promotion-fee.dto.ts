@@ -115,6 +115,15 @@ export class PromotionFeeRequestResponseDto {
   @ApiProperty({ description: 'Open "to decide": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request.' })
   toDecide!: boolean;
 
+  @ApiProperty({
+    description:
+      'Paid, but the promotion can no longer apply: the student\'s rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee then closes as PAID). Still ACCEPTED until then.',
+  })
+  promotionBlocked!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'When the paid fee\'s promotion was first found unable to apply. Kept after the owner decides.' })
+  promotionBlockedAt!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   toDecideAt!: string | null;
 

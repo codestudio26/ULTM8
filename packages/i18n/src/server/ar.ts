@@ -711,4 +711,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "لم يتم العثور على الرسم المتكرر",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "هذه رسوم ترقية. يعفي منها مالك المدرسة أو يلغيها من صفحة تقييم الطالب، وهذا يلغي هذا الرسم.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "لم تحدد هذه المدرسة عملتها بعد، لذا لا يمكن دفع الرسوم. اسأل المدرسة.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "تم دفع هذه الرسوم، لكن لم يعد بالإمكان تطبيق الترقية. ألغِ الرسوم (يصبح المبلغ المدفوع رصيدًا)، أو قم بتقييم الطالب مرة أخرى.",
 };

@@ -958,6 +958,12 @@ export class GradingService {
    * never apply (its expected-rung guard). Refused with 409. This is the
    * narrowest reading; the decisions don't say what a second grade does
    * while one waits. Needs product-owner confirmation.
+   *
+   * A fee paid in full whose promotion can no longer apply (Decision 414 item
+   * 1) doesn't hold grading up: grading the student again is one of the
+   * owner's two choices. Grading again closes it, in the same transaction, as
+   * PAID (the fee was paid; nothing happens to the money), its promotion never
+   * applied. The new grade takes the fee rules like any other grade.
    */
   private async feeForGrade(tx: TenantTx, callerId: string, schoolId: string, studentId: string, disciplineId: string, fromRungId: string, to: Rung) {
     const open = await tx.promotionFeeRequest.findMany({
@@ -972,6 +978,11 @@ export class GradingService {
     });
     const waiting = open.find(isWaitingForFee);
     if (waiting) throw new ConflictException(WAITING_MESSAGE(waiting.toRungName));
+    // Graded again: a paid fee whose promotion couldn't apply is settled (Decision 414 item 1).
+    await tx.promotionFeeRequest.updateMany({
+      where: { studentId, disciplineId, status: 'ACCEPTED', promotionBlockedAt: { not: null }, promotionEventId: null },
+      data: { status: 'PAID', paidAt: new Date() },
+    });
     const toDecide = open.find((r) => isOpenToDecide(r) && r.expectedCurrentRungId === fromRungId && r.toRungId === to.id);
     if (toDecide) {
       const resolved = await tx.promotionFeeRequest.updateMany({
@@ -1151,7 +1162,7 @@ export class GradingService {
         if (!(await isActiveForGrading(tx, sr, studentId, schoolId))) return { cannot: 'inactive (only active students can be graded)' };
         // A promotion waiting for its fee (Decision 300): not graded again until it settles.
         const waiting = await tx.promotionFeeRequest.findFirst({
-          where: { studentId, disciplineId: dto.disciplineId, promotionWaits: true, promotionEventId: null, toDecideAt: null, status: { in: UNSETTLED_STATUSES } },
+          where: { studentId, disciplineId: dto.disciplineId, promotionWaits: true, promotionEventId: null, toDecideAt: null, promotionBlockedAt: null, status: { in: UNSETTLED_STATUSES } },
           select: { id: true },
         });
         if (waiting) return { cannot: 'a promotion is waiting for its fee' };
@@ -1380,7 +1391,7 @@ export class GradingService {
       noHomeBranch: boolean;
       hardBlocked: boolean;
       eligibility: Extract<ReturnType<typeof eligibilityOnLadder>, { hasNext: true }>;
-      feeStatus: 'waiting' | 'declined' | 'toDecide' | null;
+      feeStatus: 'blocked' | 'waiting' | 'declined' | 'toDecide' | null;
       feeRequest: {
         id: string;
         status: PromotionFeeStatus;

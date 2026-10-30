@@ -711,4 +711,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "정기 청구를 찾을 수 없습니다",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "승급비입니다. 학교 소유자가 학생의 승급 화면에서 면제하거나 취소하면 이 청구도 취소됩니다.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "이 학교가 아직 통화를 설정하지 않아 비용을 결제할 수 없습니다. 학교에 문의하세요.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "이 심사비는 결제되었지만 승급을 더 이상 적용할 수 없습니다. 심사비를 취소하거나(결제된 금액은 크레딧이 됩니다) 수련생을 다시 승급하세요.",
 };

@@ -711,4 +711,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Cobrança recorrente não encontrada",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Esta é uma taxa de graduação. O dono da escola a dispensa ou cancela na graduação do aluno, o que cancela esta cobrança.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Esta escola ainda não definiu sua moeda, então a taxa não pode ser paga. Pergunte à escola.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Esta taxa está paga, mas a promoção não pode mais ser aplicada. Cancele a taxa (o que foi pago vira crédito) ou gradue o aluno novamente.",
 };

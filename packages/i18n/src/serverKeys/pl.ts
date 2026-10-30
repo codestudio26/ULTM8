@@ -300,6 +300,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "Awans {name} na {rank} ({style}) czeka na twoją decyzję. Awansuj lub zdecyduj, że nie.",
     promotionFeeBody: "Twój awans na {rank} ({style}) wiąże się z opłatą {amount}. Otwórz aplikację, aby zaakceptować lub odrzucić.",
     childPromotionFeeBody: "Awans {name} na {rank} ({style}) wiąże się z opłatą {amount}. Otwórz aplikację, aby zaakceptować lub odrzucić.",
+    promotionFeeBlockedTitle: "Nie można zastosować awansu",
+    promotionFeeBlockedBody: "Opłata {name} za {rank} ({style}) jest zapłacona, ale awansu nie można zastosować: stopień lub drabinka pasów zmieniła się od oceny. Anuluj opłatę (zapłacona kwota staje się kredytem) lub oceń ponownie.",
     forChild: "Dla {name}: {body}",
     disputeStatus: {
       warning_needs_response: "zapytanie, wymaga odpowiedzi",

@@ -711,4 +711,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Terugkerende kosten niet gevonden",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Dit is een promotievergoeding. De schooleigenaar scheldt deze kwijt of annuleert deze via de graduatie van de leerling, waardoor deze kosten worden geannuleerd.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Deze school heeft nog geen valuta ingesteld, dus de vergoeding kan niet worden betaald. Vraag het aan de school.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Deze vergoeding is betaald, maar de promotie kan niet meer worden toegepast. Annuleer de vergoeding (wat betaald is wordt tegoed) of gradeer de leerling opnieuw.",
 };
