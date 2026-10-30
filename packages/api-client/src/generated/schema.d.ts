@@ -12260,8 +12260,12 @@ export interface components {
             received: number;
             /** @description Money given back that month: refunds to the card or in cash, and lost disputes. Refunds as credit are not money given back. */
             refunded: number;
-            /** @description received − refunded. */
+            /** @description Charges revenue that month: received − refunded. */
             net: number;
+            /** @description Membership revenue that month (Decision 414 item 3): Successful payments for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received). */
+            memberships: number;
+            /** @description net + memberships. */
+            total: number;
         };
         ChargeOverviewCurrencyDto: {
             currency: string;
@@ -12269,8 +12273,12 @@ export interface components {
             scheduled: number;
             /** @description Still owed on open charges past their due date. */
             overdue: number;
-            /** @description Paid over the months covered, less money given back (the sum of revenue by month). */
+            /** @description Charges revenue: paid toward charges over the months covered, less money given back (the sum of net by month). */
             paid: number;
+            /** @description Membership revenue over the months covered (the sum of memberships by month). */
+            memberships: number;
+            /** @description Total revenue over the months covered: paid + memberships. */
+            total: number;
             /** @description Oldest month first. */
             revenueByMonth: components["schemas"]["ChargeRevenueMonthDto"][];
         };

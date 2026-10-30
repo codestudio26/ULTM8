@@ -26,6 +26,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   sends none (the dispute notice already says the money goes back). The
   owner's notes are never included. New switch "A refund of a payment" among
   the payment notifications on the School page, on by default. 15 languages.
+- **Billing reports: total revenue, charges and memberships** (Decision 414
+  item 3) — the Overview now shows revenue in two parts and their total, for
+  the period and for each month: **Charges** (payments toward charges less
+  money given back, as before) and **Memberships** (plans bought in the app or
+  sold at the desk, Subscription renewals, and late-cancellation and freeze
+  fees (Decision 415 item 2): Successful payments by billing date, less what
+  was refunded on them), then **Total revenue**. Payments toward charges are
+  counted once, in Charges. Same people and scope as before (the owner the
+  whole School; Branch Staff, when the School lets them take payments, their
+  own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
+  gains `memberships` and `total`, and each month `memberships` and `total`.
+  15 languages.
 - **A paid promotion fee whose promotion can no longer apply** (Decision 414
   item 1) — when a promotion fee is paid in full but the promotion that waited
   for it can't go through any more (the student's rank or the belt ladder

@@ -228,6 +228,7 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     await su.balanceEntry.deleteMany({ where });
     await su.chargeRefund.deleteMany({ where });
     await su.transaction.deleteMany({ where });
+    await su.membershipPlan.deleteMany({ where });
     // Late fees point at the charge they are for: those go first.
     await su.charge.deleteMany({ where: { ...where, lateFeeForChargeId: { not: null } } });
     await su.charge.deleteMany({ where });
@@ -662,6 +663,120 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect((await as(coachToken).get(`/v1/schools/${r.id}/charge-reports/overview`)).status).toBe(403);
       expect((await as(tokens.owner).get(`/v1/schools/${r.id}/charge-reports/overview`)).status).toBe(403);
       expect((await as(tokens.north).get(`/v1/schools/${r.id}/charge-reports/member-balances`)).status).toBe(403);
+    });
+
+    it('Overview revenue: charges, memberships and the total (Decision 414 item 3), with no payment counted twice', async () => {
+      const r = await su.school.create({ data: { id: randomUUID(), name: 'Revenue School', defaultCurrency: 'BRL', timezone: 'UTC' } });
+      const x = await su.school.create({ data: { id: randomUUID(), name: 'Other Revenue School', defaultCurrency: 'BRL', timezone: 'UTC' } });
+      schoolIds.push(r.id, x.id);
+      const account = await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: r.id, provider: 'CASH', accountTitle: 'Desk', country: 'BR' } });
+      const xAccount = await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: x.id, provider: 'CASH', accountTitle: 'Desk', country: 'BR' } });
+      const rA = await su.branch.create({ data: { id: randomUUID(), schoolId: r.id, name: 'North' } });
+      const rB = await su.branch.create({ data: { id: randomUUID(), schoolId: r.id, name: 'South' } });
+      const owner = await mkUser('revenueOwner');
+      await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: r.id, isMainOwner: true } });
+      const ownerToken = sign(owner, 'SCHOOL_OWNER_MANAGER', r.id);
+      const staff = await mkUser('revenueStaff');
+      await su.roleGrant.create({ data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staff.id, schoolId: r.id, branchId: rA.id } });
+      const staffToken = sign(staff, 'BRANCH_STAFF', r.id, rA.id);
+      const north = await mkStudent('revNorth', rA.id, r.id);
+      const south = await mkStudent('revSouth', rB.id, r.id);
+      const outsider = await mkStudent('revOutsider', null, x.id);
+      const plan = await su.membershipPlan.create({ data: { id: randomUUID(), schoolId: r.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 10000, currency: 'BRL' } });
+      const pack = await su.membershipPlan.create({ data: { id: randomUUID(), schoolId: r.id, type: 'CLASS_PACK', title: '10 classes', price: 6000, currency: 'BRL' } });
+      const xPlan = await su.membershipPlan.create({ data: { id: randomUUID(), schoolId: x.id, type: 'SUBSCRIPTION', title: 'Other', price: 99999, currency: 'BRL' } });
+
+      const now = new Date();
+      const lastMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 15, 12));
+      const longAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 5, 15, 12));
+      const row = (data: {
+        studentId: string;
+        amount: number;
+        kind?: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE';
+        status?: 'SUCCESSFUL' | 'PENDING' | 'FAILED' | 'REFUNDED' | 'DISPUTED';
+        currency?: string;
+        refundedAmount?: number;
+        billingDate?: Date;
+        planId?: string | null;
+        schoolId?: string;
+      }) =>
+        su.transaction.create({
+          data: {
+            id: randomUUID(),
+            schoolId: data.schoolId ?? r.id,
+            studentId: data.studentId,
+            paymentAccountId: data.schoolId === x.id ? xAccount.id : account.id,
+            membershipPlanId: data.planId === undefined ? plan.id : data.planId,
+            kind: data.kind ?? 'MEMBERSHIP',
+            amount: data.amount,
+            currency: data.currency ?? 'BRL',
+            status: data.status ?? 'SUCCESSFUL',
+            paymentMethod: 'CASH',
+            refundedAmount: data.refundedAmount ?? null,
+            billingDate: data.billingDate ?? now,
+          },
+        });
+      // Counted: a plan bought (North), a renewal partly refunded (North, 100 − 25),
+      // a Class Pack sold at the desk with its currency in lower case (South),
+      // last month's renewal (North), and a late-cancellation fee and a freeze
+      // fee (North; Decision 415 item 2).
+      await row({ studentId: north.id, amount: 10000 });
+      await row({ studentId: north.id, amount: 10000, kind: 'RENEWAL', refundedAmount: 2500 });
+      await row({ studentId: south.id, amount: 6000, planId: pack.id, currency: 'brl' });
+      await row({ studentId: north.id, amount: 3000, kind: 'RENEWAL', billingDate: lastMonth });
+      await row({ studentId: north.id, amount: 500, kind: 'LATE_CANCEL_FEE', planId: null });
+      await row({ studentId: north.id, amount: 700, kind: 'FREEZE_FEE' });
+      // Not counted: refunded in full, waiting, failed (or cancelled), disputed,
+      // older than the period, and another School.
+      await row({ studentId: north.id, amount: 4000, status: 'REFUNDED', refundedAmount: 4000 });
+      await row({ studentId: north.id, amount: 3000, status: 'PENDING' });
+      await row({ studentId: north.id, amount: 3000, status: 'FAILED' });
+      await row({ studentId: north.id, amount: 3000, status: 'DISPUTED' });
+      await row({ studentId: north.id, amount: 2000, kind: 'RENEWAL', billingDate: longAgo });
+      await row({ studentId: outsider.id, amount: 99999, schoolId: x.id, planId: xPlan.id });
+      // Another currency stays apart (South).
+      await row({ studentId: south.id, amount: 1500, currency: 'USD' });
+
+      // A charge paid at the desk (a CHARGE_PAYMENT Transaction) and 10 given back:
+      // counted once, in charges.
+      const post = (url: string, body: Record<string, unknown>) => as(ownerToken).post(`/v1/schools/${r.id}${url}`, body);
+      const charge = await post(`/students/${north.id}/charges`, { description: 'Gi', amount: 5000, dueDate: day(1) });
+      expect(charge.status).toBe(201);
+      const payRes = await post(`/students/${north.id}/charge-payments`, { amount: 5000, chargeId: charge.body.id, paymentMethod: 'CASH', sendReceipt: false });
+      expect(payRes.status).toBe(201);
+      expect((await post(`/charge-payments/${payRes.body.payment.id}/refund`, { amount: 1000, destination: 'MONEY_BACK', notes: 'Wrong size' })).status).toBe(201);
+      expect(await su.transaction.count({ where: { schoolId: r.id, kind: 'CHARGE_PAYMENT', status: 'SUCCESSFUL' } })).toBe(1);
+
+      const thisMonth = day(0).slice(0, 7);
+      const overview = await as(ownerToken).get(`/v1/schools/${r.id}/charge-reports/overview?months=3`);
+      expect(overview.status).toBe(200);
+      expect(overview.body.currencies.map((c: { currency: string }) => c.currency)).toEqual(['BRL', 'USD']);
+      const [brl, usd] = overview.body.currencies;
+      expect(brl).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 27700, total: 31700 });
+      expect(brl.revenueByMonth[2]).toEqual({ month: thisMonth, received: 5000, refunded: 1000, net: 4000, memberships: 24700, total: 28700 });
+      expect(brl.revenueByMonth[1]).toMatchObject({ received: 0, net: 0, memberships: 3000, total: 3000 });
+      expect(brl.revenueByMonth[0]).toMatchObject({ memberships: 0, total: 0 });
+      expect(usd).toMatchObject({ currency: 'USD', scheduled: 0, overdue: 0, paid: 0, memberships: 1500, total: 1500 });
+
+      // One month: last month's renewal is outside it.
+      const oneMonth = await as(ownerToken).get(`/v1/schools/${r.id}/charge-reports/overview?months=1`);
+      expect(oneMonth.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 24700, total: 28700 });
+
+      // Branch Staff (North only, once they may take payments): North's memberships, no South, no USD.
+      await su.school.update({ where: { id: r.id }, data: { branchStaffCanRecordPayments: true } });
+      const scoped = await as(staffToken).get(`/v1/schools/${r.id}/charge-reports/overview?months=3`);
+      expect(scoped.status).toBe(200);
+      expect(scoped.body.wholeSchool).toBe(false);
+      expect(scoped.body.currencies).toHaveLength(1);
+      expect(scoped.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 21700, total: 25700 });
+      expect(scoped.body.currencies[0].revenueByMonth[2]).toMatchObject({ net: 4000, memberships: 18700, total: 22700 });
+
+      // The other School sees only its own membership.
+      const xOwner = await mkUser('revenueOtherOwner');
+      await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: xOwner.id, schoolId: x.id, isMainOwner: true } });
+      const xView = await as(sign(xOwner, 'SCHOOL_OWNER_MANAGER', x.id)).get(`/v1/schools/${x.id}/charge-reports/overview?months=3`);
+      expect(xView.body.currencies).toEqual([expect.objectContaining({ currency: 'BRL', paid: 0, memberships: 99999, total: 99999 })]);
+      expect((await as(ownerToken).get(`/v1/schools/${x.id}/charge-reports/overview`)).status).toBe(403);
     });
   });
 
