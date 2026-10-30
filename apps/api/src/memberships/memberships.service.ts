@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
-import { PaymentsService, NoSavedPaymentMethodError } from '../payments/payments.service';
+import { PaymentsService, NoSavedPaymentMethodError, checkoutTransactionId } from '../payments/payments.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { StepUpService } from '../auth/step-up.service';
@@ -883,7 +883,7 @@ export class MembershipsService {
             plan.billingCycleAnchorDay,
           ]),
         );
-        const orderId = await this.createStripeOrder(studentId, paymentIntentId, transactionId, (tx) =>
+        const orderId = await this.createStripeOrder(studentId, { stripePaymentIntentId: paymentIntentId }, transactionId, (tx) =>
           tx.transaction.create({
             data: {
               id: transactionId,
@@ -940,7 +940,7 @@ export class MembershipsService {
         stripePurchaseKey(studentId, plan.id, 'card', [plan.price, currency, plan.title, surcharge]),
         surcharge,
       );
-      const orderId = await this.createStripeOrder(studentId, paymentIntentId, transactionId, (tx) =>
+      const orderId = await this.createStripeOrder(studentId, { stripePaymentIntentId: paymentIntentId }, transactionId, (tx) =>
         tx.transaction.create({
           data: {
             id: transactionId,
@@ -1024,7 +1024,7 @@ export class MembershipsService {
     let chargeResult: { succeeded: boolean; paymentIntentId: string };
     try {
       // Decision 406: the saved card is charged the price plus the surcharge.
-      chargeResult = await this.paymentsService.chargeOffSession(studentId, plan.schoolId, plan.price + surcharge, currency, plan.title);
+      chargeResult = await this.paymentsService.chargeOffSession(studentId, plan.schoolId, plan.price + surcharge, currency, plan.title, undefined, surcharge);
     } catch (err) {
       if (err instanceof NoSavedPaymentMethodError) {
         throw new BadRequestException('You have no saved payment method at this School — add a card first, or pay with a new card.');
@@ -1099,8 +1099,11 @@ export class MembershipsService {
         await this.paymentsService.refundOffSessionCharge(studentId, plan.schoolId, chargeResult.paymentIntentId);
         // Only while still Successful: Stripe's charge.refunded may have got
         // here first (it then sent the member the "Refund" notice itself).
+        // The PaymentIntent was refunded in full, so the recorded refund is
+        // the whole card payment: the price and the surcharge, as Stripe shows
+        // it (and as the webhook's own sync of this refund records it).
         const marked = await this.prismaApp.withTenantContext(studentId, (tx) =>
-          tx.transaction.updateMany({ where: { id: transactionId, status: 'SUCCESSFUL' }, data: { status: 'REFUNDED', refundedAmount: plan.price } }),
+          tx.transaction.updateMany({ where: { id: transactionId, status: 'SUCCESSFUL' }, data: { status: 'REFUNDED', refundedAmount: plan.price + surcharge } }),
         );
         // Decision 415 item 4: the whole payment went back to the card, with
         // any surcharge (the PaymentIntent is refunded in full).
@@ -1127,17 +1130,17 @@ export class MembershipsService {
    * `mode: 'setup'` card-saving pattern, extended to `mode: 'payment'`),
    * opened in the device's own browser via `expo-web-browser`.
    *
-   * The Transaction created below is, deliberately, shaped EXACTLY like the
-   * `charge()` branch's own Transaction — same PENDING/STRIPE/
-   * stripePaymentIntentId — because `PaymentsService.
-   * createPurchaseCheckoutSession()`'s own header comment confirms a
-   * `mode: 'payment'` Checkout Session's underlying PaymentIntent exists
-   * synchronously, at Session-creation time. That's what lets this reuse the
-   * EXISTING `payment_intent.succeeded` webhook handler
-   * (`StripeWebhookProcessingProcessor.handlePaymentIntentSucceeded`)
-   * verbatim for Membership creation and collision handling, instead of a
-   * second, parallel path keyed off `checkout.session.completed` — no
-   * processor change needed for this purchase path at all.
+   * The Transaction created below is shaped like the `charge()` branch's own
+   * (PENDING/STRIPE), so the EXISTING `payment_intent.succeeded` webhook
+   * handler (`StripeWebhookProcessingProcessor.handlePaymentIntentSucceeded`)
+   * creates the Membership and handles a collision, as for every card
+   * purchase. Except: it has no PaymentIntent id yet. A `mode: 'payment'`
+   * Checkout Session makes its PaymentIntent only when the member pays (see
+   * `PaymentsService.createPurchaseCheckoutSession()`), so the row's id goes
+   * in that PaymentIntent's metadata instead and the webhook matches it by
+   * that. The id is derived from the purchase's idempotency key
+   * (checkoutTransactionId), so a double click gets the same Session and the
+   * same row.
    */
   private async purchaseViaHostedCheckout(
     studentId: string,
@@ -1146,17 +1149,19 @@ export class MembershipsService {
     currency: string,
     surcharge: number,
   ) {
-    const { checkoutUrl, paymentIntentId } = await this.paymentsService.createPurchaseCheckoutSession(
+    const key = stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title, surcharge]);
+    const newId = checkoutTransactionId(key);
+    const { checkoutUrl } = await this.paymentsService.createPurchaseCheckoutSession(
       studentId,
       plan.schoolId,
+      newId,
       plan.price,
       currency,
       plan.title,
-      stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title, surcharge]),
+      key,
       surcharge,
     );
-    const newId = randomUUID();
-    const transactionId = await this.createStripeOrder(studentId, paymentIntentId, newId, (tx) =>
+    const transactionId = await this.createStripeOrder(studentId, { id: newId }, newId, (tx) =>
       tx.transaction.create({
         data: {
           id: newId,
@@ -1169,7 +1174,6 @@ export class MembershipsService {
           currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: 'STRIPE',
-          stripePaymentIntentId: paymentIntentId,
         },
       }),
     );
@@ -1179,14 +1183,15 @@ export class MembershipsService {
   /**
    * Saves a card purchase's Pending Transaction. A repeated purchase (a double
    * click) reaches Stripe with the same idempotency key and gets the same
-   * PaymentIntent back, which already has its Transaction (stripePaymentIntentId
-   * is unique): that one is returned instead of a second. Before, each click
-   * opened its own Stripe subscription or Checkout and its own Pending order
-   * (billing stress test, 26 Oct 2026, B2).
+   * PaymentIntent (or, for hosted Checkout, the same Session and so the same
+   * Transaction id) back, which already has its Transaction (both unique):
+   * that one, found by `existing`, is returned instead of a second. Before,
+   * each click opened its own Stripe subscription or Checkout and its own
+   * Pending order (billing stress test, 26 Oct 2026, B2).
    */
   private async createStripeOrder(
     studentId: string,
-    paymentIntentId: string,
+    existing: { stripePaymentIntentId: string } | { id: string },
     transactionId: string,
     create: (tx: Parameters<Parameters<PrismaAppService['withTenantContext']>[1]>[0]) => Promise<unknown>,
   ): Promise<string> {
@@ -1196,11 +1201,11 @@ export class MembershipsService {
     } catch (err) {
       const unique = Boolean(err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'P2002');
       if (!unique) throw err;
-      const existing = await this.prismaApp.withTenantContext(studentId, (tx) =>
-        tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } }),
+      const found = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.transaction.findUnique({ where: existing, select: { id: true } }),
       );
-      if (!existing) throw err;
-      return existing.id;
+      if (!found) throw err;
+      return found.id;
     }
   }
 

@@ -1,4 +1,4 @@
-import { NoSavedPaymentMethodError, PaymentsService } from './payments.service';
+import { NoSavedPaymentMethodError, PaymentsService, checkoutTransactionId } from './payments.service';
 
 /**
  * ULTM8 takes nothing from what a School charges its students, grading fees
@@ -13,7 +13,17 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
     customers: { create: jest.fn().mockResolvedValue({ id: 'cus_1' }) },
     products: { create: jest.fn().mockResolvedValue({ id: 'prod_1' }) },
     subscriptions: {
-      create: jest.fn().mockResolvedValue({ id: 'sub_1', latest_invoice: { payment_intent: { id: 'pi_2', client_secret: 'secret_2' } } }),
+      // Shaped like the real API version's (2026-08-26.dahlia) reply with
+      // `expand: ['latest_invoice.payments', 'latest_invoice.confirmation_secret']`:
+      // an Invoice has no `payment_intent`; its PaymentIntent is on `payments`.
+      create: jest.fn().mockResolvedValue({
+        id: 'sub_1',
+        latest_invoice: {
+          id: 'in_1',
+          payments: { object: 'list', data: [{ id: 'inpay_1', object: 'invoice_payment', is_default: true, payment: { type: 'payment_intent', payment_intent: 'pi_2' } }] },
+          confirmation_secret: { type: 'payment_intent', client_secret: 'pi_2_secret_2' },
+        },
+      }),
     },
   };
   const scopedClient = jest.fn().mockReturnValue(stripe);
@@ -56,6 +66,20 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
     expect(params).not.toHaveProperty('billing_cycle_anchor_config');
   });
 
+  // Every subscription purchase failed with a 500 on this API version: it
+  // expanded `latest_invoice.payment_intent`, a field an Invoice no longer has.
+  it('reads the first invoice\'s PaymentIntent from latest_invoice.payments and its client secret from confirmation_secret', async () => {
+    const result = await service.subscribe('student', 'school', 'student@example.test', 5000, 'gbp', 'Unlimited');
+    expect(result).toEqual({ subscriptionId: 'sub_1', paymentIntentId: 'pi_2', clientSecret: 'pi_2_secret_2' });
+    const params = stripe.subscriptions.create.mock.calls[0][0];
+    expect(params.expand).toEqual(['latest_invoice.payments', 'latest_invoice.confirmation_secret']);
+  });
+
+  it('refuses a subscription whose first invoice has no PaymentIntent, rather than recording an order nothing can pay', async () => {
+    stripe.subscriptions.create.mockResolvedValueOnce({ id: 'sub_2', latest_invoice: { id: 'in_2', payments: { object: 'list', data: [] }, confirmation_secret: null } });
+    await expect(service.subscribe('student', 'school', 'student@example.test', 5000, 'gbp', 'Unlimited')).rejects.toThrow("first invoice's PaymentIntent");
+  });
+
   it('passes billing_cycle_anchor_config when billingCycleAnchorDay is passed (PRORATED_TO_SHARED_CYCLE)', async () => {
     await service.subscribe('student', 'school', 'student@example.test', 5000, 'gbp', 'Unlimited', undefined, 15);
     const params = stripe.subscriptions.create.mock.calls[0][0];
@@ -74,8 +98,8 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
  * the Stripe-calling code itself, with a mocked client, never real Stripe.
  */
 describe('PaymentsService — saved payment methods (Decision 234)', () => {
-  function mockTx(studentPaymentMethod: Record<string, jest.Mock>) {
-    return { studentPaymentMethod };
+  function mockTx(studentPaymentMethod: Record<string, jest.Mock>, defaultCurrency: string | null = 'GBP') {
+    return { studentPaymentMethod, school: { findUnique: jest.fn().mockResolvedValue({ defaultCurrency }) } };
   }
 
   function makeService(stripe: Record<string, unknown>, tx: ReturnType<typeof mockTx>) {
@@ -106,6 +130,32 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
     expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_1' });
     const params = stripe.checkout.sessions.create.mock.calls[0][0] as Record<string, unknown>;
     expect(params).toMatchObject({ mode: 'setup', customer: 'cus_existing', metadata: { studentId: 'student', schoolId: 'school' } });
+  });
+
+  // Stripe refused every setup Session on this API version ("Missing required
+  // param: currency"). Cards only, in the School's currency: with a currency
+  // alone the sandbox offered Klarna, Link, Revolut Pay and Amazon Pay too.
+  it('createSetupSession asks for a card only, in the School\'s currency', async () => {
+    const tx = mockTx({ findUnique: jest.fn().mockResolvedValue(null) });
+    const stripe = { checkout: { sessions: { create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/pay/cs_3' }) } } };
+    const { service } = makeService(stripe, tx);
+
+    await service.createSetupSession('student', 'school');
+
+    const params = stripe.checkout.sessions.create.mock.calls[0][0] as Record<string, unknown>;
+    expect(params).toMatchObject({ mode: 'setup', payment_method_types: ['card'], currency: 'gbp' });
+  });
+
+  it('createSetupSession still asks for a card when the School has no currency set (card-only needs none)', async () => {
+    const tx = mockTx({ findUnique: jest.fn().mockResolvedValue(null) }, null);
+    const stripe = { checkout: { sessions: { create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/pay/cs_4' }) } } };
+    const { service } = makeService(stripe, tx);
+
+    await service.createSetupSession('student', 'school');
+
+    const params = stripe.checkout.sessions.create.mock.calls[0][0] as Record<string, unknown>;
+    expect(params.payment_method_types).toEqual(['card']);
+    expect(params).not.toHaveProperty('currency');
   });
 
   it('createSetupSession omits `customer` for a Student with no saved card yet (Stripe creates a fresh one)', async () => {
@@ -166,6 +216,20 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
     expect(result).toEqual({ succeeded: true, paymentIntentId: 'pi_1' });
     const params = stripe.paymentIntents.create.mock.calls[0][0];
     expect(params).toMatchObject({ amount: 1500, currency: 'usd', customer: 'cus_1', payment_method: 'pm_1', off_session: true, confirm: true });
+    expect(params).not.toHaveProperty('metadata');
+  });
+
+  it('chargeOffSession keeps a card surcharge in the PaymentIntent metadata, as charge() does', async () => {
+    const tx = mockTx({ findUnique: jest.fn().mockResolvedValue({ stripeCustomerId: 'cus_1' }) });
+    const stripe = {
+      customers: { retrieve: jest.fn().mockResolvedValue({ invoice_settings: { default_payment_method: 'pm_1' } }) },
+      paymentIntents: { create: jest.fn().mockResolvedValue({ id: 'pi_1', status: 'succeeded' }) },
+    };
+    const { service } = makeService(stripe, tx);
+
+    await service.chargeOffSession('student', 'school', 1530, 'usd', 'Pack', undefined, 30);
+
+    expect(stripe.paymentIntents.create.mock.calls[0][0]).toMatchObject({ amount: 1530, metadata: { surchargeAmount: '30' } });
   });
 
   it('chargeOffSession reports a declined card as succeeded:false, not a thrown error', async () => {
@@ -202,52 +266,68 @@ describe('PaymentsService — createPurchaseCheckoutSession (Decision 243)', () 
     return { service, scopedClient };
   }
 
-  it('creates a mode:payment Checkout Session with inline price_data and returns its hosted URL plus the synchronously-created PaymentIntent id', async () => {
+  /** A `mode: 'payment'` Session as this API version (2026-08-26.dahlia)
+   * returns it from create: no PaymentIntent until the member pays (seen on
+   * the real test-mode sandbox, 30 Oct 2026). */
+  function createdSession(id: string, metadata: Record<string, string>) {
+    return { id, object: 'checkout.session', mode: 'payment', status: 'open', url: `https://checkout.stripe.com/c/pay/${id}`, payment_intent: null, metadata };
+  }
+
+  it('creates a mode:payment Checkout Session with inline price_data, the Transaction id in its metadata and its PaymentIntent\'s, and returns its hosted URL', async () => {
     const stripe = {
-      checkout: {
-        sessions: {
-          create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/pay/cs_1', payment_intent: { id: 'pi_checkout_1' } }),
-        },
-      },
+      checkout: { sessions: { create: jest.fn().mockResolvedValue(createdSession('cs_test_1', { transactionId: 'tx-1' })) } },
     };
     const { service, scopedClient } = makeService(stripe);
 
-    const result = await service.createPurchaseCheckoutSession('student', 'school', 3000, 'gbp', '5-Class Pack');
+    const result = await service.createPurchaseCheckoutSession('student', 'school', 'tx-1', 3000, 'gbp', '5-Class Pack');
 
     expect(scopedClient).toHaveBeenCalledWith('acct_school');
-    expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_1', paymentIntentId: 'pi_checkout_1' });
+    expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_test_1' });
     const params = stripe.checkout.sessions.create.mock.calls[0][0] as Record<string, unknown>;
     expect(params).toMatchObject({
       mode: 'payment',
       success_url: 'ultm8-student://membership-purchase/complete',
       cancel_url: 'ultm8-student://membership-purchase/cancel',
-      expand: ['payment_intent'],
+      metadata: { transactionId: 'tx-1' },
+      payment_intent_data: { metadata: { transactionId: 'tx-1' } },
     });
+    expect(params).not.toHaveProperty('expand');
     expect(params.line_items).toEqual([
       { price_data: { currency: 'gbp', unit_amount: 3000, product_data: { name: '5-Class Pack' } }, quantity: 1 },
     ]);
   });
 
-  it('accepts a bare string PaymentIntent id too, not only an expanded object (defensive — Stripe SDK typing allows either)', async () => {
+  it('keeps the surcharge beside the Transaction id in the PaymentIntent metadata, as its own line', async () => {
     const stripe = {
-      checkout: { sessions: { create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/pay/cs_2', payment_intent: 'pi_checkout_2' }) } },
+      checkout: { sessions: { create: jest.fn().mockResolvedValue(createdSession('cs_test_2', { transactionId: 'tx-2' })) } },
     };
     const { service } = makeService(stripe);
 
-    const result = await service.createPurchaseCheckoutSession('student', 'school', 1000, 'usd', 'Trial');
+    await service.createPurchaseCheckoutSession('student', 'school', 'tx-2', 1000, 'usd', 'Trial', 'key-2', 30, 'charge-payment');
 
-    expect(result).toEqual({ checkoutUrl: 'https://checkout.stripe.com/pay/cs_2', paymentIntentId: 'pi_checkout_2' });
+    const [params, options] = stripe.checkout.sessions.create.mock.calls[0] as unknown as [Record<string, unknown>, unknown];
+    expect(options).toEqual({ idempotencyKey: 'key-2' });
+    expect(params).toMatchObject({
+      payment_intent_data: { metadata: { transactionId: 'tx-2', surchargeAmount: '30' } },
+      success_url: 'ultm8-student://charge-payment/complete',
+    });
+    expect((params.line_items as unknown[])[1]).toEqual({ price_data: { currency: 'usd', unit_amount: 30, product_data: { name: 'Card surcharge' } }, quantity: 1 });
   });
 
-  it('throws if Stripe somehow returns no expandable PaymentIntent — refuses to silently create an untracked Transaction', async () => {
+  it('throws if Stripe returns no hosted URL', async () => {
     const stripe = {
-      checkout: { sessions: { create: jest.fn().mockResolvedValue({ url: 'https://checkout.stripe.com/pay/cs_3', payment_intent: null }) } },
+      checkout: { sessions: { create: jest.fn().mockResolvedValue({ ...createdSession('cs_test_3', {}), url: null }) } },
     };
     const { service } = makeService(stripe);
 
-    await expect(service.createPurchaseCheckoutSession('student', 'school', 1000, 'usd', 'Trial')).rejects.toThrow(
-      "did not return an expandable PaymentIntent",
-    );
+    await expect(service.createPurchaseCheckoutSession('student', 'school', 'tx-3', 1000, 'usd', 'Trial')).rejects.toThrow('did not return a hosted URL');
+  });
+
+  it('checkoutTransactionId gives one stable UUID per idempotency key, and another for another key', () => {
+    const a = checkoutTransactionId('membership-purchase-checkout-s-p-abc-1');
+    expect(a).toBe(checkoutTransactionId('membership-purchase-checkout-s-p-abc-1'));
+    expect(a).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-5[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(checkoutTransactionId('membership-purchase-checkout-s-p-abc-2')).not.toBe(a);
   });
 });
 

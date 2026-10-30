@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import Stripe from 'stripe';
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -16,6 +16,7 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { toStripeAmount } from './stripe-amount';
+import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from './stripe-first-invoice';
 import { chargeAbilities } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
@@ -49,6 +50,25 @@ async function withIdempotencyRetry<T>(call: () => Promise<T>): Promise<T> {
     }
   }
 }
+
+/**
+ * The Transaction id for a hosted Checkout payment, derived from the Stripe
+ * idempotency key its Session is created with (a name-based UUID, RFC 4122
+ * version 5). The id goes in the Session's metadata
+ * (createPurchaseCheckoutSession), so a repeated request with the same key
+ * must send the same id for Stripe to return the same Session rather than
+ * refuse the key; the repeated insert of that id then finds the first
+ * request's row. A new key (a later purchase) gives a new id.
+ */
+export function checkoutTransactionId(idempotencyKey: string): string {
+  const hash = createHash('sha1').update(CHECKOUT_TRANSACTION_NAMESPACE).update(idempotencyKey).digest();
+  hash[6] = (hash[6] & 0x0f) | 0x50;
+  hash[8] = (hash[8] & 0x3f) | 0x80;
+  const hex = hash.subarray(0, 16).toString('hex');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+/** The namespace's 16 bytes: a fixed random UUID, used for nothing else. */
+const CHECKOUT_TRANSACTION_NAMESPACE = Buffer.from('3f8e2c71a94b4d5e9b06c2d4e7a1f358', 'hex');
 
 /** Confirming a payment that is no longer Pending: already SUCCESSFUL is a
  * harmless repeat; any other status is refused. */
@@ -413,10 +433,26 @@ export class PaymentsService {
     // account. `event.account` is Stripe's own Connect field for exactly this —
     // verified directly against the installed SDK's own Events.d.ts
     // (`account?: string`), not assumed. Optional/unused by every handler that
-    // only matches ids (payment_intent.*, customer.subscription.deleted).
+    // only matches ids (customer.subscription.deleted).
+    //
+    // transactionId — the hosted Checkout payment's Transaction id from the
+    // PaymentIntent's or Session's metadata (createPurchaseCheckoutSession):
+    // on this API version that PaymentIntent doesn't exist yet when the
+    // Transaction is written, so the processor matches it by this id
+    // (findCardTransaction), and an expired Session by the same id.
+    const metadataTransactionId =
+      event.type.startsWith('payment_intent.') || event.type.startsWith('checkout.session.')
+        ? (event.data.object as { metadata?: Record<string, string> | null }).metadata?.transactionId
+        : undefined;
     await this.webhookQueue.add(
       'process',
-      { stripeEventId: event.id, eventType: event.type, objectId: object.id, stripeAccountId: event.account ?? undefined },
+      {
+        stripeEventId: event.id,
+        eventType: event.type,
+        objectId: object.id,
+        stripeAccountId: event.account ?? undefined,
+        ...(metadataTransactionId ? { transactionId: metadataTransactionId } : {}),
+      },
       // Kept on the default 3-attempts/exponential-backoff policy every other job in
       // this codebase gets (Decision 23) — deliberately, not by omission. Decision
       // 23's own "except stripe-webhook-processing" carve-out reads (on this review)
@@ -558,7 +594,9 @@ export class PaymentsService {
       items: [item],
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription' },
-      expand: ['latest_invoice.payment_intent'],
+      // The first invoice's PaymentIntent (id and client secret): see
+      // stripe-first-invoice.ts for this API version's shape.
+      expand: FIRST_INVOICE_PAYMENT_EXPAND,
       // Decision 259 — Stripe's own `billing_cycle_anchor_config` prorates the
       // stub period from now through the next occurrence of `day_of_month` and
       // bills it on the first invoice immediately, then recurs on that fixed
@@ -567,12 +605,8 @@ export class PaymentsService {
       // before using this rather than computing the anchor date by hand).
       ...(billingCycleAnchorDay ? { billing_cycle_anchor_config: { day_of_month: billingCycleAnchorDay } } : {}),
     }, key('subscription')));
-    const invoice = subscription.latest_invoice as { payment_intent?: { id: string; client_secret: string } };
-    const paymentIntent = invoice?.payment_intent;
-    if (!paymentIntent) {
-      throw new Error('Stripe Subscription did not return an expandable latest_invoice.payment_intent');
-    }
-    return { subscriptionId: subscription.id, paymentIntentId: paymentIntent.id, clientSecret: paymentIntent.client_secret };
+    const { paymentIntentId, clientSecret } = firstInvoicePayment(subscription);
+    return { subscriptionId: subscription.id, paymentIntentId, clientSecret };
   }
 
   // ---------------------------------------------------------------------------
@@ -703,8 +737,22 @@ export class PaymentsService {
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: callerId, schoolId } } }),
     );
+    // The School's currency, which the saved card is later charged in. On the
+    // API version the installed SDK pins, a setup-mode Session needs either a
+    // currency (Stripe then offers every payment method the account has on,
+    // e.g. Klarna or Link, not only cards; checked against the test-mode
+    // sandbox, 30 Oct 2026) or its payment method types. Cards only, as the
+    // franchise-fee card Session (FranchiseFeesService.createCardSetupSession)
+    // does: what is saved here is shown as a card (brand and last 4,
+    // getMyPaymentMethod) and charged off-session (chargeOffSession), which
+    // only a card supports. The currency is passed when the School has one.
+    const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } }),
+    );
     const session = await stripe.checkout.sessions.create({
       mode: 'setup',
+      payment_method_types: ['card'],
+      ...(school?.defaultCurrency ? { currency: school.defaultCurrency.toLowerCase() } : {}),
       customer: existing?.stripeCustomerId,
       success_url: 'ultm8-student://payment-methods/complete',
       cancel_url: 'ultm8-student://payment-methods/cancel',
@@ -797,35 +845,34 @@ export class PaymentsService {
    * **Deliberately reuses the EXISTING `payment_intent.succeeded` webhook
    * handler** (`StripeWebhookProcessingProcessor.handlePaymentIntentSucceeded`)
    * as the completion signal, rather than adding a second, parallel
-   * Membership-creation path keyed off `checkout.session.completed` the way
-   * `createSetupSession()`'s own mode:'setup' flow has to (a Setup Intent has
-   * no Membership/Transaction of its own to settle — a Checkout `payment`-mode
-   * Session's underlying PaymentIntent does). Verified directly against the
-   * installed Stripe SDK's own type definitions before relying on this: a
-   * `mode: 'payment'` Checkout Session creates its underlying PaymentIntent
-   * SYNCHRONOUSLY at Session-creation time — `Session.payment_intent` is a
-   * real, expandable field from the moment `sessions.create()` returns, the
-   * identical shape `subscribe()`'s own `expand: ['latest_invoice.payment_intent']`
-   * already relies on for the same reason (needing the PaymentIntent id
-   * immediately, to stash on the Transaction before any webhook ever fires).
-   * So `MembershipsService.purchase()`'s caller sets
-   * `Transaction.stripePaymentIntentId` at CREATION time here, exactly like
-   * the plain `charge()` branch already does — once the Student completes
-   * payment on the hosted page, Stripe fires `payment_intent.succeeded` for
-   * that SAME PaymentIntent, already matched, collision-resolved (Spec 55
-   * §6.1's two-simultaneous-Active-Membership race), and turned into a
-   * Membership by the one handler that already exists. Deliberately NOT a new
-   * `checkout.session.completed` branch for `mode: 'payment'`: Stripe fires
-   * BOTH events for a successful card Checkout, and building a second
-   * Membership-creation path keyed off the Session would duplicate
-   * `handlePaymentIntentSucceeded`'s own logic for no benefit while opening a
-   * real risk of the two deliveries racing each other — a second source of
-   * truth, not a safer one. (Also recorded as Decision 243,
-   * `docs/decisions/POST-SPEC-55-DECISION-LOG.md`.)
+   * Membership-creation path keyed off `checkout.session.completed` (Decision
+   * 243): Stripe fires both for a paid card Checkout, and two creation paths
+   * could race each other.
+   *
+   * On the API version the installed SDK pins (2026-08-26.dahlia), a
+   * `mode: 'payment'` Session has no PaymentIntent when it is created:
+   * `Session.payment_intent` stays null until the member pays (seen on the
+   * real test-mode sandbox, 30 Oct 2026; an earlier version of this method
+   * expected one at once and failed every hosted purchase). So the caller's
+   * Pending Transaction is linked the other way round: its id
+   * (`transactionId`, chosen by the caller before this call) goes in
+   * `payment_intent_data.metadata`, which Stripe copies onto the PaymentIntent
+   * it makes when the member pays, and in the Session's own metadata. The
+   * webhook processor finds the Transaction by that id while no row has the
+   * PaymentIntent's id yet, and stores the id on it (findCardTransaction); an
+   * abandoned Session's checkout.session.expired turns the row Failed
+   * (Decision 339 item 11).
+   *
+   * `transactionId` must be the same for the same `idempotencyKey`
+   * (checkoutTransactionId() derives it from the key): a repeated request then
+   * reaches Stripe with the same key and the same parameters, gets the same
+   * Session back, and the caller's insert of the same id finds the row the
+   * first request wrote.
    */
   async createPurchaseCheckoutSession(
     callerId: string,
     schoolId: string,
+    transactionId: string,
     amount: number,
     currency: string,
     description: string,
@@ -836,9 +883,10 @@ export class PaymentsService {
     // Where the browser returns in the app: the membership purchase, or paying
     // charges (backlog §3.6 step 2), which reuses this same Checkout.
     returnPath: 'membership-purchase' | 'charge-payment' = 'membership-purchase',
-  ): Promise<{ checkoutUrl: string; paymentIntentId: string }> {
+  ): Promise<{ checkoutUrl: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    const metadata = { transactionId };
     const session = await withIdempotencyRetry(() => stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [
@@ -861,20 +909,15 @@ export class PaymentsService {
           ? [{ price_data: { currency: currency.toLowerCase(), unit_amount: toStripeAmount(surchargeAmount, currency), product_data: { name: CARD_SURCHARGE_LINE_NAME } }, quantity: 1 }]
           : []),
       ],
-      ...(surchargeAmount > 0 ? { payment_intent_data: { metadata: { surchargeAmount: String(surchargeAmount) } } } : {}),
+      metadata,
+      payment_intent_data: { metadata: { ...metadata, ...(surchargeAmount > 0 ? { surchargeAmount: String(surchargeAmount) } : {}) } },
       success_url: `ultm8-student://${returnPath}/complete`,
       cancel_url: `ultm8-student://${returnPath}/cancel`,
-      expand: ['payment_intent'],
     }, idempotencyKey ? { idempotencyKey } : undefined));
     if (!session.url) {
       throw new Error('Stripe Checkout Session did not return a hosted URL.');
     }
-    const paymentIntent = session.payment_intent;
-    const paymentIntentId = typeof paymentIntent === 'string' ? paymentIntent : paymentIntent?.id;
-    if (!paymentIntentId) {
-      throw new Error("Stripe Checkout Session (mode: 'payment') did not return an expandable PaymentIntent.");
-    }
-    return { checkoutUrl: session.url, paymentIntentId };
+    return { checkoutUrl: session.url };
   }
 
   /**
@@ -903,6 +946,9 @@ export class PaymentsService {
     description: string,
     // Decision 404: the freeze fee passes one (one charge per freeze, whoever retries).
     idempotencyKey?: string,
+    // Decision 406: the part of `amount` that is the card surcharge (0 =
+    // none), kept in the PaymentIntent's metadata as charge() keeps it.
+    surchargeAmount = 0,
   ): Promise<{ succeeded: boolean; paymentIntentId: string }> {
     const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId, schoolId } } }),
@@ -927,6 +973,7 @@ export class PaymentsService {
           payment_method: pmId,
           off_session: true,
           confirm: true,
+          ...(surchargeAmount > 0 ? { metadata: { surchargeAmount: String(surchargeAmount) } } : {}),
         },
         idempotencyKey ? { idempotencyKey } : undefined,
       );

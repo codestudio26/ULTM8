@@ -17,7 +17,15 @@ import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paym
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 import { fromStripeAmount } from '../payments/stripe-amount';
 
-type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
+/** `transactionId`: the ULTM8 Transaction id from the event object's metadata,
+ * set on a hosted Checkout payment's PaymentIntent and Session
+ * (PaymentsService.createPurchaseCheckoutSession), for payment_intent.* and
+ * checkout.session.* events only. */
+type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string; transactionId?: string };
+
+/** A payment_intent.* or checkout.session.* event's link to its card
+ * Transaction when the row has no PaymentIntent id yet (findCardTransaction). */
+type CardEventRef = { transactionId?: string; stripeAccountId?: string };
 
 /**
  * Thrown by handlePaymentIntentSucceeded when assertCanCreateMembership() refuses
@@ -127,7 +135,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   }
 
   async process(job: Job<WebhookJobData>): Promise<void> {
-    const { stripeEventId, eventType, objectId, stripeAccountId } = job.data;
+    const { stripeEventId, eventType, objectId, stripeAccountId, transactionId } = job.data;
+    const cardRef: CardEventRef = { transactionId, stripeAccountId };
 
     // Phase 16b-ii addition — pre-fetched OUTSIDE the DB transaction below,
     // deliberately: an external Stripe API call has no place holding a DB
@@ -245,7 +254,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     try {
       await this.prismaJobs.$transaction(async (tx) => {
         await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
-        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData, refundedCharge);
+        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData, refundedCharge, cardRef);
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' && this.isProcessedStripeEventConflict(err)) {
@@ -257,7 +266,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // above has already rolled back, rather than from inside handlePaymentIntentSucceeded
       // itself.
       if (err instanceof MembershipCollisionError) {
-        await this.resolveMembershipCollision(stripeEventId, eventType, objectId);
+        await this.resolveMembershipCollision(stripeEventId, eventType, objectId, cardRef);
         return;
       }
       throw err;
@@ -406,12 +415,13 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     dispute: Stripe.Dispute | undefined,
     checkoutSessionData: { studentId: string; schoolId: string; stripeCustomerId: string } | undefined,
     refundedCharge?: Stripe.Charge,
+    cardRef: CardEventRef = {},
   ): Promise<DisputeSideEffects> {
     const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     switch (eventType) {
       case 'payment_intent.succeeded':
         // Backlog §3.6 step 2: a charge payment's receipt, sent after the commit.
-        return { ...noSideEffects, notifications: await this.handlePaymentIntentSucceeded(tx, objectId) };
+        return { ...noSideEffects, notifications: await this.handlePaymentIntentSucceeded(tx, objectId, cardRef) };
       case 'payment_intent.payment_failed':
       // Decision 339 (T12) — a card payment the Student walked away from: Stripe
       // cancels the PaymentIntent (or its expired Checkout Session's), and the
@@ -419,7 +429,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // five confirmed Transaction statuses; nothing else to undo, same as a
       // failed charge. Falls through on purpose.
       case 'payment_intent.canceled':
-        await this.handlePaymentIntentFailed(tx, objectId);
+        await this.handlePaymentIntentFailed(tx, objectId, cardRef);
         return noSideEffects;
       case 'customer.subscription.deleted':
         return { ...noSideEffects, freedClassIds: await this.handleSubscriptionDeleted(tx, objectId) };
@@ -481,6 +491,14 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           );
         }
         return noSideEffects;
+      // Decision 339 item 11: a hosted Checkout the member never paid. Its
+      // PaymentIntent, if one was ever made, is canceled with it
+      // (payment_intent.canceled, above); on this API version a Session the
+      // member never submitted has none, so the Session's own expiry is what
+      // turns its Pending row Failed. See handleCheckoutSessionExpired().
+      case 'checkout.session.expired':
+        await this.handleCheckoutSessionExpired(tx, stripeEventId, cardRef);
+        return noSideEffects;
       // Safe default — see this file's own header comment for why this stays
       // log-only: nothing built yet reacts differently to past_due vs Active
       // beyond what customer.subscription.deleted already covers on cancellation.
@@ -498,8 +516,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * looked up against Transaction.stripePaymentIntentId, the correlation column
    * MembershipsService.purchase() sets at Transaction-creation time.
    */
-  private async handlePaymentIntentSucceeded(tx: Prisma.TransactionClient, paymentIntentId: string): Promise<NotificationFanoutJobData[]> {
-    const transaction = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+  private async handlePaymentIntentSucceeded(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<NotificationFanoutJobData[]> {
+    const transaction = await this.findCardTransaction(tx, paymentIntentId, cardRef);
     if (!transaction) {
       this.logger.warn(`payment_intent.succeeded for ${paymentIntentId} — no matching Transaction found. Ignoring (not a Membership purchase this platform created).`);
       return [];
@@ -675,8 +693,23 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * and `onFailed`'s existing alarm fires, the same safety net as before this
    * method existed, just now the LAST resort rather than the ONLY one.
    */
-  private async resolveMembershipCollision(stripeEventId: string, eventType: string, paymentIntentId: string): Promise<void> {
-    const transaction = await this.prismaJobs.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+  private async resolveMembershipCollision(stripeEventId: string, eventType: string, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<void> {
+    // A hosted Checkout payment's PaymentIntent id was stored on its row by
+    // findCardTransaction() in the attempt that just rolled back, so it may be
+    // matched by the metadata's Transaction id again here (same conditions),
+    // and the id is stored with the Refunded status below.
+    const transaction =
+      (await this.prismaJobs.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } })) ??
+      (cardRef.transactionId && cardRef.stripeAccountId
+        ? await this.prismaJobs.transaction.findFirst({
+            where: {
+              id: cardRef.transactionId,
+              paymentMethod: 'STRIPE',
+              stripePaymentIntentId: null,
+              paymentAccount: { stripeConnectedAccountId: cardRef.stripeAccountId },
+            },
+          })
+        : null);
     if (!transaction) {
       // Shouldn't happen — handlePaymentIntentSucceeded already matched this exact
       // Transaction moments ago, inside the attempt that then rolled back; the row
@@ -726,7 +759,10 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
       return tx.transaction.updateMany({
         where: { id: transaction.id, status: { in: SETTLEABLE } },
-        data: { status: 'REFUNDED', refundedAmount: transaction.amount },
+        // The PaymentIntent was refunded in full: the price and any card
+        // surcharge (Decision 406), so that is what is recorded as refunded,
+        // matching Stripe (and handleChargeRefunded()'s sync of the same refund).
+        data: { status: 'REFUNDED', refundedAmount: transaction.amount + transaction.surchargeAmount, stripePaymentIntentId: paymentIntentId },
       });
     });
     this.logger.log(
@@ -769,12 +805,80 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   /** payment_intent.payment_failed — flips a PENDING Transaction to FAILED. No
    * Membership was ever created for this Transaction (Decision 6), so nothing else
    * to undo. */
-  private async handlePaymentIntentFailed(tx: Prisma.TransactionClient, paymentIntentId: string): Promise<void> {
-    const transaction = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+  private async handlePaymentIntentFailed(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<void> {
+    const transaction = await this.findCardTransaction(tx, paymentIntentId, cardRef);
     if (!transaction || transaction.status !== 'PENDING') {
       return;
     }
     await tx.transaction.updateMany({ where: { id: transaction.id, status: 'PENDING' }, data: { status: 'FAILED' } });
+  }
+
+  /**
+   * The card Transaction a payment_intent.* event is about, by its stored
+   * PaymentIntent id. A hosted Checkout payment's row has none when it is
+   * written: on the API version the installed SDK pins, a `mode: 'payment'`
+   * Checkout Session makes its PaymentIntent only when the member pays
+   * (`Session.payment_intent` is null until then). That PaymentIntent carries
+   * the row's id in its metadata (PaymentsService.createPurchaseCheckoutSession
+   * sets `payment_intent_data.metadata.transactionId`), so the row is found by
+   * that id and the PaymentIntent id is stored on it here, in the same
+   * transaction, for every later event (refunds, disputes) to find it by.
+   *
+   * Only a Stripe row with no PaymentIntent yet, at a School whose connected
+   * account the event came from, is taken: the metadata can never move a
+   * payment onto another School's row, nor re-point a row already paid by
+   * another PaymentIntent. Two events for the same new PaymentIntent at once
+   * (payment_failed, then succeeded on a second card) wait on the row: the
+   * second finds the id the first stored.
+   */
+  private async findCardTransaction(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef): Promise<Transaction | null> {
+    const byIntent = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (byIntent || !cardRef.transactionId) return byIntent;
+    if (!cardRef.stripeAccountId) {
+      this.logger.warn(`PaymentIntent ${paymentIntentId} names Transaction ${cardRef.transactionId} but its event has no connected account — not matched.`);
+      return null;
+    }
+    await tx.transaction.updateMany({
+      where: {
+        id: cardRef.transactionId,
+        paymentMethod: 'STRIPE',
+        stripePaymentIntentId: null,
+        paymentAccount: { stripeConnectedAccountId: cardRef.stripeAccountId },
+      },
+      data: { stripePaymentIntentId: paymentIntentId },
+    });
+    const attached = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId } });
+    if (!attached) {
+      this.logger.warn(`PaymentIntent ${paymentIntentId} names Transaction ${cardRef.transactionId}, which is not an unpaid card payment on account ${cardRef.stripeAccountId} — not matched.`);
+    }
+    return attached;
+  }
+
+  /**
+   * checkout.session.expired — Decision 339 item 11: a hosted Checkout the
+   * member abandoned turns its Pending Transaction Failed, as
+   * payment_intent.canceled does for a PaymentIntent. Needed since the API
+   * version the installed SDK pins: a Session the member never submitted has
+   * no PaymentIntent, so nothing else would ever end the row. Matched by the
+   * Transaction id in the Session's metadata, on the same connected account
+   * (as findCardTransaction()); only a row still Pending changes, so a payment
+   * already settled, or failed by its PaymentIntent's own event, is left. A
+   * Session with no Transaction (a card being saved) changes nothing.
+   */
+  private async handleCheckoutSessionExpired(tx: Prisma.TransactionClient, stripeEventId: string, cardRef: CardEventRef): Promise<void> {
+    if (!cardRef.transactionId || !cardRef.stripeAccountId) {
+      this.logger.log(`Stripe event ${stripeEventId} (checkout.session.expired) names no Transaction on a connected account — recorded, no handler action.`);
+      return;
+    }
+    await tx.transaction.updateMany({
+      where: {
+        id: cardRef.transactionId,
+        status: 'PENDING',
+        paymentMethod: 'STRIPE',
+        paymentAccount: { stripeConnectedAccountId: cardRef.stripeAccountId },
+      },
+      data: { status: 'FAILED' },
+    });
   }
 
   /**
@@ -1360,7 +1464,15 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       refundNotices = recorded.notices;
     }
     const withNotices = { ...noSideEffects, notifications: refundNotices };
-    const refunded = Math.min(fromStripeAmount(charge.amount_refunded, charge.currency), transaction.amount);
+    // Capped at what the card paid. A membership payment's card surcharge
+    // (Decision 406) is part of that: refunding the whole payment in Stripe
+    // gives it back too, and the Refunded total says so (as the refused-
+    // purchase refunds record it). A payment toward charges stays capped at
+    // its amount: its total is the ledger's (recordChargeRefund above), which
+    // never refunds the surcharge (Decision 414 item 2). Either way the row is
+    // Refunded once the refund covers the amount.
+    const paidByCard = transaction.kind === 'CHARGE_PAYMENT' ? transaction.amount : transaction.amount + transaction.surchargeAmount;
+    const refunded = Math.min(fromStripeAmount(charge.amount_refunded, charge.currency), paidByCard);
     let status = transaction.status;
     if (status === 'SUCCESSFUL' && refunded >= transaction.amount) status = 'REFUNDED';
     else if (status === 'REFUNDED' && refunded < transaction.amount) status = 'SUCCESSFUL';

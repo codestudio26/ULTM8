@@ -36,7 +36,7 @@ import { lateFeeWaivedNotice } from '../late-fees/late-fee-notices';
 import { insertCharge, lockInvoiceNumbers } from './charge-insert';
 import { cancelChargeInTx, chargeCancelledNotice } from './charge-cancel';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
-import { PaymentsService } from '../payments/payments.service';
+import { PaymentsService, checkoutTransactionId } from '../payments/payments.service';
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
 import { StepUpService } from '../auth/step-up.service';
 import {
@@ -698,18 +698,24 @@ export class ChargesService {
       .update(JSON.stringify([studentId, schoolId, dto.chargeId ?? null, target.amount, target.currency, surcharge, ended]))
       .digest('hex')
       .slice(0, 24);
-    const { checkoutUrl, paymentIntentId } = await this.paymentsService.createPurchaseCheckoutSession(
+    const idempotencyKey = `charge-checkout-${key}-${Math.floor(Date.now() / CHECKOUT_KEY_WINDOW_MS)}`;
+    // The Session's PaymentIntent only exists once the member pays, so the
+    // row is linked to it by this id, in the PaymentIntent's metadata
+    // (PaymentsService.createPurchaseCheckoutSession); derived from the key, so
+    // a repeated tap sends Stripe the same id and gets the same session back.
+    const transactionId = checkoutTransactionId(idempotencyKey);
+    const { checkoutUrl } = await this.paymentsService.createPurchaseCheckoutSession(
       studentId,
       schoolId,
+      transactionId,
       target.amount,
       target.currency,
       target.description,
-      `charge-checkout-${key}-${Math.floor(Date.now() / CHECKOUT_KEY_WINDOW_MS)}`,
+      idempotencyKey,
       surcharge,
       'charge-payment',
     );
     const result = { checkoutUrl, amount: target.amount, surchargeAmount: surcharge, currency: target.currency };
-    const transactionId = randomUUID();
     try {
       await this.prismaJobs.transaction.create({
         data: {
@@ -724,15 +730,14 @@ export class ChargesService {
           currency: target.currency,
           status: 'PENDING',
           paymentMethod: 'STRIPE',
-          stripePaymentIntentId: paymentIntentId,
           chargePaymentChannel: 'APP',
         },
       });
     } catch (err) {
-      // A repeated tap got the same session (and PaymentIntent) back: return its row.
+      // A repeated tap got the same session (and Transaction id) back: return its row.
       if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')) throw err;
-      const existing = await this.prismaJobs.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } });
-      if (!existing) throw err;
+      const existing = await this.prismaJobs.transaction.findUnique({ where: { id: transactionId }, select: { id: true, studentId: true, schoolId: true } });
+      if (!existing || existing.studentId !== studentId || existing.schoolId !== schoolId) throw err;
       return { ...result, transactionId: existing.id };
     }
     return { ...result, transactionId };

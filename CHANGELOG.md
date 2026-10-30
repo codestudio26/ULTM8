@@ -15,6 +15,24 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fixed: card payments against Stripe's current API** — found on the first
+  run against a real Stripe test account. Several calls were written for an
+  older Stripe API and failed on the version the app now uses:
+  - buying a Subscription plan (and a School or Franchise subscribing to a
+    platform plan) always failed with a server error; the first payment is now
+    read from where Stripe now puts it;
+  - buying a pack or pass with Stripe's hosted page, and paying charges there,
+    always failed: Stripe now makes the payment only when the member pays, so
+    ULTM8 links the payment to its order by the order's own number instead. An
+    abandoned hosted payment is still marked Failed when Stripe expires it
+    (this needs the `checkout.session.expired` event switched on for the
+    webhook in Stripe);
+  - saving a card could not start; it now asks for a card in the School's
+    currency;
+  - when a membership card payment goes back to the card in full (a refused
+    purchase ULTM8 refunds, or a whole payment refunded in Stripe), the
+    Refunded amount is now what Stripe refunded, card surcharge included (it
+    used to leave the surcharge out). Refunds of charges are unchanged.
 - **Waivers: faster Signatures panel for big Schools** (Decision 418; stress
   test round 4, Q2) — the panel shows the first 100 people with a "Load more"
   button instead of loading everyone first (it took 22 s at a School with

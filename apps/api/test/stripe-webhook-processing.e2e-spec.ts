@@ -23,7 +23,9 @@ import { randomUUID } from 'crypto';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { PromotionFeeService } from '../src/ranks/promotion-fee.service';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
+import Stripe from 'stripe';
 import { StripeClientService } from '../src/payments/stripe-client.service';
+import { PaymentsService } from '../src/payments/payments.service';
 import { NOTIFICATION_FANOUT_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../src/jobs/queue.constants';
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -206,23 +208,11 @@ describeIfDb('stripe-webhook-processing job', () => {
   // Phase 9 — first real per-event-type handlers.
   // ---------------------------------------------------------------------------
 
-  // Decision 243 (Track B Slice 4b) — MembershipsService.purchaseViaHostedCheckout()
-  // (a hosted Stripe Checkout Session, `mode: 'payment'`) creates its Transaction
-  // with EXACTLY this same shape (PENDING/STRIPE/stripePaymentIntentId, no
-  // stripeSubscriptionId) as seedPendingTransaction() below already fixtures —
-  // verified directly against PaymentsService.createPurchaseCheckoutSession()'s
-  // own header comment before relying on this: a `mode: 'payment'` Checkout
-  // Session's underlying PaymentIntent exists synchronously at Session-creation
-  // time, so the Transaction it produces is settled by this SAME
-  // payment_intent.succeeded handler, with no new webhook branching needed.
-  // Every test below (success, redelivery, the two-simultaneous-Active-Membership
-  // collision further down, and payment_intent.payment_failed) therefore already
-  // covers the hosted-Checkout purchase path end-to-end too, not only the
-  // pre-existing fresh-card `charge()` one — see
-  // PaymentsService.createPurchaseCheckoutSession()/MembershipsService.
-  // purchaseViaHostedCheckout()'s own header comments for the full reasoning, and
-  // memberships.service.spec.ts's own Decision 243 block for the
-  // Transaction-creation half this file can't reach without a live Stripe call.
+  // These rows carry their PaymentIntent id from the start (a fresh-card
+  // charge() purchase or a Subscription). A hosted Checkout purchase (Decision
+  // 243) has none until the member pays, on the API version the installed SDK
+  // pins: its own block at the end of this file covers that, through the real
+  // webhook intake.
   it('payment_intent.succeeded flips the Transaction to SUCCESSFUL and creates the Membership Active (Decision 6)', async () => {
     const { transaction, plan, student, stripePaymentIntentId } = await seedPendingTransaction();
     const stripeEventId = `evt_fixture_${randomUUID()}`;
@@ -1044,5 +1034,282 @@ describeIfDb('stripe-webhook-processing job — Membership-purchase-collision au
     expect(dedupRow).not.toBeNull();
     const updated = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
     expect(updated.status).toBe('REFUNDED');
+  });
+});
+
+/**
+ * Hosted Checkout (Decision 243, and paying charges by Checkout) on the API
+ * version the installed SDK pins (2026-08-26.dahlia): a `mode: 'payment'`
+ * Checkout Session has no PaymentIntent until the member pays, so the Pending
+ * Transaction is written with none, and its id travels in the PaymentIntent's
+ * metadata (PaymentsService.createPurchaseCheckoutSession). Unlike the blocks
+ * above, these go in through the real webhook intake
+ * (PaymentsService.handleIncomingWebhook, a signed event checked by Stripe's own
+ * library), then the job it queued is handed to the processor, so the metadata
+ * hand-over is covered too. The events are shaped like the real ones the
+ * test-mode sandbox sent on 30 Oct 2026 for a PaymentIntent confirmed with
+ * pm_card_visa and for an expired Session (trimmed to the fields that matter
+ * plus a few neighbours, values as Stripe sends them).
+ */
+describeIfDb('stripe-webhook-processing job — hosted Checkout matched by its Transaction id (current Stripe API version)', () => {
+  const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
+  let processor: StripeWebhookProcessingProcessor;
+  let payments: PaymentsService;
+  const queued: Array<Record<string, unknown>> = [];
+
+  const eventIds: string[] = [];
+  const schoolIds: string[] = [];
+  const userIds: string[] = [];
+  const paymentAccountIds: string[] = [];
+  const membershipPlanIds: string[] = [];
+  const membershipIds: string[] = [];
+  const transactionIds: string[] = [];
+
+  const fakeRefundsCreate = jest.fn().mockResolvedValue({ id: 're_fixture', object: 'refund', status: 'succeeded' });
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? 'whsec_e2e_hosted_checkout';
+
+  beforeAll(async () => {
+    process.env.STRIPE_WEBHOOK_SECRET = webhookSecret;
+    process.env.STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? 'sk_test_e2e_hosted_checkout';
+    const stripeClient = new StripeClientService();
+    // No call reaches Stripe: only a lost race refunds, faked here.
+    jest.spyOn(stripeClient, 'scopedClient').mockReturnValue({ refunds: { create: fakeRefundsCreate }, subscriptions: { cancel: jest.fn() } } as never);
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        StripeWebhookProcessingProcessor,
+        PrismaJobsService,
+        { provide: StripeClientService, useValue: stripeClient },
+        { provide: getQueueToken(NOTIFICATION_FANOUT_QUEUE), useValue: { add: jest.fn().mockResolvedValue(undefined), addBulk: jest.fn().mockResolvedValue(undefined) } },
+        { provide: getQueueToken(CHARGEBACK_PATTERN_RESTRICTION_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+        { provide: getQueueToken(WAITLIST_CASCADE_PROCESSING_QUEUE), useValue: { addBulk: jest.fn().mockResolvedValue(undefined) } },
+        { provide: PromotionFeeService, useValue: { settlePaidCharges: jest.fn().mockResolvedValue(undefined) } },
+      ],
+    }).compile();
+    processor = moduleRef.get(StripeWebhookProcessingProcessor);
+    const webhookQueue = { add: jest.fn(async (_name: string, data: Record<string, unknown>) => queued.push(data)) };
+    payments = new PaymentsService(null as never, null as never, null as never, null as never, stripeClient, webhookQueue as never, null as never, null as never);
+  });
+
+  afterEach(() => {
+    fakeRefundsCreate.mockClear();
+    queued.length = 0;
+  });
+
+  afterAll(async () => {
+    await superuser.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
+    await superuser.transaction.deleteMany({ where: { id: { in: transactionIds } } });
+    await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
+    await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
+    await superuser.paymentAccount.deleteMany({ where: { id: { in: paymentAccountIds } } });
+    await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
+    await superuser.user.deleteMany({ where: { id: { in: userIds } } });
+    await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
+    await superuser.$disconnect();
+  });
+
+  /** A School on its own connected account, a Student, and the Pending row a
+   * hosted Checkout purchase writes now: no PaymentIntent id. */
+  async function seedCheckoutOrder(opts: { planType?: 'CLASS_PACK' | 'WEEKLY_PASS'; surcharge?: number; alreadyHoldsPass?: boolean } = {}) {
+    const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Hosted Checkout Fixture School' } });
+    schoolIds.push(school.id);
+    const account = `acct_fixture_${randomUUID().slice(0, 12)}`;
+    const paymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: account },
+    });
+    paymentAccountIds.push(paymentAccount.id);
+    const student = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `hosted-checkout-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Hosted',
+        surname: 'Checkout',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    userIds.push(student.id);
+    const type = opts.planType ?? 'CLASS_PACK';
+    const plan = await superuser.membershipPlan.create({
+      data: { id: randomUUID(), schoolId: school.id, type, title: 'Hosted Checkout Plan', price: 1500, classesIncluded: type === 'CLASS_PACK' ? 5 : null, expiryDurationDays: type === 'WEEKLY_PASS' ? 7 : null },
+    });
+    membershipPlanIds.push(plan.id);
+    if (opts.alreadyHoldsPass) {
+      const held = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: student.id, membershipPlanId: plan.id, schoolId: school.id, frequency: 'ONE_TIME', status: 'ACTIVE', classesRemaining: null },
+      });
+      membershipIds.push(held.id);
+    }
+    const transaction = await superuser.transaction.create({
+      data: {
+        id: randomUUID(),
+        schoolId: school.id,
+        studentId: student.id,
+        paymentAccountId: paymentAccount.id,
+        membershipPlanId: plan.id,
+        amount: 1500,
+        surchargeAmount: opts.surcharge ?? 0,
+        currency: 'GBP',
+        status: 'PENDING',
+        paymentMethod: 'STRIPE',
+      },
+    });
+    transactionIds.push(transaction.id);
+    return { school, student, plan, transaction, account };
+  }
+
+  /** A payment_intent.* event as Stripe sends it for the PaymentIntent a paid
+   * Checkout Session made, its metadata copied from payment_intent_data. */
+  function paymentIntentEvent(type: string, account: string, paymentIntentId: string, metadata: Record<string, string>, amount = 1500) {
+    const status = type === 'payment_intent.succeeded' ? 'succeeded' : type === 'payment_intent.canceled' ? 'canceled' : 'requires_payment_method';
+    return {
+      id: `evt_${randomUUID().replace(/-/g, '').slice(0, 24)}`,
+      object: 'event',
+      account,
+      api_version: '2026-08-26.dahlia',
+      created: Math.floor(Date.now() / 1000),
+      livemode: false,
+      pending_webhooks: 1,
+      request: { id: null, idempotency_key: null },
+      type,
+      data: {
+        object: {
+          id: paymentIntentId,
+          object: 'payment_intent',
+          amount,
+          amount_capturable: 0,
+          amount_received: status === 'succeeded' ? amount : 0,
+          capture_method: 'automatic_async',
+          client_secret: `${paymentIntentId}_secret_fixture`,
+          confirmation_method: 'automatic',
+          currency: 'gbp',
+          customer: null,
+          description: null,
+          last_payment_error: null,
+          latest_charge: status === 'succeeded' ? `ch_${randomUUID().slice(0, 12)}` : null,
+          livemode: false,
+          metadata,
+          payment_method: 'pm_fixture',
+          payment_method_types: ['card'],
+          status,
+        },
+      },
+    };
+  }
+
+  /** checkout.session.expired as Stripe sends it for a Session nobody paid:
+   * `payment_intent` null on this API version. */
+  function sessionExpiredEvent(account: string, metadata: Record<string, string>) {
+    const id = `cs_test_${randomUUID().replace(/-/g, '')}`;
+    return {
+      id: `evt_${randomUUID().replace(/-/g, '').slice(0, 24)}`,
+      object: 'event',
+      account,
+      api_version: '2026-08-26.dahlia',
+      created: Math.floor(Date.now() / 1000),
+      livemode: false,
+      pending_webhooks: 1,
+      request: { id: null, idempotency_key: null },
+      type: 'checkout.session.expired',
+      data: {
+        object: { id, object: 'checkout.session', amount_total: 1500, currency: 'gbp', metadata, mode: 'payment', payment_intent: null, payment_status: 'unpaid', setup_intent: null, status: 'expired', url: null },
+      },
+    };
+  }
+
+  /** Through the real intake (signature checked), then the queued job. */
+  async function deliver(event: { id: string }) {
+    eventIds.push(event.id);
+    const payload = JSON.stringify(event);
+    const signature = Stripe.webhooks.generateTestHeaderString({ payload, secret: webhookSecret });
+    await payments.handleIncomingWebhook(Buffer.from(payload), signature);
+    const job = queued.pop();
+    expect(job).toBeDefined();
+    await processor.process({ data: job, attemptsMade: 1, opts: { attempts: 3 } } as never);
+    return job!;
+  }
+
+  it('payment_intent.succeeded finds the Pending row by the Transaction id in its metadata, stores the PaymentIntent id and creates the Membership', async () => {
+    const { transaction, account, student } = await seedCheckoutOrder();
+    const pi = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+
+    const job = await deliver(paymentIntentEvent('payment_intent.succeeded', account, pi, { transactionId: transaction.id }));
+
+    expect(job).toMatchObject({ eventType: 'payment_intent.succeeded', objectId: pi, stripeAccountId: account, transactionId: transaction.id });
+    const updated = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updated).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: pi });
+    expect(updated.membershipId).not.toBeNull();
+    membershipIds.push(updated.membershipId!);
+    expect(await superuser.membership.count({ where: { studentId: student.id, status: 'ACTIVE' } })).toBe(1);
+
+    // Stripe's redelivery, and a later event for the same PaymentIntent, now
+    // find the row by the stored id: nothing changes.
+    await deliver(paymentIntentEvent('payment_intent.succeeded', account, pi, { transactionId: transaction.id }));
+    expect(await superuser.membership.count({ where: { studentId: student.id } })).toBe(1);
+  });
+
+  it('a declined card then a second card on the same Checkout: Failed, then Successful, on one PaymentIntent', async () => {
+    const { transaction, account } = await seedCheckoutOrder();
+    const pi = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+
+    await deliver(paymentIntentEvent('payment_intent.payment_failed', account, pi, { transactionId: transaction.id }));
+    expect(await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } })).toMatchObject({ status: 'FAILED', stripePaymentIntentId: pi });
+
+    await deliver(paymentIntentEvent('payment_intent.succeeded', account, pi, { transactionId: transaction.id }));
+    const updated = await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } });
+    expect(updated).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: pi });
+    membershipIds.push(updated.membershipId!);
+  });
+
+  it('metadata naming a row on another School\'s connected account, or a row already paid by another PaymentIntent, is not matched', async () => {
+    const mine = await seedCheckoutOrder();
+    const other = await seedCheckoutOrder();
+    const pi = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+
+    // An event from my account naming the other School's row.
+    await deliver(paymentIntentEvent('payment_intent.succeeded', mine.account, pi, { transactionId: other.transaction.id }));
+    expect(await superuser.transaction.findUniqueOrThrow({ where: { id: other.transaction.id } })).toMatchObject({ status: 'PENDING', stripePaymentIntentId: null });
+
+    // My row, already linked to its own PaymentIntent: another one naming it is ignored.
+    const first = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+    await deliver(paymentIntentEvent('payment_intent.payment_failed', mine.account, first, { transactionId: mine.transaction.id }));
+    await deliver(paymentIntentEvent('payment_intent.succeeded', mine.account, `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`, { transactionId: mine.transaction.id }));
+    expect(await superuser.transaction.findUniqueOrThrow({ where: { id: mine.transaction.id } })).toMatchObject({ status: 'FAILED', stripePaymentIntentId: first, membershipId: null });
+  });
+
+  it('checkout.session.expired turns an unpaid Checkout\'s Pending row Failed (Decision 339 item 11); a paid one is left alone', async () => {
+    const abandoned = await seedCheckoutOrder();
+    const job = await deliver(sessionExpiredEvent(abandoned.account, { transactionId: abandoned.transaction.id }));
+    expect(job).toMatchObject({ eventType: 'checkout.session.expired', transactionId: abandoned.transaction.id, stripeAccountId: abandoned.account });
+    expect(await superuser.transaction.findUniqueOrThrow({ where: { id: abandoned.transaction.id } })).toMatchObject({ status: 'FAILED', membershipId: null });
+
+    const paid = await seedCheckoutOrder();
+    const pi = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+    await deliver(paymentIntentEvent('payment_intent.succeeded', paid.account, pi, { transactionId: paid.transaction.id }));
+    await deliver(sessionExpiredEvent(paid.account, { transactionId: paid.transaction.id }));
+    const after = await superuser.transaction.findUniqueOrThrow({ where: { id: paid.transaction.id } });
+    expect(after.status).toBe('SUCCESSFUL');
+    membershipIds.push(after.membershipId!);
+
+    // From another School's account: not matched.
+    const elsewhere = await seedCheckoutOrder();
+    await deliver(sessionExpiredEvent(abandoned.account, { transactionId: elsewhere.transaction.id }));
+    expect((await superuser.transaction.findUniqueOrThrow({ where: { id: elsewhere.transaction.id } })).status).toBe('PENDING');
+  });
+
+  it('a hosted Checkout purchase that loses the one-pass race is refunded in full and recorded as such: price and surcharge, with its PaymentIntent id', async () => {
+    const { transaction, account, student } = await seedCheckoutOrder({ planType: 'WEEKLY_PASS', surcharge: 30, alreadyHoldsPass: true });
+    const pi = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+
+    const job = await deliver(paymentIntentEvent('payment_intent.succeeded', account, pi, { transactionId: transaction.id, surchargeAmount: '30' }, 1530));
+
+    expect(fakeRefundsCreate).toHaveBeenCalledWith({ payment_intent: pi }, expect.objectContaining({ idempotencyKey: expect.stringContaining(job.stripeEventId as string) }));
+    expect(await superuser.transaction.findUniqueOrThrow({ where: { id: transaction.id } })).toMatchObject({
+      status: 'REFUNDED',
+      refundedAmount: 1530,
+      stripePaymentIntentId: pi,
+      membershipId: null,
+    });
+    expect(await superuser.membership.count({ where: { studentId: student.id } })).toBe(1);
   });
 });

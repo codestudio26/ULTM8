@@ -25,6 +25,7 @@ import * as bcrypt from 'bcryptjs';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
+import { fakeIncompleteSubscription, fakePaymentCheckoutSession } from './stripe-fakes';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const PLATFORM_ADMIN_JWT_SECRET = process.env.PLATFORM_ADMIN_JWT_SECRET;
@@ -73,9 +74,9 @@ describeIfDb('Card surcharge (Decision 406)', () => {
       },
       checkout: {
         sessions: {
-          create: jest.fn(async (params: (typeof sessions)[number]) => {
+          create: jest.fn(async (params: (typeof sessions)[number] & { metadata?: Record<string, string> }) => {
             sessions.push(params);
-            return { url: 'https://checkout.example.test/s', payment_intent: { id: `pi_${randomUUID()}` } };
+            return fakePaymentCheckoutSession(params);
           }),
         },
       },
@@ -87,7 +88,7 @@ describeIfDb('Card surcharge (Decision 406)', () => {
       subscriptions: {
         create: jest.fn(async (params: (typeof subscriptions)[number]) => {
           subscriptions.push(params);
-          return { id: `sub_${randomUUID()}`, latest_invoice: { payment_intent: { id: `pi_${randomUUID()}`, client_secret: 'secret' } } };
+          return fakeIncompleteSubscription();
         }),
       },
     })),

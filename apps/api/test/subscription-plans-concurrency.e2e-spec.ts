@@ -41,6 +41,7 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
+import { fakeIncompleteSubscription } from './stripe-fakes';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -82,12 +83,9 @@ describeIfDb('SubscriptionPlansService.subscribe() — concurrent double-subscri
           // of relying on both requests happening to land in the same tick.
           await new Promise((resolve) => setTimeout(resolve, 25));
           subscriptionCounter += 1;
-          const id = `sub_fake_${subscriptionCounter}_${randomUUID()}`;
-          createdSubscriptions.push({ id, cancelled: false });
-          return {
-            id,
-            latest_invoice: { payment_intent: { id: `pi_fake_${randomUUID()}`, client_secret: `secret_${randomUUID()}` } },
-          };
+          const subscription = { ...fakeIncompleteSubscription(), id: `sub_fake_${subscriptionCounter}_${randomUUID()}` };
+          createdSubscriptions.push({ id: subscription.id, cancelled: false });
+          return subscription;
         }),
         cancel: jest.fn(async (id: string) => {
           const record = createdSubscriptions.find((s) => s.id === id);

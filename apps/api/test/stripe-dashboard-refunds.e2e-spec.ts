@@ -147,6 +147,23 @@ describeIfDb('Stripe-dashboard refunds (Decision 382)', () => {
     expect(res.body.items[0]).toMatchObject({ id: s.transaction.id, status: 'REFUNDED', refundedAmount: 15000 });
   });
 
+  // A membership card payment with a surcharge (Decision 406): refunding the
+  // whole card payment in Stripe gives the surcharge back too, and the
+  // Refunded total says what Stripe refunded. Refunding the price only is
+  // still a full refund (Refunded).
+  it('a surcharged payment refunded in full records the whole card payment; the price alone is still Refunded', async () => {
+    const s = await seed();
+    await su.transaction.update({ where: { id: s.transaction.id }, data: { surchargeAmount: 300 } });
+    const id = `ch_${s.pi}`;
+    charges.set(id, { id, object: 'charge', amount: 15300, amount_refunded: 15000, payment_intent: s.pi });
+    await webhook(s, 'charge.refunded', id);
+    expect(await row(s)).toMatchObject({ status: 'REFUNDED', refundedAmount: 15000 });
+
+    charges.set(id, { id, object: 'charge', amount: 15300, amount_refunded: 15300, payment_intent: s.pi });
+    await webhook(s, 'charge.refunded', id);
+    expect(await row(s)).toMatchObject({ status: 'REFUNDED', refundedAmount: 15300 });
+  });
+
   it('a partial refund shows its amount and keeps the payment Successful; a second one completing it marks it Refunded', async () => {
     const s = await seed();
     const chargeId = setCharge(s, 5000);
