@@ -712,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "定期請求が見つかりません",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "これは昇級費です。スクールのオーナーが生徒の昇級画面から免除または取り消すと、この請求も取り消されます。",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "このスクールはまだ通貨を設定していないため、料金を支払えません。スクールにお問い合わせください。",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "この昇級料は支払い済みですが、昇級はもう適用できません。昇級料をキャンセルする（支払われた金額はクレジットになります）か、もう一度昇級させてください。",
 };

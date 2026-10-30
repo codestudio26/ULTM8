@@ -1832,6 +1832,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         cancel: "Anuluj opłatę",
         promoteTo: "Promuj na stopień {rank}",
         dontPromote: "Nie promuj",
+        blocked: "Zapłacona — nie można zastosować awansu",
+        blockedText: "Opłata {name} za {rank} jest zapłacona, ale awansu nie można zastosować: stopień lub drabinka pasów zmieniła się od oceny. Anuluj opłatę, aby zwrócić zapłaconą kwotę jako kredyt, lub oceń {name} ponownie: opłata zostanie wtedy anulowana, a zapłacona kwota zaliczona jako kredyt na nową ocenę.",
         priceFor: "Opłata za promocję na stopień {rank}: {amount}",
       },
       decide: {

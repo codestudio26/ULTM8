@@ -286,6 +286,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "La promoción de {name} a {rank} ({style}) espera tu decisión. Promuévelo o decide no hacerlo.",
     promotionFeeBody: "Tu promoción a {rank} ({style}) tiene una tarifa de {amount}. Abre la app para aceptarla o rechazarla.",
     childPromotionFeeBody: "La promoción de {name} a {rank} ({style}) tiene una tarifa de {amount}. Abre la app para aceptarla o rechazarla.",
+    promotionFeeBlockedTitle: "La promoción no se puede aplicar",
+    promotionFeeBlockedBody: "La cuota de {name} para {rank} ({style}) está pagada, pero la promoción no se puede aplicar: su grado o la escala de cinturones cambió desde la graduación. Cancela la cuota (lo pagado pasa a ser crédito) o vuelve a graduarlo.",
     forChild: "Para {name}: {body}",
     disputeStatus: {
       warning_needs_response: "consulta, requiere respuesta",

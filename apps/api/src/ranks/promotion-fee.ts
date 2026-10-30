@@ -27,13 +27,22 @@ export const UNSETTLED_STATUSES: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED'];
 
 type RequestState = Pick<
   PromotionFeeRequest,
-  'status' | 'promotionWaits' | 'promotionEventId' | 'toDecideAt' | 'toDecideResolvedAt' | 'expectedCurrentRungId' | 'toRungId'
+  'status' | 'promotionWaits' | 'promotionEventId' | 'toDecideAt' | 'toDecideResolvedAt' | 'expectedCurrentRungId' | 'toRungId' | 'promotionBlockedAt'
 >;
 
 /** The promotion waits for its fee ("Waiting for fee", Decision 300): not
- * applied, not "to decide", and the fee not yet declined, waived or cancelled. */
+ * applied, not "to decide", the fee not yet declined, waived or cancelled, and
+ * not paid with a promotion that can no longer apply (isPromotionBlocked). */
 export function isWaitingForFee(r: RequestState): boolean {
-  return r.promotionWaits && r.promotionEventId === null && r.toDecideAt === null && UNSETTLED_STATUSES.includes(r.status);
+  return r.promotionWaits && r.promotionEventId === null && r.toDecideAt === null && r.promotionBlockedAt === null && UNSETTLED_STATUSES.includes(r.status);
+}
+
+/** The fee is paid but its waiting promotion can no longer apply (the
+ * student's rank or the ladder changed since the grade), and the owner hasn't
+ * decided yet: cancel the fee, or grade the student again (Decision 414 item 1).
+ * It doesn't hold up grading: grading again is one of the owner's two choices. */
+export function isPromotionBlocked(r: RequestState): boolean {
+  return r.promotionBlockedAt !== null && r.status === 'ACCEPTED';
 }
 
 /** A planned promotion left for a coach to decide (Decision 307), still open. */
@@ -41,12 +50,16 @@ export function isOpenToDecide(r: RequestState): boolean {
   return r.toDecideAt !== null && r.toDecideResolvedAt === null;
 }
 
-export type FeeStatus = 'waiting' | 'declined' | 'toDecide';
+export type FeeStatus = 'blocked' | 'waiting' | 'declined' | 'toDecide';
 
 /**
  * What the Grading Board shows for one student in one style. Only requests
  * that still concern the student's current rung count, so an old request
  * doesn't stay on the card after the student has moved on:
+ * - blocked: the fee is paid but its promotion can no longer apply (Decision
+ *   414 item 1). Shown whatever the current rung: the rung having changed is
+ *   usually why it can't apply. Until the owner cancels the fee or the
+ *   student is graded again;
  * - waiting: the promotion waits for its fee (planned from the current rung);
  * - toDecide: a planned promotion from the current rung left for a coach;
  * - declined: the fee was declined — for a waiting promotion while the student
@@ -58,6 +71,8 @@ export type FeeStatus = 'waiting' | 'declined' | 'toDecide';
  */
 export function feeStatusFor<T extends RequestState>(requests: T[], currentStripeId: string | null): { status: FeeStatus; request: T } | null {
   const onCurrent = (r: T) => (r.promotionEventId === null ? r.expectedCurrentRungId === currentStripeId : r.toRungId === currentStripeId);
+  const blocked = requests.find(isPromotionBlocked);
+  if (blocked) return { status: 'blocked', request: blocked };
   const waiting = requests.find((r) => isWaitingForFee(r) && onCurrent(r));
   if (waiting) return { status: 'waiting', request: waiting };
   const toDecide = requests.find((r) => isOpenToDecide(r) && r.expectedCurrentRungId === currentStripeId);

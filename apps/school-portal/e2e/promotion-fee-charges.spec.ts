@@ -7,8 +7,10 @@ import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fi
  * item 5), the owner's side: an accepted fee's charge on the student's
  * Payments card ("Promotion fee", the style and grade, a link to grading, and
  * no Cancel: it is waived or cancelled from grading), the style's fee list in
- * grading with the invoice, and waiving the fee from grading, which cancels
- * the charge. The fee is accepted in the student app, so the request and its
+ * grading with the invoice, waiving the fee from grading, which cancels the
+ * charge, and a fee paid after the student's rank changed (its promotion
+ * can't apply, Decision 414 item 1): shown as such, grading not held up, and
+ * Cancel fee giving the money back as credit. The fee is accepted in the student app, so the request and its
  * charge are written straight to the database here; the rules are covered by
  * the API test (apps/api/test/promotion-fee-charges.e2e-spec.ts).
  */
@@ -116,6 +118,46 @@ test('a desk payment in full shows the fee Paid in grading', async ({ page }) =>
   await expect(fees).toContainText('Paid');
   await expect(fees).toContainText('Invoice #0000001 paid');
   expect((await db.promotionFeeRequest.findUniqueOrThrow({ where: { id: requestId } })).status).toBe('PAID');
+});
+
+test("paid after the student's rank changed: shown as Paid — promotion can't apply; Grade stays available, and Cancel fee gives the money back as credit", async ({
+  page,
+}) => {
+  // The rank changed after the grade (here: corrected straight to White 2), so the paid fee's promotion can't apply (Decision 414 item 1).
+  await db.studentRank.update({
+    where: { studentId_disciplineId: { studentId: s.student.id, disciplineId: s.disciplineId } },
+    data: { currentRankId: s.rung['White 2'].rankId, currentStripeId: s.rung['White 2'].id },
+  });
+  await page.goto(`/students/${s.student.id}`);
+  const row = page.getByRole('row', { name: /^#0000001 Promotion fee/ });
+  await row.getByRole('button', { name: 'Pay' }).click();
+  const pay = page.getByTestId('record-charge-payment-form');
+  await pay.getByRole('button', { name: 'Record payment' }).click();
+  await expect(pay).toHaveCount(0);
+  await expect(row).toContainText('Paid');
+  const request = await db.promotionFeeRequest.findUniqueOrThrow({ where: { id: requestId } });
+  expect(request.status).toBe('ACCEPTED');
+  expect(request.promotionBlockedAt).not.toBeNull();
+
+  await page.reload();
+  const box = page.getByRole('region', { name: 'Promotion fee', exact: true });
+  await expect(box).toContainText("Paid — promotion can't apply");
+  await expect(box).toContainText('the promotion can\'t apply: their rank or the belt ladder changed since the grade');
+  await expect(box.getByRole('button', { name: 'Waive fee' })).toHaveCount(0);
+  // Grading again is not held up.
+  const style = page.getByRole('region', { name: 'BJJ', exact: true });
+  await expect(style.getByRole('button', { name: 'Grade', exact: true })).toBeVisible();
+
+  await box.getByRole('button', { name: 'Cancel fee' }).click();
+  await expect(page.getByRole('region', { name: 'Promotion fee', exact: true })).toHaveCount(0);
+  // Nothing is left "to decide": no Promote window opens.
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(row).toContainText('Cancelled');
+  const charge = await db.charge.findUniqueOrThrow({ where: { id: chargeId } });
+  expect(charge.cancelledAt).not.toBeNull();
+  const after = await db.promotionFeeRequest.findUniqueOrThrow({ where: { id: requestId } });
+  expect(after.status).toBe('CANCELLED');
+  expect(after.toDecideAt).toBeNull();
 });
 
 test('waiving the fee in grading cancels its charge', async ({ page }) => {

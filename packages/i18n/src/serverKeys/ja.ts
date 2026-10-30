@@ -258,6 +258,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name}さんの{rank}（{style}）への昇級があなたの判断を待っています。昇級させるか、見送るかを決めてください。",
     promotionFeeBody: "{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",
     childPromotionFeeBody: "{name}さんの{rank}（{style}）への昇級には{amount}の料金がかかります。アプリを開いて承認または辞退してください。",
+    promotionFeeBlockedTitle: "昇級を適用できません",
+    promotionFeeBlockedBody: "{name}さんの{rank}（{style}）の昇級料は支払い済みですが、昇級を適用できません。昇級後に段位または帯の順序が変わりました。昇級料をキャンセルする（支払われた金額はクレジットになります）か、もう一度昇級させてください。",
     forChild: "{name}さんについて：{body}",
     disputeStatus: {
       warning_needs_response: "問い合わせ・要回答",

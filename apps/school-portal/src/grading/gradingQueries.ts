@@ -460,14 +460,19 @@ export function useStudentFeeRequests(studentId: string | null, schoolId: string
 }
 
 /** The fee tag for one style, the board's rule (apps/api promotion-fee.ts
- * feeStatusFor): only a request that still concerns the current rung counts.
- * Waiting first, then "to decide", then declined. */
+ * feeStatusFor): a paid fee whose promotion can't apply first, whatever the
+ * current rung (Decision 414 item 1); otherwise only a request that still
+ * concerns the current rung counts. Then waiting, "to decide", declined. */
 export function feeStatusOf(
   requests: StudentFeeRequest[],
   currentStripeId: string | null | undefined,
-): { status: 'waiting' | 'declined' | 'toDecide'; request: StudentFeeRequest } | null {
+): { status: 'blocked' | 'waiting' | 'declined' | 'toDecide'; request: StudentFeeRequest } | null {
+  const blocked = requests.find((r) => r.promotionBlocked);
+  if (blocked) return { status: 'blocked', request: blocked };
   const onCurrent = (r: StudentFeeRequest) => (r.promotionApplied ? r.toRungId === currentStripeId : r.expectedCurrentRungId === currentStripeId);
-  const waiting = requests.find((r) => r.promotionWaits && !r.promotionApplied && !r.toDecide && (r.status === 'PENDING' || r.status === 'ACCEPTED') && onCurrent(r));
+  const waiting = requests.find(
+    (r) => r.promotionWaits && !r.promotionApplied && !r.toDecide && !r.promotionBlockedAt && (r.status === 'PENDING' || r.status === 'ACCEPTED') && onCurrent(r),
+  );
   if (waiting) return { status: 'waiting', request: waiting };
   const toDecide = requests.find((r) => r.toDecide && r.expectedCurrentRungId === currentStripeId);
   if (toDecide) return { status: 'toDecide', request: toDecide };

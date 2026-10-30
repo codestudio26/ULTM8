@@ -1769,6 +1769,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         cancel: "심사비 취소",
         promoteTo: "{rank}(으)로 승급",
         dontPromote: "승급하지 않음",
+        blocked: "결제됨 — 승급 적용 불가",
+        blockedText: "{name}님의 {rank} 심사비는 결제되었지만 승급을 적용할 수 없습니다. 심사 이후 등급이나 띠 순서가 바뀌었습니다. 심사비를 취소해 결제된 금액을 크레딧으로 돌려주거나, {name}님을 다시 승급하세요. 이 경우 심사비가 취소되고 결제된 금액은 크레딧으로 새 승급에 반영됩니다.",
         priceFor: "{rank} 승급 심사비: {amount}",
       },
       decide: {

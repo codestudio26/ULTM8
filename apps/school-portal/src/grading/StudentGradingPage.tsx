@@ -431,6 +431,8 @@ function DisciplineGradingCard({
   const rungName = (rungId: string | null | undefined) => ladder.find((r) => r.id === rungId)?.name ?? t('grading.student.unknownRank');
   const fee = studentRank ? feeStatusOf(feeRequests, studentRank.currentStripeId) : null;
   // A promotion waiting for its fee is not graded again until it settles (Decision 300).
+  // A paid fee whose promotion can't apply doesn't hold grading up: grading again
+  // is one of the owner's two choices (Decision 414 item 1).
   const waiting = fee?.status === 'waiting';
 
   return (
@@ -810,8 +812,9 @@ function HoursTrained({ hours }: { hours: Hours }) {
   );
 }
 
-function FeeBadge({ status }: { status: 'waiting' | 'declined' | 'toDecide' }) {
+function FeeBadge({ status }: { status: 'blocked' | 'waiting' | 'declined' | 'toDecide' }) {
   const t = useT();
+  if (status === 'blocked') return <Badge variant="danger">{t('grading.board.fee.blocked')}</Badge>;
   if (status === 'waiting') return <Badge variant="warning">{t('grading.board.fee.waiting')}</Badge>;
   if (status === 'declined') return <Badge variant="danger">{t('grading.board.fee.declined')}</Badge>;
   return <Badge variant="info">{t('grading.board.fee.toDecide')}</Badge>;
@@ -819,7 +822,9 @@ function FeeBadge({ status }: { status: 'waiting' | 'declined' | 'toDecide' }) {
 
 /** The promotion fee box (Decisions 300, 307, 313), as on the board's
  * panel: the owner waives or cancels; after a cancel (or waiving a declined
- * fee) a coach decides, and nothing promotes on its own. */
+ * fee) a coach decides, and nothing promotes on its own. A paid fee whose
+ * promotion can't apply (Decision 414 item 1): the owner cancels it (what was
+ * paid becomes credit) or grades again with the card's normal Grade button. */
 function FeeBox({
   fee,
   firstName,
@@ -848,8 +853,9 @@ function FeeBox({
   async function closeFee(action: 'waive' | 'cancel') {
     const mutation = action === 'waive' ? waive : cancel;
     await mutation.mutateAsync(request.id);
-    // Waiving a waiting promotion applies it; anything else leaves it to a coach.
-    if (!(action === 'waive' && status === 'waiting')) onDecide();
+    // Waiving a waiting promotion applies it; a cancelled fee whose promotion
+    // couldn't apply goes to no coach; anything else leaves it to a coach.
+    if (!(action === 'waive' && status === 'waiting') && status !== 'blocked') onDecide();
   }
 
   return (
@@ -859,7 +865,7 @@ function FeeBox({
         marginTop: 16,
         padding: 12,
         borderRadius: 10,
-        background: status === 'declined' ? 'var(--bg-danger)' : status === 'toDecide' ? '#e5ecf6' : 'var(--bg-warning)',
+        background: status === 'declined' || status === 'blocked' ? 'var(--bg-danger)' : status === 'toDecide' ? '#e5ecf6' : 'var(--bg-warning)',
       }}
     >
       <FeeBadge status={status} />
@@ -867,7 +873,9 @@ function FeeBox({
         {status === 'toDecide' ? t('grading.board.fee.noFeeFor', { rank: request.toRungName }) : t('grading.board.fee.amountFor', { amount, rank: request.toRungName })}
       </p>
       <p className="ultm8-field__hint" style={{ margin: 0 }}>
-        {status === 'waiting'
+        {status === 'blocked'
+          ? t('grading.board.fee.blockedText', { name: firstName, rank: request.toRungName })
+          : status === 'waiting'
           ? t('grading.board.fee.waitingText', { name: firstName, rank: request.toRungName })
           : status === 'declined'
             ? t('grading.board.fee.declinedText', { name: firstName, rank: request.toRungName })
@@ -877,9 +885,11 @@ function FeeBox({
       <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
         {status !== 'toDecide' && isOwner ? (
           <>
-            <Button variant="secondary" onClick={() => closeFee('waive')} loading={waive.isPending}>
-              {t('grading.board.fee.waive')}
-            </Button>
+            {status !== 'blocked' ? (
+              <Button variant="secondary" onClick={() => closeFee('waive')} loading={waive.isPending}>
+                {t('grading.board.fee.waive')}
+              </Button>
+            ) : null}
             <Button variant="secondary" onClick={() => closeFee('cancel')} loading={cancel.isPending}>
               {t('grading.board.fee.cancel')}
             </Button>

@@ -712,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Addebito ricorrente non trovato",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Questa è una quota di promozione. Il titolare della scuola la condona o la annulla dalla graduazione dell'allievo, e questo annulla questo addebito.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Questa scuola non ha ancora impostato la sua valuta, quindi la quota non può essere pagata. Chiedi alla scuola.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Questa quota è pagata, ma la promozione non può più essere applicata. Annulla la quota (quanto pagato diventa credito) oppure promuovi di nuovo l’allievo.",
 };
