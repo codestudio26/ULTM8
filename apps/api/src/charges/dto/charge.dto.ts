@@ -66,6 +66,11 @@ export class CreateChargeDto {
   @Matches(DAY, { message: 'dueDate must be a date like 2026-11-15.' })
   @IsISO8601({ strict: true }, { message: 'dueDate must be a date like 2026-11-15.' })
   dueDate!: string;
+
+  @ApiPropertyOptional({ default: false, description: "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): no tax on this charge, so the price ex. tax and inc. tax are both the price after any discount. Off by default: the School's tax settings apply." })
+  @IsOptional()
+  @IsBoolean()
+  taxExempt?: boolean;
 }
 
 /** POST /schools/{schoolId}/charges/{chargeId}/cancel (Decision 338 item 1). */
@@ -151,6 +156,9 @@ export class ChargeResponseDto {
 
   @ApiProperty()
   taxInclusive!: boolean;
+
+  @ApiProperty({ description: '"No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax".' })
+  taxExempt!: boolean;
 
   @ApiProperty({ description: 'The price excluding tax.' })
   netAmount!: number;

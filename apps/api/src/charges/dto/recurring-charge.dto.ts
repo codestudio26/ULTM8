@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsIn, IsInt, IsISO8601, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 import { MAX_CHARGE_MINOR } from '../charge-maths';
 import { MAX_RECURRING_OCCURRENCES, RECURRING_FREQUENCIES, type RecurringFrequency } from '../recurring-schedule';
 
@@ -59,6 +59,11 @@ export class CreateRecurringChargeDto {
   @Min(1)
   @Max(MAX_RECURRING_OCCURRENCES)
   maxOccurrences?: number | null;
+
+  @ApiPropertyOptional({ default: false, description: '"No tax on this item (0% or exempt)" (Decision 414 item 5): every charge of the series is made with no tax. Off by default.' })
+  @IsOptional()
+  @IsBoolean()
+  taxExempt?: boolean;
 }
 
 export class RecurringChargeEstimateDto {
@@ -71,7 +76,7 @@ export class RecurringChargeEstimateDto {
   @ApiProperty({ description: 'Price inc. tax of each charge at the School tax rate today.' })
   grossAmount!: number;
 
-  @ApiProperty({ description: 'The School tax rate today, hundredths of a percent.' })
+  @ApiProperty({ description: 'The School tax rate today, hundredths of a percent; 0 for a series with no tax.' })
   taxRateBasisPoints!: number;
 }
 
@@ -99,6 +104,9 @@ export class RecurringChargeResponseDto {
 
   @ApiProperty()
   currency!: string;
+
+  @ApiProperty({ description: '"No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax.' })
+  taxExempt!: boolean;
 
   @ApiProperty({ enum: RECURRING_FREQUENCIES, enumName: 'RecurringChargeFrequency' })
   frequency!: RecurringFrequency;
