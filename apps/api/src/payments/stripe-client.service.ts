@@ -1,5 +1,31 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import Stripe from 'stripe';
+
+const STRIPE_API_HOST = 'api.stripe.com';
+
+/**
+ * The agent Stripe's requests go through when the process runs behind an HTTPS
+ * proxy: `HTTPS_PROXY` (or `https_proxy`) is set and `NO_PROXY` doesn't cover
+ * api.stripe.com. The SDK sends through its own agent and never reads the proxy
+ * variables itself, so without this it tries api.stripe.com directly, which a
+ * proxied network blocks. Undefined (the SDK's own agent, as before) when no
+ * proxy is set.
+ */
+export function stripeProxyAgent(env: NodeJS.ProcessEnv = process.env): HttpsProxyAgent<string> | undefined {
+  const proxy = env.HTTPS_PROXY || env.https_proxy;
+  if (!proxy) return undefined;
+  const noProxy = (env.NO_PROXY || env.no_proxy || '')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+  const bypassed = noProxy.some((entry) => {
+    if (entry === '*') return true;
+    const domain = entry.replace(/^\*?\./, '');
+    return STRIPE_API_HOST === domain || STRIPE_API_HOST.endsWith(`.${domain}`);
+  });
+  return bypassed ? undefined : new HttpsProxyAgent(proxy);
+}
 
 /**
  * Thin wrapper around the official `stripe` SDK — Spec 55 §10.2 ("PaymentsModule
@@ -26,6 +52,7 @@ import Stripe from 'stripe';
 export class StripeClientService {
   private readonly logger = new Logger(StripeClientService.name);
   private readonly client: Stripe | null;
+  private readonly httpAgent = stripeProxyAgent();
 
   constructor() {
     const secretKey = process.env.STRIPE_SECRET_KEY;
@@ -34,7 +61,13 @@ export class StripeClientService {
       this.client = null;
       return;
     }
-    this.client = new Stripe(secretKey);
+    this.client = new Stripe(secretKey, this.options());
+  }
+
+  /** The SDK options every client here is built with, plus the proxy agent when
+   * there is one (stripeProxyAgent). */
+  private options(extra: Stripe.StripeConfig = {}): Stripe.StripeConfig {
+    return this.httpAgent ? { ...extra, httpAgent: this.httpAgent } : extra;
   }
 
   /** ULTM8's own platform-level client — Connect account/Account Link creation only
@@ -79,7 +112,7 @@ export class StripeClientService {
    */
   scopedClient(connectedAccountId: string): Stripe {
     this.assertConfigured();
-    return new Stripe(process.env.STRIPE_SECRET_KEY!, { stripeAccount: connectedAccountId });
+    return new Stripe(process.env.STRIPE_SECRET_KEY!, this.options({ stripeAccount: connectedAccountId }));
   }
 
   /** Verifies a webhook payload's signature — throws (Stripe's own
