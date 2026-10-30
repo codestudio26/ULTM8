@@ -209,10 +209,10 @@ test('Export CSV downloads every filtered row', async ({ page }) => {
   expect(file.suggestedFilename()).toMatch(/^transactions-\d{4}-\d{2}-\d{2}\.csv$/);
   const text = (await import('fs')).readFileSync((await file.path())!, 'utf8').replace(/^\uFEFF/, '');
   const lines = text.trim().split('\r\n');
-  expect(lines[0]).toBe('Date,Student,Plan,Type,Amount,Currency,Status,Method,Refunded,Disputed,Transaction ID');
+  expect(lines[0]).toBe('Date,Student,Plan,Type,Amount,Card surcharge,Currency,Status,Method,Refunded,Disputed,Transaction ID');
   expect(lines).toHaveLength(3);
-  expect(lines[1]).toContain('Sam Lee,10-Class Pack,Membership,150.00,GBP,Successful');
-  expect(lines[2]).toContain('Late-cancellation fee,5.00,GBP,Failed');
+  expect(lines[1]).toContain('Sam Lee,10-Class Pack,Membership,150.00,0.00,GBP,Successful');
+  expect(lines[2]).toContain('Late-cancellation fee,5.00,0.00,GBP,Failed');
 });
 
 test('Record a payment starts the membership and shows the row as taken at the desk', async ({ page }) => {

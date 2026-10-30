@@ -17799,6 +17799,172 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/card-surcharge": {
+      "get": {
+        "operationId": "CardSurchargeController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardSurchargeSettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "card-surcharge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CardSurchargeController_update",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCardSurchargeSettingsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardSurchargeSettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "card-surcharge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/card-surcharge-countries": {
+      "get": {
+        "operationId": "PlatformAdminCardSurchargeController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardSurchargeCountryListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-card-surcharge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PlatformAdminCardSurchargeController_add",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCardSurchargeCountryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardSurchargeCountryDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-card-surcharge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/card-surcharge-countries/{countryCode}": {
+      "delete": {
+        "operationId": "PlatformAdminCardSurchargeController_remove",
+        "parameters": [
+          {
+            "name": "countryCode",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "platform-admin-card-surcharge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -26570,6 +26736,10 @@
           "amount": {
             "type": "number"
           },
+          "surchargeAmount": {
+            "type": "number",
+            "description": "Card surcharge paid on top of amount, in the same minor units. 0 when none."
+          },
           "currency": {
             "type": "string",
             "nullable": true
@@ -26605,6 +26775,7 @@
           "kind",
           "billingDate",
           "amount",
+          "surchargeAmount",
           "status",
           "paymentMethod",
           "createdAt",
@@ -31127,6 +31298,10 @@
           },
           "visible": {
             "type": "boolean"
+          },
+          "cardSurchargeAmount": {
+            "type": "number",
+            "description": "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Subscription or a Friend Pass)."
           }
         },
         "required": [
@@ -31135,7 +31310,8 @@
           "type",
           "title",
           "price",
-          "visible"
+          "visible",
+          "cardSurchargeAmount"
         ]
       },
       "AcademyClassDto": {
@@ -34352,6 +34528,106 @@
         },
         "required": [
           "canStartOpenMat"
+        ]
+      },
+      "CardSurchargeSettingsDto": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "Whether the School's country is on the allow-list. When false the setting is hidden and can't be changed, and no surcharge is charged."
+          },
+          "country": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School's country (its address), ISO 3166-1 alpha-2."
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "bps": {
+            "type": "number",
+            "description": "Basis points: 250 = 2.5%. At most 300. Kept while off."
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the owner last confirmed surcharges are legal where the School operates."
+          },
+          "applies": {
+            "type": "boolean",
+            "description": "Whether card payments are surcharged right now: on, the country allowed, and the School takes card payments."
+          }
+        },
+        "required": [
+          "available",
+          "enabled",
+          "bps",
+          "applies"
+        ]
+      },
+      "UpdateCardSurchargeSettingsDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "bps": {
+            "type": "number",
+            "description": "Basis points: 250 = 2.5%, 1 to 300 when enabled."
+          },
+          "legalConfirmed": {
+            "type": "boolean",
+            "description": "\"I confirm surcharges are legal where my School operates.\" Required (true) to switch it on or save it while on."
+          }
+        },
+        "required": [
+          "enabled",
+          "bps"
+        ]
+      },
+      "CardSurchargeCountryDto": {
+        "type": "object",
+        "properties": {
+          "countryCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2, in capitals."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "countryCode",
+          "createdAt"
+        ]
+      },
+      "CardSurchargeCountryListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CardSurchargeCountryDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AddCardSurchargeCountryDto": {
+        "type": "object",
+        "properties": {
+          "countryCode": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code, e.g. \"US\". Add a country only after legal review."
+          }
+        },
+        "required": [
+          "countryCode"
         ]
       }
     }

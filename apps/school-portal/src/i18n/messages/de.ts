@@ -278,6 +278,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   schools: {
+    cardSurcharge: {
+      title: "Kartenzuschlag",
+      subtitle: "Füge einen Zuschlag zu dem hinzu, was Mitglieder in der App per Karte zahlen, um die Kartengebühren zu decken. Sie sehen ihn vor dem Bezahlen und als eigene Zeile auf der Quittung. Er wird nie auf Bar- oder Überweisungszahlungen oder auf Abos aufgeschlagen.",
+      enabled: "Kartenzuschlag hinzufügen",
+      percent: "Zuschlag (%)",
+      percentHint: "Bis zu 3 %, z. B. 2,5.",
+      legalConfirm: "Ich bestätige, dass Zuschläge dort, wo meine Schule tätig ist, erlaubt sind",
+      invalidPercent: "Gib einen Zuschlag über 0 % und bis zu 3 % mit höchstens zwei Nachkommastellen ein.",
+      confirmRequired: "Setze das Häkchen, um zu bestätigen, dass Zuschläge dort, wo deine Schule tätig ist, erlaubt sind.",
+      notApplying: "Er wird noch nicht berechnet: Deine Schule nimmt keine Kartenzahlungen an.",
+    },
     heardFrom: {
       title: "Wie hast du von uns erfahren?",
       subtitle: "Die Antworten im Anmeldeformular am Empfang. Solange du sie nicht änderst, erscheint die Startliste in der Sprache der jeweiligen Person.",
@@ -540,6 +551,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "Kartenzuschlag",
+    surchargeLine: "+ {amount} Kartenzuschlag",
     title: "Transaktionen",
     subtitle: "Alle abgeschlossenen oder versuchten Zahlungen für die Mitgliedschaftstarife deiner Schule.",
     loadFailed: "Transaktionen konnten nicht geladen werden.",

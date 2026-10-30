@@ -5924,6 +5924,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/card-surcharge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CardSurchargeController_get"];
+        put: operations["CardSurchargeController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/card-surcharge-countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminCardSurchargeController_list"];
+        put?: never;
+        post: operations["PlatformAdminCardSurchargeController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/card-surcharge-countries/{countryCode}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["PlatformAdminCardSurchargeController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -8601,6 +8649,8 @@ export interface components {
             membershipId?: string | null;
             billingDate: string;
             amount: number;
+            /** @description Card surcharge paid on top of amount, in the same minor units. 0 when none. */
+            surchargeAmount: number;
             currency?: string | null;
             status: string;
             paymentMethod: string;
@@ -10045,6 +10095,8 @@ export interface components {
             expiryDurationDays?: number | null;
             classesIncluded?: number | null;
             visible: boolean;
+            /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Subscription or a Friend Pass). */
+            cardSurchargeAmount: number;
         };
         AcademyClassDto: {
             id: string;
@@ -10989,6 +11041,42 @@ export interface components {
         };
         SetOpenMatPermissionDto: {
             canStartOpenMat: boolean;
+        };
+        CardSurchargeSettingsDto: {
+            /** @description Whether the School's country is on the allow-list. When false the setting is hidden and can't be changed, and no surcharge is charged. */
+            available: boolean;
+            /** @description The School's country (its address), ISO 3166-1 alpha-2. */
+            country?: string | null;
+            enabled: boolean;
+            /** @description Basis points: 250 = 2.5%. At most 300. Kept while off. */
+            bps: number;
+            /**
+             * Format: date-time
+             * @description When the owner last confirmed surcharges are legal where the School operates.
+             */
+            confirmedAt?: string | null;
+            /** @description Whether card payments are surcharged right now: on, the country allowed, and the School takes card payments. */
+            applies: boolean;
+        };
+        UpdateCardSurchargeSettingsDto: {
+            enabled: boolean;
+            /** @description Basis points: 250 = 2.5%, 1 to 300 when enabled. */
+            bps: number;
+            /** @description "I confirm surcharges are legal where my School operates." Required (true) to switch it on or save it while on. */
+            legalConfirmed?: boolean;
+        };
+        CardSurchargeCountryDto: {
+            /** @description ISO 3166-1 alpha-2, in capitals. */
+            countryCode: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CardSurchargeCountryListDto: {
+            items: components["schemas"]["CardSurchargeCountryDto"][];
+        };
+        AddCardSurchargeCountryDto: {
+            /** @description ISO 3166-1 alpha-2 country code, e.g. "US". Add a country only after legal review. */
+            countryCode: string;
         };
     };
     responses: never;
@@ -20892,6 +20980,113 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OpenMatPermissionDto"];
                 };
+            };
+        };
+    };
+    CardSurchargeController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardSurchargeSettingsDto"];
+                };
+            };
+        };
+    };
+    CardSurchargeController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCardSurchargeSettingsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardSurchargeSettingsDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminCardSurchargeController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardSurchargeCountryListDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminCardSurchargeController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCardSurchargeCountryDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardSurchargeCountryDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminCardSurchargeController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                countryCode: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

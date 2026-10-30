@@ -8,6 +8,7 @@ import { FranchiseLookupPage } from './franchises/FranchiseLookupPage';
 import { ImpersonationPage } from './impersonation/ImpersonationPage';
 import { TranslationsPage } from './translations/TranslationsPage';
 import { SubscriptionPlansPage } from './subscriptionPlans/SubscriptionPlansPage';
+import { CardSurchargePage } from './cardSurcharge/CardSurchargePage';
 import { Shell } from './layout/Shell';
 
 export function App() {
@@ -74,6 +75,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <SubscriptionPlansPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/card-surcharge"
+        element={
+          <RequireAuth>
+            <Shell>
+              <CardSurchargePage />
             </Shell>
           </RequireAuth>
         }

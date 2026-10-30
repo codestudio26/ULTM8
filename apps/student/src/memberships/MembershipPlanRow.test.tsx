@@ -54,6 +54,18 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
     mocked(stepUpQueries.useVerifyStepUp).mockReturnValue(verifyStepUp);
   });
 
+  it('shows the card surcharge before paying (Decision 406)', async () => {
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
+    const { getByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 125 } as never} schoolId="school-1" />);
+    expect(getByText('+ £1.25 card surcharge when paying by card')).toBeTruthy();
+  });
+
+  it('shows no card surcharge line when there is none (Decision 406)', async () => {
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
+    const { queryByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" />);
+    expect(queryByText(/card surcharge/)).toBeNull();
+  });
+
   it('offers only "Purchase" when nothing is saved for this School', async () => {
     mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
 

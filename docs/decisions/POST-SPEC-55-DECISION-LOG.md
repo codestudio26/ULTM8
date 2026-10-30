@@ -7036,7 +7036,7 @@ User (Code), 29 Oct 2026: "ok" on Claude's recommendation for §3.22.
 
 ## Decision 408 — Staff page: activity log
 
-**Date:** 29 Oct 2026 · **Status:** Built · **Follows:** Decision 360, order of work (g) · **Migration:** `20270105000000_staff_activity`
+**Date:** 29 Oct 2026 · **Status:** Built · **Follows:** Decision 360, order of work (g) · **Migration:** `20270110000000_staff_activity`
 
 The Staff build plan's last item was an activity log of staff changes. The product owner chose the suggested defaults on 29 Oct 2026 ("Yes, use these defaults").
 

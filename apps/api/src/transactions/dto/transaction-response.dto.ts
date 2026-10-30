@@ -75,6 +75,11 @@ export class TransactionResponseDto {
   @ApiProperty()
   amount!: number;
 
+  /** Decision 406: the card surcharge paid on top of `amount`, same minor
+   * units; 0 when none. Shown as its own line on the receipt. */
+  @ApiProperty({ description: 'Card surcharge paid on top of amount, in the same minor units. 0 when none.' })
+  surchargeAmount!: number;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   currency!: string | null;
 

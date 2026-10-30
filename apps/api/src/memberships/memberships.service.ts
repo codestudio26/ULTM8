@@ -31,6 +31,7 @@ import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { VISIT_PASS_TITLE } from './visitors';
+import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -892,8 +893,17 @@ export class MembershipsService {
       // instead of collecting a fresh one, gated by a fresh step-up proof.
       // SUBSCRIPTION already took its own branch above and never reaches
       // here; CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only.
+      // Decision 406: the card surcharge, on top of the plan's price for the
+      // one-off card payments below (never a Subscription, which took its own
+      // branch above, nor cash or a bank transfer). The member saw the same
+      // amount on the plan before paying (AcademiesService).
+      const surcharge = planCardSurcharge(
+        plan,
+        await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, plan.schoolId)),
+      );
+
       if (dto?.payWithSavedCard) {
-        return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, stepUpToken);
+        return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, surcharge, stepUpToken);
       }
 
       // Decision 243 (Track B Slice 4b) — hosted Stripe Checkout, the fresh-
@@ -901,7 +911,7 @@ export class MembershipsService {
       // took its own branch above and never reaches here; CLASS_PACK/
       // WEEKLY_PASS/TRIAL_MEMBERSHIP only, same scope as payWithSavedCard.
       if (dto?.useHostedCheckout) {
-        return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency);
+        return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency, surcharge);
       }
 
       const { paymentIntentId, clientSecret } = await this.paymentsService.charge(
@@ -910,7 +920,8 @@ export class MembershipsService {
         plan.price,
         currency,
         plan.title,
-        stripePurchaseKey(studentId, plan.id, 'card', [plan.price, currency, plan.title]),
+        stripePurchaseKey(studentId, plan.id, 'card', [plan.price, currency, plan.title, surcharge]),
+        surcharge,
       );
       const orderId = await this.createStripeOrder(studentId, paymentIntentId, transactionId, (tx) =>
         tx.transaction.create({
@@ -921,6 +932,7 @@ export class MembershipsService {
             paymentAccountId: paymentAccount.id,
             membershipPlanId: plan.id,
             amount: plan.price,
+            surchargeAmount: surcharge,
             currency: currency.toUpperCase(),
             status: 'PENDING',
             paymentMethod: 'STRIPE',
@@ -987,13 +999,15 @@ export class MembershipsService {
     plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null; price: number; title: string },
     paymentAccountId: string,
     currency: string,
+    surcharge: number,
     stepUpToken?: string,
   ) {
     this.stepUpService.assertVerified(callerId, stepUpToken);
 
     let chargeResult: { succeeded: boolean; paymentIntentId: string };
     try {
-      chargeResult = await this.paymentsService.chargeOffSession(studentId, plan.schoolId, plan.price, currency, plan.title);
+      // Decision 406: the saved card is charged the price plus the surcharge.
+      chargeResult = await this.paymentsService.chargeOffSession(studentId, plan.schoolId, plan.price + surcharge, currency, plan.title);
     } catch (err) {
       if (err instanceof NoSavedPaymentMethodError) {
         throw new BadRequestException('You have no saved payment method at this School — add a card first, or pay with a new card.');
@@ -1018,6 +1032,7 @@ export class MembershipsService {
             paymentAccountId,
             membershipPlanId: plan.id,
             amount: plan.price,
+            surchargeAmount: surcharge,
             currency: currency.toUpperCase(),
             status: 'FAILED',
             paymentMethod: 'STRIPE',
@@ -1037,6 +1052,7 @@ export class MembershipsService {
           paymentAccountId,
           membershipPlanId: plan.id,
           amount: plan.price,
+          surchargeAmount: surcharge,
           currency: currency.toUpperCase(),
           status: 'SUCCESSFUL',
           paymentMethod: 'STRIPE',
@@ -1100,6 +1116,7 @@ export class MembershipsService {
     plan: { id: string; schoolId: string; price: number; title: string },
     paymentAccountId: string,
     currency: string,
+    surcharge: number,
   ) {
     const { checkoutUrl, paymentIntentId } = await this.paymentsService.createPurchaseCheckoutSession(
       studentId,
@@ -1107,7 +1124,8 @@ export class MembershipsService {
       plan.price,
       currency,
       plan.title,
-      stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title]),
+      stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title, surcharge]),
+      surcharge,
     );
     const newId = randomUUID();
     const transactionId = await this.createStripeOrder(studentId, paymentIntentId, newId, (tx) =>
@@ -1119,6 +1137,7 @@ export class MembershipsService {
           paymentAccountId,
           membershipPlanId: plan.id,
           amount: plan.price,
+          surchargeAmount: surcharge,
           currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: 'STRIPE',

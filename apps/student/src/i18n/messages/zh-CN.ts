@@ -747,6 +747,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelledEnds: "已取消，{date} 结束",
     },
     planRow: {
+      cardSurcharge: "刷卡支付另加 {amount} 附加费",
       classesIncluded: { other: "{count} 节课" },
       durationDays: { other: "{count} 天" },
       purchaseError: "无法完成此次购买，请重试。",
@@ -858,6 +859,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "无法加载你的付款记录，请重试。",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} 刷卡附加费",
       loading: "加载中…",
       viewReceipt: "查看收据",
       noReceipt: "此笔付款没有可用的收据。",

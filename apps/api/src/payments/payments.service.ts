@@ -16,6 +16,11 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 
+/** Decision 406: the name of the card-surcharge line on a hosted Checkout
+ * page and its Stripe receipt, beside the plan's own title (also untranslated,
+ * as Stripe shows our line names as given). */
+export const CARD_SURCHARGE_LINE_NAME = 'Card surcharge';
+
 /** Thrown by PaymentsService.chargeOffSession() when the Student has no saved
  * payment method (or their Customer has no default one set) at this School —
  * a real precondition failure, distinct from a Stripe-side decline/error.
@@ -451,16 +456,21 @@ export class PaymentsService {
     currency: string,
     description: string,
     idempotencyKey?: string,
+    // Decision 406: the card surcharge, charged on top of `amount` in the
+    // same minor units (0 = none). Kept in metadata too, since a bare
+    // PaymentIntent has no separate lines.
+    surchargeAmount = 0,
   ): Promise<{ paymentIntentId: string; clientSecret: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const intent = await withIdempotencyRetry(() =>
       stripe.paymentIntents.create(
         {
-          amount,
+          amount: amount + surchargeAmount,
           currency: currency.toLowerCase(),
           description,
           automatic_payment_methods: { enabled: true },
+          ...(surchargeAmount > 0 ? { metadata: { surchargeAmount: String(surchargeAmount) } } : {}),
         },
         idempotencyKey ? { idempotencyKey } : undefined,
       ),
@@ -816,6 +826,9 @@ export class PaymentsService {
     currency: string,
     description: string,
     idempotencyKey?: string,
+    // Decision 406: the card surcharge, its own line on the hosted page and
+    // on Stripe's receipt (0 = none).
+    surchargeAmount = 0,
   ): Promise<{ checkoutUrl: string; paymentIntentId: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
@@ -837,7 +850,11 @@ export class PaymentsService {
           },
           quantity: 1,
         },
+        ...(surchargeAmount > 0
+          ? [{ price_data: { currency: currency.toLowerCase(), unit_amount: surchargeAmount, product_data: { name: CARD_SURCHARGE_LINE_NAME } }, quantity: 1 }]
+          : []),
       ],
+      ...(surchargeAmount > 0 ? { payment_intent_data: { metadata: { surchargeAmount: String(surchargeAmount) } } } : {}),
       success_url: 'ultm8-student://membership-purchase/complete',
       cancel_url: 'ultm8-student://membership-purchase/cancel',
       expand: ['payment_intent'],

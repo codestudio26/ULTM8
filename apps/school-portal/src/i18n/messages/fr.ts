@@ -278,6 +278,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   schools: {
+    cardSurcharge: {
+      title: "Frais de carte",
+      subtitle: "Ajoutez des frais au montant que les membres paient par carte dans l'app, pour couvrir les frais de carte. Ils les voient avant de payer, sur une ligne à part du reçu. Ils ne s'ajoutent jamais aux paiements en espèces ou par virement, ni aux abonnements.",
+      enabled: "Ajouter des frais de carte",
+      percent: "Frais (%)",
+      percentHint: "Jusqu'à 3 %, par ex. 2,5.",
+      legalConfirm: "Je confirme que ces frais sont légaux là où mon école exerce",
+      invalidPercent: "Indiquez des frais supérieurs à 0 % et jusqu'à 3 %, avec deux décimales au plus.",
+      confirmRequired: "Cochez la case pour confirmer que ces frais sont légaux là où votre école exerce.",
+      notApplying: "Ils ne sont pas encore ajoutés : votre école n'accepte pas les paiements par carte.",
+    },
     heardFrom: {
       title: "Comment nous avez-vous connus ?",
       subtitle: "Les choix du formulaire d'inscription à l'accueil. Tant que vous ne les modifiez pas, la liste de départ s'affiche dans la langue de chaque personne.",
@@ -540,6 +551,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "Frais de carte",
+    surchargeLine: "+ {amount} de frais de carte",
     title: "Transactions",
     subtitle: "Tous les paiements effectués ou tentés sur les formules d’adhésion de votre école.",
     loadFailed: "Impossible de charger les transactions.",

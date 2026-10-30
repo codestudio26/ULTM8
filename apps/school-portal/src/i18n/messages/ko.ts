@@ -275,6 +275,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   schools: {
+    cardSurcharge: {
+      title: "카드 수수료",
+      subtitle: "앱에서 회원이 카드로 결제하는 금액에 수수료를 더해 카드 수수료를 충당합니다. 회원은 결제 전에 확인할 수 있고 영수증에도 별도 항목으로 표시됩니다. 현금·계좌이체 결제나 구독에는 절대 추가되지 않습니다.",
+      enabled: "카드 수수료 추가",
+      percent: "수수료(%)",
+      percentHint: "최대 3%, 예: 2.5.",
+      legalConfirm: "학교가 운영되는 곳에서 수수료 부과가 합법임을 확인합니다",
+      invalidPercent: "0%보다 크고 최대 3%, 소수점 둘째 자리까지 입력하세요.",
+      confirmRequired: "학교가 운영되는 곳에서 수수료 부과가 합법임을 확인하려면 상자를 선택하세요.",
+      notApplying: "아직 추가되지 않습니다: 학교가 카드 결제를 받지 않습니다.",
+    },
     heardFrom: {
       title: "저희를 어떻게 알게 되셨나요?",
       subtitle: "프런트 데스크 가입 신청서의 선택지입니다. 바꾸기 전까지는 기본 목록이 각자의 언어로 표시됩니다.",
@@ -537,6 +548,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "카드 수수료",
+    surchargeLine: "+ 카드 수수료 {amount}",
     title: "거래 내역",
     subtitle: "도장 회원권 플랜에 대해 완료되었거나 시도된 모든 결제입니다.",
     loadFailed: "거래 내역을 불러올 수 없습니다.",

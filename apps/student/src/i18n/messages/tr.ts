@@ -754,6 +754,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelledEnds: "İptal edildi, {date} tarihinde bitiyor",
     },
     planRow: {
+      cardSurcharge: "Kartla ödemede + {amount} ek ücret",
       classesIncluded: { one: "{count} ders", other: "{count} ders" },
       durationDays: { one: "{count} gün", other: "{count} gün" },
       purchaseError: "Bu satın alma tamamlanamadı — lütfen tekrar deneyin.",
@@ -866,6 +867,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Ödeme geçmişiniz yüklenemedi — lütfen tekrar deneyin.",
     },
     row: {
+      surchargeLine: "{price} + {surcharge} kart ek ücreti",
       loading: "Yükleniyor…",
       viewReceipt: "Makbuzu gör",
       noReceipt: "Bu ödeme için makbuz yok.",
