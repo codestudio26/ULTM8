@@ -691,4 +691,11 @@ export const SERVER_PATTERNS: string[] = [
  "Give a reason for cancelling this charge.",
  "Only the student, or their Guardian, can see their charges.",
  "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.",
+ // Paying charges in the app (backlog 3.6 step 2).
+ "This School doesn't take card payments in the app. Pay at the front desk.",
+ "This account can only pay by cash or bank transfer. Pay at the front desk.",
+ "You owe in more than one currency. Choose which one to pay.",
+ "There is nothing to pay.",
+ "Only the member can set automatic payment, with their own saved card.",
+ "Save a card for this School first.",
 ];

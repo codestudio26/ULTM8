@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "โปรดระบุเหตุผลในการยกเลิกรายการเรียกเก็บนี้",
   "Only the student, or their Guardian, can see their charges.": "เฉพาะนักเรียนหรือผู้ปกครองเท่านั้นที่ดูรายการเรียกเก็บได้",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "\"สร้างรายการเรียกเก็บได้\" และ \"ยกเลิกรายการเรียกเก็บได้\" ใช้กับเจ้าหน้าที่สาขาและโค้ชของโรงเรียนนี้",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "โรงเรียนนี้ไม่รับชำระด้วยบัตรในแอป โปรดชำระที่เคาน์เตอร์",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "บัญชีนี้ชำระได้เฉพาะเงินสดหรือโอนเงินผ่านธนาคาร โปรดชำระที่เคาน์เตอร์",
+  "You owe in more than one currency. Choose which one to pay.": "คุณมียอดค้างชำระมากกว่าหนึ่งสกุลเงิน เลือกสกุลเงินที่จะชำระ",
+  "There is nothing to pay.": "ไม่มียอดที่ต้องชำระ",
+  "Only the member can set automatic payment, with their own saved card.": "เฉพาะสมาชิกเท่านั้นที่ตั้งค่าการชำระอัตโนมัติด้วยบัตรที่บันทึกไว้ของตนเองได้",
+  "Save a card for this School first.": "บันทึกบัตรสำหรับโรงเรียนนี้ก่อน",
 };

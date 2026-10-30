@@ -964,6 +964,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "抵扣：{invoices}",
     toCredit: "{amount} 已计入你的余额，作为预存款",
     payAtDesk: "如需付款，请到学校前台咨询。",
+    receiptSurcharge: "含刷卡附加费 {amount}",
+    pay: {
+      balance: "支付余额（{amount}）",
+      charge: "支付 {amount}",
+      surcharge: "含刷卡附加费 {amount}",
+      failed: "无法发起付款，请重试。",
+      submitted: "付款已提交。刷卡付款确认后会显示在这里。",
+      restricted: "此账户只能用现金或银行转账付款。请到前台付款。",
+      processing: "{amount} 的刷卡付款处理中（{date}）",
+      autoFailed: "{date} 的 {amount} 自动付款失败。请在 App 中或到前台付款。",
+    },
+    autoPay: {
+      label: "用我保存的卡自动支付费用",
+      onHint: "每个到期日都会从你保存的卡中扣款。",
+      offHint: "你自己支付每笔费用，在这里或到前台。",
+      noCard: "在“付款方式”中保存一张卡，即可自动支付费用。",
+      failed: "无法更改自动付款，请重试。",
+    },
     status: {
       OPEN: "未付",
       PART_PAID: "部分已付",
@@ -975,6 +993,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "银行转账",
       CARD_TERMINAL: "前台刷卡",
+      app: "App 内刷卡",
+      automatic: "自动刷卡付款",
     },
     transactions: {
       item: "付款：{invoice} {description}",

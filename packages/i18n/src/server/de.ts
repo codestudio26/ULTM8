@@ -681,4 +681,10 @@ export const serverMessages: Record<string, string> = {
   "Give a reason for cancelling this charge.": "Gib einen Grund für die Stornierung dieser Gebühr an.",
   "Only the student, or their Guardian, can see their charges.": "Nur der Schüler oder sein Erziehungsberechtigter kann seine Gebühren sehen.",
   "\"Can create charges\" and \"Can cancel charges\" are for Branch Staff and coaches at this School.": "„Darf Gebühren anlegen“ und „Darf Gebühren stornieren“ gelten für Standortpersonal und Trainer dieser Schule.",
+  "This School doesn't take card payments in the app. Pay at the front desk.": "Diese Schule nimmt in der App keine Kartenzahlungen an. Bitte am Empfang bezahlen.",
+  "This account can only pay by cash or bank transfer. Pay at the front desk.": "Dieses Konto kann nur bar oder per Überweisung zahlen. Bitte am Empfang bezahlen.",
+  "You owe in more than one currency. Choose which one to pay.": "Du schuldest Beträge in mehr als einer Währung. Wähle, welche du bezahlen möchtest.",
+  "There is nothing to pay.": "Es gibt nichts zu bezahlen.",
+  "Only the member can set automatic payment, with their own saved card.": "Nur das Mitglied selbst kann die automatische Zahlung mit seiner eigenen gespeicherten Karte einstellen.",
+  "Save a card for this School first.": "Speichere zuerst eine Karte für diese Schule.",
 };

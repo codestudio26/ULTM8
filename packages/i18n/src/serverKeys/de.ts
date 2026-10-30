@@ -212,6 +212,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledCreditBody: "Deine Gebühr „{description}, {amount}“ wurde storniert. Nichts zu zahlen. Die bereits gezahlten {paid} sind jetzt Guthaben auf deinem Konto.",
     freezeBookingsCancelledTitle: "Buchungen storniert",
     freezeBookingsCancelledBody: "Deine Mitgliedschaft {plan} ist ab {start} eingefroren und ab {back} bist du wieder dabei. Deine Buchungen in dieser Zeit wurden storniert: {list}. Nach dem Einfrieren kannst du wieder buchen.",
+    chargeAutoPayFailedTitle: "Automatische Zahlung fehlgeschlagen",
+    chargeAutoPayFailedBody: "Wir konnten deine gespeicherte Karte für die Rechnung {invoice} ({description}, {amount}) nicht belasten. Bezahle sie in der App oder am Empfang.",
     classMovedTitle: "Kurs verschoben",
     classCancelledTitle: "Kurs abgesagt",
     toDecideTitle: "Beförderung zu entscheiden",

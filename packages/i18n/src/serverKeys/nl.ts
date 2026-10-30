@@ -212,6 +212,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledCreditBody: "Je kosten '{description}, {amount}' zijn geannuleerd. Niets te betalen. De al betaalde {paid} staan nu als tegoed op je saldo.",
     freezeBookingsCancelledTitle: "Boekingen geannuleerd",
     freezeBookingsCancelledBody: "Je lidmaatschap {plan} is bevroren vanaf {start} en je bent terug op {back}, dus je boekingen in die periode zijn geannuleerd: {list}. Je kunt weer boeken zodra de bevriezing voorbij is.",
+    chargeAutoPayFailedTitle: "Automatische betaling mislukt",
+    chargeAutoPayFailedBody: "We konden je opgeslagen kaart niet belasten voor factuur {invoice} ({description}, {amount}). Betaal hem in de app of bij de balie.",
     classMovedTitle: "Les verplaatst",
     classCancelledTitle: "Les geannuleerd",
     toDecideTitle: "Promotie te beslissen",

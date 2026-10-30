@@ -965,6 +965,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "充当先：{invoices}",
     toCredit: "{amount} が残高のクレジットになりました",
     payAtDesk: "お支払いはスクールの受付でお尋ねください。",
+    receiptSurcharge: "カード手数料 {amount} を含みます",
+    pay: {
+      balance: "残高を支払う（{amount}）",
+      charge: "{amount} を支払う",
+      surcharge: "カード手数料 {amount} を含みます",
+      failed: "支払いを開始できませんでした。もう一度お試しください。",
+      submitted: "支払いを送信しました。カード払いが確認されるとここに表示されます。",
+      restricted: "このアカウントは現金または銀行振込でのみ支払えます。受付でお支払いください。",
+      processing: "{amount} のカード払いを処理中（{date}）",
+      autoFailed: "{date} の {amount} の自動支払いに失敗しました。アプリまたは受付でお支払いください。",
+    },
+    autoPay: {
+      label: "保存済みカードで請求を自動で支払う",
+      onHint: "支払期日ごとに保存済みカードに請求されます。",
+      offHint: "請求はご自身で、ここまたは受付でお支払いください。",
+      noCard: "請求を自動で支払うには、支払い方法でカードを保存してください。",
+      failed: "自動支払いを変更できませんでした。もう一度お試しください。",
+    },
     status: {
       OPEN: "未払い",
       PART_PAID: "一部支払い済み",
@@ -976,6 +994,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "銀行振込",
       CARD_TERMINAL: "受付でのカード",
+      app: "アプリでのカード払い",
+      automatic: "カード自動支払い",
     },
     transactions: {
       item: "支払い：{invoice} {description}",

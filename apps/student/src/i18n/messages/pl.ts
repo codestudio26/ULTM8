@@ -1011,6 +1011,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "Zaliczono na {invoices}",
     toCredit: "{amount} trafiło na twoje saldo jako nadpłata",
     payAtDesk: "Aby zapłacić, zapytaj w recepcji swojej szkoły.",
+    receiptSurcharge: "Zawiera opłatę za kartę w wysokości {amount}",
+    pay: {
+      balance: "Zapłać saldo ({amount})",
+      charge: "Zapłać {amount}",
+      surcharge: "Zawiera opłatę za kartę w wysokości {amount}",
+      failed: "Nie udało się rozpocząć płatności — spróbuj ponownie.",
+      submitted: "Płatność wysłana. Pojawi się tutaj po potwierdzeniu płatności kartą.",
+      restricted: "To konto może płacić tylko gotówką lub przelewem bankowym. Zapłać w recepcji.",
+      processing: "Płatność kartą {amount} w toku ({date})",
+      autoFailed: "Płatność automatyczna {amount} nie powiodła się {date}. Zapłać w aplikacji lub w recepcji.",
+    },
+    autoPay: {
+      label: "Płać należności automatycznie zapisaną kartą",
+      onHint: "Twoja zapisana karta jest obciążana w każdym terminie płatności.",
+      offHint: "Każdą należność płacisz sam, tutaj lub w recepcji.",
+      noCard: "Zapisz kartę w Metodach płatności, aby płacić należności automatycznie.",
+      failed: "Nie udało się zmienić płatności automatycznej — spróbuj ponownie.",
+    },
     status: {
       OPEN: "Otwarta",
       PART_PAID: "Opłacona częściowo",
@@ -1022,6 +1040,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "przelew bankowy",
       CARD_TERMINAL: "karta w recepcji",
+      app: "karta w aplikacji",
+      automatic: "automatyczna płatność kartą",
     },
     transactions: {
       item: "Płatność: {invoice} {description}",

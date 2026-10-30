@@ -972,6 +972,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "Verrekend met {invoices}",
     toCredit: "{amount} ging als tegoed naar je saldo",
     payAtDesk: "Vraag aan de balie van je School om te betalen.",
+    receiptSurcharge: "Inclusief een kaarttoeslag van {amount}",
+    pay: {
+      balance: "Saldo betalen ({amount})",
+      charge: "{amount} betalen",
+      surcharge: "Inclusief een kaarttoeslag van {amount}",
+      failed: "Kan de betaling niet starten — probeer het opnieuw.",
+      submitted: "Betaling verstuurd. Ze verschijnt hier zodra je kaartbetaling is bevestigd.",
+      restricted: "Dit account kan alleen contant of per bankoverschrijving betalen. Betaal bij de balie.",
+      processing: "Kaartbetaling van {amount} wordt verwerkt ({date})",
+      autoFailed: "Automatische betaling van {amount} mislukt op {date}. Betaal in de app of bij de balie.",
+    },
+    autoPay: {
+      label: "Kosten automatisch betalen met mijn opgeslagen kaart",
+      onHint: "Je opgeslagen kaart wordt op elke vervaldatum belast.",
+      offHint: "Je betaalt elke rekening zelf, hier of bij de balie.",
+      noCard: "Sla een kaart op bij Betaalmethoden om kosten automatisch te betalen.",
+      failed: "Kan automatisch betalen niet wijzigen — probeer het opnieuw.",
+    },
     status: {
       OPEN: "Open",
       PART_PAID: "Deels betaald",
@@ -983,6 +1001,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "bankoverschrijving",
       CARD_TERMINAL: "pin aan de balie",
+      app: "kaart in de app",
+      automatic: "automatische kaartbetaling",
     },
     transactions: {
       item: "Betaling: {invoice} {description}",

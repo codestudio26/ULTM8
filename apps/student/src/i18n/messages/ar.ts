@@ -1035,6 +1035,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "خُصمت من {invoices}",
     toCredit: "أُضيف {amount} إلى رصيدك الدائن",
     payAtDesk: "للدفع، اسأل في استقبال مدرستك.",
+    receiptSurcharge: "يشمل رسوم بطاقة قدرها {amount}",
+    pay: {
+      balance: "ادفع الرصيد ({amount})",
+      charge: "ادفع {amount}",
+      surcharge: "يشمل رسوم بطاقة قدرها {amount}",
+      failed: "تعذّر بدء الدفع — حاول مرة أخرى.",
+      submitted: "تم إرسال الدفعة. ستظهر هنا بعد تأكيد الدفع بالبطاقة.",
+      restricted: "لا يمكن لهذا الحساب الدفع إلا نقدًا أو بتحويل بنكي. ادفع في مكتب الاستقبال.",
+      processing: "دفعة بالبطاقة بقيمة {amount} قيد المعالجة ({date})",
+      autoFailed: "فشل الدفع التلقائي بقيمة {amount} في {date}. ادفع في التطبيق أو في مكتب الاستقبال.",
+    },
+    autoPay: {
+      label: "ادفع الرسوم تلقائيًا ببطاقتي المحفوظة",
+      onHint: "تُخصم المبالغ من بطاقتك المحفوظة في كل تاريخ استحقاق.",
+      offHint: "تدفع كل رسم بنفسك، هنا أو في مكتب الاستقبال.",
+      noCard: "احفظ بطاقة في طرق الدفع لتدفع الرسوم تلقائيًا.",
+      failed: "تعذّر تغيير الدفع التلقائي — حاول مرة أخرى.",
+    },
     status: {
       OPEN: "مفتوحة",
       PART_PAID: "مدفوعة جزئيًا",
@@ -1046,6 +1064,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       PIX: "Pix",
       BANK_TRANSFER: "تحويل بنكي",
       CARD_TERMINAL: "بطاقة في الاستقبال",
+      app: "بطاقة في التطبيق",
+      automatic: "دفع تلقائي بالبطاقة",
     },
     transactions: {
       item: "دفعة: {invoice} {description}",

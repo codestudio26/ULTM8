@@ -197,6 +197,8 @@ export const server = {
     chargeCancelledCreditBody: "Your charge '{description}, {amount}' was cancelled. Nothing to pay. The {paid} already paid is now credit on your balance.",
     freezeBookingsCancelledTitle: "Bookings cancelled",
     freezeBookingsCancelledBody: "Your {plan} membership is frozen from {start} and you're back on {back}, so your bookings in between were cancelled: {list}. You can book again once the freeze ends.",
+    chargeAutoPayFailedTitle: "Automatic payment failed",
+    chargeAutoPayFailedBody: "We couldn't charge your saved card for invoice {invoice} ({description}, {amount}). Pay it in the app or at the front desk.",
     classMovedTitle: 'Class moved',
     classCancelledTitle: 'Class cancelled',
     toDecideTitle: 'Promotion to decide',
