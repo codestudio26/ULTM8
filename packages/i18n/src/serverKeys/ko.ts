@@ -263,6 +263,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name}님의 {rank}({style}) 승급이 결정을 기다리고 있습니다. 승급하거나 하지 않기로 결정하세요.",
     promotionFeeBody: "{rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",
     childPromotionFeeBody: "{name}님의 {rank}({style}) 승급 비용은 {amount}입니다. 앱을 열어 수락하거나 거절하세요.",
+    promotionFeeBlockedTitle: "승급을 적용할 수 없음",
+    promotionFeeBlockedBody: "{name}님의 {rank}({style}) 심사비는 결제되었지만 승급을 적용할 수 없습니다. 심사 이후 등급이나 띠 순서가 바뀌었습니다. 심사비를 취소하거나(결제된 금액은 크레딧이 됩니다) 다시 승급하세요.",
     forChild: "{name} 관련: {body}",
     disputeStatus: {
       warning_needs_response: "문의, 응답 필요",

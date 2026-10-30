@@ -1769,6 +1769,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         cancel: "昇級料を取り消す",
         promoteTo: "{rank}に昇級",
         dontPromote: "昇級しない",
+        blocked: "支払い済み — 昇級を適用できません",
+        blockedText: "{name}さんの{rank}の昇級料は支払い済みですが、昇級を適用できません。昇級後に段位または帯の順序が変わりました。昇級料をキャンセルして支払われた金額をクレジットとして戻すか、{name}さんをもう一度昇級させてください。その場合、昇級料はキャンセルされ、支払われた金額はクレジットとして新しい昇級に充てられます。",
         priceFor: "{rank}の昇級料：{amount}",
       },
       decide: {

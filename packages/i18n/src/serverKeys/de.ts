@@ -277,6 +277,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "Die Beförderung von {name} zu {rank} ({style}) wartet auf deine Entscheidung. Befördere oder entscheide dich dagegen.",
     promotionFeeBody: "Deine Beförderung zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
     childPromotionFeeBody: "Die Beförderung von {name} zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
+    promotionFeeBlockedTitle: "Beförderung kann nicht angewendet werden",
+    promotionFeeBlockedBody: "Die Gebühr von {name} für {rank} ({style}) ist bezahlt, aber die Beförderung kann nicht angewendet werden: Rang oder Gürtelfolge haben sich seit der Graduierung geändert. Storniere die Gebühr (das Bezahlte wird zu Guthaben) oder graduiere erneut.",
     forChild: "Für {name}: {body}",
     disputeStatus: {
       warning_needs_response: "Anfrage, Antwort erforderlich",

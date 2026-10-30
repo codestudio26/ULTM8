@@ -712,4 +712,5 @@ export const serverMessages: Record<string, string> = {
   "Recurring charge not found": "Frais récurrents introuvables",
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Ce sont des frais de promotion. Le propriétaire de l'école les annule ou y renonce depuis la progression de l'élève, ce qui annule cette facture.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Cette école n'a pas encore défini sa devise, les frais ne peuvent donc pas être payés. Renseignez-vous auprès de l'école.",
+  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Ces frais sont payés, mais la promotion ne peut plus s'appliquer. Annulez les frais (ce qui a été payé devient un crédit), ou évaluez de nouveau l'élève.",
 };

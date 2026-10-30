@@ -267,6 +267,8 @@ export const server = {
     toDecideBody: "{name}'s promotion to {rank} ({style}) is waiting for your decision. Promote them, or decide not to.",
     promotionFeeBody: 'Your promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.',
     childPromotionFeeBody: "{name}'s promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.",
+    promotionFeeBlockedTitle: "Promotion can't apply",
+    promotionFeeBlockedBody: "{name}'s fee for {rank} ({style}) is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade. Cancel the fee (what was paid becomes credit) or grade them again.",
     forChild: "For {name}: {body}",
     disputeStatus: {
       warning_needs_response: 'inquiry, needs a response',

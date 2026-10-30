@@ -136,12 +136,12 @@ export class GradingBoardItemDto {
   noHomeBranch!: boolean;
 
   @ApiPropertyOptional({
-    enum: ['waiting', 'declined', 'toDecide'],
+    enum: ['blocked', 'waiting', 'declined', 'toDecide'],
     nullable: true,
     description:
-      'Promotion fee (Decisions 300, 307): "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.',
+      'Promotion fee (Decisions 300, 307, 414): "blocked" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the owner cancels the fee or grades again, and grading is not held up; "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.',
   })
-  feeStatus!: 'waiting' | 'declined' | 'toDecide' | null;
+  feeStatus!: 'blocked' | 'waiting' | 'declined' | 'toDecide' | null;
 
   @ApiPropertyOptional({ type: BoardFeeRequestDto, nullable: true, description: 'The request behind feeStatus.' })
   feeRequest!: BoardFeeRequestDto | null;

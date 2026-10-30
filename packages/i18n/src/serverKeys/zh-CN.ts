@@ -263,6 +263,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "{name}晋级到{rank}（{style}）正在等待你的决定。请晋级或决定不晋级。",
     promotionFeeBody: "你晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
     childPromotionFeeBody: "{name}晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
+    promotionFeeBlockedTitle: "晋级无法执行",
+    promotionFeeBlockedBody: "{name}晋级到{rank}（{style}）的费用已支付，但晋级无法执行：自评级以来其级别或腰带阶梯已更改。请取消费用（已付款项将转为余额抵扣）或重新晋级。",
     forChild: "关于{name}：{body}",
     disputeStatus: {
       warning_needs_response: "问询，需要回复",

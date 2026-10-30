@@ -277,6 +277,8 @@ export const server: PartialMessages<ServerKeys> = {
     toDecideBody: "De promotie van {name} naar {rank} ({style}) wacht op je beslissing. Promoveer, of besluit het niet te doen.",
     promotionFeeBody: "Je promotie naar {rank} ({style}) kost {amount}. Open de app om te accepteren of te weigeren.",
     childPromotionFeeBody: "De promotie van {name} naar {rank} ({style}) kost {amount}. Open de app om te accepteren of te weigeren.",
+    promotionFeeBlockedTitle: "Promotie kan niet worden toegepast",
+    promotionFeeBlockedBody: "De vergoeding van {name} voor {rank} ({style}) is betaald, maar de promotie kan niet worden toegepast: de graad of de bandenladder is veranderd sinds de gradering. Annuleer de vergoeding (wat betaald is wordt tegoed) of gradeer opnieuw.",
     forChild: "Voor {name}: {body}",
     disputeStatus: {
       warning_needs_response: "vraag, reactie nodig",
