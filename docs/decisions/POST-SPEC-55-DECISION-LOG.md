@@ -7068,3 +7068,24 @@ The Staff build plan's last item was an activity log of staff changes. The produ
 ### Recorded by
 
 User (Code), 29 Oct 2026, choosing the suggested defaults for the Staff activity log (Decision 360, order of work (g)). Built 29 Oct 2026 in the Staff thread.
+
+---
+
+## Decision 410 — Schools set their own trial limits
+
+**Date:** 30 Oct 2026. **Changes:** Decisions 54 and 64 (and the later decisions that restated them: Decision 334 item 3, which built the two limits, and Decision 348 item 1, which listed "the trial allowance" among the desk-sale checks). Decision 391 item 1's note that "Trial's 30-day caps don't apply" to a visit pass no longer has anything to contrast with.
+
+### Decision
+
+1. **No platform limit on a Trial's length.** Each School sets how many days its Trial plan lasts: any whole number of days, at least 1. A Trial plan still needs a length (as a Weekly Pass does). There is no upper limit, the same as every other plan type's expiry.
+2. **No platform limit on repeat trials.** The rule of at most 30 trial days per Student per School in any rolling 12 months is removed. A Student can have a second trial straight after the first. A School that doesn't want that simply doesn't sell or give another trial; there is no new School setting for it.
+3. **Every path follows the same rule:** making or editing a plan, a Student's own purchase, cash or bank-transfer confirmation, the Stripe payment handler, and a sale at the desk.
+4. **Existing data is unchanged.** Trial plans set to 30 days by Decision 334 keep 30 days; a School can now lengthen them. Memberships already sold keep their dates.
+
+### What this changes
+
+The two limits were there to stop a School chaining trials so that a regular member was never counted as a paid, active student (a Trial is not counted in Franchise per-headcount billing, Spec 55 §10.2). The product owner chose to leave this to each School rather than have the platform enforce it.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: "school has to decided not us".

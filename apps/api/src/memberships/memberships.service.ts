@@ -22,8 +22,6 @@ import {
   assertCanCreateMembership,
   GeneralAccessConflictError,
   isMembershipLive,
-  TRIAL_MAX_DAYS,
-  TrialAllowanceError,
 } from './membership-creation-guard';
 import { CURRENCIES } from '../settings/constants/currencies';
 import { StripeClientService } from '../payments/stripe-client.service';
@@ -534,8 +532,9 @@ export class MembershipsService {
    *   - expiry: every type except SUBSCRIPTION, which renews until cancelled.
    * A field the type doesn't use is refused when sent and cleared when only
    * carried over from before a type change. `check` turns on the required-
-   * field rules: CLASS_PACK needs credits, WEEKLY_PASS an expiry, and
-   * TRIAL_MEMBERSHIP an expiry of 1-30 days (Decisions 54/64).
+   * field rules: CLASS_PACK needs credits, and WEEKLY_PASS and
+   * TRIAL_MEMBERSHIP an expiry. A Trial's length is the School's own choice,
+   * any whole number of days from 1 (Decision 410).
    */
   private resolvePlanShape(
     type: string,
@@ -565,8 +564,8 @@ export class MembershipsService {
     if (check.expiry && type === 'WEEKLY_PASS' && expiryDurationDays === null) {
       throw new BadRequestException('A Weekly Pass needs the number of days it lasts.');
     }
-    if (check.expiry && type === 'TRIAL_MEMBERSHIP' && (expiryDurationDays === null || expiryDurationDays > TRIAL_MAX_DAYS)) {
-      throw new BadRequestException(`A Trial Membership must last between 1 and ${TRIAL_MAX_DAYS} days.`);
+    if (check.expiry && type === 'TRIAL_MEMBERSHIP' && expiryDurationDays === null) {
+      throw new BadRequestException('A Trial Membership needs the number of days it lasts.');
     }
     return { expiryDurationDays, classesIncluded, scopedClassId };
   }
@@ -1210,10 +1209,10 @@ export class MembershipsService {
     }
   }
 
-  /** The guard's two refusals as a 409; anything else unchanged.
+  /** The guard's refusal as a 409; anything else unchanged.
    * purchaseWithSavedCard() refunds on any ConflictException. */
   private toCreationConflict(err: unknown): unknown {
-    if (err instanceof GeneralAccessConflictError || err instanceof TrialAllowanceError) {
+    if (err instanceof GeneralAccessConflictError) {
       return new ConflictException(err.message);
     }
     return err;
@@ -1254,7 +1253,7 @@ export class MembershipsService {
    * a caller already allowed to record it: the owner (sellAtDesk above) or,
    * from the Transactions follow-ups, Branch Staff when the School allows
    * it. The one place a desk sale creates a Membership, so the creation
-   * guard (one live general access, trial allowance) always runs. Reads and
+   * guard (one live general access) always runs. Reads and
    * writes run under the Student's own context, as purchase() does, so it
    * doesn't depend on the recorder's access to Membership or Transaction.
    */

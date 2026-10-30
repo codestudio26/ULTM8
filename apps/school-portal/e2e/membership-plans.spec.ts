@@ -355,7 +355,7 @@ test('editing a SUBSCRIPTION plan price with an active subscriber shows the requ
 // Decision 334 — the Memberships review of 26 Oct 2026.
 // ---------------------------------------------------------------------------
 
-test('a Trial must last 1-30 days, checked on Save from any step (M3)', async ({ page }) => {
+test('a Trial needs a length, checked on Save from any step (M3); the School picks any length (Decision 410)', async ({ page }) => {
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.getByLabel('Type').selectOption('TRIAL_MEMBERSHIP');
@@ -363,20 +363,15 @@ test('a Trial must last 1-30 days, checked on Save from any step (M3)', async ({
   // Straight to Save without ever opening the Pricing step.
   await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('A Trial must last between 1 and 30 days.')).toBeVisible();
-  // The error opens the step that needs fixing.
+  await expect(page.getByText('A Trial needs an expiry: how many days it lasts.')).toBeVisible();
+  // The error opens the step that needs fixing. More than 30 days is fine.
   await page.getByLabel('Expiry duration (days)').fill('45');
-  await page.getByRole('button', { name: '5. Visibility' }).click();
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('A Trial must last between 1 and 30 days.')).toBeVisible();
-
-  await page.getByLabel('Expiry duration (days)').fill('14');
   await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page).toHaveURL(/\/membership-plans$/);
   const created = await db.membershipPlan.findFirstOrThrow({ where: { schoolId: s.schoolId, title: 'Free trial' } });
   planIds.push(created.id);
-  expect(created.expiryDurationDays).toBe(14);
+  expect(created.expiryDurationDays).toBe(45);
 });
 
 test('a Class Pack needs its class count and a Weekly Pass its expiry (M4)', async ({ page }) => {

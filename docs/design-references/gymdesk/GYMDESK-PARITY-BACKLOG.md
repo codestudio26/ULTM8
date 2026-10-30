@@ -119,7 +119,7 @@ including a filled-in example where possible. Empty screens hide most fields.
 | P4 | Available on sign-up form / member portal / members can book | 🟡 | One `visible` flag only, not three separate channels |
 | P5 | Pricing type: Recurring / One-time | ✅ | `MembershipFrequency` RECURRING/ONE_TIME |
 | P6 | Pricing type: **Per-session** | 🟡 | Class Pack covers prepaid credits; pay-per-session is different |
-| P7 | Pricing type: Trial | ✅ | `TRIAL_MEMBERSHIP` (30-day caps) |
+| P7 | Pricing type: Trial | ✅ | `TRIAL_MEMBERSHIP` (length set by the School; the 30-day caps were removed by Decision 410) |
 | P8 | Frequency "every N weeks/months" + **max number of payments** | 🟡 | `billingCycleAnchorDay` exists; no custom interval and no payment-count cap |
 | P9 | Start membership on first check-in | ❌ | |
 | P10 | **Sign-up fee** | ❌ | |

@@ -20,25 +20,9 @@ export function isMembershipLive(
  * M20, Decision 334). */
 export const GENERAL_ACCESS_TYPES = ['SUBSCRIPTION', 'WEEKLY_PASS'] as const;
 
-/** Decisions 54/64: at most 30 days per Trial, and at most 30 Trial days per
- * Student per School in any rolling 12 months. */
-export const TRIAL_MAX_DAYS = 30;
-const TRIAL_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 export class GeneralAccessConflictError extends Error {
   constructor() {
     super('This Student already holds an active Subscription or Weekly Pass at this School.');
-  }
-}
-
-export class TrialAllowanceError extends Error {
-  constructor(readonly nextTrialDate: Date | null) {
-    super(
-      nextTrialDate
-        ? `This Student has used their 30 trial days at this School for the last 12 months. Another trial can start on ${nextTrialDate.toISOString().slice(0, 10)}.`
-        : 'This Student has used their 30 trial days at this School for the last 12 months.',
-    );
   }
 }
 
@@ -54,6 +38,10 @@ type GuardTx = Pick<Prisma.TransactionClient, 'membership' | '$executeRaw'>;
  * by date (Memberships review M1). Expiry stays live-computed (Decision 26):
  * nothing here writes Membership.status.
  *
+ * A Trial has no platform limit here (Decision 410, replacing Decisions 54/64):
+ * each School sets its own trial length and decides whether to give a Student
+ * another trial.
+ *
  * The advisory lock serialises concurrent creates for one Student at one
  * School until the transaction ends, so two simultaneous purchases can't both
  * pass the check (the job the unique index used to do).
@@ -62,7 +50,7 @@ export async function assertCanCreateMembership(
   tx: GuardTx,
   studentId: string,
   schoolId: string,
-  plan: { type: string; expiryDurationDays: number | null },
+  plan: { type: string },
   now: Date = new Date(),
 ): Promise<void> {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`membership:${studentId}:${schoolId}`}, 0))`;
@@ -74,35 +62,6 @@ export async function assertCanCreateMembership(
     });
     if (held.some((m) => isMembershipLive(m, now))) {
       throw new GeneralAccessConflictError();
-    }
-  }
-
-  if (plan.type === 'TRIAL_MEMBERSHIP') {
-    const newDays = Math.min(plan.expiryDurationDays ?? TRIAL_MAX_DAYS, TRIAL_MAX_DAYS);
-    const trials = await tx.membership.findMany({
-      where: {
-        studentId,
-        schoolId,
-        membershipPlan: { type: 'TRIAL_MEMBERSHIP' },
-        createdAt: { gt: new Date(now.getTime() - TRIAL_WINDOW_MS) },
-      },
-      select: { createdAt: true, expiryDate: true },
-      orderBy: { createdAt: 'asc' },
-    });
-    const daysOf = (t: { createdAt: Date; expiryDate: Date | null }) =>
-      t.expiryDate ? Math.max(0, Math.ceil((t.expiryDate.getTime() - t.createdAt.getTime()) / DAY_MS)) : TRIAL_MAX_DAYS;
-    let used = trials.reduce((sum, t) => sum + daysOf(t), 0);
-    if (used + newDays > TRIAL_MAX_DAYS) {
-      // The day enough of the oldest trials leave the 12-month window.
-      let nextTrialDate: Date | null = null;
-      for (const t of trials) {
-        used -= daysOf(t);
-        if (used + newDays <= TRIAL_MAX_DAYS) {
-          nextTrialDate = new Date(t.createdAt.getTime() + TRIAL_WINDOW_MS);
-          break;
-        }
-      }
-      throw new TrialAllowanceError(nextTrialDate);
     }
   }
 }

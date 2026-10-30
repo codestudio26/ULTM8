@@ -13,7 +13,7 @@ import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
-import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
+import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 
 /** Decision 406: the name of the card-surcharge line on a hosted Checkout
@@ -1073,7 +1073,7 @@ export class PaymentsService {
       try {
         await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
       } catch (err) {
-        if (err instanceof GeneralAccessConflictError || err instanceof TrialAllowanceError) {
+        if (err instanceof GeneralAccessConflictError) {
           throw new ConflictException(err.message);
         }
         throw err;
