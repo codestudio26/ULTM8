@@ -44,8 +44,9 @@ function Tile({ label, hint, value, danger }: { label: string; hint: string; val
 
 /**
  * The billing reports (v1.3 backlog §3.6 step 4; Decision 338 item 11), next
- * to Transactions: an Overview of charges (scheduled, overdue and paid totals,
- * revenue by month) and Member balances (everyone who owes or is in credit),
+ * to Transactions: an Overview (charges scheduled and overdue; revenue from
+ * charges and from memberships, and the total, Decision 414 item 3, over the
+ * period and by month) and Member balances (everyone who owes or is in credit),
  * with a CSV of the balances. The owner sees the whole School; Branch Staff
  * whose School lets them take payments (Decision 347) see their own
  * branches' students.
@@ -100,16 +101,27 @@ function Overview({ schoolId }: { schoolId: string }) {
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               <Tile label={t('charges.reports.scheduled')} hint={t('charges.reports.scheduledHint')} value={formatMoney(c.scheduled, c.currency)} />
               <Tile label={t('charges.reports.overdue')} hint={t('charges.reports.overdueHint')} value={formatMoney(c.overdue, c.currency)} danger={c.overdue > 0} />
-              <Tile label={t('charges.reports.paid')} hint={t('charges.reports.paidHint', { count: data.months })} value={formatMoney(c.paid, c.currency)} />
+              <Tile label={t('charges.reports.revenueCharges')} hint={t('charges.reports.revenueChargesHint', { count: data.months })} value={formatMoney(c.paid, c.currency)} />
+              <Tile
+                label={t('charges.reports.revenueMemberships')}
+                hint={t('charges.reports.revenueMembershipsHint', { count: data.months })}
+                value={formatMoney(c.memberships, c.currency)}
+              />
+              <Tile label={t('charges.reports.revenueTotal')} hint={t('charges.reports.revenueTotalHint', { count: data.months })} value={formatMoney(c.total, c.currency)} />
             </div>
             <h3 style={{ fontSize: 14, margin: '0 0 4px' }}>{t('charges.reports.revenueHeading')}</h3>
+            <p className="ultm8-field__hint" style={{ margin: '0 0 8px' }}>
+              {t('charges.reports.revenueHint')}
+            </p>
             <Table<ChargeOverview['currencies'][number]['revenueByMonth'][number] & { id: string }>
               rows={[...c.revenueByMonth].reverse().map((m) => ({ ...m, id: m.month }))}
               columns={[
                 { key: 'month', header: t('charges.reports.columnMonth'), render: (m) => monthLabel(m.month) },
                 { key: 'received', header: t('charges.reports.columnReceived'), render: (m) => formatMoney(m.received, c.currency) },
                 { key: 'refunded', header: t('charges.reports.columnRefunded'), render: (m) => formatMoney(m.refunded, c.currency) },
-                { key: 'net', header: t('charges.reports.columnNet'), render: (m) => <strong>{formatMoney(m.net, c.currency)}</strong> },
+                { key: 'net', header: t('charges.reports.columnCharges'), render: (m) => formatMoney(m.net, c.currency) },
+                { key: 'memberships', header: t('charges.reports.columnMemberships'), render: (m) => formatMoney(m.memberships, c.currency) },
+                { key: 'total', header: t('charges.reports.columnTotal'), render: (m) => <strong>{formatMoney(m.total, c.currency)}</strong> },
               ]}
             />
           </Card>

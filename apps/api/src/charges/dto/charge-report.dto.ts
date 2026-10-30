@@ -23,8 +23,17 @@ export class ChargeRevenueMonthDto {
   @ApiProperty({ description: 'Money given back that month: refunds to the card or in cash, and lost disputes. Refunds as credit are not money given back.' })
   refunded!: number;
 
-  @ApiProperty({ description: 'received − refunded.' })
+  @ApiProperty({ description: 'Charges revenue that month: received − refunded.' })
   net!: number;
+
+  @ApiProperty({
+    description:
+      'Membership revenue that month (Decision 414 item 3): Successful payments for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received).',
+  })
+  memberships!: number;
+
+  @ApiProperty({ description: 'net + memberships.' })
+  total!: number;
 }
 
 export class ChargeOverviewCurrencyDto {
@@ -37,8 +46,14 @@ export class ChargeOverviewCurrencyDto {
   @ApiProperty({ description: 'Still owed on open charges past their due date.' })
   overdue!: number;
 
-  @ApiProperty({ description: 'Paid over the months covered, less money given back (the sum of revenue by month).' })
+  @ApiProperty({ description: 'Charges revenue: paid toward charges over the months covered, less money given back (the sum of net by month).' })
   paid!: number;
+
+  @ApiProperty({ description: 'Membership revenue over the months covered (the sum of memberships by month).' })
+  memberships!: number;
+
+  @ApiProperty({ description: 'Total revenue over the months covered: paid + memberships.' })
+  total!: number;
 
   @ApiProperty({ type: [ChargeRevenueMonthDto], description: 'Oldest month first.' })
   revenueByMonth!: ChargeRevenueMonthDto[];
