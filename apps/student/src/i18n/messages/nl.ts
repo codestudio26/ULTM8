@@ -945,6 +945,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Terugkerende kosten",
+      every: {
+        WEEKLY: "Elke week",
+        MONTHLY: "Elke maand",
+        YEARLY: "Elk jaar",
+      },
+      amount: "{amount} per keer",
+      next: "Volgende factuur op {date}",
+      endsOn: "Laatste op {date}",
+      payments: "Betalingen gedaan: {done} / {count}",
+      status: {
+        STOPPED: "Gestopt",
+        ENDED: "Beëindigd",
+      },
+      taxNote: "Tegen het btw-tarief van vandaag. Elke factuur gebruikt het tarief van die dag.",
+    },
     home: "Facturen",
     childButton: "Facturen",
     title: "Facturen",

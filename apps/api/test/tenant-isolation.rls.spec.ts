@@ -192,6 +192,30 @@ describeIfDb('cross-tenant isolation (RLS)', () => {
     }
   });
 
+  it('recurring charges are visible only within their School, and never written by the app connection (Decision 412)', async () => {
+    const id = randomUUID();
+    await superuser.recurringCharge.create({
+      data: {
+        id, schoolId: schoolB.id, studentId: userB.id, description: 'RLS recurring', unitAmount: 1000, currency: 'GBP',
+        frequency: 'MONTHLY', firstDate: new Date('2026-11-01'), nextDate: new Date('2026-11-01'),
+      },
+    });
+    try {
+      expect(await withUser(userA.id, (tx) => tx.recurringCharge.findMany({ where: { id } }))).toHaveLength(0);
+      expect(await withUser(userB.id, (tx) => tx.recurringCharge.findMany({ where: { id } }))).toHaveLength(1);
+      await expect(withUser(userB.id, (tx) => tx.recurringCharge.updateMany({ where: { id }, data: { unitAmount: 1 } }))).rejects.toThrow();
+      await expect(
+        withUser(userA.id, (tx) =>
+          tx.recurringCharge.create({
+            data: { schoolId: schoolA.id, studentId: userA.id, description: 'x', unitAmount: 1, currency: 'GBP', frequency: 'WEEKLY', firstDate: new Date('2026-11-01') },
+          }),
+        ),
+      ).rejects.toThrow();
+    } finally {
+      await superuser.recurringCharge.deleteMany({ where: { id } });
+    }
+  });
+
   it('a request with no tenant context set sees zero rows, not an error and not all rows', async () => {
     // Deliberately bypass withUser — no SET LOCAL app.current_user_id at all.
     const schools = await appDb.school.findMany({ where: { id: { in: [schoolA.id, schoolB.id] } } });

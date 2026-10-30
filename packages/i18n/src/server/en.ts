@@ -703,4 +703,14 @@ export const SERVER_PATTERNS: string[] = [
  "Set a late fee percentage above 0%, up to 100%.",
  "Confirm that late fees are legal where your School operates.",
  "Only a late fee can be waived.",
+ // Recurring charges (backlog 3.6 step 3, Decision 412).
+ "The School owner hasn't let you stop recurring charges.",
+ "Only the School owner, and staff who can take payments, can restart a recurring charge.",
+ "The first date can't be in the past.",
+ "Choose an end date or a number of payments, not both.",
+ "The end date must be on or after the first date.",
+ "This recurring charge is already stopped.",
+ "This recurring charge has ended: its end date has passed or all its payments were made.",
+ "This recurring charge isn't stopped.",
+ "Recurring charge not found",
 ];

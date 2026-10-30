@@ -691,4 +691,13 @@ export const serverMessages: Record<string, string> = {
   "Set a late fee percentage above 0%, up to 100%.": "延滞料の割合を0%より大きく、100%以下で設定してください。",
   "Confirm that late fees are legal where your School operates.": "スクールの所在地で延滞料が合法であることを確認してください。",
   "Only a late fee can be waived.": "免除できるのは延滞料のみです。",
+  "The School owner hasn't let you stop recurring charges.": "スクールのオーナーから定期請求を停止する権限が与えられていません。",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "定期請求を再開できるのは、スクールのオーナーと支払いを受け付けられるスタッフだけです。",
+  "The first date can't be in the past.": "初回の日付を過去にすることはできません。",
+  "Choose an end date or a number of payments, not both.": "終了日か支払い回数のどちらか一方を選んでください。",
+  "The end date must be on or after the first date.": "終了日は初回の日付と同じかそれ以降にしてください。",
+  "This recurring charge is already stopped.": "この定期請求はすでに停止されています。",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "この定期請求は終了しました。終了日を過ぎたか、すべての支払いが完了しています。",
+  "This recurring charge isn't stopped.": "この定期請求は停止されていません。",
+  "Recurring charge not found": "定期請求が見つかりません",
 };

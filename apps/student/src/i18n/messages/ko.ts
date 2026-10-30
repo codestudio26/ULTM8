@@ -938,6 +938,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "정기 청구",
+      every: {
+        WEEKLY: "매주",
+        MONTHLY: "매월",
+        YEARLY: "매년",
+      },
+      amount: "회당 {amount}",
+      next: "다음 청구서: {date}",
+      endsOn: "마지막: {date}",
+      payments: "결제 완료: {done} / {count}",
+      status: {
+        STOPPED: "중지됨",
+        ENDED: "종료됨",
+      },
+      taxNote: "오늘 세율 기준입니다. 각 청구서는 해당 날짜의 세율을 사용합니다.",
+    },
     home: "청구서",
     childButton: "청구서",
     title: "청구서",

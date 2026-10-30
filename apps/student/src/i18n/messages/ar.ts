@@ -1008,6 +1008,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "الرسوم المتكررة",
+      every: {
+        WEEKLY: "كل أسبوع",
+        MONTHLY: "كل شهر",
+        YEARLY: "كل سنة",
+      },
+      amount: "{amount} في كل مرة",
+      next: "الفاتورة التالية في {date}",
+      endsOn: "الأخيرة في {date}",
+      payments: "الدفعات المسددة: {done} / {count}",
+      status: {
+        STOPPED: "متوقف",
+        ENDED: "منتهٍ",
+      },
+      taxNote: "بمعدل الضريبة اليوم. تستخدم كل فاتورة معدل يومها.",
+    },
     home: "الفواتير",
     childButton: "الفواتير",
     title: "الفواتير",

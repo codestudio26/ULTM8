@@ -28,6 +28,7 @@ import { WaiverRenewalSweepProcessor, WaiverRenewalSweepScheduler } from './waiv
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pay.processor';
 import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
+import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -175,6 +176,9 @@ import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
  * charge-auto-pay) adding one late fee to the member's balance for each
  * payment still unpaid after the School's grace days (Decision 413). Plain
  * ledger functions and the notification queue only; no new module import.
+ * Backlog §3.6 step 3 adds ChargeRecurringProcessor/Scheduler — a daily run
+ * (5:30am UTC, before charge-auto-pay) making recurring charges' occurrences
+ * (Decision 412), with the plain functions in charges/recurring-occurrences.ts.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule],
@@ -215,6 +219,8 @@ import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
     ChargeAutoPayScheduler,
     LateFeeProcessor,
     LateFeeScheduler,
+    ChargeRecurringProcessor,
+    ChargeRecurringScheduler,
   ],
 })
 export class JobsModule {}

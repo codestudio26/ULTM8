@@ -691,4 +691,13 @@ export const serverMessages: Record<string, string> = {
   "Set a late fee percentage above 0%, up to 100%.": "请设置大于 0% 且不超过 100% 的滞纳金比例。",
   "Confirm that late fees are legal where your School operates.": "请确认在你的学校所在地收取滞纳金是合法的。",
   "Only a late fee can be waived.": "只能免除滞纳金。",
+  "The School owner hasn't let you stop recurring charges.": "学校所有者未允许你停止定期收费项。",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "只有学校所有者和可以收款的员工才能重新开始定期收费项。",
+  "The first date can't be in the past.": "首次日期不能是过去的日期。",
+  "Choose an end date or a number of payments, not both.": "请选择结束日期或付款次数，不能两者都选。",
+  "The end date must be on or after the first date.": "结束日期必须等于或晚于首次日期。",
+  "This recurring charge is already stopped.": "此定期收费项已停止。",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "此定期收费项已结束：已过结束日期或所有付款均已完成。",
+  "This recurring charge isn't stopped.": "此定期收费项未停止。",
+  "Recurring charge not found": "未找到定期收费项",
 };

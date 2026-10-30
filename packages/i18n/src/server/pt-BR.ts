@@ -691,4 +691,13 @@ export const serverMessages: Record<string, string> = {
   "Set a late fee percentage above 0%, up to 100%.": "Defina uma porcentagem de multa por atraso acima de 0%, até 100%.",
   "Confirm that late fees are legal where your School operates.": "Confirme que multas por atraso são legais onde sua Escola atua.",
   "Only a late fee can be waived.": "Só uma multa por atraso pode ser dispensada.",
+  "The School owner hasn't let you stop recurring charges.": "O proprietário da escola não permitiu que você interrompa cobranças recorrentes.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "Só o proprietário da escola e a equipe que pode receber pagamentos podem retomar uma cobrança recorrente.",
+  "The first date can't be in the past.": "A primeira data não pode estar no passado.",
+  "Choose an end date or a number of payments, not both.": "Escolha uma data de término ou um número de pagamentos, não os dois.",
+  "The end date must be on or after the first date.": "A data de término deve ser igual ou posterior à primeira data.",
+  "This recurring charge is already stopped.": "Esta cobrança recorrente já está interrompida.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "Esta cobrança recorrente terminou: a data de término já passou ou todos os pagamentos foram feitos.",
+  "This recurring charge isn't stopped.": "Esta cobrança recorrente não está interrompida.",
+  "Recurring charge not found": "Cobrança recorrente não encontrada",
 };

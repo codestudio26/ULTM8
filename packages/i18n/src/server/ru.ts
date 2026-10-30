@@ -691,4 +691,13 @@ export const serverMessages: Record<string, string> = {
   "Set a late fee percentage above 0%, up to 100%.": "Укажите процент пени за просрочку больше 0% и не выше 100%.",
   "Confirm that late fees are legal where your School operates.": "Подтвердите, что пени за просрочку законны там, где работает ваша школа.",
   "Only a late fee can be waived.": "Списать можно только пеню за просрочку.",
+  "The School owner hasn't let you stop recurring charges.": "Владелец школы не разрешил вам останавливать регулярные начисления.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "Возобновить регулярное начисление могут только владелец школы и сотрудники, которые принимают платежи.",
+  "The first date can't be in the past.": "Первая дата не может быть в прошлом.",
+  "Choose an end date or a number of payments, not both.": "Выберите дату окончания или число платежей, но не оба варианта.",
+  "The end date must be on or after the first date.": "Дата окончания должна совпадать с первой датой или быть позже неё.",
+  "This recurring charge is already stopped.": "Это регулярное начисление уже остановлено.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "Это регулярное начисление завершено: дата окончания прошла или все платежи уже сделаны.",
+  "This recurring charge isn't stopped.": "Это регулярное начисление не остановлено.",
+  "Recurring charge not found": "Регулярное начисление не найдено",
 };

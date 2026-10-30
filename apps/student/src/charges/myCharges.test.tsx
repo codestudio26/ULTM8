@@ -12,6 +12,7 @@ jest.mock('../auth/stepUpQueries', () => ({ useVerifyStepUp: jest.fn() }));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn() }));
 jest.mock('./chargeQueries', () => ({
   useMemberCharges: jest.fn(),
+  useMemberRecurringCharges: jest.fn(),
   useStartChargeCheckout: jest.fn(),
   useSetChargeAutoPay: jest.fn(),
   useInvalidateMemberCharges: jest.fn(),
@@ -100,6 +101,7 @@ beforeEach(() => {
   invalidate = jest.fn();
   mocked(auth.useAuth).mockReturnValue({ claims: { sub: 'me', grants: [] } });
   mocked(q.useMemberCharges).mockReturnValue(ok({ schools: [SCHOOL] }));
+  mocked(q.useMemberRecurringCharges).mockReturnValue(ok({ items: [] }));
   mocked(q.useStartChargeCheckout).mockReturnValue(checkout);
   mocked(q.useSetChargeAutoPay).mockReturnValue(setAutoPay);
   mocked(q.useInvalidateMemberCharges).mockReturnValue(invalidate);
@@ -284,5 +286,60 @@ describe('MyChargesScreen: paying in the app (backlog 3.6 step 2)', () => {
     expect(getByText(/^For invoice #0000001 \(Rash guard\), due /)).toBeTruthy();
     expect(getByText(/^For your Monthly membership payment of £60.00, due /)).toBeTruthy();
     expect(getByText(/^Waived on .*\. Nothing to pay\.$/)).toBeTruthy();
+  });
+
+  describe('recurring charges (Decision 412)', () => {
+    const recurring = (over: Record<string, unknown>) => ({
+      id: 'r1',
+      schoolId: 's1',
+      schoolName: 'Alpha Dojo',
+      studentId: 'me',
+      description: 'Private lesson',
+      unitAmount: 3000,
+      discountType: null,
+      discountValue: null,
+      currency: 'GBP',
+      frequency: 'MONTHLY',
+      firstDate: '2026-11-01',
+      endDate: null,
+      maxOccurrences: null,
+      createdCount: 1,
+      nextDate: '2026-12-01',
+      status: 'ACTIVE',
+      stoppedAt: null,
+      stoppedReason: null,
+      stoppedByName: null,
+      createdByName: null,
+      createdAt: '2026-10-30T10:00:00.000Z',
+      estimate: { netAmount: 2500, taxAmount: 500, grossAmount: 3000, taxRateBasisPoints: 2000 },
+      ...over,
+    });
+
+    it('lists them read-only: what, how much each time, how often and the next date', async () => {
+      mocked(q.useMemberRecurringCharges).mockReturnValue(
+        ok({ items: [recurring({}), recurring({ id: 'r2', description: 'Locker', frequency: 'WEEKLY', status: 'STOPPED', nextDate: null, maxOccurrences: 10, createdCount: 3 })] }),
+      );
+      const { getByText, queryByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+      expect(mocked(q.useMemberRecurringCharges)).toHaveBeenCalledWith('me');
+      expect(getByText('Recurring charges')).toBeTruthy();
+      expect(getByText('Private lesson')).toBeTruthy();
+      expect(getByText('£30.00 each time · Every month')).toBeTruthy();
+      expect(getByText(/^Next invoice on /)).toBeTruthy();
+      expect(getByText('Locker')).toBeTruthy();
+      expect(getByText('Stopped')).toBeTruthy();
+      expect(getByText('Payments made: 3 / 10')).toBeTruthy();
+      // Read-only: nothing to stop or restart.
+      expect(queryByText('Stop')).toBeNull();
+      expect(queryByText('Restart')).toBeNull();
+    });
+
+    it('shows a School whose recurring charge has made no invoice yet', async () => {
+      mocked(q.useMemberCharges).mockReturnValue(ok({ schools: [] }));
+      mocked(q.useMemberRecurringCharges).mockReturnValue(ok({ items: [recurring({ createdCount: 0, nextDate: '2026-11-20', frequency: 'YEARLY', endDate: '2030-11-20' })] }));
+      const { getByText, queryByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+      expect(queryByText('No invoices yet.')).toBeNull();
+      expect(getByText('£30.00 each time · Every year')).toBeTruthy();
+      expect(getByText(/^Last one on /)).toBeTruthy();
+    });
   });
 });

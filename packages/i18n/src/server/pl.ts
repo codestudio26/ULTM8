@@ -691,4 +691,13 @@ export const serverMessages: Record<string, string> = {
   "Set a late fee percentage above 0%, up to 100%.": "Ustaw procent opłaty za zwłokę większy niż 0%, maksymalnie 100%.",
   "Confirm that late fees are legal where your School operates.": "Potwierdź, że opłaty za zwłokę są legalne tam, gdzie działa Twoja szkoła.",
   "Only a late fee can be waived.": "Umorzyć można tylko opłatę za zwłokę.",
+  "The School owner hasn't let you stop recurring charges.": "Właściciel szkoły nie pozwolił Ci zatrzymywać opłat cyklicznych.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "Opłatę cykliczną mogą wznowić tylko właściciel szkoły i pracownicy, którzy mogą przyjmować płatności.",
+  "The first date can't be in the past.": "Pierwsza data nie może być w przeszłości.",
+  "Choose an end date or a number of payments, not both.": "Wybierz datę zakończenia albo liczbę płatności, nie oba.",
+  "The end date must be on or after the first date.": "Data zakończenia musi być taka sama jak pierwsza data lub późniejsza.",
+  "This recurring charge is already stopped.": "Ta opłata cykliczna jest już zatrzymana.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "Ta opłata cykliczna się zakończyła: minęła jej data zakończenia lub dokonano wszystkich płatności.",
+  "This recurring charge isn't stopped.": "Ta opłata cykliczna nie jest zatrzymana.",
+  "Recurring charge not found": "Nie znaleziono opłaty cyklicznej",
 };

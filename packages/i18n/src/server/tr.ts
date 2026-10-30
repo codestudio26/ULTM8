@@ -691,4 +691,13 @@ export const serverMessages: Record<string, string> = {
   "Set a late fee percentage above 0%, up to 100%.": "%0'dan büyük, en fazla %100 bir gecikme ücreti yüzdesi belirleyin.",
   "Confirm that late fees are legal where your School operates.": "Okulunuzun faaliyet gösterdiği yerde gecikme ücretlerinin yasal olduğunu onaylayın.",
   "Only a late fee can be waived.": "Yalnızca bir gecikme ücreti silinebilir.",
+  "The School owner hasn't let you stop recurring charges.": "Okul sahibi tekrarlayan ücretleri durdurmanıza izin vermedi.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "Tekrarlayan bir ücreti yalnızca okul sahibi ve ödeme alabilen personel yeniden başlatabilir.",
+  "The first date can't be in the past.": "İlk tarih geçmişte olamaz.",
+  "Choose an end date or a number of payments, not both.": "Bir bitiş tarihi ya da ödeme sayısı seçin, ikisini birden değil.",
+  "The end date must be on or after the first date.": "Bitiş tarihi ilk tarihle aynı ya da sonra olmalıdır.",
+  "This recurring charge is already stopped.": "Bu tekrarlayan ücret zaten durduruldu.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "Bu tekrarlayan ücret sona erdi: bitiş tarihi geçti ya da tüm ödemeleri yapıldı.",
+  "This recurring charge isn't stopped.": "Bu tekrarlayan ücret durdurulmuş değil.",
+  "Recurring charge not found": "Tekrarlayan ücret bulunamadı",
 };

@@ -691,4 +691,13 @@ export const serverMessages: Record<string, string> = {
   "Set a late fee percentage above 0%, up to 100%.": "กำหนดเปอร์เซ็นต์ค่าปรับล่าช้าให้มากกว่า 0% และไม่เกิน 100%",
   "Confirm that late fees are legal where your School operates.": "ยืนยันว่าค่าปรับล่าช้าถูกกฎหมายในพื้นที่ที่โรงเรียนของคุณดำเนินการ",
   "Only a late fee can be waived.": "ยกเว้นได้เฉพาะค่าปรับล่าช้าเท่านั้น",
+  "The School owner hasn't let you stop recurring charges.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณหยุดรายการเรียกเก็บประจำ",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "เฉพาะเจ้าของโรงเรียนและพนักงานที่รับชำระเงินได้เท่านั้นที่เริ่มรายการเรียกเก็บประจำอีกครั้งได้",
+  "The first date can't be in the past.": "วันที่ครั้งแรกต้องไม่อยู่ในอดีต",
+  "Choose an end date or a number of payments, not both.": "เลือกวันสิ้นสุดหรือจำนวนครั้งที่ชำระ อย่างใดอย่างหนึ่ง",
+  "The end date must be on or after the first date.": "วันสิ้นสุดต้องเป็นวันเดียวกับหรือหลังวันที่ครั้งแรก",
+  "This recurring charge is already stopped.": "รายการเรียกเก็บประจำนี้หยุดอยู่แล้ว",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "รายการเรียกเก็บประจำนี้สิ้นสุดแล้ว: เลยวันสิ้นสุดหรือชำระครบทุกครั้งแล้ว",
+  "This recurring charge isn't stopped.": "รายการเรียกเก็บประจำนี้ไม่ได้หยุดอยู่",
+  "Recurring charge not found": "ไม่พบรายการเรียกเก็บประจำ",
 };

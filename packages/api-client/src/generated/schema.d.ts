@@ -6292,6 +6292,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/recurring-charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RecurringChargesController_listForStaff"];
+        put?: never;
+        post: operations["RecurringChargesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/recurring-charges/{id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RecurringChargesController_stop"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/recurring-charges/{id}/restart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RecurringChargesController_restart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/recurring-charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RecurringChargesController_listForMember"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/late-fees": {
         parameters: {
             query?: never;
@@ -11873,6 +11937,126 @@ export interface components {
         SetChargePermissionDto: {
             canCreateCharges: boolean;
             canCancelCharges: boolean;
+        };
+        /** @enum {string} */
+        RecurringChargeFrequency: "WEEKLY" | "MONTHLY" | "YEARLY";
+        /**
+         * @description ACTIVE; STOPPED (by staff, or because the student left); ENDED (its end date passed or all its payments were made).
+         * @enum {string}
+         */
+        RecurringChargeStatus: "ACTIVE" | "STOPPED" | "ENDED";
+        /** @enum {string} */
+        RecurringChargeStopReason: "STAFF" | "STUDENT_LEFT";
+        RecurringChargeEstimateDto: {
+            /** @description Price ex. tax of each charge at the School tax rate today. Each charge uses the rate on its own day. */
+            netAmount: number;
+            taxAmount: number;
+            /** @description Price inc. tax of each charge at the School tax rate today. */
+            grossAmount: number;
+            /** @description The School tax rate today, hundredths of a percent. */
+            taxRateBasisPoints: number;
+        };
+        RecurringChargeResponseDto: {
+            id: string;
+            schoolId: string;
+            studentId: string;
+            description: string;
+            /** @description The price as typed, before the discount. */
+            unitAmount: number;
+            /** @enum {string|null} */
+            discountType?: "PERCENT" | "FIXED" | null;
+            discountValue?: number | null;
+            currency: string;
+            frequency: components["schemas"]["RecurringChargeFrequency"];
+            /** @example 2026-11-15 */
+            firstDate: string;
+            endDate?: string | null;
+            /** @description The number of payments, when the series has one. */
+            maxOccurrences?: number | null;
+            /** @description Charges made so far. */
+            createdCount: number;
+            /** @description The next charge date; null once stopped or ended. */
+            nextDate?: string | null;
+            status: components["schemas"]["RecurringChargeStatus"];
+            stoppedAt?: string | null;
+            stoppedReason?: components["schemas"]["RecurringChargeStopReason"];
+            /** @description Staff only. */
+            stoppedByName?: string | null;
+            /** @description Staff only. */
+            createdByName?: string | null;
+            createdAt: string;
+            estimate: components["schemas"]["RecurringChargeEstimateDto"];
+        };
+        RecurringChargeAbilitiesDto: {
+            /** @description Set up a recurring charge: the owner and staff with "Can create charges". */
+            create: boolean;
+            /** @description Stop one: the same people. */
+            stop: boolean;
+            /** @description Restart a stopped one: the owner and staff with access to payments (Decision 338 item 2). */
+            restart: boolean;
+        };
+        StudentRecurringChargesResponseDto: {
+            /** @description Active first (next date first), then stopped, then ended. */
+            items: components["schemas"]["RecurringChargeResponseDto"][];
+            can: components["schemas"]["RecurringChargeAbilitiesDto"];
+        };
+        CreateRecurringChargeDto: {
+            /** @example Private lesson */
+            description: string;
+            /** @description The price of each charge in minor units of the School's currency, as the School prices (with or without tax). */
+            amount: number;
+            /** @enum {string|null} */
+            discountType?: "PERCENT" | "FIXED" | null;
+            /** @description PERCENT: hundredths of a percent (1250 = 12.5%). FIXED: minor units. Required with discountType. */
+            discountValue?: number | null;
+            frequency: components["schemas"]["RecurringChargeFrequency"];
+            /**
+             * @description The first charge's date (YYYY-MM-DD), today or later in the School's time zone. Each charge is due on its own date.
+             * @example 2026-11-15
+             */
+            firstDate: string;
+            /**
+             * @description Optional: no charge after this day. Not with maxOccurrences.
+             * @example 2027-06-30
+             */
+            endDate?: string | null;
+            /** @description Optional: the number of payments. Not with endDate. Neither: until stopped. */
+            maxOccurrences?: number | null;
+        };
+        MemberRecurringChargeDto: {
+            id: string;
+            schoolId: string;
+            studentId: string;
+            description: string;
+            /** @description The price as typed, before the discount. */
+            unitAmount: number;
+            /** @enum {string|null} */
+            discountType?: "PERCENT" | "FIXED" | null;
+            discountValue?: number | null;
+            currency: string;
+            frequency: components["schemas"]["RecurringChargeFrequency"];
+            /** @example 2026-11-15 */
+            firstDate: string;
+            endDate?: string | null;
+            /** @description The number of payments, when the series has one. */
+            maxOccurrences?: number | null;
+            /** @description Charges made so far. */
+            createdCount: number;
+            /** @description The next charge date; null once stopped or ended. */
+            nextDate?: string | null;
+            status: components["schemas"]["RecurringChargeStatus"];
+            stoppedAt?: string | null;
+            stoppedReason?: components["schemas"]["RecurringChargeStopReason"];
+            /** @description Staff only. */
+            stoppedByName?: string | null;
+            /** @description Staff only. */
+            createdByName?: string | null;
+            createdAt: string;
+            estimate: components["schemas"]["RecurringChargeEstimateDto"];
+            schoolName: string;
+        };
+        MemberRecurringChargesResponseDto: {
+            items: components["schemas"]["MemberRecurringChargeDto"][];
         };
         LateFeeSettingsDto: {
             /** @description Off by default. */
@@ -22404,6 +22588,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChargePermissionDto"];
+                };
+            };
+        };
+    };
+    RecurringChargesController_listForStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentRecurringChargesResponseDto"];
+                };
+            };
+        };
+    };
+    RecurringChargesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRecurringChargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringChargeResponseDto"];
+                };
+            };
+        };
+    };
+    RecurringChargesController_stop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringChargeResponseDto"];
+                };
+            };
+        };
+    };
+    RecurringChargesController_restart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringChargeResponseDto"];
+                };
+            };
+        };
+    };
+    RecurringChargesController_listForMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberRecurringChargesResponseDto"];
                 };
             };
         };

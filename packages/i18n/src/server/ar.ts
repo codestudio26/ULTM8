@@ -691,4 +691,13 @@ export const serverMessages: Record<string, string> = {
   "Set a late fee percentage above 0%, up to 100%.": "حدّد نسبة رسوم تأخير أكبر من 0% وحتى 100%.",
   "Confirm that late fees are legal where your School operates.": "أكّد أن رسوم التأخير قانونية حيث تعمل مدرستك.",
   "Only a late fee can be waived.": "لا يمكن الإعفاء إلا من رسوم التأخير.",
+  "The School owner hasn't let you stop recurring charges.": "لم يسمح لك مالك المدرسة بإيقاف الرسوم المتكررة.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "لا يمكن إعادة تشغيل رسم متكرر إلا لمالك المدرسة والموظفين الذين يمكنهم استلام المدفوعات.",
+  "The first date can't be in the past.": "لا يمكن أن يكون التاريخ الأول في الماضي.",
+  "Choose an end date or a number of payments, not both.": "اختر تاريخ انتهاء أو عدد دفعات، وليس كليهما.",
+  "The end date must be on or after the first date.": "يجب أن يكون تاريخ الانتهاء في التاريخ الأول أو بعده.",
+  "This recurring charge is already stopped.": "هذا الرسم المتكرر متوقف بالفعل.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "انتهى هذا الرسم المتكرر: انقضى تاريخ انتهائه أو تمت جميع دفعاته.",
+  "This recurring charge isn't stopped.": "هذا الرسم المتكرر ليس متوقفًا.",
+  "Recurring charge not found": "لم يتم العثور على الرسم المتكرر",
 };

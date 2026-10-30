@@ -963,6 +963,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Frais récurrents",
+      every: {
+        WEEKLY: "Chaque semaine",
+        MONTHLY: "Chaque mois",
+        YEARLY: "Chaque année",
+      },
+      amount: "{amount} à chaque fois",
+      next: "Prochaine facture le {date}",
+      endsOn: "Dernière le {date}",
+      payments: "Paiements faits : {done} / {count}",
+      status: {
+        STOPPED: "Arrêtés",
+        ENDED: "Terminés",
+      },
+      taxNote: "Au taux de taxe d'aujourd'hui. Chaque facture utilise le taux de son jour.",
+    },
     home: "Factures",
     childButton: "Factures",
     title: "Factures",

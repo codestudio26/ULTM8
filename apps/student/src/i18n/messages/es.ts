@@ -945,6 +945,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Cargos recurrentes",
+      every: {
+        WEEKLY: "Cada semana",
+        MONTHLY: "Cada mes",
+        YEARLY: "Cada año",
+      },
+      amount: "{amount} cada vez",
+      next: "Próxima factura el {date}",
+      endsOn: "La última el {date}",
+      payments: "Pagos hechos: {done} / {count}",
+      status: {
+        STOPPED: "Detenido",
+        ENDED: "Terminado",
+      },
+      taxNote: "Con el impuesto de hoy. Cada factura usa el de su propio día.",
+    },
     home: "Facturas",
     childButton: "Facturas",
     title: "Facturas",

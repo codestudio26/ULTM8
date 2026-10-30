@@ -2,12 +2,12 @@ import { ForbiddenException, Injectable, Logger, OnModuleInit } from '@nestjs/co
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
-import { randomUUID } from 'crypto';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { trialEndedUnpaid } from '../subscription-plans/subscription-gate.service';
 import { dayIn, dayNumber, dayString, dayToDate } from '../memberships/freeze/membership-freeze';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
-import { allocate, lockBalance } from '../charges/charge-ledger';
+import { lockBalance } from '../charges/charge-ledger';
+import { insertCharge, lockInvoiceNumbers } from '../charges/charge-insert';
 import { computeCharge, formatInvoiceNumber } from '../charges/charge-maths';
 import { LateFeeSetting, isLateFeeDue, lateFeeAmount } from '../late-fees/late-fee-maths';
 import {
@@ -248,7 +248,7 @@ export class LateFeeProcessor extends WorkerHost {
         await lockSchoolOpen(tx, school.id);
         // Invoice numbers first, then the member's balance: the order every
         // path takes these two locks in (ChargesService.create).
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`charge-invoice:${school.id}`}, 0))`;
+        await lockInvoiceNumbers(tx, school.id);
         const overdue = 'chargeId' in item ? await this.overdueCharge(tx, school, item.chargeId) : await this.overdueRenewal(tx, school, item.transactionId);
         if (!overdue) return null;
         const fee = lateFeeAmount(setting, overdue.owed);
@@ -256,34 +256,27 @@ export class LateFeeProcessor extends WorkerHost {
         const currency = setting.type === 'FIXED' ? school.defaultCurrency?.toUpperCase() : overdue.currency;
         if (fee <= 0 || !currency) return null;
         const totals = computeCharge({ unitAmount: fee, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive });
-        const last = await tx.charge.aggregate({ where: { schoolId: school.id }, _max: { invoiceNumber: true } });
-        const id = randomUUID();
-        await tx.charge.create({
-          data: {
-            id,
-            schoolId: school.id,
-            studentId: overdue.studentId,
-            invoiceNumber: (last._max.invoiceNumber ?? 0) + 1,
-            description: overdue.description,
-            unitAmount: fee,
-            discountAmount: 0,
-            taxCountry: school.taxCountry,
-            taxRateBasisPoints: school.taxRateBasisPoints,
-            taxInclusive: school.taxInclusive,
-            netAmount: totals.netAmount,
-            taxAmount: totals.taxAmount,
-            grossAmount: totals.grossAmount,
-            currency,
-            dueDate: dayToDate(today),
-            createdById: null,
+        // Invoice number, balance and any credit, as for every charge.
+        const { id } = await insertCharge(tx, {
+          schoolId: school.id,
+          studentId: overdue.studentId,
+          description: overdue.description,
+          unitAmount: fee,
+          discountType: null,
+          discountValue: null,
+          taxCountry: school.taxCountry,
+          taxRateBasisPoints: school.taxRateBasisPoints,
+          taxInclusive: school.taxInclusive,
+          totals,
+          currency,
+          dueDate: dayToDate(today),
+          createdById: null,
+          lateFee: {
             ...overdue.link,
             lateFeeOverdueAmount: overdue.owed,
             lateFeePercentBps: setting.type === 'PERCENT' ? setting.percentBps : null,
           },
         });
-        await tx.balanceEntry.create({ data: { id: randomUUID(), schoolId: school.id, studentId: overdue.studentId, kind: 'CHARGE', amount: totals.grossAmount, currency, chargeId: id } });
-        // Credit already on the balance pays it straight away, as any new charge.
-        await allocate(tx, school.id, overdue.studentId, currency, null, null);
         return { id, studentId: overdue.studentId, schoolId: school.id, ...overdue.notice(totals.grossAmount, currency) };
       });
     } catch (err) {
