@@ -345,12 +345,15 @@ enum TransactionStatus {
 /// charge, one row per Stripe Invoice. LATE_CANCEL_FEE: the fee charged to a
 /// saved card when a Booking is cancelled after the refund cut-off (Decision 234).
 /// FREEZE_FEE: the School's one-off fee for freezing a membership, charged when
-/// the freeze is approved (Decision 404).
+/// the freeze is approved (Decision 404). CHARGE_PAYMENT: money taken at the
+/// desk toward staff-created charges or the member's balance (Decisions 303,
+/// 338 item 9).
 enum TransactionKind {
   MEMBERSHIP
   RENEWAL
   LATE_CANCEL_FEE
   FREEZE_FEE
+  CHARGE_PAYMENT
 }
 
 /// MembershipFreeze.status (Decision 404). REQUESTED waits for staff; APPROVED
@@ -561,6 +564,12 @@ model User {
   membershipFreezes                 MembershipFreeze[]          @relation("MembershipFreezeStudent")
   membershipFreezesRequested        MembershipFreeze[]          @relation("MembershipFreezeRequestedBy")
   membershipFreezesDecided          MembershipFreeze[]          @relation("MembershipFreezeDecidedBy")
+  chargesOwed                       Charge[]                    @relation("ChargeStudent")
+  chargesCreated                    Charge[]                    @relation("ChargeCreatedBy")
+  chargesCancelled                  Charge[]                    @relation("ChargeCancelledBy")
+  chargeAllocations                 ChargeAllocation[]          @relation("ChargeAllocationStudent")
+  balanceEntries                    BalanceEntry[]              @relation("BalanceEntryStudent")
+  balanceEntriesRecorded            BalanceEntry[]              @relation("BalanceEntryRecordedBy")
   rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
@@ -1128,6 +1137,18 @@ model School {
   /// School's currency, charged when a freeze is approved.
   freezeMaxDaysPer12Months       Int                             @default(90)
   freezeFeeAmount                Int?
+  /// Decision 411: tax on staff-created charges, set by the School. The country
+  /// the School is in (ISO 3166-1 alpha-2; picking it pre-fills the rate from
+  /// ULTM8's list, which the School can change), the one rate in hundredths of
+  /// a percent (2000 = 20%, 0-10000), and whether its prices include tax
+  /// (true) or have tax added on top (false). Each charge keeps its own copy.
+  taxCountry                     String?
+  taxRateBasisPoints             Int                             @default(0)
+  taxInclusive                   Boolean                         @default(true)
+  /// Decision 338 item 6: the School's tax ID, shown on its invoices and receipts.
+  taxId                          String?
+  /// Decision 338 item 1: a reason must be typed when cancelling a charge (default on).
+  chargeCancelReasonRequired     Boolean                         @default(true)
   /// Check-in closes this many minutes after a Class starts (0 = at the start).
   /// Null: when the Class ends (or its own QR end time), as before.
   checkInClosesMinutesAfterStart Int?
@@ -1248,6 +1269,9 @@ model School {
   signUps                SignUp[]
   packRecharges          PackRecharge[]
   membershipFreezes      MembershipFreeze[]
+  charges                Charge[]
+  chargeAllocations      ChargeAllocation[]
+  balanceEntries         BalanceEntry[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -2368,6 +2392,14 @@ model Transaction {
   /// reports aren't changed by the surcharge.
   surchargeAmount Int @default(0)
 
+  /// CHARGE_PAYMENT only: the charge the desk recorded it against; null when
+  /// it was paid toward the balance as a whole (Decision 338 item 9).
+  chargeId String?
+  charge   Charge? @relation(fields: [chargeId], references: [id])
+
+  balanceEntries    BalanceEntry[]
+  chargeAllocations ChargeAllocation[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2375,6 +2407,7 @@ model Transaction {
   @@index([schoolId])
   @@index([studentId])
   @@index([membershipPlanId])
+  @@index([chargeId])
 }
 
 /// FranchiseFeeCharge (Phase 16b-ii, Spec 55 §6.1/§10.2) — the per-billing-cycle
@@ -4547,6 +4580,13 @@ model StaffPermission {
   /// only; off by default; owners always can.
   canExportStudents Boolean @default(false)
 
+  /// Decision 303 item 3: may create charges for the students of their own
+  /// branches. Null = the role's default: on for Branch Staff, off for
+  /// Instructors. Owners always can.
+  canCreateCharges Boolean?
+  /// Decision 338 item 1: may cancel charges. Off by default for all staff;
+  /// owners always can.
+  canCancelCharges Boolean  @default(false)
   /// Decision 409: may freeze members' memberships, approve, decline or end
   /// a freeze, for the students of their own branches. Branch Staff only;
   /// off by default; owners always can. The School's freeze settings stay
@@ -4999,8 +5039,8 @@ model MembershipFreeze {
   studentId    String
   student      User       @relation("MembershipFreezeStudent", fields: [studentId], references: [id], onDelete: Cascade)
 
-  startsAt DateTime @db.Date
-  endsAt   DateTime @db.Date
+  startsAt DateTime               @db.Date
+  endsAt   DateTime               @db.Date
   status   MembershipFreezeStatus
 
   /// When staff or the member ended an approved freeze early.
@@ -5205,4 +5245,148 @@ model CardSurchargeCountry {
   /// ISO 3166-1 alpha-2, in capitals.
   countryCode String   @id
   createdAt   DateTime @default(now())
+}
+
+/// How a charge's discount was typed (Decision 303 item 1).
+enum ChargeDiscountType {
+  PERCENT
+  FIXED
+}
+
+/// What a BalanceEntry records (Decisions 303, 338). CHARGE: a charge was
+/// raised (+ its total). CHARGE_CANCELLED: it was cancelled (− its total, so
+/// any part already paid becomes credit). PAYMENT: money taken at the desk
+/// (− the amount).
+enum BalanceEntryKind {
+  CHARGE
+  CHARGE_CANCELLED
+  PAYMENT
+}
+
+/// A charge staff create outside a Membership Plan (Decision 303; backlog
+/// 3.6), e.g. a rash guard. Its invoice number runs per School with no gaps
+/// (Decision 338 item 4). The tax is worked out when it is created, from the
+/// School's settings (Decision 411), and kept here, so a later change to the
+/// settings never rewrites it. Never deleted: a cancelled charge keeps who,
+/// when and why (Decision 338 item 1). Open, part paid or paid comes from its
+/// ChargeAllocation rows.
+///
+/// Written only on the jobs connection, after the API's own checks; read by
+/// the owner, by staff who cover the student, by the student and by an
+/// active Guardian (RLS).
+model Charge {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  studentId String
+  student   User   @relation("ChargeStudent", fields: [studentId], references: [id], onDelete: Restrict)
+
+  /// 1, 2, 3… per School, shown as #0000001.
+  invoiceNumber Int
+  description   String
+
+  /// The price as typed, then the discount (minor units). discountValue is
+  /// hundredths of a percent for PERCENT, minor units for FIXED.
+  unitAmount     Int
+  discountType   ChargeDiscountType?
+  discountValue  Int?
+  discountAmount Int                 @default(0)
+
+  /// The School's tax settings when the charge was created.
+  taxCountry         String?
+  taxRateBasisPoints Int
+  taxInclusive       Boolean
+
+  /// Price excluding tax, the tax, and the price including tax (what is owed).
+  netAmount   Int
+  taxAmount   Int
+  grossAmount Int
+  currency    String
+
+  /// A calendar day; overdue once it has passed while something is owed.
+  dueDate DateTime @db.Date
+
+  createdById String?
+  createdBy   User?   @relation("ChargeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  cancelledAt   DateTime?
+  cancelledById String?
+  cancelledBy   User?     @relation("ChargeCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  /// For staff only, never shown to the member.
+  cancelReason  String?
+
+  allocations    ChargeAllocation[]
+  balanceEntries BalanceEntry[]
+  transactions   Transaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, invoiceNumber])
+  @@index([schoolId, studentId])
+  @@index([studentId])
+}
+
+/// Money put toward one charge: from a desk payment (transactionId) or from
+/// the member's credit (no transactionId). A charge's paid amount is the sum
+/// of its rows. Rows on a cancelled charge stay as history; that money counts
+/// as credit again. Jobs connection writes; same readers as Charge.
+model ChargeAllocation {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  studentId String
+  student   User   @relation("ChargeAllocationStudent", fields: [studentId], references: [id], onDelete: Restrict)
+
+  chargeId String
+  charge   Charge @relation(fields: [chargeId], references: [id], onDelete: Restrict)
+
+  amount Int
+
+  transactionId String?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, studentId])
+  @@index([chargeId])
+  @@index([transactionId])
+}
+
+/// The member balance as a ledger (Decision 303 item 2): the balance is the
+/// sum of `amount` (positive = the member owes, negative = in credit), never
+/// a stored number. Rows are only ever added. Jobs connection writes; same
+/// readers as Charge.
+model BalanceEntry {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  studentId String
+  student   User   @relation("BalanceEntryStudent", fields: [studentId], references: [id], onDelete: Restrict)
+
+  kind     BalanceEntryKind
+  amount   Int
+  currency String
+
+  chargeId String?
+  charge   Charge? @relation(fields: [chargeId], references: [id], onDelete: Restrict)
+
+  /// PAYMENT only: its Transaction (kind CHARGE_PAYMENT), how it was paid and
+  /// who took it.
+  transactionId String?
+  transaction   Transaction?            @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+  paymentMethod PaymentAccountProvider?
+  recordedById  String?
+  recordedBy    User?                   @relation("BalanceEntryRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, studentId])
+  @@index([chargeId])
 }

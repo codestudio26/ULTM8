@@ -25,6 +25,7 @@ import { FrontDeskModule } from './front-desk/front-desk.module';
 import { StudentNotesModule } from './student-notes/student-notes.module';
 import { StudentAccessModule } from './student-access/student-access.module';
 import { OpenMatsModule } from './open-mats/open-mats.module';
+import { ChargesModule } from './charges/charges.module';
 import { CardSurchargeModule } from './card-surcharge/card-surcharge.module';
 import { AcademiesModule } from './academies/academies.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -96,6 +97,7 @@ import { validateEnv } from './common/config/validate-env';
     StudentAccessModule,
     OpenMatsModule,
     CardSurchargeModule,
+    ChargesModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

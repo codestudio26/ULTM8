@@ -6132,6 +6132,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tax-rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChargesController_taxRates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChargesController_listForStaff"];
+        put?: never;
+        post: operations["ChargesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/charges/{chargeId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChargesController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/charge-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ChargesController_recordPayment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{id}/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChargesController_listForMember"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/charge-permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ChargesController_listPermissions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/charge-permissions/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ChargesController_setPermission"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6294,6 +6406,19 @@ export interface components {
             freezeMaxDaysPer12Months?: number;
             /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
             freezeFeeAmount?: number | null;
+            /**
+             * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
+             * @example GB
+             */
+            taxCountry?: string | null;
+            /** @description Decision 411: the School's one tax rate on charges, in hundredths of a percent (2000 = 20%; 0 = no tax). Each charge keeps the rate it was created with. */
+            taxRateBasisPoints?: number;
+            /** @description Decision 411: true = the School's prices include tax; false = tax is added on top. */
+            taxInclusive?: boolean;
+            /** @description Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it. */
+            taxId?: string | null;
+            /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
+            chargeCancelReasonRequired?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -6387,6 +6512,16 @@ export interface components {
             freezeMaxDaysPer12Months: number;
             /** @description Decision 404: the freeze fee in minor units of the School's currency; null = no fee. */
             freezeFeeAmount?: number | null;
+            /** @description Decision 411: the country the School is in, for its tax. */
+            taxCountry?: string | null;
+            /** @description Decision 411: the School's tax rate on charges, in hundredths of a percent (default 0). */
+            taxRateBasisPoints: number;
+            /** @description Decision 411: the School's prices include tax (true, the default) or have it added on top. */
+            taxInclusive: boolean;
+            /** @description Decision 338 item 6: the School's tax ID for its invoices. */
+            taxId?: string | null;
+            /** @description Decision 338 item 1: a reason is required when cancelling a charge (default on). */
+            chargeCancelReasonRequired: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
@@ -6481,6 +6616,19 @@ export interface components {
             freezeMaxDaysPer12Months?: number;
             /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
             freezeFeeAmount?: number | null;
+            /**
+             * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
+             * @example GB
+             */
+            taxCountry?: string | null;
+            /** @description Decision 411: the School's one tax rate on charges, in hundredths of a percent (2000 = 20%; 0 = no tax). Each charge keeps the rate it was created with. */
+            taxRateBasisPoints?: number;
+            /** @description Decision 411: true = the School's prices include tax; false = tax is added on top. */
+            taxInclusive?: boolean;
+            /** @description Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it. */
+            taxId?: string | null;
+            /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
+            chargeCancelReasonRequired?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -7120,7 +7268,7 @@ export interface components {
         StaffActivityEntryDto: {
             id: string;
             /** @enum {string} */
-            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED";
+            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED";
             /** @description Who made the change; null once their account is deleted. */
             actorId: string | null;
             /** @description First name and surname of who made the change. */
@@ -8947,7 +9095,11 @@ export interface components {
             membershipPlanId?: string | null;
             membershipPlanTitle?: string | null;
             /** @enum {string} */
-            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE";
+            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
+            chargeId?: string | null;
+            chargeDescription?: string | null;
+            /** @example #0000001 */
+            chargeInvoiceLabel?: string | null;
             bookingId?: string | null;
             bookingClassTitle?: string | null;
             recordedById?: string | null;
@@ -11384,6 +11536,183 @@ export interface components {
         AddCardSurchargeCountryDto: {
             /** @description ISO 3166-1 alpha-2 country code, e.g. "US". Add a country only after legal review. */
             countryCode: string;
+        };
+        StandardTaxRateDto: {
+            /** @example GB */
+            country: string;
+            /** @description Hundredths of a percent (2000 = 20%). */
+            rateBasisPoints: number;
+            /** @description false: no single national rate; 0 is a placeholder and the School types its own. */
+            national: boolean;
+        };
+        StandardTaxRateListDto: {
+            items: components["schemas"]["StandardTaxRateDto"][];
+        };
+        ChargeBalanceDto: {
+            schoolId: string;
+            currency: string;
+            /** @description Still to pay on open charges. */
+            owed: number;
+            /** @description Money paid and not used yet (in credit). */
+            credit: number;
+            /** @description The balance: owed minus credit. Positive = the member owes; negative = in credit. */
+            net: number;
+            /** @description Of what is owed, the part past its due date. */
+            overdue: number;
+        };
+        ChargeResponseDto: {
+            id: string;
+            schoolId: string;
+            studentId: string;
+            /** @description The running number per School. */
+            invoiceNumber: number;
+            /** @example #0000001 */
+            invoiceLabel: string;
+            description: string;
+            /** @description The price as typed, before the discount. */
+            unitAmount: number;
+            /** @enum {string|null} */
+            discountType?: "PERCENT" | "FIXED" | null;
+            discountValue?: number | null;
+            discountAmount: number;
+            taxCountry?: string | null;
+            /** @description Hundredths of a percent, as when the charge was created. */
+            taxRateBasisPoints: number;
+            taxInclusive: boolean;
+            /** @description The price excluding tax. */
+            netAmount: number;
+            taxAmount: number;
+            /** @description The price including tax: what is owed. */
+            grossAmount: number;
+            currency: string;
+            /** @example 2026-11-15 */
+            dueDate: string;
+            /** @description Paid so far (by desk payments and credit). */
+            paidAmount: number;
+            /** @description Still to pay; 0 once paid or cancelled. */
+            owedAmount: number;
+            /** @enum {string} */
+            status: "OPEN" | "PART_PAID" | "PAID" | "CANCELLED";
+            /** @description Something is still owed and the due date has passed. */
+            overdue: boolean;
+            createdAt: string;
+            /** @description Staff only. */
+            createdByName?: string | null;
+            cancelledAt?: string | null;
+            /** @description Staff only. */
+            cancelledByName?: string | null;
+            /** @description Staff only; never sent to the member. */
+            cancelReason?: string | null;
+        };
+        ChargePaymentAllocationDto: {
+            chargeId: string;
+            /** @example #0000001 */
+            invoiceLabel: string;
+            amount: number;
+        };
+        ChargePaymentResponseDto: {
+            /** @description The Transaction id. */
+            id: string;
+            schoolId: string;
+            amount: number;
+            currency: string;
+            /** @enum {string} */
+            paymentMethod: "CASH" | "PIX" | "BANK_TRANSFER" | "CARD_TERMINAL";
+            receivedAt: string;
+            /** @description Staff only. */
+            recordedByName?: string | null;
+            /** @description Which charges it paid. */
+            allocations: components["schemas"]["ChargePaymentAllocationDto"][];
+            /** @description The part that went onto the balance as credit when it was taken. */
+            creditAmount: number;
+        };
+        ChargeAbilitiesDto: {
+            create: boolean;
+            cancel: boolean;
+            recordPayment: boolean;
+        };
+        ChargeSettingsDto: {
+            currency?: string | null;
+            taxCountry?: string | null;
+            taxRateBasisPoints: number;
+            taxInclusive: boolean;
+            cancelReasonRequired: boolean;
+            /** @description A desk payment can be recorded: the School has its payments set up. */
+            paymentsSetUp: boolean;
+        };
+        StudentChargesResponseDto: {
+            /** @description One per currency; usually one. */
+            balances: components["schemas"]["ChargeBalanceDto"][];
+            /** @description What is owed first (oldest due first), then paid, then cancelled. */
+            charges: components["schemas"]["ChargeResponseDto"][];
+            /** @description Newest first. */
+            payments: components["schemas"]["ChargePaymentResponseDto"][];
+            /** @description What the caller may do here. */
+            can: components["schemas"]["ChargeAbilitiesDto"];
+            settings: components["schemas"]["ChargeSettingsDto"];
+        };
+        CreateChargeDto: {
+            /** @example Rash guard */
+            description: string;
+            /** @description The price in minor units of the School's currency, as the School prices (with or without tax, by its tax setting). */
+            amount: number;
+            /** @enum {string|null} */
+            discountType?: "PERCENT" | "FIXED" | null;
+            /** @description PERCENT: hundredths of a percent (1250 = 12.5%). FIXED: minor units. Required with discountType. */
+            discountValue?: number | null;
+            /**
+             * @description The due date (YYYY-MM-DD).
+             * @example 2026-11-15
+             */
+            dueDate: string;
+        };
+        CancelChargeDto: {
+            /** @description For staff only. Required unless the School's owner made it optional. */
+            reason?: string;
+        };
+        RecordChargePaymentDto: {
+            /** @description The charge it was taken for. Null or missing: toward the balance, oldest charge first. */
+            chargeId?: string | null;
+            /** @description Minor units. More than is owed becomes credit; less leaves the rest owed. */
+            amount: number;
+            /** @enum {string} */
+            paymentMethod: "CASH" | "PIX" | "BANK_TRANSFER" | "CARD_TERMINAL";
+            /**
+             * @description Send the member (or Guardian) a notification with the receipt.
+             * @default true
+             */
+            sendReceipt: boolean;
+        };
+        RecordChargePaymentResponseDto: {
+            payment: components["schemas"]["ChargePaymentResponseDto"];
+            balances: components["schemas"]["ChargeBalanceDto"][];
+        };
+        MemberChargeSchoolDto: {
+            schoolId: string;
+            schoolName: string;
+            /** @description The School's tax ID, for its invoices (Decision 338 item 6). */
+            taxId?: string | null;
+            balances: components["schemas"]["ChargeBalanceDto"][];
+            charges: components["schemas"]["ChargeResponseDto"][];
+            payments: components["schemas"]["ChargePaymentResponseDto"][];
+        };
+        MemberChargesResponseDto: {
+            schools: components["schemas"]["MemberChargeSchoolDto"][];
+        };
+        ChargePermissionDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            roles: ("BRANCH_STAFF" | "INSTRUCTOR")[];
+            canCreateCharges: boolean;
+            canCancelCharges: boolean;
+        };
+        ChargePermissionListDto: {
+            items: components["schemas"]["ChargePermissionDto"][];
+        };
+        SetChargePermissionDto: {
+            canCreateCharges: boolean;
+            canCancelCharges: boolean;
         };
     };
     responses: never;
@@ -16368,7 +16697,7 @@ export interface operations {
                 limit?: number;
                 status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
-                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
                 /** @description First day included, YYYY-MM-DD (UTC). */
                 from?: string;
@@ -16398,7 +16727,7 @@ export interface operations {
             query?: {
                 status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
-                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
                 /** @description First day included, YYYY-MM-DD (UTC). */
                 from?: string;
@@ -21618,6 +21947,193 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    ChargesController_taxRates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandardTaxRateListDto"];
+                };
+            };
+        };
+    };
+    ChargesController_listForStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentChargesResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateChargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                chargeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelChargeDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargeResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_recordPayment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecordChargePaymentDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordChargePaymentResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_listForMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberChargesResponseDto"];
+                };
+            };
+        };
+    };
+    ChargesController_listPermissions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargePermissionListDto"];
+                };
+            };
+        };
+    };
+    ChargesController_setPermission: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetChargePermissionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChargePermissionDto"];
+                };
             };
         };
     };

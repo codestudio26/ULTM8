@@ -15,7 +15,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Notifications'>;
 
 /** Decision 355 — the screen a notification opens, or null when there is
  * none in this app (CANCELLATIONS is a School staff page). */
-type Target = 'MyBookings' | 'Waivers' | 'TransactionHistory' | 'MyGrading';
+type Target = 'MyBookings' | 'Waivers' | 'TransactionHistory' | 'MyGrading' | 'MyCharges';
 function notificationTarget(n: Notification): Target | null {
   switch (n.targetType) {
     case 'CLASS':
@@ -23,7 +23,8 @@ function notificationTarget(n: Notification): Target | null {
     case 'WAIVER':
       return 'Waivers';
     case 'PAYMENT':
-      return 'TransactionHistory';
+      // A staff-created charge, its receipt or its cancellation (Decision 338).
+      return n.type === 'CHARGE' ? 'MyCharges' : 'TransactionHistory';
     case 'GRADING':
       return 'MyGrading';
     default:

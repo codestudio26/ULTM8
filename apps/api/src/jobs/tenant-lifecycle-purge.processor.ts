@@ -179,6 +179,7 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
         description: null,
         logoUrl: null,
         bannerUrl: null,
+        taxId: null,
         purgedAt: new Date(),
       },
     });

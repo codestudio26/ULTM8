@@ -225,6 +225,10 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   // Decision 404 — apps/api/src/memberships/freeze/membership-freezes.service.ts.
   'Freeze approved': 'freezeApprovedTitle',
   'Freeze declined': 'freezeDeclinedTitle',
+  // Decisions 303, 338 — apps/api/src/charges/charges.service.ts.
+  'New invoice': 'chargeCreatedTitle',
+  'Payment received': 'chargePaymentTitle',
+  'Charge cancelled': 'chargeCancelledTitle',
   // Decision 409 — MembershipFreezesService.notifyBookingsCancelled.
   'Bookings cancelled': 'freezeBookingsCancelledTitle',
   'Class moved': 'classMovedTitle',
@@ -405,6 +409,21 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^Your School declined your request to freeze (.+) from (\d{4}-\d{2}-\d{2})\.$/s,
     (m, { t, locale }) => n(t, 'freezeDeclinedBody', { plan: m[1], start: formatDay(m[2], locale) }),
+  ],
+  // Decisions 303, 338 — ChargesService. Amounts are "120.00 BRL"; days are YYYY-MM-DD.
+  [
+    /^Invoice (#\d+) for (.+): ([\d.]+) ([A-Z]{3}), due (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) => n(t, 'chargeCreatedBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale), due: formatDay(m[5], locale) }),
+  ],
+  [/^Your payment of ([\d.]+) ([A-Z]{3}) was received\.$/s, (m, { t, locale }) => n(t, 'chargePaymentBody', { amount: formatAmount(m[1], m[2], locale) })],
+  [
+    /^Your charge '(.+), ([\d.]+) ([A-Z]{3})' was cancelled\. Nothing to pay\. The ([\d.]+) ([A-Z]{3}) already paid is now credit on your balance\.$/s,
+    (m, { t, locale }) =>
+      n(t, 'chargeCancelledCreditBody', { description: m[1], amount: formatAmount(m[2], m[3], locale), paid: formatAmount(m[4], m[5], locale) }),
+  ],
+  [
+    /^Your charge '(.+), ([\d.]+) ([A-Z]{3})' was cancelled\. Nothing to pay\.$/s,
+    (m, { t, locale }) => n(t, 'chargeCancelledBody', { description: m[1], amount: formatAmount(m[2], m[3], locale) }),
   ],
   // Decision 409 — MembershipFreezesService.notifyBookingsCancelled. The list
   // is "Class title (YYYY-MM-DD)" joined with "; ", maybe ending "; +N"; only

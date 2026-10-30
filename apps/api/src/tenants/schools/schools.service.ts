@@ -987,6 +987,12 @@ export class SchoolsService {
           // Decision 404: freezing memberships.
           freezeMaxDaysPer12Months: dto.freezeMaxDaysPer12Months,
           freezeFeeAmount: dto.freezeFeeAmount,
+          // Decision 411: tax on staff-created charges; Decision 338 items 1 and 6.
+          taxCountry: dto.taxCountry,
+          taxRateBasisPoints: dto.taxRateBasisPoints,
+          taxInclusive: dto.taxInclusive,
+          taxId: dto.taxId,
+          chargeCancelReasonRequired: dto.chargeCancelReasonRequired,
         },
       }),
     );

@@ -64,6 +64,7 @@ export function HomeScreen({ navigation }: Props) {
       <Button title={t('home.myBookings')} onPress={() => navigation.navigate('MyBookings')} />
       <Button title={t('home.myMemberships')} onPress={() => navigation.navigate('MyMemberships')} />
       <Button title={t('home.paymentHistory')} variant="secondary" onPress={() => navigation.navigate('TransactionHistory')} />
+      {isStudent ? <Button title={t('charges.home')} variant="secondary" onPress={() => navigation.navigate('MyCharges')} /> : null}
       <Button title={t('home.waivers')} onPress={() => navigation.navigate('Waivers')} />
       {isStudent ? <Button title={t('home.paymentMethods')} onPress={() => navigation.navigate('PaymentMethods')} /> : null}
       {isStudent ? <Button title={t('home.lessons')} onPress={() => navigation.navigate('Lessons')} /> : null}

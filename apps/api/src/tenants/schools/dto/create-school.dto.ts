@@ -18,6 +18,7 @@ import {
   MaxLength,
   MinLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
@@ -312,6 +313,38 @@ export class CreateSchoolDto {
   @IsInt()
   @Min(1)
   freezeFeeAmount?: number | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, example: 'GB', description: "Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it." })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @Matches(/^[A-Z]{2}$/, { message: 'taxCountry must be a two-letter country code.' })
+  taxCountry?: string | null;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 10000, description: "Decision 411: the School's one tax rate on charges, in hundredths of a percent (2000 = 20%; 0 = no tax). Each charge keeps the rate it was created with." })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(10000)
+  taxRateBasisPoints?: number;
+
+  @ApiPropertyOptional({ description: "Decision 411: true = the School's prices include tax; false = tax is added on top." })
+  @IsOptional()
+  @IsBoolean()
+  taxInclusive?: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 50, description: "Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it." })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(50)
+  taxId?: string | null;
+
+  @ApiPropertyOptional({ description: 'Decision 338 item 1: staff must type a reason when cancelling a charge (default on).' })
+  @IsOptional()
+  @IsBoolean()
+  chargeCancelReasonRequired?: boolean;
 
   @ApiPropertyOptional({
     type: [String],

@@ -152,6 +152,21 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: "Decision 404: the freeze fee in minor units of the School's currency; null = no fee." })
   freezeFeeAmount!: number | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 411: the country the School is in, for its tax.' })
+  taxCountry!: string | null;
+
+  @ApiProperty({ description: "Decision 411: the School's tax rate on charges, in hundredths of a percent (default 0)." })
+  taxRateBasisPoints!: number;
+
+  @ApiProperty({ description: "Decision 411: the School's prices include tax (true, the default) or have it added on top." })
+  taxInclusive!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 338 item 6: the School's tax ID for its invoices." })
+  taxId!: string | null;
+
+  @ApiProperty({ description: 'Decision 338 item 1: a reason is required when cancelling a charge (default on).' })
+  chargeCancelReasonRequired!: boolean;
+
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. Null until the School sets it.' })
   visitorPeriodDays!: number | null;
 

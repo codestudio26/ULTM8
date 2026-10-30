@@ -52,8 +52,20 @@ export class TransactionResponseDto {
 
   /** MEMBERSHIP (a plan bought or recorded at the desk), RENEWAL (a later
    * Subscription charge) or LATE_CANCEL_FEE (Decision 346). */
-  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE'] })
-  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE';
+  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE', 'CHARGE_PAYMENT'] })
+  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE' | 'CHARGE_PAYMENT';
+
+  /** CHARGE_PAYMENT only (Decision 338 item 9): the charge it was taken
+   * against, as "#0000001 Rash guard"; null when it was paid toward the
+   * balance as a whole. */
+  @ApiPropertyOptional({ type: String, nullable: true })
+  chargeId!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  chargeDescription!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, example: '#0000001' })
+  chargeInvoiceLabel!: string | null;
 
   /** LATE_CANCEL_FEE only: the cancelled Booking and its class's title. */
   @ApiPropertyOptional({ type: String, nullable: true })

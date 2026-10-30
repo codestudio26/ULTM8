@@ -53,6 +53,12 @@ function rowTitle(transaction: Transaction, t: ReturnType<typeof useT>): string 
   const plan = transaction.membershipPlanTitle ?? '';
   // Decision 404: the School's fee for freezing a membership.
   if (transaction.kind === 'FREEZE_FEE') return plan ? t('transactions.row.freezeFee', { plan }) : t('transactions.row.freezeFeeNoPlan');
+  // Decision 338 item 9: a payment taken at the desk toward a charge.
+  if (transaction.kind === 'CHARGE_PAYMENT') {
+    return transaction.chargeInvoiceLabel
+      ? t('charges.transactions.item', { invoice: transaction.chargeInvoiceLabel, description: transaction.chargeDescription ?? '' })
+      : t('charges.transactions.itemBalance');
+  }
   return transaction.kind === 'RENEWAL' ? t('transactions.row.renewal', { plan }) : plan;
 }
 
