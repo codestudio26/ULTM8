@@ -15,7 +15,8 @@ permissions:
 jobs:
   portal-browser-tests-other-engines:
     name: Portal browser tests (Firefox, WebKit)
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright doesn't support yet.
+    runs-on: ubuntu-24.04
 
     services:
       postgres:

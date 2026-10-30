@@ -23,6 +23,8 @@ import {
   WAIVER_RENEWAL_SWEEP_QUEUE,
   CHARGE_AUTO_PAY_QUEUE,
   CHARGE_OVERDUE_NOTICE_QUEUE,
+  LATE_FEE_QUEUE,
+  CHARGE_RECURRING_QUEUE,
 } from './queue.constants';
 
 const logger = new Logger('QueueModule');
@@ -95,6 +97,8 @@ export {
   WAIVER_RENEWAL_SWEEP_QUEUE,
   CHARGE_AUTO_PAY_QUEUE,
   CHARGE_OVERDUE_NOTICE_QUEUE,
+  LATE_FEE_QUEUE,
+  CHARGE_RECURRING_QUEUE,
 };
 
 @Module({
@@ -121,6 +125,8 @@ export {
       { name: WAIVER_RENEWAL_SWEEP_QUEUE },
       { name: CHARGE_AUTO_PAY_QUEUE },
       { name: CHARGE_OVERDUE_NOTICE_QUEUE },
+      { name: LATE_FEE_QUEUE },
+      { name: CHARGE_RECURRING_QUEUE },
     ),
   ],
   exports: [BullModule],

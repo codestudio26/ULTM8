@@ -945,6 +945,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Terugkerende kosten",
+      every: {
+        WEEKLY: "Elke week",
+        MONTHLY: "Elke maand",
+        YEARLY: "Elk jaar",
+      },
+      amount: "{amount} per keer",
+      next: "Volgende factuur op {date}",
+      endsOn: "Laatste op {date}",
+      payments: "Betalingen gedaan: {done} / {count}",
+      status: {
+        STOPPED: "Gestopt",
+        ENDED: "Beëindigd",
+      },
+      taxNote: "Tegen het btw-tarief van vandaag. Elke factuur gebruikt het tarief van die dag.",
+    },
     home: "Facturen",
     childButton: "Facturen",
     title: "Facturen",
@@ -1022,6 +1039,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Betaling: {invoice} {description}",
       itemBalance: "Betaling op je saldo",
+    },
+    lateFee: {
+      label: "Te-laatvergoeding",
+      forInvoice: "Voor factuur {invoice} ({description}), vervallen op {date}",
+      forRenewal: "Voor je lidmaatschapsbetaling {plan} van {amount}, vervallen op {date}",
+      waivedOn: "Kwijtgescholden op {date}. Niets te betalen.",
     },
   },
 };

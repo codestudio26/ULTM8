@@ -57,7 +57,8 @@ export type ChargeAutoPayOutcome = { paid: number; failed: number; skipped: numb
  * it when they turned the switch on (ChargesService.setAutoPay).
  *
  * - Which charges: open (not cancelled, something still owed) and due today or
- *   earlier in the School's time zone, never tried before. One attempt per
+ *   earlier in the School's time zone, never tried before, and not a late fee
+ *   (Decision 413: a late fee is never charged to a card automatically). One attempt per
  *   charge, ever: a partial unique index on Transaction makes that hold even if
  *   two runs overlap. A charge that was already overdue when the member turned
  *   the switch on is tried once on the next run. No retries and no dunning: a
@@ -137,6 +138,10 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         cancelledAt: null,
         dueDate: { lte: today },
         transactions: { none: { chargePaymentChannel: 'AUTOMATIC' } },
+        // Decision 413 item 5: a late fee is never charged to a card
+        // automatically; the member pays it in the app or at the desk.
+        lateFeeForChargeId: null,
+        lateFeeForTransactionId: null,
       },
       orderBy: [{ dueDate: 'asc' }, { invoiceNumber: 'asc' }],
       select: { id: true },

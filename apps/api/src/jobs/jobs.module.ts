@@ -28,6 +28,8 @@ import { WaiverRenewalSweepProcessor, WaiverRenewalSweepScheduler } from './waiv
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pay.processor';
 import { ChargeOverdueNoticeProcessor, ChargeOverdueNoticeScheduler } from './charge-overdue-notice.processor';
+import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
+import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -173,6 +175,13 @@ import { ChargeOverdueNoticeProcessor, ChargeOverdueNoticeScheduler } from './ch
  *
  * Backlog §3.6 step 4 adds ChargeOverdueNoticeProcessor/Scheduler — a daily
  * "Payment overdue" notice, once per charge (Decision 338 item 10).
+ * Backlog §3.7 adds LateFeeProcessor/Scheduler — a daily run (7am UTC, after
+ * charge-auto-pay) adding one late fee to the member's balance for each
+ * payment still unpaid after the School's grace days (Decision 413). Plain
+ * ledger functions and the notification queue only; no new module import.
+ * Backlog §3.6 step 3 adds ChargeRecurringProcessor/Scheduler — a daily run
+ * (5:30am UTC, before charge-auto-pay) making recurring charges' occurrences
+ * (Decision 412), with the plain functions in charges/recurring-occurrences.ts.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule],
@@ -213,6 +222,10 @@ import { ChargeOverdueNoticeProcessor, ChargeOverdueNoticeScheduler } from './ch
     ChargeAutoPayScheduler,
     ChargeOverdueNoticeProcessor,
     ChargeOverdueNoticeScheduler,
+    LateFeeProcessor,
+    LateFeeScheduler,
+    ChargeRecurringProcessor,
+    ChargeRecurringScheduler,
   ],
 })
 export class JobsModule {}

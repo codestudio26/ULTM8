@@ -984,6 +984,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Регулярные начисления",
+      every: {
+        WEEKLY: "Каждую неделю",
+        MONTHLY: "Каждый месяц",
+        YEARLY: "Каждый год",
+      },
+      amount: "{amount} за раз",
+      next: "Следующий счёт: {date}",
+      endsOn: "Последний: {date}",
+      payments: "Сделано платежей: {done} / {count}",
+      status: {
+        STOPPED: "Остановлено",
+        ENDED: "Завершено",
+      },
+      taxNote: "По сегодняшней ставке налога. Каждый счёт использует ставку своего дня.",
+    },
     home: "Счета",
     childButton: "Счета",
     title: "Счета",
@@ -1061,6 +1078,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Оплата: {invoice} {description}",
       itemBalance: "Оплата на ваш баланс",
+    },
+    lateFee: {
+      label: "Пеня за просрочку",
+      forInvoice: "За счёт {invoice} ({description}), срок {date}",
+      forRenewal: "За платёж по вашему абонементу {plan} на сумму {amount}, срок {date}",
+      waivedOn: "Списана {date}. Платить ничего не нужно.",
     },
   },
 };

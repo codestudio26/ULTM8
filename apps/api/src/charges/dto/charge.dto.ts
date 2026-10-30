@@ -197,6 +197,9 @@ export class ChargeResponseDto {
   @ApiProperty({ description: "Decision 406: the card surcharge on what is still owed when paid by card in the app (0 = none). Member's view only; 0 for staff." })
   cardSurchargeAmount!: number;
 
+  @ApiPropertyOptional({ type: () => LateFeeDetailsDto, nullable: true, description: 'Decision 413: set when this charge is a late fee, with what it is for.' })
+  lateFee!: LateFeeDetailsDto | null;
+
   @ApiProperty({ description: 'Step 4 (Decision 338 item 3): refunded off its total, to the card, in cash or as credit. A refund never re-opens a charge.' })
   refundedAmount!: number;
 
@@ -233,6 +236,40 @@ export class ChargePaymentRefundableDto {
   @ApiProperty({ description: 'What can be turned into credit: the part of the payment still on charges.' })
   asCredit!: number;
 }
+
+export const LATE_FEE_FOR_TYPES = ['CHARGE', 'RENEWAL'] as const;
+
+/** Decision 413: what a late-fee charge is for. */
+export class LateFeeDetailsDto {
+  @ApiProperty({ enum: LATE_FEE_FOR_TYPES, description: 'CHARGE: an overdue charge. RENEWAL: a card membership renewal Stripe could not collect.' })
+  forType!: (typeof LATE_FEE_FOR_TYPES)[number];
+
+  @ApiPropertyOptional({ type: String, nullable: true, example: '#0000003', description: 'CHARGE only.' })
+  forInvoiceLabel!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "CHARGE only: the overdue charge's description." })
+  forDescription!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "RENEWAL only: the membership plan's title." })
+  forPlanTitle!: string | null;
+
+  @ApiProperty({ example: '2026-11-01', description: "The overdue payment's due day (a renewal's invoice date, in the School's time zone)." })
+  forDueDate!: string;
+
+  @ApiProperty({ description: 'What was still owed on it when the late fee was added (minor units).' })
+  overdueAmount!: number;
+
+  @ApiProperty()
+  overdueCurrency!: string;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'The % used, in hundredths of a percent; null for a fixed fee.' })
+  percentBps!: number | null;
+
+  @ApiProperty({ description: 'Staff waived it (it is then Cancelled).' })
+  waived!: boolean;
+}
+
+export type LateFeeDetails = LateFeeDetailsDto;
 
 export class ChargePaymentAllocationDto {
   @ApiProperty()

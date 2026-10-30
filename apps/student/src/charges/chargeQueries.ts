@@ -20,6 +20,18 @@ export function useMemberCharges(studentId: string | null) {
   });
 }
 
+export type MemberRecurringCharge = components['schemas']['MemberRecurringChargeDto'];
+
+/** GET /students/{id}/recurring-charges — the recurring charges the School set
+ * up for the student (Decision 412), read-only. */
+export function useMemberRecurringCharges(studentId: string | null) {
+  return useQuery({
+    queryKey: ['member-recurring-charges', studentId],
+    queryFn: () => unwrap(apiClient.GET('/v1/students/{id}/recurring-charges', { params: { path: { id: studentId! } } })),
+    enabled: !!studentId,
+  });
+}
+
 /** Re-reads the charges after a Checkout: the payment lands from Stripe's
  * webhook, so it may show as Pending for a moment first. */
 export function useInvalidateMemberCharges() {

@@ -75,8 +75,33 @@ export const charges = {
     app: 'card in the app',
     automatic: 'automatic card payment',
   },
+  /** Recurring charges the School set up (Decision 412), read-only. */
+  recurring: {
+    heading: 'Recurring charges',
+    every: {
+      WEEKLY: 'Every week',
+      MONTHLY: 'Every month',
+      YEARLY: 'Every year',
+    },
+    amount: '{amount} each time',
+    next: 'Next invoice on {date}',
+    endsOn: 'Last one on {date}',
+    payments: 'Payments made: {done} / {count}',
+    status: {
+      STOPPED: 'Stopped',
+      ENDED: 'Ended',
+    },
+    taxNote: "At today's tax rate. Each invoice uses the rate on its own day.",
+  },
   transactions: {
     item: 'Payment: {invoice} {description}',
     itemBalance: 'Payment toward your balance',
+  },
+  // Decision 413 — late fees.
+  lateFee: {
+    label: "Late fee",
+    forInvoice: "For invoice {invoice} ({description}), due {date}",
+    forRenewal: "For your {plan} membership payment of {amount}, due {date}",
+    waivedOn: "Waived on {date}. Nothing to pay.",
   },
 };

@@ -937,6 +937,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "定期收费项",
+      every: {
+        WEEKLY: "每周",
+        MONTHLY: "每月",
+        YEARLY: "每年",
+      },
+      amount: "每次 {amount}",
+      next: "下一张账单：{date}",
+      endsOn: "最后一次：{date}",
+      payments: "已付款：{done} / {count}",
+      status: {
+        STOPPED: "已停止",
+        ENDED: "已结束",
+      },
+      taxNote: "按今天的税率。每张账单使用当天的税率。",
+    },
     home: "账单",
     childButton: "账单",
     title: "账单",
@@ -1014,6 +1031,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "付款：{invoice} {description}",
       itemBalance: "余额付款",
+    },
+    lateFee: {
+      label: "滞纳金",
+      forInvoice: "针对发票 {invoice}（{description}），到期日 {date}",
+      forRenewal: "针对你的 {plan} 会员费 {amount}，到期日 {date}",
+      waivedOn: "已于 {date} 免除，无需支付。",
     },
   },
 };

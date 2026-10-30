@@ -945,6 +945,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Wiederkehrende Gebühren",
+      every: {
+        WEEKLY: "Jede Woche",
+        MONTHLY: "Jeden Monat",
+        YEARLY: "Jedes Jahr",
+      },
+      amount: "{amount} pro Mal",
+      next: "Nächste Rechnung am {date}",
+      endsOn: "Letzte am {date}",
+      payments: "Zahlungen: {done} / {count}",
+      status: {
+        STOPPED: "Gestoppt",
+        ENDED: "Beendet",
+      },
+      taxNote: "Zum heutigen Steuersatz. Jede Rechnung nutzt den Satz ihres Tages.",
+    },
     home: "Rechnungen",
     childButton: "Rechnungen",
     title: "Rechnungen",
@@ -1022,6 +1039,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Zahlung: {invoice} {description}",
       itemBalance: "Zahlung auf dein Guthabenkonto",
+    },
+    lateFee: {
+      label: "Säumnisgebühr",
+      forInvoice: "Für Rechnung {invoice} ({description}), fällig am {date}",
+      forRenewal: "Für deine Mitgliedszahlung {plan} über {amount}, fällig am {date}",
+      waivedOn: "Erlassen am {date}. Nichts zu zahlen.",
     },
   },
 };

@@ -235,6 +235,13 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   // Backlog 3.6 step 4 — charge-overdue-notice job and the dispute webhook.
   'Payment overdue': 'chargeOverdueTitle',
   'Payment dispute': 'chargeDisputeTitle',
+  // Decision 413 — late fees.
+  'Late fee added': 'lateFeeAddedTitle',
+  'Late fee waived': 'lateFeeWaivedTitle',
+  // Decision 412 — apps/api/src/charges/recurring-charges.service.ts.
+  'Recurring charge set up': 'recurringChargeSetUpTitle',
+  'Recurring charge stopped': 'recurringChargeStoppedTitle',
+  'Recurring charge restarted': 'recurringChargeRestartedTitle',
   'Class moved': 'classMovedTitle',
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
@@ -439,6 +446,20 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^The dispute on your card payment of ([\d.]+) ([A-Z]{3}) was decided in the School's favour\. The payment stands\.$/s,
     (m, { t, locale }) => n(t, 'chargeDisputeWonBody', { amount: formatAmount(m[1], m[2], locale) }),
   ],
+  // Decision 413 — late fees (apps/api/src/late-fees/late-fee-notices.ts).
+  [
+    /^A late fee of ([\d.]+) ([A-Z]{3}) was added to your balance because invoice (#\d+) \((.+)\) is overdue\. Pay it in the app or at the front desk\.$/s,
+    (m, { t, locale }) => n(t, 'lateFeeAddedChargeBody', { fee: formatAmount(m[1], m[2], locale), invoice: m[3], description: m[4] }),
+  ],
+  [
+    /^A late fee of ([\d.]+) ([A-Z]{3}) was added to your balance because your (.+) membership payment of ([\d.]+) ([A-Z]{3}) is overdue\. Pay it in the app or at the front desk\.$/s,
+    (m, { t, locale }) => n(t, 'lateFeeAddedRenewalBody', { fee: formatAmount(m[1], m[2], locale), plan: m[3], amount: formatAmount(m[4], m[5], locale) }),
+  ],
+  [
+    /^Your late fee of ([\d.]+) ([A-Z]{3}) was waived\. Nothing to pay\. The ([\d.]+) ([A-Z]{3}) already paid is now credit on your balance\.$/s,
+    (m, { t, locale }) => n(t, 'lateFeeWaivedCreditBody', { fee: formatAmount(m[1], m[2], locale), paid: formatAmount(m[3], m[4], locale) }),
+  ],
+  [/^Your late fee of ([\d.]+) ([A-Z]{3}) was waived\. Nothing to pay\.$/s, (m, { t, locale }) => n(t, 'lateFeeWaivedBody', { fee: formatAmount(m[1], m[2], locale) })],
   [
     /^Your charge '(.+), ([\d.]+) ([A-Z]{3})' was cancelled\. Nothing to pay\. The ([\d.]+) ([A-Z]{3}) already paid is now credit on your balance\.$/s,
     (m, { t, locale }) =>
@@ -447,6 +468,21 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^Your charge '(.+), ([\d.]+) ([A-Z]{3})' was cancelled\. Nothing to pay\.$/s,
     (m, { t, locale }) => n(t, 'chargeCancelledBody', { description: m[1], amount: formatAmount(m[2], m[3], locale) }),
+  ],
+  // Decision 412 — RecurringChargesService. Each occurrence's own notice is "New invoice" above.
+  [
+    /^A recurring charge was set up: (.+), ([\d.]+) ([A-Z]{3}) every (week|month|year), first on (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) =>
+      n(t, { week: 'recurringChargeSetUpWeeklyBody', month: 'recurringChargeSetUpMonthlyBody', year: 'recurringChargeSetUpYearlyBody' }[m[4] as 'week' | 'month' | 'year'], {
+        description: m[1],
+        amount: formatAmount(m[2], m[3], locale),
+        first: formatDay(m[5], locale),
+      }),
+  ],
+  [/^Your recurring charge '(.+)' was stopped\. No more invoices will be created for it\.$/s, (m, { t }) => n(t, 'recurringChargeStoppedBody', { description: m[1] })],
+  [
+    /^Your recurring charge '(.+)' was restarted\. The next invoice is on (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) => n(t, 'recurringChargeRestartedBody', { description: m[1], next: formatDay(m[2], locale) }),
   ],
   // Decision 409 — MembershipFreezesService.notifyBookingsCancelled. The list
   // is "Class title (YYYY-MM-DD)" joined with "; ", maybe ending "; +N"; only

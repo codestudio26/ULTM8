@@ -963,6 +963,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Frais récurrents",
+      every: {
+        WEEKLY: "Chaque semaine",
+        MONTHLY: "Chaque mois",
+        YEARLY: "Chaque année",
+      },
+      amount: "{amount} à chaque fois",
+      next: "Prochaine facture le {date}",
+      endsOn: "Dernière le {date}",
+      payments: "Paiements faits : {done} / {count}",
+      status: {
+        STOPPED: "Arrêtés",
+        ENDED: "Terminés",
+      },
+      taxNote: "Au taux de taxe d'aujourd'hui. Chaque facture utilise le taux de son jour.",
+    },
     home: "Factures",
     childButton: "Factures",
     title: "Factures",
@@ -1040,6 +1057,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Paiement : {invoice} {description}",
       itemBalance: "Paiement sur votre solde",
+    },
+    lateFee: {
+      label: "Frais de retard",
+      forInvoice: "Pour la facture {invoice} ({description}), échue le {date}",
+      forRenewal: "Pour le paiement de votre abonnement {plan} de {amount}, échu le {date}",
+      waivedOn: "Annulés le {date}. Rien à payer.",
     },
   },
 };

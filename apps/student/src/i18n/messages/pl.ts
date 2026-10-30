@@ -984,6 +984,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Opłaty cykliczne",
+      every: {
+        WEEKLY: "Co tydzień",
+        MONTHLY: "Co miesiąc",
+        YEARLY: "Co rok",
+      },
+      amount: "{amount} za każdym razem",
+      next: "Następna faktura: {date}",
+      endsOn: "Ostatnia: {date}",
+      payments: "Dokonane płatności: {done} / {count}",
+      status: {
+        STOPPED: "Zatrzymana",
+        ENDED: "Zakończona",
+      },
+      taxNote: "Według dzisiejszej stawki podatku. Każda faktura używa stawki ze swojego dnia.",
+    },
     home: "Faktury",
     childButton: "Faktury",
     title: "Faktury",
@@ -1061,6 +1078,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     transactions: {
       item: "Płatność: {invoice} {description}",
       itemBalance: "Płatność na twoje saldo",
+    },
+    lateFee: {
+      label: "Opłata za zwłokę",
+      forInvoice: "Za fakturę {invoice} ({description}), termin {date}",
+      forRenewal: "Za płatność za Twój karnet {plan} w kwocie {amount}, termin {date}",
+      waivedOn: "Umorzona {date}. Nic do zapłaty.",
     },
   },
 };

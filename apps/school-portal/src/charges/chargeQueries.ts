@@ -76,6 +76,60 @@ export function useCancelCharge(schoolId: string | null, studentId: string) {
   });
 }
 
+/** Recurring charges (Decision 412; backlog §3.6 step 3). */
+export type RecurringCharge = components['schemas']['RecurringChargeResponseDto'];
+export type StudentRecurringCharges = components['schemas']['StudentRecurringChargesResponseDto'];
+export type CreateRecurringChargeInput = components['schemas']['CreateRecurringChargeDto'];
+
+const recurringKey = (schoolId: string | null, studentId: string) => ['recurring-charges', schoolId, studentId];
+
+/** A student's recurring charges. A 403 means the caller may not see them. */
+export function useStudentRecurringCharges(schoolId: string | null, studentId: string) {
+  return useQuery({
+    queryKey: recurringKey(schoolId, studentId),
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/students/{studentId}/recurring-charges', { params: { path: { schoolId: schoolId!, studentId } } })),
+    enabled: !!schoolId && !!studentId,
+    retry: false,
+  });
+}
+
+/** Setting up, stopping or restarting a series can make a charge today, so
+ * the charges are re-read too. */
+function useInvalidateRecurring(schoolId: string | null, studentId: string) {
+  const queryClient = useQueryClient();
+  const invalidateCharges = useInvalidateCharges(schoolId, studentId);
+  return () => {
+    void invalidateCharges();
+    return queryClient.invalidateQueries({ queryKey: recurringKey(schoolId, studentId) });
+  };
+}
+
+export function useCreateRecurringCharge(schoolId: string | null, studentId: string) {
+  const invalidate = useInvalidateRecurring(schoolId, studentId);
+  return useMutation({
+    mutationFn: (body: CreateRecurringChargeInput) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/recurring-charges', { params: { path: { schoolId: schoolId!, studentId } }, body })),
+    onSuccess: invalidate,
+  });
+}
+
+export function useStopRecurringCharge(schoolId: string | null, studentId: string) {
+  const invalidate = useInvalidateRecurring(schoolId, studentId);
+  return useMutation({
+    mutationFn: (id: string) => unwrap(apiClient.POST('/v1/schools/{schoolId}/recurring-charges/{id}/stop', { params: { path: { schoolId: schoolId!, id } } })),
+    onSuccess: invalidate,
+  });
+}
+
+export function useRestartRecurringCharge(schoolId: string | null, studentId: string) {
+  const invalidate = useInvalidateRecurring(schoolId, studentId);
+  return useMutation({
+    mutationFn: (id: string) => unwrap(apiClient.POST('/v1/schools/{schoolId}/recurring-charges/{id}/restart', { params: { path: { schoolId: schoolId!, id } } })),
+    onSuccess: invalidate,
+  });
+}
+
 /** Step 4: refund a payment (owner only, Decision 338 item 3). */
 export function useRefundChargePayment(schoolId: string | null, studentId: string) {
   const invalidate = useInvalidateCharges(schoolId, studentId);

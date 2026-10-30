@@ -7143,3 +7143,66 @@ User (Code), 30 Oct 2026: "school has to decided not us".
 ### Recorded by
 
 User (Code), 30 Oct 2026: "My mistake, the school should set the tax per country not the platform admin"; "rate per school, they will choose the country they are in and the right tax will be applied"; "yes it should display price ex tax, the tax and the price inc tax"; and chose "ULTM8 list, School can edit".
+
+---
+
+## Decision 412 — Recurring charges outside a Membership Plan
+
+**Date:** 30 Oct 2026. **Answers:** how Decision 303 item 1's "recurring payments outside a Membership Plan" work (v1.3 backlog §3.6, step 3 of 6). **Builds on:** Decisions 303, 338 (item 2: who restarts), 347, 411.
+
+### Decision
+
+1. **Setting one up.** Staff who can create charges set up a recurring charge on the student's page: description, price, an optional discount (% or fixed), **how often: weekly, monthly or yearly**, a **first date**, and optionally **an end date or a number of payments**. Neither means it runs until it is stopped.
+2. **Each occurrence becomes a normal charge** on its day: its own invoice number, the School's tax at that moment (kept on the charge, as Decision 411 says), and a due date, which is the occurrence's date. Automatic payment with a saved card (Decision 338 item 8) applies to it like any charge, if the member turned it on, and credit pays it like any charge.
+3. **The calendar.** Weekly: the same weekday. Monthly on the 29th, 30th or 31st: the last day of shorter months. Yearly: the same date, and 28 Feb in years that are not leap years for a series that started on 29 Feb.
+4. **Who:**
+   - set up and stop: the people who can create charges (the owner, and staff with "Can create charges", Decision 303 item 3);
+   - restart a stopped one: the owner and staff with access to payments (Decision 338 item 2).
+5. **Notifications:** each occurrence sends the usual "New invoice" notice; the member is also told when a recurring charge is set up and when it is stopped.
+6. **A student who has left the School:** the series stops; no charges are made for former students. **A closed or degraded School:** no occurrences.
+
+### How it is built (step 3 of 6 of §3.6)
+
+- `RecurringCharge` (migration `20270115000000_charges_recurring`); each occurrence is a `Charge` with `recurringChargeId` and `occurrenceDate`, unique together, so the daily job never makes the same occurrence twice.
+- The daily job `charge-recurring` (5:30am UTC, before `charge-auto-pay` at 6am) makes each occurrence on its date in the School's time zone, never ahead, and catches up after downtime: one charge per missed occurrence, never more.
+- "Access to payments" is the School's "Let Branch Staff record payments" switch (Decision 347), as for desk payments in step 1. Instructors never restart.
+- Restarting picks up at the first occurrence on or after the day it is restarted; occurrences that fell while it was stopped are not charged. A number of payments counts charges made.
+- Implementation choices, not part of the answer: occurrences that fall while the School is closed or degraded are passed over, not made later; the first date can't be in the past (a first date of today makes its charge at once); the member is also told when a stopped recurring charge is restarted.
+- Editing a running series is not built: stop it and set up a new one.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: chose "Weekly/monthly/yearly + optional end" (Claude's recommendation).
+
+---
+
+## Decision 413 — Late fees: the School's choice, with a legal confirmation
+
+**Date:** 30 Oct 2026. **Changes:** Decision 405 item 4 ("Platform Admin keeps a maximum late fee per country"): there is no Platform Admin limit. **Answers:** the rest of v1.3 backlog §3.7. **Builds on:** Decisions 303, 316 item 2, 338, 346, 405, 406, 411.
+
+### Decision
+
+1. **Off by default. The School decides.** The owner switches late fees on, and must tick **"I confirm late fees are legal where my School operates"** to do so, as for the card surcharge (Decision 406). **No Platform Admin limit**: late fees are illegal in some countries, and each School is responsible for its own.
+2. **A fixed amount or a %.** A % is more than 0 and at most 100, with up to two decimals; a fixed amount is more than 0, in the School's currency. **Grace period: 3 days by default, 0 to 30.**
+3. **Which payments:**
+   - a staff-created charge not fully paid after its due date plus the grace days;
+   - a card Subscription renewal Stripe couldn't collect (the RENEWAL Transaction left FAILED, keyed on the Stripe invoice, Decision 346) and still unpaid after the grace days.
+   Paid within the grace period: no fee. Cash and bank-transfer membership payments waiting at the desk never get one.
+4. **One late fee per overdue payment.** Never repeated, never compounded: a late fee never gets its own late fee. **Staff can waive it**: the owner, and staff with "Can cancel charges". Waiving is cancelling the charge (Decision 338 item 1), so the ledger stays right.
+5. **Never charged to a card automatically.** The fee is a charge, marked as a late fee and linked to what it is for, on the member's balance; the member pays it in the app or at the desk. Automatic payment of charges never takes a late fee.
+6. **How much:** the fixed amount, or the % of what is still unpaid at the time (a charge: what is left including tax; a renewal: the invoice's amount due). **Tax on the fee** follows the School's tax settings, as for any charge (Decision 411). Rounded as any charge is.
+7. **A daily job**, in the School's time zone, adds the fees. It is safe to run twice (one fee per payment, enforced in the database). It skips closed and degraded Schools and former students.
+8. **The member is told** when a late fee is added, and when one is waived (a Guardian gets the usual copy), in their language. Both apps label a late fee "Late fee" and say what it is for.
+
+### How it is built
+
+- `School.lateFeeEnabled` (default false), `lateFeeType` (`FIXED` / `PERCENT`), `lateFeeFixedAmount` (minor units), `lateFeePercentBps` (hundredths of a percent, 1 to 10000), `lateFeeGraceDays` (0 to 30, default 3), `lateFeeEnabledAt`, `lateFeeConfirmedAt`, `lateFeeConfirmedById`. Owner only: `GET`/`PUT /schools/{schoolId}/late-fees`; the tick is needed every time the setting is saved on.
+- A late fee is a `Charge` with `lateFeeForChargeId` or `lateFeeForTransactionId` (each unique, so one per payment), `lateFeeOverdueAmount`, `lateFeePercentBps` and `lateFeeWaived`. A database trigger refuses a late fee for a late fee. Waiving: `POST /schools/{schoolId}/charges/{chargeId}/waive-late-fee` (the cancel path, no reason asked for). Migration `20270116000000_late_fees`.
+- The job is `jobs/late-fee.processor.ts`, daily at 7am UTC (after `charge-auto-pay` at 6am), working in each School's time zone. `charge-auto-pay` skips late-fee charges.
+- **Not retroactive (build choice):** only a payment whose grace period ends on or after the day late fees were switched on gets one. A payment already late before that day never does.
+- **A renewal's due day** is its invoice date (the Transaction's billing date) in the School's time zone. A renewal paid after its late fee was added keeps the fee; staff can waive it.
+- **A fixed fee** is in the School's currency; a % fee is in the currency of the payment it is for.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: "% should be down to each academy and in some countries is illegal. We must have a on and off toggle and default should be off"; chose "School confirms legality" and "Charges + failed renewals".

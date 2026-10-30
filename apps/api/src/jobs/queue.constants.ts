@@ -97,3 +97,9 @@ export const CHARGE_AUTO_PAY_QUEUE = 'charge-auto-pay';
 // Backlog §3.6 step 4 (Decision 338 item 10): the daily "Payment overdue"
 // notice, once per charge, the day after its due date.
 export const CHARGE_OVERDUE_NOTICE_QUEUE = 'charge-overdue-notice';
+// Backlog §3.7 (Decision 413): the daily run that adds a late fee to the
+// balance for each payment still unpaid after the School's grace days.
+export const LATE_FEE_QUEUE = 'late-fee';
+// Backlog §3.6 step 3 (Decision 412): the daily run that makes each recurring
+// charge's occurrences, half an hour before charge-auto-pay.
+export const CHARGE_RECURRING_QUEUE = 'charge-recurring';

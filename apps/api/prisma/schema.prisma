@@ -577,6 +577,10 @@ model User {
   chargesOwed                       Charge[]                    @relation("ChargeStudent")
   chargesCreated                    Charge[]                    @relation("ChargeCreatedBy")
   chargesCancelled                  Charge[]                    @relation("ChargeCancelledBy")
+  recurringCharges                  RecurringCharge[]           @relation("RecurringChargeStudent")
+  recurringChargesCreated           RecurringCharge[]           @relation("RecurringChargeCreatedBy")
+  recurringChargesStopped           RecurringCharge[]           @relation("RecurringChargeStoppedBy")
+  recurringChargesRestarted         RecurringCharge[]           @relation("RecurringChargeRestartedBy")
   chargeAllocations                 ChargeAllocation[]          @relation("ChargeAllocationStudent")
   balanceEntries                    BalanceEntry[]              @relation("BalanceEntryStudent")
   balanceEntriesRecorded            BalanceEntry[]              @relation("BalanceEntryRecordedBy")
@@ -1175,6 +1179,22 @@ model School {
   chargeNoticeReceipt            Boolean                         @default(true)
   chargeNoticeFailedOverdue      Boolean                         @default(true)
   chargeNoticeDispute            Boolean                         @default(true)
+  /// Decision 413: late fees, the School's choice. Off by default; switching
+  /// them on needs the owner's tick "I confirm late fees are legal where my
+  /// School operates" (when and by whom: lateFeeConfirmedAt/ById). A fixed
+  /// amount (minor units of the School's currency) or a % of what is still
+  /// owed (hundredths of a percent, 1-10000), and the grace days after the
+  /// due date (0-30, default 3). lateFeeEnabledAt is when they were last
+  /// switched on: only a payment whose grace period ends on or after that day
+  /// gets a late fee, never one that was already late before.
+  lateFeeEnabled                 Boolean                         @default(false)
+  lateFeeType                    LateFeeType                     @default(FIXED)
+  lateFeeFixedAmount             Int?
+  lateFeePercentBps              Int?
+  lateFeeGraceDays               Int                             @default(3)
+  lateFeeEnabledAt               DateTime?
+  lateFeeConfirmedAt             DateTime?
+  lateFeeConfirmedById           String?
   /// Check-in closes this many minutes after a Class starts (0 = at the start).
   /// Null: when the Class ends (or its own QR end time), as before.
   checkInClosesMinutesAfterStart Int?
@@ -1299,6 +1319,7 @@ model School {
   chargeAllocations      ChargeAllocation[]
   balanceEntries         BalanceEntry[]
   chargeRefunds          ChargeRefund[]
+  recurringCharges       RecurringCharge[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -2428,7 +2449,7 @@ model Transaction {
   /// CHARGE_PAYMENT only: the charge the desk recorded it against; null when
   /// it was paid toward the balance as a whole (Decision 338 item 9).
   chargeId String?
-  charge   Charge? @relation(fields: [chargeId], references: [id])
+  charge   Charge? @relation("TransactionCharge", fields: [chargeId], references: [id])
 
   /// CHARGE_PAYMENT only: taken at the desk, paid by the member in the app
   /// (hosted Checkout) or charged automatically to their saved card (backlog
@@ -2436,6 +2457,10 @@ model Transaction {
   /// partial unique index Transaction_one_auto_pay_attempt_per_charge
   /// (migration 20270113000000_charges_pay_in_app).
   chargePaymentChannel ChargePaymentChannel?
+
+  /// RENEWAL only: the late fee added because this renewal stayed unpaid past
+  /// the School's grace days (Decision 413). At most one.
+  lateFee Charge? @relation("LateFeeForRenewal")
 
   balanceEntries    BalanceEntry[]
   chargeAllocations ChargeAllocation[]
@@ -5288,6 +5313,12 @@ model CardSurchargeCountry {
   createdAt   DateTime @default(now())
 }
 
+/// Decision 413: a School's late fee is a fixed amount or a % of what is owed.
+enum LateFeeType {
+  FIXED
+  PERCENT
+}
+
 /// How a charge's discount was typed (Decision 303 item 1).
 enum ChargeDiscountType {
   PERCENT
@@ -5391,11 +5422,37 @@ model Charge {
 
   allocations    ChargeAllocation[]
   balanceEntries BalanceEntry[]
-  transactions   Transaction[]
+  transactions   Transaction[]      @relation("TransactionCharge")
+
+  /// Decision 413: a late fee is a Charge like any other, linked to the one
+  /// payment it is for: an overdue charge (lateFeeForChargeId) or a card
+  /// renewal Stripe could not collect (lateFeeForTransactionId, a RENEWAL
+  /// Transaction). Each is unique, so the daily late-fee job never adds two
+  /// for one payment. A late fee never gets its own late fee, and is never
+  /// charged to a card automatically (charge-auto-pay skips it).
+  /// lateFeeOverdueAmount: what was still owed when the fee was worked out;
+  /// lateFeePercentBps: the % used (null for a fixed fee). lateFeeWaived:
+  /// staff waived it (it is cancelled, as any charge is).
+  lateFeeForChargeId      String?      @unique
+  lateFeeForCharge        Charge?      @relation("LateFeeForCharge", fields: [lateFeeForChargeId], references: [id], onDelete: Restrict)
+  lateFee                 Charge?      @relation("LateFeeForCharge")
+  lateFeeForTransactionId String?      @unique
+  lateFeeForTransaction   Transaction? @relation("LateFeeForRenewal", fields: [lateFeeForTransactionId], references: [id], onDelete: Restrict)
+  lateFeeOverdueAmount    Int?
+  lateFeePercentBps       Int?
+  lateFeeWaived           Boolean      @default(false)
+
+  /// Backlog §3.6 step 3 (Decision 412): the recurring charge this charge is
+  /// one occurrence of, and that occurrence's date (also its due date). One
+  /// charge per series and date, so a rerun of the daily job never doubles.
+  recurringChargeId String?
+  recurringCharge   RecurringCharge? @relation(fields: [recurringChargeId], references: [id], onDelete: Restrict)
+  occurrenceDate    DateTime?        @db.Date
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([recurringChargeId, occurrenceDate])
   @@unique([schoolId, invoiceNumber])
   @@index([schoolId, studentId])
   @@index([studentId])
@@ -5514,4 +5571,84 @@ model ChargeRefund {
 
   @@index([schoolId, studentId])
   @@index([transactionId])
+}
+
+/// How often a recurring charge repeats (Decision 412).
+enum RecurringChargeFrequency {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+/// Why a recurring charge stopped (Decision 412). STAFF: stopped on the
+/// student's page. STUDENT_LEFT: the daily job found the student was no longer
+/// a current student of the School.
+enum RecurringChargeStopReason {
+  STAFF
+  STUDENT_LEFT
+}
+
+/// A recurring charge outside a Membership Plan (Decision 303 item 1, Decision
+/// 412; backlog §3.6 step 3). Each occurrence becomes a normal Charge on its
+/// day, made by the daily charge-recurring job in the School's time zone, with
+/// its own invoice number and the School's tax at that moment.
+///
+/// Occurrence n's date is worked out from firstDate (weekly: + 7n days;
+/// monthly: + n months, the last day of a shorter month for the 29th-31st;
+/// yearly: + n years, 28 Feb for 29 Feb), so month ends never drift.
+/// nextIndex is the next occurrence to make; createdCount counts the charges
+/// made, for maxOccurrences. nextDate is that next occurrence's date, null once
+/// the series has ended (past endDate, or all its payments made).
+///
+/// Written only on the jobs connection, after the API's own checks; read by
+/// the owner, by staff who cover the student, by the student and by an active
+/// Guardian (RLS), as Charge is. Never deleted.
+model RecurringCharge {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  studentId String
+  student   User   @relation("RecurringChargeStudent", fields: [studentId], references: [id], onDelete: Restrict)
+
+  description   String
+  /// The price as typed and its discount, as on a Charge (minor units;
+  /// discountValue is hundredths of a percent for PERCENT).
+  unitAmount    Int
+  discountType  ChargeDiscountType?
+  discountValue Int?
+  currency      String
+
+  frequency      RecurringChargeFrequency
+  firstDate      DateTime                 @db.Date
+  /// Optional end: no occurrence after this day.
+  endDate        DateTime?                @db.Date
+  /// Optional end: at most this many charges. Neither end: until stopped.
+  maxOccurrences Int?
+
+  nextIndex    Int       @default(0)
+  createdCount Int       @default(0)
+  nextDate     DateTime? @db.Date
+
+  stoppedAt     DateTime?
+  stoppedById   String?
+  stoppedBy     User?                      @relation("RecurringChargeStoppedBy", fields: [stoppedById], references: [id], onDelete: SetNull)
+  stoppedReason RecurringChargeStopReason?
+
+  restartedAt   DateTime?
+  restartedById String?
+  restartedBy   User?     @relation("RecurringChargeRestartedBy", fields: [restartedById], references: [id], onDelete: SetNull)
+
+  createdById String?
+  createdBy   User?   @relation("RecurringChargeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  charges Charge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, studentId])
+  @@index([studentId])
+  @@index([nextDate])
 }
