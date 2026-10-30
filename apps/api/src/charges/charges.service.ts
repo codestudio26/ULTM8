@@ -19,6 +19,7 @@ import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { ChargeMathsError, computeCharge, formatInvoiceNumber } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
 import { allocate, freeCredit, lockBalance, receiptNotice } from './charge-ledger';
+import { insertCharge, lockInvoiceNumbers } from './charge-insert';
 import { PaymentsService } from '../payments/payments.service';
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
 import { StepUpService } from '../auth/step-up.service';
@@ -224,43 +225,31 @@ export class ChargesService {
       throw err;
     }
 
-    const id = randomUUID();
-    await this.prismaJobs.$transaction(async (tx) => {
+    const { id } = await this.prismaJobs.$transaction(async (tx) => {
       await lockSchoolOpen(tx, schoolId);
       // Invoice numbers: one at a time per School, so they never repeat or skip.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`charge-invoice:${schoolId}`}, 0))`;
+      await lockInvoiceNumbers(tx, schoolId);
       await lockBalance(tx, schoolId, studentId);
       const recent = await tx.charge.findFirst({
         where: { schoolId, studentId, description: dto.description, unitAmount: dto.amount, createdById: callerId, createdAt: { gt: new Date(Date.now() - DESK_REPEAT_WINDOW_MS) } },
         select: { id: true },
       });
       if (recent) throw new ConflictException({ code: 'DESK_REPEAT', message: 'This was just recorded. Check before adding another.' });
-      const last = await tx.charge.aggregate({ where: { schoolId }, _max: { invoiceNumber: true } });
-      await tx.charge.create({
-        data: {
-          id,
-          schoolId,
-          studentId,
-          invoiceNumber: (last._max.invoiceNumber ?? 0) + 1,
-          description: dto.description,
-          unitAmount: dto.amount,
-          discountType: dto.discountType ?? null,
-          discountValue: dto.discountType ? dto.discountValue! : null,
-          discountAmount: totals.discountAmount,
-          taxCountry: school.taxCountry,
-          taxRateBasisPoints: school.taxRateBasisPoints,
-          taxInclusive: school.taxInclusive,
-          netAmount: totals.netAmount,
-          taxAmount: totals.taxAmount,
-          grossAmount: totals.grossAmount,
-          currency,
-          dueDate: dayToDate(dto.dueDate),
-          createdById: callerId,
-        },
+      return insertCharge(tx, {
+        schoolId,
+        studentId,
+        description: dto.description,
+        unitAmount: dto.amount,
+        discountType: dto.discountType ?? null,
+        discountValue: dto.discountType ? dto.discountValue! : null,
+        taxCountry: school.taxCountry,
+        taxRateBasisPoints: school.taxRateBasisPoints,
+        taxInclusive: school.taxInclusive,
+        totals,
+        currency,
+        dueDate: dayToDate(dto.dueDate),
+        createdById: callerId,
       });
-      await tx.balanceEntry.create({ data: { id: randomUUID(), schoolId, studentId, kind: 'CHARGE', amount: totals.grossAmount, currency, chargeId: id } });
-      // Credit already on the balance pays this charge straight away.
-      await allocate(tx, schoolId, studentId, currency, null, null);
     });
 
     const charge = await this.prismaJobs.charge.findUniqueOrThrow({ where: { id }, include: { allocations: { select: { amount: true } } } });

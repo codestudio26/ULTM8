@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "ไม่มียอดที่ต้องชำระ",
   "Only the member can set automatic payment, with their own saved card.": "เฉพาะสมาชิกเท่านั้นที่ตั้งค่าการชำระอัตโนมัติด้วยบัตรที่บันทึกไว้ของตนเองได้",
   "Save a card for this School first.": "บันทึกบัตรสำหรับโรงเรียนนี้ก่อน",
+  "The School owner hasn't let you stop recurring charges.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณหยุดรายการเรียกเก็บประจำ",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "เฉพาะเจ้าของโรงเรียนและพนักงานที่รับชำระเงินได้เท่านั้นที่เริ่มรายการเรียกเก็บประจำอีกครั้งได้",
+  "The first date can't be in the past.": "วันที่ครั้งแรกต้องไม่อยู่ในอดีต",
+  "Choose an end date or a number of payments, not both.": "เลือกวันสิ้นสุดหรือจำนวนครั้งที่ชำระ อย่างใดอย่างหนึ่ง",
+  "The end date must be on or after the first date.": "วันสิ้นสุดต้องเป็นวันเดียวกับหรือหลังวันที่ครั้งแรก",
+  "This recurring charge is already stopped.": "รายการเรียกเก็บประจำนี้หยุดอยู่แล้ว",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "รายการเรียกเก็บประจำนี้สิ้นสุดแล้ว: เลยวันสิ้นสุดหรือชำระครบทุกครั้งแล้ว",
+  "This recurring charge isn't stopped.": "รายการเรียกเก็บประจำนี้ไม่ได้หยุดอยู่",
+  "Recurring charge not found": "ไม่พบรายการเรียกเก็บประจำ",
 };

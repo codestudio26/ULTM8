@@ -27,6 +27,7 @@ import { FranchiseFeeRateMigrationProcessor } from './franchise-fee-rate-migrati
 import { WaiverRenewalSweepProcessor, WaiverRenewalSweepScheduler } from './waiver-renewal-sweep.processor';
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pay.processor';
+import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -169,6 +170,10 @@ import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pa
  * Needs PaymentsService.chargeOffSession(), already available via the
  * PaymentsModule import; its ledger writes are the plain functions in
  * charges/charge-ledger.ts, so no ChargesModule import.
+ *
+ * Backlog §3.6 step 3 adds ChargeRecurringProcessor/Scheduler — a daily run
+ * (5:30am UTC, before charge-auto-pay) making recurring charges' occurrences
+ * (Decision 412), with the plain functions in charges/recurring-occurrences.ts.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule],
@@ -207,6 +212,8 @@ import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pa
     WaiverRenewalSweepScheduler,
     ChargeAutoPayProcessor,
     ChargeAutoPayScheduler,
+    ChargeRecurringProcessor,
+    ChargeRecurringScheduler,
   ],
 })
 export class JobsModule {}

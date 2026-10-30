@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Er is niets te betalen.",
   "Only the member can set automatic payment, with their own saved card.": "Alleen het lid zelf kan automatisch betalen instellen, met zijn eigen opgeslagen kaart.",
   "Save a card for this School first.": "Sla eerst een kaart op voor deze school.",
+  "The School owner hasn't let you stop recurring charges.": "De schooleigenaar heeft je niet toegestaan terugkerende kosten te stoppen.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "Alleen de schooleigenaar en medewerkers die betalingen mogen ontvangen, kunnen terugkerende kosten opnieuw starten.",
+  "The first date can't be in the past.": "De eerste datum mag niet in het verleden liggen.",
+  "Choose an end date or a number of payments, not both.": "Kies een einddatum of een aantal betalingen, niet allebei.",
+  "The end date must be on or after the first date.": "De einddatum moet op of na de eerste datum liggen.",
+  "This recurring charge is already stopped.": "Deze terugkerende kosten zijn al gestopt.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "Deze terugkerende kosten zijn beëindigd: de einddatum is voorbij of alle betalingen zijn gedaan.",
+  "This recurring charge isn't stopped.": "Deze terugkerende kosten zijn niet gestopt.",
+  "Recurring charge not found": "Terugkerende kosten niet gevonden",
 };
