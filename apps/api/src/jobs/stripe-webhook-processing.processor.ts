@@ -15,6 +15,7 @@ import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card
 import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-billing';
 import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paymentRefundable, receiptNotice, recordChargeRefund, settleChargePayment } from '../charges/charge-ledger';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
+import { fromStripeAmount } from '../payments/stripe-amount';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
@@ -1224,7 +1225,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       if (existing.status === 'FAILED' && status === 'SUCCESSFUL') {
         await tx.transaction.update({
           where: { id: existing.id },
-          data: { status, amount: invoice.amount_paid, stripePaymentIntentId: paymentIntentId ?? existing.stripePaymentIntentId, billingDate: this.invoiceDate(invoice) },
+          data: { status, amount: fromStripeAmount(invoice.amount_paid, invoice.currency), stripePaymentIntentId: paymentIntentId ?? existing.stripePaymentIntentId, billingDate: this.invoiceDate(invoice) },
         });
       } else if (paymentIntentId && !existing.stripePaymentIntentId) {
         await tx.transaction.update({ where: { id: existing.id }, data: { stripePaymentIntentId: paymentIntentId } });
@@ -1246,7 +1247,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         membershipId: membership.id,
         kind: 'RENEWAL',
         billingDate: this.invoiceDate(invoice),
-        amount: status === 'SUCCESSFUL' ? invoice.amount_paid : invoice.amount_due,
+        amount: fromStripeAmount(status === 'SUCCESSFUL' ? invoice.amount_paid : invoice.amount_due, invoice.currency),
         currency: invoice.currency?.toUpperCase() ?? 'USD',
         status,
         paymentMethod: 'STRIPE',
@@ -1317,9 +1318,9 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     await tx.$queryRaw`SELECT id FROM "Transaction" WHERE id = ${match.id} FOR UPDATE`;
     let transaction = await tx.transaction.findUniqueOrThrow({ where: { id: match.id } });
     if (transaction.kind === 'CHARGE_PAYMENT') {
-      transaction = await this.recordStripeRefundOnLedger(tx, transaction, Math.min(charge.amount_refunded, transaction.amount), stripeEventId);
+      transaction = await this.recordStripeRefundOnLedger(tx, transaction, Math.min(fromStripeAmount(charge.amount_refunded, charge.currency), transaction.amount), stripeEventId);
     }
-    const refunded = Math.min(charge.amount_refunded, transaction.amount);
+    const refunded = Math.min(fromStripeAmount(charge.amount_refunded, charge.currency), transaction.amount);
     let status = transaction.status;
     if (status === 'SUCCESSFUL' && refunded >= transaction.amount) status = 'REFUNDED';
     else if (status === 'REFUNDED' && refunded < transaction.amount) status = 'SUCCESSFUL';
@@ -1465,7 +1466,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     if (dispute.status === 'won') {
       return { status: 'SUCCESSFUL', disputedAmount: null, lost: false };
     }
-    return { status: 'DISPUTED', disputedAmount: dispute.amount, lost: dispute.status === 'lost' };
+    return { status: 'DISPUTED', disputedAmount: fromStripeAmount(dispute.amount, dispute.currency), lost: dispute.status === 'lost' };
   }
 
   /** Transaction (Membership purchase) disputes — the only one of the three that
@@ -1541,8 +1542,9 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     const lostBefore = await tx.chargeRefund.findFirst({ where: { transactionId: transaction.id, kind: 'DISPUTE_LOST' }, select: { id: true } });
     if (outcome.lost && !lostBefore && transaction.currency) {
       const state = await paymentRefundable(tx, transaction);
-      const amount = Math.min(dispute.amount, state.asMoney);
-      if (amount < Math.min(dispute.amount, transaction.amount)) {
+      const disputed = fromStripeAmount(dispute.amount, dispute.currency);
+      const amount = Math.min(disputed, state.asMoney);
+      if (amount < Math.min(disputed, transaction.amount)) {
         this.logger.warn(`Dispute ${dispute.id} lost on Transaction ${transaction.id}: only ${amount} of ${dispute.amount} could go on the member's ledger.`);
       }
       if (amount > 0) {
@@ -1556,7 +1558,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // Told once each: a later event for the same lost dispute finds it recorded.
     const ended = (outcome.lost && !lostBefore) || (outcome.status === 'SUCCESSFUL' && transaction.status === 'DISPUTED');
     if ((!opened && !ended) || !(await chargeNoticeSwitches(tx, transaction.schoolId)).dispute) return [];
-    const amount = noticeMoney(dispute.amount, dispute.currency);
+    const amount = noticeMoney(fromStripeAmount(dispute.amount, dispute.currency), dispute.currency);
     const body = outcome.lost
       ? `The dispute on your card payment of ${amount} was decided in your favour. The money goes back to your card.`
       : opened
@@ -1665,7 +1667,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   }
 
   private formatDisputeAmount(dispute: Stripe.Dispute): string {
-    return `${(dispute.amount / 100).toFixed(2)} ${dispute.currency.toUpperCase()}`;
+    return `${(fromStripeAmount(dispute.amount, dispute.currency) / 100).toFixed(2)} ${dispute.currency.toUpperCase()}`;
   }
 
   /** Decision 234's own saved-payment-method dependency — upserts rather than

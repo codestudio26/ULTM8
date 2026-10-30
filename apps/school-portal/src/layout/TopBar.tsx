@@ -74,7 +74,10 @@ export function TopBar() {
         U8
       </span>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+      {/* Wraps on a phone: in one row, search, bell, account and language are
+          wider than a 390px screen and the whole page scrolled sideways
+          (stress test round 4). */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
         <GlobalSearch />
 
         <Link

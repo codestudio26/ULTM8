@@ -21,6 +21,14 @@ export async function assertBookingUnlocked(
   const styles = cls.styles as unknown as Array<{ disciplineId: string; classType: string | null }>;
   for (const style of styles) {
     if (style.classType === null) continue;
+    // Most class types are open: no rung of the style unlocks them. Ask that
+    // first, so a booking doesn't load the whole ladder (every belt, stripe and
+    // required skill) just to find nothing locked (stress test round 4, P1).
+    const anyUnlock = await tx.rankStripeTier.findFirst({
+      where: { bookingUnlocksClassTypes: { has: style.classType }, rank: { disciplineId: style.disciplineId, archivedAt: null } },
+      select: { id: true },
+    });
+    if (!anyUnlock) continue;
     const ladder = await loadLadder(tx, style.disciplineId);
     const studentRank = await tx.studentRank.findUnique({
       where: { studentId_disciplineId: { studentId, disciplineId: style.disciplineId } },
