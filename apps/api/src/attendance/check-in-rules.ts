@@ -2,6 +2,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { frozenMembershipIds, MEMBERSHIP_FROZEN } from '../memberships/freeze/frozen-lookup';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -25,6 +26,8 @@ export interface CheckInRules {
   visitors: boolean;
   /** The front desk may check someone in to several Classes at once (Decision 378). */
   severalClasses: boolean;
+  /** Members whose membership is frozen may still check in (Decision 404). */
+  frozenMembers: boolean;
 }
 
 export const CHECK_IN_RULES_SELECT = {
@@ -34,6 +37,7 @@ export const CHECK_IN_RULES_SELECT = {
   checkInOtherBranches: true,
   checkInVisitors: true,
   checkInSeveralClasses: true,
+  checkInFrozenMembers: true,
 } as const;
 
 type RuleColumns = {
@@ -43,6 +47,7 @@ type RuleColumns = {
   checkInOtherBranches: boolean;
   checkInVisitors: boolean;
   checkInSeveralClasses: boolean;
+  checkInFrozenMembers: boolean;
 };
 
 /** What check-in did before the rules: the column defaults. */
@@ -53,6 +58,7 @@ export const DEFAULT_CHECK_IN_RULES: CheckInRules = {
   otherBranches: true,
   visitors: true,
   severalClasses: true,
+  frozenMembers: false,
 };
 
 export function checkInRulesFrom(row: RuleColumns | null | undefined): CheckInRules {
@@ -64,6 +70,7 @@ export function checkInRulesFrom(row: RuleColumns | null | undefined): CheckInRu
     otherBranches: row.checkInOtherBranches,
     visitors: row.checkInVisitors,
     severalClasses: row.checkInSeveralClasses,
+    frozenMembers: row.checkInFrozenMembers,
   };
 }
 
@@ -127,6 +134,14 @@ export async function assertPersonMayCheckIn(
     });
     if (paidBy?.membershipPlan.type === 'VISIT_PASS') {
       throw new ForbiddenException({ code: 'CHECK_IN_VISITORS_OFF', message: CHECK_IN_RULE_MESSAGES.visitors });
+    }
+  }
+  // Decision 404: a frozen member can't check in unless the School allows it.
+  // "Frozen" is the membership that paid for this Booking, frozen today.
+  if (!rules.frozenMembers && booking.sourceMembershipId) {
+    const frozen = await frozenMembershipIds(prismaJobs, booking.schoolId, [booking.sourceMembershipId], [new Date()]);
+    if (frozen.size > 0) {
+      throw new ForbiddenException(MEMBERSHIP_FROZEN);
     }
   }
 }

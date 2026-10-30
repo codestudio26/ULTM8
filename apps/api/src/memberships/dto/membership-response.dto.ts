@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { FreezeSummaryDto } from '../freeze/dto/membership-freeze.dto';
 
 /** Field-for-field match of the Membership Prisma model. */
 export class MembershipResponseDto {
@@ -52,6 +53,12 @@ export class MembershipResponseDto {
 export class MyMembershipResponseDto extends MembershipResponseDto {
   @ApiProperty({ description: 'Decision 391: a Visitor\'s free visit pass (its plan is hidden from the School\'s plan list).' })
   visitPass!: boolean;
+
+  @ApiProperty({ description: 'Decision 404: an approved freeze covers today.' })
+  frozen!: boolean;
+
+  @ApiPropertyOptional({ type: FreezeSummaryDto, nullable: true, description: 'Decision 404: the freeze in effect or still to come, else a request waiting.' })
+  freeze!: FreezeSummaryDto | null;
 }
 
 export class MyMembershipListResponseDto {
@@ -107,6 +114,12 @@ export class StudentMembershipResponseDto extends MembershipResponseDto {
 
   @ApiProperty({ description: 'In effect now: Active, not past its expiry date, and not a used-up pack.' })
   live!: boolean;
+
+  @ApiProperty({ description: 'Decision 404: an approved freeze covers today (a frozen membership stays live).' })
+  frozen!: boolean;
+
+  @ApiPropertyOptional({ type: FreezeSummaryDto, nullable: true, description: 'Decision 404: the freeze in effect or still to come, else a request waiting.' })
+  freeze!: FreezeSummaryDto | null;
 }
 
 export class StudentMembershipListResponseDto {

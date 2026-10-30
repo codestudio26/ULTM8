@@ -64,6 +64,12 @@ export class StudentSummaryResponseDto {
   /** When the Visitor's last visit pass ends (past once it has ended). Null for a member. */
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   visitPassEndsAt!: Date | null;
+
+  @ApiProperty({ description: 'Decision 404: a membership of theirs is frozen today.' })
+  frozen!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 404: the day they are back (YYYY-MM-DD) when frozen.' })
+  frozenUntil!: string | null;
 }
 
 export class StudentListResponseDto {

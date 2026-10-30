@@ -7,6 +7,8 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
 import { useCancelSubscription, useMyMemberships } from './membershipQueries';
 import { getRememberedPlanName } from './planNameCache';
+import { FreezeControls, FreezeStatusLine } from './FreezeControls';
+import { useMyFreezes, type FreezableMembership } from './freezeQueries';
 import { useT } from '../i18n/I18nProvider';
 import type { TranslationKey } from '../i18n/types';
 
@@ -25,7 +27,7 @@ type Membership = components['schemas']['MyMembershipResponseDto'];
  * has no denormalized plan title, only `membershipPlanId` — resolved via
  * `planNameCache` (populated whenever AcademyDetailScreen fetches a School's plans),
  * falling back to the raw id only for a plan the Student never browsed that way. */
-export function MembershipRow({ membership }: { membership: Membership }) {
+export function MembershipRow({ membership, freezable }: { membership: Membership; freezable?: FreezableMembership }) {
   const t = useT();
   const cancel = useCancelSubscription();
   const [confirming, setConfirming] = useState(false);
@@ -63,6 +65,8 @@ export function MembershipRow({ membership }: { membership: Membership }) {
       {membership.cancelAt && membership.status === 'ACTIVE' ? (
         <Text style={{ color: '#B06000', fontSize: 12, marginTop: 2 }}>{t('memberships.myMemberships.cancelledEnds', { date: formatDate(membership.cancelAt) })}</Text>
       ) : null}
+      {/* Decision 404: freezing; the controls when it can be frozen now, else just its freeze. */}
+      {freezable ? <FreezeControls item={freezable} /> : <FreezeStatusLine freeze={membership.freeze} frozen={membership.frozen} />}
       {error ? <InlineError message={error} /> : null}
       {canCancel && confirming ? (
         <View style={{ marginTop: 8 }}>
@@ -85,14 +89,37 @@ export function MembershipRow({ membership }: { membership: Membership }) {
   );
 }
 
+/** Decision 404: a Guardian asks to freeze a child's membership here. */
+function ChildFreezes({ items }: { items: FreezableMembership[] }) {
+  const t = useT();
+  if (items.length === 0) return null;
+  return (
+    <View style={{ marginBottom: 16 }}>
+      <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 4 }}>{t('memberships.myMemberships.freeze.childrenTitle')}</Text>
+      {items.map((item) => (
+        <View key={item.membershipId} style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+          <Text style={{ fontSize: 15, fontWeight: '600' }}>
+            {t('memberships.myMemberships.freeze.childLine', { name: item.studentFirstName, plan: item.planTitle, school: item.schoolName })}
+          </Text>
+          <FreezeControls item={item} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
 export function MyMembershipsScreen() {
   const t = useT();
   const query = useMyMemberships();
+  const freezes = useMyFreezes();
+  const items = freezes.data?.items ?? [];
+  const mine = new Map(items.filter((i) => i.self).map((i) => [i.membershipId, i]));
 
   return (
     <PaginatedListScreen
       query={query}
-      renderItem={(item: Membership) => <MembershipRow membership={item} />}
+      header={<ChildFreezes items={items.filter((i) => !i.self)} />}
+      renderItem={(item: Membership) => <MembershipRow membership={item} freezable={mine.get(item.id)} />}
       emptyMessage={t('memberships.myMemberships.empty')}
       errorFallbackMessage={t('memberships.myMemberships.loadError')}
     />

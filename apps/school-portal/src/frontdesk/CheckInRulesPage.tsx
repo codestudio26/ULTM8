@@ -78,6 +78,7 @@ export function CheckInRulesPage() {
       otherBranches: form.otherBranches,
       visitors: form.visitors,
       severalClasses: form.severalClasses,
+      frozenMembers: form.frozenMembers ?? false,
       codeDigits: form.codeDigits,
     });
   }
@@ -162,6 +163,14 @@ export function CheckInRulesPage() {
               description={t('frontDesk.rules.visitorsHint')}
               checked={form.visitors}
               onChange={(on) => set('visitors', on)}
+            />
+            {/* Decision 404: off by default. */}
+            <Switch
+              id="rules-frozen-members"
+              label={t('frontDesk.rules.frozenMembers')}
+              description={t('frontDesk.rules.frozenMembersHint')}
+              checked={form.frozenMembers ?? false}
+              onChange={(on) => set('frozenMembers', on)}
             />
 
             <h2 className="fd-eyebrow">{t('frontDesk.rules.deskHeading')}</h2>

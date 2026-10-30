@@ -52,8 +52,8 @@ export class TransactionResponseDto {
 
   /** MEMBERSHIP (a plan bought or recorded at the desk), RENEWAL (a later
    * Subscription charge) or LATE_CANCEL_FEE (Decision 346). */
-  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE'] })
-  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE';
+  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE'] })
+  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE';
 
   /** LATE_CANCEL_FEE only: the cancelled Booking and its class's title. */
   @ApiPropertyOptional({ type: String, nullable: true })

@@ -15,6 +15,23 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Freezing a membership** (backlog 3.4; Decision 404) — the owner can freeze
+  a Subscription, Weekly Pass or Trial straight away with a **Freeze** button on
+  the student's Memberships card, and approve or decline the freezes members
+  (or a child's Guardian) ask for in the student app, there or in the new
+  **Freeze requests** card on the Students page. A freeze is at least 7 days,
+  starts today or later, and stays within the School's maximum in any 12
+  months (default 90). While frozen, a card Subscription's next charge moves
+  later by the freeze (nothing is charged, no frozen days paid for), a Weekly
+  Pass or Trial's end date moves later, and the member can't book or check in
+  unless the new check-in rule **Allow frozen members to check in** is on
+  (off by default). Staff or the member can end a freeze early; billing
+  restarts that day. The School page's **Freezing memberships** card sets the
+  maximum and an optional freeze fee, charged once when a freeze is approved
+  (on a saved card, else a pending cash charge for the desk; never refunded).
+  The Students list shows a blue **Frozen** badge and a **Frozen only** filter.
+  Class packs can't be frozen. **Needs a database migration**
+  (`20270106000000_membership_freeze`).
 - **Card surcharge** (backlog 3.8; Decision 406) — off everywhere by default.
   Platform Admin has a new **Card Surcharge** page listing the countries where
   a School may add a surcharge to members' card payments; the list starts

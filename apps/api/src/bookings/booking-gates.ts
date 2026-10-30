@@ -1,5 +1,6 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { MEMBERSHIP_FROZEN } from '../memberships/freeze/frozen-lookup';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -53,6 +54,11 @@ export function assertClassBookable(
  * (product owner, 28 Oct 2026; guests go through consumeGuestMembership). A
  * Student whose only plan is a Friend Pass gets the usual "no Active
  * Membership" refusal.
+ *
+ * A frozen membership can't pay for a seat (Decision 404): `frozenAmong`
+ * names the candidates an approved freeze covers today or on the Class's
+ * day (frozen-lookup.ts). When only frozen ones are left, the refusal says
+ * so (MEMBERSHIP_FROZEN).
  */
 export async function selectAndConsumeMembership(
   tx: TenantTx,
@@ -60,10 +66,11 @@ export async function selectAndConsumeMembership(
   schoolId: string,
   cls: OneOffMarkers,
   now: Date = new Date(),
+  frozenAmong?: (membershipIds: string[]) => Promise<Set<string>>,
 ): Promise<{ id: string }> {
   const classId = cls.id;
   const ticketOnly = needsOwnTicket(cls);
-  const candidates = await tx.membership.findMany({
+  const found = await tx.membership.findMany({
     where: {
       studentId,
       schoolId,
@@ -77,6 +84,11 @@ export async function selectAndConsumeMembership(
     orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],
     include: { membershipPlan: { select: { type: true } } },
   });
+  const frozen = frozenAmong && found.length > 0 ? await frozenAmong(found.map((m) => m.id)) : new Set<string>();
+  const candidates = found.filter((m) => !frozen.has(m.id));
+  if (candidates.length === 0 && found.length > 0) {
+    throw new BadRequestException(MEMBERSHIP_FROZEN);
+  }
   if (ticketOnly && candidates.length === 0) {
     throw new BadRequestException({
       code: 'TICKET_REQUIRED',

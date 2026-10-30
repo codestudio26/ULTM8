@@ -263,6 +263,8 @@ export const frontDesk = {
     otherBranchesHint: 'When off, members with a home branch check in only there. Members with no home branch can check in anywhere.',
     visitors: 'Check visitors in on a visit pass',
     visitorsHint: 'When off, nobody checks in on a visit pass.',
+    frozenMembers: "Allow frozen members to check in",
+    frozenMembersHint: "When off, a member whose membership is frozen can't check in.",
     deskHeading: 'Front desk',
     severalClasses: 'Check in to several classes at once',
     severalClassesHint: 'When off, the desk and the tablet tick one class at a time.',

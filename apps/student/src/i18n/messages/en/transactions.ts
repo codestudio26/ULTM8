@@ -13,6 +13,8 @@ export const transactions = {
     renewal: 'Renewal: {plan}',
     lateCancelFee: 'Late-cancellation fee: {class}',
     lateCancelFeeNoClass: 'Late-cancellation fee',
+    freezeFee: "Freeze fee: {plan}",
+    freezeFeeNoPlan: "Freeze fee",
   },
   /** A payment's status, shown in capitals on each row. */
   status: {

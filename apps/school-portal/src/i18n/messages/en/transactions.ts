@@ -42,6 +42,8 @@ export const transactions = {
   kindMembership: 'Membership',
   kindRenewal: 'Renewal',
   kindLateFee: 'Late-cancellation fee',
+  kindFreezeFee: "Freeze fee",
+  itemFreezeFee: "Freeze fee: {plan}",
   columnKind: 'Type',
   columnCurrency: 'Currency',
   columnId: 'Transaction ID',

@@ -4,6 +4,8 @@ import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { MEMBERSHIP_EXPIRY_SWEEP_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from './queue.constants';
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
+import { StripeClientService } from '../payments/stripe-client.service';
+import { applyDueFreezeBilling } from '../memberships/freeze/freeze-billing';
 
 /** Same cadence as BookingNoShowProcessingScheduler's own sweep — frequent
  * enough that a Student's stale Bookings against a long-expired Membership
@@ -117,6 +119,7 @@ export class MembershipExpirySweepProcessor extends WorkerHost {
   constructor(
     private readonly prismaJobs: PrismaJobsService,
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
+    private readonly stripeClient: StripeClientService,
   ) {
     super();
   }
@@ -173,5 +176,12 @@ export class MembershipExpirySweepProcessor extends WorkerHost {
     }
 
     this.logger.log(`membership-expiry-sweep: ${overdue.length} overdue Membership(s) found, ${swept} swept, ${freedClassIds.length} seat-freed job(s) enqueued.`);
+
+    // Decision 404: a card Subscription's next charge moves later once a
+    // freeze starts (freeze-billing.ts). A freeze approved for a later day is
+    // picked up here on its start day; an early end whose Stripe call failed
+    // is retried. Never reads or writes Membership.status.
+    const shifted = await applyDueFreezeBilling(this.prismaJobs, this.stripeClient, this.logger, now);
+    if (shifted > 0) this.logger.log(`membership-expiry-sweep: moved the next charge of ${shifted} frozen Subscription(s).`);
   }
 }

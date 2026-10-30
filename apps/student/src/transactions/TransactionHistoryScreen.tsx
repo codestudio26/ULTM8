@@ -51,6 +51,8 @@ function rowTitle(transaction: Transaction, t: ReturnType<typeof useT>): string 
       : t('transactions.row.lateCancelFeeNoClass');
   }
   const plan = transaction.membershipPlanTitle ?? '';
+  // Decision 404: the School's fee for freezing a membership.
+  if (transaction.kind === 'FREEZE_FEE') return plan ? t('transactions.row.freezeFee', { plan }) : t('transactions.row.freezeFeeNoPlan');
   return transaction.kind === 'RENEWAL' ? t('transactions.row.renewal', { plan }) : plan;
 }
 

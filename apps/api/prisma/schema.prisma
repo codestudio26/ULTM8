@@ -344,10 +344,23 @@ enum TransactionStatus {
 /// the app or recorded at the desk. RENEWAL: a Subscription's later monthly
 /// charge, one row per Stripe Invoice. LATE_CANCEL_FEE: the fee charged to a
 /// saved card when a Booking is cancelled after the refund cut-off (Decision 234).
+/// FREEZE_FEE: the School's one-off fee for freezing a membership, charged when
+/// the freeze is approved (Decision 404).
 enum TransactionKind {
   MEMBERSHIP
   RENEWAL
   LATE_CANCEL_FEE
+  FREEZE_FEE
+}
+
+/// MembershipFreeze.status (Decision 404). REQUESTED waits for staff; APPROVED
+/// is a freeze (staff-made ones start here); DECLINED was refused; CANCELLED is a
+/// request the member withdrew before anyone decided.
+enum MembershipFreezeStatus {
+  REQUESTED
+  APPROVED
+  DECLINED
+  CANCELLED
 }
 
 // Transaction.paymentMethod (Spec 55 §6.1, quoted: "payment method (Stripe/Cash/Bank
@@ -543,6 +556,9 @@ model User {
   signUpsApproved                   SignUp[]                    @relation("SignUpApprovedBy")
   signUpsRejected                   SignUp[]                    @relation("SignUpRejectedBy")
   packRecharges                     PackRecharge[]              @relation("PackRechargeStudent")
+  membershipFreezes                 MembershipFreeze[]          @relation("MembershipFreezeStudent")
+  membershipFreezesRequested        MembershipFreeze[]          @relation("MembershipFreezeRequestedBy")
+  membershipFreezesDecided          MembershipFreeze[]          @relation("MembershipFreezeDecidedBy")
   rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
@@ -1103,6 +1119,13 @@ model School {
   checkInVisitors                Boolean                         @default(true)
   /// The front desk may check someone in to several Classes at once (Decision 378).
   checkInSeveralClasses          Boolean                         @default(true)
+  /// Decision 404: frozen members may still check in. Off by default.
+  checkInFrozenMembers           Boolean                         @default(false)
+  /// Decision 404: the most days a membership can be frozen in any 12 months
+  /// (1-365, default 90), and an optional one-off fee in minor units of the
+  /// School's currency, charged when a freeze is approved.
+  freezeMaxDaysPer12Months       Int                             @default(90)
+  freezeFeeAmount                Int?
   /// Check-in closes this many minutes after a Class starts (0 = at the start).
   /// Null: when the Class ends (or its own QR end time), as before.
   checkInClosesMinutesAfterStart Int?
@@ -1221,6 +1244,7 @@ model School {
   childInvites           ChildInvite[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
+  membershipFreezes      MembershipFreeze[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -2221,6 +2245,7 @@ model Membership {
   updatedAt DateTime @updatedAt
 
   transactions Transaction[]
+  freezes      MembershipFreeze[]
 
   // Phase 11 — this Membership's credit can fund the Student's own seat on a
   // Booking (sourceMembershipId) or a guest's seat via BookingAttendee.
@@ -4944,6 +4969,60 @@ model PackRecharge {
 
   @@index([studentId, completedAt])
   @@index([schoolId])
+}
+
+/// Decision 404: a freeze on a membership. Frozen is never a stored status: a
+/// membership is frozen on a day when an APPROVED freeze covers it, worked out
+/// live (membership-freeze.ts), as expiry is (Decision 26).
+///
+/// Dates are calendar days in the School's time zone. startsAt is the first
+/// frozen day; endsAt is the day the member is back (exclusive), so the freeze
+/// lasts endsAt - startsAt days. Ending early sets endedEarlyAt; the member is
+/// back from that day. Read and written only on the jobs connection, after the
+/// API's own checks.
+model MembershipFreeze {
+  id String @id @default(uuid())
+
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  schoolId     String
+  school       School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User       @relation("MembershipFreezeStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  startsAt DateTime @db.Date
+  endsAt   DateTime @db.Date
+  status   MembershipFreezeStatus
+
+  /// When staff or the member ended an approved freeze early.
+  endedEarlyAt DateTime?
+
+  /// Who asked (the member, their Guardian, or the staff member who froze it).
+  requestedById String?
+  requestedBy   User?     @relation("MembershipFreezeRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+  /// Who approved or declined (staff), or withdrew (the member).
+  decidedById   String?
+  decidedBy     User?     @relation("MembershipFreezeDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  decidedAt     DateTime?
+
+  /// The School's freeze fee when approved (minor units), and its Transaction.
+  feeAmount        Int?
+  feeTransactionId String?
+
+  /// A card Subscription's next charge moved later by the freeze: the trial_end
+  /// worked out once (so a retry sends Stripe the same value), and when Stripe
+  /// took it. Ending early moves it back: restoredTrialEnd / billingRestoredAt.
+  shiftedTrialEnd       DateTime?
+  billingShiftAppliedAt DateTime?
+  restoredTrialEnd      DateTime?
+  billingRestoredAt     DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([membershipId])
+  @@index([schoolId, status])
+  @@index([studentId])
 }
 
 /// Backlog 3.13 (Decisions 286, 299): a student asks the School to correct

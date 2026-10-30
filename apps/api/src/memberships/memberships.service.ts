@@ -31,6 +31,8 @@ import { cancelSubscriptionAtPeriodEnd } from './cancel-subscription';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { VISIT_PASS_TITLE } from './visitors';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
 
 /** A second identical desk sale or Friend Pass within this long is refused
@@ -73,6 +75,7 @@ export class MembershipsService {
     private readonly stepUpService: StepUpService,
     @InjectQueue(MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE) private readonly priceMigrationQueue: Queue,
     private readonly stripeClient: StripeClientService,
+    private readonly prismaJobs: PrismaJobsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -1516,8 +1519,17 @@ export class MembershipsService {
       }),
     );
     const now = new Date();
+    // Decision 404: each membership's freeze, and whether it is frozen today.
+    const freezes = await loadFreezeStates(this.prismaJobs, rows.map((m) => m.id));
     return {
-      items: rows.map(({ membershipPlan, ...m }) => ({ ...m, planTitle: membershipPlan.title, planType: membershipPlan.type, live: isMembershipLive(m, now) })),
+      items: rows.map(({ membershipPlan, ...m }) => ({
+        ...m,
+        planTitle: membershipPlan.title,
+        planType: membershipPlan.type,
+        live: isMembershipLive(m, now),
+        frozen: freezes.get(m.id)?.frozen ?? false,
+        freeze: freezes.get(m.id)?.freeze ?? null,
+      })),
     };
   }
 
@@ -1648,7 +1660,7 @@ export class MembershipsService {
   // Reads
   // ---------------------------------------------------------------------------
 
-  async findMyMemberships(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string; visitPass: boolean }>> {
+  async findMyMemberships(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string; visitPass: boolean; frozen: boolean }>> {
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const page = await cursorPaginate((args) => tx.membership.findMany({ ...args, where: { studentId: callerId } }), cursor, limit);
       // Decision 391: the app can't name the hidden visit-pass plan from the
@@ -1660,6 +1672,13 @@ export class MembershipsService {
       });
       const visit = new Set(visitPlans.map((p) => p.id));
       return { ...page, items: page.items.map((m) => ({ ...m, visitPass: visit.has(m.membershipPlanId) })) };
+    }).then(async (page) => {
+      // Decision 404: each membership's freeze, and whether it is frozen today.
+      const freezes = await loadFreezeStates(this.prismaJobs, page.items.map((m) => m.id));
+      return {
+        ...page,
+        items: page.items.map((m) => ({ ...m, frozen: freezes.get(m.id)?.frozen ?? false, freeze: freezes.get(m.id)?.freeze ?? null })),
+      };
     });
   }
 

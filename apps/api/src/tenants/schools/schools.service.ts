@@ -24,6 +24,7 @@ import { JoinSchoolDto } from './dto/join-school.dto';
 import { SetHomeBranchDto } from './dto/home-branch.dto';
 import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { loadVisitorStatuses, VisitorStatus } from '../../memberships/visitors';
+import { loadFrozenStudents } from '../../memberships/freeze/freeze-states';
 import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-query.dto';
 import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
@@ -834,8 +835,11 @@ export class SchoolsService {
       const matched = items.filter((g) => !search || matchesPersonName(g.firstName, g.surname, search));
       const homes = await this.homeBranchesOf(callerId, schoolId, matched.map((g) => g.id));
       const visitors = await this.visitorStatusesOf(schoolId, matched.map((g) => g.id));
+      const frozen = await loadFrozenStudents(this.prismaJobs, schoolId, matched.map((g) => g.id));
       return {
-        items: matched.map((g) => rosterRow({ ...g, status: StudentStatusDto.ACTIVE, ...homeBranchOf(homes, g.id), ...visitorOf(visitors, g.id) })),
+        items: matched.map((g) =>
+          rosterRow({ ...g, status: StudentStatusDto.ACTIVE, ...homeBranchOf(homes, g.id), ...visitorOf(visitors, g.id), ...frozenOf(frozen, g.id) }),
+        ),
       };
     }
 
@@ -899,7 +903,8 @@ export class SchoolsService {
 
     const homes = await this.homeBranchesOf(callerId, schoolId, rows.map((r) => r.id));
     const visitors = await this.visitorStatusesOf(schoolId, rows.map((r) => r.id));
-    return { items: rows.map((r) => rosterRow({ ...r, ...homeBranchOf(homes, r.id), ...visitorOf(visitors, r.id) })) };
+    const frozen = await loadFrozenStudents(this.prismaJobs, schoolId, rows.map((r) => r.id));
+    return { items: rows.map((r) => rosterRow({ ...r, ...homeBranchOf(homes, r.id), ...visitorOf(visitors, r.id), ...frozenOf(frozen, r.id) })) };
   }
 
   /** Decision 391: which listed students are Visitors. Branch Staff can't read
@@ -979,6 +984,9 @@ export class SchoolsService {
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
           weekStartsOn: dto.weekStartsOn,
           timetableDefaultLayout: dto.timetableDefaultLayout,
+          // Decision 404: freezing memberships.
+          freezeMaxDaysPer12Months: dto.freezeMaxDaysPer12Months,
+          freezeFeeAmount: dto.freezeFeeAmount,
         },
       }),
     );
@@ -1213,6 +1221,13 @@ export function withoutBillingIds<
 
 function visitorOf(statuses: Map<string, VisitorStatus>, studentId: string): VisitorStatus {
   return statuses.get(studentId) ?? { visitor: false, visitPassEndsAt: null };
+}
+
+/** Decision 404: the Students list's Frozen badge and filter. Students who
+ * may be listed only; the dates come from the jobs connection. */
+function frozenOf(frozen: Map<string, { frozenUntil: string }>, studentId: string): { frozen: boolean; frozenUntil: string | null } {
+  const f = frozen.get(studentId);
+  return { frozen: !!f, frozenUntil: f?.frozenUntil ?? null };
 }
 
 function homeBranchOf(homes: Map<string, { id: string; name: string }>, studentId: string) {

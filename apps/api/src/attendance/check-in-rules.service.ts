@@ -32,6 +32,7 @@ export class CheckInRulesService {
         checkInOtherBranches: dto.otherBranches,
         checkInVisitors: dto.visitors,
         checkInSeveralClasses: dto.severalClasses,
+        checkInFrozenMembers: dto.frozenMembers,
         checkInCodeDigits: dto.codeDigits,
       },
       select: { ...CHECK_IN_RULES_SELECT, checkInCodeDigits: true },
