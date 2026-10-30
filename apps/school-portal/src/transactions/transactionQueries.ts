@@ -10,7 +10,9 @@ export type RecordDeskPaymentInput = components['schemas']['RecordDeskPaymentDto
 
 /** The page's filters (Decision 346, G3). Empty strings mean "any". */
 export interface TransactionFilters {
-  status: '' | 'SUCCESSFUL' | 'PENDING' | 'FAILED' | 'REFUNDED' | 'DISPUTED';
+  /** CANCELLED (Decision 338 item 1) is a FAILED row that was cancelled;
+   * FAILED leaves those out. */
+  status: '' | 'SUCCESSFUL' | 'PENDING' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | 'DISPUTED';
   paymentMethod: '' | 'STRIPE' | 'CASH' | 'BANK_TRANSFER' | 'PIX' | 'CARD_TERMINAL';
   kind: '' | 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE' | 'CHARGE_PAYMENT';
   membershipPlanId: string;
@@ -79,17 +81,30 @@ export function useTransactionReceiptUrl() {
   });
 }
 
-/** "Mark as paid" (PATCH /transactions/{id}/confirm) and "Cancel"
- * (PATCH /transactions/{id}/cancel) for a Pending Cash/Bank Transfer payment —
- * Owner/Manager only (Decision 339, G1). Both refresh the ledger and its tiles. */
-export function useSettleTransaction(schoolId: string | null) {
+/** "Mark as paid" (PATCH /transactions/{id}/confirm) for a Pending Cash/Bank
+ * Transfer payment — Owner/Manager only (Decision 339, G1). Refreshes the
+ * ledger and its tiles. */
+export function useConfirmTransaction(schoolId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'confirm' | 'cancel' }) =>
-      action === 'confirm'
-        ? unwrap(apiClient.PATCH('/v1/transactions/{id}/confirm', { params: { path: { id } } }))
-        : unwrap(apiClient.PATCH('/v1/transactions/{id}/cancel', { params: { path: { id } } })),
+    mutationFn: (id: string) => unwrap(apiClient.PATCH('/v1/transactions/{id}/confirm', { params: { path: { id } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions', schoolId] }),
+  });
+}
+
+/** "Cancel payment" (PATCH /transactions/{id}/cancel) for a Pending Cash/Bank
+ * Transfer payment: the owner, or staff with "Can cancel charges", with a
+ * reason (Decision 338 item 1). Refreshes the ledger and the student's
+ * Payments card, whichever it was cancelled from. */
+export function useCancelTransaction(schoolId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      unwrap(apiClient.PATCH('/v1/transactions/{id}/cancel', { params: { path: { id } }, body: reason ? { reason } : {} })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['charges', schoolId] });
+      return queryClient.invalidateQueries({ queryKey: ['transactions', schoolId] });
+    },
   });
 }
 

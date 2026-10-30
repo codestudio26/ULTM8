@@ -921,6 +921,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Frais d'annulation tardive",
       freezeFee: "Frais de gel : {plan}",
       freezeFeeNoPlan: "Frais de gel",
+      cancelledOn: "Annulé le {date}. Rien à payer.",
     },
     status: {
       successful: "RÉUSSI",
@@ -928,6 +929,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "ÉCHOUÉ",
       refunded: "REMBOURSÉ",
       disputed: "CONTESTÉ",
+      cancelled: "ANNULÉ",
     },
   },
   waivers: {

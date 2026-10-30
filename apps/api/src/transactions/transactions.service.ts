@@ -85,7 +85,15 @@ export class TransactionsService {
     if (f.to) billingDate.lt = new Date(new Date(`${f.to}T00:00:00.000Z`).getTime() + 86_400_000);
     return {
       schoolId,
-      ...(f.status ? { status: f.status } : {}),
+      // Decisions 338 item 1, 414 item 7: a cancelled payment is stored FAILED but is not a
+      // failed one. FAILED means failed and not cancelled; CANCELLED, cancelled.
+      ...(f.status === 'CANCELLED'
+        ? { status: 'FAILED' as const, cancelledAt: { not: null } }
+        : f.status === 'FAILED'
+          ? { status: 'FAILED' as const, cancelledAt: null }
+          : f.status
+            ? { status: f.status }
+            : {}),
       ...(f.paymentMethod ? { paymentMethod: f.paymentMethod } : {}),
       ...(f.kind ? { kind: f.kind } : {}),
       ...(f.membershipPlanId ? { membershipPlanId: f.membershipPlanId } : {}),
@@ -153,21 +161,35 @@ export class TransactionsService {
     // an `include` under Decision 109; retrofitted here — see Decision 117 for the
     // full account (found while reviewing the same pattern applied to Bookings/
     // Waitlist/RoleGrant in this same change). See resolveUserNames's own comment.
-    const names = await resolveUserNames(this.prismaAuth, page.items.map((t) => t.studentId));
+    const names = await resolveUserNames(this.prismaAuth, [
+      ...page.items.map((t) => t.studentId),
+      ...page.items.map((t) => t.cancelledById).filter((id): id is string => !!id),
+    ]);
+    const fullName = (id: string | null) => {
+      const n = id ? names.get(id) : undefined;
+      return n ? `${n.firstName} ${n.surname}`.trim() : null;
+    };
     return {
       ...page,
       items: page.items.map((t) => ({
         ...this.withMembershipPlanTitle(t),
         studentFirstName: names.get(t.studentId)?.firstName ?? '',
         studentSurname: names.get(t.studentId)?.surname ?? '',
+        // Decision 338 item 1: who cancelled it, for staff.
+        cancelledByName: fullName(t.cancelledById),
       })),
     };
   }
 
-  /** GET /transactions/me — see this class's own header comment. */
+  /** GET /transactions/me — see this class's own header comment. A cancelled
+   * payment says when, never who or why: the reason is for staff only
+   * (Decision 338 item 1). */
   async findMyTransactions(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, { studentId: callerId }, cursor, limit));
-    return { ...page, items: page.items.map((t) => this.withMembershipPlanTitle(t)) };
+    return {
+      ...page,
+      items: page.items.map((t) => ({ ...this.withMembershipPlanTitle(t), cancelledById: null, cancelledByName: null, cancelReason: null })),
+    };
   }
 
   /**
@@ -185,6 +207,11 @@ export class TransactionsService {
     const groups = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.transaction.groupBy({ by: ['status', 'currency'], where, _count: { _all: true }, _sum: { amount: true } }),
     );
+    // Decisions 338 item 1, 414 item 7: cancelled payments are stored FAILED; they are
+    // counted on their own, not as failed ones.
+    const cancelled = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.transaction.count({ where: { AND: [where, { status: 'FAILED', cancelledAt: { not: null } }] } }),
+    );
     const count = (statuses: string[]) => groups.filter((g) => statuses.includes(g.status)).reduce((n, g) => n + g._count._all, 0);
     const revenue = new Map<string, number>();
     for (const g of groups) {
@@ -196,7 +223,8 @@ export class TransactionsService {
       total: groups.reduce((n, g) => n + g._count._all, 0),
       successful: count(['SUCCESSFUL']),
       pending: count(['PENDING']),
-      failedOrDisputed: count(['FAILED', 'DISPUTED']),
+      failedOrDisputed: count(['FAILED', 'DISPUTED']) - cancelled,
+      cancelled,
       revenue: [...revenue.entries()]
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([currency, amount]) => ({ currency: currency || null, amount })),

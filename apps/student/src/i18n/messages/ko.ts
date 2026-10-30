@@ -896,6 +896,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "늦은 취소 수수료",
       freezeFee: "일시정지 수수료: {plan}",
       freezeFeeNoPlan: "일시정지 수수료",
+      cancelledOn: "{date}에 취소되었습니다. 결제할 금액이 없습니다.",
     },
     status: {
       successful: "성공",
@@ -903,6 +904,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "실패",
       refunded: "환불됨",
       disputed: "이의 제기됨",
+      cancelled: "취소됨",
     },
   },
   waivers: {

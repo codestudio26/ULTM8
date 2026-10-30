@@ -903,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Gebühr für späte Absage",
       freezeFee: "Gebühr fürs Einfrieren: {plan}",
       freezeFeeNoPlan: "Gebühr fürs Einfrieren",
+      cancelledOn: "Storniert am {date}. Nichts zu zahlen.",
     },
     status: {
       successful: "ERFOLGREICH",
@@ -910,6 +911,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "FEHLGESCHLAGEN",
       refunded: "ERSTATTET",
       disputed: "ANGEFOCHTEN",
+      cancelled: "STORNIERT",
     },
   },
   waivers: {

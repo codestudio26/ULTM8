@@ -895,6 +895,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "ค่าธรรมเนียมยกเลิกล่าช้า",
       freezeFee: "ค่าธรรมเนียมการพัก: {plan}",
       freezeFeeNoPlan: "ค่าธรรมเนียมการพัก",
+      cancelledOn: "ยกเลิกเมื่อ {date} ไม่ต้องชำระเงิน",
     },
     status: {
       successful: "สำเร็จ",
@@ -902,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "ล้มเหลว",
       refunded: "คืนเงินแล้ว",
       disputed: "มีข้อโต้แย้ง",
+      cancelled: "ยกเลิกแล้ว",
     },
   },
   waivers: {

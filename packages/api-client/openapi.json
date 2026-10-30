@@ -5623,6 +5623,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelTransactionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -8859,6 +8869,7 @@
                 "SUCCESSFUL",
                 "PENDING",
                 "FAILED",
+                "CANCELLED",
                 "REFUNDED",
                 "DISPUTED"
               ],
@@ -8965,6 +8976,7 @@
                 "SUCCESSFUL",
                 "PENDING",
                 "FAILED",
+                "CANCELLED",
                 "REFUNDED",
                 "DISPUTED"
               ],
@@ -25227,6 +25239,16 @@
           "hasSavedPaymentMethod"
         ]
       },
+      "CancelTransactionDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "For staff only; never sent to the member. Required unless the School's owner made it optional."
+          }
+        }
+      },
       "CreateTimetableSlotDto": {
         "type": "object",
         "properties": {
@@ -28854,6 +28876,26 @@
             "type": "number",
             "nullable": true
           },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set when the payment was cancelled: shown as Cancelled (status stays FAILED)."
+          },
+          "cancelledById": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only; null in the member's own list."
+          },
+          "cancelledByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who cancelled it. Staff only; null in the member's own list."
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why it was cancelled. Staff only; never sent to the member."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -28925,7 +28967,12 @@
             "type": "number"
           },
           "failedOrDisputed": {
-            "type": "number"
+            "type": "number",
+            "description": "Failed (not cancelled) or disputed."
+          },
+          "cancelled": {
+            "type": "number",
+            "description": "Cancelled cash or bank-transfer payments (Decision 338 item 1)."
           },
           "revenue": {
             "description": "Successful rows only, one entry per currency.",
@@ -28940,6 +28987,7 @@
           "successful",
           "pending",
           "failedOrDisputed",
+          "cancelled",
           "revenue"
         ]
       },
@@ -37442,6 +37490,72 @@
           "givenAt"
         ]
       },
+      "DeskMembershipPaymentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The Transaction id."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEMBERSHIP",
+              "RENEWAL",
+              "LATE_CANCEL_FEE",
+              "FREEZE_FEE"
+            ]
+          },
+          "membershipPlanTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "The plan it is for (a freeze fee: the frozen membership's plan)."
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "CASH, BANK_TRANSFER, PIX or CARD_TERMINAL."
+          },
+          "billingDate": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CANCELLED"
+            ],
+            "description": "CANCELLED is stored as FAILED with cancelledAt set."
+          },
+          "cancelledAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelledByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelReason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "amount",
+          "paymentMethod",
+          "billingDate",
+          "status"
+        ]
+      },
       "ChargeAbilitiesDto": {
         "type": "object",
         "properties": {
@@ -37549,6 +37663,13 @@
               "$ref": "#/components/schemas/BalanceCreditResponseDto"
             }
           },
+          "deskMembershipPayments": {
+            "description": "Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeskMembershipPaymentDto"
+            }
+          },
           "can": {
             "description": "What the caller may do here.",
             "allOf": [
@@ -37566,6 +37687,7 @@
           "charges",
           "payments",
           "credits",
+          "deskMembershipPayments",
           "can",
           "settings"
         ]

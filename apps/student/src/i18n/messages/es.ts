@@ -919,6 +919,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Cargo por cancelación tardía",
       freezeFee: "Cuota de congelación: {plan}",
       freezeFeeNoPlan: "Cuota de congelación",
+      cancelledOn: "Cancelado el {date}. Nada que pagar.",
     },
     status: {
       successful: "CORRECTO",
@@ -926,6 +927,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "FALLIDO",
       refunded: "REEMBOLSADO",
       disputed: "DISPUTADO",
+      cancelled: "CANCELADO",
     },
   },
   waivers: {
