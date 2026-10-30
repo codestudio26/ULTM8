@@ -11928,6 +11928,8 @@ export interface components {
             /** @description Hundredths of a percent, as when the charge was created. */
             taxRateBasisPoints: number;
             taxInclusive: boolean;
+            /** @description "No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax". */
+            taxExempt: boolean;
             /** @description The price excluding tax. */
             netAmount: number;
             taxAmount: number;
@@ -12114,6 +12116,11 @@ export interface components {
              * @example 2026-11-15
              */
             dueDate: string;
+            /**
+             * @description "No tax on this item (0% or exempt)" (Decision 414 item 5): no tax on this charge, so the price ex. tax and inc. tax are both the price after any discount. Off by default: the School's tax settings apply.
+             * @default false
+             */
+            taxExempt: boolean;
         };
         CancelChargeDto: {
             /** @description For staff only. Required unless the School's owner made it optional. */
@@ -12304,7 +12311,7 @@ export interface components {
             taxAmount: number;
             /** @description Price inc. tax of each charge at the School tax rate today. */
             grossAmount: number;
-            /** @description The School tax rate today, hundredths of a percent. */
+            /** @description The School tax rate today, hundredths of a percent; 0 for a series with no tax. */
             taxRateBasisPoints: number;
         };
         RecurringChargeResponseDto: {
@@ -12318,6 +12325,8 @@ export interface components {
             discountType?: "PERCENT" | "FIXED" | null;
             discountValue?: number | null;
             currency: string;
+            /** @description "No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax. */
+            taxExempt: boolean;
             frequency: components["schemas"]["RecurringChargeFrequency"];
             /** @example 2026-11-15 */
             firstDate: string;
@@ -12373,6 +12382,11 @@ export interface components {
             endDate?: string | null;
             /** @description Optional: the number of payments. Not with endDate. Neither: until stopped. */
             maxOccurrences?: number | null;
+            /**
+             * @description "No tax on this item (0% or exempt)" (Decision 414 item 5): every charge of the series is made with no tax. Off by default.
+             * @default false
+             */
+            taxExempt: boolean;
         };
         MemberRecurringChargeDto: {
             id: string;
@@ -12385,6 +12399,8 @@ export interface components {
             discountType?: "PERCENT" | "FIXED" | null;
             discountValue?: number | null;
             currency: string;
+            /** @description "No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax. */
+            taxExempt: boolean;
             frequency: components["schemas"]["RecurringChargeFrequency"];
             /** @example 2026-11-15 */
             firstDate: string;

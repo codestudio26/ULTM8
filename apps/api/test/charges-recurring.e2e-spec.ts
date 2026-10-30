@@ -273,6 +273,35 @@ describeIfDb('Recurring charges (backlog 3.6 step 3, Decision 412)', () => {
       expect(second).toMatchObject({ discountAmount: 1000, netAmount: 9000, taxRateBasisPoints: 1000, taxAmount: 900, grossAmount: 9900 });
     });
 
+    it('"No tax on this item" (Decision 414 item 5): every occurrence has no tax, inclusive or added on top; unticked is unchanged', async () => {
+      await as(tokens.owner).patch(`/v1/schools/${school.id}`, { taxCountry: 'GB', taxRateBasisPoints: 2000, taxInclusive: false });
+      const student = await mkStudent('noTax');
+      const s = await setUpOk(student.id, { frequency: 'WEEKLY', taxExempt: true });
+      expect(s).toMatchObject({ taxExempt: true, estimate: { netAmount: 10000, taxAmount: 0, grossAmount: 10000, taxRateBasisPoints: 0 } });
+      expect(await series(s.id)).toMatchObject({ taxExempt: true });
+      const taxed = await setUpOk(student.id, { frequency: 'WEEKLY' });
+      expect(taxed).toMatchObject({ taxExempt: false, estimate: { netAmount: 10000, taxAmount: 2000, grossAmount: 12000, taxRateBasisPoints: 2000 } });
+
+      // The School switches to inclusive prices: still no tax on the no-tax series.
+      await as(tokens.owner).patch(`/v1/schools/${school.id}`, { taxInclusive: true });
+      await job.run(at(7));
+      const made = await occurrences(s.id);
+      expect(made).toHaveLength(2);
+      for (const c of made) {
+        expect(c).toMatchObject({ taxExempt: true, taxCountry: 'GB', taxRateBasisPoints: 0, netAmount: 10000, taxAmount: 0, grossAmount: 10000 });
+      }
+      expect(made.map((c) => c.taxInclusive)).toEqual([false, true]);
+      const [first, second] = await occurrences(taxed.id);
+      expect(first).toMatchObject({ taxExempt: false, taxRateBasisPoints: 2000, taxInclusive: false, netAmount: 10000, taxAmount: 2000, grossAmount: 12000 });
+      expect(second).toMatchObject({ taxExempt: false, taxRateBasisPoints: 2000, taxInclusive: true, netAmount: 8333, taxAmount: 1667, grossAmount: 10000 });
+
+      // The member sees it as a no-tax series.
+      const mine = await as(tokens.noTax).get(`/v1/students/${student.id}/recurring-charges`);
+      expect(mine.status).toBe(200);
+      expect(mine.body.items.find((r: { id: string }) => r.id === s.id)).toMatchObject({ taxExempt: true, estimate: { taxAmount: 0, grossAmount: 10000 } });
+      expect((await setUp(student.id, { taxExempt: 'yes' })).status).toBe(400);
+    });
+
     it('ends after the number of payments, or after the end date', async () => {
       const student = await mkStudent('ends');
       const byCount = await setUpOk(student.id, { frequency: 'WEEKLY', maxOccurrences: 2 });

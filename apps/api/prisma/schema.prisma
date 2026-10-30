@@ -5419,6 +5419,11 @@ model Charge {
   taxCountry         String?
   taxRateBasisPoints Int
   taxInclusive       Boolean
+  /// "No tax on this item (0% or exempt)", ticked by staff (Decision 414
+  /// item 5): no tax at all, so taxRateBasisPoints and taxAmount are 0 and
+  /// netAmount = grossAmount = the price after any discount. Never on a late
+  /// fee or a promotion fee (they always take the School's tax settings).
+  taxExempt          Boolean @default(false)
 
   /// Price excluding tax, the tax, and the price including tax (what is owed).
   netAmount   Int
@@ -5660,6 +5665,9 @@ model RecurringCharge {
   discountType  ChargeDiscountType?
   discountValue Int?
   currency      String
+  /// "No tax on this item (0% or exempt)" (Decision 414 item 5): every
+  /// occurrence is made with no tax.
+  taxExempt     Boolean             @default(false)
 
   frequency      RecurringChargeFrequency
   firstDate      DateTime                 @db.Date

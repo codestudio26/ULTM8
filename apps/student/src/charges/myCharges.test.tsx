@@ -40,6 +40,7 @@ const charge = (over: Record<string, unknown>) => ({
   taxCountry: 'GB',
   taxRateBasisPoints: 2000,
   taxInclusive: true,
+  taxExempt: false,
   netAmount: 10000,
   taxAmount: 2000,
   grossAmount: 12000,
@@ -140,6 +141,16 @@ describe('MyChargesScreen (Decisions 303, 338)', () => {
     expect(getByText(/Nothing to pay\.$/)).toBeTruthy();
     expect(getByText(/paid on .* by cash/)).toBeTruthy();
     expect(getByText('Toward #0000001')).toBeTruthy();
+  });
+
+  it('shows "No tax on this item" on a no-tax charge (Decision 414 item 5)', async () => {
+    mocked(q.useMemberCharges).mockReturnValue(
+      ok({ schools: [{ ...SCHOOL, charges: [charge({ taxExempt: true, taxRateBasisPoints: 0, taxAmount: 0, netAmount: 12000, grossAmount: 12000 })] }] }),
+    );
+    const { getByText, queryByText, getAllByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('No tax on this item')).toBeTruthy();
+    expect(queryByText('Tax (0%)')).toBeNull();
+    expect(getAllByText('£120.00').length).toBeGreaterThanOrEqual(2);
   });
 
   it('a guardian opens it for their child', async () => {
@@ -331,6 +342,7 @@ describe('MyChargesScreen: paying in the app (backlog 3.6 step 2)', () => {
       discountType: null,
       discountValue: null,
       currency: 'GBP',
+      taxExempt: false,
       frequency: 'MONTHLY',
       firstDate: '2026-11-01',
       endDate: null,
@@ -363,6 +375,13 @@ describe('MyChargesScreen: paying in the app (backlog 3.6 step 2)', () => {
       // Read-only: nothing to stop or restart.
       expect(queryByText('Stop')).toBeNull();
       expect(queryByText('Restart')).toBeNull();
+    });
+
+    it('a no-tax recurring charge says so instead of the tax-rate note (Decision 414 item 5)', async () => {
+      mocked(q.useMemberRecurringCharges).mockReturnValue(ok({ items: [recurring({ taxExempt: true, estimate: { netAmount: 3000, taxAmount: 0, grossAmount: 3000, taxRateBasisPoints: 0 } })] }));
+      const { getByText, queryByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+      expect(getByText('No tax on this item')).toBeTruthy();
+      expect(queryByText(/At today's tax rate/)).toBeNull();
     });
 
     it('shows a School whose recurring charge has made no invoice yet', async () => {

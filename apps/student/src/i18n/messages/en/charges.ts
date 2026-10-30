@@ -20,6 +20,7 @@ export const charges = {
   exTax: 'Price ex. tax',
   tax: 'Tax ({rate}%)',
   incTax: 'Price inc. tax',
+  noTax: 'No tax on this item',
   discount: 'Discount',
   paid: 'Paid',
   stillOwed: 'Still to pay',

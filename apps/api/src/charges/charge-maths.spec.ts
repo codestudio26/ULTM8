@@ -1,4 +1,4 @@
-import { ChargeMathsError, computeCharge, divideRoundHalfUp, formatInvoiceNumber } from './charge-maths';
+import { ChargeMathsError, computeCharge, divideRoundHalfUp, formatInvoiceNumber, taxForCharge } from './charge-maths';
 
 describe('charge maths (Decisions 303, 411)', () => {
   it('rounds half up', () => {
@@ -101,6 +101,18 @@ describe('charge maths (Decisions 303, 411)', () => {
     expect(code(() => computeCharge({ unitAmount: 100, discount: { type: 'PERCENT', value: 10001 }, taxRateBasisPoints: 0, taxInclusive: true }))).toBe('DISCOUNT_INVALID');
     expect(code(() => computeCharge({ unitAmount: 100, discount: { type: 'PERCENT', value: 10000 }, taxRateBasisPoints: 0, taxInclusive: true }))).toBe('DISCOUNT_TOO_BIG');
     expect(code(() => computeCharge({ unitAmount: 100, discount: { type: 'FIXED', value: 100 }, taxRateBasisPoints: 0, taxInclusive: true }))).toBe('DISCOUNT_TOO_BIG');
+  });
+
+  it('"No tax on this item" (Decision 414 item 5): no tax, net = gross = the price, either way the School prices', () => {
+    const onTop = { taxRateBasisPoints: 2000, taxInclusive: false };
+    const inclusive = { taxRateBasisPoints: 2000, taxInclusive: true };
+    expect(taxForCharge(onTop, true)).toEqual({ taxRateBasisPoints: 0, taxInclusive: false });
+    expect(taxForCharge(inclusive, true)).toEqual({ taxRateBasisPoints: 0, taxInclusive: true });
+    expect(taxForCharge(onTop, false)).toEqual(onTop);
+    for (const school of [onTop, inclusive]) {
+      expect(computeCharge({ unitAmount: 2500, ...taxForCharge(school, true) })).toEqual({ discountAmount: 0, netAmount: 2500, taxAmount: 0, grossAmount: 2500 });
+      expect(computeCharge({ unitAmount: 2500, discount: { type: 'PERCENT', value: 1000 }, ...taxForCharge(school, true) })).toEqual({ discountAmount: 250, netAmount: 2250, taxAmount: 0, grossAmount: 2250 });
+    }
   });
 
   it('shows invoice numbers with seven digits', () => {

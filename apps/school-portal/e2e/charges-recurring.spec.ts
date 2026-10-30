@@ -84,3 +84,29 @@ test('set up a monthly recurring charge for 3 payments, then stop and restart it
   expect((await db.recurringCharge.findUniqueOrThrow({ where: { id: row.id } })).stoppedAt).toBeNull();
   expect(await db.charge.count({ where: { recurringChargeId: row.id } })).toBe(1);
 });
+
+test('"No tax on this item" on a recurring charge: each charge has no tax (Decision 414 item 5)', async ({ page }) => {
+  const today = new Date().toISOString().slice(0, 10);
+  await page.goto(`/students/${s.student.id}`);
+  const card = page.getByTestId('student-charges');
+  await card.getByRole('button', { name: '+ Recurring charge' }).click();
+  const form = page.getByTestId('create-recurring-charge-form');
+  await form.getByLabel('Description').fill('Kids kit');
+  await form.getByLabel('Price').fill('60');
+  await form.getByLabel('First charge').fill(today);
+  // Prices include 20% tax, until the tick.
+  const preview = page.getByTestId('recurring-charge-preview');
+  await expect(preview).toContainText('10.00 GBP');
+  await form.getByLabel('No tax on this item (0% or exempt)').check();
+  await expect(preview).toContainText('No tax');
+  await expect(preview).not.toContainText('10.00 GBP');
+  await expect(form).toContainText('with its own invoice number and no tax');
+  await form.getByRole('button', { name: 'Set up recurring charge' }).click();
+  await expect(form).toHaveCount(0);
+
+  const series = page.getByTestId('recurring-charges').getByRole('row', { name: /Kids kit/ });
+  await expect(series).toContainText('No tax on this item (0% or exempt)');
+  await expect(page.getByRole('row', { name: /#0000001/ })).toContainText('No tax');
+  expect(await db.recurringCharge.findFirstOrThrow({ where: { schoolId: s.schoolId, studentId: s.student.id } })).toMatchObject({ taxExempt: true });
+  expect(await db.charge.findFirstOrThrow({ where: { schoolId: s.schoolId, studentId: s.student.id } })).toMatchObject({ taxExempt: true, taxAmount: 0, netAmount: 6000, grossAmount: 6000 });
+});

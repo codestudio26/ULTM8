@@ -105,3 +105,31 @@ test('a discounted charge, a part cash payment, and cancelling with a reason', a
   expect(cancelled).toMatchObject({ cancelReason: 'Out of stock' });
   expect(cancelled.cancelledAt).not.toBeNull();
 });
+
+test('"No tax on this item": the preview and the charge show no tax (Decision 414 item 5)', async ({ page }) => {
+  await db.school.update({ where: { id: s.schoolId }, data: { taxCountry: 'GB', taxRateBasisPoints: 2000, taxInclusive: false } });
+  await page.goto(`/students/${s.student.id}`);
+  const card = page.getByTestId('student-charges');
+  await card.getByRole('button', { name: '+ Create charge' }).click();
+  const create = page.getByTestId('create-charge-form');
+  await create.getByLabel('Description').fill('Kids rash guard');
+  await create.getByLabel('Price').fill('25');
+  const preview = page.getByTestId('charge-preview');
+  // Off by default: 20% added on top.
+  const tick = create.getByLabel('No tax on this item (0% or exempt)');
+  await expect(tick).not.toBeChecked();
+  await expect(preview).toContainText('30.00 GBP');
+  await tick.check();
+  await expect(create.getByText('No tax is added or included.')).toBeVisible();
+  await expect(preview).toContainText('No tax');
+  await expect(preview).not.toContainText('30.00 GBP');
+  await expect(preview).toContainText('25.00 GBP');
+  await create.getByRole('button', { name: 'Create charge' }).click();
+  await expect(create).toHaveCount(0);
+
+  const row = page.getByRole('row', { name: /Kids rash guard/ });
+  await expect(row).toContainText('No tax');
+  await expect(card.getByText('Owes 25.00 GBP')).toBeVisible();
+  const charge = await db.charge.findFirstOrThrow({ where: { schoolId: s.schoolId, studentId: s.student.id } });
+  expect(charge).toMatchObject({ taxExempt: true, taxRateBasisPoints: 0, netAmount: 2500, taxAmount: 0, grossAmount: 2500 });
+});
