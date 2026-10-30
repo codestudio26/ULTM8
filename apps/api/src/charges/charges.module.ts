@@ -7,12 +7,14 @@ import { PaymentsModule } from '../payments/payments.module';
 import { AuthModule } from '../auth/auth.module';
 import { ChargesController } from './charges.controller';
 import { ChargesService } from './charges.service';
+import { ChargeReportsController } from './charge-reports.controller';
+import { ChargeReportsService } from './charge-reports.service';
 
 /** Staff-created charges and the member balance (Decisions 303, 338, 411). */
 @Module({
   imports: [TenantsModule, SubscriptionPlansModule, GuardiansModule, QueueModule, PaymentsModule, AuthModule],
-  controllers: [ChargesController],
-  providers: [ChargesService],
+  controllers: [ChargesController, ChargeReportsController],
+  providers: [ChargesService, ChargeReportsService],
   exports: [ChargesService],
 })
 export class ChargesModule {}
