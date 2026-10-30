@@ -10188,6 +10188,34 @@ export interface components {
             /** @description "Allow grading before the fee is paid" (off by default). On: a priced promotion applies at once and the fee request waits. Off: the promotion waits ("Waiting for fee") until the fee is paid or waived. */
             gradeBeforeFeePaid?: boolean;
         };
+        PromotionFeeChargeSummaryDto: {
+            id: string;
+            /** @example #0000012 */
+            invoiceLabel: string;
+            /** @enum {string} */
+            status: "OPEN" | "PART_PAID" | "PAID" | "CANCELLED";
+            /** @description Price excluding tax (minor units). */
+            netAmount: number;
+            taxAmount: number;
+            /** @description Price including tax: what is owed in all. */
+            grossAmount: number;
+            taxRateBasisPoints: number;
+            taxInclusive: boolean;
+            paidAmount: number;
+            /** @description Still to pay (0 when paid or cancelled). */
+            owedAmount: number;
+            currency: string;
+            /** @example 2026-10-30 */
+            dueDate: string;
+        };
+        PromotionFeeTaxPreviewDto: {
+            netAmount: number;
+            taxAmount: number;
+            grossAmount: number;
+            taxRateBasisPoints: number;
+            taxInclusive: boolean;
+            currency: string;
+        };
         PromotionFeeRequestResponseDto: {
             id: string;
             schoolId: string;
@@ -10226,6 +10254,10 @@ export interface components {
             waivedAt?: string | null;
             cancelledAt?: string | null;
             createdAt: string;
+            /** @description Backlog §3.6 step 6 (Decision 303 item 5): the charge made when the fee was accepted, paid as any charge is. Null before it is accepted. */
+            charge?: components["schemas"]["PromotionFeeChargeSummaryDto"] | null;
+            /** @description PENDING only: what accepting would charge with the School's tax settings today (Decision 411). The charge keeps the tax of the day it is made. */
+            taxPreview?: components["schemas"]["PromotionFeeTaxPreviewDto"] | null;
         };
         PromotionFeeRequestListResponseDto: {
             items: components["schemas"]["PromotionFeeRequestResponseDto"][];
@@ -11720,6 +11752,17 @@ export interface components {
             /** @description Staff waived it (it is then Cancelled). */
             waived: boolean;
         };
+        PromotionFeeChargeDetailsDto: {
+            /** @description The PromotionFeeRequest id. */
+            requestId: string;
+            disciplineId: string;
+            /** @description The style it is in. */
+            disciplineName: string;
+            /** @description The belt or stripe it is for (also the charge description). */
+            toRungName: string;
+            /** @enum {string} */
+            status: "PENDING" | "ACCEPTED" | "PAID" | "DECLINED" | "WAIVED" | "CANCELLED";
+        };
         ChargeResponseDto: {
             id: string;
             schoolId: string;
@@ -11767,6 +11810,8 @@ export interface components {
             cardSurchargeAmount: number;
             /** @description Decision 413: set when this charge is a late fee, with what it is for. */
             lateFee?: components["schemas"]["LateFeeDetailsDto"] | null;
+            /** @description Backlog §3.6 step 6 (Decision 303 item 5): set when this charge is an accepted promotion fee, with the grade it is for. */
+            promotionFee?: components["schemas"]["PromotionFeeChargeDetailsDto"] | null;
         };
         /** @enum {string} */
         ChargePaymentMethod: "CASH" | "PIX" | "BANK_TRANSFER" | "CARD_TERMINAL" | "STRIPE";

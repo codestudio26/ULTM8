@@ -31500,6 +31500,103 @@
           }
         }
       },
+      "PromotionFeeChargeSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "invoiceLabel": {
+            "type": "string",
+            "example": "#0000012"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "PART_PAID",
+              "PAID",
+              "CANCELLED"
+            ]
+          },
+          "netAmount": {
+            "type": "number",
+            "description": "Price excluding tax (minor units)."
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "grossAmount": {
+            "type": "number",
+            "description": "Price including tax: what is owed in all."
+          },
+          "taxRateBasisPoints": {
+            "type": "number"
+          },
+          "taxInclusive": {
+            "type": "boolean"
+          },
+          "paidAmount": {
+            "type": "number"
+          },
+          "owedAmount": {
+            "type": "number",
+            "description": "Still to pay (0 when paid or cancelled)."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "example": "2026-10-30"
+          }
+        },
+        "required": [
+          "id",
+          "invoiceLabel",
+          "status",
+          "netAmount",
+          "taxAmount",
+          "grossAmount",
+          "taxRateBasisPoints",
+          "taxInclusive",
+          "paidAmount",
+          "owedAmount",
+          "currency",
+          "dueDate"
+        ]
+      },
+      "PromotionFeeTaxPreviewDto": {
+        "type": "object",
+        "properties": {
+          "netAmount": {
+            "type": "number"
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "grossAmount": {
+            "type": "number"
+          },
+          "taxRateBasisPoints": {
+            "type": "number"
+          },
+          "taxInclusive": {
+            "type": "boolean"
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "netAmount",
+          "taxAmount",
+          "grossAmount",
+          "taxRateBasisPoints",
+          "taxInclusive",
+          "currency"
+        ]
+      },
       "PromotionFeeRequestResponseDto": {
         "type": "object",
         "properties": {
@@ -31610,6 +31707,24 @@
           },
           "createdAt": {
             "type": "string"
+          },
+          "charge": {
+            "nullable": true,
+            "description": "Backlog §3.6 step 6 (Decision 303 item 5): the charge made when the fee was accepted, paid as any charge is. Null before it is accepted.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PromotionFeeChargeSummaryDto"
+              }
+            ]
+          },
+          "taxPreview": {
+            "nullable": true,
+            "description": "PENDING only: what accepting would charge with the School's tax settings today (Decision 411). The charge keeps the tax of the day it is made.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PromotionFeeTaxPreviewDto"
+              }
+            ]
           }
         },
         "required": [
@@ -36538,6 +36653,44 @@
           "waived"
         ]
       },
+      "PromotionFeeChargeDetailsDto": {
+        "type": "object",
+        "properties": {
+          "requestId": {
+            "type": "string",
+            "description": "The PromotionFeeRequest id."
+          },
+          "disciplineId": {
+            "type": "string"
+          },
+          "disciplineName": {
+            "type": "string",
+            "description": "The style it is in."
+          },
+          "toRungName": {
+            "type": "string",
+            "description": "The belt or stripe it is for (also the charge description)."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "PAID",
+              "DECLINED",
+              "WAIVED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "requestId",
+          "disciplineId",
+          "disciplineName",
+          "toRungName",
+          "status"
+        ]
+      },
       "ChargeResponseDto": {
         "type": "object",
         "properties": {
@@ -36662,6 +36815,15 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/LateFeeDetailsDto"
+              }
+            ]
+          },
+          "promotionFee": {
+            "nullable": true,
+            "description": "Backlog §3.6 step 6 (Decision 303 item 5): set when this charge is an accepted promotion fee, with the grade it is for.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PromotionFeeChargeDetailsDto"
               }
             ]
           }
