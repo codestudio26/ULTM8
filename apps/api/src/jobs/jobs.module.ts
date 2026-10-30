@@ -32,6 +32,7 @@ import { ChargeOverdueNoticeProcessor, ChargeOverdueNoticeScheduler } from './ch
 import { ChargeDueReminderProcessor, ChargeDueReminderScheduler } from './charge-due-reminder.processor';
 import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
 import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
+import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } from './large-school-check-in-codes.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -190,6 +191,10 @@ import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-rec
  * pays a promotion fee's charge in full, the fee becomes Paid and a waiting
  * promotion applies; charge-auto-pay also runs the fees' daily catch-up first.
  * RanksModule imports nothing that imports this module.
+ *
+ * Decision 418 adds LargeSchoolCheckInCodesProcessor/Scheduler: a 15-minute
+ * sweep moving Schools past 500 Students to 6-digit check-in codes. Only
+ * PrismaJobsService; no new module import.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule, RanksModule],
@@ -236,6 +241,8 @@ import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-rec
     LateFeeScheduler,
     ChargeRecurringProcessor,
     ChargeRecurringScheduler,
+    LargeSchoolCheckInCodesProcessor,
+    LargeSchoolCheckInCodesScheduler,
   ],
 })
 export class JobsModule {}

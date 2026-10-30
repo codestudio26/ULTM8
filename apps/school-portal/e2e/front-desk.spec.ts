@@ -261,6 +261,33 @@ test('front-desk mode: a locked tablet with the branch\'s classes, short names, 
   await expect(page).toHaveURL(/\/login/);
 });
 
+test('ten wrong member codes in a row lock the tablet until a staff code; it then carries on (Decision 418)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/front-desk');
+  const myCode = ((await page.getByTestId('fd-my-code').textContent()) ?? '').match(/(\d{4,6})/)?.[1] ?? '';
+  expect(myCode).toMatch(/^\d{4,6}$/);
+  await page.getByRole('button', { name: 'Start', exact: true }).click();
+  await expect(page).toHaveURL(/\/front-desk\/kiosk$/);
+  const session = await db.frontDeskSession.findFirstOrThrow({ where: { schoolId: s.schoolId, endedAt: null }, orderBy: { createdAt: 'desc' } });
+  // As if nine wrong codes came over the last minutes (the API allows ten a minute).
+  await db.frontDeskSession.update({ where: { id: session.id }, data: { wrongMemberCodeCount: 9 } });
+
+  await page.getByRole('tab', { name: 'Code' }).click();
+  const taken = new Set((await db.studentCheckInCode.findMany({ where: { schoolId: s.schoolId } })).map((c) => c.code));
+  let wrong = 0;
+  while (taken.has(String(wrong).padStart(4, '0'))) wrong++;
+  for (const d of String(wrong).padStart(4, '0')) await page.getByRole('button', { name: d, exact: true }).click();
+  await page.getByRole('button', { name: 'Check in', exact: true }).click();
+
+  await expect(page.getByRole('heading', { name: 'This tablet is locked' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Code' })).toHaveCount(0);
+  for (const d of myCode) await page.getByRole('button', { name: d, exact: true }).click();
+  await page.getByRole('button', { name: 'Unlock' }).click();
+  await expect(page.getByRole('tab', { name: 'Code' })).toBeVisible();
+  const row = await db.frontDeskSession.findUniqueOrThrow({ where: { id: session.id } });
+  expect(row).toMatchObject({ lockedAt: null, wrongMemberCodeCount: 0, endedAt: null });
+});
+
 test('find me on the tablet says only whether you\'re already a member (Decision 385)', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/front-desk');

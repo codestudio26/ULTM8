@@ -44,7 +44,7 @@ export class CheckInRulesDto {
   @IsBoolean()
   frozenMembers?: boolean;
 
-  @ApiProperty({ enum: [4, 6], description: "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length." })
+  @ApiProperty({ enum: [4, 6], description: "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 418: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced." })
   @IsIn([4, 6])
   codeDigits!: number;
 }

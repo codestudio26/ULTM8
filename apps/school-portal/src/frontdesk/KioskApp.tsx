@@ -10,6 +10,7 @@ import { codeErrorText, errorText, type QrLookup } from './frontDeskQueries';
 import {
   clearKioskToken,
   isSessionEnded,
+  isTabletLocked,
   readKioskToken,
   useKioskCard,
   useKioskCheckIn,
@@ -17,6 +18,7 @@ import {
   useKioskPackRecharges,
   useKioskCodeLookup,
   useKioskQrLookup,
+  useKioskResume,
   useKioskStudentSearch,
   useKioskToday,
   useKioskUnlock,
@@ -85,6 +87,14 @@ export function KioskApp() {
     if (ended) clearKioskToken();
   }, [ended]);
 
+  // Too many wrong member codes locked the tablet (Decision 418): whatever
+  // heard so fetches the session again, which shows the locked screen.
+  const refreshLock = () => void queryClient.invalidateQueries({ queryKey: ['kiosk', 'session'] });
+  const todayLocked = isTabletLocked(today.error);
+  useEffect(() => {
+    if (todayLocked) void queryClient.invalidateQueries({ queryKey: ['kiosk', 'session'] });
+  }, [todayLocked, queryClient]);
+
   // "You're in" goes back to check-in by itself.
   useEffect(() => {
     if (!done) return;
@@ -116,6 +126,17 @@ export function KioskApp() {
           {t('frontDesk.tablet.staffSignIn')}
         </button>
       </KioskMessage>
+    );
+  }
+  if (info.data?.locked) {
+    return (
+      <LockedScreen
+        digits={info.data.checkInCodeDigits}
+        onResumed={() => {
+          setMsg(null);
+          setWho(null);
+        }}
+      />
     );
   }
   if (info.isPending || (today.isPending && !today.error)) {
@@ -241,7 +262,10 @@ export function KioskApp() {
                   codeLookup.mutate(code, {
                     // Like a scanned QR, the lookup lets the check-in record how they came in.
                     onSuccess: (r) => setWho({ student: fromKiosk(r.student), qr: { lookupToken: r.lookupToken, expiresAt: Date.parse(r.expiresAt) } }),
-                    onError: (err) => setMsg(codeErrorText(err, t('frontDesk.code.notFound'))),
+                    onError: (err) => {
+                      if (isTabletLocked(err)) refreshLock();
+                      setMsg(codeErrorText(err, t('frontDesk.code.notFound')));
+                    },
                   });
                 }}
               />
@@ -416,6 +440,42 @@ function KioskWelcome({
       closesMinutesAfterStart={closesMinutesAfterStart}
       severalClasses={severalClasses}
     />
+  );
+}
+
+/** Too many wrong member codes in a row (Decision 418): only a staff member's
+ * own code lets the tablet carry on in front-desk mode. */
+function LockedScreen({ digits, onResumed }: { digits: number; onResumed: () => void }) {
+  const t = useT();
+  const resume = useKioskResume();
+  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <KioskMessage title={t('frontDesk.tablet.lockedTitle')} body={t('frontDesk.tablet.lockedBody')}>
+      <CodePad
+        title={t('frontDesk.tablet.lockedCodeTitle')}
+        hint={t('frontDesk.exit.codeHint')}
+        length={digits}
+        staffCode
+        onCode={(code) => {
+          setError(null);
+          resume.mutate(code, {
+            onSuccess: () => {
+              onResumed();
+              void queryClient.invalidateQueries({ queryKey: ['kiosk'] });
+            },
+            onError: (err) => {
+              // Too many wrong staff codes end the session, as on the exit screen (Decision 388).
+              if (isSessionEnded(err)) void queryClient.invalidateQueries({ queryKey: ['kiosk'] });
+              setError(errorText(err, t('frontDesk.exit.failed')));
+            },
+          });
+        }}
+      />
+      <div className="fd-msg fd-msg--bad" aria-live="polite">
+        {error ?? ''}
+      </div>
+    </KioskMessage>
   );
 }
 

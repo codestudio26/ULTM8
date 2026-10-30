@@ -8,7 +8,7 @@ import { Throttle } from '@nestjs/throttler';
 import { jwtSubTracker } from '../common/throttle/identity-trackers';
 import { DeskQrLookupDto } from '../attendance/dto/desk-qr-lookup.dto';
 import { DeskCheckInDto, DeskCheckInResponseDto } from '../attendance/dto/desk-check-in.dto';
-import { FrontDeskSession, FrontDeskSessionGuard } from './front-desk-session.guard';
+import { AllowWhileLocked, FrontDeskSession, FrontDeskSessionGuard } from './front-desk-session.guard';
 import { FrontDeskSessionContext, FrontDeskSessionsService } from './front-desk-sessions.service';
 import { FrontDeskKioskService } from './front-desk-kiosk.service';
 import {
@@ -24,6 +24,7 @@ import {
   KioskTodayQueryDto,
   KioskUnlockDto,
   KioskUnlockedDto,
+  KioskResumedDto,
 } from './dto/front-desk.dto';
 
 // Per session: the tablet's token buckets as `front-desk:<sessionId>` (handover F1, F2).
@@ -81,6 +82,7 @@ export class FrontDeskKioskController {
   }
 
   @ApiOkResponse({ type: KioskSessionInfoDto })
+  @AllowWhileLocked()
   @Get('session')
   info(@FrontDeskSession() session: FrontDeskSessionContext) {
     return this.kiosk.info(session);
@@ -138,9 +140,21 @@ export class FrontDeskKioskController {
   /** A staff member's own code ends the session (Decision 320). */
   @ApiOkResponse({ type: KioskUnlockedDto })
   @Throttle(UNLOCK_THROTTLE)
+  @AllowWhileLocked()
   @HttpCode(200)
   @Post('unlock')
   unlock(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: KioskUnlockDto) {
     return this.sessions.unlock(session, dto.staffCode);
+  }
+
+  /** A staff member's own code lets a tablet locked by wrong member codes
+   * carry on (Decision 418). */
+  @ApiOkResponse({ type: KioskResumedDto })
+  @Throttle(UNLOCK_THROTTLE)
+  @AllowWhileLocked()
+  @HttpCode(200)
+  @Post('resume')
+  resume(@FrontDeskSession() session: FrontDeskSessionContext, @Body() dto: KioskUnlockDto) {
+    return this.sessions.resume(session, dto.staffCode);
   }
 }

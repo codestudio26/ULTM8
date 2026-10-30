@@ -14,7 +14,7 @@ import { AttendanceService } from '../attendance/attendance.service';
 import { FrontDeskCheckInService, frontDeskLookupOwner } from '../attendance/front-desk-check-in.service';
 import { QrTokenService } from '../attendance/qr-token.service';
 import { DeskCheckInDto } from '../attendance/dto/desk-check-in.dto';
-import { FrontDeskSessionContext } from './front-desk-sessions.service';
+import { FrontDeskSessionContext, FrontDeskSessionsService } from './front-desk-sessions.service';
 import { StudentCheckInCodesService } from './student-check-in-codes.service';
 import { heardFromList } from './sign-up-rules';
 import { KioskBookingDto, KioskClassDto, KioskStudentCardDto, KioskStudentDto, KioskTodayDto, KioskTodayQueryDto } from './dto/front-desk.dto';
@@ -59,6 +59,7 @@ export class FrontDeskKioskService {
     private readonly deskCheckIn: FrontDeskCheckInService,
     private readonly checkInCodes: StudentCheckInCodesService,
     private readonly qrTokens: QrTokenService,
+    private readonly sessions: FrontDeskSessionsService,
   ) {}
 
   async info(session: FrontDeskSessionContext) {
@@ -89,6 +90,7 @@ export class FrontDeskKioskService {
       checkInCodeDigits: school.checkInCodeDigits,
       // Decision 392: the sign-up form offers Visitor only with a visitor period.
       visitorsOn: !!school.visitorPeriodDays,
+      locked: session.lockedAt !== null,
       heardFromOptions: heardFromList(school.heardFromOptions),
     };
   }
@@ -239,7 +241,12 @@ export class FrontDeskKioskService {
   /** A typed personal check-in code (Decision 384); like a scanned QR, the
    * lookup only works on this tablet. */
   async codeLookup(session: FrontDeskSessionContext, code: string) {
-    const r = await this.checkInCodes.lookup(session.schoolId, code, frontDeskLookupOwner(session.id), `tablet ${session.id}`);
+    // Wrong codes in a row lock the tablet (Decision 418); a right one starts the count again.
+    const r = await this.checkInCodes.lookup(session.schoolId, code, frontDeskLookupOwner(session.id), `tablet ${session.id}`).catch(async (err) => {
+      if (err instanceof NotFoundException) await this.sessions.countWrongMemberCode(session);
+      throw err;
+    });
+    await this.sessions.resetWrongMemberCodes(session);
     return { lookupToken: r.lookupToken, expiresAt: r.expiresAt, student: await this.student(session, r.studentId) };
   }
 

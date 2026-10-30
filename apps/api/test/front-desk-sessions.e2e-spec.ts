@@ -390,7 +390,9 @@ describeIfDb('Front desk: locked tablet sessions (Decision 380)', () => {
     for (let i = 0; i < 11; i++) {
       statuses.push((await http().post('/v1/front-desk/kiosk/code-lookups').set('Authorization', `Bearer ${s.sessionToken}`).send({ code: next() })).status);
     }
-    expect(statuses.slice(0, 10).every((x) => x === 404)).toBe(true);
+    expect(statuses.slice(0, 9).every((x) => x === 404)).toBe(true);
+    // The tenth wrong one in a row locks the tablet (Decision 418).
+    expect(statuses[9]).toBe(423);
     expect(statuses[10]).toBe(429);
   });
 

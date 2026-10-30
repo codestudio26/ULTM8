@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
+import { assertCodeDigitsAllowed } from '../front-desk/check-in-code';
 import { CHECK_IN_RULES_SELECT, checkInRulesFrom } from './check-in-rules';
 import { CheckInRulesDto } from './dto/check-in-rules.dto';
 
@@ -23,6 +24,7 @@ export class CheckInRulesService {
 
   async update(callerId: string, schoolId: string, dto: CheckInRulesDto): Promise<CheckInRulesDto> {
     await this.tenantAuth.assertMayManageCheckInRules(callerId, schoolId);
+    await assertCodeDigitsAllowed(this.prismaJobs, schoolId, dto.codeDigits);
     const school = await this.prismaJobs.school.update({
       where: { id: schoolId },
       data: {

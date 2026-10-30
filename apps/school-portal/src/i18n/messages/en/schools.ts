@@ -33,7 +33,7 @@ export const schools = {
     checkInOpens: 'Check-in opens (minutes before class)',
     checkInOpensHint: 'How early students can check in to a class. 0 means only once it starts.',
     checkInCodeDigits: 'Check-in code length',
-    checkInCodeDigitsHint: 'Staff codes for leaving front-desk mode. Codes already given out keep their length until someone gets a new one.',
+    checkInCodeDigitsHint: 'Staff codes for leaving front-desk mode. Codes already given out keep their length until someone gets a new one. A School with more than 500 members always uses 6 digits, and shorter codes are replaced.',
     visitorPeriod: 'Visit pass length (days)',
     visitorPeriodHint: "How long a Visitor's free visit pass lasts. Leave empty to turn visit passes off.",
     checkInCodeDigits4: '4 digits',

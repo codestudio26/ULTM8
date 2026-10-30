@@ -7239,3 +7239,22 @@ User (Code), 30 Oct 2026: "1a, 2 keep, 3 yes, 4 yes, 5 ok, 6 ok", answering the 
 ### Recorded by
 
 User (Code), 30 Oct 2026: "Count it toward new fee (Recommended)"; "Under Memberships (Recommended)"; "Net of refunds (Recommended)"; "Yes, all refunds (Recommended)".
+
+## Decision 418 — Front-desk check-in codes at large Schools: 6 digits past 500 members, and the tablet locks after 10 wrong member codes
+
+**Date:** 30 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 315, 320, 380, 384, 388, 394 · **Answers:** stress test round 4 Q1 (`docs/handover/STRESS-TEST-ROUND4.md`, finding FD1)
+
+### Background
+
+Check-in codes (members' personal codes and staff tablet codes) default to 4 digits. At one 782-member Branch in the round 4 stress test, 1 in 10 random guesses on a front-desk tablet opened a real member's card: lookups were limited to 10 a minute, and wrong member codes never locked the tablet (only wrong staff codes ended its session, Decision 388).
+
+### Decision
+
+1. **A School with more than 500 current Students moves to 6-digit codes on its own.** Current Students are those with an active Student role at the School, all Branches together. It's checked whenever a code is given out there, and by a sweep every 15 minutes.
+2. **It stays on 6 digits.** Going back to 500 or fewer members doesn't switch it back, and neither Check-in rules nor the School page can choose 4 while it has more than 500 (`CHECK_IN_CODE_DIGITS_LOCKED`). A smaller School keeps its own choice, as before.
+3. **Existing shorter codes are all replaced at once** with new 6-digit ones, members' and staff's alike; the old ones stop working. Staff see each member's new code on the member's Student page, and their own on the front-desk screen. (The member app doesn't show personal codes yet, so until it does, members get the new code from staff.) The switch runs again safely: it only touches codes still shorter than 6.
+4. **10 wrong member codes in a row lock a front-desk tablet.** A right member code starts the count again. While locked the tablet does nothing else; it shows "This tablet is locked", and a staff member's own code (one who covers the tablet's Branch) lets it carry on in front-desk mode with the count back at 0. Leaving front-desk mode with a staff code still works. Wrong staff codes on the locked screen count toward the existing limit of 10, after which the session ends (Decision 388).
+
+### Recorded by
+
+User (Code), 30 Oct 2026, on stress test round 4 Q1: "a School with more than 500 members automatically switches to 6-digit codes, and 10 wrong member codes in a row lock the tablet until a staff code is entered" (Recommended). Items 1, 2 and 4's details (staff codes too, counted School-wide, no switching back, staff code carries on rather than ending the session, a right code resets the count) were stated to the user as the defaults being built. Item 3 was asked on a card; built as the recommended answer ("Replace them all at once") while waiting for the choice.
