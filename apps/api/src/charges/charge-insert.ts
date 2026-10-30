@@ -16,6 +16,11 @@ export interface NewCharge {
   taxCountry: string | null;
   taxRateBasisPoints: number;
   taxInclusive: boolean;
+  /** "No tax on this item" (Decision 414 item 5): staff-created charges and
+   * occurrences of a no-tax recurring charge only. The caller passes a rate of
+   * 0 and totals worked out at 0 (taxForCharge() in charge-maths.ts). Never set for a late
+   * fee or a promotion fee, which always take the School's tax settings. */
+  taxExempt?: boolean;
   totals: ChargeTotals;
   currency: string;
   dueDate: Date;
@@ -73,6 +78,7 @@ export async function insertCharge(tx: Tx, c: NewCharge): Promise<{ id: string; 
       taxCountry: c.taxCountry,
       taxRateBasisPoints: c.taxRateBasisPoints,
       taxInclusive: c.taxInclusive,
+      taxExempt: c.taxExempt ?? false,
       netAmount: c.totals.netAmount,
       taxAmount: c.totals.taxAmount,
       grossAmount: c.totals.grossAmount,

@@ -15,6 +15,17 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **"No tax on this item (0% or exempt)" on charges** (backlog 3.6; Decision 414
+  item 5) — staff creating a one-off charge or setting up a recurring charge
+  can tick it (off by default) for an item tax doesn't apply to, such as
+  children's clothing at 0% VAT in the UK. The charge then has no tax: the
+  price ex. tax and inc. tax are both the price typed (after any discount),
+  whether the School's prices include tax or have it added on top, and every
+  charge of a recurring series set up with the tick has no tax. The form's live
+  preview, the student's charges table and recurring list, and the invoice in
+  the student app show "No tax". A tax rate is still never typed per charge.
+  Late fees and promotion fees always take the School's tax settings.
+  Migration `20270119000000_charges_no_tax`.
 - **Cancelling a cash or bank-transfer membership payment works like
   cancelling a charge** (backlog 3.6; Decision 338 item 1, Decision 414 item 7)
   — a membership payment waiting at the desk is cancelled by the owner, and
