@@ -120,7 +120,7 @@ test('a desk payment in full shows the fee Paid in grading', async ({ page }) =>
 
 test('waiving the fee in grading cancels its charge', async ({ page }) => {
   await page.goto(`/students/${s.student.id}`);
-  const box = page.getByRole('region', { name: 'Promotion fee' });
+  const box = page.getByRole('region', { name: 'Promotion fee', exact: true });
   await box.getByRole('button', { name: 'Waive fee' }).click();
   const row = page.getByRole('row', { name: /#0000001/ });
   await expect(row).toContainText('Cancelled');
