@@ -79,8 +79,17 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <Text style={{ fontSize: 15, fontWeight: '600', flex: 1, marginRight: 8 }}>{rowTitle(transaction, t)}</Text>
-        <Text style={{ fontSize: 15, fontWeight: '600' }}>{formatMoney(transaction.amount, transaction.currency)}</Text>
+        <Text style={{ fontSize: 15, fontWeight: '600' }}>{formatMoney(transaction.amount + (transaction.surchargeAmount ?? 0), transaction.currency)}</Text>
       </View>
+      {/* Decision 406: a card surcharge is its own line on the receipt. */}
+      {(transaction.surchargeAmount ?? 0) > 0 ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
+          {t('transactions.row.surchargeLine', {
+            price: formatMoney(transaction.amount, transaction.currency),
+            surcharge: formatMoney(transaction.surchargeAmount, transaction.currency),
+          })}
+        </Text>
+      ) : null}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
         <Text style={{ color: '#5F6368', fontSize: 12 }}>{formatDate(transaction.billingDate)}</Text>
         <Text style={{ color: statusColor, fontSize: 12, fontWeight: '600' }}>{statusLabel ? t(statusLabel) : transaction.status}</Text>

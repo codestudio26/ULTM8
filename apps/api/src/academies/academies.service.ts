@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaDiscoveryService } from '../common/prisma/prisma-discovery.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { shapeTimetableSlotResponse } from '../timetable/timetable.service';
+import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
 
 // These four `select` shapes MUST match the column-level Postgres GRANTs the Phase 14
 // migration (20260917000000_academies_discovery_module) gives the `ultm8_discovery`
@@ -192,7 +193,14 @@ export class AcademiesService {
       throw new NotFoundException('Academy not found');
     }
     const { classes: upcomingClasses, ...summary } = school;
-    return { ...summary, upcomingClasses };
+    return { ...(await this.withCardSurcharge(summary)), upcomingClasses };
+  }
+
+  /** Decision 406: each plan's card surcharge, so the member sees it before
+   * paying. One rule with the purchase (card_surcharge_bps()). */
+  private async withCardSurcharge<T extends { id: string; membershipPlans: Array<{ type: string; price: number }> }>(school: T) {
+    const bps = await readCardSurchargeBps(this.prismaDiscovery, school.id);
+    return { ...school, membershipPlans: school.membershipPlans.map((p) => ({ ...p, cardSurchargeAmount: planCardSurcharge(p, bps) })) };
   }
 
   /** One nested query, not three sequential ones — membershipPlans/classes are fetched
@@ -249,7 +257,7 @@ export class AcademiesService {
       throw new NotFoundException('Academy not found');
     }
     const { classes: upcomingClasses, ...summary } = school;
-    return { ...summary, upcomingClasses };
+    return { ...(await this.withCardSurcharge(summary)), upcomingClasses };
   }
 
   /**

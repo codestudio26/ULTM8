@@ -278,6 +278,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   schools: {
+    cardSurcharge: {
+      title: "Acréscimo no cartão",
+      subtitle: "Adicione um acréscimo ao que os membros pagam com cartão no app, para cobrir as taxas do cartão. Eles veem antes de pagar e como uma linha própria no recibo. Nunca é somado a pagamentos em dinheiro, transferência bancária ou assinaturas.",
+      enabled: "Adicionar acréscimo no cartão",
+      percent: "Acréscimo (%)",
+      percentHint: "Até 3%, ex.: 2,5.",
+      legalConfirm: "Confirmo que acréscimos são legais onde minha escola atua",
+      invalidPercent: "Informe um acréscimo acima de 0% e de até 3%, com no máximo duas casas decimais.",
+      confirmRequired: "Marque a caixa para confirmar que acréscimos são legais onde sua escola atua.",
+      notApplying: "Ainda não é somado: sua escola não aceita pagamentos com cartão.",
+    },
     heardFrom: {
       title: "Como você nos conheceu?",
       subtitle: "As opções do formulário de cadastro da recepção. Até você mudá-las, a lista inicial aparece no idioma de cada pessoa.",
@@ -540,6 +551,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    columnSurcharge: "Acréscimo no cartão",
+    surchargeLine: "+ {amount} de acréscimo no cartão",
     title: "Transações",
     subtitle: "Todas as cobranças concluídas ou tentadas nos planos de matrícula da sua escola.",
     loadFailed: "Não foi possível carregar as transações.",

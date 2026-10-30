@@ -46,6 +46,10 @@ export const AuditAction = {
   // Backlog 3.14 — a free trial of ULTM8 for a School.
   START_SCHOOL_TRIAL: 'START_SCHOOL_TRIAL',
   EXTEND_SCHOOL_TRIAL: 'EXTEND_SCHOOL_TRIAL',
+  // Backlog 3.8 (Decision 406) — the countries where a card surcharge is
+  // allowed. Platform-wide, so no schoolId/franchiseId.
+  ADD_CARD_SURCHARGE_COUNTRY: 'ADD_CARD_SURCHARGE_COUNTRY',
+  REMOVE_CARD_SURCHARGE_COUNTRY: 'REMOVE_CARD_SURCHARGE_COUNTRY',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
