@@ -39,8 +39,9 @@ import { RankCorrectionsService } from './rank-corrections.service';
   // GradingErasureService: not called by anything yet (Decision 134 groundwork
   // only, no account-deletion endpoint exists) — exported so a future
   // account-deletion job can inject it once it's built.
-  // PromotionFeeService: exported so staff-created charges (Decision 303)
-  // can call markPaid() once they are built.
+  // PromotionFeeService: exported so staff-created charges (ChargesModule)
+  // and the payment jobs (JobsModule) settle a promotion fee once its charge
+  // is fully paid (backlog §3.6 step 6).
   providers: [RanksService, GradingService, GradingPermissionsService, InstructorBeltsService, GradingErasureService, PromotionFeeService, RankCorrectionsService],
   // GradingService: belt progress on the locked front-desk tablet's welcome card (Decision 380).
   exports: [GradingErasureService, PromotionFeeService, GradingService],

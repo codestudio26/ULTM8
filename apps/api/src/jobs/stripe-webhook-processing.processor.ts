@@ -14,6 +14,7 @@ import { assertCanCreateMembership, GeneralAccessConflictError } from '../member
 import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card';
 import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-billing';
 import { receiptNotice, settleChargePayment } from '../charges/charge-ledger';
+import { PromotionFeeService } from '../ranks/promotion-fee.service';
 
 type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string };
 
@@ -116,6 +117,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // already registered by QueueModule (JobsModule imports it), same as every
     // other queue this processor injects.
     @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
+    // Backlog §3.6 step 6: a card payment that pays a promotion fee's charge.
+    private readonly promotionFees: PromotionFeeService,
   ) {
     super();
   }
@@ -327,6 +330,22 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         `Stripe event ${stripeEventId} (${eventType}) — DB write committed but a post-commit side effect (Subscription cancellation, notification fan-out, chargeback-pattern check, or waitlist-cascade notify) failed and cannot be retried (the dedup row already committed). Needs manual follow-up.`,
         err as Error,
       );
+    }
+
+    // Backlog §3.6 step 6: a card payment toward charges (in the app, or an
+    // automatic one) may have paid a promotion fee's charge in full: the fee
+    // becomes Paid and a promotion waiting for it applies. After the commit,
+    // since that is a grading write of its own. settlePaidCharges() never
+    // throws, and the daily catch-up makes up a step lost here.
+    if (eventType === 'payment_intent.succeeded') {
+      try {
+        const paid = await this.prismaJobs.transaction.findUnique({ where: { stripePaymentIntentId: objectId }, select: { kind: true, status: true, schoolId: true, studentId: true } });
+        if (paid?.kind === 'CHARGE_PAYMENT' && paid.status === 'SUCCESSFUL') {
+          await this.promotionFees.settlePaidCharges(paid.schoolId, paid.studentId);
+        }
+      } catch (err) {
+        this.logger.error(`Stripe event ${stripeEventId}: settling promotion fees after a charge payment failed; the daily catch-up retries.`, err as Error);
+      }
     }
 
     // Decision 409: a Membership Subscription's renewal is paid, so a freeze

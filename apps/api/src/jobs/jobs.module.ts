@@ -4,6 +4,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { FranchiseFeesModule } from '../franchise-fees/franchise-fees.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { QueueModule } from './queue.module';
+import { RanksModule } from '../ranks/ranks.module';
 import { OtpDeliveryProcessor } from './otp-delivery.processor';
 import { ClassOccurrenceGenerationProcessor, ClassOccurrenceGenerationScheduler } from './class-occurrence-generation.processor';
 import { StripeWebhookProcessingProcessor } from './stripe-webhook-processing.processor';
@@ -179,9 +180,14 @@ import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-rec
  * Backlog §3.6 step 3 adds ChargeRecurringProcessor/Scheduler — a daily run
  * (5:30am UTC, before charge-auto-pay) making recurring charges' occurrences
  * (Decision 412), with the plain functions in charges/recurring-occurrences.ts.
+ * Backlog §3.6 step 6 imports RanksModule for PromotionFeeService: once a
+ * card payment (the Stripe webhook) or an automatic payment (charge-auto-pay)
+ * pays a promotion fee's charge in full, the fee becomes Paid and a waiting
+ * promotion applies; charge-auto-pay also runs the fees' daily catch-up first.
+ * RanksModule imports nothing that imports this module.
  */
 @Module({
-  imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule],
+  imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule, RanksModule],
   providers: [
     OtpDeliveryProcessor,
     ClassOccurrenceGenerationProcessor,

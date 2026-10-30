@@ -189,7 +189,34 @@ export class ChargeResponseDto {
 
   @ApiPropertyOptional({ type: () => LateFeeDetailsDto, nullable: true, description: 'Decision 413: set when this charge is a late fee, with what it is for.' })
   lateFee!: LateFeeDetailsDto | null;
+
+  @ApiPropertyOptional({
+    type: () => PromotionFeeChargeDetailsDto,
+    nullable: true,
+    description: 'Backlog §3.6 step 6 (Decision 303 item 5): set when this charge is an accepted promotion fee, with the grade it is for.',
+  })
+  promotionFee!: PromotionFeeChargeDetailsDto | null;
 }
+
+/** Backlog §3.6 step 6: the promotion fee a charge is for (Decision 300). */
+export class PromotionFeeChargeDetailsDto {
+  @ApiProperty({ description: 'The PromotionFeeRequest id.' })
+  requestId!: string;
+
+  @ApiProperty()
+  disciplineId!: string;
+
+  @ApiProperty({ description: 'The style it is in.' })
+  disciplineName!: string;
+
+  @ApiProperty({ description: 'The belt or stripe it is for (also the charge description).' })
+  toRungName!: string;
+
+  @ApiProperty({ enum: ['PENDING', 'ACCEPTED', 'PAID', 'DECLINED', 'WAIVED', 'CANCELLED'] })
+  status!: 'PENDING' | 'ACCEPTED' | 'PAID' | 'DECLINED' | 'WAIVED' | 'CANCELLED';
+}
+
+export type PromotionFeeChargeDetails = PromotionFeeChargeDetailsDto;
 
 export const LATE_FEE_FOR_TYPES = ['CHARGE', 'RENEWAL'] as const;
 

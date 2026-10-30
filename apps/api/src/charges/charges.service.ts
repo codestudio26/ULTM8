@@ -21,12 +21,15 @@ import { STANDARD_TAX_RATES } from './standard-tax-rates';
 import { allocate, freeCredit, lockBalance, receiptNotice } from './charge-ledger';
 import { lateFeeWaivedNotice } from '../late-fees/late-fee-notices';
 import { insertCharge, lockInvoiceNumbers } from './charge-insert';
+import { cancelChargeInTx, chargeCancelledNotice } from './charge-cancel';
+import { PromotionFeeService } from '../ranks/promotion-fee.service';
 import { PaymentsService } from '../payments/payments.service';
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
 import { StepUpService } from '../auth/step-up.service';
 import {
   CancelChargeDto,
   LateFeeDetails,
+  PromotionFeeChargeDetails,
   ChargePaymentChannelValue,
   ChargePaymentMethod,
   ChargePaymentStatus,
@@ -113,6 +116,7 @@ export class ChargesService {
     private readonly guardiansService: GuardiansService,
     private readonly paymentsService: PaymentsService,
     private readonly stepUpService: StepUpService,
+    private readonly promotionFees: PromotionFeeService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
   ) {}
 
@@ -268,9 +272,24 @@ export class ChargesService {
    */
   async cancel(callerId: string, schoolId: string, chargeId: string, dto: CancelChargeDto, waive = false) {
     this.assertUuid(chargeId);
-    const found = await this.prismaJobs.charge.findFirst({ where: { id: chargeId, schoolId }, select: { studentId: true, lateFeeOverdueAmount: true } });
+    const found = await this.prismaJobs.charge.findFirst({
+      where: { id: chargeId, schoolId },
+      select: { studentId: true, lateFeeOverdueAmount: true, promotionFeeRequestId: true },
+    });
     if (!found) throw new NotFoundException({ code: 'CHARGE_NOT_FOUND', message: 'Charge not found' });
     await this.assertMay(callerId, schoolId, found.studentId, 'cancel');
+    // Backlog §3.6 step 6: a promotion fee's charge goes with its fee. Waiving
+    // and cancelling a fee are different outcomes for the promotion (Decisions
+    // 300, 307), are the owner's alone, and are done from grading, which
+    // cancels the charge. Cancelling the charge here would pick one of them for
+    // the owner, or let staff with "Can cancel charges" do what only the owner
+    // may, so it is refused.
+    if (found.promotionFeeRequestId) {
+      throw new ConflictException({
+        code: 'CHARGE_IS_PROMOTION_FEE',
+        message: "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.",
+      });
+    }
     const isLateFee = found.lateFeeOverdueAmount !== null;
     if (waive && !isLateFee) {
       throw new BadRequestException({ code: 'CHARGE_NOT_A_LATE_FEE', message: 'Only a late fee can be waived.' });
@@ -285,22 +304,14 @@ export class ChargesService {
     const { charge, paid } = await this.prismaJobs.$transaction(async (tx) => {
       await lockSchoolOpen(tx, schoolId);
       await lockBalance(tx, schoolId, found.studentId);
-      const now = new Date();
-      const updated = await tx.charge.updateMany({
-        where: { id: chargeId, schoolId, cancelledAt: null },
-        data: { cancelledAt: now, cancelledById: callerId, cancelReason: reason, lateFeeWaived: waive },
-      });
-      if (updated.count === 0) {
+      const cancelled = await cancelChargeInTx(tx, { schoolId, chargeId, cancelledById: callerId, reason, lateFeeWaived: waive });
+      if (!cancelled) {
         throw new ConflictException({ code: 'CHARGE_ALREADY_CANCELLED', message: 'This charge has already been cancelled.' });
       }
-      const row = await tx.charge.findUniqueOrThrow({ where: { id: chargeId }, include: { allocations: { select: { amount: true } } } });
-      await tx.balanceEntry.create({
-        data: { id: randomUUID(), schoolId, studentId: row.studentId, kind: 'CHARGE_CANCELLED', amount: -row.grossAmount, currency: row.currency, chargeId },
-      });
-      // Anything already paid toward it is credit now, and goes to the next open charge.
-      await allocate(tx, schoolId, row.studentId, row.currency, null, null);
-      return { charge: row, paid: row.allocations.reduce((n, a) => n + a.amount, 0) };
+      return cancelled;
     });
+    // The credit it freed may have paid a promotion fee in full (step 6).
+    await this.promotionFees.settlePaidCharges(schoolId, found.studentId);
 
     if (isLateFee) {
       // Decision 413: the member is told in their own language, not with the
@@ -308,10 +319,8 @@ export class ChargesService {
       const notice = lateFeeWaivedNotice(charge.grossAmount, charge.currency, paid);
       await this.notify(charge.studentId, schoolId, `charge-cancelled-${chargeId}`, notice.title, notice.body, chargeId);
     } else {
-      const body =
-        `Your charge '${charge.description}, ${money(charge.grossAmount, charge.currency)}' was cancelled. Nothing to pay.` +
-        (paid > 0 ? ` The ${money(paid, charge.currency)} already paid is now credit on your balance.` : '');
-      await this.notify(charge.studentId, schoolId, `charge-cancelled-${chargeId}`, 'Charge cancelled', body, chargeId);
+      const notice = chargeCancelledNotice(charge.description, charge.grossAmount, charge.currency, paid);
+      await this.notify(charge.studentId, schoolId, `charge-cancelled-${chargeId}`, notice.title, notice.body, chargeId);
     }
     const reread = await this.prismaJobs.charge.findUniqueOrThrow({ where: { id: chargeId }, include: { allocations: { select: { amount: true } } } });
     return (await this.shapeCharges([reread], school.timezone, true))[0];
@@ -401,6 +410,9 @@ export class ChargesService {
       });
       await allocate(tx, schoolId, studentId, currency!, transactionId, dto.chargeId ?? null);
     });
+    // A promotion fee this paid in full becomes Paid, and a promotion waiting
+    // for it applies (backlog §3.6 step 6).
+    await this.promotionFees.settlePaidCharges(schoolId, studentId);
 
     if (dto.sendReceipt !== false) {
       const receipt = receiptNotice(transactionId, dto.amount, currency);
@@ -804,6 +816,7 @@ export class ChargesService {
       return n ? `${n.firstName} ${n.surname}`.trim() : null;
     };
     const lateFees = await this.lateFeeDetails(rows, timezone);
+    const promotionFees = await this.promotionFeeDetails(rows);
     return rows.map((c) => {
       const paid = c.allocations.reduce((n, a) => n + a.amount, 0);
       const cancelled = !!c.cancelledAt;
@@ -840,6 +853,7 @@ export class ChargesService {
         cancelReason: forStaff ? c.cancelReason : null,
         cardSurchargeAmount: 0,
         lateFee: lateFees.get(c.id) ?? null,
+        promotionFee: promotionFees.get(c.id) ?? null,
       };
     });
   }
@@ -888,6 +902,31 @@ export class ChargesService {
           overdueCurrency: (forRenewal.currency ?? fee.currency).toUpperCase(),
         });
       }
+    }
+    return out;
+  }
+
+  /**
+   * Backlog §3.6 step 6: the promotion fee each such charge is for, so both
+   * apps label it "Promotion fee" with the style and the grade, and the portal
+   * links it to the student's grading. Read on the jobs connection after the
+   * caller's access to these charges was checked: a charge and its request
+   * always belong to the same student at the same School (a database trigger
+   * holds it).
+   */
+  private async promotionFeeDetails(rows: ChargeRow[]): Promise<Map<string, PromotionFeeChargeDetails>> {
+    const out = new Map<string, PromotionFeeChargeDetails>();
+    const ids = rows.map((c) => c.promotionFeeRequestId).filter((id): id is string => !!id);
+    if (ids.length === 0) return out;
+    const requests = await this.prismaJobs.promotionFeeRequest.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, disciplineId: true, toRungName: true, status: true, discipline: { select: { name: true } } },
+    });
+    const byId = new Map(requests.map((r) => [r.id, r]));
+    for (const c of rows) {
+      const r = c.promotionFeeRequestId ? byId.get(c.promotionFeeRequestId) : undefined;
+      if (!r) continue;
+      out.set(c.id, { requestId: r.id, disciplineId: r.disciplineId, disciplineName: r.discipline.name, toRungName: r.toRungName, status: r.status });
     }
     return out;
   }

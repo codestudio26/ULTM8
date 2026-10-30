@@ -27,6 +27,8 @@ export interface NewCharge {
     Prisma.ChargeUncheckedCreateInput,
     'lateFeeForChargeId' | 'lateFeeForTransactionId' | 'lateFeeOverdueAmount' | 'lateFeePercentBps'
   >;
+  /** An accepted promotion fee (Decision 303 item 5): the request it is for. */
+  promotionFeeRequestId?: string;
 }
 
 /**
@@ -43,7 +45,8 @@ export async function lockInvoiceNumbers(tx: Tx, schoolId: string): Promise<void
  * Inserts one charge, puts it on the member's balance, and uses any credit on
  * it straight away (Decision 303 item 2). Shared by a charge staff create
  * (ChargesService.create, step 1), each occurrence of a recurring charge
- * (step 3) and each late fee (Decision 413), so all get an invoice number the same way. Runs inside the
+ * (step 3), each late fee (Decision 413) and each accepted promotion fee
+ * (step 6), so all get an invoice number the same way. Runs inside the
  * caller's transaction, on the jobs connection, after the caller's checks.
  *
  * Invoice numbers: one at a time per School, under a per-School lock inside
@@ -79,6 +82,7 @@ export async function insertCharge(tx: Tx, c: NewCharge): Promise<{ id: string; 
       recurringChargeId: c.recurring?.recurringChargeId ?? null,
       occurrenceDate: c.recurring?.occurrenceDate ?? null,
       ...c.lateFee,
+      promotionFeeRequestId: c.promotionFeeRequestId ?? null,
     },
   });
   await tx.balanceEntry.create({ data: { id: randomUUID(), schoolId: c.schoolId, studentId: c.studentId, kind: 'CHARGE', amount: c.totals.grossAmount, currency: c.currency, chargeId: id } });
