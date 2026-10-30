@@ -32,7 +32,7 @@ if (!hasDb) {
   );
 }
 
-const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false };
+const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false };
 
 describeIfDb('Pause and Unpause staff (Decision 390)', () => {
   let app: INestApplication;

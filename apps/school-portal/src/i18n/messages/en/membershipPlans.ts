@@ -190,6 +190,8 @@ export const membershipPlans = {
       endLabel: "Back on",
       endHint: "At least 7 days after the first frozen day. The member can train again on this day.",
       maxHint: "Most frozen days in any 12 months at this School: {days}.",
+      bookingsNote: "Their bookings on the frozen days that this membership paid for are cancelled, and the member is told.",
+      staffEmpty: "This student has no membership that can be frozen. Class packs can't be frozen.",
       fee: "Freeze fee, charged now: {amount}.",
       submit: "Freeze membership",
       failed: "The freeze could not be saved.",

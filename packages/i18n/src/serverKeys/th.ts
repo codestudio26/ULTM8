@@ -196,6 +196,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledTitle: "ยกเลิกรายการเรียกเก็บแล้ว",
     chargeCancelledBody: "รายการเรียกเก็บ '{description}, {amount}' ของคุณถูกยกเลิกแล้ว ไม่ต้องชำระเงิน",
     chargeCancelledCreditBody: "รายการเรียกเก็บ '{description}, {amount}' ของคุณถูกยกเลิกแล้ว ไม่ต้องชำระเงิน ยอด {paid} ที่ชำระไปแล้วกลายเป็นเครดิตในยอดคงเหลือของคุณ",
+    freezeBookingsCancelledTitle: "ยกเลิกการจองแล้ว",
+    freezeBookingsCancelledBody: "สมาชิก {plan} ของคุณถูกพักตั้งแต่ {start} และจะกลับมาได้ในวันที่ {back} จึงยกเลิกการจองในช่วงนี้แล้ว: {list} คุณจองใหม่ได้เมื่อการพักสิ้นสุด",
     classMovedTitle: "ย้ายคลาสแล้ว",
     classCancelledTitle: "ยกเลิกคลาสแล้ว",
     toDecideTitle: "การเลื่อนระดับที่รอการตัดสินใจ",

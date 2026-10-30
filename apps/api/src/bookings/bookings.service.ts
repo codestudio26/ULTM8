@@ -326,13 +326,33 @@ export class BookingsService {
    *
    * `opts.schoolCancelled` (Decision 322): the School cancelled the Class itself,
    * so the credit always comes back, with no late-cancel rule and no fee.
+   *
+   * `opts.frozenStudentId` (Decision 409): the booking falls inside a freeze
+   * of the membership that paid for it, and MembershipFreezesService already
+   * checked that the caller may freeze this student's membership. It is read
+   * in that student's own context (it may be at a branch the caller can't
+   * see) and cancelled as a School cancellation is: credit back, no
+   * late-cancel rule, no fee, and the waitlist told as usual.
    */
-  async cancelBooking(callerId: string, bookingId: string, dto?: CancelBookingDto, opts?: { schoolCancelled?: boolean }) {
-    let existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.booking.findUnique({ where: { id: bookingId }, include: { attendees: true } }),
-    );
+  async cancelBooking(
+    callerId: string,
+    bookingId: string,
+    dto?: CancelBookingDto,
+    opts?: { schoolCancelled?: boolean; frozenStudentId?: string },
+  ) {
+    const frozenStudentId = opts?.frozenStudentId;
+    if (frozenStudentId) {
+      opts = { ...opts, schoolCancelled: true };
+    }
+    let existing = frozenStudentId
+      ? await this.prismaApp.withTenantContext(frozenStudentId, (tx) =>
+          tx.booking.findFirst({ where: { id: bookingId, studentId: frozenStudentId }, include: { attendees: true } }),
+        )
+      : await this.prismaApp.withTenantContext(callerId, (tx) =>
+          tx.booking.findUnique({ where: { id: bookingId }, include: { attendees: true } }),
+        );
     let isGuardianAction = false;
-    if (!existing && dto?.studentId !== undefined && dto.studentId !== callerId) {
+    if (!existing && !frozenStudentId && dto?.studentId !== undefined && dto.studentId !== callerId) {
       existing = await this.prismaApp.withTenantContext(dto.studentId, (tx) =>
         tx.booking.findUnique({ where: { id: bookingId }, include: { attendees: true } }),
       );
@@ -345,7 +365,9 @@ export class BookingsService {
     // for a `let`" fix bookClass() already applies to its own `cls`/`resolvedClass`.
     const resolvedBooking = existing;
 
-    if (isGuardianAction) {
+    if (frozenStudentId) {
+      // Already allowed by MembershipFreezesService (Decision 409).
+    } else if (isGuardianAction) {
       await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId);
     } else if (resolvedBooking.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
@@ -358,9 +380,11 @@ export class BookingsService {
     // Decision 291 — only a School Owner/Manager can send money back. A Student
     // or Guardian cancelling their own booking gets whatever the owner chose;
     // any other staff member's refund waits for an Owner/Manager instead.
-    const mayRefund = isGuardianAction || resolvedBooking.studentId === callerId
-      ? true
-      : await this.cancellation.isSchoolOwner(callerId, resolvedBooking.schoolId);
+    const mayRefund = frozenStudentId
+      ? false // every seat gets its credit back; no money moves
+      : isGuardianAction || resolvedBooking.studentId === callerId
+        ? true
+        : await this.cancellation.isSchoolOwner(callerId, resolvedBooking.schoolId);
 
     let cancellationChargeAmount: number | null = null;
     let cancellationChargeCurrency = 'usd';

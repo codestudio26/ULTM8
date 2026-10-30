@@ -81,6 +81,7 @@ export const schools = {
     feeInvalid: "Enter an amount, like 10 or 12.50.",
     checkInNote: "Whether frozen members may check in is one of the check-in rules.",
     checkInLink: "Open check-in rules",
+    stripeTrialNote: "In Stripe, a frozen card subscription shows as a trial. If your Stripe account sends trial-ending reminder emails, members may get one. You can turn these emails off in your Stripe settings.",
   },
   heardFrom: {
     title: 'How did you hear about us?',

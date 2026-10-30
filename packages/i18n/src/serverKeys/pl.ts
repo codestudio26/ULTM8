@@ -238,6 +238,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledTitle: "Opłata anulowana",
     chargeCancelledBody: "Twoja opłata „{description}, {amount}” została anulowana. Nic do zapłaty.",
     chargeCancelledCreditBody: "Twoja opłata „{description}, {amount}” została anulowana. Nic do zapłaty. Już zapłacone {paid} to teraz nadpłata na twoim saldzie.",
+    freezeBookingsCancelledTitle: "Rezerwacje anulowane",
+    freezeBookingsCancelledBody: "Twój karnet {plan} jest zamrożony od {start}, a wracasz {back}, więc twoje rezerwacje w tym czasie zostały anulowane: {list}. Po zakończeniu zamrożenia możesz znów rezerwować.",
     classMovedTitle: "Zajęcia przeniesione",
     classCancelledTitle: "Zajęcia odwołane",
     toDecideTitle: "Awans do decyzji",

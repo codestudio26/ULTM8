@@ -224,6 +224,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledTitle: "Addebito annullato",
     chargeCancelledBody: "Il tuo addebito '{description}, {amount}' è stato annullato. Niente da pagare.",
     chargeCancelledCreditBody: "Il tuo addebito '{description}, {amount}' è stato annullato. Niente da pagare. I {paid} già pagati ora sono credito sul tuo saldo.",
+    freezeBookingsCancelledTitle: "Prenotazioni cancellate",
+    freezeBookingsCancelledBody: "Il tuo abbonamento {plan} è sospeso dal {start} e riprendi il {back}, quindi le tue prenotazioni in quel periodo sono state cancellate: {list}. Potrai prenotare di nuovo al termine della sospensione.",
     classMovedTitle: "Lezione spostata",
     classCancelledTitle: "Lezione annullata",
     toDecideTitle: "Promozione da decidere",

@@ -196,6 +196,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledTitle: "收费项已取消",
     chargeCancelledBody: "你的收费项“{description}，{amount}”已取消。无需付款。",
     chargeCancelledCreditBody: "你的收费项“{description}，{amount}”已取消。无需付款。已支付的 {paid} 现已计入你的余额，作为预存款。",
+    freezeBookingsCancelledTitle: "预约已取消",
+    freezeBookingsCancelledBody: "你的 {plan} 会员资格自 {start} 起冻结，{back} 恢复，因此这期间的预约已取消：{list}。冻结结束后可以重新预约。",
     classMovedTitle: "课程已调整",
     classCancelledTitle: "课程已取消",
     toDecideTitle: "待决定的晋级",

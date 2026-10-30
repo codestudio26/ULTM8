@@ -224,6 +224,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledTitle: "Cobrança cancelada",
     chargeCancelledBody: "Sua cobrança '{description}, {amount}' foi cancelada. Nada a pagar.",
     chargeCancelledCreditBody: "Sua cobrança '{description}, {amount}' foi cancelada. Nada a pagar. Os {paid} já pagos agora são crédito no seu saldo.",
+    freezeBookingsCancelledTitle: "Reservas canceladas",
+    freezeBookingsCancelledBody: "Seu plano {plan} está congelado a partir de {start} e você volta em {back}, então suas reservas nesse período foram canceladas: {list}. Você pode reservar de novo quando o congelamento terminar.",
     classMovedTitle: "Aula remarcada",
     classCancelledTitle: "Aula cancelada",
     toDecideTitle: "Promoção a decidir",

@@ -3,10 +3,13 @@ import { unwrap, type components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { formatLocale } from '../i18n/format';
 
-/** Decision 404: freezing a membership. The owner's side. */
+/** Decision 404: freezing a membership. The staff side: the owner, or Branch
+ * Staff with "Can freeze memberships" (Decision 409). */
 export type SchoolFreeze = components['schemas']['SchoolMembershipFreezeResponseDto'];
+export type StudentFreezableMembership = components['schemas']['StudentFreezableMembershipDto'];
 
-/** The School's freeze requests waiting for a decision. Owner only. */
+/** The School's freeze requests waiting for a decision. Branch Staff with the
+ * switch get only their branches' students' (Decision 409). */
 export function useFreezeRequests(schoolId: string | null) {
   return useQuery({
     queryKey: ['freezes', schoolId, 'REQUESTED'],
@@ -20,10 +23,27 @@ export function useFreezeRequests(schoolId: string | null) {
 function invalidateFreezeViews(queryClient: ReturnType<typeof useQueryClient>, schoolId: string) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ['studentMemberships', schoolId] }),
+    queryClient.invalidateQueries({ queryKey: ['freezableMemberships', schoolId] }),
     queryClient.invalidateQueries({ queryKey: ['freezes', schoolId] }),
     queryClient.invalidateQueries({ queryKey: ['students', schoolId] }),
     queryClient.invalidateQueries({ queryKey: ['transactions'] }),
   ]);
+}
+
+/** Decision 409: a student's memberships that can be frozen, for Branch
+ * Staff with "Can freeze memberships" (who can't see the full Memberships
+ * card). */
+export function useStudentFreezableMemberships(schoolId: string | null, studentId: string | null) {
+  return useQuery({
+    queryKey: ['freezableMemberships', schoolId, studentId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/students/{studentId}/freezable-memberships', {
+          params: { path: { schoolId: schoolId!, studentId: studentId! } },
+        }),
+      ),
+    enabled: !!schoolId && !!studentId,
+  });
 }
 
 /** Staff freeze a membership straight away. */

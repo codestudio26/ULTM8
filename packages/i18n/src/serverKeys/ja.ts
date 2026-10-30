@@ -196,6 +196,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledTitle: "請求が取り消されました",
     chargeCancelledBody: "請求「{description}、{amount}」は取り消されました。お支払いは不要です。",
     chargeCancelledCreditBody: "請求「{description}、{amount}」は取り消されました。お支払いは不要です。支払い済みの {paid} は残高のクレジットになりました。",
+    freezeBookingsCancelledTitle: "予約がキャンセルされました",
+    freezeBookingsCancelledBody: "{plan} は {start} から休会中で、{back} に再開します。そのため、この期間の予約はキャンセルされました：{list}。休会が終わると、また予約できます。",
     classMovedTitle: "クラスが移動しました",
     classCancelledTitle: "クラスが中止されました",
     toDecideTitle: "判断待ちの昇級",

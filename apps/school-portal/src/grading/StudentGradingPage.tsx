@@ -15,7 +15,7 @@ import { useSkills, type SkillResponse } from '../skills/skillQueries';
 import { useLessons } from '../curriculum/curriculumQueries';
 import { useInstructors } from '../instructors/instructorQueries';
 import { useNextStudentBooking, type StudentBookingResponse } from '../bookings/bookingQueries';
-import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
+import { useMyStaffAccess, useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { flattenLadder, type Rung } from './ladder';
 import { BeltChip } from './BeltChip';
@@ -113,6 +113,10 @@ export function StudentGradingPage() {
   // Decision 371 (Q4): who the student's Guardians are. Read for a current
   // student only (the API's own rule, like the profile read).
   const guardians = useStudentGuardians(schoolId, studentId, enrolled);
+  // Decision 409: Branch Staff the owner let freeze memberships.
+  const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === schoolId);
+  const staffAccess = useMyStaffAccess(!my.isOwner && isBranchStaff ? schoolId : null);
+  const mayFreeze = !my.isOwner && !!staffAccess.data?.access.freezeMemberships;
 
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
@@ -221,8 +225,14 @@ export function StudentGradingPage() {
       {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}
 
       {/* Decision 348: memberships, selling at the desk, Friend Pass and
-          cancelling a Subscription. Owner only, like the API. */}
-      {my.isOwner ? <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} /> : null}
+          cancelling a Subscription. Owner only, like the API. Decision 409:
+          Branch Staff with "Can freeze memberships" see the ones that can
+          be frozen, with the freeze actions only. */}
+      {my.isOwner ? (
+        <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} />
+      ) : mayFreeze && !inactive ? (
+        <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} freezeOnly />
+      ) : null}
 
       {/* Decisions 303, 338: charges, desk payments and the balance. Shown to
           the owner and to staff with a charges switch (the API says who). */}

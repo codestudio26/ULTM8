@@ -229,6 +229,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'New invoice': 'chargeCreatedTitle',
   'Payment received': 'chargePaymentTitle',
   'Charge cancelled': 'chargeCancelledTitle',
+  // Decision 409 — MembershipFreezesService.notifyBookingsCancelled.
+  'Bookings cancelled': 'freezeBookingsCancelledTitle',
   'Class moved': 'classMovedTitle',
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
@@ -422,6 +424,19 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^Your charge '(.+), ([\d.]+) ([A-Z]{3})' was cancelled\. Nothing to pay\.$/s,
     (m, { t, locale }) => n(t, 'chargeCancelledBody', { description: m[1], amount: formatAmount(m[2], m[3], locale) }),
+  ],
+  // Decision 409 — MembershipFreezesService.notifyBookingsCancelled. The list
+  // is "Class title (YYYY-MM-DD)" joined with "; ", maybe ending "; +N"; only
+  // its dates are translated (class titles are the School's own words).
+  [
+    /^Your (.+) membership is frozen from (\d{4}-\d{2}-\d{2}) and you're back on (\d{4}-\d{2}-\d{2}), so your bookings in between were cancelled: (.+)\. You can book again once the freeze ends\.$/s,
+    (m, { t, locale }) =>
+      n(t, 'freezeBookingsCancelledBody', {
+        plan: m[1],
+        start: formatDay(m[2], locale),
+        back: formatDay(m[3], locale),
+        list: m[4].replace(/\((\d{4}-\d{2}-\d{2})\)/g, (_d, day: string) => `(${formatDay(day, locale)})`),
+      }),
   ],
   // Decision 407 — StripeWebhookProcessingProcessor.franchiseFeeFailedNotices.
   [

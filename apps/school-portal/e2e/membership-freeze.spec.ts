@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * Decision 404 (backlog 3.4) — freezing a membership, the owner's side: the
@@ -9,6 +9,10 @@ import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fi
  * filter, and the School's settings. Cash-paid Weekly Passes only: a card
  * Subscription's Stripe call is covered by the API test
  * (apps/api/test/membership-freeze.e2e-spec.ts), which stubs Stripe.
+ *
+ * Decision 409: the owner turns on "Freeze memberships" in a Branch Staff
+ * member's Access; they then freeze their branch's student from the
+ * student's page, where they see only the memberships that can be frozen.
  */
 let s: GradingSchool;
 
@@ -32,6 +36,7 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
   await db.membershipFreeze.deleteMany({ where });
+  await db.staffActivity.deleteMany({ where });
   await db.transaction.deleteMany({ where });
   await db.membership.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where });
@@ -118,7 +123,7 @@ test('the owner sets the freezing limit and fee on the School page, and lets fro
   await card.getByLabel('Most frozen days in any 12 months').fill('60');
   await card.getByLabel('Freeze fee').fill('12.50');
   await card.getByRole('button', { name: 'Save' }).click();
-  await expect(card.getByText('Saved')).toBeVisible();
+  await expect(card.getByText('Saved.', { exact: true })).toBeVisible();
   const school = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
   expect(school).toMatchObject({ freezeMaxDaysPer12Months: 60, freezeFeeAmount: 1250 });
 
@@ -128,4 +133,43 @@ test('the owner sets the freezing limit and fee on the School page, and lets fro
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Check-in rules saved.')).toBeVisible();
   expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).checkInFrozenMembers).toBe(true);
+});
+
+test('Decision 409: Branch Staff freeze only once the owner turns on "Freeze memberships" in their Access', async ({ page }) => {
+  const m = await weeklyPass(s.student.id);
+  const north = await addBranch(s, 'North');
+  const bea = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
+  await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: north.id } });
+
+  // Off by default: no memberships on the student's page.
+  await signIn(page, bea.token);
+  await page.goto(`/students/${s.student.id}`);
+  await expect(page.getByRole('row', { name: /Four weeks/ })).toHaveCount(0);
+
+  await signIn(page, s.ownerToken);
+  await page.goto('/staff');
+  const row = page.locator('.ultm8-card').filter({ hasText: 'Your staff' }).getByRole('row').filter({ hasText: 'Bea Desk' });
+  await row.getByRole('button', { name: 'Actions for Bea Desk' }).click();
+  await page.getByRole('menuitem', { name: 'Access' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Access for Bea Desk' });
+  await expect(dialog.getByLabel('Freeze memberships')).not.toBeChecked();
+  await dialog.getByLabel('Freeze memberships').check();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Access saved for Bea Desk.')).toBeVisible();
+  expect((await db.staffPermission.findFirstOrThrow({ where: { userId: bea.id } })).canFreezeMemberships).toBe(true);
+
+  await signIn(page, bea.token);
+  await page.goto(`/students/${s.student.id}`);
+  const membership = page.getByRole('row', { name: /Four weeks/ });
+  // Freezing only: no selling, Friend Pass or cancelling.
+  await expect(page.getByRole('button', { name: 'Sell a plan' })).toHaveCount(0);
+  await membership.getByRole('button', { name: 'Freeze', exact: true }).click();
+  const freezeDialog = page.getByTestId('freeze-modal');
+  await expect(freezeDialog.getByText(/the member is told/)).toBeVisible();
+  await page.getByLabel('First frozen day').fill(day(1));
+  await page.getByLabel('Back on').fill(day(9));
+  await freezeDialog.getByRole('button', { name: 'Freeze membership' }).click();
+  await expect(membership).toContainText(/Freeze from/);
+  const freeze = await db.membershipFreeze.findFirstOrThrow({ where: { membershipId: m.id } });
+  expect(freeze).toMatchObject({ status: 'APPROVED', decidedById: bea.id });
 });

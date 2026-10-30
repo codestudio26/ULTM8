@@ -195,6 +195,8 @@ export const server = {
     chargeCancelledTitle: "Charge cancelled",
     chargeCancelledBody: "Your charge '{description}, {amount}' was cancelled. Nothing to pay.",
     chargeCancelledCreditBody: "Your charge '{description}, {amount}' was cancelled. Nothing to pay. The {paid} already paid is now credit on your balance.",
+    freezeBookingsCancelledTitle: "Bookings cancelled",
+    freezeBookingsCancelledBody: "Your {plan} membership is frozen from {start} and you're back on {back}, so your bookings in between were cancelled: {list}. You can book again once the freeze ends.",
     classMovedTitle: 'Class moved',
     classCancelledTitle: 'Class cancelled',
     toDecideTitle: 'Promotion to decide',

@@ -8455,6 +8455,49 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/students/{studentId}/freezable-memberships": {
+      "get": {
+        "operationId": "MembershipFreezesController_listForStudent",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentFreezableMembershipListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/freezes": {
       "get": {
         "operationId": "MembershipFreezesController_listForSchool",
@@ -21656,6 +21699,10 @@
           "exportStudents": {
             "type": "boolean",
             "description": "Export the student list as a spreadsheet (off by default; Decision 399)."
+          },
+          "freezeMemberships": {
+            "type": "boolean",
+            "description": "Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409)."
           }
         },
         "required": [
@@ -21667,7 +21714,8 @@
           "inviteCoaches",
           "disciplines",
           "checkInRules",
-          "exportStudents"
+          "exportStudents",
+          "freezeMemberships"
         ]
       },
       "StaffRoleDto": {
@@ -27680,6 +27728,67 @@
           "status",
           "frozenNow",
           "createdAt"
+        ]
+      },
+      "StudentFreezableMembershipDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The membership id."
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "planType": {
+            "type": "string",
+            "enum": [
+              "SUBSCRIPTION",
+              "WEEKLY_PASS",
+              "TRIAL_MEMBERSHIP"
+            ]
+          },
+          "expiryDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "cancelAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set to end at this time (a Subscription cancelled at the end of its paid period)."
+          },
+          "frozen": {
+            "type": "boolean",
+            "description": "An approved freeze covers today."
+          },
+          "freeze": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FreezeSummaryDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "planTitle",
+          "planType",
+          "frozen"
+        ]
+      },
+      "StudentFreezableMembershipListResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentFreezableMembershipDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "SchoolMembershipFreezeResponseDto": {

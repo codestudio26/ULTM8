@@ -266,6 +266,8 @@ export const server: PartialMessages<ServerKeys> = {
     chargeCancelledTitle: "تم إلغاء الرسم",
     chargeCancelledBody: "تم إلغاء رسمك '{description}، {amount}'. لا يوجد ما تدفعه.",
     chargeCancelledCreditBody: "تم إلغاء رسمك '{description}، {amount}'. لا يوجد ما تدفعه. أصبح المبلغ المدفوع {paid} رصيدًا دائنًا في حسابك.",
+    freezeBookingsCancelledTitle: "تم إلغاء الحجوزات",
+    freezeBookingsCancelledBody: "عضويتك {plan} مجمّدة اعتبارًا من {start} وتعود في {back}، لذلك أُلغيت حجوزاتك خلال هذه الفترة: {list}. يمكنك الحجز مجددًا بعد انتهاء التجميد.",
     classMovedTitle: "تم نقل الحصة",
     classCancelledTitle: "تم إلغاء الحصة",
     toDecideTitle: "ترقية بانتظار القرار",

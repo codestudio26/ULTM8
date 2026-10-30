@@ -66,6 +66,11 @@ export function dayIn(instant: Date, zone: string | null | undefined): string {
   return DateTime.fromJSDate(instant, { zone: freezeZone(zone) }).toISODate() as string;
 }
 
+/** The instant a calendar day (a day number) begins in the School's time zone. */
+export function dayStart(day: number, zone: string | null | undefined): Date {
+  return DateTime.fromISO(dayString(day), { zone: freezeZone(zone) }).toJSDate();
+}
+
 /** The day the member is back: endsAt, or the day it was ended early (never
  * before the start, never after endsAt). */
 export function backDay(freeze: FreezeDates, zone: string | null | undefined): number {

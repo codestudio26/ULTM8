@@ -37,6 +37,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   read-only; the member is notified of a new invoice, a receipt and a
   cancelled charge. **Needs a database migration**
   (`20270112000000_charges_and_balance`).
+- **Freezing a membership: follow-ups** (backlog 3.4; Decision 409) —
+  approving a freeze now cancels the member's bookings on the frozen days that
+  the frozen membership paid for (no late fee; the place goes to the waitlist),
+  with one notice listing them; ending early doesn't bring them back. A new
+  **Freeze memberships** switch on a Branch Staff member's Access page (off by
+  default) lets them freeze, approve, decline and end freezes for their own
+  branches' students; the freeze settings stay the owner's. A card
+  Subscription's next charge now moves as soon as the freeze is approved, or
+  right after the renewal that falls before it, so a renewal on the first
+  frozen day is no longer charged; £0 Stripe invoices are kept off the
+  Transactions page. The Freezing memberships card notes that Stripe shows a
+  frozen subscription as a trial. **Needs a database migration**
+  (`20270111000000_freeze_follow_ups`).
 - **Schools set their own trial limits** (Decision 410) — a Trial plan can
   last any number of days the School chooses (at least 1), no longer 1-30, and
   a Student can have another trial straight after the first: the limit of 30
