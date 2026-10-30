@@ -531,7 +531,7 @@ export const serverMessages: Record<string, string> = {
   "A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.": "Подписка продлевается каждый месяц до отмены, поэтому у неё нет срока действия. Оставьте количество дней пустым.",
   "A Class Pack needs the number of classes it gives.": "Для пакета занятий нужно указать, сколько занятий он даёт.",
   "A Weekly Pass needs the number of days it lasts.": "Для недельного абонемента нужно указать, сколько дней он действует.",
-  "A Trial Membership must last between 1 and {v1} days.": "Пробное членство должно длиться от 1 до {v1} дн.",
+  "A Trial Membership needs the number of days it lasts.": "Для пробного членства нужно указать, сколько дней оно действует.",
   "The title cannot be blank.": "Название не может быть пустым.",
   "{v1} is not a supported currency. Pick one from the list.": "{v1} — неподдерживаемая валюта. Выберите валюту из списка.",
   "This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.": "У этого тарифа нет валюты, и у школы не задана валюта по умолчанию — сначала укажите её в тарифе или в настройках школы.",

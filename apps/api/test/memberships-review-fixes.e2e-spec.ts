@@ -162,26 +162,36 @@ describeIfDb('Memberships review fixes (Decision 334)', () => {
     expect(tx.status).toBe('PENDING');
   });
 
-  it('M3: a Trial must last 1-30 days', async () => {
+  it('M3 / Decision 410: a Trial needs a length, and the School picks any length from 1 day', async () => {
     expect((await createPlan({ type: 'TRIAL_MEMBERSHIP', title: 'No expiry', price: 0 })).status).toBe(400);
-    expect((await createPlan({ type: 'TRIAL_MEMBERSHIP', title: 'Too long', price: 0, expiryDurationDays: 31 })).status).toBe(400);
-    const plan = await mkPlan({ type: 'TRIAL_MEMBERSHIP', title: 'Thirty', price: 0, expiryDurationDays: 30 });
-    expect((await patchPlan(plan.id, { expiryDurationDays: 60 })).status).toBe(400);
-    expect((await patchPlan(plan.id, { expiryDurationDays: null })).status).toBe(400);
+    expect((await createPlan({ type: 'TRIAL_MEMBERSHIP', title: 'Zero days', price: 0, expiryDurationDays: 0 })).status).toBe(400);
+    const res = await createPlan({ type: 'TRIAL_MEMBERSHIP', title: 'Forty-five', price: 0, expiryDurationDays: 45, currency: 'gbp' });
+    expect(res.status).toBe(201);
+    expect(res.body.expiryDurationDays).toBe(45);
+    expect((await patchPlan(res.body.id, { expiryDurationDays: 90 })).status).toBe(200);
+    expect((await patchPlan(res.body.id, { expiryDurationDays: null })).status).toBe(400);
   });
 
-  it('M3: at most 30 trial days per Student per School in 12 months, and the refusal says when the next can start', async () => {
-    const twenty = await mkPlan({ type: 'TRIAL_MEMBERSHIP', title: '20-day trial', price: 0, expiryDurationDays: 20 });
-    const ten = await mkPlan({ type: 'TRIAL_MEMBERSHIP', title: '10-day trial', price: 0, expiryDurationDays: 10 });
-    const { token } = await mkStudent('m3');
-    expect((await purchase(twenty.id, token)).status).toBe(201);
+  it('Decision 410: a Student can buy a 45-day Trial, then a second Trial straight after the first', async () => {
+    const long = await mkPlan({ type: 'TRIAL_MEMBERSHIP', title: '45-day trial', price: 0, expiryDurationDays: 45 });
+    const { user, token } = await mkStudent('trials');
+    const before = Date.now();
+    const first = await purchase(long.id, token);
+    expect(first.status).toBe(201);
+    const membership = await superuser.membership.findFirstOrThrow({ where: { studentId: user.id, membershipPlanId: long.id } });
+    const days = (membership.expiryDate!.getTime() - before) / DAY;
+    expect(days).toBeGreaterThan(44.9);
+    expect(days).toBeLessThan(45.1);
 
-    const refused = await purchase(twenty.id, token);
-    expect(refused.status).toBe(409);
-    expect(refused.body.error.message).toMatch(/Another trial can start on \d{4}-\d{2}-\d{2}/);
+    expect((await purchase(long.id, token)).status).toBe(201);
+    expect(await superuser.membership.count({ where: { studentId: user.id, membershipPlan: { type: 'TRIAL_MEMBERSHIP' } } })).toBe(2);
 
-    expect((await purchase(ten.id, token)).status).toBe(201);
-    expect((await purchase(ten.id, token)).status).toBe(409);
+    // A paid Trial confirmed by staff (the Bank Transfer path) is not limited either.
+    const paid = await mkPlan({ type: 'TRIAL_MEMBERSHIP', title: 'Paid 45-day trial', price: 500, expiryDurationDays: 45 });
+    const pending = await purchase(paid.id, token);
+    expect(pending.body.outcome).toBe('pending_confirmation');
+    expect((await confirm(pending.body.transactionId)).status).toBe(200);
+    expect(await superuser.membership.count({ where: { studentId: user.id, membershipPlan: { type: 'TRIAL_MEMBERSHIP' } } })).toBe(3);
   });
 
   it('M2: changing type clears what the new type does not use; sending it is refused', async () => {

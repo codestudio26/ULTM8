@@ -531,7 +531,7 @@ export const serverMessages: Record<string, string> = {
   "A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.": "Abonelik iptal edilene kadar her ay yenilenir, bu yüzden süresi dolmaz. Gün sayısını boş bırakın.",
   "A Class Pack needs the number of classes it gives.": "Ders paketi için kaç ders içerdiği girilmelidir.",
   "A Weekly Pass needs the number of days it lasts.": "Haftalık kart için kaç gün geçerli olduğu girilmelidir.",
-  "A Trial Membership must last between 1 and {v1} days.": "Deneme üyeliği 1 ile {v1} gün arasında sürmelidir.",
+  "A Trial Membership needs the number of days it lasts.": "Deneme üyeliği için kaç gün geçerli olduğu girilmelidir.",
   "The title cannot be blank.": "Başlık boş olamaz.",
   "{v1} is not a supported currency. Pick one from the list.": "{v1} desteklenen bir para birimi değil. Listeden birini seçin.",
   "This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.": "Bu planın para birimi yok ve okulun varsayılan para birimi ayarlanmamış — önce plana veya okul ayarlarına bir para birimi girin.",

@@ -531,7 +531,7 @@ export const serverMessages: Record<string, string> = {
   "A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.": "구독은 취소할 때까지 매달 갱신되므로 만료가 없습니다. 일수를 비워 두세요.",
   "A Class Pack needs the number of classes it gives.": "수업 패키지에는 포함된 수업 수가 필요합니다.",
   "A Weekly Pass needs the number of days it lasts.": "주간 패스에는 유효 일수가 필요합니다.",
-  "A Trial Membership must last between 1 and {v1} days.": "체험 회원권은 1~{v1}일 사이여야 합니다.",
+  "A Trial Membership needs the number of days it lasts.": "체험 회원권에는 유효 일수가 필요합니다.",
   "The title cannot be blank.": "제목은 비워 둘 수 없습니다.",
   "{v1} is not a supported currency. Pick one from the list.": "{v1}은(는) 지원하지 않는 통화입니다. 목록에서 선택하세요.",
   "This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.": "이 플랜에 통화가 없고 학교의 기본 통화도 설정되어 있지 않습니다. 먼저 플랜이나 학교 설정에서 통화를 지정하세요.",

@@ -531,7 +531,7 @@ export const serverMessages: Record<string, string> = {
   "A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.": "订阅在取消前每月自动续订，因此没有有效期。请将天数留空。",
   "A Class Pack needs the number of classes it gives.": "课时包需要填写包含的课时数。",
   "A Weekly Pass needs the number of days it lasts.": "周卡需要填写有效天数。",
-  "A Trial Membership must last between 1 and {v1} days.": "体验会员的时长必须在 1 到 {v1} 天之间。",
+  "A Trial Membership needs the number of days it lasts.": "体验会员需要填写有效天数。",
   "The title cannot be blank.": "标题不能为空。",
   "{v1} is not a supported currency. Pick one from the list.": "{v1} 不是支持的币种，请从列表中选择。",
   "This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.": "该方案没有设置币种，学校也没有默认币种——请先在方案或学校设置中设置一个。",

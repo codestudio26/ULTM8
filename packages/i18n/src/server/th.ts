@@ -531,7 +531,7 @@ export const serverMessages: Record<string, string> = {
   "A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.": "สมาชิกรายเดือนต่ออายุทุกเดือนจนกว่าจะยกเลิก จึงไม่มีวันหมดอายุ เว้นจำนวนวันไว้ว่าง",
   "A Class Pack needs the number of classes it gives.": "แพ็กคลาสต้องระบุจำนวนคลาสที่ได้",
   "A Weekly Pass needs the number of days it lasts.": "บัตรรายสัปดาห์ต้องระบุจำนวนวันที่ใช้ได้",
-  "A Trial Membership must last between 1 and {v1} days.": "สมาชิกทดลองต้องมีระยะเวลา 1 ถึง {v1} วัน",
+  "A Trial Membership needs the number of days it lasts.": "สมาชิกทดลองต้องระบุจำนวนวันที่ใช้ได้",
   "The title cannot be blank.": "ชื่อต้องไม่ว่าง",
   "{v1} is not a supported currency. Pick one from the list.": "{v1} ไม่ใช่สกุลเงินที่รองรับ เลือกจากรายการ",
   "This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.": "แผนนี้ไม่มีสกุลเงิน และโรงเรียนยังไม่ได้ตั้งสกุลเงินเริ่มต้น — ตั้งค่าในแผนหรือในการตั้งค่าโรงเรียนก่อน",

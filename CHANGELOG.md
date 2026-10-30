@@ -28,6 +28,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Transactions page. The Freezing memberships card notes that Stripe shows a
   frozen subscription as a trial. **Needs a database migration**
   (`20270111000000_freeze_follow_ups`).
+- **Schools set their own trial limits** (Decision 410) — a Trial plan can
+  last any number of days the School chooses (at least 1), no longer 1-30, and
+  a Student can have another trial straight after the first: the limit of 30
+  trial days per Student per School in 12 months (from Decision 334) is gone.
+  This applies to plan editing, app purchases, cash/bank confirmation, card
+  payments and desk sales. Existing plans keep their length.
 - **Staff activity log** (Decision 408) — a new "Activity" section on the
   Staff page lists every staff change (roles, Remove from School, Pause,
   access, display name and work phone, owners, invites, the "must accept

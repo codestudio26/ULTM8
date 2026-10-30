@@ -88,13 +88,11 @@ export class FranchiseFeeUsageReportingScheduler implements OnModuleInit {
  * per-cycle action after that — Stripe's own billing cycle handles it from
  * there); Pass 2 is Per-Headcount-only, matching the job's own confirmed name.
  *
- * Deliberately deferred (not silently dropped): the platform-enforced 30-day
- * Trial Membership expiry cap Decision 54 also confirms ("to close the resulting
- * headcount-dodge gap") is a genuinely separate MembershipsModule gap, not
- * required for THIS job's own correctness — the active-student-count query below
- * already excludes TRIAL_MEMBERSHIP entirely regardless of its expiry, so an
- * unbounded trial doesn't inflate or deflate what this job counts. Flagged for a
- * future MembershipsModule pass, not built here.
+ * Trial Memberships: the active-student-count query below excludes
+ * TRIAL_MEMBERSHIP entirely regardless of its expiry. Decision 54's 30-day
+ * Trial caps (built later in MembershipsModule) were removed by Decision 410:
+ * each School now sets its own trial length, so a long trial is simply not
+ * counted here.
  */
 @Processor(FRANCHISE_FEE_USAGE_REPORTING_QUEUE)
 export class FranchiseFeeUsageReportingProcessor extends WorkerHost {

@@ -10,7 +10,7 @@ import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_
 import { NotificationFanoutJobData } from './notification-fanout.types';
 import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
-import { assertCanCreateMembership, GeneralAccessConflictError, TrialAllowanceError } from '../memberships/membership-creation-guard';
+import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { FRANCHISE_FEE_CARD_PURPOSE } from '../franchise-fees/franchise-fee-card';
 import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-billing';
 
@@ -527,7 +527,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     try {
       await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
     } catch (err) {
-      if (err instanceof GeneralAccessConflictError || err instanceof TrialAllowanceError) {
+      if (err instanceof GeneralAccessConflictError) {
         throw new MembershipCollisionError(`Membership create for Transaction ${transaction.id} (PaymentIntent ${paymentIntentId}) refused: ${err.message}`);
       }
       throw err;

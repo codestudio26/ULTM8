@@ -180,7 +180,7 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       expect(await superuser.transaction.count({ where: { studentId: user.id } })).toBe(0);
     });
 
-    it('keeps the one-live-Weekly-Pass rule and the trial allowance', async () => {
+    it('keeps the one-live-Weekly-Pass rule', async () => {
       const week = await mkPlan({ type: 'WEEKLY_PASS', title: 'Desk week', price: 1000, expiryDurationDays: 7 });
       const { user } = await mkStudent('twice');
       expect((await sell(user.id, { membershipPlanId: week.id, paymentMethod: 'CASH' })).status).toBe(201);
@@ -188,6 +188,19 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       expect(second.status).toBe(409);
       // Refused before any money was recorded.
       expect(await superuser.transaction.count({ where: { studentId: user.id } })).toBe(1);
+    });
+
+    it('sells a 45-day Trial, and a second Trial straight after the first (Decision 410)', async () => {
+      const plan = await mkPlan({ type: 'TRIAL_MEMBERSHIP', title: 'Desk long trial', price: 0, expiryDurationDays: 45 });
+      // A second plan: selling the same plan twice within a minute is refused
+      // as a likely double entry, which is a separate check.
+      const again = await mkPlan({ type: 'TRIAL_MEMBERSHIP', title: 'Desk second trial', price: 0, expiryDurationDays: 45 });
+      const { user } = await mkStudent('two-trials');
+      const first = await sell(user.id, { membershipPlanId: plan.id, paymentMethod: 'CASH' });
+      expect(first.status).toBe(201);
+      const second = await sell(user.id, { membershipPlanId: again.id, paymentMethod: 'CASH' });
+      expect(second.status).toBe(201);
+      expect(await superuser.membership.count({ where: { studentId: user.id, membershipPlan: { type: 'TRIAL_MEMBERSHIP' } } })).toBe(2);
     });
 
     it('refuses a Subscription, a Friend Pass, an archived plan, a removed Student and a missing payment method', async () => {

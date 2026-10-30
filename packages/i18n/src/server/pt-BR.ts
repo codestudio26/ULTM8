@@ -531,7 +531,7 @@ export const serverMessages: Record<string, string> = {
   "A Subscription renews every month until cancelled, so it has no expiry. Leave the number of days empty.": "Uma assinatura renova todo mês até ser cancelada, então não tem validade. Deixe o número de dias em branco.",
   "A Class Pack needs the number of classes it gives.": "Um pacote de aulas precisa do número de aulas que inclui.",
   "A Weekly Pass needs the number of days it lasts.": "Um passe semanal precisa do número de dias que dura.",
-  "A Trial Membership must last between 1 and {v1} days.": "Uma matrícula experimental deve durar entre 1 e {v1} dias.",
+  "A Trial Membership needs the number of days it lasts.": "Uma matrícula experimental precisa do número de dias que dura.",
   "The title cannot be blank.": "O título não pode ficar em branco.",
   "{v1} is not a supported currency. Pick one from the list.": "{v1} não é uma moeda aceita. Escolha uma da lista.",
   "This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.": "Este plano não tem moeda e a escola não tem moeda padrão — defina uma no plano ou nas configurações da escola primeiro.",
