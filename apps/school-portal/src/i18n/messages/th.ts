@@ -3839,7 +3839,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       revenueCharges: "ค่าบริการ",
       revenueChargesHint: "ชำระค่าบริการใน {count} เดือนล่าสุด หักเงินที่คืนไป",
       revenueMemberships: "สมาชิกภาพ",
-      revenueMembershipsHint: "แพ็กเกจที่ซื้อในแอปหรือที่เคาน์เตอร์ และการต่ออายุ ใน {count} เดือนล่าสุด หักเงินคืน",
+      revenueMembershipsHint: "แพ็กเกจที่ซื้อในแอปหรือที่เคาน์เตอร์ การต่ออายุ และค่าธรรมเนียมยกเลิกล่าช้าและการพักสมาชิก ใน {count} เดือนที่ผ่านมา หักเงินคืนแล้ว",
       revenueTotal: "รายได้รวม",
       revenueTotalHint: "ค่าบริการและสมาชิกภาพ {count} เดือนล่าสุด",
       revenueHeading: "รายได้ต่อเดือน",

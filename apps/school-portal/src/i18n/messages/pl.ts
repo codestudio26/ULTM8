@@ -3994,7 +3994,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       revenueCharges: "Należności",
       revenueChargesHint: "Wpłaty na należności w ostatnich {count} mies., minus oddane pieniądze",
       revenueMemberships: "Karnety",
-      revenueMembershipsHint: "Plany kupione w aplikacji lub w recepcji oraz odnowienia w ostatnich {count} mies., minus zwroty",
+      revenueMembershipsHint: "Plany kupione w aplikacji lub w recepcji, odnowienia oraz opłaty za późne anulowanie i zawieszenie w ostatnich {count} mies., minus zwroty",
       revenueTotal: "Łączny przychód",
       revenueTotalHint: "Należności i karnety, ostatnie {count} mies.",
       revenueHeading: "Przychód według miesięcy",

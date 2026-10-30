@@ -609,20 +609,21 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
         });
       // Counted: a plan bought (North), a renewal partly refunded (North, 100 − 25),
       // a Class Pack sold at the desk with its currency in lower case (South),
-      // and last month's renewal (North).
+      // last month's renewal (North), and a late-cancellation fee and a freeze
+      // fee (North; Decision 415 item 2).
       await row({ studentId: north.id, amount: 10000 });
       await row({ studentId: north.id, amount: 10000, kind: 'RENEWAL', refundedAmount: 2500 });
       await row({ studentId: south.id, amount: 6000, planId: pack.id, currency: 'brl' });
       await row({ studentId: north.id, amount: 3000, kind: 'RENEWAL', billingDate: lastMonth });
+      await row({ studentId: north.id, amount: 500, kind: 'LATE_CANCEL_FEE', planId: null });
+      await row({ studentId: north.id, amount: 700, kind: 'FREEZE_FEE' });
       // Not counted: refunded in full, waiting, failed (or cancelled), disputed,
-      // older than the period, the fees that are neither part, and another School.
+      // older than the period, and another School.
       await row({ studentId: north.id, amount: 4000, status: 'REFUNDED', refundedAmount: 4000 });
       await row({ studentId: north.id, amount: 3000, status: 'PENDING' });
       await row({ studentId: north.id, amount: 3000, status: 'FAILED' });
       await row({ studentId: north.id, amount: 3000, status: 'DISPUTED' });
       await row({ studentId: north.id, amount: 2000, kind: 'RENEWAL', billingDate: longAgo });
-      await row({ studentId: north.id, amount: 500, kind: 'LATE_CANCEL_FEE', planId: null });
-      await row({ studentId: north.id, amount: 700, kind: 'FREEZE_FEE' });
       await row({ studentId: outsider.id, amount: 99999, schoolId: x.id, planId: xPlan.id });
       // Another currency stays apart (South).
       await row({ studentId: south.id, amount: 1500, currency: 'USD' });
@@ -642,15 +643,15 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect(overview.status).toBe(200);
       expect(overview.body.currencies.map((c: { currency: string }) => c.currency)).toEqual(['BRL', 'USD']);
       const [brl, usd] = overview.body.currencies;
-      expect(brl).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 26500, total: 30500 });
-      expect(brl.revenueByMonth[2]).toEqual({ month: thisMonth, received: 5000, refunded: 1000, net: 4000, memberships: 23500, total: 27500 });
+      expect(brl).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 27700, total: 31700 });
+      expect(brl.revenueByMonth[2]).toEqual({ month: thisMonth, received: 5000, refunded: 1000, net: 4000, memberships: 24700, total: 28700 });
       expect(brl.revenueByMonth[1]).toMatchObject({ received: 0, net: 0, memberships: 3000, total: 3000 });
       expect(brl.revenueByMonth[0]).toMatchObject({ memberships: 0, total: 0 });
       expect(usd).toMatchObject({ currency: 'USD', scheduled: 0, overdue: 0, paid: 0, memberships: 1500, total: 1500 });
 
       // One month: last month's renewal is outside it.
       const oneMonth = await as(ownerToken).get(`/v1/schools/${r.id}/charge-reports/overview?months=1`);
-      expect(oneMonth.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 23500, total: 27500 });
+      expect(oneMonth.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 24700, total: 28700 });
 
       // Branch Staff (North only, once they may take payments): North's memberships, no South, no USD.
       await su.school.update({ where: { id: r.id }, data: { branchStaffCanRecordPayments: true } });
@@ -658,8 +659,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect(scoped.status).toBe(200);
       expect(scoped.body.wholeSchool).toBe(false);
       expect(scoped.body.currencies).toHaveLength(1);
-      expect(scoped.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 20500, total: 24500 });
-      expect(scoped.body.currencies[0].revenueByMonth[2]).toMatchObject({ net: 4000, memberships: 17500, total: 21500 });
+      expect(scoped.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 21700, total: 25700 });
+      expect(scoped.body.currencies[0].revenueByMonth[2]).toMatchObject({ net: 4000, memberships: 18700, total: 22700 });
 
       // The other School sees only its own membership.
       const xOwner = await mkUser('revenueOtherOwner');

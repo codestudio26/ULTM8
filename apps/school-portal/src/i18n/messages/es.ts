@@ -3884,7 +3884,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       revenueCharges: "Cargos",
       revenueChargesHint: "Pagado por cargos en los últimos {count} meses, menos el dinero devuelto",
       revenueMemberships: "Membresías",
-      revenueMembershipsHint: "Planes comprados en la app o en recepción, y renovaciones, en los últimos {count} meses, menos reembolsos",
+      revenueMembershipsHint: "Planes comprados en la app o en recepción, renovaciones y cargos por cancelación tardía y por congelación, en los últimos {count} meses, menos reembolsos",
       revenueTotal: "Ingresos totales",
       revenueTotalHint: "Cargos y membresías, últimos {count} meses",
       revenueHeading: "Ingresos por mes",

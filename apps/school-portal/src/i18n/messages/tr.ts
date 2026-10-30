@@ -3884,7 +3884,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       revenueCharges: "Ücretler",
       revenueChargesHint: "Son {count} ayda ücretlere ödenen, geri verilen para düşülerek",
       revenueMemberships: "Üyelikler",
-      revenueMembershipsHint: "Son {count} ayda uygulamada veya resepsiyonda satın alınan planlar ve yenilemeler, iadeler düşülerek",
+      revenueMembershipsHint: "Son {count} ayda uygulamada veya resepsiyonda satın alınan planlar, yenilemeler ve geç iptal ile dondurma ücretleri, iadeler düşülerek",
       revenueTotal: "Toplam gelir",
       revenueTotalHint: "Ücretler ve üyelikler, son {count} ay",
       revenueHeading: "Aylık gelir",

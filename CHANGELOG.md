@@ -19,10 +19,10 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   item 3) — the Overview now shows revenue in two parts and their total, for
   the period and for each month: **Charges** (payments toward charges less
   money given back, as before) and **Memberships** (plans bought in the app or
-  sold at the desk, and Subscription renewals: Successful payments by billing
-  date, less what was refunded on them), then **Total revenue**. Payments
-  toward charges are counted once, in Charges. Late-cancellation and freeze
-  fees are in neither part. Same people and scope as before (the owner the
+  sold at the desk, Subscription renewals, and late-cancellation and freeze
+  fees (Decision 415 item 2): Successful payments by billing date, less what
+  was refunded on them), then **Total revenue**. Payments toward charges are
+  counted once, in Charges. Same people and scope as before (the owner the
   whole School; Branch Staff, when the School lets them take payments, their
   own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
   gains `memberships` and `total`, and each month `memberships` and `total`.

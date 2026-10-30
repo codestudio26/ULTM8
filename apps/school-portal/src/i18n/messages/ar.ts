@@ -4092,7 +4092,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       revenueCharges: "الرسوم",
       revenueChargesHint: "المدفوع مقابل الرسوم في آخر {count} أشهر، بعد خصم المال المُعاد",
       revenueMemberships: "العضويات",
-      revenueMembershipsHint: "الخطط المشتراة في التطبيق أو في مكتب الاستقبال، والتجديدات، في آخر {count} أشهر، بعد خصم المبالغ المستردة",
+      revenueMembershipsHint: "الخطط المشتراة في التطبيق أو في مكتب الاستقبال، والتجديدات، ورسوم الإلغاء المتأخر والتجميد، في آخر {count} أشهر، بعد خصم المبالغ المستردة",
       revenueTotal: "إجمالي الإيرادات",
       revenueTotalHint: "الرسوم والعضويات، آخر {count} أشهر",
       revenueHeading: "الإيرادات حسب الشهر",

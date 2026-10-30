@@ -137,7 +137,7 @@ export const charges = {
     revenueCharges: 'Charges',
     revenueChargesHint: 'Paid toward charges in the last {count} months, less money given back',
     revenueMemberships: 'Memberships',
-    revenueMembershipsHint: 'Plans bought in the app or at the desk, and renewals, in the last {count} months, less refunds',
+    revenueMembershipsHint: 'Plans bought in the app or at the desk, renewals, and late-cancellation and freeze fees, in the last {count} months, less refunds',
     revenueTotal: 'Total revenue',
     revenueTotalHint: 'Charges and memberships, last {count} months',
     revenueHeading: 'Revenue by month',

@@ -9,8 +9,9 @@ import { dayIn, freezeZone } from '../memberships/freeze/membership-freeze';
 import { chargeRemaining } from './charge-ledger';
 
 /** The Transaction kinds that are membership revenue (Decision 414 item 3):
- * plans bought in the app or sold at the desk, and Subscription renewals. */
-export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL'] as const;
+ * plans bought in the app or sold at the desk, and Subscription renewals;
+ * and the late-cancellation and freeze fees (Decision 415 item 2). */
+export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE'] as const;
 
 /**
  * The billing reports (backlog §3.6 step 4; Decision 338 item 11): an

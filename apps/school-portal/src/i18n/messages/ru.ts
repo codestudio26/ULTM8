@@ -3994,7 +3994,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       revenueCharges: "Начисления",
       revenueChargesHint: "Оплачено по начислениям за последние {count} мес., минус возвращённые деньги",
       revenueMemberships: "Абонементы",
-      revenueMembershipsHint: "Тарифы, купленные в приложении или на ресепшене, и продления за последние {count} мес., минус возвраты",
+      revenueMembershipsHint: "Тарифы, купленные в приложении или на ресепшене, продления, а также сборы за позднюю отмену и заморозку за последние {count} мес., минус возвраты",
       revenueTotal: "Общая выручка",
       revenueTotalHint: "Начисления и абонементы, последние {count} мес.",
       revenueHeading: "Выручка по месяцам",

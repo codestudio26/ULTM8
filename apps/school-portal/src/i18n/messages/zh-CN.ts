@@ -3839,7 +3839,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       revenueCharges: "费用",
       revenueChargesHint: "最近 {count} 个月支付的费用，扣除已退还的钱款",
       revenueMemberships: "会员资格",
-      revenueMembershipsHint: "最近 {count} 个月在应用内或前台购买的方案及续费，扣除退款",
+      revenueMembershipsHint: "最近 {count} 个月在应用内或前台购买的方案、续费，以及逾时取消费和冻结费，扣除退款",
       revenueTotal: "总收入",
       revenueTotalHint: "费用和会员资格，最近 {count} 个月",
       revenueHeading: "每月收入",
