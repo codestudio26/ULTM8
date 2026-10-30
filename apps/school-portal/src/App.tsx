@@ -51,6 +51,7 @@ import { MembershipPlanFormPage } from './membershipPlans/MembershipPlanFormPage
 import { CancellationsPage } from './cancellations/CancellationsPage';
 import { MembershipPlanMembersPage } from './membershipPlans/MembershipPlanMembersPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
+import { BillingReportsPage } from './charges/BillingReportsPage';
 import { WaiversPage } from './waivers/WaiversPage';
 import { WaiverSettingsPage } from './waivers/WaiverSettingsPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
@@ -484,6 +485,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <TransactionsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/billing-reports"
+        element={
+          <RequireAuth>
+            <Shell>
+              <BillingReportsPage />
             </Shell>
           </RequireAuth>
         }

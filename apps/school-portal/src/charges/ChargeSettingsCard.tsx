@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Button, COUNTRY_NAMES, Card, ErrorBanner, Field, SelectField, SuccessBanner, Switch, TextField } from '@ultm8/ui';
+import { Button, COUNTRY_NAMES, Card, ErrorBanner, Field, SelectField, SuccessBanner, Switch, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -25,7 +25,10 @@ function useCountryOptions() {
  * per School. Picking the country fills in ULTM8's standard rate for it; the
  * owner can change the rate and say whether prices include tax. Also the tax
  * ID for receipts (Decision 338 item 6) and whether cancelling a charge needs
- * a reason (Decision 338 item 1). Owner only, like the rest of the School page.
+ * a reason (Decision 338 item 1). Step 4 adds whether refunds need notes (item
+ * 3, on by default), the address and payment instructions for receipts (item
+ * 6) and the payment notification switches (item 10, all on by default). Owner
+ * only, like the rest of the School page.
  */
 export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
   const t = useT();
@@ -37,6 +40,12 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
   const [inclusive, setInclusive] = useState(school.taxInclusive ?? true);
   const [taxId, setTaxId] = useState(school.taxId ?? '');
   const [reasonRequired, setReasonRequired] = useState(school.chargeCancelReasonRequired ?? true);
+  const [notesRequired, setNotesRequired] = useState(school.chargeRefundNotesRequired ?? true);
+  const [address, setAddress] = useState(school.receiptAddress ?? '');
+  const [instructions, setInstructions] = useState(school.receiptPaymentInstructions ?? '');
+  const [noticeReceipt, setNoticeReceipt] = useState(school.chargeNoticeReceipt ?? true);
+  const [noticeFailedOverdue, setNoticeFailedOverdue] = useState(school.chargeNoticeFailedOverdue ?? true);
+  const [noticeDispute, setNoticeDispute] = useState(school.chargeNoticeDispute ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const parsedRate = parseRate(rate);
@@ -74,6 +83,12 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
         taxInclusive: inclusive,
         taxId: taxId.trim() || null,
         chargeCancelReasonRequired: reasonRequired,
+        chargeRefundNotesRequired: notesRequired,
+        receiptAddress: address.trim() || null,
+        receiptPaymentInstructions: instructions.trim() || null,
+        chargeNoticeReceipt: noticeReceipt,
+        chargeNoticeFailedOverdue: noticeFailedOverdue,
+        chargeNoticeDispute: noticeDispute,
       });
       setSaved(true);
     } catch (err) {
@@ -148,6 +163,71 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
           checked={reasonRequired}
           onChange={(on) => {
             setReasonRequired(on);
+            changed();
+          }}
+        />
+        <Switch
+          id="charge-refund-notes-required"
+          label={t('charges.settings.refundNotesRequired')}
+          description={t('charges.settings.refundNotesRequiredHint')}
+          checked={notesRequired}
+          onChange={(on) => {
+            setNotesRequired(on);
+            changed();
+          }}
+        />
+        <Field label={t('charges.settings.receiptAddressLabel')} htmlFor="charge-receipt-address" hint={t('charges.settings.receiptAddressHint')}>
+          <TextArea
+            id="charge-receipt-address"
+            maxLength={300}
+            rows={3}
+            value={address}
+            onChange={(e) => {
+              setAddress(e.target.value);
+              changed();
+            }}
+          />
+        </Field>
+        <Field label={t('charges.settings.paymentInstructionsLabel')} htmlFor="charge-payment-instructions" hint={t('charges.settings.paymentInstructionsHint')}>
+          <TextArea
+            id="charge-payment-instructions"
+            maxLength={1000}
+            rows={3}
+            value={instructions}
+            onChange={(e) => {
+              setInstructions(e.target.value);
+              changed();
+            }}
+          />
+        </Field>
+        <h3 style={{ fontSize: 15, margin: '16px 0 4px' }}>{t('charges.settings.noticesHeading')}</h3>
+        <p className="ultm8-field__hint" style={{ margin: '0 0 8px' }}>
+          {t('charges.settings.noticesIntro')}
+        </p>
+        <Switch
+          id="charge-notice-receipt"
+          label={t('charges.settings.noticeReceipt')}
+          checked={noticeReceipt}
+          onChange={(on) => {
+            setNoticeReceipt(on);
+            changed();
+          }}
+        />
+        <Switch
+          id="charge-notice-failed-overdue"
+          label={t('charges.settings.noticeFailedOverdue')}
+          checked={noticeFailedOverdue}
+          onChange={(on) => {
+            setNoticeFailedOverdue(on);
+            changed();
+          }}
+        />
+        <Switch
+          id="charge-notice-dispute"
+          label={t('charges.settings.noticeDispute')}
+          checked={noticeDispute}
+          onChange={(on) => {
+            setNoticeDispute(on);
             changed();
           }}
         />

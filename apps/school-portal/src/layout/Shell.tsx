@@ -37,6 +37,9 @@ const CANCELLATIONS_NAV: NavItem = { label: 'layout.nav.cancellations', to: '/ca
 const MY_BELTS_NAV: NavItem = { label: 'layout.nav.myBelts', to: '/my-belts' };
 /** Branch Staff whose owner lets them take desk payments (Decision 347). */
 const RECORD_PAYMENT_NAV: NavItem = { label: 'layout.nav.recordPayment', to: '/transactions' };
+/** Backlog §3.6 step 4 (Decision 338 item 11): the billing reports, for the
+ * owner and for Branch Staff who may take payments (their branches only). */
+const BILLING_REPORTS_NAV: NavItem = { label: 'layout.nav.billingReports', to: '/billing-reports' };
 /** Decision 1/217/237 — self-service completion of the fields "Add
  * Manually" leaves blank; not a blocking gate, so it's an ordinary nav item,
  * not a forced redirect. */
@@ -60,6 +63,7 @@ const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.timetable', to: '/timetable' },
   { label: 'layout.nav.membershipPlans', to: '/membership-plans' },
   { label: 'layout.nav.transactions', to: '/transactions' },
+  BILLING_REPORTS_NAV,
   { label: 'layout.nav.cancellations', to: '/cancellations' },
   { label: 'layout.nav.waivers', to: '/waivers' },
   { label: 'layout.nav.franchises', to: '/franchises' },
@@ -100,7 +104,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []),
             ...(mayInvite ? [INVITE_NAV] : []),
             ...branchStaffNav,
-            ...(mayRecordPayments ? [RECORD_PAYMENT_NAV] : []),
+            ...(mayRecordPayments ? [RECORD_PAYMENT_NAV, BILLING_REPORTS_NAV] : []),
             COACH_NAV[2],
           ]
         : OWNER_NAV
