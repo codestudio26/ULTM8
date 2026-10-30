@@ -167,6 +167,24 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Decision 338 item 1: a reason is required when cancelling a charge (default on).' })
   chargeCancelReasonRequired!: boolean;
 
+  @ApiProperty({ description: 'Decision 338 item 3: notes are required when refunding (default on).' })
+  chargeRefundNotesRequired!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 338 item 6: the School's address on its invoices and receipts." })
+  receiptAddress!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 338 item 6: payment instructions on its invoices.' })
+  receiptPaymentInstructions!: string | null;
+
+  @ApiProperty({ description: 'Decision 338 item 10: payment receipts to the member (default on).' })
+  chargeNoticeReceipt!: boolean;
+
+  @ApiProperty({ description: 'Decision 338 item 10: failed or overdue payment notices to the member (default on).' })
+  chargeNoticeFailedOverdue!: boolean;
+
+  @ApiProperty({ description: 'Decision 338 item 10: dispute notices to the member (default on).' })
+  chargeNoticeDispute!: boolean;
+
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. Null until the School sets it.' })
   visitorPeriodDays!: number | null;
 

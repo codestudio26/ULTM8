@@ -94,3 +94,6 @@ export const WAIVER_RENEWAL_SWEEP_QUEUE = 'waiver-renewal-sweep';
 // charges to their saved card, for those who turned on "Pay charges
 // automatically with my saved card".
 export const CHARGE_AUTO_PAY_QUEUE = 'charge-auto-pay';
+// Backlog §3.6 step 4 (Decision 338 item 10): the daily "Payment overdue"
+// notice, once per charge, the day after its due date.
+export const CHARGE_OVERDUE_NOTICE_QUEUE = 'charge-overdue-notice';
