@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "결제할 금액이 없습니다.",
   "Only the member can set automatic payment, with their own saved card.": "자동 결제는 회원 본인만 본인의 저장된 카드로 설정할 수 있습니다.",
   "Save a card for this School first.": "먼저 이 학원용 카드를 저장하세요.",
+  "The School owner hasn't let you stop recurring charges.": "학교 소유자가 정기 청구를 중지할 권한을 주지 않았습니다.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "정기 청구는 학교 소유자와 결제를 받을 수 있는 직원만 다시 시작할 수 있습니다.",
+  "The first date can't be in the past.": "첫 날짜는 과거일 수 없습니다.",
+  "Choose an end date or a number of payments, not both.": "종료일 또는 결제 횟수 중 하나만 선택하세요.",
+  "The end date must be on or after the first date.": "종료일은 첫 날짜와 같거나 그 이후여야 합니다.",
+  "This recurring charge is already stopped.": "이 정기 청구는 이미 중지되었습니다.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "이 정기 청구는 종료되었습니다. 종료일이 지났거나 모든 결제가 완료되었습니다.",
+  "This recurring charge isn't stopped.": "이 정기 청구는 중지된 상태가 아닙니다.",
+  "Recurring charge not found": "정기 청구를 찾을 수 없습니다",
 };

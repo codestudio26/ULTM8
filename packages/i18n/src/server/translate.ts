@@ -232,6 +232,10 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   // Decision 409 — MembershipFreezesService.notifyBookingsCancelled.
   'Bookings cancelled': 'freezeBookingsCancelledTitle',
   'Automatic payment failed': 'chargeAutoPayFailedTitle',
+  // Decision 412 — apps/api/src/charges/recurring-charges.service.ts.
+  'Recurring charge set up': 'recurringChargeSetUpTitle',
+  'Recurring charge stopped': 'recurringChargeStoppedTitle',
+  'Recurring charge restarted': 'recurringChargeRestartedTitle',
   'Class moved': 'classMovedTitle',
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
@@ -429,6 +433,21 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^Your charge '(.+), ([\d.]+) ([A-Z]{3})' was cancelled\. Nothing to pay\.$/s,
     (m, { t, locale }) => n(t, 'chargeCancelledBody', { description: m[1], amount: formatAmount(m[2], m[3], locale) }),
+  ],
+  // Decision 412 — RecurringChargesService. Each occurrence's own notice is "New invoice" above.
+  [
+    /^A recurring charge was set up: (.+), ([\d.]+) ([A-Z]{3}) every (week|month|year), first on (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) =>
+      n(t, { week: 'recurringChargeSetUpWeeklyBody', month: 'recurringChargeSetUpMonthlyBody', year: 'recurringChargeSetUpYearlyBody' }[m[4] as 'week' | 'month' | 'year'], {
+        description: m[1],
+        amount: formatAmount(m[2], m[3], locale),
+        first: formatDay(m[5], locale),
+      }),
+  ],
+  [/^Your recurring charge '(.+)' was stopped\. No more invoices will be created for it\.$/s, (m, { t }) => n(t, 'recurringChargeStoppedBody', { description: m[1] })],
+  [
+    /^Your recurring charge '(.+)' was restarted\. The next invoice is on (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) => n(t, 'recurringChargeRestartedBody', { description: m[1], next: formatDay(m[2], locale) }),
   ],
   // Decision 409 — MembershipFreezesService.notifyBookingsCancelled. The list
   // is "Class title (YYYY-MM-DD)" joined with "; ", maybe ending "; +N"; only

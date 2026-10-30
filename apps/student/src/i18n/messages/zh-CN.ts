@@ -937,6 +937,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "定期收费项",
+      every: {
+        WEEKLY: "每周",
+        MONTHLY: "每月",
+        YEARLY: "每年",
+      },
+      amount: "每次 {amount}",
+      next: "下一张账单：{date}",
+      endsOn: "最后一次：{date}",
+      payments: "已付款：{done} / {count}",
+      status: {
+        STOPPED: "已停止",
+        ENDED: "已结束",
+      },
+      taxNote: "按今天的税率。每张账单使用当天的税率。",
+    },
     home: "账单",
     childButton: "账单",
     title: "账单",

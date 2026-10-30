@@ -64,6 +64,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   student's **Payments** card shows card payments as paid in the app or paid
   automatically, and Pending or Failed ones. **Needs a database migration**
   (`20270113000000_charges_pay_in_app`).
+- **Charges and member balance, step 3: recurring charges** (backlog 3.6;
+  Decisions 303, 338, 412) — on a student's **Payments** card, staff who can
+  create charges set up a **recurring charge**: description, price, discount,
+  weekly, monthly or yearly, a first date, and optionally an end date or a
+  number of payments. Each occurrence becomes a normal charge on its date, with
+  its own invoice number and the School's tax that day, and is paid from
+  credit or automatically like any charge (a daily job at 5:30am UTC, in the
+  School's time zone, catching up missed days once each). The card lists the
+  student's recurring charges with **Stop** (the same staff) and **Restart**
+  (the owner, and Branch Staff when the School lets them take payments). A
+  former student's recurring charge stops; a closed or degraded School makes
+  none. The student app's **Invoices** shows the member's recurring charges,
+  read-only, and the member is told when one is set up, stopped or restarted
+  (15 languages). **Needs a database migration**
+  (`20270115000000_charges_recurring`).
 - **Schools set their own trial limits** (Decision 410) — a Trial plan can
   last any number of days the School chooses (at least 1), no longer 1-30, and
   a Student can have another trial straight after the first: the limit of 30

@@ -7143,3 +7143,33 @@ User (Code), 30 Oct 2026: "school has to decided not us".
 ### Recorded by
 
 User (Code), 30 Oct 2026: "My mistake, the school should set the tax per country not the platform admin"; "rate per school, they will choose the country they are in and the right tax will be applied"; "yes it should display price ex tax, the tax and the price inc tax"; and chose "ULTM8 list, School can edit".
+
+---
+
+## Decision 412 — Recurring charges outside a Membership Plan
+
+**Date:** 30 Oct 2026. **Answers:** how Decision 303 item 1's "recurring payments outside a Membership Plan" work (v1.3 backlog §3.6, step 3 of 6). **Builds on:** Decisions 303, 338 (item 2: who restarts), 347, 411.
+
+### Decision
+
+1. **Setting one up.** Staff who can create charges set up a recurring charge on the student's page: description, price, an optional discount (% or fixed), **how often: weekly, monthly or yearly**, a **first date**, and optionally **an end date or a number of payments**. Neither means it runs until it is stopped.
+2. **Each occurrence becomes a normal charge** on its day: its own invoice number, the School's tax at that moment (kept on the charge, as Decision 411 says), and a due date, which is the occurrence's date. Automatic payment with a saved card (Decision 338 item 8) applies to it like any charge, if the member turned it on, and credit pays it like any charge.
+3. **The calendar.** Weekly: the same weekday. Monthly on the 29th, 30th or 31st: the last day of shorter months. Yearly: the same date, and 28 Feb in years that are not leap years for a series that started on 29 Feb.
+4. **Who:**
+   - set up and stop: the people who can create charges (the owner, and staff with "Can create charges", Decision 303 item 3);
+   - restart a stopped one: the owner and staff with access to payments (Decision 338 item 2).
+5. **Notifications:** each occurrence sends the usual "New invoice" notice; the member is also told when a recurring charge is set up and when it is stopped.
+6. **A student who has left the School:** the series stops; no charges are made for former students. **A closed or degraded School:** no occurrences.
+
+### How it is built (step 3 of 6 of §3.6)
+
+- `RecurringCharge` (migration `20270115000000_charges_recurring`); each occurrence is a `Charge` with `recurringChargeId` and `occurrenceDate`, unique together, so the daily job never makes the same occurrence twice.
+- The daily job `charge-recurring` (5:30am UTC, before `charge-auto-pay` at 6am) makes each occurrence on its date in the School's time zone, never ahead, and catches up after downtime: one charge per missed occurrence, never more.
+- "Access to payments" is the School's "Let Branch Staff record payments" switch (Decision 347), as for desk payments in step 1. Instructors never restart.
+- Restarting picks up at the first occurrence on or after the day it is restarted; occurrences that fell while it was stopped are not charged. A number of payments counts charges made.
+- Implementation choices, not part of the answer: occurrences that fall while the School is closed or degraded are passed over, not made later; the first date can't be in the past (a first date of today makes its charge at once); the member is also told when a stopped recurring charge is restarted.
+- Editing a running series is not built: stop it and set up a new one.
+
+### Recorded by
+
+User (Code), 30 Oct 2026: chose "Weekly/monthly/yearly + optional end" (Claude's recommendation).

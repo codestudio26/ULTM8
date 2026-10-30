@@ -577,6 +577,10 @@ model User {
   chargesOwed                       Charge[]                    @relation("ChargeStudent")
   chargesCreated                    Charge[]                    @relation("ChargeCreatedBy")
   chargesCancelled                  Charge[]                    @relation("ChargeCancelledBy")
+  recurringCharges                  RecurringCharge[]           @relation("RecurringChargeStudent")
+  recurringChargesCreated           RecurringCharge[]           @relation("RecurringChargeCreatedBy")
+  recurringChargesStopped           RecurringCharge[]           @relation("RecurringChargeStoppedBy")
+  recurringChargesRestarted         RecurringCharge[]           @relation("RecurringChargeRestartedBy")
   chargeAllocations                 ChargeAllocation[]          @relation("ChargeAllocationStudent")
   balanceEntries                    BalanceEntry[]              @relation("BalanceEntryStudent")
   balanceEntriesRecorded            BalanceEntry[]              @relation("BalanceEntryRecordedBy")
@@ -1282,6 +1286,7 @@ model School {
   charges                Charge[]
   chargeAllocations      ChargeAllocation[]
   balanceEntries         BalanceEntry[]
+  recurringCharges       RecurringCharge[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -4606,15 +4611,15 @@ model StaffPermission {
   /// Decision 303 item 3: may create charges for the students of their own
   /// branches. Null = the role's default: on for Branch Staff, off for
   /// Instructors. Owners always can.
-  canCreateCharges Boolean?
+  canCreateCharges     Boolean?
   /// Decision 338 item 1: may cancel charges. Off by default for all staff;
   /// owners always can.
-  canCancelCharges Boolean  @default(false)
+  canCancelCharges     Boolean  @default(false)
   /// Decision 409: may freeze members' memberships, approve, decline or end
   /// a freeze, for the students of their own branches. Branch Staff only;
   /// off by default; owners always can. The School's freeze settings stay
   /// the owner's.
-  canFreezeMemberships Boolean @default(false)
+  canFreezeMemberships Boolean  @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -5344,9 +5349,17 @@ model Charge {
   balanceEntries BalanceEntry[]
   transactions   Transaction[]
 
+  /// Backlog §3.6 step 3 (Decision 412): the recurring charge this charge is
+  /// one occurrence of, and that occurrence's date (also its due date). One
+  /// charge per series and date, so a rerun of the daily job never doubles.
+  recurringChargeId String?
+  recurringCharge   RecurringCharge? @relation(fields: [recurringChargeId], references: [id], onDelete: Restrict)
+  occurrenceDate    DateTime?        @db.Date
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([recurringChargeId, occurrenceDate])
   @@unique([schoolId, invoiceNumber])
   @@index([schoolId, studentId])
   @@index([studentId])
@@ -5412,4 +5425,84 @@ model BalanceEntry {
 
   @@index([schoolId, studentId])
   @@index([chargeId])
+}
+
+/// How often a recurring charge repeats (Decision 412).
+enum RecurringChargeFrequency {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+/// Why a recurring charge stopped (Decision 412). STAFF: stopped on the
+/// student's page. STUDENT_LEFT: the daily job found the student was no longer
+/// a current student of the School.
+enum RecurringChargeStopReason {
+  STAFF
+  STUDENT_LEFT
+}
+
+/// A recurring charge outside a Membership Plan (Decision 303 item 1, Decision
+/// 412; backlog §3.6 step 3). Each occurrence becomes a normal Charge on its
+/// day, made by the daily charge-recurring job in the School's time zone, with
+/// its own invoice number and the School's tax at that moment.
+///
+/// Occurrence n's date is worked out from firstDate (weekly: + 7n days;
+/// monthly: + n months, the last day of a shorter month for the 29th-31st;
+/// yearly: + n years, 28 Feb for 29 Feb), so month ends never drift.
+/// nextIndex is the next occurrence to make; createdCount counts the charges
+/// made, for maxOccurrences. nextDate is that next occurrence's date, null once
+/// the series has ended (past endDate, or all its payments made).
+///
+/// Written only on the jobs connection, after the API's own checks; read by
+/// the owner, by staff who cover the student, by the student and by an active
+/// Guardian (RLS), as Charge is. Never deleted.
+model RecurringCharge {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  studentId String
+  student   User   @relation("RecurringChargeStudent", fields: [studentId], references: [id], onDelete: Restrict)
+
+  description   String
+  /// The price as typed and its discount, as on a Charge (minor units;
+  /// discountValue is hundredths of a percent for PERCENT).
+  unitAmount    Int
+  discountType  ChargeDiscountType?
+  discountValue Int?
+  currency      String
+
+  frequency      RecurringChargeFrequency
+  firstDate      DateTime                 @db.Date
+  /// Optional end: no occurrence after this day.
+  endDate        DateTime?                @db.Date
+  /// Optional end: at most this many charges. Neither end: until stopped.
+  maxOccurrences Int?
+
+  nextIndex    Int       @default(0)
+  createdCount Int       @default(0)
+  nextDate     DateTime? @db.Date
+
+  stoppedAt     DateTime?
+  stoppedById   String?
+  stoppedBy     User?                      @relation("RecurringChargeStoppedBy", fields: [stoppedById], references: [id], onDelete: SetNull)
+  stoppedReason RecurringChargeStopReason?
+
+  restartedAt   DateTime?
+  restartedById String?
+  restartedBy   User?     @relation("RecurringChargeRestartedBy", fields: [restartedById], references: [id], onDelete: SetNull)
+
+  createdById String?
+  createdBy   User?   @relation("RecurringChargeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  charges Charge[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId, studentId])
+  @@index([studentId])
+  @@index([nextDate])
 }

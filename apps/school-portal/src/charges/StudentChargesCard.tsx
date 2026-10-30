@@ -15,11 +15,13 @@ import {
   useCreateCharge,
   useRecordChargePayment,
   useStudentCharges,
+  useStudentRecurringCharges,
   type Charge,
   type ChargeBalance,
   type ChargePayment,
   type StudentCharges,
 } from './chargeQueries';
+import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
   OPEN: 'warning',
@@ -58,7 +60,8 @@ function paymentMethodText(t: ReturnType<typeof useT>, p: ChargePayment): string
 export function StudentChargesCard({ schoolId, studentId, studentName }: { schoolId: string; studentId: string; studentName: string }) {
   const t = useT();
   const charges = useStudentCharges(schoolId, studentId);
-  const [dialog, setDialog] = useState<'create' | { pay: string | null } | null>(null);
+  const recurring = useStudentRecurringCharges(schoolId, studentId);
+  const [dialog, setDialog] = useState<'create' | 'recurring' | { pay: string | null } | null>(null);
   const [cancelling, setCancelling] = useState<Charge | null>(null);
 
   if (charges.error instanceof ApiError && charges.error.status === 403) return null;
@@ -77,6 +80,11 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
           {charges.data ? (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {charges.data.can.create ? <Button onClick={() => setDialog('create')}>{t('charges.card.create')}</Button> : null}
+              {recurring.data?.can.create ? (
+                <Button variant="secondary" onClick={() => setDialog('recurring')}>
+                  {t('charges.recurring.add')}
+                </Button>
+              ) : null}
               {charges.data.can.recordPayment ? (
                 <Button variant="secondary" onClick={() => setDialog({ pay: null })} disabled={!charges.data.settings.paymentsSetUp}>
                   {t('charges.card.recordPayment')}
@@ -90,13 +98,19 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
         ) : charges.error ? (
           <ErrorBanner message={errorText(charges.error, t('charges.card.loadFailed'))} />
         ) : charges.data ? (
-          <ChargesBody data={charges.data} onPay={(id) => setDialog({ pay: id })} onCancel={setCancelling} />
+          <>
+            <ChargesBody data={charges.data} onPay={(id) => setDialog({ pay: id })} onCancel={setCancelling} />
+            {recurring.data ? <RecurringChargesList schoolId={schoolId} studentId={studentId} data={recurring.data} /> : null}
+          </>
         ) : null}
       </Card>
       {dialog === 'create' && charges.data ? (
         <CreateChargeModal schoolId={schoolId} studentId={studentId} studentName={studentName} data={charges.data} onClose={() => setDialog(null)} />
       ) : null}
-      {dialog && dialog !== 'create' && charges.data ? (
+      {dialog === 'recurring' && charges.data ? (
+        <CreateRecurringChargeModal schoolId={schoolId} studentId={studentId} studentName={studentName} settings={charges.data.settings} onClose={() => setDialog(null)} />
+      ) : null}
+      {dialog && typeof dialog === 'object' && charges.data ? (
         <RecordPaymentModal
           schoolId={schoolId}
           studentId={studentId}

@@ -201,7 +201,8 @@ jobs:
   # run nightly and on demand instead, in browsers-nightly.yml (Decision 302).
   portal-browser-tests:
     name: Portal browser tests (Chromium)
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04, which Playwright doesn't support yet.
+    runs-on: ubuntu-24.04
 
     services:
       postgres:

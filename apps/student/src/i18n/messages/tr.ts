@@ -945,6 +945,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Tekrarlayan ücretler",
+      every: {
+        WEEKLY: "Her hafta",
+        MONTHLY: "Her ay",
+        YEARLY: "Her yıl",
+      },
+      amount: "Her seferinde {amount}",
+      next: "Sonraki fatura: {date}",
+      endsOn: "Sonuncusu: {date}",
+      payments: "Yapılan ödemeler: {done} / {count}",
+      status: {
+        STOPPED: "Durduruldu",
+        ENDED: "Sona erdi",
+      },
+      taxNote: "Bugünkü vergi oranıyla. Her fatura kendi gününün oranını kullanır.",
+    },
     home: "Faturalar",
     childButton: "Faturalar",
     title: "Faturalar",

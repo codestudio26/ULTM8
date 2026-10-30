@@ -963,6 +963,23 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   charges: {
+    recurring: {
+      heading: "Addebiti ricorrenti",
+      every: {
+        WEEKLY: "Ogni settimana",
+        MONTHLY: "Ogni mese",
+        YEARLY: "Ogni anno",
+      },
+      amount: "{amount} ogni volta",
+      next: "Prossima fattura il {date}",
+      endsOn: "L'ultima il {date}",
+      payments: "Pagamenti fatti: {done} / {count}",
+      status: {
+        STOPPED: "Interrotto",
+        ENDED: "Terminato",
+      },
+      taxNote: "Con l'aliquota di oggi. Ogni fattura usa quella del proprio giorno.",
+    },
     home: "Fatture",
     childButton: "Fatture",
     title: "Fatture",

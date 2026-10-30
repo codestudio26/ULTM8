@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Платить нечего.",
   "Only the member can set automatic payment, with their own saved card.": "Включить автоплатёж может только сам участник, своей сохранённой картой.",
   "Save a card for this School first.": "Сначала сохраните карту для этой школы.",
+  "The School owner hasn't let you stop recurring charges.": "Владелец школы не разрешил вам останавливать регулярные начисления.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "Возобновить регулярное начисление могут только владелец школы и сотрудники, которые принимают платежи.",
+  "The first date can't be in the past.": "Первая дата не может быть в прошлом.",
+  "Choose an end date or a number of payments, not both.": "Выберите дату окончания или число платежей, но не оба варианта.",
+  "The end date must be on or after the first date.": "Дата окончания должна совпадать с первой датой или быть позже неё.",
+  "This recurring charge is already stopped.": "Это регулярное начисление уже остановлено.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "Это регулярное начисление завершено: дата окончания прошла или все платежи уже сделаны.",
+  "This recurring charge isn't stopped.": "Это регулярное начисление не остановлено.",
+  "Recurring charge not found": "Регулярное начисление не найдено",
 };

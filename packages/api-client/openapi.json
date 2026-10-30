@@ -18833,6 +18833,221 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/recurring-charges": {
+      "get": {
+        "operationId": "RecurringChargesController_listForStaff",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentRecurringChargesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "RecurringChargesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRecurringChargeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/recurring-charges/{id}/stop": {
+      "post": {
+        "operationId": "RecurringChargesController_stop",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/recurring-charges/{id}/restart": {
+      "post": {
+        "operationId": "RecurringChargesController_restart",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringChargeResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{id}/recurring-charges": {
+      "get": {
+        "operationId": "RecurringChargesController_listForMember",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberRecurringChargesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "charges"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -36846,6 +37061,375 @@
         "required": [
           "canCreateCharges",
           "canCancelCharges"
+        ]
+      },
+      "RecurringChargeFrequency": {
+        "type": "string",
+        "enum": [
+          "WEEKLY",
+          "MONTHLY",
+          "YEARLY"
+        ]
+      },
+      "RecurringChargeStatus": {
+        "type": "string",
+        "description": "ACTIVE; STOPPED (by staff, or because the student left); ENDED (its end date passed or all its payments were made).",
+        "enum": [
+          "ACTIVE",
+          "STOPPED",
+          "ENDED"
+        ]
+      },
+      "RecurringChargeStopReason": {
+        "type": "string",
+        "enum": [
+          "STAFF",
+          "STUDENT_LEFT"
+        ]
+      },
+      "RecurringChargeEstimateDto": {
+        "type": "object",
+        "properties": {
+          "netAmount": {
+            "type": "number",
+            "description": "Price ex. tax of each charge at the School tax rate today. Each charge uses the rate on its own day."
+          },
+          "taxAmount": {
+            "type": "number"
+          },
+          "grossAmount": {
+            "type": "number",
+            "description": "Price inc. tax of each charge at the School tax rate today."
+          },
+          "taxRateBasisPoints": {
+            "type": "number",
+            "description": "The School tax rate today, hundredths of a percent."
+          }
+        },
+        "required": [
+          "netAmount",
+          "taxAmount",
+          "grossAmount",
+          "taxRateBasisPoints"
+        ]
+      },
+      "RecurringChargeResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unitAmount": {
+            "type": "number",
+            "description": "The price as typed, before the discount."
+          },
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ],
+            "nullable": true
+          },
+          "discountValue": {
+            "type": "number",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/RecurringChargeFrequency"
+          },
+          "firstDate": {
+            "type": "string",
+            "example": "2026-11-15"
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "maxOccurrences": {
+            "type": "number",
+            "nullable": true,
+            "description": "The number of payments, when the series has one."
+          },
+          "createdCount": {
+            "type": "number",
+            "description": "Charges made so far."
+          },
+          "nextDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "The next charge date; null once stopped or ended."
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecurringChargeStatus"
+          },
+          "stoppedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "stoppedReason": {
+            "nullable": true,
+            "$ref": "#/components/schemas/RecurringChargeStopReason"
+          },
+          "stoppedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "estimate": {
+            "$ref": "#/components/schemas/RecurringChargeEstimateDto"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "description",
+          "unitAmount",
+          "currency",
+          "frequency",
+          "firstDate",
+          "createdCount",
+          "status",
+          "createdAt",
+          "estimate"
+        ]
+      },
+      "RecurringChargeAbilitiesDto": {
+        "type": "object",
+        "properties": {
+          "create": {
+            "type": "boolean",
+            "description": "Set up a recurring charge: the owner and staff with \"Can create charges\"."
+          },
+          "stop": {
+            "type": "boolean",
+            "description": "Stop one: the same people."
+          },
+          "restart": {
+            "type": "boolean",
+            "description": "Restart a stopped one: the owner and staff with access to payments (Decision 338 item 2)."
+          }
+        },
+        "required": [
+          "create",
+          "stop",
+          "restart"
+        ]
+      },
+      "StudentRecurringChargesResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "Active first (next date first), then stopped, then ended.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecurringChargeResponseDto"
+            }
+          },
+          "can": {
+            "$ref": "#/components/schemas/RecurringChargeAbilitiesDto"
+          }
+        },
+        "required": [
+          "items",
+          "can"
+        ]
+      },
+      "CreateRecurringChargeDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 200,
+            "example": "Private lesson"
+          },
+          "amount": {
+            "type": "number",
+            "description": "The price of each charge in minor units of the School's currency, as the School prices (with or without tax).",
+            "minimum": 1,
+            "maximum": 99999999
+          },
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ],
+            "nullable": true
+          },
+          "discountValue": {
+            "type": "number",
+            "nullable": true,
+            "description": "PERCENT: hundredths of a percent (1250 = 12.5%). FIXED: minor units. Required with discountType."
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/RecurringChargeFrequency"
+          },
+          "firstDate": {
+            "type": "string",
+            "example": "2026-11-15",
+            "description": "The first charge's date (YYYY-MM-DD), today or later in the School's time zone. Each charge is due on its own date."
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true,
+            "example": "2027-06-30",
+            "description": "Optional: no charge after this day. Not with maxOccurrences."
+          },
+          "maxOccurrences": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1,
+            "maximum": 520,
+            "description": "Optional: the number of payments. Not with endDate. Neither: until stopped."
+          }
+        },
+        "required": [
+          "description",
+          "amount",
+          "frequency",
+          "firstDate"
+        ]
+      },
+      "MemberRecurringChargeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "unitAmount": {
+            "type": "number",
+            "description": "The price as typed, before the discount."
+          },
+          "discountType": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ],
+            "nullable": true
+          },
+          "discountValue": {
+            "type": "number",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string"
+          },
+          "frequency": {
+            "$ref": "#/components/schemas/RecurringChargeFrequency"
+          },
+          "firstDate": {
+            "type": "string",
+            "example": "2026-11-15"
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "maxOccurrences": {
+            "type": "number",
+            "nullable": true,
+            "description": "The number of payments, when the series has one."
+          },
+          "createdCount": {
+            "type": "number",
+            "description": "Charges made so far."
+          },
+          "nextDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "The next charge date; null once stopped or ended."
+          },
+          "status": {
+            "$ref": "#/components/schemas/RecurringChargeStatus"
+          },
+          "stoppedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "stoppedReason": {
+            "nullable": true,
+            "$ref": "#/components/schemas/RecurringChargeStopReason"
+          },
+          "stoppedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          },
+          "createdByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Staff only."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "estimate": {
+            "$ref": "#/components/schemas/RecurringChargeEstimateDto"
+          },
+          "schoolName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "studentId",
+          "description",
+          "unitAmount",
+          "currency",
+          "frequency",
+          "firstDate",
+          "createdCount",
+          "status",
+          "createdAt",
+          "estimate",
+          "schoolName"
+        ]
+      },
+      "MemberRecurringChargesResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberRecurringChargeDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       }
     }

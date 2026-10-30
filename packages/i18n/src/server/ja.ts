@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "支払うものはありません。",
   "Only the member can set automatic payment, with their own saved card.": "自動支払いを設定できるのは、本人の保存済みカードを使う会員本人だけです。",
   "Save a card for this School first.": "先にこのスクール用のカードを保存してください。",
+  "The School owner hasn't let you stop recurring charges.": "スクールのオーナーから定期請求を停止する権限が与えられていません。",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "定期請求を再開できるのは、スクールのオーナーと支払いを受け付けられるスタッフだけです。",
+  "The first date can't be in the past.": "初回の日付を過去にすることはできません。",
+  "Choose an end date or a number of payments, not both.": "終了日か支払い回数のどちらか一方を選んでください。",
+  "The end date must be on or after the first date.": "終了日は初回の日付と同じかそれ以降にしてください。",
+  "This recurring charge is already stopped.": "この定期請求はすでに停止されています。",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "この定期請求は終了しました。終了日を過ぎたか、すべての支払いが完了しています。",
+  "This recurring charge isn't stopped.": "この定期請求は停止されていません。",
+  "Recurring charge not found": "定期請求が見つかりません",
 };

@@ -687,4 +687,13 @@ export const serverMessages: Record<string, string> = {
   "There is nothing to pay.": "Non c'è niente da pagare.",
   "Only the member can set automatic payment, with their own saved card.": "Solo il membro stesso può impostare il pagamento automatico, con la propria carta salvata.",
   "Save a card for this School first.": "Prima salva una carta per questa scuola.",
+  "The School owner hasn't let you stop recurring charges.": "Il titolare della scuola non ti ha permesso di interrompere gli addebiti ricorrenti.",
+  "Only the School owner, and staff who can take payments, can restart a recurring charge.": "Solo il titolare della scuola e lo staff che può incassare pagamenti possono riattivare un addebito ricorrente.",
+  "The first date can't be in the past.": "La prima data non può essere nel passato.",
+  "Choose an end date or a number of payments, not both.": "Scegli una data di fine o un numero di pagamenti, non entrambi.",
+  "The end date must be on or after the first date.": "La data di fine deve essere uguale o successiva alla prima data.",
+  "This recurring charge is already stopped.": "Questo addebito ricorrente è già interrotto.",
+  "This recurring charge has ended: its end date has passed or all its payments were made.": "Questo addebito ricorrente è terminato: la data di fine è passata o tutti i pagamenti sono stati fatti.",
+  "This recurring charge isn't stopped.": "Questo addebito ricorrente non è interrotto.",
+  "Recurring charge not found": "Addebito ricorrente non trovato",
 };
