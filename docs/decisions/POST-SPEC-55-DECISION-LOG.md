@@ -7108,7 +7108,7 @@ User (Code), 30 Oct 2026: "school has to decided not us".
 
 - `School.taxCountry`, `taxRateBasisPoints` (hundredths of a percent, 0 to 10000, default 0), `taxInclusive` (default true), set by the owner on the School page ("Charges and tax"). The list is `apps/api/src/charges/standard-tax-rates.ts`, served by `GET /tax-rates`; its rates could not be checked against the official sources when it was written and are marked "unverified — check before launch".
 - The sums are in `apps/api/src/charges/charge-maths.ts`: the discount comes off first, tax is worked out on what is left, rounded half up to the minor unit; for an inclusive price, tax = price − round(price ÷ (1 + rate)).
-- Each `Charge` keeps its country, rate, inclusive flag, price excluding tax, tax and price including tax. Migration `20270111000000_charges_and_balance`.
+- Each `Charge` keeps its country, rate, inclusive flag, price excluding tax, tax and price including tax. Migration `20270112000000_charges_and_balance`.
 
 ### Recorded by
 

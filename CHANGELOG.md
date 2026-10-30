@@ -36,7 +36,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   **Invoices** (and a child's, for a Guardian) lists each invoice and receipt,
   read-only; the member is notified of a new invoice, a receipt and a
   cancelled charge. **Needs a database migration**
-  (`20270111000000_charges_and_balance`).
+  (`20270112000000_charges_and_balance`).
 - **Schools set their own trial limits** (Decision 410) — a Trial plan can
   last any number of days the School chooses (at least 1), no longer 1-30, and
   a Student can have another trial straight after the first: the limit of 30
