@@ -2,7 +2,10 @@ import { ApiPropertyOptional, IntersectionType } from '@nestjs/swagger';
 import { IsDateString, IsIn, IsOptional, IsUUID } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
-export const TRANSACTION_STATUSES = ['SUCCESSFUL', 'PENDING', 'FAILED', 'REFUNDED', 'DISPUTED'] as const;
+/** The five stored statuses (Spec 55), plus CANCELLED: a FAILED cash or
+ * bank-transfer payment that was cancelled (Decision 338 item 1). FAILED alone
+ * leaves the cancelled ones out. */
+export const TRANSACTION_STATUSES = ['SUCCESSFUL', 'PENDING', 'FAILED', 'CANCELLED', 'REFUNDED', 'DISPUTED'] as const;
 export const TRANSACTION_METHODS = ['STRIPE', 'CASH', 'BANK_TRANSFER', 'PIX', 'CARD_TERMINAL'] as const;
 export const TRANSACTION_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE', 'CHARGE_PAYMENT'] as const;
 
