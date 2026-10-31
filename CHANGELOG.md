@@ -15,6 +15,11 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
+  stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
+  doesn't know this, so Vancouver classes would have come out an hour off. The
+  API (Render, the Docker image) and CI now run Node 22.23.4 (time-zone data
+  2026e), and a test fails on any Node whose data is too old.
 - **Fixed: card payments against Stripe's current API** — found on the first
   run against a real Stripe test account. Several calls were written for an
   older Stripe API and failed on the version the app now uses:
