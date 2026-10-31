@@ -713,4 +713,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Это сбор за повышение. Владелец школы освобождает от него или отменяет его в аттестации ученика, и это отменяет этот счёт.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Эта школа ещё не указала валюту, поэтому сбор нельзя оплатить. Обратитесь в школу.",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Этот сбор оплачен, но повышение больше нельзя применить. Отмените сбор (оплаченное станет кредитом) или аттестуйте ученика заново.",
+  "The School owner hasn't let you see attendance statistics.": "Владелец школы не разрешил вам смотреть статистику посещаемости.",
+  "You can only see your own Branches' attendance.": "Вы можете видеть посещаемость только своих филиалов.",
+  "This class hasn't started yet. Check them in instead.": "Это занятие ещё не началось. Отметьте их как пришедших обычным способом.",
+  "This date is not valid.": "Эта дата недействительна.",
+  "Attendance can only be logged from {v1} to {v2}.": "Посещение можно отметить только с {v1} по {v2}.",
 };

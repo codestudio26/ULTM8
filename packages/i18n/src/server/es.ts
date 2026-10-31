@@ -713,4 +713,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Esta es una tarifa de promoción. El propietario de la escuela la condona o la cancela desde la graduación del alumno, lo que cancela este cargo.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Esta escuela aún no ha configurado su moneda, así que la tarifa no se puede pagar. Pregunta a la escuela.",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Esta cuota está pagada, pero su promoción ya no se puede aplicar. Cancela la cuota (lo pagado pasa a ser crédito) o vuelve a graduar al alumno.",
+  "The School owner hasn't let you see attendance statistics.": "El propietario de la Escuela no te ha permitido ver las estadísticas de asistencia.",
+  "You can only see your own Branches' attendance.": "Solo puedes ver la asistencia de tus propias sedes.",
+  "This class hasn't started yet. Check them in instead.": "Esta clase aún no ha empezado. Regístrales la entrada en su lugar.",
+  "This date is not valid.": "Esta fecha no es válida.",
+  "Attendance can only be logged from {v1} to {v2}.": "La asistencia solo se puede registrar del {v1} al {v2}.",
 };

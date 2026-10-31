@@ -15,6 +15,28 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Students → Attendance: statistics and logging past attendance**
+  (Decision 317 items 3 and 4; backlog 5.6, 5.7) — a new **Attendance** tab
+  on the Students page:
+  - **Statistics for the last 30 days** (days in the School's time zone):
+    check-ins, students per class and classes per student. The owner sees the
+    whole School, with a Branch filter; Branch Staff see their own Branches
+    only when the owner turns on the new **"See attendance statistics"**
+    switch on their Access page (off by default, in neither preset). Coaches
+    don't see statistics. Trial, Visitor and Friend Pass check-ins count, with
+    a tick box to leave them out.
+  - **"+ Log attendance"**, on the tab and on a student's page: staff who can
+    check people in log a class someone came to but wasn't checked in to, up
+    to 30 days back. It counts exactly like a check-in: it books the class
+    when needed, paid for like any staff booking (a Class Pack class is used
+    when that's what pays), counts toward grading and hours trained, and
+    follows the School's check-in rules about the person. It is recorded with
+    its own check-in method (`STAFF_LOGGED`) and who logged it. A booking
+    already marked No-Show is checked in without being paid for again, and a
+    student already checked in to that class is refused.
+  - Migration `20270123000000_attendance_stats_and_past`; new endpoints
+    `GET /schools/{id}/attendance/stats`, `GET /schools/{id}/attendance/log-classes`
+    and `POST /schools/{id}/attendance/logs`.
 - **Fixed: card payments against Stripe's current API** — found on the first
   run against a real Stripe test account. Several calls were written for an
   older Stripe API and failed on the version the app now uses:

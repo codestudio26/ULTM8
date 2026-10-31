@@ -4644,6 +4644,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/attendance/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffAttendanceController_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/attendance/log-classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffAttendanceController_logClasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/attendance/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffAttendanceController_log"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -7467,6 +7515,8 @@ export interface components {
             exportStudents: boolean;
             /** @description Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409). */
             freezeMemberships: boolean;
+            /** @description See attendance statistics for their branches (off by default; Decision 317 item 3). */
+            attendanceStats: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -10844,6 +10894,72 @@ export interface components {
              * @enum {number}
              */
             codeDigits: 4 | 6;
+        };
+        AttendanceStatsResponseDto: {
+            /** @description First day counted (YYYY-MM-DD, the School's time zone): 29 days before today. */
+            from: string;
+            /** @description Today (YYYY-MM-DD, the School's time zone). Classes count once they have started. */
+            to: string;
+            /** @description The School's time zone the days are in (UTC when the School has none). */
+            timeZone: string;
+            /** @description The Branches counted; null means the whole School. */
+            branchIds: string[] | null;
+            /** @description Whether Trial, Visitor and Friend Pass check-ins were left out. */
+            excludePasses: boolean;
+            /** @description Check-ins: members' classes checked in (or logged), plus guests checked in on a Friend Pass. */
+            checkIns: number;
+            /** @description Of checkIns, guests checked in on a Friend Pass. */
+            guestCheckIns: number;
+            /** @description Of checkIns, attendance staff logged afterwards (STAFF_LOGGED). */
+            loggedCheckIns: number;
+            /** @description Classes with at least one check-in. */
+            classes: number;
+            /** @description Different members with at least one check-in (guests have no account and are not counted). */
+            students: number;
+            /** @description checkIns / classes, to one decimal (0 when no class had a check-in). */
+            studentsPerClass: number;
+            /** @description Members' check-ins / students, to one decimal (0 when nobody checked in). */
+            classesPerStudent: number;
+        };
+        LogClassItemDto: {
+            id: string;
+            title: string;
+            startDate: string;
+            endDate: string;
+            branchId: string | null;
+            /** @description The student named in the query has already attended (checked in or logged). */
+            attended: boolean;
+        };
+        LogClassesResponseDto: {
+            /** @description The earliest day attendance can be logged for (YYYY-MM-DD): 30 days before today. */
+            earliestDay: string;
+            /** @description Today (YYYY-MM-DD, the School's time zone). */
+            today: string;
+            /** @description The day listed (YYYY-MM-DD). */
+            date: string;
+            /** @description The School's time zone the days are in (UTC when the School has none). */
+            timeZone: string;
+            /** @description Classes on that day that have started, aren't cancelled or archived, at the caller's Branches. */
+            items: components["schemas"]["LogClassItemDto"][];
+        };
+        LogAttendanceDto: {
+            studentId: string;
+            /** @description A Class that started in the last 30 days (from the start of that day, School time). */
+            classId: string;
+        };
+        LoggedAttendanceResponseDto: {
+            bookingId: string;
+            classId: string;
+            studentId: string;
+            /** @enum {string} */
+            checkInMethod: "STAFF_LOGGED";
+            /** @description Who logged it. */
+            checkedInById: string;
+            /**
+             * @description BOOKED: a new booking was made, paid for like any staff booking (a Class Pack credit when that is what pays). UPCOMING: their booking was still open and is now checked in. NO_SHOW: their booking had been marked No-Show and is now checked in; it was already paid for, so nothing more is used.
+             * @enum {string}
+             */
+            from: "BOOKED" | "UPCOMING" | "NO_SHOW";
         };
         AcademySummaryDto: {
             id: string;
@@ -20199,6 +20315,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckInRulesDto"];
+                };
+            };
+        };
+    };
+    StaffAttendanceController_stats: {
+        parameters: {
+            query?: {
+                /** @description Only this Branch. Staff may only name one of their own Branches. */
+                branchId?: string;
+                /** @description Leave out Trial, Visitor (visit pass) and Friend Pass check-ins. They count by default. */
+                excludePasses?: boolean;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceStatsResponseDto"];
+                };
+            };
+        };
+    };
+    StaffAttendanceController_logClasses: {
+        parameters: {
+            query?: {
+                /** @description The day (YYYY-MM-DD, the School's time zone), today or up to 30 days back. Today when left out. */
+                date?: string;
+                /** @description Marks the Classes this student has already attended. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogClassesResponseDto"];
+                };
+            };
+        };
+    };
+    StaffAttendanceController_log: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogAttendanceDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoggedAttendanceResponseDto"];
                 };
             };
         };

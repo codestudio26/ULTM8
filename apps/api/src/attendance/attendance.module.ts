@@ -9,6 +9,8 @@ import { CheckInRulesController } from './check-in-rules.controller';
 import { CheckInRulesService } from './check-in-rules.service';
 import { BookingsModule } from '../bookings/bookings.module';
 import { SubscriptionPlansModule } from '../subscription-plans/subscription-plans.module';
+import { StaffAttendanceController } from './staff-attendance.controller';
+import { StaffAttendanceService } from './staff-attendance.service';
 
 /**
  * Phase 13 built self-service-only, no TenantsModule import needed (a pure
@@ -21,11 +23,13 @@ import { SubscriptionPlansModule } from '../subscription-plans/subscription-plan
  * BookingsModule and SubscriptionPlansModule: the front desk's one-step
  * check-in books where needed, with a staff booking's gates (Decision 378).
  * Check-in rules (Decision 394): Settings, and the checks every check-in runs.
+ * Students → Attendance (Decision 317 items 3, 4): statistics and logging
+ * past attendance.
  */
 @Module({
   imports: [TenantsModule, QueueModule, BookingsModule, SubscriptionPlansModule],
-  controllers: [AttendanceController, CheckInRulesController],
-  providers: [AttendanceService, QrTokenService, FrontDeskCheckInService, CheckInRulesService],
+  controllers: [AttendanceController, CheckInRulesController, StaffAttendanceController],
+  providers: [AttendanceService, QrTokenService, FrontDeskCheckInService, CheckInRulesService, StaffAttendanceService],
   // The locked front-desk tablet (FrontDeskModule, Decision 380) checks in through these.
   exports: [AttendanceService, FrontDeskCheckInService, QrTokenService],
 })

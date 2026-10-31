@@ -13914,6 +13914,158 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/attendance/stats": {
+      "get": {
+        "operationId": "StaffAttendanceController_stats",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this Branch. Staff may only name one of their own Branches.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "excludePasses",
+            "required": false,
+            "in": "query",
+            "description": "Leave out Trial, Visitor (visit pass) and Friend Pass check-ins. They count by default.",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceStatsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/attendance/log-classes": {
+      "get": {
+        "operationId": "StaffAttendanceController_logClasses",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "The day (YYYY-MM-DD, the School's time zone), today or up to 30 days back. Today when left out.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "Marks the Classes this student has already attended.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogClassesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/attendance/logs": {
+      "post": {
+        "operationId": "StaffAttendanceController_log",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogAttendanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoggedAttendanceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/academies": {
       "get": {
         "operationId": "AcademiesController_findAll",
@@ -22551,6 +22703,10 @@
           "freezeMemberships": {
             "type": "boolean",
             "description": "Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409)."
+          },
+          "attendanceStats": {
+            "type": "boolean",
+            "description": "See attendance statistics for their branches (off by default; Decision 317 item 3)."
           }
         },
         "required": [
@@ -22563,7 +22719,8 @@
           "disciplines",
           "checkInRules",
           "exportStudents",
-          "freezeMemberships"
+          "freezeMemberships",
+          "attendanceStats"
         ]
       },
       "StaffRoleDto": {
@@ -33518,6 +33675,202 @@
           "visitors",
           "severalClasses",
           "codeDigits"
+        ]
+      },
+      "AttendanceStatsResponseDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "First day counted (YYYY-MM-DD, the School's time zone): 29 days before today."
+          },
+          "to": {
+            "type": "string",
+            "description": "Today (YYYY-MM-DD, the School's time zone). Classes count once they have started."
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The School's time zone the days are in (UTC when the School has none)."
+          },
+          "branchIds": {
+            "nullable": true,
+            "description": "The Branches counted; null means the whole School.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "excludePasses": {
+            "type": "boolean",
+            "description": "Whether Trial, Visitor and Friend Pass check-ins were left out."
+          },
+          "checkIns": {
+            "type": "number",
+            "description": "Check-ins: members' classes checked in (or logged), plus guests checked in on a Friend Pass."
+          },
+          "guestCheckIns": {
+            "type": "number",
+            "description": "Of checkIns, guests checked in on a Friend Pass."
+          },
+          "loggedCheckIns": {
+            "type": "number",
+            "description": "Of checkIns, attendance staff logged afterwards (STAFF_LOGGED)."
+          },
+          "classes": {
+            "type": "number",
+            "description": "Classes with at least one check-in."
+          },
+          "students": {
+            "type": "number",
+            "description": "Different members with at least one check-in (guests have no account and are not counted)."
+          },
+          "studentsPerClass": {
+            "type": "number",
+            "description": "checkIns / classes, to one decimal (0 when no class had a check-in)."
+          },
+          "classesPerStudent": {
+            "type": "number",
+            "description": "Members' check-ins / students, to one decimal (0 when nobody checked in)."
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "timeZone",
+          "branchIds",
+          "excludePasses",
+          "checkIns",
+          "guestCheckIns",
+          "loggedCheckIns",
+          "classes",
+          "students",
+          "studentsPerClass",
+          "classesPerStudent"
+        ]
+      },
+      "LogClassItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "attended": {
+            "type": "boolean",
+            "description": "The student named in the query has already attended (checked in or logged)."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "startDate",
+          "endDate",
+          "branchId",
+          "attended"
+        ]
+      },
+      "LogClassesResponseDto": {
+        "type": "object",
+        "properties": {
+          "earliestDay": {
+            "type": "string",
+            "description": "The earliest day attendance can be logged for (YYYY-MM-DD): 30 days before today."
+          },
+          "today": {
+            "type": "string",
+            "description": "Today (YYYY-MM-DD, the School's time zone)."
+          },
+          "date": {
+            "type": "string",
+            "description": "The day listed (YYYY-MM-DD)."
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The School's time zone the days are in (UTC when the School has none)."
+          },
+          "items": {
+            "description": "Classes on that day that have started, aren't cancelled or archived, at the caller's Branches.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogClassItemDto"
+            }
+          }
+        },
+        "required": [
+          "earliestDay",
+          "today",
+          "date",
+          "timeZone",
+          "items"
+        ]
+      },
+      "LogAttendanceDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string",
+            "description": "A Class that started in the last 30 days (from the start of that day, School time)."
+          }
+        },
+        "required": [
+          "studentId",
+          "classId"
+        ]
+      },
+      "LoggedAttendanceResponseDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "checkInMethod": {
+            "type": "string",
+            "enum": [
+              "STAFF_LOGGED"
+            ]
+          },
+          "checkedInById": {
+            "type": "string",
+            "description": "Who logged it."
+          },
+          "from": {
+            "type": "string",
+            "enum": [
+              "BOOKED",
+              "UPCOMING",
+              "NO_SHOW"
+            ],
+            "description": "BOOKED: a new booking was made, paid for like any staff booking (a Class Pack credit when that is what pays). UPCOMING: their booking was still open and is now checked in. NO_SHOW: their booking had been marked No-Show and is now checked in; it was already paid for, so nothing more is used."
+          }
+        },
+        "required": [
+          "bookingId",
+          "classId",
+          "studentId",
+          "checkInMethod",
+          "checkedInById",
+          "from"
         ]
       },
       "AcademySummaryDto": {
