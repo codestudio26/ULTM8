@@ -85,6 +85,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   member next subscribes. A Migrate price change keeps the surcharge at the
   Subscription's own %. The School page's Card surcharge text says so (15
   languages). No migration.
+- **Card surcharge: removing a country stops it on running Subscriptions**
+  (Decision 419 item 3) — when Platform Admin takes a country off the card
+  surcharge list, every running Subscription at a School in that country stops
+  charging the surcharge from its next renewal (this replaces "Platform Admin
+  removing the country applies when the member next subscribes" in the entry
+  above). A background job removes the surcharge item from each Stripe
+  Subscription with no proration (the month already paid is left as it is),
+  so the next renewal charges, records and shows no surcharge; one
+  Subscription Stripe refuses doesn't hold up the rest, and the job retries.
+  Adding the country back doesn't put the surcharge back on running
+  Subscriptions; only new ones get it. An owner turning the surcharge off or
+  changing the % still applies only when the member next subscribes. The
+  Platform Admin "Remove country" dialog says so. No migration, no API change.
 - **Waivers: faster Signatures panel for big Schools** (Decision 418; stress
   test round 4, Q2) — the panel shows the first 100 people with a "Load more"
   button instead of loading everyone first (it took 22 s at a School with

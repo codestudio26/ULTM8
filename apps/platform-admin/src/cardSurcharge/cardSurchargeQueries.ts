@@ -22,7 +22,9 @@ export function useAddCardSurchargeCountry() {
   });
 }
 
-/** DELETE — same tiers; Schools there stop surcharging at once. */
+/** DELETE — same tiers; Schools there stop surcharging at once, and running
+ * subscriptions there from their next renewal (Decision 419 item 3, a
+ * background job). */
 export function useRemoveCardSurchargeCountry() {
   const queryClient = useQueryClient();
   return useMutation({

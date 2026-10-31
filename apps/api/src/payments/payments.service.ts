@@ -772,6 +772,49 @@ export class PaymentsService {
     });
   }
 
+  /**
+   * Decision 419 item 3: the School's country came off the card surcharge
+   * allow-list, so this running Subscription stops charging the surcharge
+   * from its next renewal. Removes the surcharge item (told apart by the
+   * Product its metadata names, as migrateSubscriptionToNewPrice does) with
+   * `proration_behavior: 'none'`: no credit or charge for the current period,
+   * which was already paid with the surcharge. Clears the surcharge metadata
+   * in the same call (Stripe unsets a key set to ''), so the invoice
+   * snapshots of later renewals name no surcharge line and the webhook
+   * records none.
+   *
+   * Idempotent: a Subscription with neither a surcharge item nor surcharge
+   * metadata left is not touched ('none'). A Subscription Stripe created
+   * after `removedAt` is left as it is ('started-after'): it can only carry a
+   * surcharge if the country was added back since, and re-adding a country
+   * applies to new Subscriptions only. Ended Subscriptions are skipped too.
+   */
+  async removeSubscriptionSurcharge(
+    connectedAccountId: string,
+    stripeSubscriptionId: string,
+    removedAt: Date,
+  ): Promise<'removed' | 'none' | 'started-after' | 'ended'> {
+    const stripe = this.stripeClient.scopedClient(connectedAccountId);
+    const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+    if (subscription.status === 'canceled' || subscription.status === 'incomplete_expired') return 'ended';
+    const product = subscription.metadata?.[SUBSCRIPTION_SURCHARGE_METADATA.product];
+    const { surchargeItem } = splitSubscriptionItems(subscription);
+    if (!product && !surchargeItem) return 'none';
+    if (typeof subscription.created === 'number' && subscription.created * 1000 > removedAt.getTime()) return 'started-after';
+    // No idempotency key: the retrieve above is what makes a re-run safe, and
+    // Stripe would replay a saved server error for a reused key.
+    await stripe.subscriptions.update(stripeSubscriptionId, {
+      ...(surchargeItem ? { items: [{ id: surchargeItem.id, deleted: true }] } : {}),
+      proration_behavior: 'none',
+      metadata: {
+        [SUBSCRIPTION_SURCHARGE_METADATA.product]: '',
+        [SUBSCRIPTION_SURCHARGE_METADATA.bps]: '',
+        [SUBSCRIPTION_SURCHARGE_METADATA.amount]: '',
+      },
+    });
+    return 'removed';
+  }
+
   // ---------------------------------------------------------------------------
   // Saved payment methods (Decision 234's own dependency — see
   // StudentPaymentMethod's schema.prisma comment for why this didn't exist before

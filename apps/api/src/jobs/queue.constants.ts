@@ -121,3 +121,7 @@ export const MEMBERSHIP_ENDING_REPORT_QUEUE = 'membership-ending-report';
 // Decision 315 item 13: one job per signed-documents export the School owner
 // asks for (a ZIP of every signed waiver at the School).
 export const SIGNED_DOCUMENTS_EXPORT_QUEUE = 'signed-documents-export';
+// Decision 419 item 3: when Platform Admin takes a country off the card
+// surcharge allow-list, one job removes the surcharge item from every running
+// Subscription at Schools in that country, from its next renewal.
+export const CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE = 'card-surcharge-country-removal';

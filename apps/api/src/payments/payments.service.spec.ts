@@ -179,6 +179,51 @@ describe('PaymentsService — card surcharge on a Subscription (Decision 406)', 
     expect(stripe.prices.retrieve).not.toHaveBeenCalled();
     expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_1', { items: [{ id: 'si_plan', price: 'price_new' }], proration_behavior: 'none' });
   });
+
+  describe('removeSubscriptionSurcharge (Decision 419 item 3: the country came off the allow-list)', () => {
+    const removedAt = new Date('2026-11-01T12:00:00Z');
+    const createdBefore = Math.floor(removedAt.getTime() / 1000) - 86_400;
+    const surcharged = (overrides: Record<string, unknown> = {}) => ({
+      id: 'sub_1',
+      status: 'active',
+      created: createdBefore,
+      metadata: { cardSurchargeProduct: 'prod_surcharge', cardSurchargeBps: '250', surchargeAmount: '125' },
+      items: { data: [{ id: 'si_surcharge', price: { id: 'price_s', product: 'prod_surcharge' } }, { id: 'si_plan', price: { id: 'price_p', product: 'prod_plan' } }] },
+      ...overrides,
+    });
+    const stripeWith = (subscription: Record<string, unknown>) => ({
+      subscriptions: { retrieve: jest.fn().mockResolvedValue(subscription), update: jest.fn().mockResolvedValue({}) },
+    });
+
+    it('removes the surcharge item with no proration and clears its metadata, leaving the plan item', async () => {
+      const stripe = stripeWith(surcharged());
+      expect(await makeService(stripe).removeSubscriptionSurcharge('acct_school', 'sub_1', removedAt)).toBe('removed');
+      expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_1', {
+        items: [{ id: 'si_surcharge', deleted: true }],
+        proration_behavior: 'none',
+        metadata: { cardSurchargeProduct: '', cardSurchargeBps: '', surchargeAmount: '' },
+      });
+    });
+
+    it('clears leftover metadata when the item is already gone (a Migrate re-priced it to nothing)', async () => {
+      const stripe = stripeWith(surcharged({ items: { data: [{ id: 'si_plan', price: { id: 'price_p', product: 'prod_plan' } }] } }));
+      expect(await makeService(stripe).removeSubscriptionSurcharge('acct_school', 'sub_1', removedAt)).toBe('removed');
+      expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_1', {
+        proration_behavior: 'none',
+        metadata: { cardSurchargeProduct: '', cardSurchargeBps: '', surchargeAmount: '' },
+      });
+    });
+
+    it('leaves alone a Subscription with no surcharge, one started after the removal, and one that has ended', async () => {
+      const none = stripeWith(surcharged({ metadata: {}, items: { data: [{ id: 'si_plan', price: { id: 'price_p', product: 'prod_plan' } }] } }));
+      expect(await makeService(none).removeSubscriptionSurcharge('acct_school', 'sub_1', removedAt)).toBe('none');
+      const later = stripeWith(surcharged({ created: Math.floor(removedAt.getTime() / 1000) + 60 }));
+      expect(await makeService(later).removeSubscriptionSurcharge('acct_school', 'sub_1', removedAt)).toBe('started-after');
+      const ended = stripeWith(surcharged({ status: 'canceled' }));
+      expect(await makeService(ended).removeSubscriptionSurcharge('acct_school', 'sub_1', removedAt)).toBe('ended');
+      for (const stripe of [none, later, ended]) expect(stripe.subscriptions.update).not.toHaveBeenCalled();
+    });
+  });
 });
 
 /**

@@ -872,6 +872,21 @@ describeIfSandbox('Stripe sandbox: the real integration against Stripe test mode
       check(fee.grossAmount === 500, `late fee grossAmount ${fee.grossAmount} (net ${fee.netAmount}, tax ${fee.taxAmount})`);
       return `late fee Charge ${fee.id} gross ${fee.grossAmount} ${fee.currency} (run ${JSON.stringify(outcome)} at ${when.toISOString()}; no Stripe call: a late fee is a charge on the member's balance)`;
     });
+
+    await step('6g', 'country removed (Decision 419 item 3): the surcharge item comes off the running Subscription, no proration, metadata cleared; the next invoice has no surcharge line', async () => {
+      // Called directly, as the card-surcharge-country-removal job does per
+      // Subscription: the allow-list keeps GB for the steps after this one.
+      const ok = subs.find((s) => s.label === 'renewOk')!;
+      const outcome = await app.get(PaymentsService).removeSubscriptionSurcharge(schoolAccount, ok.subscriptionId, new Date());
+      check(outcome === 'removed', `outcome ${outcome}`);
+      const after = await harness.subscriptions.retrieve(ok.subscriptionId, {}, on());
+      check(after.items.data.length === 1 && !after.metadata.cardSurchargeProduct && !after.metadata.cardSurchargeBps, `${after.items.data.length} items, metadata ${JSON.stringify(after.metadata)}`);
+      const preview = await harness.invoices.createPreview({ subscription: ok.subscriptionId }, on());
+      check(preview.total === monthly.price, `next invoice ${preview.total} (${preview.lines.data.map((l) => l.amount).join(' + ')})`);
+      const again = await app.get(PaymentsService).removeSubscriptionSurcharge(schoolAccount, ok.subscriptionId, new Date());
+      check(again === 'none', `re-run outcome ${again}`);
+      return `${ok.subscriptionId}: ${after.items.data.length} item, next invoice ${preview.total} ${preview.currency}; re-run ${again}`;
+    });
   });
 
   // ===========================================================================

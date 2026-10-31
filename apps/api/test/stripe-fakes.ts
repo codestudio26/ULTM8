@@ -125,3 +125,98 @@ export function fakeSubscriptionInvoice(params: {
     },
   };
 }
+
+/** One item of a fake running Subscription: its price and that price's Product. */
+export type FakeSubscriptionItem = { id: string; price: { id: string; product: string; unit_amount: number; currency: string } };
+export type FakeRunningSubscription = {
+  id: string;
+  object: 'subscription';
+  status: string;
+  /** Unix seconds, as Stripe sends it. */
+  created: number;
+  metadata: Record<string, string>;
+  items: { object: 'list'; data: FakeSubscriptionItem[] };
+};
+
+/**
+ * Running Subscriptions on fake connected accounts, kept as Stripe keeps them:
+ * `subscriptions.retrieve()` returns the current items and metadata, and
+ * `subscriptions.update()` applies what it is sent (an item sent with
+ * `deleted: true` goes; a metadata key set to '' is unset, as Stripe does).
+ * `renewal()` builds the next renewal invoice from the items still there, with
+ * the metadata snapshot Stripe copies onto it, so a test sees what the next
+ * renewal would charge. `failNextUpdate()` makes updates throw a Stripe-like
+ * connection error.
+ */
+export class FakeSubscriptionStore {
+  readonly subscriptions = new Map<string, FakeRunningSubscription>();
+  /** Every update that went through, with what was sent. */
+  readonly updates: Array<{ id: string; params: Record<string, unknown> }> = [];
+  private readonly failing = new Map<string, number>();
+
+  /** A running Subscription with these items (the plan's first). */
+  add(params: { id?: string; items: Array<{ amount: number; product: string; currency?: string }>; metadata?: Record<string, string>; created?: Date; status?: string }): FakeRunningSubscription {
+    const subscription: FakeRunningSubscription = {
+      id: params.id ?? `sub_${randomUUID().replace(/-/g, '').slice(0, 24)}`,
+      object: 'subscription',
+      status: params.status ?? 'active',
+      created: Math.floor((params.created ?? new Date()).getTime() / 1000),
+      metadata: { ...(params.metadata ?? {}) },
+      items: {
+        object: 'list',
+        data: params.items.map((item) => ({
+          id: `si_${randomUUID().replace(/-/g, '').slice(0, 14)}`,
+          price: { id: `price_${randomUUID().replace(/-/g, '').slice(0, 24)}`, product: item.product, unit_amount: item.amount, currency: item.currency ?? 'usd' },
+        })),
+      },
+    };
+    this.subscriptions.set(subscription.id, subscription);
+    return subscription;
+  }
+
+  /** The next `times` updates of this Subscription throw. */
+  failNextUpdate(id: string, times = 1): void {
+    this.failing.set(id, times);
+  }
+
+  retrieve = async (id: string): Promise<FakeRunningSubscription> => {
+    const subscription = this.subscriptions.get(id);
+    if (!subscription) throw Object.assign(new Error(`No such subscription: '${id}'`), { type: 'StripeInvalidRequestError', statusCode: 404 });
+    return structuredClone(subscription);
+  };
+
+  update = async (id: string, params: { items?: Array<{ id?: string; deleted?: boolean }>; metadata?: Record<string, string> } & Record<string, unknown>): Promise<FakeRunningSubscription> => {
+    const remaining = this.failing.get(id) ?? 0;
+    if (remaining > 0) {
+      this.failing.set(id, remaining - 1);
+      throw Object.assign(new Error('An error occurred with our connection to Stripe.'), { type: 'StripeConnectionError' });
+    }
+    const subscription = this.subscriptions.get(id);
+    if (!subscription) throw Object.assign(new Error(`No such subscription: '${id}'`), { type: 'StripeInvalidRequestError', statusCode: 404 });
+    this.updates.push({ id, params });
+    for (const item of params.items ?? []) {
+      if (item.deleted) subscription.items.data = subscription.items.data.filter((i) => i.id !== item.id);
+    }
+    for (const [key, value] of Object.entries(params.metadata ?? {})) {
+      if (value === '') delete subscription.metadata[key];
+      else subscription.metadata[key] = value;
+    }
+    return structuredClone(subscription);
+  };
+
+  /** What the Subscription's items on this Product charge each month (0 once gone). */
+  itemAmount(id: string, product: string): number {
+    return this.subscriptions.get(id)!.items.data.filter((item) => item.price.product === product).reduce((sum, item) => sum + item.price.unit_amount, 0);
+  }
+
+  /** The next renewal invoice: one line per item still on the Subscription. */
+  renewal(id: string, opts: { paymentIntentId?: string } = {}) {
+    const subscription = this.subscriptions.get(id)!;
+    return fakeSubscriptionInvoice({
+      subscriptionId: id,
+      paymentIntentId: opts.paymentIntentId ?? `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`,
+      subscriptionMetadata: { ...subscription.metadata },
+      lines: subscription.items.data.map((item) => ({ amount: item.price.unit_amount, product: item.price.product, currency: item.price.currency })),
+    });
+  }
+}

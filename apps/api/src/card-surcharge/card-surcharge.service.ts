@@ -1,10 +1,14 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
 import { AdminSubRole } from '@prisma/client';
+import { Queue } from 'bullmq';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaPlatformAdminService } from '../common/prisma/prisma-platform-admin.service';
 import { AuditAction, AuditLogService } from '../platform-admin/audit-log.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { readCardSurchargeBps } from '../payments/card-surcharge';
+import { CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE } from '../jobs/queue.constants';
+import { CardSurchargeCountryRemovalJobData } from '../jobs/card-surcharge-country-removal.types';
 import { CardSurchargeSettingsDto, UpdateCardSurchargeSettingsDto } from './dto/card-surcharge.dto';
 
 /**
@@ -21,8 +25,15 @@ import { CardSurchargeSettingsDto, UpdateCardSurchargeSettingsDto } from './dto/
  *   Otherwise the setting is refused. A country taken off the list later
  *   leaves the School's stored % alone; it just stops applying
  *   (card_surcharge_bps(), read when a member pays).
+ * - Taking a country off the list also stops the surcharge on running
+ *   Subscriptions at Schools there, from their next renewal (Decision 419
+ *   item 3): the card-surcharge-country-removal job removes each one's
+ *   surcharge item. Adding the country back doesn't put it back on them;
+ *   only new Subscriptions get it. The owner's own changes still apply only
+ *   when a member next subscribes.
  *
- * Where it is charged: MembershipsService.purchase() (one-off card payments).
+ * Where it is charged: MembershipsService.purchase() (one-off card payments,
+ * and a Subscription's first payment and renewals).
  */
 @Injectable()
 export class CardSurchargeService {
@@ -31,6 +42,7 @@ export class CardSurchargeService {
     private readonly prismaPlatformAdmin: PrismaPlatformAdminService,
     private readonly auditLog: AuditLogService,
     private readonly tenantAuth: TenantAuthorizationService,
+    @InjectQueue(CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE) private readonly countryRemovalQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -61,6 +73,14 @@ export class CardSurchargeService {
       throw new NotFoundException('This country is not on the card surcharge list.');
     }
     await this.auditLog.record({ adminUserId, action: AuditAction.REMOVE_CARD_SURCHARGE_COUNTRY, targetType: 'CardSurchargeCountry', targetId: code });
+    // Decision 419 item 3: running Subscriptions there stop charging it from
+    // their next renewal, in the background (one job per removal).
+    const removedAt = new Date();
+    await this.countryRemovalQueue.add(
+      'remove',
+      { countryCode: code, removedAt: removedAt.toISOString() } satisfies CardSurchargeCountryRemovalJobData,
+      { jobId: `${code}-${removedAt.getTime()}`, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+    );
   }
 
   private async assertBillingOrFullAdmin(adminUserId: string): Promise<void> {
