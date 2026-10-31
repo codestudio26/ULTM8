@@ -1893,6 +1893,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "nicht befördert: der Durchgang brach vorher ab",
       doneTitle: "Schüler befördert",
       notPromoted: "Nicht befördert: {list}.",
+      waitingForFee: "Warten auf ihre Gebühr, daher noch nicht befördert (jeweils befördert, sobald die Gebühr bezahlt oder erlassen ist): {list}.",
       openReport: "Druckbaren Bericht öffnen",
       title: "Diese Schüler befördern",
       intro: "Jeder Schüler steigt auf den Grad unter „Befördern zu“ auf; vorausgewählt ist sein nächster Grad. Lege die Aufrufreihenfolge fest, indem du eine Zeile ziehst, oder mit Hoch und Runter.",

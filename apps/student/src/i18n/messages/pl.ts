@@ -609,6 +609,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Opłata za promocję",
       gradedSelf: "Awansowano Cię na stopień {rank}",
       gradedChild: "{name}: awans na stopień {rank}",
+      gradedSelfAdult: "Awansowano Cię do programu dla dorosłych, na stopień {rank}",
+      gradedChildAdult: "{name}: awans do programu dla dorosłych, na stopień {rank}",
       styleAtSchoolAmount: "{style} · {school} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "Nie udało się wysłać Twojej odpowiedzi — spróbuj ponownie.",

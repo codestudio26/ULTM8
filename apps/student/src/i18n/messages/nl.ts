@@ -592,6 +592,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Promotievergoeding",
       gradedSelf: "Je bent gegradeerd naar {rank}",
       gradedChild: "{name} is gegradeerd naar {rank}",
+      gradedSelfAdult: "Je bent gegradeerd naar het volwassenenprogramma, naar {rank}",
+      gradedChildAdult: "{name} is gegradeerd naar het volwassenenprogramma, naar {rank}",
       styleAtSchoolAmount: "{style} bij {school} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "Je antwoord kon niet worden verstuurd — probeer het opnieuw.",

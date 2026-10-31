@@ -90,6 +90,9 @@ export class BoardFeeRequestDto {
 
   @ApiProperty({ description: '"To decide" only: promoting to toRungId makes no new fee request (Decision 307).' })
   feeFree!: boolean;
+
+  @ApiProperty({ description: 'The grade moves a Kids student into the linked Adult program (backlog 3.20; Decision 419 item 2): toRungId is a rank of the Adult style.' })
+  toAdult!: boolean;
 }
 
 export class GradingBoardItemDto {

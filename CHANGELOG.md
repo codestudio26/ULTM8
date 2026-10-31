@@ -131,6 +131,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   The API takes the picks as `targets` on `POST …/grading/bulk-promote`, and
   each answer row says `toAdult`. No promotion fee is asked for on a move into
   Adult: Decision 397 leaves that open. 15 languages.
+- **Grading: the move from Kids to Adult is charged like any promotion**
+  (backlog 3.20; Decision 419 item 2) — moving a student into the Adult
+  program, from the Grade window or in bulk promote, is now a promotion to the
+  Adult rank they are given. With the School's promotion fee on, that Adult
+  rank's own price is asked for (no price means free); with "Allow grading
+  before the fee is paid" off the move waits ("Waiting for fee") and happens
+  once the fee is paid or the owner waives it, with the coach's grading date;
+  declined shows "Fee declined"; a waived decline or a cancelled fee leaves it
+  "to decide", and moving the student then is fee-free. The student, or a
+  child's Guardian, accepts or declines it in the app, where the card says
+  "graded into the Adult program" and names the Adult style; an accepted fee
+  is a charge like any other. The fee tags and the Waive / Cancel buttons name
+  the rank "Blue Belt (Adult program)"; the Ranks tab shows a move's fee on the
+  Kids style until it applies, then on the Adult style. A single move is now
+  refused while a Kids promotion is waiting for its fee, as bulk promote
+  already did (Decision 314 item 3). Bulk promote's done window now also lists
+  the students waiting for their fee (any priced grade, not only a move into
+  Adult). The API keeps the Kids style as a request's `disciplineId` and adds
+  `toDisciplineId` (the Adult style) to fee requests, `toAdult` to the board's
+  fee request, and `toDisciplineName` to the student's list (migration
+  `20270206000000_kids_adult_promotion_fee`). 15 languages.
 - **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
   — every refund sends the member a "Refund" notice with the amount and where
   it went: refunded to the card, given back, or added to the balance as credit

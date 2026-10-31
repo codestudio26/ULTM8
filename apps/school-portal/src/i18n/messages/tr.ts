@@ -1893,6 +1893,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "terfi etmedi: toplu işlem ondan önce durdu",
       doneTitle: "Öğrenciler terfi etti",
       notPromoted: "Terfi etmeyenler: {list}.",
+      waitingForFee: "Ücretleri bekleniyor, bu yüzden henüz terfi etmediler (her biri ücreti ödendiğinde ya da muaf tutulduğunda terfi eder): {list}.",
       openReport: "Yazdırılabilir raporu aç",
       title: "Bu öğrencileri terfi ettir",
       intro: "Her öğrenci “Terfi edilecek derece”de seçilen dereceye yükselir; başlangıçta sonraki derecesi seçilidir. Çağrı sırasını bir satırı sürükleyerek veya Yukarı ve Aşağı ile belirleyin.",

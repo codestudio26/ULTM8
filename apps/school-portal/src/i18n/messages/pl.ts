@@ -1937,6 +1937,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "nie awansowano: partia zatrzymała się wcześniej",
       doneTitle: "Uczniowie promowani",
       notPromoted: "Nie promowano: {list}.",
+      waitingForFee: "Czekają na opłatę, więc jeszcze nie promowano (każdy awansuje, gdy opłata zostanie zapłacona lub umorzona): {list}.",
       openReport: "Otwórz raport do druku",
       title: "Promuj tych uczniów",
       intro: "Każdy uczeń awansuje na stopień wybrany w „Promuj na”, domyślnie na swój następny stopień. Ustal kolejność wywoływania, przeciągając wiersz lub przyciskami W górę i W dół.",

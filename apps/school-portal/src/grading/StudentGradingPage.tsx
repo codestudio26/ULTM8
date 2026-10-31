@@ -54,6 +54,7 @@ import { DowngradeModal, EditNoteModal, GradeModal, LogClassModal, NoteLogModal,
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { DecideDialog } from './BoardPanels';
+import { feeRankName, feeStyleOf } from './feeRank';
 import { StudentMembershipsCard } from '../membershipPlans/StudentMembershipsCard';
 import { StudentChargesCard } from '../charges/StudentChargesCard';
 import { formatHours } from './hours';
@@ -317,7 +318,7 @@ export function StudentGradingPage() {
             archived={!!discipline.archivedAt}
             firstName={student?.firstName || studentName}
             studentName={studentName}
-            feeRequests={(feeRequests.data?.items ?? []).filter((r) => r.disciplineId === discipline.id)}
+            feeRequests={(feeRequests.data?.items ?? []).filter((r) => feeStyleOf(r) === discipline.id)}
             feeCurrency={feeSettings.data?.currency ?? null}
             styles={disciplines.data?.items ?? []}
             corrections={(corrections.data?.items ?? []).filter((c) => c.disciplineId === discipline.id)}
@@ -644,7 +645,7 @@ function DisciplineGradingCard({
         <DecideDialog
           name={studentName}
           firstName={firstName}
-          rank={fee.request.toRungName}
+          rank={feeRankName(fee.request, t)}
           from={current}
           to={ladder.find((r) => r.id === fee.request.toRungId) ?? null}
           canPromote={can('canPromote')}
@@ -903,6 +904,7 @@ function FeeBox({
   const actionError = waive.error ?? cancel.error ?? dismiss.error;
   const { status, request } = fee;
   const amount = formatMoney(request.amountMinor, request.currency ?? currency);
+  const rank = feeRankName(request, t);
 
   async function closeFee(action: 'waive' | 'cancel') {
     const mutation = action === 'waive' ? waive : cancel;
@@ -924,15 +926,15 @@ function FeeBox({
     >
       <FeeBadge status={status} />
       <p style={{ margin: '8px 0 4px', fontWeight: 600 }}>
-        {status === 'toDecide' ? t('grading.board.fee.noFeeFor', { rank: request.toRungName }) : t('grading.board.fee.amountFor', { amount, rank: request.toRungName })}
+        {status === 'toDecide' ? t('grading.board.fee.noFeeFor', { rank }) : t('grading.board.fee.amountFor', { amount, rank })}
       </p>
       <p className="ultm8-field__hint" style={{ margin: 0 }}>
         {status === 'blocked'
-          ? t('grading.board.fee.blockedText', { name: firstName, rank: request.toRungName })
+          ? t('grading.board.fee.blockedText', { name: firstName, rank })
           : status === 'waiting'
-          ? t('grading.board.fee.waitingText', { name: firstName, rank: request.toRungName })
+          ? t('grading.board.fee.waitingText', { name: firstName, rank })
           : status === 'declined'
-            ? t('grading.board.fee.declinedText', { name: firstName, rank: request.toRungName })
+            ? t('grading.board.fee.declinedText', { name: firstName, rank })
             : t('grading.board.fee.toDecideText', { name: firstName })}
       </p>
       {actionError ? <ErrorBanner message={actionError instanceof ApiError ? actionError.message : t('common.tryAgain')} /> : null}
@@ -951,7 +953,7 @@ function FeeBox({
         ) : null}
         {status === 'toDecide' && canPromote ? (
           <>
-            <Button onClick={onPromote}>{t('grading.board.fee.promoteTo', { rank: request.toRungName })}</Button>
+            <Button onClick={onPromote}>{t('grading.board.fee.promoteTo', { rank })}</Button>
             <Button variant="secondary" onClick={() => dismiss.mutate(request.id)} loading={dismiss.isPending}>
               {t('grading.board.fee.dontPromote')}
             </Button>
@@ -985,7 +987,7 @@ function FeeRequestList({ requests, currency }: { requests: StudentFeeRequest[];
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {requests.slice(0, 5).map((r) => (
           <li key={r.id} style={{ padding: '4px 0', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>{t('grading.student.feeList.row', { rank: r.toRungName, amount: formatMoney(r.amountMinor, r.currency ?? currency) })}</span>
+            <span>{t('grading.student.feeList.row', { rank: feeRankName(r, t), amount: formatMoney(r.amountMinor, r.currency ?? currency) })}</span>
             <Badge variant={FEE_STATUS_BADGE[r.status]}>{t(`grading.student.feeList.status.${r.status}` as TranslationKey)}</Badge>
             {r.charge && r.charge.status !== 'CANCELLED' ? (
               <span className="ultm8-field__hint">

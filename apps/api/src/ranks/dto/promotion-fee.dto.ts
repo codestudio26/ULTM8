@@ -82,6 +82,17 @@ export class PromotionFeeRequestResponseDto {
   @ApiPropertyOptional({ description: 'Student app list only: the style\'s name.' })
   disciplineName?: string;
 
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description:
+      'Set only when the grade moves a Kids student into the linked Adult program (backlog 3.20; Decision 419 item 2): the Adult style, where toRungId is. disciplineId stays the Kids style the student was graded from.',
+  })
+  toDisciplineId!: string | null;
+
+  @ApiPropertyOptional({ description: 'Student app list only, for a move into the Adult program: the Adult style\'s name.' })
+  toDisciplineName?: string;
+
   @ApiProperty({ description: 'The rung the grade moves the student to.' })
   toRungId!: string;
 

@@ -2849,7 +2849,9 @@ model Discipline {
   studentRanks       StudentRank[]
   gradingPermissions GradingPermission[]
   instructorBelts    InstructorBelt[]
-  feeRequests        PromotionFeeRequest[]
+  feeRequests        PromotionFeeRequest[] @relation("PromotionFeeRequestDiscipline")
+  /// Fees for moves into this style from its Kids style (Decision 419 item 2).
+  feeRequestsInto    PromotionFeeRequest[] @relation("PromotionFeeRequestToDiscipline")
   trainingLogs       TrainingLog[]
 
   @@index([schoolId])
@@ -4958,8 +4960,15 @@ model PromotionFeeRequest {
   studentId String
   student   User   @relation("PromotionFeeRequestStudent", fields: [studentId], references: [id], onDelete: Cascade)
 
+  /// The style the student is graded from (where `expectedCurrentRungId` is).
   disciplineId String
-  discipline   Discipline @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  discipline   Discipline @relation("PromotionFeeRequestDiscipline", fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  /// Set only when the grade moves a Kids student into the linked Adult
+  /// program (backlog 3.20; Decision 419 item 2): the Adult style, where
+  /// `toRungId` is. Null for every grade within one style.
+  toDisciplineId String?
+  toDiscipline   Discipline? @relation("PromotionFeeRequestToDiscipline", fields: [toDisciplineId], references: [id], onDelete: Cascade)
 
   /// The rung the grade moves the student to, and the rung they were on when
   /// graded. Plain ids (no foreign key): the request keeps its record if the
@@ -5024,6 +5033,7 @@ model PromotionFeeRequest {
   @@index([schoolId, status])
   @@index([studentId])
   @@index([disciplineId])
+  @@index([toDisciplineId])
   @@index([toDecideAt])
 }
 

@@ -586,6 +586,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "승급 심사비",
       gradedSelf: "{rank}(으)로 승급했습니다",
       gradedChild: "{name}님이 {rank}(으)로 승급했습니다",
+      gradedSelfAdult: "성인 프로그램의 {rank}(으)로 승급했습니다",
+      gradedChildAdult: "{name}님이 성인 프로그램의 {rank}(으)로 승급했습니다",
       styleAtSchoolAmount: "{school}의 {style} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "답변을 보내지 못했습니다. 다시 시도해 주세요.",

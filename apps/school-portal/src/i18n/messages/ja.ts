@@ -1871,6 +1871,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "昇級していません：処理がその前に止まりました",
       doneTitle: "生徒を昇級しました",
       notPromoted: "昇級されなかった生徒：{list}。",
+      waitingForFee: "昇級料の支払い待ちのため、まだ昇級していない生徒（昇級料が支払われるか免除されると昇級します）：{list}。",
       openReport: "印刷用レポートを開く",
       title: "これらの生徒を昇級",
       intro: "各生徒は「昇級先」で選んだ級に上がります。最初は次の級が選ばれています。行をドラッグするか、上へ・下へボタンで呼び出し順を設定します。",

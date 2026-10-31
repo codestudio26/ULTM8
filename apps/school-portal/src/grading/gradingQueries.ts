@@ -299,7 +299,7 @@ const worthRetrying = (err: unknown) => !(err instanceof ApiError && err.status 
  * (`expected`), so one already promoted is skipped, never promoted twice.
  */
 async function bulkPromoteInBatches(schoolId: string, body: BulkPromoteInput): Promise<BulkPromoteResult> {
-  const merged: BulkPromoteResult = { ready: [], needsAcknowledgement: [], cannotPromote: [] };
+  const merged: BulkPromoteResult = { ready: [], needsAcknowledgement: [], cannotPromote: [], waitingForFee: [] };
   for (let i = 0; i < body.studentIds.length; i += BULK_BATCH) {
     const studentIds = body.studentIds.slice(i, i + BULK_BATCH);
     const inBatch = new Set(studentIds);
@@ -337,6 +337,7 @@ async function bulkPromoteInBatches(schoolId: string, body: BulkPromoteInput): P
     merged.ready.push(...part.ready);
     merged.needsAcknowledgement.push(...part.needsAcknowledgement);
     merged.cannotPromote.push(...part.cannotPromote);
+    merged.waitingForFee!.push(...(part.waitingForFee ?? []));
   }
   return merged;
 }

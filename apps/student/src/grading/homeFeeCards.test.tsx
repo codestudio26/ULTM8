@@ -28,6 +28,8 @@ const fee = (id: string, extra: Record<string, unknown> = {}) => ({
 const mockFees = {
   me: [fee('mine'), fee('accepted', { status: 'ACCEPTED', toRungName: 'Blue Belt' }), fee('decide', { toDecide: true, toRungName: 'Brown Belt' })],
   kid: [fee('kids', { toRungName: 'Grey Belt' })],
+  // A move from the Kids program into the Adult program (Decision 419 item 2).
+  teen: [fee('teenMove', { disciplineName: 'BJJ Kids', toDisciplineId: 'adult', toDisciplineName: 'BJJ', toRungName: 'Blue Belt', amountMinor: 3000 })],
 };
 
 async function renderCards(onAnswer = jest.fn()) {
@@ -61,6 +63,25 @@ describe('HomeFeeCards', () => {
     const buttons = await findAllByText('See and answer');
     await fireEvent.press(buttons[1]);
     expect(onAnswer).toHaveBeenCalledWith({ studentId: 'kid', childName: 'Ben' }, expect.objectContaining({ id: 'kids' }));
+  });
+
+  it('names the Adult program and its style for a move from Kids into Adult, for the student and for a guardian', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { findByText, findAllByText } = await render(
+      <QueryClientProvider client={client}>
+        <HomeFeeCards
+          people={[
+            { studentId: 'teen', childName: null },
+            { studentId: 'teen', childName: 'Ana' },
+          ]}
+          onAnswer={jest.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    expect(await findByText('You were graded into the Adult program, to Blue Belt')).toBeTruthy();
+    expect(await findByText('Ana was graded into the Adult program, to Blue Belt')).toBeTruthy();
+    // The Adult style, not the Kids one the student was graded from.
+    expect(await findAllByText(/^BJJ at Alpha Dojo/)).toHaveLength(2);
   });
 
   it('shows nothing when no fee is waiting', async () => {

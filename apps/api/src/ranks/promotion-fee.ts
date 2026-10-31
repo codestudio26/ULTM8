@@ -9,7 +9,10 @@ import { PromotionFeeRequest, PromotionFeeStatus } from '@prisma/client';
  * its fee or is "to decide" (Decision 307). Applied through the normal grading
  * path, with the coach's grading date (Decision 300 item 4). */
 export interface PendingGrade {
-  type: 'PROMOTION' | 'STRIPE_AWARD';
+  /** MOVE_TO_ADULT: a Kids student graded into the linked Adult program
+   * (backlog 3.20; Decision 419 item 2). `targetRungId` is then a rank of the
+   * Adult style (the request's `toDisciplineId`), applied through the move. */
+  type: 'PROMOTION' | 'STRIPE_AWARD' | 'MOVE_TO_ADULT';
   targetRungId: string;
   expectedCurrentRungId: string | null;
   /** The grading date the coach chose (or the day they graded), YYYY-MM-DD in the student's local time. */

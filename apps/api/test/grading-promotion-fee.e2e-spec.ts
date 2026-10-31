@@ -305,7 +305,7 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       const res = await grade('carla', 'pat', 'stripe-award', { effectiveDate: coachDate, note: 'Great guard' });
       expect(res.status).toBe(201);
       expect(res.body.promotionEvent).toBeNull();
-      expect(res.body.feeRequest).toMatchObject({ status: 'PENDING', promotionWaits: true, amountMinor: 1500, currency: 'GBP', toRungId: rung['white-2'].id, promotionEventId: null });
+      expect(res.body.feeRequest).toMatchObject({ status: 'PENDING', promotionWaits: true, amountMinor: 1500, currency: 'GBP', toRungId: rung['white-2'].id, promotionEventId: null, toDisciplineId: null });
       waitingId = res.body.feeRequest.id;
       expect((await rankOf('pat')).currentStripeId).toBe(rung['white-1'].id);
 
@@ -313,7 +313,8 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       expect(n).toMatchObject({ userId: user.pat.id, title: 'Promotion fee', type: 'GRADING_PROMOTION_FEE' });
       expect(n?.body).toMatch(/white-2 \(BJJ\) has a fee of £15\.00/);
 
-      expect(await boardCard('pat')).toMatchObject({ feeStatus: 'waiting', feeRequest: { id: waitingId, toRungId: rung['white-2'].id, promotionApplied: false, feeFree: false } });
+      // A grade within one style: not a move into an Adult program (Decision 419 item 2).
+      expect(await boardCard('pat')).toMatchObject({ feeStatus: 'waiting', feeRequest: { id: waitingId, toRungId: rung['white-2'].id, promotionApplied: false, feeFree: false, toAdult: false } });
       // The coach sees it too (the board's own rule).
       const coachBoard = await http().get(`/v1/schools/${school.id}/grading-board?disciplineId=${bjj.id}`).set(as('carla'));
       expect(coachBoard.body.items.find((i: { studentId: string }) => i.studentId === user.pat.id).feeStatus).toBe('waiting');
