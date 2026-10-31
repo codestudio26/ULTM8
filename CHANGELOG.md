@@ -237,6 +237,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (its own switch, on by default; none for a charge created less than 3 days
   before it is due). Late fees and automatic payment count what a charge owes
   after refunds. Migration `20270114000000_charges_refunds_reports`.
+- **Fixed: "Give pass" and "Record sale" could stay greyed out** on a student's
+  Memberships card when the window opened before the School's plans had loaded.
+  The first plan is now picked as soon as the list arrives.
 - **Charges and member balance, step 1** (backlog 3.6; Decisions 303, 338,
   411) — staff can charge a student for something outside a membership plan,
   such as a rash guard, from a new **Payments** card on the student's page:
