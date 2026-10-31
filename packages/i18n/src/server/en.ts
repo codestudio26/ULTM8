@@ -604,6 +604,7 @@ export const SERVER_MESSAGES: string[] = [
   "A roster name can be at most 60 characters.",
   "The School owner hasn't let you see attendance statistics.",
   "You can only see your own Branches' attendance.",
+  "You can only see your own Branches' growth.",
   "This class hasn't started yet. Check them in instead.",
   "This date is not valid.",
   "The School owner hasn't let you import data.",

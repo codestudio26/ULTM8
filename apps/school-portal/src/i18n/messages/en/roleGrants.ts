@@ -212,7 +212,7 @@ export const roleGrants = {
     freezeMemberships: "Freeze memberships",
     freezeMembershipsHint: "Freeze the memberships of their branches' students, and approve, decline or end freezes. The freeze settings stay yours.",
     attendanceStats: 'See attendance statistics',
-    attendanceStatsHint: 'See check-ins, students per class and classes per student for their branches over the last 30 days.',
+    attendanceStatsHint: "See check-ins, students per class and classes per student for their branches over the last 30 days, and their students' growth over 12 months.",
     memberFiles: "See and manage member files",
     memberFilesHint: "See, upload, download and delete files on their branches' students. Members never see these files.",
     ownerOnly: "Money (payments, refunds, plans and prices), School settings and owners always stay with the School's owners.",

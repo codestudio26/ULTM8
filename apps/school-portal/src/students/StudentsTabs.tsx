@@ -9,8 +9,8 @@ import { useMayImport } from './imports/ImportPage';
 
 /** Students and Check-in sit side by side (DESIGN.md → "Check-in and
  * front-desk mode"), with Sign-ups from the tablet for the people who can
- * approve them (Decision 392), and Attendance (Decision 317). Same tab row
- * as Grading's. */
+ * approve them (Decision 392), Attendance (Decision 317) and Growth
+ * (backlog 5.8). Same tab row as Grading's. */
 export function StudentsTabs() {
   const t = useT();
   const schoolId = useGradingSchoolId();
@@ -25,6 +25,8 @@ export function StudentsTabs() {
     { to: '/check-in', label: 'students.tabs.checkIn' },
     ...(maySeeSignUps ? [{ to: '/students/sign-ups', label: 'students.tabs.signUps' as TranslationKey, count: waiting }] : []),
     ...(attendance.stats || attendance.log ? [{ to: '/students/attendance', label: 'students.tabs.attendance' as TranslationKey }] : []),
+    // Backlog 5.8: the same people as attendance statistics.
+    ...(attendance.stats ? [{ to: '/students/growth', label: 'students.tabs.growth' as TranslationKey }] : []),
     ...(mayImport ? [{ to: '/students/import', label: 'imports.tab' as TranslationKey }] : []),
   ];
   return (

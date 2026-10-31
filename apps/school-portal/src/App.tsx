@@ -30,6 +30,7 @@ import { StudentsPage } from './students/StudentsPage';
 import { SignUpsPage } from './students/SignUpsPage';
 import { RostersPage } from './students/RostersPage';
 import { AttendancePage } from './students/AttendancePage';
+import { GrowthPage } from './students/GrowthPage';
 import { ImportPage } from './students/imports/ImportPage';
 import { CheckInPage } from './frontdesk/CheckInPage';
 import { CheckInRulesPage } from './frontdesk/CheckInRulesPage';
@@ -307,6 +308,17 @@ export function App() {
           <RequireAuth>
             <Shell>
               <AttendancePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* Backlog 5.8: Students → Growth, for the people who see attendance statistics. */}
+      <Route
+        path="/students/growth"
+        element={
+          <RequireAuth>
+            <Shell>
+              <GrowthPage />
             </Shell>
           </RequireAuth>
         }

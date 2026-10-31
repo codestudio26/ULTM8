@@ -1,20 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
-import { isMembershipLive } from '../memberships/membership-creation-guard';
+import { loadActiveStudents } from './active-students';
 import { daysInRange, defaultWeekRange, safeZone } from '../bookings/booking-week';
 import { localDay } from '../ranks/engine';
 import { BirthdaysResponseDto, DashboardOverviewDto, SetupStepKey } from './dto/dashboard.dto';
-
-/** Membership types that make a student "active" (Decision 317 item 5). */
-const ACTIVE_TYPES = ['SUBSCRIPTION', 'CLASS_PACK', 'WEEKLY_PASS', 'TRIAL_MEMBERSHIP'] as const;
 
 /**
  * Decision 374 — the Dashboard items Decisions 317 and 318 decided: Active
  * students, this week's birthdays, and the owner's setup checklist.
  *
- * Visitors and frozen members (Decision 317 item 5's separate numbers) don't
- * exist in ULTM8 yet, so there is nothing to count for them.
+ * Visitors and frozen members (Decision 317 item 5's separate numbers) are
+ * shown on Students → Growth (backlog 5.8), which counts Active the same way.
  */
 @Injectable()
 export class DashboardService {
@@ -26,13 +23,10 @@ export class DashboardService {
   async getOverview(callerId: string, schoolId: string): Promise<DashboardOverviewDto> {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const [school, enrolled, memberships, branch, style, cls, slot, plan, waiver, account, staff, invite] = await Promise.all([
+      const [school, { active }, branch, style, cls, slot, plan, waiver, account, staff, invite] = await Promise.all([
         tx.school.findUnique({ where: { id: schoolId }, select: { setupChecklistHiddenAt: true } }),
-        tx.roleGrant.findMany({ where: { schoolId, role: 'STUDENT', revokedAt: null }, select: { userId: true } }),
-        tx.membership.findMany({
-          where: { schoolId, status: 'ACTIVE', membershipPlan: { type: { in: [...ACTIVE_TYPES] } } },
-          select: { studentId: true, status: true, expiryDate: true, classesRemaining: true },
-        }),
+        // Decision 317 item 5: the same count Students → Growth shows.
+        loadActiveStudents(tx, schoolId),
         tx.branch.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }),
         // A style counts once it has at least one belt.
         tx.discipline.findFirst({ where: { schoolId, archivedAt: null, ranks: { some: { archivedAt: null } } }, select: { id: true } }),
@@ -44,10 +38,6 @@ export class DashboardService {
         tx.roleGrant.findFirst({ where: { schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null }, select: { id: true } }),
         tx.coachInvite.findFirst({ where: { schoolId, acceptedAt: null, cancelledAt: null, expiresAt: { gt: new Date() } }, select: { id: true } }),
       ]);
-
-      const enrolledIds = new Set(enrolled.map((g) => g.userId));
-      const now = new Date();
-      const active = new Set(memberships.filter((m) => enrolledIds.has(m.studentId) && isMembershipLive(m, now)).map((m) => m.studentId));
 
       return {
         activeStudents: active.size,

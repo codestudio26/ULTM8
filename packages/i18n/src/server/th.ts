@@ -766,6 +766,7 @@ export const serverMessages: Record<string, string> = {
   "A child's contact details are changed by their Guardian or the School.": "ข้อมูลติดต่อของเด็กจะเปลี่ยนโดยผู้ปกครองหรือโรงเรียน",
   "The School owner hasn't let you see attendance statistics.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณดูสถิติการเข้าเรียน",
   "You can only see your own Branches' attendance.": "คุณดูการเข้าเรียนได้เฉพาะสาขาของคุณเท่านั้น",
+  "You can only see your own Branches' growth.": "คุณดูการเติบโตได้เฉพาะสาขาของคุณเท่านั้น",
   "This class hasn't started yet. Check them in instead.": "คลาสนี้ยังไม่เริ่ม ให้เช็กอินแทน",
   "This date is not valid.": "วันที่นี้ไม่ถูกต้อง",
   "Attendance can only be logged from {v1} to {v2}.": "บันทึกการเข้าเรียนได้เฉพาะตั้งแต่ {v1} ถึง {v2}",
