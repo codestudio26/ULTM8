@@ -1,9 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsDateString, IsEmail, IsOptional, IsString, IsUUID, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { IsDateString, IsEmail, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength, ValidateNested } from 'class-validator';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
 import { GenderField } from '../../common/decorators/gender-field.decorator';
+import { JOIN_DATE_FORMAT } from '../../tenants/schools/student-join-dates';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -69,6 +70,12 @@ export class AddChildManuallyDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  /** Decision 315 item 4. For an invite, applied when the Guardian accepts. */
+  @ApiPropertyOptional({ description: 'YYYY-MM-DD. The day the child joined; the day they are enrolled when omitted. Not in the future.' })
+  @IsOptional()
+  @Matches(JOIN_DATE_FORMAT, { message: 'Enter the join date as YYYY-MM-DD.' })
+  joinedOn?: string;
 }
 
 export class AddChildManuallyResponseDto {

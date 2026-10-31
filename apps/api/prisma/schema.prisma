@@ -493,6 +493,19 @@ model User {
   kimonoSize     String?
   beltSize       String?
 
+  /// Decision 315 item 5 (backlog 5.2): one secondary phone and one secondary
+  /// email, and an emergency contact (name, phone, relationship) who is not a
+  /// Guardian and has no account. Contact details only: never a login or OTP
+  /// destination. Person-level, on `User` like the address and measurements,
+  /// so edited the same ways (PATCH /users/me, and staff through
+  /// PATCH /schools/{id}/students/{studentId}/profile). Free text, like the
+  /// sign-up's emergency contact (Decision 392). Gone with the User row.
+  secondaryPhone               String?
+  secondaryEmail               String?
+  emergencyContactName         String?
+  emergencyContactPhone        String?
+  emergencyContactRelationship String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -556,6 +569,8 @@ model User {
   frontDeskSessionsEnded            FrontDeskSession[]          @relation("FrontDeskSessionEndedBy")
   staffKioskCodes                   StaffKioskCode[]            @relation("StaffKioskCodeUser")
   studentCheckInCodes               StudentCheckInCode[]        @relation("StudentCheckInCodeStudent")
+  studentJoinDates                  StudentJoinDate[]           @relation("StudentJoinDateStudent")
+  studentJoinDatesSet               StudentJoinDate[]           @relation("StudentJoinDateSetBy")
   bookingAttendeesResolved          BookingAttendee[]           @relation("BookingAttendeeResolvedBy")
   waitlistEntries                   WaitlistEntry[]             @relation("WaitlistEntryStudent")
   guardianLinksAsGuardian           GuardianLink[]              @relation("GuardianLinkGuardian")
@@ -592,12 +607,21 @@ model User {
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
   studentNotesWritten               StudentNote[]               @relation("StudentNoteAuthor")
   studentTags                       StudentTag[]                @relation("StudentTagStudent")
+  customFieldValues                 CustomMemberFieldValue[]    @relation("CustomMemberFieldValueStudent")
+  customStatuses                    StudentCustomStatus[]       @relation("StudentCustomStatusStudent")
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
   medicalInfo                       StudentMedicalInfo[]        @relation("StudentMedicalInfoStudent")
   medicalInfoConsentsGiven          StudentMedicalInfo[]        @relation("StudentMedicalInfoConsentedBy")
+  memberFiles                       MemberFile[]                @relation("MemberFileStudent")
+  memberFilesUploaded               MemberFile[]                @relation("MemberFileUploadedBy")
+  dataImports                       DataImport[]                @relation("DataImportCreatedBy")
+  dataImportRows                    DataImportRow[]             @relation("DataImportRowStudent")
+  signedDocumentExports             SignedDocumentExport[]      @relation("SignedDocumentExportRequestedBy")
   childInvitesReceived              ChildInvite[]               @relation("ChildInviteGuardian")
   childInvitesSent                  ChildInvite[]               @relation("ChildInviteCreatedBy")
   childInvitesChild                 ChildInvite[]               @relation("ChildInviteStudent")
+  rosterMemberships                 RosterMember[]              @relation("RosterMemberStudent")
+  absenceAlerts                     StudentAbsenceAlert[]       @relation("StudentAbsenceAlertStudent")
 
   @@index([email])
   @@index([phone])
@@ -1230,6 +1254,10 @@ model School {
   /// Decision 315 item 10: the School asks for medical information at
   /// sign-up (the tablet and joining in the student app). Off by default.
   medicalInfoEnabled             Boolean                         @default(false)
+  /// Decision 317 item 7: staff are told when a member hasn't checked in for
+  /// this many weeks (1-52). The School sets it; null (the default) sends no
+  /// absence alerts.
+  absenceAlertWeeks              Int?
   /// Backlog 3.18: the School's own colours for the belt editor, shared by
   /// every colour row and every style. `#RRGGBB`, upper case, no repeats, at
   /// most 24. Deleting one never changes a belt or stripe already using it.
@@ -1329,13 +1357,19 @@ model School {
   frontDeskSessions     FrontDeskSession[]
   staffKioskCodes       StaffKioskCode[]
   studentCheckInCodes   StudentCheckInCode[]
+  studentJoinDates      StudentJoinDate[]
 
   notificationBroadcasts NotificationBroadcast[]
   rankCorrectionRequests RankCorrectionRequest[]
   studentNotes           StudentNote[]
   schoolTags             SchoolTag[]
+  customMemberFields     CustomMemberField[]
+  customMemberStatuses   CustomMemberStatus[]
   studentExportLogs      StudentExportLog[]
   studentMedicalInfo     StudentMedicalInfo[]
+  memberFiles            MemberFile[]
+  dataImports            DataImport[]
+  signedDocumentExports  SignedDocumentExport[]
   childInvites           ChildInvite[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
@@ -1345,6 +1379,9 @@ model School {
   balanceEntries         BalanceEntry[]
   chargeRefunds          ChargeRefund[]
   recurringCharges       RecurringCharge[]
+  rosters                Roster[]
+  absenceAlerts          StudentAbsenceAlert[]
+  membershipEndingReports MembershipEndingReport[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -2350,8 +2387,9 @@ model Membership {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
-  freezes      MembershipFreeze[]
+  transactions    Transaction[]
+  freezes         MembershipFreeze[]
+  expiryReminders MembershipExpiryReminder[]
 
   // Phase 11 — this Membership's credit can fund the Student's own seat on a
   // Booking (sourceMembershipId) or a guest's seat via BookingAttendee.
@@ -4684,6 +4722,11 @@ model StaffPermission {
   /// only; off by default; owners always can.
   canExportStudents Boolean @default(false)
 
+  /// Decision 315 item 9 (backlog 5.11): may see and manage the files on the
+  /// students of their own branches. Branch Staff only; off by default;
+  /// owners always can.
+  canManageMemberFiles Boolean @default(false)
+
   /// Decision 303 item 3: may create charges for the students of their own
   /// branches. Null = the role's default: on for Branch Staff, off for
   /// Instructors. Owners always can.
@@ -4704,6 +4747,10 @@ model StaffPermission {
   /// students of their own branches. Branch Staff only; off by default;
   /// owners always can.
   canSeeMedicalInfo     Boolean @default(false)
+  /// Decision 315 items 12, 13: may import members, memberships and past
+  /// attendance from a spreadsheet, for their own Branches. Branch Staff
+  /// only; off by default; owners always can.
+  canImportData Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -5048,6 +5095,35 @@ model StudentCheckInCode {
   @@index([studentId])
 }
 
+/// Decision 315 item 4 (backlog 5.1): the day a student joined a School.
+/// One per student per School, kept when they leave and come back. A trigger
+/// on RoleGrant makes it the day the STUDENT grant is first given, in the
+/// School's timezone (UTC if it has none); staff can set an earlier day,
+/// never a future one. Students enrolled before this existed got the day of
+/// their first STUDENT grant at the School (migration 20270123000000).
+/// Read and written only on the jobs connection, after the API's own checks.
+model StudentJoinDate {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentJoinDateStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  joinedOn DateTime @db.Date
+
+  /// The staff member who last changed it. Null: set when they joined.
+  setById String?
+  setBy   User?   @relation("StudentJoinDateSetBy", fields: [setById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, studentId])
+  @@index([studentId])
+}
+
 /// Decision 392: who is signing up, as chosen on the tablet.
 enum SignUpKind {
   VISITOR
@@ -5322,6 +5398,132 @@ model StudentTag {
   @@index([schoolId, studentId])
 }
 
+/// Backlog 5.11 (Decision 315 item 9): a file on a member (PDF, JPG or PNG,
+/// up to 10 MB), kept in the private R2 bucket under objectKey. Seen only by
+/// the School's owners and the Branch Staff they let manage member files;
+/// never by the member. Jobs connection only (RLS on, no app grant).
+/// Erased with the account: studentId is set to null when the account is
+/// deleted, and the daily entity-offboarding-purge deletes the stored file and
+/// then the row. A purged School's files are deleted by tenant-lifecycle-purge
+/// before the School goes.
+model MemberFile {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  /// Null once the student's account is erased (then purged, see above).
+  studentId String?
+  student   User?   @relation("MemberFileStudent", fields: [studentId], references: [id], onDelete: SetNull)
+
+  /// Null once the uploader's own account is erased.
+  uploadedById String?
+  uploadedBy   User?   @relation("MemberFileUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  /// The name the file was uploaded with (no folders).
+  fileName    String
+  /// application/pdf, image/jpeg or image/png, read from the file's content.
+  contentType String
+  sizeBytes   Int
+  objectKey   String @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, studentId, createdAt])
+  @@index([studentId])
+}
+
+/// Decision 315 item 14: the type of a School's own member field.
+enum CustomMemberFieldType {
+  TEXT
+  NUMBER
+  DATE
+  DROPDOWN
+  YES_NO
+}
+
+/// Decision 315 item 14: a member field the School adds for its students.
+/// Staff-only: no member-facing endpoint ever returns one. Jobs connection
+/// only (RLS on, no app grant).
+model CustomMemberField {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+  type CustomMemberFieldType
+  /// The choices of a DROPDOWN field, in order; empty for the other types.
+  options String[] @default([])
+  /// Order on the student's page, from 0.
+  position Int
+
+  createdAt DateTime @default(now())
+
+  values CustomMemberFieldValue[]
+
+  @@unique([schoolId, name])
+  /// Target of CustomMemberFieldValue's (fieldId, schoolId) key, so a value
+  /// can only ever sit on a student under the field's own School.
+  @@unique([id, schoolId])
+}
+
+/// Decision 315 item 14: a student's value for one of the School's fields,
+/// stored as text in the field type's own form (a number, YYYY-MM-DD, one of
+/// the drop-down's choices, or "true"/"false"). Erased with the account and
+/// with the field. Jobs connection only.
+model CustomMemberFieldValue {
+  fieldId  String
+  schoolId String
+  field    CustomMemberField @relation(fields: [fieldId, schoolId], references: [id, schoolId], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("CustomMemberFieldValueStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  value String
+
+  updatedAt DateTime @updatedAt
+
+  @@id([fieldId, studentId])
+  @@index([schoolId, studentId])
+}
+
+/// Decision 315 item 14: a member status the School adds (up to 50
+/// characters). Staff-only. Jobs connection only.
+model CustomMemberStatus {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+
+  createdAt DateTime @default(now())
+
+  students StudentCustomStatus[]
+
+  @@unique([schoolId, name])
+  /// Target of StudentCustomStatus's (statusId, schoolId) key.
+  @@unique([id, schoolId])
+}
+
+/// Decision 315 item 14: a student's member status at a School (at most one;
+/// none is fine). Cleared when the status is deleted, erased with the
+/// account. Jobs connection only.
+model StudentCustomStatus {
+  schoolId String
+  statusId String
+  status   CustomMemberStatus @relation(fields: [statusId, schoolId], references: [id, schoolId], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentCustomStatusStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@id([schoolId, studentId])
+  @@index([statusId])
+}
+
 /// Decision 315 item 10: a student's medical information at one School,
 /// given at sign-up with explicit consent from the member (their Guardian for
 /// a child). Seen only by the School's owners and Branch Staff the owner
@@ -5372,6 +5574,70 @@ model StudentExportLog {
   createdAt DateTime @default(now())
 
   @@index([schoolId, createdAt])
+}
+
+/// Decision 315 items 12, 13: one spreadsheet import (members, memberships
+/// or past attendance), who ran it and when. The rows are sent in batches and
+/// each row's result is kept (DataImportRow), so a batch sent again returns
+/// the same results instead of importing twice. Jobs connection only (RLS on,
+/// no app grant).
+model DataImport {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  /// MEMBERS, MEMBERSHIPS or ATTENDANCE.
+  kind String
+
+  createdById String?
+  createdBy   User?   @relation("DataImportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  fileName  String?
+  totalRows Int
+
+  createdAt DateTime @default(now())
+
+  rows DataImportRow[]
+
+  @@index([schoolId, createdAt])
+}
+
+/// One spreadsheet row's result in a DataImport. `rowNumber` is its line in
+/// the file (the header is line 1). A new member's imported phone is kept
+/// here: it isn't put on the account, where it would need verifying before
+/// they could sign in. Erased with the member's account. The join date goes
+/// to StudentJoinDate (Decision 315 item 4).
+model DataImportRow {
+  importId String
+  import   DataImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  rowNumber Int
+
+  /// CREATED, SKIPPED or ERROR.
+  outcome  String
+  /// Why it was skipped or refused, or what was done (data-imports/import-rows.ts).
+  code     String?
+  /// The spreadsheet column the problem is in.
+  column   String?
+  message  String?
+  /// Done, with a caveat (e.g. a belt that couldn't be set): [{ code, message }].
+  warnings Json?
+
+  studentId     String?
+  student       User?   @relation("DataImportRowStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  /// What the row made. No foreign keys: this is a record of the import.
+  membershipId  String?
+  bookingId     String?
+  childInviteId String?
+
+  /// A new adult member's imported phone (not put on the account).
+  phone String?
+
+  createdAt DateTime @default(now())
+
+  @@id([importId, rowNumber])
+  @@index([studentId])
 }
 
 /// Decision 408: the Staff page's activity log, who changed what. One row per
@@ -5430,6 +5696,9 @@ model ChildInvite {
   childDateOfBirth DateTime
   /// FEMALE, MALE or null (Decision 315 item 15).
   childGender      String?
+  /// Decision 315 item 4: the join date the owner chose (YYYY-MM-DD), set on
+  /// the child's enrolment when the Guardian accepts. Null: the day accepted.
+  joinedOn         DateTime? @db.Date
 
   status ChildInviteStatus @default(PENDING)
 
@@ -5816,4 +6085,145 @@ model RecurringCharge {
   @@index([schoolId, studentId])
   @@index([studentId])
   @@index([nextDate])
+}
+
+/// Decision 317 item 6: a School's named list of members, for staff (to take
+/// attendance or filter the Students list). Being on a roster doesn't change
+/// who can book (Decision 319 item 2). Staff-only: no member-facing endpoint
+/// returns one. Jobs connection only (RLS on, no app grant).
+model Roster {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+
+  createdAt DateTime @default(now())
+
+  members RosterMember[]
+
+  @@unique([schoolId, name])
+  /// Target of RosterMember's (rosterId, schoolId) key, so a roster can only
+  /// ever hold students under its own School.
+  @@unique([id, schoolId])
+}
+
+/// Decision 317 item 6: a student on a roster. Goes when the roster is
+/// deleted or the student's account is erased. Jobs connection only.
+model RosterMember {
+  rosterId String
+  schoolId String
+  roster   Roster @relation(fields: [rosterId, schoolId], references: [id, schoolId], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("RosterMemberStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  addedAt DateTime @default(now())
+
+  @@id([rosterId, studentId])
+  @@index([schoolId, studentId])
+}
+
+/// Decision 317 item 7: the expiry reminder sent for one end date of a
+/// membership (membership-expiry-reminder job). The key is the end date, so a
+/// reminder goes once per end; a freeze that moves the end later allows one
+/// for the new date. Jobs connection only.
+model MembershipExpiryReminder {
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  /// The end reminded about (Membership.expiryDate, or a cancelled
+  /// Subscription's cancelAt).
+  endsAt DateTime
+
+  sentAt DateTime @default(now())
+
+  @@id([membershipId, endsAt])
+}
+
+/// Decision 317 item 7: the absence alert sent to staff for one absence
+/// spell (student-absence-alert job). `absentSince` is the day the spell
+/// started (the last check-in, else when they became a member or came back
+/// from a freeze), so a new check-in starts a new spell. Jobs connection only.
+model StudentAbsenceAlert {
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentAbsenceAlertStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  absentSince DateTime @db.Date
+
+  sentAt DateTime @default(now())
+
+  @@id([schoolId, studentId, absentSince])
+}
+
+/// Decision 317 item 7: the weekly report to staff of memberships ending soon
+/// (membership-ending-report job), one row per School per week, so it goes
+/// once a week. `weekStart` is the first day of the School's week (its
+/// weekStartsOn, in its time zone). Written even when nothing was ending.
+/// Jobs connection only.
+model MembershipEndingReport {
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  weekStart DateTime @db.Date
+
+  /// How many memberships it listed (0: nothing was sent).
+  listed Int
+
+  sentAt DateTime @default(now())
+
+  @@id([schoolId, weekStart])
+}
+
+/// Decision 315 item 13 (data tools): where an export of every signed
+/// document at a School stands. Built by the signed-documents-export job.
+enum SignedDocumentExportStatus {
+  PENDING
+  /// The job has started building it.
+  RUNNING
+  READY
+  FAILED
+  /// The ZIP was deleted from storage (24 hours after it was made).
+  EXPIRED
+}
+
+/// Decision 315 item 13: one export of every signed waiver at a School as a
+/// ZIP (one HTML document per signature and an index CSV), made by a
+/// background job into the private R2 bucket and downloaded through a
+/// 5-minute signed link. The row stays as the record of who exported and
+/// when; the stored ZIP is deleted 24 hours after it is made (daily sweep),
+/// and with a purged School. Jobs connection only (RLS on, no app grant).
+model SignedDocumentExport {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  /// Null once that account is deleted.
+  requestedById String?
+  requestedBy   User?   @relation("SignedDocumentExportRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+
+  status SignedDocumentExportStatus @default(PENDING)
+  /// The column headings and words the portal sent, in the reader's
+  /// language (SignedDocumentLabelsDto).
+  labels Json
+
+  documentCount Int?
+  sizeBytes     Int?
+  /// Set while the ZIP is stored; null before it is made and once deleted.
+  objectKey     String? @unique
+  /// Why a FAILED export failed (for support; not shown to the School).
+  error         String?
+
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+  /// When the ZIP is deleted: 24 hours after it was made.
+  expiresAt  DateTime?
+
+  @@index([schoolId, createdAt])
+  @@index([status, expiresAt])
 }

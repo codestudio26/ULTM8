@@ -112,6 +112,13 @@ export class StaffAccessDto {
   @ApiProperty({ description: "See the medical information of their branches' students (off by default; Decision 315 item 10)." })
   @IsBoolean()
   seeMedicalInfo!: boolean;
+  @ApiProperty({ description: "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)." })
+  @IsBoolean()
+  memberFiles!: boolean;
+
+  @ApiProperty({ description: 'Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13).' })
+  @IsBoolean()
+  importData!: boolean;
 }
 
 export class StaffAccessResponseDto {

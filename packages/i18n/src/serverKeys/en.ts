@@ -61,6 +61,7 @@ export const server = {
     packNotForSale: 'This pack is no longer sold. Ask at the desk about another plan.',
     rechargeNotPaid: "The pack hasn't been paid for yet.",
     trialEnded: "This School's free trial of ULTM8 has ended. The portal is read-only until it subscribes: no new Classes, Bookings or payments.",
+    mergeBlocked: "These two records can't be merged yet. Open the merge again to see why.",
     correctionNotVerified: "Your belt in this style is still waiting to be checked by the School. They can correct it then.",
     correctionPending: "You already asked for a correction in this style. Wait for the School to answer it.",
     correctionSameRank: "That is the belt you already have. Pick the belt you should have.",
@@ -212,6 +213,14 @@ export const server = {
     chargePaymentLabel: "charge payment",
     chargeDueReminderTitle: "Payment due soon",
     chargeDueReminderBody: "Invoice {invoice} for {description}: {amount} is due on {due}.",
+    // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
+    membershipExpiryTitle: "Membership ending soon",
+    membershipExpiryBody: "Your {plan} membership ends on {date}.",
+    absenceAlertTitle: "Member absent",
+    absenceAlertBody: "{name} hasn't checked in since {date}.",
+    absenceAlertNeverBody: "{name} hasn't checked in yet.",
+    membershipEndingReportTitle: "Memberships ending soon",
+    membershipEndingReportBody: "Memberships ending in the next 7 days: {list}.",
     // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
     chargeRefundTitle: "Refund",
     chargeRefundCardBody: "{amount} was refunded to your card.",

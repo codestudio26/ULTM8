@@ -131,6 +131,45 @@ export class R2ClientService {
     return getSignedUrl(client, command, { expiresIn: 900 });
   }
 
+  /** Writes `body` to `key` in the private bucket. For uploads that pass
+   * through apps/api so their content can be checked first (files on a
+   * member, backlog 5.11: type by content and size), rather than going
+   * straight from the browser through a presigned PUT. */
+  async putObject(key: string, body: Buffer, contentType: string): Promise<void> {
+    const client = this.assertConfigured();
+    await client.send(new PutObjectCommand({ Bucket: this.bucketName, Key: key, Body: body, ContentType: contentType, ContentLength: body.length }));
+  }
+
+  /** Reads `key` from the private bucket, or null when there is no such
+   * object. For the signed-documents export (Decision 315 item 13), which
+   * puts each drawn signature or paper photo inside its document. */
+  async getObject(key: string): Promise<Buffer | null> {
+    const client = this.assertConfigured();
+    try {
+      const res = await client.send(new GetObjectCommand({ Bucket: this.bucketName, Key: key }));
+      if (!res.Body) return null;
+      return Buffer.from(await res.Body.transformToByteArray());
+    } catch (err) {
+      if (err instanceof Error && (err.name === 'NoSuchKey' || err.name === 'NotFound')) return null;
+      throw err;
+    }
+  }
+
+  /** A presigned GET URL for `key` in the private bucket that downloads it as
+   * `fileName` (Content-Disposition: attachment) with `contentType`. Expires
+   * in 5 minutes: the caller asks for it at the moment of download. */
+  async getPresignedFileDownloadUrl(key: string, fileName: string, contentType: string): Promise<string> {
+    const client = this.assertConfigured();
+    const ascii = fileName.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_');
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: key,
+      ResponseContentDisposition: `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      ResponseContentType: contentType,
+    });
+    return getSignedUrl(client, command, { expiresIn: 300 });
+  }
+
   /**
    * FOUND ON REVIEW, before this ever shipped: sign() originally accepted any
    * caller-supplied signatureImageKey that merely matched the expected PREFIX

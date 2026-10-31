@@ -27,6 +27,7 @@ import {
 import { HeardFromCard } from './HeardFromCard';
 import { StudentTagsSettingsCard } from './StudentTagsSettingsCard';
 import { MedicalInfoSettingsCard } from './MedicalInfoSettingsCard';
+import { CustomMemberFieldsSettingsCard } from './CustomMemberFieldsSettingsCard';
 import { FreezeSettingsCard } from './FreezeSettingsCard';
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
@@ -100,6 +101,8 @@ export function SchoolPage() {
         <StudentTagsSettingsCard key={`tags-${schoolId}`} schoolId={schoolId} />
         {/* Decision 315 item 10: medical information at sign-up, off by default. */}
         <MedicalInfoSettingsCard key={`medical-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 315 item 14: the School's own member fields and statuses. */}
+        <CustomMemberFieldsSettingsCard key={`custom-fields-${schoolId}`} schoolId={schoolId} />
         <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />
         <FranchiseAffiliationCard key={`franchise-${schoolId}`} schoolId={schoolId} franchiseId={school.franchiseId ?? null} closed={closed} />
       </fieldset>
@@ -126,6 +129,7 @@ type DetailsForm = {
   checkInOpensMinutesBeforeStart: string;
   checkInCodeDigits: 4 | 6;
   visitorPeriodDays: string;
+  absenceAlertWeeks: string;
   branchStaffCanRecordPayments: boolean;
   weekStartsOn: 'MONDAY' | 'SUNDAY';
   timetableDefaultLayout: 'LIST' | 'GRID';
@@ -150,6 +154,7 @@ function detailsForm(school: SchoolResponse, address: PostalAddress): DetailsFor
     checkInOpensMinutesBeforeStart: String(school.checkInOpensMinutesBeforeStart),
     checkInCodeDigits: school.checkInCodeDigits === 6 ? 6 : 4,
     visitorPeriodDays: school.visitorPeriodDays ? String(school.visitorPeriodDays) : '',
+    absenceAlertWeeks: school.absenceAlertWeeks ? String(school.absenceAlertWeeks) : '',
     branchStaffCanRecordPayments: school.branchStaffCanRecordPayments,
     weekStartsOn: school.weekStartsOn,
     timetableDefaultLayout: school.timetableDefaultLayout,
@@ -212,6 +217,7 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
         checkInOpensMinutesBeforeStart: Number(form.checkInOpensMinutesBeforeStart),
         checkInCodeDigits: form.checkInCodeDigits,
         visitorPeriodDays: form.visitorPeriodDays.trim() === '' ? null : Number(form.visitorPeriodDays),
+        absenceAlertWeeks: form.absenceAlertWeeks.trim() === '' ? null : Number(form.absenceAlertWeeks),
         branchStaffCanRecordPayments: form.branchStaffCanRecordPayments,
         weekStartsOn: form.weekStartsOn,
         timetableDefaultLayout: form.timetableDefaultLayout,
@@ -343,6 +349,18 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
             step={1}
             value={form.visitorPeriodDays}
             onChange={(e) => set('visitorPeriodDays', e.target.value)}
+          />
+        </Field>
+        {/* Decision 317 item 7: staff are told when a member hasn't checked in for this many weeks. Empty: off. */}
+        <Field label={t('schools.form.absenceAlertWeeks')} htmlFor="edit-absence-alert-weeks" hint={t('schools.form.absenceAlertWeeksHint')}>
+          <TextField
+            id="edit-absence-alert-weeks"
+            type="number"
+            min={1}
+            max={52}
+            step={1}
+            value={form.absenceAlertWeeks}
+            onChange={(e) => set('absenceAlertWeeks', e.target.value)}
           />
         </Field>
         {/* Decision 319 §4 (Decision 353, Q8): how the Timetable opens. */}

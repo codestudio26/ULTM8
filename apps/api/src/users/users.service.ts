@@ -1,7 +1,8 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { CONTACT_FIELDS, UpdateUserDto } from './dto/update-user.dto';
 import { addressWriteData } from '../common/address/postal-address.dto';
 
 /**
@@ -34,6 +35,11 @@ const SELF_PROFILE_SELECT = {
   weightCategory: true,
   kimonoSize: true,
   beltSize: true,
+  secondaryPhone: true,
+  secondaryEmail: true,
+  emergencyContactName: true,
+  emergencyContactPhone: true,
+  emergencyContactRelationship: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -43,6 +49,7 @@ export class UsersService {
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
+    private readonly prismaJobs: PrismaJobsService,
   ) {}
 
   /**
@@ -89,6 +96,15 @@ export class UsersService {
    * (`"id" = current_setting('app.current_user_id', true)`) is reached.
    */
   async updateMe(callerId: string, dto: UpdateUserDto) {
+    // A child's contacts are kept by staff or their Guardian, never the child
+    // (Decision 315 item 5 with the Guardian rules of §14). A Guardian-managed
+    // child has no login today (Decision 175); this holds if one ever does.
+    if (CONTACT_FIELDS.some((f) => dto[f] !== undefined)) {
+      const guardian = await this.prismaJobs.guardianLink.findFirst({ where: { studentId: callerId, revokedAt: null }, select: { id: true } });
+      if (guardian) {
+        throw new ForbiddenException("A child's contact details are changed by their Guardian or the School.");
+      }
+    }
     return this.updateProfileFor(callerId, callerId, dto);
   }
 
@@ -175,6 +191,12 @@ export class UsersService {
           weightCategory: dto.weightCategory,
           kimonoSize: dto.kimonoSize,
           beltSize: dto.beltSize,
+          // Decision 315 item 5: same pass-through (null clears).
+          secondaryPhone: dto.secondaryPhone,
+          secondaryEmail: dto.secondaryEmail,
+          emergencyContactName: dto.emergencyContactName,
+          emergencyContactPhone: dto.emergencyContactPhone,
+          emergencyContactRelationship: dto.emergencyContactRelationship,
         },
         select: SELF_PROFILE_SELECT,
       }),

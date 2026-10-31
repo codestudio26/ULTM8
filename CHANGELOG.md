@@ -34,6 +34,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   doesn't know this, so Vancouver classes would have come out an hour off. The
   API (Render, the Docker image) and CI now run Node 22.23.4 (time-zone data
   2026e), and a test fails on any Node whose data is too old.
+
+- **New: member details — join date and other contacts** (Decision 315
+  items 4 and 5; v1.3 backlog 5.1 and 5.2):
+  - **Join date.** Each student has a join date at each School they belong
+    to. It is the day they are added, unless staff set an earlier day (never a
+    future one). Add student has a "Join date" field (today by default), the
+    Students list's "Enrolled" column is now "Joined", and the student's page
+    shows it in a new "Member details" card. Staff change it on Edit profile.
+    Existing students got the day they first joined that School. The student
+    list export uses it too.
+  - **Contacts.** A secondary phone, a secondary email and an emergency
+    contact (name, phone, relationship; not a Guardian, no account). Staff add
+    them on Add student ("+ Secondary phone", "+ Secondary email",
+    "+ Emergency contact", for adults) and on Edit profile, and see them in
+    "Member details". Members edit their own on My Profile in the student
+    app; a child's are kept by the School (a child has no login). They are
+    contact details only, never used to sign in, and are erased with the
+    account.
+  - Migration `20270123000000_member_details`.
+
 - **Fixed: card payments against Stripe's current API** — found on the first
   run against a real Stripe test account. Several calls were written for an
   older Stripe API and failed on the version the app now uses:
@@ -122,6 +142,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   sends none (the dispute notice already says the money goes back). The
   owner's notes are never included. New switch "A refund of a payment" among
   the payment notifications on the School page, on by default. 15 languages.
+- **Students → Growth** (backlog 5.8, Gymdesk G1–G5) — a new Growth tab next
+  to Attendance. Tiles for **Active students** (the Dashboard's own count,
+  Decision 317 item 5 / 374, from the same code so the two always agree),
+  **Visitors** (Decision 391), **Frozen** (a membership frozen today, Decision
+  404), **New this month** (by join date, Decision 315 item 4) and **Cancelled
+  this month** (Subscriptions ended by cancellation); a bar chart of new and
+  cancelled students for each of the last 12 months; and a **By style** table
+  (students holding a rank in each style now, and how many started it). Months
+  are calendar months in the School's time zone. The owner sees the whole
+  School with a Branch filter (by home Branch); Branch Staff with "See
+  attendance statistics" see their own Branches' students. New endpoint
+  `GET /schools/{id}/growth`. 15 languages.
 - **Billing reports: total revenue, charges and memberships** (Decision 414
   item 3) — the Overview now shows revenue in two parts and their total, for
   the period and for each month: **Charges** (payments toward charges less
@@ -134,6 +166,33 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
   gains `memberships` and `total`, and each month `memberships` and `total`.
   15 languages.
+- **Data tools: merge duplicate members, export all signed documents**
+  (Decision 315 item 13; imports are a separate change). **Merge a duplicate**
+  on a student's page: the owner picks the other record of the same person at
+  the School; a preview lists what moves (memberships, payments and charges,
+  bookings and waitlists, belts and grading history, waiver signatures, notes,
+  tags, files and the rest) or why the two can't be merged yet (different
+  Guardians, both on an unlimited membership, the duplicate on a card
+  Subscription, a card payment in progress, a belt in the same style, the same
+  class booked, an open sign-up or invite, and so on). Merging moves the
+  duplicate's records **at this School only** to the kept student, keeps the
+  earlier join date, and ends the duplicate's enrolment there, in one
+  transaction, with a line in the Staff page's activity log. The duplicate's
+  account and login, and anything they have at other Schools, never change.
+  Waiver signatures are legal records: none is deleted or rewritten; where
+  both signed the same waiver, the duplicate's signature stays on the
+  duplicate's record. **Export signed documents** on the Waivers page: a ZIP
+  of every signed waiver at the School (members' and guests', expired ones
+  included), one HTML document per signature with the drawn signature or paper
+  photo inside it (opens in a browser, prints to PDF), and `index.csv`
+  (member, document, version, signed at, signed by, with the Guardian or
+  paper marked), in the owner's language. Made by a background job into the
+  private bucket, downloaded through a 5-minute link, deleted after 24 hours.
+  Both are School-owner only. New endpoints `GET/POST
+  /schools/{schoolId}/students/{studentId}/merge[/preview]` and
+  `/schools/{schoolId}/signed-documents/exports` (`POST`, `GET latest`,
+  `GET {id}`, `GET {id}/download`). 15 languages. **Needs a database
+  migration** (`20270204000000_data_tools_merge_export`).
 - **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
   its own list of tags, managed under **School settings → Student tags** (add,
   rename, delete; deleting a tag takes it off every student). A **Tags** card
@@ -192,6 +251,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   - Migration `20270123000000_attendance_stats_and_past`; new endpoints
     `GET /schools/{id}/attendance/stats`, `GET /schools/{id}/attendance/log-classes`
     and `POST /schools/{id}/attendance/logs`.
+- **Files on a member (Documents)** — backlog 5.11, Decision 315 item 9. A new
+  Documents section on the student's page: upload a PDF, JPG or PNG (up to
+  10 MB each), see the list (name, size, date, who uploaded), download and
+  delete. The type is read from the file's content, not only its name, and the
+  size is checked by the server. Files are kept in the private storage bucket
+  and downloaded through a link that works for 5 minutes. Only the School's
+  owners see them, and Branch Staff the owner switches on with the new
+  "See and manage member files" access (off by default, in neither preset),
+  for their own branches' students; the member and their Guardian never do.
+  Files are erased with the member's account and when a closed School is
+  purged (the stored file first, then its record; if storage can't be reached
+  both stay and the next daily sweep tries again). Migration
+  `20270125000000_member_files`.
 - **Currency first** (backlog 3.6; Decision 414 item 6) — until the School has
   set its currency on the School page, no price can be saved: membership
   plans, belt prices for promotion fees, charges, recurring charges, credit,
@@ -262,6 +334,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   read-only; the member is notified of a new invoice, a receipt and a
   cancelled charge. **Needs a database migration**
   (`20270112000000_charges_and_balance`).
+- **Import from a spreadsheet** (backlog 5.13; Decision 315 items 12 and 13) —
+  a new **Students → Import** tab brings in members, memberships and past
+  attendance from a CSV file, with a template to download for each. Every row
+  is checked first in a preview that changes nothing (to import, skipped with
+  the reason, or an error with the reason); then the file is imported in
+  batches, and a batch sent again after a dropped connection imports nothing
+  twice. At most 2,000 rows per file. **Members** are made as Add manually
+  makes them: an account, a temporary passcode by email, the home branch,
+  the join date,
+  gender Female/Male/empty, and belts per style matched by name to the
+  School's own styles and belts. A row whose email already has an account is
+  skipped and listed. A child (under 18) is added with their Guardian's email:
+  a new Guardian gets an account with a temporary passcode; one who already
+  has an account gets an invite to accept in the app. **Memberships** are
+  recorded against the School's plans by name, with their dates and no
+  payment (a Subscription is card-only, so it isn't imported). **Past
+  attendance** is logged as "Log attendance" logs it: up to 30 days back,
+  counting like a check-in, never twice. The owner can import; Branch Staff
+  need the new "Import data" switch and reach only their own branches' students
+  (adding a child stays the owner's). Results can be downloaded as CSV. **Needs
+  a database migration** (`20270202000000_data_imports`).
 - **Freezing a membership: follow-ups** (backlog 3.4; Decision 409) —
   approving a freeze now cancels the member's bookings on the frozen days that
   the frozen membership paid for (no late fee; the place goes to the waitlist),
@@ -275,6 +368,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Transactions page. The Freezing memberships card notes that Stripe shows a
   frozen subscription as a trial. **Needs a database migration**
   (`20270111000000_freeze_follow_ups`).
+- **Custom member fields and statuses** (Decision 315 item 14) — each School
+  adds its own member fields (text, number, date, drop-down, yes/no) and its
+  own member statuses (up to 50 characters) under **School settings → Member
+  fields and statuses**: fields can be added, renamed, reordered and deleted
+  (deleting one deletes every student's value; a drop-down's choices can be
+  changed, and a student whose choice goes loses it), statuses added, renamed
+  and deleted (deleting one clears it from every student). A **Member fields**
+  card on the student's page sets the student's member status and values,
+  each checked against its field's type. The Students list gains a **Member
+  status** filter and column, and a **Member field** filter: pick a field,
+  then a value (a drop-down's choice or yes/no; a number or date matches
+  exactly; text matches when the value contains it). Staff-only, like tags: no member or Guardian
+  screen or API reply shows them, and they are for the staff who can edit the
+  student's details. Erased with the student's account and with the School.
+  **Needs a database migration** (`20270131000000_custom_member_fields`).
 - **Charges and member balance, step 2: paying in the app** (backlog 3.6;
   Decisions 303, 338, 406) — in the student app's **Invoices**, a member (or a
   Guardian, for a child) can **Pay balance** or **Pay** a single charge by card
@@ -325,7 +433,28 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   or endpoint shows it. It is erased with the student's account (also when a
   Guardian withdraws a child's baseline consent) and with the School, including
   a closed School that is kept anonymised for its waivers. **Needs a database
-  migration** (`20270131000000_medical_info`).
+  migration** (`20270205000000_medical_info`).
+- **Rosters and reminders** (Decision 317 items 6 and 7):
+  - **Rosters**: named lists of students for staff. Students → "Manage
+    rosters" creates, renames and deletes them and adds or removes students.
+    The Students list has a Roster filter, and a class's Roll call can show
+    one roster's booked students. Being on a roster doesn't change who can
+    book, and students never see rosters. Staff see and change only the
+    students of their own branches; Branch Staff need the Students switch to
+    change rosters.
+  - **Membership ending soon**: a daily reminder to the member 7 days before a
+    membership ends (a child's Guardian gets it as "For {name}: …"), once per
+    end date. Friend Passes and visit passes get none.
+  - **Member absent**: a daily alert to the School's owners when a member
+    hasn't checked in for the number of weeks set on the School page
+    ("Absence alert (weeks)"; empty, the default, turns it off). Once per
+    absence; a new check-in starts a new one.
+  - **Memberships ending soon** (weekly report): on the first day of the
+    School's week, the owners get one notice listing the memberships ending in
+    the next 7 days (the same memberships as the reminder above). Nothing is
+    sent when none are ending.
+  - The "+ Log attendance" student picker can be narrowed to a roster.
+  - Migration `20270126000000_rosters_and_reminders`.
 - **Paying a promotion fee** (backlog 3.6 step 6; Decisions 300, 303) — when a
   student, or a Guardian for a child, accepts a promotion fee, it becomes an
   invoice on the student's balance: the rank it is for, the fee with the

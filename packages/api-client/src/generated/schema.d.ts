@@ -5396,6 +5396,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/growth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GrowthController_growth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff/{userId}/teaching": {
         parameters: {
             query?: never;
@@ -6068,6 +6084,294 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/custom-member-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_listFields"];
+        put?: never;
+        post: operations["CustomMemberFieldsController_createField"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-fields/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CustomMemberFieldsController_reorderFields"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_fieldMatches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CustomMemberFieldsController_deleteField"];
+        options?: never;
+        head?: never;
+        patch: operations["CustomMemberFieldsController_updateField"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-statuses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_listStatuses"];
+        put?: never;
+        post: operations["CustomMemberFieldsController_createStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-statuses/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_statusAssignments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-statuses/{statusId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CustomMemberFieldsController_deleteStatus"];
+        options?: never;
+        head?: never;
+        patch: operations["CustomMemberFieldsController_renameStatus"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/custom-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_studentValues"];
+        put: operations["CustomMemberFieldsController_setStudentValues"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/custom-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CustomMemberFieldsController_setStudentStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberFilesController_list"];
+        put?: never;
+        post: operations["MemberFilesController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/files/{fileId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberFilesController_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/files/{fileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["MemberFilesController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/merge/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberMergeController_preview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MemberMergeController_merge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/signed-documents/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignedDocumentsExportController_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/signed-documents/exports/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignedDocumentsExportController_latest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/signed-documents/exports/{exportId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignedDocumentsExportController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/signed-documents/exports/{exportId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignedDocumentsExportController_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/add-child-manually": {
         parameters: {
             query?: never;
@@ -6612,6 +6916,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/rosters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RostersController_list"];
+        put?: never;
+        post: operations["RostersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rosters/{rosterId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["RostersController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["RostersController_rename"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rosters/{rosterId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RostersController_students"];
+        put?: never;
+        post: operations["RostersController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rosters/{rosterId}/students/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["RostersController_removeStudent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataImportsController_limits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataImportsController_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataImportsController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports/{importId}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataImportsController_importRows"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports/{importId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataImportsController_find"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6770,6 +7218,8 @@ export interface components {
             checkInOpensMinutesBeforeStart?: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 317 item 7: staff are told when a member hasn't checked in for this many weeks (1-52). Null (the default) turns absence alerts off. */
+            absenceAlertWeeks?: number | null;
             /** @description Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90). */
             freezeMaxDaysPer12Months?: number;
             /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
@@ -6931,6 +7381,8 @@ export interface components {
             chargeNoticeRefund: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 317 item 7: weeks without a check-in before staff get an absence alert. Null: off. */
+            absenceAlertWeeks?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
             heardFromOptions?: string[] | null;
             /** @description Decision 315 item 10: the School asks for medical information at sign-up (off by default). */
@@ -7021,6 +7473,8 @@ export interface components {
             checkInOpensMinutesBeforeStart?: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 317 item 7: staff are told when a member hasn't checked in for this many weeks (1-52). Null (the default) turns absence alerts off. */
+            absenceAlertWeeks?: number | null;
             /** @description Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90). */
             freezeMaxDaysPer12Months?: number;
             /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
@@ -7119,6 +7573,8 @@ export interface components {
             guardianManaged: boolean;
             profilePhotoUrl?: string | null;
             enrolledAt: string;
+            /** @description YYYY-MM-DD: the day they joined this School. */
+            joinedOn?: string | null;
             status: components["schemas"]["StudentStatus"];
             homeBranchId?: string | null;
             homeBranchName?: string | null;
@@ -7155,6 +7611,8 @@ export interface components {
             dateOfBirth?: string | null;
             status: components["schemas"]["StudentStatus"];
             enrolledAt: string;
+            /** @description YYYY-MM-DD: the day they joined this School (Decision 315 item 4). */
+            joinedOn?: string | null;
             homeBranchName?: string | null;
             visitor: boolean;
             /** @description Memberships in effect now, by plan name. */
@@ -7186,7 +7644,7 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
-        UserResponseDto: {
+        StudentProfileResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
             addressLine1?: string | null;
             addressLine2?: string | null;
@@ -7216,8 +7674,18 @@ export interface components {
             kimonoSize?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). */
             beltSize?: string | null;
+            /** @description Decision 315 item 5. Not a login. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. */
+            secondaryEmail?: string | null;
+            /** @description Decision 315 item 5: not a Guardian, no account. */
+            emergencyContactName?: string | null;
+            emergencyContactPhone?: string | null;
+            emergencyContactRelationship?: string | null;
             createdAt: string;
             updatedAt: string;
+            /** @description YYYY-MM-DD: the day they joined this School. */
+            joinedOn?: string | null;
         };
         StudentGuardianDto: {
             id: string;
@@ -7273,6 +7741,21 @@ export interface components {
             kimonoSize?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             beltSize?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryEmail?: string | null;
+            /** @description Emergency contact's name (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactName?: string | null;
+            /** @description Emergency contact's phone (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactPhone?: string | null;
+            /** @description How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactRelationship?: string | null;
+            /**
+             * @description YYYY-MM-DD. The day the student joined this School; not in the future.
+             * @example 2025-09-01
+             */
+            joinedOn?: string;
         };
         JoinSchoolDto: {
             /** @description Enroll this person at the School instead of the caller — a Guardian enrolling a linked minor, or School Owner/Manager staff enrolling an already-registered person who found via the invite-candidate lookup (schools/:id/role-grants/invite-candidate). */
@@ -7587,6 +8070,16 @@ export interface components {
             emailSent: boolean;
         };
         CreateStudentManuallyDto: {
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryEmail?: string | null;
+            /** @description Emergency contact's name (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactName?: string | null;
+            /** @description Emergency contact's phone (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactPhone?: string | null;
+            /** @description How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactRelationship?: string | null;
             firstName: string;
             surname: string;
             email: string;
@@ -7594,6 +8087,8 @@ export interface components {
             dateOfBirth: string;
             /** @description Required when the School has open branches: the home branch. */
             branchId?: string;
+            /** @description YYYY-MM-DD. The day they joined; today when omitted. Not in the future. */
+            joinedOn?: string;
         };
         CreateStudentManuallyResponseDto: {
             id: string;
@@ -7630,6 +8125,10 @@ export interface components {
             attendanceStats: boolean;
             /** @description See the medical information of their branches' students (off by default; Decision 315 item 10). */
             seeMedicalInfo: boolean;
+            /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
+            memberFiles: boolean;
+            /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */
+            importData: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -7703,7 +8202,7 @@ export interface components {
         StaffActivityEntryDto: {
             id: string;
             /** @enum {string} */
-            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED";
+            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED" | "MEMBERS_MERGED";
             /** @description Who made the change; null once their account is deleted. */
             actorId: string | null;
             /** @description First name and surname of who made the change. */
@@ -8148,6 +8647,47 @@ export interface components {
             lastSeenAt: string;
             createdAt: string;
         };
+        UserResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
+            id: string;
+            email: string;
+            phone: string;
+            /** @description Set once Twilio Verify OTP confirms this phone; null if not yet verified. */
+            phoneVerifiedAt?: string | null;
+            firstName: string;
+            surname: string;
+            username?: string | null;
+            dateOfBirth: string;
+            gender?: string | null;
+            nationality?: string | null;
+            language?: string | null;
+            currency?: string | null;
+            address?: string | null;
+            profilePhotoUrl?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string | null;
+            /** @description Decision 315 item 5. Not a login. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. */
+            secondaryEmail?: string | null;
+            /** @description Decision 315 item 5: not a Guardian, no account. */
+            emergencyContactName?: string | null;
+            emergencyContactPhone?: string | null;
+            emergencyContactRelationship?: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
         UpdateUserDto: {
             firstName?: string;
             surname?: string;
@@ -8177,6 +8717,16 @@ export interface components {
             kimonoSize?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             beltSize?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryEmail?: string | null;
+            /** @description Emergency contact's name (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactName?: string | null;
+            /** @description Emergency contact's phone (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactPhone?: string | null;
+            /** @description How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactRelationship?: string | null;
         };
         ClassStyleInputDto: {
             /** @description A style (Discipline) of this School. */
@@ -11551,6 +12101,39 @@ export interface components {
             today: string;
             items: components["schemas"]["BirthdayDto"][];
         };
+        GrowthMonthDto: {
+            /** @description The month, YYYY-MM, in the School's time zone. */
+            month: string;
+            /** @description Students whose join date at the School (StudentJoinDate) falls in this month. */
+            newStudents: number;
+            /** @description Students whose Subscription ended by cancellation (Membership.cancelAt) in this month, up to now. */
+            cancelled: number;
+        };
+        GrowthProgrammeDto: {
+            disciplineId: string;
+            /** @description The style's name, as the School typed it. */
+            name: string;
+            /** @description Enrolled students holding a rank in this style now. */
+            students: number;
+            /** @description Students who started this style (their rank in it was created) each month, in the same order as `months`. */
+            newByMonth: number[];
+        };
+        GrowthResponseDto: {
+            /** @description The School's time zone the months are in (UTC when the School has none). */
+            timeZone: string;
+            /** @description The home Branches counted; null means the whole School. */
+            branchIds: string[] | null;
+            /** @description Active students now (Decision 317 item 5, the Dashboard's count): enrolled, with a Subscription, a Class Pack with credits left, a Weekly Pass or a Trial in effect. */
+            activeStudents: number;
+            /** @description Enrolled students who are Visitors now (Decision 391: a visit pass and no other membership since). */
+            visitors: number;
+            /** @description Enrolled students with a membership frozen today (Decision 404). */
+            frozen: number;
+            /** @description The last 12 months, oldest first; the last is the current month. */
+            months: components["schemas"]["GrowthMonthDto"][];
+            /** @description The School's styles that aren't archived, by name. */
+            programmes: components["schemas"]["GrowthProgrammeDto"][];
+        };
         StaffTeachingResponseDto: {
             /** @description Upcoming classes they teach here (not ended, cancelled or archived). */
             upcomingClasses: number;
@@ -12005,6 +12588,227 @@ export interface components {
             /** @description A new tag, added to the School's list. Send this or tagId. */
             name?: string;
         };
+        /** @enum {string} */
+        CustomMemberFieldType: "TEXT" | "NUMBER" | "DATE" | "DROPDOWN" | "YES_NO";
+        CustomMemberFieldDto: {
+            id: string;
+            name: string;
+            type: components["schemas"]["CustomMemberFieldType"];
+            options: string[];
+            /** @description Order on the student page, from 0. */
+            position: number;
+        };
+        CustomMemberFieldListDto: {
+            items: components["schemas"]["CustomMemberFieldDto"][];
+        };
+        CustomMemberFieldCreateDto: {
+            name: string;
+            type: components["schemas"]["CustomMemberFieldType"];
+            /** @description A drop-down's choices, in order. Only for DROPDOWN, which needs at least one. */
+            options?: string[];
+        };
+        CustomMemberFieldOrderDto: {
+            /** @description Every one of the School's field ids, in the new order. */
+            fieldIds: string[];
+        };
+        CustomFieldMatchesDto: {
+            /** @description The students whose value matches that the caller covers. */
+            studentIds: string[];
+        };
+        CustomMemberFieldUpdateDto: {
+            name?: string;
+            /** @description A drop-down's new choices, in order. Students whose value is no longer a choice lose it. */
+            options?: string[];
+        };
+        CustomMemberStatusDto: {
+            id: string;
+            name: string;
+            /** @description How many students have this status. */
+            studentCount: number;
+        };
+        CustomMemberStatusListDto: {
+            items: components["schemas"]["CustomMemberStatusDto"][];
+        };
+        CustomMemberStatusNameDto: {
+            name: string;
+        };
+        StudentCustomStatusAssignmentDto: {
+            studentId: string;
+            statusId: string;
+        };
+        StudentCustomStatusAssignmentListDto: {
+            /** @description The students with a status that the caller covers. */
+            items: components["schemas"]["StudentCustomStatusAssignmentDto"][];
+        };
+        StudentCustomFieldValueDto: {
+            id: string;
+            name: string;
+            type: components["schemas"]["CustomMemberFieldType"];
+            options: string[];
+            /** @description Order on the student page, from 0. */
+            position: number;
+            /** @description The value as text: a number, YYYY-MM-DD, one of the choices, or "true"/"false". Null when empty. */
+            value: string | null;
+        };
+        StudentCustomFieldsDto: {
+            fields: components["schemas"]["StudentCustomFieldValueDto"][];
+            /** @description The student's member status at this School, or null. */
+            statusId: string | null;
+        };
+        SetCustomFieldValueDto: {
+            fieldId: string;
+            /** @description Null or empty clears the value. */
+            value: string | null;
+        };
+        SetCustomFieldValuesDto: {
+            /** @description Only the fields listed change. */
+            values: components["schemas"]["SetCustomFieldValueDto"][];
+        };
+        SetStudentCustomStatusDto: {
+            /** @description A status from the School list, or null for none. */
+            statusId: string | null;
+        };
+        MemberFileDto: {
+            id: string;
+            /** @description The name the file was uploaded with. */
+            fileName: string;
+            /** @enum {string} */
+            contentType: "application/pdf" | "image/jpeg" | "image/png";
+            /** @description Size in bytes. */
+            sizeBytes: number;
+            /** @description Who uploaded it; null once their account is gone. */
+            uploadedByName?: string | null;
+            createdAt: string;
+        };
+        MemberFileListDto: {
+            items: components["schemas"]["MemberFileDto"][];
+        };
+        UploadMemberFileDto: {
+            /**
+             * Format: binary
+             * @description A PDF, JPG or PNG file, up to 10 MB.
+             */
+            file: string;
+        };
+        MemberFileDownloadDto: {
+            /** @description A link that downloads the file. It works for 5 minutes. */
+            url: string;
+        };
+        MergePersonDto: {
+            id: string;
+            name: string;
+        };
+        /** @enum {string} */
+        MergeBlockerCode: "GUARDIANS_DIFFER" | "BOTH_UNLIMITED_MEMBERSHIPS" | "DUPLICATE_HAS_SUBSCRIPTION" | "PENDING_CARD_PAYMENT" | "OPEN_PACK_RECHARGE" | "SAME_STYLE_RANK" | "SAME_STYLE_CORRECTION" | "SAME_CLASS_BOOKED" | "SAME_CLASS_WAITLIST" | "OPEN_SIGN_UP" | "PENDING_CHILD_INVITE";
+        MergeBlockerDto: {
+            code: components["schemas"]["MergeBlockerCode"];
+            /** @description Style names or class titles the reason is about, when there are any. */
+            details: string[];
+        };
+        MergeRecordCountsDto: {
+            Membership: number;
+            MembershipFreeze: number;
+            PackRecharge: number;
+            Transaction: number;
+            Booking: number;
+            WaitlistEntry: number;
+            StudentRank: number;
+            StudentRankSkillStatus: number;
+            PromotionEvent: number;
+            PromotionEventNoteLog: number;
+            SkillSignOffLog: number;
+            TrainingLog: number;
+            RankCorrectionRequest: number;
+            PromotionFeeRequest: number;
+            Charge: number;
+            ChargeAllocation: number;
+            BalanceEntry: number;
+            ChargeRefund: number;
+            RecurringCharge: number;
+            StudentNote: number;
+            MemberFile: number;
+            ChildInvite: number;
+            SignUp: number;
+            Favorite: number;
+            WatchHistory: number;
+            StudentTag: number;
+            RosterMember: number;
+            StudentAbsenceAlert: number;
+            CustomMemberFieldValue: number;
+            StudentHomeBranch: number;
+            StudentCheckInCode: number;
+            StudentJoinDate: number;
+            StudentCustomStatus: number;
+            WaiverSignature: number;
+        };
+        MergePreviewDto: {
+            /** @description The record that is kept. */
+            kept: components["schemas"]["MergePersonDto"];
+            /** @description The record merged into it. */
+            duplicate: components["schemas"]["MergePersonDto"];
+            /** @description Why the two records cannot be merged yet; empty when they can. */
+            blockers: components["schemas"]["MergeBlockerDto"][];
+            /** @description The duplicate's rows at this School, per table. */
+            records: components["schemas"]["MergeRecordCountsDto"];
+        };
+        MergeDuplicateDto: {
+            /** @description The duplicate record: merged into the student in the path, then no longer a Student here. */
+            duplicateId: string;
+        };
+        MergeResultDto: {
+            keptStudentId: string;
+            duplicateStudentId: string;
+            /** @description Rows moved to the kept record, per table. */
+            records: components["schemas"]["MergeRecordCountsDto"];
+            /** @description Signed waivers both had signed: the duplicate's copy stays on the duplicate's record. */
+            waiverSignaturesLeft: number;
+        };
+        SignedDocumentLabelsDto: {
+            member?: string;
+            document?: string;
+            version?: string;
+            signedAt?: string;
+            signedBy?: string;
+            file?: string;
+            guardian?: string;
+            onPaper?: string;
+            guest?: string;
+            signedName?: string;
+            signature?: string;
+            recordedBy?: string;
+            textSigned?: string;
+            notRecorded?: string;
+            imageMissing?: string;
+            expired?: string;
+        };
+        CreateSignedDocumentExportDto: {
+            /** @description The index's column headings and the documents' words, in the reader's language. */
+            labels?: components["schemas"]["SignedDocumentLabelsDto"];
+        };
+        /** @enum {string} */
+        SignedDocumentExportStatus: "PENDING" | "RUNNING" | "READY" | "FAILED" | "EXPIRED";
+        SignedDocumentExportDto: {
+            id: string;
+            status: components["schemas"]["SignedDocumentExportStatus"];
+            /** @description Signed documents in the ZIP, once it is made. */
+            documentCount?: number | null;
+            /** @description The ZIP's size in bytes, once it is made. */
+            sizeBytes?: number | null;
+            /** @description Who asked for it; null once their account is gone. */
+            requestedByName?: string | null;
+            createdAt: string;
+            finishedAt?: string | null;
+            /** @description When the ZIP is deleted (24 hours after it is made). */
+            expiresAt?: string | null;
+        };
+        LatestSignedDocumentExportDto: {
+            /** @description The School's most recent export, or null. */
+            export?: components["schemas"]["SignedDocumentExportDto"] | null;
+        };
+        SignedDocumentExportDownloadDto: {
+            /** @description A link that downloads the ZIP. It works for 5 minutes. */
+            url: string;
+        };
         ChildDetailsDto: {
             firstName: string;
             surname: string;
@@ -12027,6 +12831,8 @@ export interface components {
             guardian: components["schemas"]["GuardianDetailsDto"];
             /** @description Required when the School has open branches: the child's home branch. */
             branchId?: string;
+            /** @description YYYY-MM-DD. The day the child joined; the day they are enrolled when omitted. Not in the future. */
+            joinedOn?: string;
         };
         AddChildManuallyResponseDto: {
             /**
@@ -12793,6 +13599,116 @@ export interface components {
             /** @description "I confirm late fees are legal where my School operates." Required (true) to switch late fees on, or to save them while on. */
             legalConfirmed?: boolean;
         };
+        RosterDto: {
+            id: string;
+            name: string;
+            /** @description How many current students the caller covers are on it. */
+            memberCount: number;
+        };
+        RosterListDto: {
+            items: components["schemas"]["RosterDto"][];
+        };
+        RosterNameDto: {
+            name: string;
+        };
+        RosterStudentsDto: {
+            /** @description The current students on this roster that the caller covers. */
+            studentIds: string[];
+        };
+        AddRosterStudentsDto: {
+            /** @description Students of this School to add. Ones already on the roster are left as they are. */
+            studentIds: string[];
+        };
+        ImportLimitsDto: {
+            maxRows: number;
+            maxRowsPerRequest: number;
+            /** @description Past attendance can be imported this many days back (Decision 317 item 4). */
+            attendanceMaxDaysBack: number;
+            /** @description Each kind's columns, in template order. */
+            columns: {
+                [key: string]: string[];
+            };
+        };
+        /** @enum {string} */
+        ImportKind: "MEMBERS" | "MEMBERSHIPS" | "ATTENDANCE";
+        ImportRowDto: {
+            /** @description The line in the file; the header row is line 1. */
+            rowNumber: number;
+            /** @description Cells by column name, as the template names them. */
+            values: {
+                [key: string]: string;
+            };
+        };
+        PreviewImportDto: {
+            kind: components["schemas"]["ImportKind"];
+            rows: components["schemas"]["ImportRowDto"][];
+        };
+        /**
+         * @description READY: a preview row that would be imported. CREATED: imported.
+         * @enum {string}
+         */
+        ImportRowOutcome: "READY" | "CREATED" | "SKIPPED" | "ERROR";
+        /**
+         * @description What will be or was done, or why the row is skipped or refused. FAILED: see message.
+         * @enum {string}
+         */
+        ImportRowCode: "NEW_MEMBER" | "NEW_CHILD_NEW_GUARDIAN" | "NEW_CHILD_GUARDIAN_INVITED" | "NEW_MEMBERSHIP" | "NEW_ATTENDANCE" | "EMAIL_EXISTS" | "DUPLICATE_IN_FILE" | "INVITE_PENDING" | "ALREADY_MEMBER" | "ALREADY_IMPORTED" | "ALREADY_ATTENDED" | "MISSING_VALUE" | "TOO_LONG" | "INVALID_EMAIL" | "INVALID_PHONE" | "INVALID_DATE" | "INVALID_BIRTH_DATE" | "FUTURE_DATE" | "INVALID_GENDER" | "INVALID_TIME" | "INVALID_NUMBER" | "BRANCH_REQUIRED" | "NO_BRANCHES" | "UNKNOWN_BRANCH" | "NOT_YOUR_BRANCH" | "BELTS_FORMAT" | "BELTS_OFF" | "UNKNOWN_STYLE" | "UNKNOWN_BELT" | "GUARDIAN_NAME_REQUIRED" | "GUARDIAN_UNDER_18" | "CHILD_OWNER_ONLY" | "NOT_A_MEMBER" | "AMBIGUOUS_MEMBER" | "UNKNOWN_PLAN" | "AMBIGUOUS_PLAN" | "PLAN_IS_SUBSCRIPTION" | "PLAN_NOT_IMPORTABLE" | "NOT_A_CLASS_PACK" | "END_BEFORE_START" | "WAIVER_NEEDED" | "GENERAL_ACCESS_CONFLICT" | "UNKNOWN_CLASS" | "AMBIGUOUS_CLASS" | "CLASS_CANCELLED" | "CLASS_NOT_STARTED" | "OUT_OF_RANGE" | "FAILED";
+        /** @enum {string} */
+        ImportWarningCode: "BELT_NOT_SET" | "BELTS_AFTER_ACCEPT" | "CHILD_PHONE_NOT_USED" | "EMAIL_NOT_SENT";
+        ImportWarningDto: {
+            code: components["schemas"]["ImportWarningCode"];
+            /** @description In English. */
+            message: string;
+            /** @description BELT_NOT_SET: the style. */
+            style?: string;
+            /** @description BELT_NOT_SET: why, in the API's own words. */
+            reason?: string;
+        };
+        ImportRowResultDto: {
+            rowNumber: number;
+            outcome: components["schemas"]["ImportRowOutcome"];
+            code: components["schemas"]["ImportRowCode"];
+            /** @description The column the problem is in. */
+            column: string | null;
+            /** @description In English; for FAILED, the reason the API gave. */
+            message: string;
+            warnings: components["schemas"]["ImportWarningDto"][];
+        };
+        ImportCountsDto: {
+            /** @description Preview: rows that would be imported. Import: rows imported. */
+            ok: number;
+            skipped: number;
+            errors: number;
+        };
+        ImportPreviewResponseDto: {
+            kind: components["schemas"]["ImportKind"];
+            rows: components["schemas"]["ImportRowResultDto"][];
+            counts: components["schemas"]["ImportCountsDto"];
+        };
+        StartImportDto: {
+            kind: components["schemas"]["ImportKind"];
+            /** @description How many rows the file has (at most 2000). */
+            totalRows: number;
+            fileName?: string;
+        };
+        DataImportResponseDto: {
+            id: string;
+            kind: components["schemas"]["ImportKind"];
+            fileName: string | null;
+            totalRows: number;
+            /** @description Rows sent so far. */
+            rowsDone: number;
+            counts: components["schemas"]["ImportCountsDto"];
+            createdAt: string;
+            /** @description Each row sent so far, in file order. */
+            rows: components["schemas"]["ImportRowResultDto"][];
+        };
+        ImportRowsDto: {
+            rows: components["schemas"]["ImportRowDto"][];
+        };
+        ImportRowsResponseDto: {
+            rows: components["schemas"]["ImportRowResultDto"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -13282,7 +14198,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
+                    "application/json": components["schemas"]["StudentProfileResponseDto"];
                 };
             };
         };
@@ -13308,7 +14224,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
+                    "application/json": components["schemas"]["StudentProfileResponseDto"];
                 };
             };
         };
@@ -21846,6 +22762,30 @@ export interface operations {
             };
         };
     };
+    GrowthController_growth: {
+        parameters: {
+            query?: {
+                /** @description Only students whose home Branch is this one. Staff may only name one of their own Branches. */
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrowthResponseDto"];
+                };
+            };
+        };
+    };
     StaffRemovalController_teaching: {
         parameters: {
             query?: never;
@@ -22973,6 +23913,568 @@ export interface operations {
             };
         };
     };
+    CustomMemberFieldsController_listFields: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberFieldListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_createField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberFieldCreateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberFieldDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_reorderFields: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberFieldOrderDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberFieldListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_fieldMatches: {
+        parameters: {
+            query: {
+                /** @description A choice, "true"/"false", a number or a YYYY-MM-DD date to match exactly, or text the value contains (ignoring case). */
+                value: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomFieldMatchesDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_deleteField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomMemberFieldsController_updateField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberFieldUpdateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberFieldDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_listStatuses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberStatusListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_createStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberStatusNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberStatusDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_statusAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCustomStatusAssignmentListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_deleteStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                statusId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomMemberFieldsController_renameStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                statusId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberStatusNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberStatusDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_studentValues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCustomFieldsDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_setStudentValues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCustomFieldValuesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCustomFieldsDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_setStudentStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetStudentCustomStatusDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCustomFieldsDto"];
+                };
+            };
+        };
+    };
+    MemberFilesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberFileListDto"];
+                };
+            };
+        };
+    };
+    MemberFilesController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UploadMemberFileDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberFileDto"];
+                };
+            };
+        };
+    };
+    MemberFilesController_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberFileDownloadDto"];
+                };
+            };
+        };
+    };
+    MemberFilesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MemberMergeController_preview: {
+        parameters: {
+            query: {
+                /** @description The duplicate record: merged into the student in the path, then no longer a Student here. */
+                duplicateId: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergePreviewDto"];
+                };
+            };
+        };
+    };
+    MemberMergeController_merge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeDuplicateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergeResultDto"];
+                };
+            };
+        };
+    };
+    SignedDocumentsExportController_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSignedDocumentExportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedDocumentExportDto"];
+                };
+            };
+        };
+    };
+    SignedDocumentsExportController_latest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatestSignedDocumentExportDto"];
+                };
+            };
+        };
+    };
+    SignedDocumentsExportController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                exportId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedDocumentExportDto"];
+                };
+            };
+        };
+    };
+    SignedDocumentsExportController_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                exportId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedDocumentExportDownloadDto"];
+                };
+            };
+        };
+    };
     StudentAccessController_addChildManually: {
         parameters: {
             query?: never;
@@ -23878,6 +25380,286 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LateFeeSettingsDto"];
+                };
+            };
+        };
+    };
+    RostersController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterListDto"];
+                };
+            };
+        };
+    };
+    RostersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RosterNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterDto"];
+                };
+            };
+        };
+    };
+    RostersController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RostersController_rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RosterNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterDto"];
+                };
+            };
+        };
+    };
+    RostersController_students: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterStudentsDto"];
+                };
+            };
+        };
+    };
+    RostersController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddRosterStudentsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterStudentsDto"];
+                };
+            };
+        };
+    };
+    RostersController_removeStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DataImportsController_limits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportLimitsDto"];
+                };
+            };
+        };
+    };
+    DataImportsController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewImportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreviewResponseDto"];
+                };
+            };
+        };
+    };
+    DataImportsController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartImportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImportResponseDto"];
+                };
+            };
+        };
+    };
+    DataImportsController_importRows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                importId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportRowsDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportRowsResponseDto"];
+                };
+            };
+        };
+    };
+    DataImportsController_find: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                importId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImportResponseDto"];
                 };
             };
         };

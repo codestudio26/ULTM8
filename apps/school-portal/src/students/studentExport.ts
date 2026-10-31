@@ -35,7 +35,8 @@ export function studentExportTable(t: TranslateFn, rows: StudentExportRow[], wit
     r.dateOfBirth ?? '',
     ageOn(r.dateOfBirth),
     r.status === 'ACTIVE' ? t('students.export.statusActive') : t('students.export.statusFormer'),
-    r.enrolledAt.slice(0, 10),
+    // Decision 315 item 4: the join date staff can set.
+    r.joinedOn ?? r.enrolledAt.slice(0, 10),
     ...(withBranch ? [r.homeBranchName ?? ''] : []),
     r.visitor ? t('students.export.yes') : t('students.export.no'),
     r.memberships.join('; '),

@@ -301,6 +301,13 @@ export class CreateSchoolDto {
   @Max(3650)
   visitorPeriodDays?: number | null;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 317 item 7: staff are told when a member hasn\'t checked in for this many weeks (1-52). Null (the default) turns absence alerts off.' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(52)
+  absenceAlertWeeks?: number | null;
+
   @ApiPropertyOptional({ description: 'Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90).' })
   @IsOptional()
   @IsInt()

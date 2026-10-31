@@ -16,6 +16,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { TenantLifecyclePurgeProcessor } from '../src/jobs/tenant-lifecycle-purge.processor';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
+import { R2ClientService } from '../src/common/object-storage/r2-client.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_JOBS = process.env.DATABASE_URL_JOBS;
@@ -41,7 +42,9 @@ describeIfDb('tenant-lifecycle-purge job', () => {
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [TenantLifecyclePurgeProcessor, PrismaJobsService],
+      // R2 stands in: a purged School's member files are deleted first
+      // (member-files.e2e-spec.ts covers that); these Schools have none.
+      providers: [TenantLifecyclePurgeProcessor, PrismaJobsService, { provide: R2ClientService, useValue: { isConfigured: () => true, deleteObject: async () => undefined } }],
     }).compile();
     processor = moduleRef.get(TenantLifecyclePurgeProcessor);
   });

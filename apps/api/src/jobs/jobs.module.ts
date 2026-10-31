@@ -31,8 +31,12 @@ import { ChargeAutoPayProcessor, ChargeAutoPayScheduler } from './charge-auto-pa
 import { ChargeOverdueNoticeProcessor, ChargeOverdueNoticeScheduler } from './charge-overdue-notice.processor';
 import { ChargeDueReminderProcessor, ChargeDueReminderScheduler } from './charge-due-reminder.processor';
 import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
+import { MembershipExpiryReminderProcessor, MembershipExpiryReminderScheduler } from './membership-expiry-reminder.processor';
+import { StudentAbsenceAlertProcessor, StudentAbsenceAlertScheduler } from './student-absence-alert.processor';
+import { MembershipEndingReportProcessor, MembershipEndingReportScheduler } from './membership-ending-report.processor';
 import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } from './large-school-check-in-codes.processor';
+import { SignedDocumentsExportProcessor } from './signed-documents-export.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -195,6 +199,14 @@ import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } fr
  * Decision 417 adds LargeSchoolCheckInCodesProcessor/Scheduler: a 15-minute
  * sweep moving Schools past 500 Students to 6-digit check-in codes. Only
  * PrismaJobsService; no new module import.
+ *
+ * Decision 317 item 7 adds MembershipExpiryReminderProcessor/Scheduler (the
+ * member's reminder 7 days before a membership ends) and
+ * StudentAbsenceAlertProcessor/Scheduler (staff told when a member hasn't
+ * checked in for the School's number of weeks), and
+ * MembershipEndingReportProcessor/Scheduler (the weekly report to the owners
+ * of memberships ending in the next 7 days). PrismaJobsService and the
+ * notification queue only; no new module import.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule, RanksModule],
@@ -239,10 +251,17 @@ import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } fr
     ChargeDueReminderScheduler,
     LateFeeProcessor,
     LateFeeScheduler,
+    MembershipExpiryReminderProcessor,
+    MembershipExpiryReminderScheduler,
+    StudentAbsenceAlertProcessor,
+    StudentAbsenceAlertScheduler,
+    MembershipEndingReportProcessor,
+    MembershipEndingReportScheduler,
     ChargeRecurringProcessor,
     ChargeRecurringScheduler,
     LargeSchoolCheckInCodesProcessor,
     LargeSchoolCheckInCodesScheduler,
+    SignedDocumentsExportProcessor,
   ],
 })
 export class JobsModule {}

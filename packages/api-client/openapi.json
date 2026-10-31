@@ -768,7 +768,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
+                  "$ref": "#/components/schemas/StudentProfileResponseDto"
                 }
               }
             }
@@ -819,7 +819,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
+                  "$ref": "#/components/schemas/StudentProfileResponseDto"
                 }
               }
             }
@@ -16361,6 +16361,50 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/growth": {
+      "get": {
+        "operationId": "GrowthController_growth",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only students whose home Branch is this one. Staff may only name one of their own Branches.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrowthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "dashboard"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff/{userId}/teaching": {
       "get": {
         "operationId": "StaffRemovalController_teaching",
@@ -18374,6 +18418,1076 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/custom-member-fields": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_listFields",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberFieldListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CustomMemberFieldsController_createField",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberFieldCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberFieldDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-fields/order": {
+      "put": {
+        "operationId": "CustomMemberFieldsController_reorderFields",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberFieldOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberFieldListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}/students": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_fieldMatches",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fieldId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "value",
+            "required": true,
+            "in": "query",
+            "description": "A choice, \"true\"/\"false\", a number or a YYYY-MM-DD date to match exactly, or text the value contains (ignoring case).",
+            "schema": {
+              "maxLength": 500,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFieldMatchesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}": {
+      "patch": {
+        "operationId": "CustomMemberFieldsController_updateField",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fieldId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberFieldUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberFieldDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CustomMemberFieldsController_deleteField",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fieldId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-statuses": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_listStatuses",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberStatusListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CustomMemberFieldsController_createStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberStatusNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-statuses/students": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_statusAssignments",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCustomStatusAssignmentListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-statuses/{statusId}": {
+      "patch": {
+        "operationId": "CustomMemberFieldsController_renameStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statusId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberStatusNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CustomMemberFieldsController_deleteStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statusId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/custom-fields": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_studentValues",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCustomFieldsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CustomMemberFieldsController_setStudentValues",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCustomFieldValuesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCustomFieldsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/custom-status": {
+      "put": {
+        "operationId": "CustomMemberFieldsController_setStudentStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetStudentCustomStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCustomFieldsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/files": {
+      "get": {
+        "operationId": "MemberFilesController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberFileListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-files"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "MemberFilesController_upload",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadMemberFileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberFileDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-files"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/files/{fileId}/download": {
+      "get": {
+        "operationId": "MemberFilesController_download",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberFileDownloadDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-files"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/files/{fileId}": {
+      "delete": {
+        "operationId": "MemberFilesController_remove",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "member-files"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/merge/preview": {
+      "get": {
+        "operationId": "MemberMergeController_preview",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "duplicateId",
+            "required": true,
+            "in": "query",
+            "description": "The duplicate record: merged into the student in the path, then no longer a Student here.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergePreviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-merge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/merge": {
+      "post": {
+        "operationId": "MemberMergeController_merge",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeDuplicateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-merge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/signed-documents/exports": {
+      "post": {
+        "operationId": "SignedDocumentsExportController_request",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSignedDocumentExportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedDocumentExportDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signed-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/signed-documents/exports/latest": {
+      "get": {
+        "operationId": "SignedDocumentsExportController_latest",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LatestSignedDocumentExportDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signed-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/signed-documents/exports/{exportId}": {
+      "get": {
+        "operationId": "SignedDocumentsExportController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedDocumentExportDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signed-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/signed-documents/exports/{exportId}/download": {
+      "get": {
+        "operationId": "SignedDocumentsExportController_download",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedDocumentExportDownloadDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signed-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/add-child-manually": {
       "post": {
         "operationId": "StudentAccessController_addChildManually",
@@ -20011,6 +21125,530 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/rosters": {
+      "get": {
+        "operationId": "RostersController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "rosters"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "RostersController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RosterNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "rosters"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/rosters/{rosterId}": {
+      "patch": {
+        "operationId": "RostersController_rename",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rosterId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RosterNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "rosters"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "RostersController_remove",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rosterId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "rosters"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/rosters/{rosterId}/students": {
+      "get": {
+        "operationId": "RostersController_students",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rosterId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterStudentsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "rosters"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "RostersController_add",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rosterId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddRosterStudentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RosterStudentsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "rosters"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/rosters/{rosterId}/students/{studentId}": {
+      "delete": {
+        "operationId": "RostersController_removeStudent",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rosterId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "rosters"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports/limits": {
+      "get": {
+        "operationId": "DataImportsController_limits",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportLimitsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports/preview": {
+      "post": {
+        "operationId": "DataImportsController_preview",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports": {
+      "post": {
+        "operationId": "DataImportsController_start",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataImportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports/{importId}/rows": {
+      "post": {
+        "operationId": "DataImportsController_importRows",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "importId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportRowsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportRowsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports/{importId}": {
+      "get": {
+        "operationId": "DataImportsController_find",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "importId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataImportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -20451,6 +22089,11 @@
             "nullable": true,
             "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
           },
+          "absenceAlertWeeks": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 317 item 7: staff are told when a member hasn't checked in for this many weeks (1-52). Null (the default) turns absence alerts off."
+          },
           "freezeMaxDaysPer12Months": {
             "type": "number",
             "description": "Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90)."
@@ -20861,6 +22504,11 @@
             "nullable": true,
             "description": "Decision 391: days a Visitor's visit pass lasts. Null until the School sets it."
           },
+          "absenceAlertWeeks": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 317 item 7: weeks without a check-in before staff get an absence alert. Null: off."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "Decision 392: the \"How did you hear about us?\" choices. Null: the starting list, shown in the viewer's language.",
@@ -21145,6 +22793,11 @@
             "nullable": true,
             "description": "Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off."
           },
+          "absenceAlertWeeks": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 317 item 7: staff are told when a member hasn't checked in for this many weeks (1-52). Null (the default) turns absence alerts off."
+          },
           "freezeMaxDaysPer12Months": {
             "type": "number",
             "description": "Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90)."
@@ -21385,6 +23038,11 @@
           "enrolledAt": {
             "type": "string"
           },
+          "joinedOn": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD: the day they joined this School."
+          },
           "status": {
             "$ref": "#/components/schemas/StudentStatus"
           },
@@ -21511,6 +23169,11 @@
           "enrolledAt": {
             "type": "string"
           },
+          "joinedOn": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD: the day they joined this School (Decision 315 item 4)."
+          },
           "homeBranchName": {
             "type": "string",
             "nullable": true
@@ -21629,7 +23292,7 @@
           "updatedAt"
         ]
       },
-      "UserResponseDto": {
+      "StudentProfileResponseDto": {
         "type": "object",
         "properties": {
           "addressLine1": {
@@ -21724,11 +23387,39 @@
             "nullable": true,
             "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5. Not a login."
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5. Not a login."
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5: not a Guardian, no account."
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string"
           },
           "updatedAt": {
             "type": "string"
+          },
+          "joinedOn": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD: the day they joined this School."
           }
         },
         "required": [
@@ -21916,6 +23607,36 @@
             "type": "string",
             "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
             "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "description": "Emergency contact's name (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "description": "Emergency contact's phone (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "description": "How the emergency contact is related, e.g. \"Mother\" (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "joinedOn": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The day the student joined this School; not in the future.",
+            "example": "2025-09-01"
           }
         }
       },
@@ -23021,6 +24742,31 @@
       "CreateStudentManuallyDto": {
         "type": "object",
         "properties": {
+          "secondaryPhone": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "description": "Emergency contact's name (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "description": "Emergency contact's phone (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "description": "How the emergency contact is related, e.g. \"Mother\" (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
           "firstName": {
             "type": "string"
           },
@@ -23037,6 +24783,10 @@
           "branchId": {
             "type": "string",
             "description": "Required when the School has open branches: the home branch."
+          },
+          "joinedOn": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The day they joined; today when omitted. Not in the future."
           }
         },
         "required": [
@@ -23132,6 +24882,14 @@
           "seeMedicalInfo": {
             "type": "boolean",
             "description": "See the medical information of their branches' students (off by default; Decision 315 item 10)."
+          },
+          "memberFiles": {
+            "type": "boolean",
+            "description": "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)."
+          },
+          "importData": {
+            "type": "boolean",
+            "description": "Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13)."
           }
         },
         "required": [
@@ -23146,7 +24904,9 @@
           "exportStudents",
           "freezeMemberships",
           "attendanceStats",
-          "seeMedicalInfo"
+          "seeMedicalInfo",
+          "memberFiles",
+          "importData"
         ]
       },
       "StaffRoleDto": {
@@ -23403,7 +25163,8 @@
               "INVITE_ACCEPTED",
               "OPEN_MAT_CHANGED",
               "SETTING_CHANGED",
-              "CHARGE_ACCESS_CHANGED"
+              "CHARGE_ACCESS_CHANGED",
+              "MEMBERS_MERGED"
             ]
           },
           "actorId": {
@@ -24872,6 +26633,142 @@
           "createdAt"
         ]
       },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "phoneVerifiedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set once Twilio Verify OTP confirms this phone; null if not yet verified."
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "weightCategory": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5. Not a login."
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5. Not a login."
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5: not a Guardian, no account."
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "phone",
+          "firstName",
+          "surname",
+          "dateOfBirth",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "UpdateUserDto": {
         "type": "object",
         "properties": {
@@ -24945,6 +26842,31 @@
           "beltSize": {
             "type": "string",
             "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "description": "Emergency contact's name (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "description": "Emergency contact's phone (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "description": "How the emergency contact is related, e.g. \"Mother\" (Decision 315 item 5). Blank or null clears it.",
             "nullable": true
           }
         }
@@ -36016,6 +37938,109 @@
           "items"
         ]
       },
+      "GrowthMonthDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "The month, YYYY-MM, in the School's time zone."
+          },
+          "newStudents": {
+            "type": "number",
+            "description": "Students whose join date at the School (StudentJoinDate) falls in this month."
+          },
+          "cancelled": {
+            "type": "number",
+            "description": "Students whose Subscription ended by cancellation (Membership.cancelAt) in this month, up to now."
+          }
+        },
+        "required": [
+          "month",
+          "newStudents",
+          "cancelled"
+        ]
+      },
+      "GrowthProgrammeDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The style's name, as the School typed it."
+          },
+          "students": {
+            "type": "number",
+            "description": "Enrolled students holding a rank in this style now."
+          },
+          "newByMonth": {
+            "description": "Students who started this style (their rank in it was created) each month, in the same order as `months`.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "disciplineId",
+          "name",
+          "students",
+          "newByMonth"
+        ]
+      },
+      "GrowthResponseDto": {
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string",
+            "description": "The School's time zone the months are in (UTC when the School has none)."
+          },
+          "branchIds": {
+            "nullable": true,
+            "description": "The home Branches counted; null means the whole School.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "activeStudents": {
+            "type": "number",
+            "description": "Active students now (Decision 317 item 5, the Dashboard's count): enrolled, with a Subscription, a Class Pack with credits left, a Weekly Pass or a Trial in effect."
+          },
+          "visitors": {
+            "type": "number",
+            "description": "Enrolled students who are Visitors now (Decision 391: a visit pass and no other membership since)."
+          },
+          "frozen": {
+            "type": "number",
+            "description": "Enrolled students with a membership frozen today (Decision 404)."
+          },
+          "months": {
+            "description": "The last 12 months, oldest first; the last is the current month.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrowthMonthDto"
+            }
+          },
+          "programmes": {
+            "description": "The School's styles that aren't archived, by name.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrowthProgrammeDto"
+            }
+          }
+        },
+        "required": [
+          "timeZone",
+          "branchIds",
+          "activeStudents",
+          "visitors",
+          "frozen",
+          "months",
+          "programmes"
+        ]
+      },
       "StaffTeachingResponseDto": {
         "type": "object",
         "properties": {
@@ -37491,6 +39516,807 @@
           }
         }
       },
+      "CustomMemberFieldType": {
+        "type": "string",
+        "enum": [
+          "TEXT",
+          "NUMBER",
+          "DATE",
+          "DROPDOWN",
+          "YES_NO"
+        ]
+      },
+      "CustomMemberFieldDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CustomMemberFieldType"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "position": {
+            "type": "number",
+            "description": "Order on the student page, from 0."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "options",
+          "position"
+        ]
+      },
+      "CustomMemberFieldListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomMemberFieldDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CustomMemberFieldCreateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "type": {
+            "$ref": "#/components/schemas/CustomMemberFieldType"
+          },
+          "options": {
+            "description": "A drop-down's choices, in order. Only for DROPDOWN, which needs at least one.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "CustomMemberFieldOrderDto": {
+        "type": "object",
+        "properties": {
+          "fieldIds": {
+            "description": "Every one of the School's field ids, in the new order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "fieldIds"
+        ]
+      },
+      "CustomFieldMatchesDto": {
+        "type": "object",
+        "properties": {
+          "studentIds": {
+            "description": "The students whose value matches that the caller covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "studentIds"
+        ]
+      },
+      "CustomMemberFieldUpdateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "options": {
+            "description": "A drop-down's new choices, in order. Students whose value is no longer a choice lose it.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CustomMemberStatusDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "studentCount": {
+            "type": "number",
+            "description": "How many students have this status."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "studentCount"
+        ]
+      },
+      "CustomMemberStatusListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomMemberStatusDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CustomMemberStatusNameDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "StudentCustomStatusAssignmentDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "statusId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentId",
+          "statusId"
+        ]
+      },
+      "StudentCustomStatusAssignmentListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "The students with a status that the caller covers.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentCustomStatusAssignmentDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "StudentCustomFieldValueDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CustomMemberFieldType"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "position": {
+            "type": "number",
+            "description": "Order on the student page, from 0."
+          },
+          "value": {
+            "type": "string",
+            "nullable": true,
+            "description": "The value as text: a number, YYYY-MM-DD, one of the choices, or \"true\"/\"false\". Null when empty."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "options",
+          "position",
+          "value"
+        ]
+      },
+      "StudentCustomFieldsDto": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentCustomFieldValueDto"
+            }
+          },
+          "statusId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The student's member status at this School, or null."
+          }
+        },
+        "required": [
+          "fields",
+          "statusId"
+        ]
+      },
+      "SetCustomFieldValueDto": {
+        "type": "object",
+        "properties": {
+          "fieldId": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null or empty clears the value."
+          }
+        },
+        "required": [
+          "fieldId",
+          "value"
+        ]
+      },
+      "SetCustomFieldValuesDto": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "description": "Only the fields listed change.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetCustomFieldValueDto"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "SetStudentCustomStatusDto": {
+        "type": "object",
+        "properties": {
+          "statusId": {
+            "type": "string",
+            "nullable": true,
+            "description": "A status from the School list, or null for none."
+          }
+        },
+        "required": [
+          "statusId"
+        ]
+      },
+      "MemberFileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "The name the file was uploaded with."
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png"
+            ]
+          },
+          "sizeBytes": {
+            "type": "number",
+            "description": "Size in bytes."
+          },
+          "uploadedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who uploaded it; null once their account is gone."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fileName",
+          "contentType",
+          "sizeBytes",
+          "createdAt"
+        ]
+      },
+      "MemberFileListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberFileDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UploadMemberFileDto": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "A PDF, JPG or PNG file, up to 10 MB."
+          }
+        },
+        "required": [
+          "file"
+        ]
+      },
+      "MemberFileDownloadDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "A link that downloads the file. It works for 5 minutes."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "MergePersonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "MergeBlockerCode": {
+        "type": "string",
+        "enum": [
+          "GUARDIANS_DIFFER",
+          "BOTH_UNLIMITED_MEMBERSHIPS",
+          "DUPLICATE_HAS_SUBSCRIPTION",
+          "PENDING_CARD_PAYMENT",
+          "OPEN_PACK_RECHARGE",
+          "SAME_STYLE_RANK",
+          "SAME_STYLE_CORRECTION",
+          "SAME_CLASS_BOOKED",
+          "SAME_CLASS_WAITLIST",
+          "OPEN_SIGN_UP",
+          "PENDING_CHILD_INVITE"
+        ]
+      },
+      "MergeBlockerDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/MergeBlockerCode"
+          },
+          "details": {
+            "description": "Style names or class titles the reason is about, when there are any.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "details"
+        ]
+      },
+      "MergeRecordCountsDto": {
+        "type": "object",
+        "properties": {
+          "Membership": {
+            "type": "number"
+          },
+          "MembershipFreeze": {
+            "type": "number"
+          },
+          "PackRecharge": {
+            "type": "number"
+          },
+          "Transaction": {
+            "type": "number"
+          },
+          "Booking": {
+            "type": "number"
+          },
+          "WaitlistEntry": {
+            "type": "number"
+          },
+          "StudentRank": {
+            "type": "number"
+          },
+          "StudentRankSkillStatus": {
+            "type": "number"
+          },
+          "PromotionEvent": {
+            "type": "number"
+          },
+          "PromotionEventNoteLog": {
+            "type": "number"
+          },
+          "SkillSignOffLog": {
+            "type": "number"
+          },
+          "TrainingLog": {
+            "type": "number"
+          },
+          "RankCorrectionRequest": {
+            "type": "number"
+          },
+          "PromotionFeeRequest": {
+            "type": "number"
+          },
+          "Charge": {
+            "type": "number"
+          },
+          "ChargeAllocation": {
+            "type": "number"
+          },
+          "BalanceEntry": {
+            "type": "number"
+          },
+          "ChargeRefund": {
+            "type": "number"
+          },
+          "RecurringCharge": {
+            "type": "number"
+          },
+          "StudentNote": {
+            "type": "number"
+          },
+          "MemberFile": {
+            "type": "number"
+          },
+          "ChildInvite": {
+            "type": "number"
+          },
+          "SignUp": {
+            "type": "number"
+          },
+          "Favorite": {
+            "type": "number"
+          },
+          "WatchHistory": {
+            "type": "number"
+          },
+          "StudentTag": {
+            "type": "number"
+          },
+          "RosterMember": {
+            "type": "number"
+          },
+          "StudentAbsenceAlert": {
+            "type": "number"
+          },
+          "CustomMemberFieldValue": {
+            "type": "number"
+          },
+          "StudentHomeBranch": {
+            "type": "number"
+          },
+          "StudentCheckInCode": {
+            "type": "number"
+          },
+          "StudentJoinDate": {
+            "type": "number"
+          },
+          "StudentCustomStatus": {
+            "type": "number"
+          },
+          "WaiverSignature": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "Membership",
+          "MembershipFreeze",
+          "PackRecharge",
+          "Transaction",
+          "Booking",
+          "WaitlistEntry",
+          "StudentRank",
+          "StudentRankSkillStatus",
+          "PromotionEvent",
+          "PromotionEventNoteLog",
+          "SkillSignOffLog",
+          "TrainingLog",
+          "RankCorrectionRequest",
+          "PromotionFeeRequest",
+          "Charge",
+          "ChargeAllocation",
+          "BalanceEntry",
+          "ChargeRefund",
+          "RecurringCharge",
+          "StudentNote",
+          "MemberFile",
+          "ChildInvite",
+          "SignUp",
+          "Favorite",
+          "WatchHistory",
+          "StudentTag",
+          "RosterMember",
+          "StudentAbsenceAlert",
+          "CustomMemberFieldValue",
+          "StudentHomeBranch",
+          "StudentCheckInCode",
+          "StudentJoinDate",
+          "StudentCustomStatus",
+          "WaiverSignature"
+        ]
+      },
+      "MergePreviewDto": {
+        "type": "object",
+        "properties": {
+          "kept": {
+            "description": "The record that is kept.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergePersonDto"
+              }
+            ]
+          },
+          "duplicate": {
+            "description": "The record merged into it.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergePersonDto"
+              }
+            ]
+          },
+          "blockers": {
+            "description": "Why the two records cannot be merged yet; empty when they can.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MergeBlockerDto"
+            }
+          },
+          "records": {
+            "description": "The duplicate's rows at this School, per table.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergeRecordCountsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kept",
+          "duplicate",
+          "blockers",
+          "records"
+        ]
+      },
+      "MergeDuplicateDto": {
+        "type": "object",
+        "properties": {
+          "duplicateId": {
+            "type": "string",
+            "description": "The duplicate record: merged into the student in the path, then no longer a Student here."
+          }
+        },
+        "required": [
+          "duplicateId"
+        ]
+      },
+      "MergeResultDto": {
+        "type": "object",
+        "properties": {
+          "keptStudentId": {
+            "type": "string"
+          },
+          "duplicateStudentId": {
+            "type": "string"
+          },
+          "records": {
+            "description": "Rows moved to the kept record, per table.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergeRecordCountsDto"
+              }
+            ]
+          },
+          "waiverSignaturesLeft": {
+            "type": "number",
+            "description": "Signed waivers both had signed: the duplicate's copy stays on the duplicate's record."
+          }
+        },
+        "required": [
+          "keptStudentId",
+          "duplicateStudentId",
+          "records",
+          "waiverSignaturesLeft"
+        ]
+      },
+      "SignedDocumentLabelsDto": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string"
+          },
+          "document": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "signedAt": {
+            "type": "string"
+          },
+          "signedBy": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "guardian": {
+            "type": "string"
+          },
+          "onPaper": {
+            "type": "string"
+          },
+          "guest": {
+            "type": "string"
+          },
+          "signedName": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          },
+          "recordedBy": {
+            "type": "string"
+          },
+          "textSigned": {
+            "type": "string"
+          },
+          "notRecorded": {
+            "type": "string"
+          },
+          "imageMissing": {
+            "type": "string"
+          },
+          "expired": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateSignedDocumentExportDto": {
+        "type": "object",
+        "properties": {
+          "labels": {
+            "description": "The index's column headings and the documents' words, in the reader's language.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SignedDocumentLabelsDto"
+              }
+            ]
+          }
+        }
+      },
+      "SignedDocumentExportStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "READY",
+          "FAILED",
+          "EXPIRED"
+        ]
+      },
+      "SignedDocumentExportDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SignedDocumentExportStatus"
+          },
+          "documentCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Signed documents in the ZIP, once it is made."
+          },
+          "sizeBytes": {
+            "type": "number",
+            "nullable": true,
+            "description": "The ZIP's size in bytes, once it is made."
+          },
+          "requestedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who asked for it; null once their account is gone."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the ZIP is deleted (24 hours after it is made)."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "createdAt"
+        ]
+      },
+      "LatestSignedDocumentExportDto": {
+        "type": "object",
+        "properties": {
+          "export": {
+            "nullable": true,
+            "description": "The School's most recent export, or null.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SignedDocumentExportDto"
+              }
+            ]
+          }
+        }
+      },
+      "SignedDocumentExportDownloadDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "A link that downloads the ZIP. It works for 5 minutes."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
       "ChildDetailsDto": {
         "type": "object",
         "properties": {
@@ -37556,6 +40382,10 @@
           "branchId": {
             "type": "string",
             "description": "Required when the School has open branches: the child's home branch."
+          },
+          "joinedOn": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The day the child joined; the day they are enrolled when omitted. Not in the future."
           }
         },
         "required": [
@@ -39873,6 +42703,436 @@
           "enabled",
           "type",
           "graceDays"
+        ]
+      },
+      "RosterDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "memberCount": {
+            "type": "number",
+            "description": "How many current students the caller covers are on it."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "memberCount"
+        ]
+      },
+      "RosterListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RosterDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RosterNameDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "RosterStudentsDto": {
+        "type": "object",
+        "properties": {
+          "studentIds": {
+            "description": "The current students on this roster that the caller covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "studentIds"
+        ]
+      },
+      "AddRosterStudentsDto": {
+        "type": "object",
+        "properties": {
+          "studentIds": {
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "Students of this School to add. Ones already on the roster are left as they are.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "studentIds"
+        ]
+      },
+      "ImportLimitsDto": {
+        "type": "object",
+        "properties": {
+          "maxRows": {
+            "type": "number"
+          },
+          "maxRowsPerRequest": {
+            "type": "number"
+          },
+          "attendanceMaxDaysBack": {
+            "type": "number",
+            "description": "Past attendance can be imported this many days back (Decision 317 item 4)."
+          },
+          "columns": {
+            "type": "object",
+            "description": "Each kind's columns, in template order.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "maxRows",
+          "maxRowsPerRequest",
+          "attendanceMaxDaysBack",
+          "columns"
+        ]
+      },
+      "ImportKind": {
+        "type": "string",
+        "enum": [
+          "MEMBERS",
+          "MEMBERSHIPS",
+          "ATTENDANCE"
+        ]
+      },
+      "ImportRowDto": {
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 2001,
+            "description": "The line in the file; the header row is line 1."
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Cells by column name, as the template names them."
+          }
+        },
+        "required": [
+          "rowNumber",
+          "values"
+        ]
+      },
+      "PreviewImportDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ImportKind"
+          },
+          "rows": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowDto"
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "rows"
+        ]
+      },
+      "ImportRowOutcome": {
+        "type": "string",
+        "description": "READY: a preview row that would be imported. CREATED: imported.",
+        "enum": [
+          "READY",
+          "CREATED",
+          "SKIPPED",
+          "ERROR"
+        ]
+      },
+      "ImportRowCode": {
+        "type": "string",
+        "description": "What will be or was done, or why the row is skipped or refused. FAILED: see message.",
+        "enum": [
+          "NEW_MEMBER",
+          "NEW_CHILD_NEW_GUARDIAN",
+          "NEW_CHILD_GUARDIAN_INVITED",
+          "NEW_MEMBERSHIP",
+          "NEW_ATTENDANCE",
+          "EMAIL_EXISTS",
+          "DUPLICATE_IN_FILE",
+          "INVITE_PENDING",
+          "ALREADY_MEMBER",
+          "ALREADY_IMPORTED",
+          "ALREADY_ATTENDED",
+          "MISSING_VALUE",
+          "TOO_LONG",
+          "INVALID_EMAIL",
+          "INVALID_PHONE",
+          "INVALID_DATE",
+          "INVALID_BIRTH_DATE",
+          "FUTURE_DATE",
+          "INVALID_GENDER",
+          "INVALID_TIME",
+          "INVALID_NUMBER",
+          "BRANCH_REQUIRED",
+          "NO_BRANCHES",
+          "UNKNOWN_BRANCH",
+          "NOT_YOUR_BRANCH",
+          "BELTS_FORMAT",
+          "BELTS_OFF",
+          "UNKNOWN_STYLE",
+          "UNKNOWN_BELT",
+          "GUARDIAN_NAME_REQUIRED",
+          "GUARDIAN_UNDER_18",
+          "CHILD_OWNER_ONLY",
+          "NOT_A_MEMBER",
+          "AMBIGUOUS_MEMBER",
+          "UNKNOWN_PLAN",
+          "AMBIGUOUS_PLAN",
+          "PLAN_IS_SUBSCRIPTION",
+          "PLAN_NOT_IMPORTABLE",
+          "NOT_A_CLASS_PACK",
+          "END_BEFORE_START",
+          "WAIVER_NEEDED",
+          "GENERAL_ACCESS_CONFLICT",
+          "UNKNOWN_CLASS",
+          "AMBIGUOUS_CLASS",
+          "CLASS_CANCELLED",
+          "CLASS_NOT_STARTED",
+          "OUT_OF_RANGE",
+          "FAILED"
+        ]
+      },
+      "ImportWarningCode": {
+        "type": "string",
+        "enum": [
+          "BELT_NOT_SET",
+          "BELTS_AFTER_ACCEPT",
+          "CHILD_PHONE_NOT_USED",
+          "EMAIL_NOT_SENT"
+        ]
+      },
+      "ImportWarningDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ImportWarningCode"
+          },
+          "message": {
+            "type": "string",
+            "description": "In English."
+          },
+          "style": {
+            "type": "string",
+            "description": "BELT_NOT_SET: the style."
+          },
+          "reason": {
+            "type": "string",
+            "description": "BELT_NOT_SET: why, in the API's own words."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "ImportRowResultDto": {
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "number"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ImportRowOutcome"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ImportRowCode"
+          },
+          "column": {
+            "type": "string",
+            "nullable": true,
+            "description": "The column the problem is in."
+          },
+          "message": {
+            "type": "string",
+            "description": "In English; for FAILED, the reason the API gave."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportWarningDto"
+            }
+          }
+        },
+        "required": [
+          "rowNumber",
+          "outcome",
+          "code",
+          "column",
+          "message",
+          "warnings"
+        ]
+      },
+      "ImportCountsDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "number",
+            "description": "Preview: rows that would be imported. Import: rows imported."
+          },
+          "skipped": {
+            "type": "number"
+          },
+          "errors": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "ok",
+          "skipped",
+          "errors"
+        ]
+      },
+      "ImportPreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ImportKind"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowResultDto"
+            }
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCountsDto"
+          }
+        },
+        "required": [
+          "kind",
+          "rows",
+          "counts"
+        ]
+      },
+      "StartImportDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ImportKind"
+          },
+          "totalRows": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 2000,
+            "description": "How many rows the file has (at most 2000)."
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "kind",
+          "totalRows"
+        ]
+      },
+      "DataImportResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImportKind"
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalRows": {
+            "type": "number"
+          },
+          "rowsDone": {
+            "type": "number",
+            "description": "Rows sent so far."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCountsDto"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "rows": {
+            "description": "Each row sent so far, in file order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowResultDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "fileName",
+          "totalRows",
+          "rowsDone",
+          "counts",
+          "createdAt",
+          "rows"
+        ]
+      },
+      "ImportRowsDto": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowDto"
+            }
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "ImportRowsResponseDto": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowResultDto"
+            }
+          }
+        },
+        "required": [
+          "rows"
         ]
       }
     }

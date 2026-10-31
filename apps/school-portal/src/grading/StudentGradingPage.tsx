@@ -7,10 +7,14 @@ import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
 import { StudentTagsCard } from '../students/StudentTagsCard';
 import { StudentMedicalInfoCard } from '../students/StudentMedicalInfoCard';
+import { StudentCustomFieldsCard } from '../students/StudentCustomFieldsCard';
+import { MemberFilesCard } from '../students/MemberFilesCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
+import { MergeDuplicateModal } from '../students/MergeDuplicateModal';
 import { VisitorCard } from '../students/VisitorCard';
+import { MemberDetailsCard } from '../students/MemberDetails';
 import { useAttendanceAccess } from '../students/AttendancePage';
 import { LogAttendanceModal } from '../students/LogAttendanceModal';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -117,6 +121,9 @@ export function StudentGradingPage() {
   const mayLogAttendance = useAttendanceAccess(schoolId).log;
   const [loggingAttendance, setLoggingAttendance] = useState(false);
   const [attendanceLogged, setAttendanceLogged] = useState<string | null>(null);
+  // Decision 315 item 13: merge a duplicate record into this one (owner only).
+  const [merging, setMerging] = useState(false);
+  const [merged, setMerged] = useState<string | null>(null);
   const enrolled = students.data?.items.find((s) => s.id === studentId)?.status === 'ACTIVE';
   // Decision 371 (Q4): who the student's Guardians are. Read for a current
   // student only (the API's own rule, like the profile read).
@@ -127,6 +134,8 @@ export function StudentGradingPage() {
   const mayFreeze = !my.isOwner && !!staffAccess.data?.access.freezeMemberships;
   // Decision 315 item 10: owners, and Branch Staff the owner let see medical information.
   const maySeeMedical = my.isOwner || !!staffAccess.data?.access.seeMedicalInfo;
+  // Decision 315 item 9: the owner, or Branch Staff the owner let see member files.
+  const mayFiles = my.isOwner || !!staffAccess.data?.access.memberFiles;
 
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
@@ -191,6 +200,11 @@ export function StudentGradingPage() {
                 {t('grading.student.editProfile')}
               </Button>
             ) : null}
+            {my.isOwner && student && !inactive ? (
+              <Button variant="secondary" onClick={() => setMerging(true)}>
+                {t('students.merge.button')}
+              </Button>
+            ) : null}
             {my.isOwner && inactive ? (
               <Button onClick={() => setReEnrolling(true)}>{t('students.reEnrol.button')}</Button>
             ) : null}
@@ -204,6 +218,10 @@ export function StudentGradingPage() {
       />
 
       {attendanceLogged ? <SuccessBanner message={attendanceLogged} /> : null}
+      {merged ? <SuccessBanner message={merged} /> : null}
+      {merging && student ? (
+        <MergeDuplicateModal schoolId={schoolId} keptId={studentId} keptName={studentName} onClose={() => setMerging(false)} onMerged={setMerged} />
+      ) : null}
       {loggingAttendance ? (
         <LogAttendanceModal
           schoolId={schoolId}
@@ -237,6 +255,12 @@ export function StudentGradingPage() {
         </Card>
       </div>
 
+      {/* Decision 315 items 4, 5: join date and other contacts. The same staff
+          who may open the Edit page (Branch Staff need the students switch). */}
+      {!inactive && student && (my.isOwner || !isBranchStaff || staffAccess.data?.access.students) ? (
+        <MemberDetailsCard schoolId={schoolId} studentId={studentId} />
+      ) : null}
+
       {/* Decision 384: the personal check-in code typed at the front desk. */}
       {!inactive ? <StudentCheckInCodeCard schoolId={schoolId} studentId={studentId} /> : null}
 
@@ -250,6 +274,11 @@ export function StudentGradingPage() {
       {!inactive ? <StudentTagsCard schoolId={schoolId} studentId={studentId} /> : null}
       {/* Decision 315 item 10: medical information given at sign-up. */}
       {maySeeMedical ? <StudentMedicalInfoCard schoolId={schoolId} studentId={studentId} /> : null}
+      {/* Decision 315 item 9 (backlog 5.11): Documents, files on the member. */}
+      {mayFiles ? <MemberFilesCard schoolId={schoolId} studentId={studentId} canUpload={!inactive} /> : null}
+
+      {/* Decision 315 item 14: the School's own member fields and status. */}
+      {!inactive ? <StudentCustomFieldsCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 391: Visitor status and visit passes. */}
       {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}

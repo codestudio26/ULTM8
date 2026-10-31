@@ -200,6 +200,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. Null until the School sets it.' })
   visitorPeriodDays!: number | null;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 317 item 7: weeks without a check-in before staff get an absence alert. Null: off.' })
+  absenceAlertWeeks!: number | null;
+
   @ApiPropertyOptional({ type: [String], nullable: true, description: 'Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer\'s language.' })
   heardFromOptions!: string[] | null;
 
