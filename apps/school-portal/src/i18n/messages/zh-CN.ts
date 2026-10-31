@@ -2558,6 +2558,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         waivers: "免责声明签名：{count}",
         notes: "备注：{count}",
         tags: "标签：{count}",
+        customFields: "自定义字段和状态：{count}",
         files: "文件：{count}",
         more: "其他记录：{count}",
       },

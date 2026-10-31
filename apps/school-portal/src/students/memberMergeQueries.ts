@@ -44,6 +44,7 @@ export const MERGE_GROUPS = {
   waivers: ['WaiverSignature'],
   notes: ['StudentNote'],
   tags: ['StudentTag'],
+  customFields: ['CustomMemberFieldValue', 'StudentCustomStatus'],
   files: ['MemberFile'],
   more: ['ChildInvite', 'SignUp', 'Favorite', 'WatchHistory', 'RosterMember', 'StudentAbsenceAlert', 'StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate'],
 } as const satisfies Record<string, ReadonlyArray<keyof MergeRecordCounts>>;

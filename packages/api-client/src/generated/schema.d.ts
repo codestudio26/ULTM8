@@ -12555,9 +12555,11 @@ export interface components {
             StudentTag: number;
             RosterMember: number;
             StudentAbsenceAlert: number;
+            CustomMemberFieldValue: number;
             StudentHomeBranch: number;
             StudentCheckInCode: number;
             StudentJoinDate: number;
+            StudentCustomStatus: number;
             WaiverSignature: number;
         };
         MergePreviewDto: {

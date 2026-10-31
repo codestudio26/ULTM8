@@ -2558,6 +2558,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         waivers: "免責同意書の署名: {count}",
         notes: "メモ: {count}",
         tags: "タグ: {count}",
+        customFields: "カスタム項目とステータス: {count}",
         files: "ファイル: {count}",
         more: "その他の記録: {count}",
       },

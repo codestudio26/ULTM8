@@ -38,6 +38,10 @@ type Grant = [Role, string, string | null];
 /** Tables cleaned up after the spec, children first. */
 const CLEANUP_TABLES = [
   'StaffActivity',
+  'CustomMemberFieldValue',
+  'CustomMemberField',
+  'StudentCustomStatus',
+  'CustomMemberStatus',
   'RosterMember',
   'Roster',
   'StudentAbsenceAlert',
@@ -187,6 +191,18 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
         { id: id('roster2'), schoolId: school, name: 'Kids' },
       ],
     });
+    await superuser.customMemberField.createMany({
+      data: [
+        { id: id('field1'), schoolId: school, name: 'T-shirt', type: 'TEXT', position: 1 },
+        { id: id('field2'), schoolId: school, name: 'Locker', type: 'TEXT', position: 2 },
+      ],
+    });
+    await superuser.customMemberStatus.createMany({
+      data: [
+        { id: id('status1'), schoolId: school, name: 'Competitor' },
+        { id: id('status2'), schoolId: school, name: 'On hold' },
+      ],
+    });
   }
 
   /** One row in every merged table for `studentId` at `school`, as the student's own. */
@@ -301,6 +317,13 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
       ],
     });
     await superuser.studentAbsenceAlert.create({ data: { schoolId: school, studentId, absentSince: new Date('2026-01-01') } });
+    await superuser.customMemberFieldValue.createMany({
+      data: [
+        { fieldId: c('field1'), schoolId: school, studentId, value: 'L (duplicate)' },
+        { fieldId: c('field2'), schoolId: school, studentId, value: '42' },
+      ],
+    });
+    await superuser.studentCustomStatus.create({ data: { schoolId: school, studentId, statusId: c('status2') } });
   }
 
   const signed = (waiverId: string, studentId: string, school: string, extra: Partial<Prisma.WaiverSignatureUncheckedCreateInput> = {}) => ({
@@ -396,6 +419,11 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
     await superuser.favorite.create({ data: { id: randomUUID(), studentId: users.kate.id, lessonId: cat.Alesson1, schoolId: schoolA } });
     await superuser.studentTag.create({ data: { tagId: cat.Atag1, schoolId: schoolA, studentId: users.kate.id } });
     await superuser.rosterMember.create({ data: { rosterId: cat.Aroster1, schoolId: schoolA, studentId: users.kate.id } });
+    // Kate has her own T-shirt value and a status; Dan's Locker value is new to her.
+    await superuser.customMemberFieldValue.create({ data: { fieldId: cat.Afield1, schoolId: schoolA, studentId: users.kate.id, value: 'M (kept)' } });
+    await superuser.studentCustomStatus.create({ data: { schoolId: schoolA, studentId: users.kate.id, statusId: cat.Astatus1 } });
+    // Kid B (merged into Kid A, who has no status) brings his status with him.
+    await superuser.studentCustomStatus.create({ data: { schoolId: schoolA, studentId: users.kidB.id, statusId: cat.Astatus2 } });
     await superuser.studentJoinDate.updateMany({ where: { schoolId: schoolA, studentId: users.kate.id }, data: { joinedOn: new Date('2024-06-01') } });
     await superuser.studentJoinDate.updateMany({ where: { schoolId: schoolA, studentId: users.dan.id }, data: { joinedOn: new Date('2021-03-15') } });
     await superuser.studentCheckInCode.createMany({
@@ -549,6 +577,9 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
 
     const same = await merge('ownerA', users.kidA.id, users.kidB.id);
     expect(same.status).toBe(201);
+    // Kid A had no status, so Kid B's comes with the merge.
+    expect((await superuser.studentCustomStatus.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kidA.id } })).statusId).toBe(cat.Astatus2);
+    expect(await superuser.studentCustomStatus.count({ where: { studentId: users.kidB.id } })).toBe(0);
     // The Guardian links are the person's, not the School's: untouched.
     expect(await superuser.guardianLink.count({ where: { studentId: users.kidB.id, revokedAt: null } })).toBe(1);
   });
@@ -612,12 +643,19 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
     expect([danAfter.StudentTag, kateAfter.StudentTag]).toEqual([0, 2]);
     expect([danAfter.RosterMember, kateAfter.RosterMember]).toEqual([0, 2]);
     expect([danAfter.StudentAbsenceAlert, kateAfter.StudentAbsenceAlert]).toEqual([0, 1]);
+    // Custom fields: Kate's own value wins, Dan's value for a field she lacks moves.
+    expect([danAfter.CustomMemberFieldValue, kateAfter.CustomMemberFieldValue]).toEqual([0, 2]);
+    const values = await superuser.customMemberFieldValue.findMany({ where: { schoolId: schoolA, studentId: users.kate.id }, orderBy: { fieldId: 'asc' } });
+    expect(Object.fromEntries(values.map((v) => [v.fieldId, v.value]))).toEqual({ [cat.Afield1]: 'M (kept)', [cat.Afield2]: '42' });
+    expect(res.body.records.CustomMemberFieldValue).toBe(1);
     // One per member at the School: Kate's stays, Dan's goes.
-    for (const table of ['StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate'] as const) {
+    for (const table of ['StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate', 'StudentCustomStatus'] as const) {
       expect([table, danAfter[table], kateAfter[table]]).toEqual([table, 0, 1]);
     }
     expect((await superuser.studentCheckInCode.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).code).toBe('1111');
     expect((await superuser.studentHomeBranch.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).branchId).toBe(branchA1);
+    // Kate's status is set, so it stays.
+    expect((await superuser.studentCustomStatus.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).statusId).toBe(cat.Astatus1);
     // The earliest join date is kept.
     expect((await superuser.studentJoinDate.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).joinedOn.toISOString().slice(0, 10)).toBe('2021-03-15');
 

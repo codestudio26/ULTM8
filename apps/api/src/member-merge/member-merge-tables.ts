@@ -41,10 +41,11 @@ export const MOVED_BY_STUDENT_ID = [
 /** Moved by "userId": a sign-up made or used the duplicate's account. */
 export const MOVED_BY_USER_ID = ['SignUp'] as const;
 
-/** One row per member and lesson (tag, roster, absence spell): the
- * duplicate's row moves unless the kept member already has one for the same
- * lesson (tag, roster, spell) at this School; then the duplicate's copy is
- * deleted. StudentAbsenceAlert only records that the absence alert for a
+/** One row per member and lesson (tag, roster, absence spell, custom
+ * field): the duplicate's row moves unless the kept member already has one
+ * for the same lesson (tag, roster, spell, field) at this School; then the
+ * duplicate's copy is deleted. For a custom field (Decision 315 item 14)
+ * that means the kept member's value wins when both have one. StudentAbsenceAlert only records that the absence alert for a
  * spell was sent (Decision 317 item 7), so moving it keeps a merged member
  * from being alerted twice for the same spell. */
 export const MOVED_UNLESS_KEPT_HAS = [
@@ -53,14 +54,16 @@ export const MOVED_UNLESS_KEPT_HAS = [
   { table: 'StudentTag', key: 'tagId' },
   { table: 'RosterMember', key: 'rosterId' },
   { table: 'StudentAbsenceAlert', key: 'absentSince' },
+  { table: 'CustomMemberFieldValue', key: 'fieldId' },
 ] as const;
 
 /** One row per member at a School: the kept member's stays and the
  * duplicate's is deleted; the duplicate's moves when the kept member has
  * none. (StudentJoinDate keeps the earlier of the two dates, Decision 315
  * item 4: a join date is never in the future and staff only move it
- * earlier.) */
-export const ONE_PER_SCHOOL = ['StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate'] as const;
+ * earlier.) StudentCustomStatus (Decision 315 item 14): the kept member's
+ * status if set, else the duplicate's. */
+export const ONE_PER_SCHOOL = ['StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate', 'StudentCustomStatus'] as const;
 
 export type MergeTable =
   | (typeof MOVED_BY_STUDENT_ID)[number]

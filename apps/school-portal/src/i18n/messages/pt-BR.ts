@@ -2597,6 +2597,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         waivers: "Assinaturas de termos: {count}",
         notes: "Notas: {count}",
         tags: "Etiquetas: {count}",
+        customFields: "Campos e status personalizados: {count}",
         files: "Arquivos: {count}",
         more: "Outros registros: {count}",
       },

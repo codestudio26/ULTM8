@@ -2558,6 +2558,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         waivers: "ลายเซ็นเอกสารสละสิทธิ์: {count}",
         notes: "บันทึก: {count}",
         tags: "แท็ก: {count}",
+        customFields: "ฟิลด์และสถานะที่กำหนดเอง: {count}",
         files: "ไฟล์: {count}",
         more: "ข้อมูลอื่น: {count}",
       },

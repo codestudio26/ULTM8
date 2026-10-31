@@ -2675,6 +2675,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         waivers: "Подписи под отказами: {count}",
         notes: "Заметки: {count}",
         tags: "Теги: {count}",
+        customFields: "Свои поля и статус: {count}",
         files: "Файлы: {count}",
         more: "Прочие данные: {count}",
       },

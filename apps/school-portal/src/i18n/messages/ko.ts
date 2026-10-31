@@ -2558,6 +2558,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         waivers: "면책 동의서 서명: {count}",
         notes: "메모: {count}",
         tags: "태그: {count}",
+        customFields: "사용자 지정 항목 및 상태: {count}",
         files: "파일: {count}",
         more: "기타 기록: {count}",
       },

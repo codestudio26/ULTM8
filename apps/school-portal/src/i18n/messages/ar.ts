@@ -2753,6 +2753,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         waivers: "توقيعات الإقرارات: {count}",
         notes: "الملاحظات: {count}",
         tags: "الوسوم: {count}",
+        customFields: "الحقول والحالة المخصصة: {count}",
         files: "الملفات: {count}",
         more: "سجلات أخرى: {count}",
       },

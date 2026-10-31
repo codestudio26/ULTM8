@@ -39526,6 +39526,9 @@
           "StudentAbsenceAlert": {
             "type": "number"
           },
+          "CustomMemberFieldValue": {
+            "type": "number"
+          },
           "StudentHomeBranch": {
             "type": "number"
           },
@@ -39533,6 +39536,9 @@
             "type": "number"
           },
           "StudentJoinDate": {
+            "type": "number"
+          },
+          "StudentCustomStatus": {
             "type": "number"
           },
           "WaiverSignature": {
@@ -39568,9 +39574,11 @@
           "StudentTag",
           "RosterMember",
           "StudentAbsenceAlert",
+          "CustomMemberFieldValue",
           "StudentHomeBranch",
           "StudentCheckInCode",
           "StudentJoinDate",
+          "StudentCustomStatus",
           "WaiverSignature"
         ]
       },

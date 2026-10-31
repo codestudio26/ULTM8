@@ -38,6 +38,7 @@ export const students = {
       waivers: "Waiver signatures: {count}",
       notes: "Notes: {count}",
       tags: "Tags: {count}",
+      customFields: "Custom fields and status: {count}",
       files: "Files: {count}",
       more: "Other records: {count}",
     },

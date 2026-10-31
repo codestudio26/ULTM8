@@ -28,6 +28,7 @@ const GROUP_KEYS: Record<MergeGroup, TranslationKey> = {
   waivers: 'students.merge.groups.waivers',
   notes: 'students.merge.groups.notes',
   tags: 'students.merge.groups.tags',
+  customFields: 'students.merge.groups.customFields',
   files: 'students.merge.groups.files',
   more: 'students.merge.groups.more',
 };

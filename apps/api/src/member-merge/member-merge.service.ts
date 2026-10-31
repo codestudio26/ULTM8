@@ -247,8 +247,8 @@ export class MemberMergeService {
     }
     for (const table of ONE_PER_SCHOOL) {
       const t = tableSql(table);
-      const [kept] = await tx.$queryRaw<Array<{ id: string }>>`
-        SELECT "id" FROM ${t} WHERE "schoolId" = ${schoolId} AND "studentId" = ${keptId}`;
+      const [kept] = await tx.$queryRaw<Array<{ found: number }>>`
+        SELECT 1 AS found FROM ${t} WHERE "schoolId" = ${schoolId} AND "studentId" = ${keptId}`;
       if (!kept) {
         records[table] = await tx.$executeRaw`
           UPDATE ${t} SET "studentId" = ${keptId} WHERE "schoolId" = ${schoolId} AND "studentId" = ${duplicateId}`;
@@ -259,7 +259,7 @@ export class MemberMergeService {
         records[table] = await tx.$executeRaw`
           UPDATE "StudentJoinDate" k SET "joinedOn" = d."joinedOn", "updatedAt" = now()
           FROM "StudentJoinDate" d
-          WHERE k."id" = ${kept.id} AND d."schoolId" = ${schoolId} AND d."studentId" = ${duplicateId} AND d."joinedOn" < k."joinedOn"`;
+          WHERE k."schoolId" = ${schoolId} AND k."studentId" = ${keptId} AND d."schoolId" = ${schoolId} AND d."studentId" = ${duplicateId} AND d."joinedOn" < k."joinedOn"`;
       } else {
         records[table] = 0;
       }

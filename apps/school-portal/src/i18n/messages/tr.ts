@@ -2597,6 +2597,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         waivers: "Feragatname imzaları: {count}",
         notes: "Notlar: {count}",
         tags: "Etiketler: {count}",
+        customFields: "Özel alanlar ve durum: {count}",
         files: "Dosyalar: {count}",
         more: "Diğer kayıtlar: {count}",
       },
