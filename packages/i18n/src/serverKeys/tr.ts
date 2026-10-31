@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "Bu Okul üyelerin check-in'ini yalnızca kendi Şubelerinde yapar.",
     checkInVisitorsOff: "Bu Okul şu anda ziyaret kartıyla ziyaretçi check-in'i yapmıyor.",
     checkInOneClass: "Bu Okul tek seferde bir derse check-in yapar.",
+    checkInPaymentOverdue: "Bu Okul, gecikmiş bir ödeme varken üyelerin check-in yapmasına izin vermiyor. Ödemeyi uygulamada veya resepsiyonda yapın.",
     packUsedUp: "Bu ders paketinde ders kalmadı. Giriş için aynı paketi satın alın.",
     membershipFrozen: "Bu üyelik dondurulmuş; dondurma bitene kadar rezervasyon ya da giriş için kullanılamaz.",
     freezeTooShort: "Bir dondurma en az 7 gün sürmelidir.",

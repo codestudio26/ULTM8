@@ -454,7 +454,9 @@ export function WelcomeCard(props: {
     const b = (bookingsByClass.get(c.id) ?? []).find((x) => x.studentId === student.id && (x.status === 'UPCOMING' || x.status === 'COMPLETED'));
     if (b) mine.set(c.id, { bookingId: b.id, status: b.status as DeskBooking['status'], hasGuests: (b.attendees ?? []).length > 0 });
   }
-  const progress = (eligibility.data?.items ?? []).map((i) => i.progressBreakdown?.classes).find((c) => c && c.required > 0) ?? null;
+  // Backlog §3.5: the School may hide belt progress on the check-in screen.
+  const progress =
+    school.data.checkInShowBeltProgress === false ? null : ((eligibility.data?.items ?? []).map((i) => i.progressBreakdown?.classes).find((c) => c && c.required > 0) ?? null);
   return (
     <WelcomeCardBody
       student={student}

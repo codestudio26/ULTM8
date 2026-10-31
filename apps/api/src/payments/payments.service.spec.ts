@@ -70,7 +70,7 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
   // expanded `latest_invoice.payment_intent`, a field an Invoice no longer has.
   it('reads the first invoice\'s PaymentIntent from latest_invoice.payments and its client secret from confirmation_secret', async () => {
     const result = await service.subscribe('student', 'school', 'student@example.test', 5000, 'gbp', 'Unlimited');
-    expect(result).toEqual({ subscriptionId: 'sub_1', paymentIntentId: 'pi_2', clientSecret: 'pi_2_secret_2' });
+    expect(result).toEqual({ subscriptionId: 'sub_1', paymentIntentId: 'pi_2', clientSecret: 'pi_2_secret_2', surchargeAmount: 0 });
     const params = stripe.subscriptions.create.mock.calls[0][0];
     expect(params.expand).toEqual(['latest_invoice.payments', 'latest_invoice.confirmation_secret']);
   });
@@ -84,6 +84,100 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
     await service.subscribe('student', 'school', 'student@example.test', 5000, 'gbp', 'Unlimited', undefined, 15);
     const params = stripe.subscriptions.create.mock.calls[0][0];
     expect(params.billing_cycle_anchor_config).toEqual({ day_of_month: 15 });
+  });
+});
+
+/**
+ * Decision 406 (backlog 3.8) on a membership Subscription: the card surcharge
+ * is its own recurring item, on its own product, named in the Subscription's
+ * metadata, and a Migrate price change re-prices it at the rate the
+ * Subscription started with.
+ */
+describe('PaymentsService — card surcharge on a Subscription (Decision 406)', () => {
+  const firstInvoice = (lines: Array<{ amount: number; product: string }>) => ({
+    id: 'in_1',
+    currency: 'jpy',
+    payments: { object: 'list', data: [{ id: 'inpay_1', object: 'invoice_payment', is_default: true, payment: { type: 'payment_intent', payment_intent: 'pi_2' } }] },
+    confirmation_secret: { type: 'payment_intent', client_secret: 'pi_2_secret_2' },
+    lines: { object: 'list', data: lines.map((l) => ({ amount: l.amount, pricing: { type: 'price_details', price_details: { price: 'price_x', product: l.product } } })) },
+  });
+  function makeService(stripe: Record<string, unknown>) {
+    const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient: jest.fn().mockReturnValue(stripe) } as never, null as never, null as never, null as never);
+    jest
+      .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
+      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+    return service;
+  }
+
+  it('adds the surcharge as a second monthly item on its own product, and returns what the first invoice charged for it', async () => {
+    const stripe = {
+      customers: { create: jest.fn().mockResolvedValue({ id: 'cus_1' }) },
+      products: { create: jest.fn().mockResolvedValueOnce({ id: 'prod_surcharge' }).mockResolvedValueOnce({ id: 'prod_plan' }) },
+      // A prorated first invoice (Decision 259): Stripe prorates both items.
+      subscriptions: { create: jest.fn().mockResolvedValue({ id: 'sub_1', latest_invoice: firstInvoice([{ amount: 2500, product: 'prod_plan' }, { amount: 63, product: 'prod_surcharge' }]) }) },
+    };
+    // 5,000 yen a month (500000 hundredths), 2.5% surcharge = 125 yen.
+    const result = await makeService(stripe).subscribe('student', 'school', 's@example.test', 500000, 'JPY', 'Unlimited', undefined, 15, 'key', { amount: 12500, bps: 250 });
+    expect(stripe.products.create.mock.calls[0]).toEqual([{ name: 'Card surcharge' }, { idempotencyKey: 'key-surcharge-product' }]);
+    const params = stripe.subscriptions.create.mock.calls[0][0];
+    expect(params.items).toEqual([
+      { price_data: { currency: 'jpy', unit_amount: 5000, recurring: { interval: 'month' }, product: 'prod_plan' } },
+      { price_data: { currency: 'jpy', unit_amount: 125, recurring: { interval: 'month' }, product: 'prod_surcharge' } },
+    ]);
+    expect(params.metadata).toEqual({ cardSurchargeProduct: 'prod_surcharge', cardSurchargeBps: '250', surchargeAmount: '12500' });
+    // 63 yen as Stripe charged it, back in hundredths.
+    expect(result).toEqual({ subscriptionId: 'sub_1', paymentIntentId: 'pi_2', clientSecret: 'pi_2_secret_2', surchargeAmount: 6300 });
+  });
+
+  it('adds nothing when there is no surcharge', async () => {
+    const stripe = {
+      customers: { create: jest.fn().mockResolvedValue({ id: 'cus_1' }) },
+      products: { create: jest.fn().mockResolvedValue({ id: 'prod_plan' }) },
+      subscriptions: { create: jest.fn().mockResolvedValue({ id: 'sub_1', latest_invoice: firstInvoice([{ amount: 5000, product: 'prod_plan' }]) }) },
+    };
+    const result = await makeService(stripe).subscribe('student', 'school', 's@example.test', 5000, 'gbp', 'Unlimited', 'price_kept', undefined, undefined, { amount: 0, bps: 250 });
+    expect(stripe.products.create).not.toHaveBeenCalled();
+    const params = stripe.subscriptions.create.mock.calls[0][0];
+    expect(params.items).toEqual([{ price: 'price_kept' }]);
+    expect(params).not.toHaveProperty('metadata');
+    expect(result.surchargeAmount).toBe(0);
+  });
+
+  it('a Migrate price change moves the plan item to the new Price and re-prices the surcharge item at the Subscription\'s own rate', async () => {
+    const stripe = {
+      subscriptions: {
+        retrieve: jest.fn().mockResolvedValue({
+          id: 'sub_1',
+          metadata: { cardSurchargeProduct: 'prod_surcharge', cardSurchargeBps: '250', surchargeAmount: '125' },
+          // The surcharge item listed first: told apart by its product, not its place.
+          items: { data: [{ id: 'si_surcharge', price: { id: 'price_s', product: 'prod_surcharge' } }, { id: 'si_plan', price: { id: 'price_old', product: 'prod_plan' } }] },
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      prices: { retrieve: jest.fn().mockResolvedValue({ id: 'price_new', unit_amount: 6000, currency: 'usd' }) },
+    };
+    await makeService(stripe).migrateSubscriptionToNewPrice('acct_school', 'sub_1', 'price_new');
+    expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_1', {
+      items: [
+        { id: 'si_plan', price: 'price_new' },
+        { id: 'si_surcharge', price_data: { currency: 'usd', product: 'prod_surcharge', unit_amount: 150, recurring: { interval: 'month' } } },
+      ],
+      proration_behavior: 'none',
+      metadata: { surchargeAmount: '150' },
+    });
+  });
+
+  it('a Migrate price change on a Subscription with no surcharge is unchanged', async () => {
+    const stripe = {
+      subscriptions: {
+        retrieve: jest.fn().mockResolvedValue({ id: 'sub_1', metadata: {}, items: { data: [{ id: 'si_plan', price: { id: 'price_old', product: 'prod_plan' } }] } }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      prices: { retrieve: jest.fn() },
+    };
+    await makeService(stripe).migrateSubscriptionToNewPrice('acct_school', 'sub_1', 'price_new');
+    expect(stripe.prices.retrieve).not.toHaveBeenCalled();
+    expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_1', { items: [{ id: 'si_plan', price: 'price_new' }], proration_behavior: 'none' });
   });
 });
 

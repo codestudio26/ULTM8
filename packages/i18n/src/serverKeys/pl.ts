@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "Ta Szkoła melduje członków tylko w ich macierzystym Oddziale.",
     checkInVisitorsOff: "Ta Szkoła obecnie nie melduje gości z karnetem wizytowym.",
     checkInOneClass: "Ta Szkoła melduje na jedne zajęcia naraz.",
+    checkInPaymentOverdue: "Ta Szkoła nie melduje członków, dopóki płatność jest zaległa. Opłać ją w aplikacji lub w recepcji.",
     packUsedUp: "W tym pakiecie zajęć nie ma już zajęć. Kup ten sam pakiet, aby się zameldować.",
     membershipFrozen: "Ten karnet jest zamrożony, więc do końca zamrożenia nie można go użyć do rezerwacji ani zameldowania.",
     freezeTooShort: "Zamrożenie musi trwać co najmniej 7 dni.",

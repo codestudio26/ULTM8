@@ -29,6 +29,8 @@ const DEFAULT_RULES: {
   visitors: boolean;
   severalClasses: boolean;
   frozenMembers: boolean;
+  showBeltProgress: boolean;
+  blockOverdueDays: number | null;
   codeDigits: number;
 } = {
   opensMinutesBeforeStart: 30,
@@ -39,9 +41,12 @@ const DEFAULT_RULES: {
   severalClasses: true,
   // Decision 404: frozen members can't check in by default.
   frozenMembers: false,
+  // Backlog §3.5: belt progress shown, never refused for an overdue payment.
+  showBeltProgress: true,
+  blockOverdueDays: null,
   codeDigits: 4,
 };
-const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false };
+const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false };
 
 describeIfDb('Check-in rules (Decision 394)', () => {
   let app: INestApplication;

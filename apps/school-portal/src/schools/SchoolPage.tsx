@@ -25,6 +25,7 @@ import {
   type SchoolResponse,
 } from './schoolQueries';
 import { HeardFromCard } from './HeardFromCard';
+import { StudentTagsSettingsCard } from './StudentTagsSettingsCard';
 import { FreezeSettingsCard } from './FreezeSettingsCard';
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
@@ -94,6 +95,8 @@ export function SchoolPage() {
         <LateFeesCard key={`late-fees-${schoolId}`} schoolId={schoolId} />
         {/* Decision 392: the tablet sign-up's "How did you hear about us?" list. */}
         <HeardFromCard key={`heard-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Backlog 5.4: the School's own student tags. */}
+        <StudentTagsSettingsCard key={`tags-${schoolId}`} schoolId={schoolId} />
         <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />
         <FranchiseAffiliationCard key={`franchise-${schoolId}`} schoolId={schoolId} franchiseId={school.franchiseId ?? null} closed={closed} />
       </fieldset>

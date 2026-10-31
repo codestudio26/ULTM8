@@ -3,10 +3,11 @@ import { Prisma } from '@prisma/client';
 /** Decision 406: a School's card surcharge is at most 3%, kept in basis points. */
 export const CARD_SURCHARGE_MAX_BPS = 300;
 
-/** The plan types a member pays once, by card, where the surcharge applies.
- * A Subscription is left out for now: its recurring Stripe price has no
- * surcharge line yet. A Friend Pass is never sold. */
-export const CARD_SURCHARGE_PLAN_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'TRIAL_MEMBERSHIP'] as const;
+/** The plan types a member pays by card, where the surcharge applies: the
+ * one-off ones, and a Subscription's first payment and renewals (its own
+ * recurring line on the Stripe Subscription, stripe-subscription-surcharge.ts).
+ * A Friend Pass is never sold. */
+export const CARD_SURCHARGE_PLAN_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'TRIAL_MEMBERSHIP', 'SUBSCRIPTION'] as const;
 
 /**
  * The surcharge on `price` (minor units) at `bps` basis points, in the same

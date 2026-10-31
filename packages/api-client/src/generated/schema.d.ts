@@ -4644,6 +4644,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/attendance/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffAttendanceController_stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/attendance/log-classes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffAttendanceController_logClasses"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/attendance/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffAttendanceController_log"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies": {
         parameters: {
             query?: never;
@@ -5924,6 +5972,86 @@ export interface paths {
         patch: operations["StudentNotesController_update"];
         trace?: never;
     };
+    "/v1/schools/{schoolId}/student-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentTagsController_list"];
+        put?: never;
+        post: operations["StudentTagsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/student-tags/{tagId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StudentTagsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["StudentTagsController_rename"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/student-tags/{tagId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentTagsController_tagged"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentTagsController_studentTags"];
+        put?: never;
+        post: operations["StudentTagsController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/tags/{tagId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StudentTagsController_untag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/add-child-manually": {
         parameters: {
             query?: never;
@@ -6748,6 +6876,13 @@ export interface components {
             checkInSeveralClasses: boolean;
             /** @description Decision 404: members whose membership is frozen may still check in (default off). */
             checkInFrozenMembers: boolean;
+            /** @description Backlog §3.5: the check-in welcome card shows the member's classes toward their next belt (default on). */
+            checkInShowBeltProgress: boolean;
+            /**
+             * @description Backlog §3.5: check-in is refused while a charge is owed more than this many days past its due date. Null (default): never.
+             * @enum {number|null}
+             */
+            checkInBlockOverdueDays?: 7 | 14 | null;
             /** @description Decision 404: the most days a membership can be frozen in any 12 months (default 90). */
             freezeMaxDaysPer12Months: number;
             /** @description Decision 404: the freeze fee in minor units of the School's currency; null = no fee. */
@@ -7508,6 +7643,8 @@ export interface components {
             exportStudents: boolean;
             /** @description Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409). */
             freezeMemberships: boolean;
+            /** @description See attendance statistics for their branches (off by default; Decision 317 item 3). */
+            attendanceStats: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -10294,6 +10431,11 @@ export interface components {
             /** @description The student's rung in the dry run (its fromRungId). */
             rungId: string;
         };
+        BulkTargetRungDto: {
+            studentId: string;
+            /** @description The rung (stripe tier id) to move to: a higher rung of this style (rungs between are skipped and recorded), or, on a Kids style, a rung of its linked Adult program above the Adult ladder's first belt, for a student who has reached "Ready for Adult from age" (backlog 3.20). */
+            rungId: string;
+        };
         BulkPromoteDto: {
             disciplineId: string;
             /** @description Up to 200 students (Spec 55). */
@@ -10311,11 +10453,15 @@ export interface components {
             dryRun?: boolean;
             /** @description Each student's rung from the dry run (Decision 284). A listed student who is no longer on it is skipped, not promoted again, so a batch can be sent again safely after a failure. */
             expected?: components["schemas"]["BulkExpectedRungDto"][];
+            /** @description Each student's "Promote to" pick (Decision 281 item 2). A student left out moves up one rung. Send the same picks with the dry run and with the real run. */
+            targets?: components["schemas"]["BulkTargetRungDto"][];
         };
         BulkPromoteStudentDto: {
             studentId: string;
             fromRungId?: string | null;
             toRungId?: string;
+            /** @description Backlog 3.20: toRungId is on the linked Adult program, so the student moves to the Adult style. */
+            toAdult?: boolean;
             /** @description Why this student needs a look, or why they can't be promoted. */
             reasons: string[];
             /** @description Set on a promoted student: their history entry. */
@@ -10931,11 +11077,84 @@ export interface components {
             severalClasses: boolean;
             /** @description Members whose membership is frozen may still check in (default off; Decision 404). Always in the response; leave it out of a save to keep it as it is. */
             frozenMembers?: boolean;
+            /** @description Backlog §3.5: the welcome card on the front desk and the tablet shows the member's classes toward their next belt (default on, as before). Always in the response; leave it out of a save to keep it as it is. */
+            showBeltProgress?: boolean;
+            /**
+             * @description Backlog §3.5: refuse check-in (CHECK_IN_PAYMENT_OVERDUE) to a member who still owes on a charge more than 7 or 14 days after its due date, in the School's time zone. Null (default): never refused for an overdue payment, as before. Always in the response; leave it out of a save to keep it as it is.
+             * @enum {number|null}
+             */
+            blockOverdueDays?: 7 | 14 | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced.
              * @enum {number}
              */
             codeDigits: 4 | 6;
+        };
+        AttendanceStatsResponseDto: {
+            /** @description First day counted (YYYY-MM-DD, the School's time zone): 29 days before today. */
+            from: string;
+            /** @description Today (YYYY-MM-DD, the School's time zone). Classes count once they have started. */
+            to: string;
+            /** @description The School's time zone the days are in (UTC when the School has none). */
+            timeZone: string;
+            /** @description The Branches counted; null means the whole School. */
+            branchIds: string[] | null;
+            /** @description Whether Trial, Visitor and Friend Pass check-ins were left out. */
+            excludePasses: boolean;
+            /** @description Check-ins: members' classes checked in (or logged), plus guests checked in on a Friend Pass. */
+            checkIns: number;
+            /** @description Of checkIns, guests checked in on a Friend Pass. */
+            guestCheckIns: number;
+            /** @description Of checkIns, attendance staff logged afterwards (STAFF_LOGGED). */
+            loggedCheckIns: number;
+            /** @description Classes with at least one check-in. */
+            classes: number;
+            /** @description Different members with at least one check-in (guests have no account and are not counted). */
+            students: number;
+            /** @description checkIns / classes, to one decimal (0 when no class had a check-in). */
+            studentsPerClass: number;
+            /** @description Members' check-ins / students, to one decimal (0 when nobody checked in). */
+            classesPerStudent: number;
+        };
+        LogClassItemDto: {
+            id: string;
+            title: string;
+            startDate: string;
+            endDate: string;
+            branchId: string | null;
+            /** @description The student named in the query has already attended (checked in or logged). */
+            attended: boolean;
+        };
+        LogClassesResponseDto: {
+            /** @description The earliest day attendance can be logged for (YYYY-MM-DD): 30 days before today. */
+            earliestDay: string;
+            /** @description Today (YYYY-MM-DD, the School's time zone). */
+            today: string;
+            /** @description The day listed (YYYY-MM-DD). */
+            date: string;
+            /** @description The School's time zone the days are in (UTC when the School has none). */
+            timeZone: string;
+            /** @description Classes on that day that have started, aren't cancelled or archived, at the caller's Branches. */
+            items: components["schemas"]["LogClassItemDto"][];
+        };
+        LogAttendanceDto: {
+            studentId: string;
+            /** @description A Class that started in the last 30 days (from the start of that day, School time). */
+            classId: string;
+        };
+        LoggedAttendanceResponseDto: {
+            bookingId: string;
+            classId: string;
+            studentId: string;
+            /** @enum {string} */
+            checkInMethod: "STAFF_LOGGED";
+            /** @description Who logged it. */
+            checkedInById: string;
+            /**
+             * @description BOOKED: a new booking was made, paid for like any staff booking (a Class Pack credit when that is what pays). UPCOMING: their booking was still open and is now checked in. NO_SHOW: their booking had been marked No-Show and is now checked in; it was already paid for, so nothing more is used.
+             * @enum {string}
+             */
+            from: "BOOKED" | "UPCOMING" | "NO_SHOW";
         };
         AcademySummaryDto: {
             id: string;
@@ -10969,7 +11188,7 @@ export interface components {
             expiryDurationDays?: number | null;
             classesIncluded?: number | null;
             visible: boolean;
-            /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Subscription or a Friend Pass). */
+            /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment. */
             cardSurchargeAmount: number;
         };
         AcademyClassDto: {
@@ -11800,6 +12019,35 @@ export interface components {
         UpdateStudentNoteDto: {
             body?: string;
             showToMember?: boolean;
+        };
+        SchoolTagDto: {
+            id: string;
+            name: string;
+            /** @description How many students have this tag. */
+            studentCount: number;
+        };
+        SchoolTagListDto: {
+            items: components["schemas"]["SchoolTagDto"][];
+        };
+        SchoolTagNameDto: {
+            name: string;
+        };
+        TaggedStudentsDto: {
+            /** @description The students with this tag that the caller covers. */
+            studentIds: string[];
+        };
+        StudentTagDto: {
+            id: string;
+            name: string;
+        };
+        StudentTagListDto: {
+            items: components["schemas"]["StudentTagDto"][];
+        };
+        AddStudentTagDto: {
+            /** @description A tag from the School's list. */
+            tagId?: string;
+            /** @description A new tag, added to the School's list. Send this or tagId. */
+            name?: string;
         };
         ChildDetailsDto: {
             firstName: string;
@@ -20297,6 +20545,83 @@ export interface operations {
             };
         };
     };
+    StaffAttendanceController_stats: {
+        parameters: {
+            query?: {
+                /** @description Only this Branch. Staff may only name one of their own Branches. */
+                branchId?: string;
+                /** @description Leave out Trial, Visitor (visit pass) and Friend Pass check-ins. They count by default. */
+                excludePasses?: boolean;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttendanceStatsResponseDto"];
+                };
+            };
+        };
+    };
+    StaffAttendanceController_logClasses: {
+        parameters: {
+            query?: {
+                /** @description The day (YYYY-MM-DD, the School's time zone), today or up to 30 days back. Today when left out. */
+                date?: string;
+                /** @description Marks the Classes this student has already attended. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogClassesResponseDto"];
+                };
+            };
+        };
+    };
+    StaffAttendanceController_log: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogAttendanceDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LoggedAttendanceResponseDto"];
+                };
+            };
+        };
+    };
     AcademiesController_findAll: {
         parameters: {
             query?: {
@@ -22486,6 +22811,189 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StudentNoteDto"];
                 };
+            };
+        };
+    };
+    StudentTagsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTagListDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolTagNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTagDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StudentTagsController_rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolTagNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTagDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_tagged: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaggedStudentsDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_studentTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentTagListDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddStudentTagDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentTagListDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_untag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -7,7 +7,11 @@
  *   listed, above 3%, or without the legal confirmation;
  * - a one-off card payment is charged the surcharge as a separate amount
  *   (its own Checkout line, Transaction.surchargeAmount), shown on the plan
- *   before paying; never on cash or a bank transfer, nor on a Subscription;
+ *   before paying; never on cash or a bank transfer;
+ * - a Subscription carries it as its own recurring item: its first payment
+ *   and each renewal record it apart from the plan's price (from the
+ *   invoice's own surcharge line), a refund in Stripe counts it, and the
+ *   School changing its rate leaves a running Subscription as it is;
  * - removing the country stops it, keeping the School's stored %.
  *
  * Stripe is faked (StripeClientService.scopedClient), recording what was sent.
@@ -24,8 +28,10 @@ import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { Job } from 'bullmq';
 import { StripeClientService } from '../src/payments/stripe-client.service';
-import { fakeIncompleteSubscription, fakePaymentCheckoutSession } from './stripe-fakes';
+import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
+import { fakeIncompleteSubscription, fakePaymentCheckoutSession, fakeSubscriptionInvoice } from './stripe-fakes';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const PLATFORM_ADMIN_JWT_SECRET = process.env.PLATFORM_ADMIN_JWT_SECRET;
@@ -45,6 +51,7 @@ const COUNTRY = 'UY';
 
 describeIfDb('Card surcharge (Decision 406)', () => {
   let app: INestApplication;
+  let processor: StripeWebhookProcessingProcessor;
   const su = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
   const adminJwt = new JwtService({ secret: PLATFORM_ADMIN_JWT_SECRET });
@@ -63,7 +70,14 @@ describeIfDb('Card surcharge (Decision 406)', () => {
   // Every Stripe call made, for the assertions below.
   const intents: Array<{ amount: number; metadata?: Record<string, string> }> = [];
   const sessions: Array<{ line_items: Array<{ price_data: { unit_amount: number; product_data: { name: string } } }> }> = [];
-  const subscriptions: Array<{ items: Array<{ price_data?: { unit_amount: number } }> }> = [];
+  type SubscriptionItemParams = { price?: string; price_data?: { unit_amount: number; product: string; currency: string; recurring: { interval: string } } };
+  const subscriptions: Array<{ items: SubscriptionItemParams[]; metadata?: Record<string, string> }> = [];
+  const products: Array<{ id: string; name: string }> = [];
+  /** What invoices.retrieve / charges.retrieve hand the webhook processor, by id. */
+  const invoices = new Map<string, object>();
+  const charges = new Map<string, object>();
+  const subscriptionUpdates: unknown[] = [];
+  const subscriptionCancels: string[] = [];
   const fakeStripeClient = {
     scopedClient: jest.fn(() => ({
       paymentIntents: {
@@ -84,13 +98,30 @@ describeIfDb('Card surcharge (Decision 406)', () => {
         create: jest.fn(async () => ({ id: `cus_${randomUUID()}` })),
         retrieve: jest.fn(async () => ({ invoice_settings: { default_payment_method: 'pm_saved' } })),
       },
-      products: { create: jest.fn(async () => ({ id: `prod_${randomUUID()}` })) },
-      subscriptions: {
-        create: jest.fn(async (params: (typeof subscriptions)[number]) => {
-          subscriptions.push(params);
-          return fakeIncompleteSubscription();
+      products: {
+        create: jest.fn(async (params: { name: string }) => {
+          const product = { id: `prod_${randomUUID()}`, name: params.name };
+          products.push(product);
+          return product;
         }),
       },
+      subscriptions: {
+        // The first invoice charges each item's price, one line per item.
+        create: jest.fn(async (params: (typeof subscriptions)[number]) => {
+          subscriptions.push(params);
+          return fakeIncompleteSubscription(undefined, params.items.map((i) => ({ amount: i.price_data?.unit_amount ?? 0, product: i.price_data?.product ?? 'prod_plan' })));
+        }),
+        update: jest.fn(async (...args: unknown[]) => {
+          subscriptionUpdates.push(args);
+          return {};
+        }),
+        cancel: jest.fn(async (id: string) => {
+          subscriptionCancels.push(id);
+          return { id, status: 'canceled' };
+        }),
+      },
+      invoices: { retrieve: jest.fn(async (id: string) => invoices.get(id)) },
+      charges: { retrieve: jest.fn(async (id: string) => charges.get(id)) },
     })),
     platformClient: jest.fn(),
   };
@@ -112,6 +143,18 @@ describeIfDb('Card surcharge (Decision 406)', () => {
     return res.body.membershipPlans as Array<{ id: string; price: number; cardSurchargeAmount: number }>;
   };
   const transaction = (id: string) => su.transaction.findUniqueOrThrow({ where: { id } });
+  const eventIds: string[] = [];
+  /** Runs one Stripe webhook job on the card School's connected account. */
+  const webhook = async (eventType: string, objectId: string) => {
+    const stripeEventId = `evt_${randomUUID()}`;
+    eventIds.push(stripeEventId);
+    const account = await su.paymentAccount.findUniqueOrThrow({ where: { schoolId: card.id } });
+    await processor.process({ data: { stripeEventId, eventType, objectId, stripeAccountId: account.stripeConnectedAccountId } } as unknown as Job);
+  };
+  const invoiceEvent = (eventType: 'invoice.paid' | 'invoice.payment_failed', invoice: { id: string }) => {
+    invoices.set(invoice.id, invoice);
+    return webhook(eventType, invoice.id);
+  };
 
   const mkUser = async (label: string) => {
     const u = await su.user.create({
@@ -140,6 +183,7 @@ describeIfDb('Card surcharge (Decision 406)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
+    processor = app.get(StripeWebhookProcessingProcessor);
     await su.cardSurchargeCountry.deleteMany({ where: { countryCode: COUNTRY } });
 
     card = await su.school.create({ data: { id: randomUUID(), name: `${tag}-card`, addressCountry: COUNTRY, defaultCurrency: 'USD' } });
@@ -172,6 +216,7 @@ describeIfDb('Card surcharge (Decision 406)', () => {
     await su.cardSurchargeCountry.deleteMany({ where: { countryCode: COUNTRY } });
     await su.auditLogEntry.deleteMany({ where: { adminUserId: { in: adminIds } } });
     const where = { schoolId: { in: schoolIds } };
+    await su.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
     await su.transaction.deleteMany({ where });
     await su.membership.deleteMany({ where });
     await su.studentPaymentMethod.deleteMany({ where });
@@ -234,11 +279,12 @@ describeIfDb('Card surcharge (Decision 406)', () => {
     expect(saved.body.confirmedAt).toBeTruthy();
   });
 
-  it('shows the surcharge on each one-off plan before paying, never on a Subscription', async () => {
+  it('shows the surcharge on each plan before paying, a Subscription\'s monthly one included', async () => {
     const plans = await academyPlans(card.id);
     // 2.5% of 19.99 is 0.49975, charged as 0.50.
     expect(plans.find((p) => p.id === pack.id)?.cardSurchargeAmount).toBe(50);
-    expect(plans.find((p) => p.id === monthly.id)?.cardSurchargeAmount).toBe(0);
+    // 2.5% of 50.00 a month.
+    expect(plans.find((p) => p.id === monthly.id)?.cardSurchargeAmount).toBe(125);
   });
 
   it('charges it as its own Checkout line and keeps it apart on the Transaction', async () => {
@@ -279,12 +325,131 @@ describeIfDb('Card surcharge (Decision 406)', () => {
     expect(await transaction(res.body.transactionId)).toMatchObject({ amount: 1999, surchargeAmount: 50, status: 'SUCCESSFUL' });
   });
 
-  it('never applies to a Subscription', async () => {
-    const res = await buy(monthly.id);
-    expect(res.status).toBe(201);
-    expect(subscriptions[subscriptions.length - 1].items[0].price_data?.unit_amount).toBe(5000);
-    expect(subscriptions[subscriptions.length - 1].items).toHaveLength(1);
-    expect(await transaction(res.body.transactionId)).toMatchObject({ amount: 5000, surchargeAmount: 0 });
+  describe('a Subscription', () => {
+    let subscriptionId: string;
+    let surchargeProduct: string;
+    let snapshot: Record<string, string>;
+    const renewal = (opts: { id?: string; pi?: string; paid?: boolean } = {}) =>
+      fakeSubscriptionInvoice({
+        subscriptionId,
+        id: opts.id,
+        paymentIntentId: opts.pi ?? `pi_${randomUUID()}`,
+        paid: opts.paid,
+        subscriptionMetadata: snapshot,
+        lines: [
+          { amount: 5000, product: 'prod_plan' },
+          { amount: 125, product: surchargeProduct },
+        ],
+      });
+
+    it("adds it as its own recurring item, and keeps the first payment's surcharge apart on the Transaction", async () => {
+      const res = await buy(monthly.id);
+      expect(res.status).toBe(201);
+      expect(res.body.outcome).toBe('requires_payment');
+      const sent = subscriptions[subscriptions.length - 1];
+      expect(sent.items).toHaveLength(2);
+      expect(sent.items[0].price_data).toMatchObject({ unit_amount: 5000, recurring: { interval: 'month' } });
+      // The surcharge's own monthly item, on its own "Card surcharge" product,
+      // so each Stripe invoice and receipt shows it as its own line.
+      expect(sent.items[1].price_data).toMatchObject({ unit_amount: 125, currency: 'usd', recurring: { interval: 'month' } });
+      surchargeProduct = sent.items[1].price_data!.product;
+      expect(products.find((p) => p.id === surchargeProduct)?.name).toBe('Card surcharge');
+      // Kept on the Subscription, so each invoice's snapshot names its line.
+      expect(sent.metadata).toEqual({ cardSurchargeProduct: surchargeProduct, cardSurchargeBps: '250', surchargeAmount: '125' });
+      snapshot = sent.metadata!;
+
+      const tx = await transaction(res.body.transactionId);
+      expect(tx).toMatchObject({ amount: 5000, surchargeAmount: 125, paymentMethod: 'STRIPE', status: 'PENDING' });
+      subscriptionId = tx.stripeSubscriptionId!;
+
+      // The first payment goes through: the Membership starts, the row keeps both parts.
+      await webhook('payment_intent.succeeded', tx.stripePaymentIntentId!);
+      expect(await transaction(tx.id)).toMatchObject({ status: 'SUCCESSFUL', amount: 5000, surchargeAmount: 125 });
+      expect(await su.membership.count({ where: { stripeSubscriptionId: subscriptionId, status: 'ACTIVE' } })).toBe(1);
+      const mine = await http().get('/v1/transactions/me').set('Authorization', `Bearer ${token.student}`);
+      expect(mine.body.items.find((t: { id: string }) => t.id === tx.id)).toMatchObject({ amount: 5000, surchargeAmount: 125 });
+    });
+
+    it("records each renewal's surcharge line apart from the plan's price", async () => {
+      const invoice = renewal();
+      await invoiceEvent('invoice.paid', invoice);
+      const row = await su.transaction.findUniqueOrThrow({ where: { stripeInvoiceId: invoice.id } });
+      expect(row).toMatchObject({ kind: 'RENEWAL', status: 'SUCCESSFUL', amount: 5000, surchargeAmount: 125, currency: 'USD' });
+      const ledger = await http().get(`/v1/schools/${card.id}/transactions`).set('Authorization', `Bearer ${token.owner}`);
+      expect(ledger.body.items.find((t: { id: string }) => t.id === row.id)).toMatchObject({ kind: 'RENEWAL', amount: 5000, surchargeAmount: 125 });
+    });
+
+    it('a failed renewal keeps both parts, and so does the retry that pays it', async () => {
+      const id = `in_${randomUUID()}`;
+      const pi = `pi_${randomUUID()}`;
+      await invoiceEvent('invoice.payment_failed', renewal({ id, pi, paid: false }));
+      expect(await su.transaction.findUniqueOrThrow({ where: { stripeInvoiceId: id } })).toMatchObject({ status: 'FAILED', amount: 5000, surchargeAmount: 125 });
+      await invoiceEvent('invoice.paid', renewal({ id, pi }));
+      expect(await su.transaction.findUniqueOrThrow({ where: { stripeInvoiceId: id } })).toMatchObject({ status: 'SUCCESSFUL', amount: 5000, surchargeAmount: 125 });
+    });
+
+    it('the School changing its rate leaves a running Subscription as it is; a new one takes the new rate', async () => {
+      const saved = await setting('owner').put({ enabled: true, bps: 100, legalConfirmed: true });
+      expect(saved.status).toBe(200);
+      expect(subscriptionUpdates).toHaveLength(0);
+      // Stripe still charges the item the Subscription started with: recorded from the invoice.
+      const invoice = renewal();
+      await invoiceEvent('invoice.paid', invoice);
+      expect(await su.transaction.findUniqueOrThrow({ where: { stripeInvoiceId: invoice.id } })).toMatchObject({ amount: 5000, surchargeAmount: 125 });
+
+      // A new Subscription takes 1% (bought, not paid: the purchase only starts
+      // it). The running one is set aside meanwhile: one general-access
+      // Membership at a time.
+      await su.membership.updateMany({ where: { stripeSubscriptionId: subscriptionId }, data: { status: 'EXPIRED' } });
+      const res = await buy(monthly.id);
+      await su.membership.updateMany({ where: { stripeSubscriptionId: subscriptionId }, data: { status: 'ACTIVE' } });
+      expect(res.status).toBe(201);
+      const sent = subscriptions[subscriptions.length - 1];
+      expect(sent.items[1].price_data?.unit_amount).toBe(50);
+      expect(sent.metadata).toMatchObject({ cardSurchargeBps: '100', surchargeAmount: '50' });
+      expect(await transaction(res.body.transactionId)).toMatchObject({ amount: 5000, surchargeAmount: 50 });
+      await su.transaction.update({ where: { id: res.body.transactionId }, data: { status: 'FAILED' } });
+      expect((await setting('owner').put({ enabled: true, bps: 250, legalConfirmed: true })).status).toBe(200);
+    });
+
+    it('a renewal refunded in full in Stripe counts the surcharge as refunded', async () => {
+      const pi = `pi_${randomUUID()}`;
+      const invoice = renewal({ pi });
+      await invoiceEvent('invoice.paid', invoice);
+      const chargeId = `ch_${randomUUID()}`;
+      charges.set(chargeId, { id: chargeId, object: 'charge', payment_intent: pi, amount: 5125, amount_refunded: 5125, currency: 'usd' });
+      await webhook('charge.refunded', chargeId);
+      expect(await su.transaction.findUniqueOrThrow({ where: { stripeInvoiceId: invoice.id } })).toMatchObject({
+        status: 'REFUNDED',
+        refundedAmount: 5125,
+        amount: 5000,
+        surchargeAmount: 125,
+      });
+      // A refunded renewal ends the Membership and cancels its Subscription.
+      expect(subscriptionCancels).toContain(subscriptionId);
+    });
+
+    it('a Subscription started with no surcharge has one item, and its renewals record none', async () => {
+      await su.school.update({ where: { id: card.id }, data: { cardSurchargeEnabled: false } });
+      const res = await buy(monthly.id);
+      expect(res.status).toBe(201);
+      const sent = subscriptions[subscriptions.length - 1];
+      expect(sent.items).toHaveLength(1);
+      expect(sent.metadata).toBeUndefined();
+      const tx = await transaction(res.body.transactionId);
+      expect(tx).toMatchObject({ amount: 5000, surchargeAmount: 0 });
+      await su.transaction.update({ where: { id: tx.id }, data: { status: 'FAILED' } });
+
+      const plain = tx.stripeSubscriptionId!;
+      await su.membership.create({
+        data: { id: randomUUID(), studentId: student.id, membershipPlanId: monthly.id, schoolId: card.id, frequency: 'RECURRING', stripeSubscriptionId: plain },
+      });
+      const invoice = fakeSubscriptionInvoice({ subscriptionId: plain, paymentIntentId: `pi_${randomUUID()}`, lines: [{ amount: 5000, product: 'prod_plan' }] });
+      await invoiceEvent('invoice.paid', invoice);
+      expect(await su.transaction.findUniqueOrThrow({ where: { stripeInvoiceId: invoice.id } })).toMatchObject({ amount: 5000, surchargeAmount: 0 });
+      await su.membership.updateMany({ where: { stripeSubscriptionId: plain }, data: { status: 'EXPIRED' } });
+      await su.school.update({ where: { id: card.id }, data: { cardSurchargeEnabled: true } });
+    });
   });
 
   it('never applies to cash or a bank transfer, even with the setting on', async () => {

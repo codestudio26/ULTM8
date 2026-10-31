@@ -16,6 +16,7 @@ import { applyFreezeBillingAfterRenewal } from '../memberships/freeze/freeze-bil
 import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paymentRefundable, receiptNotice, paymentRefundNotice, recordChargeRefund, refundNotice, refusedPurchaseRefundNotice, settleChargePayment } from '../charges/charge-ledger';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 import { fromStripeAmount } from '../payments/stripe-amount';
+import { invoiceSurchargeAmount } from '../payments/stripe-subscription-surcharge';
 
 /** `transactionId`: the ULTM8 Transaction id from the event object's metadata,
  * set on a hosted Checkout payment's PaymentIntent and Session
@@ -1358,12 +1359,19 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         return true; // the purchase's own charge, already on the ledger
       }
     }
+    // Decision 406 (backlog 3.8): the card surcharge is its own line on the
+    // invoice (the Subscription's surcharge item, stripe-subscription-
+    // surcharge.ts), kept apart from the plan's price as on every other card
+    // payment: `amount` is the rest of what the invoice charged.
+    // Never more than the invoice took (a balance credit can pay part of it).
+    const invoiced = fromStripeAmount(status === 'SUCCESSFUL' ? invoice.amount_paid : invoice.amount_due, invoice.currency);
+    const surchargeAmount = Math.min(invoiceSurchargeAmount(invoice), invoiced);
     const existing = await tx.transaction.findUnique({ where: { stripeInvoiceId: invoice.id } });
     if (existing) {
       if (existing.status === 'FAILED' && status === 'SUCCESSFUL') {
         await tx.transaction.update({
           where: { id: existing.id },
-          data: { status, amount: fromStripeAmount(invoice.amount_paid, invoice.currency), stripePaymentIntentId: paymentIntentId ?? existing.stripePaymentIntentId, billingDate: this.invoiceDate(invoice) },
+          data: { status, amount: invoiced - surchargeAmount, surchargeAmount, stripePaymentIntentId: paymentIntentId ?? existing.stripePaymentIntentId, billingDate: this.invoiceDate(invoice) },
         });
       } else if (paymentIntentId && !existing.stripePaymentIntentId) {
         await tx.transaction.update({ where: { id: existing.id }, data: { stripePaymentIntentId: paymentIntentId } });
@@ -1385,7 +1393,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         membershipId: membership.id,
         kind: 'RENEWAL',
         billingDate: this.invoiceDate(invoice),
-        amount: fromStripeAmount(status === 'SUCCESSFUL' ? invoice.amount_paid : invoice.amount_due, invoice.currency),
+        amount: invoiced - surchargeAmount,
+        surchargeAmount,
         currency: invoice.currency?.toUpperCase() ?? 'USD',
         status,
         paymentMethod: 'STRIPE',

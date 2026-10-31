@@ -15,8 +15,10 @@ import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
-import { toStripeAmount } from './stripe-amount';
+import { fromStripeAmount, toStripeAmount } from './stripe-amount';
 import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from './stripe-first-invoice';
+import { cardSurchargeAmount } from './card-surcharge';
+import { SUBSCRIPTION_SURCHARGE_METADATA, invoiceSurchargeAmount, splitSubscriptionItems } from './stripe-subscription-surcharge';
 import { chargeAbilities } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
@@ -574,11 +576,21 @@ export class PaymentsService {
     // The purchase's idempotency key (MembershipsService): a repeated purchase
     // (a double click) gets the same customer, product and subscription back.
     idempotencyKey?: string,
-  ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string }> {
+    // Decision 406 (backlog 3.8): the School's card surcharge for one month,
+    // in the same minor units as `amount`, and the rate it was worked out at.
+    // Added as its own recurring item (stripe-subscription-surcharge.ts), so
+    // the first payment and every renewal carry it as their own line.
+    // `undefined` or an amount of 0 leaves the Subscription as before.
+    surcharge?: { amount: number; bps: number },
+  ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string; surchargeAmount: number }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const key = (part: string) => (idempotencyKey ? { idempotencyKey: `${idempotencyKey}-${part}` } : undefined);
     const customer = await withIdempotencyRetry(() => stripe.customers.create({ email: studentEmail }, key('customer')));
+    const surchargeProductId =
+      surcharge && surcharge.amount > 0
+        ? (await withIdempotencyRetry(() => stripe.products.create({ name: CARD_SURCHARGE_LINE_NAME }, key('surcharge-product')))).id
+        : undefined;
     const item = existingPriceId
       ? { price: existingPriceId }
       : {
@@ -591,7 +603,30 @@ export class PaymentsService {
         };
     const subscription = await withIdempotencyRetry(() => stripe.subscriptions.create({
       customer: customer.id,
-      items: [item],
+      items: surchargeProductId
+        ? [
+            item,
+            {
+              price_data: {
+                currency: currency.toLowerCase(),
+                unit_amount: toStripeAmount(surcharge!.amount, currency),
+                // Monthly, as the plan's own item: Stripe bills every item of
+                // a Subscription on one interval.
+                recurring: { interval: 'month' as const },
+                product: surchargeProductId,
+              },
+            },
+          ]
+        : [item],
+      ...(surchargeProductId
+        ? {
+            metadata: {
+              [SUBSCRIPTION_SURCHARGE_METADATA.product]: surchargeProductId,
+              [SUBSCRIPTION_SURCHARGE_METADATA.bps]: String(surcharge!.bps),
+              [SUBSCRIPTION_SURCHARGE_METADATA.amount]: String(surcharge!.amount),
+            },
+          }
+        : {}),
       payment_behavior: 'default_incomplete',
       payment_settings: { save_default_payment_method: 'on_subscription' },
       // The first invoice's PaymentIntent (id and client secret): see
@@ -606,7 +641,16 @@ export class PaymentsService {
       ...(billingCycleAnchorDay ? { billing_cycle_anchor_config: { day_of_month: billingCycleAnchorDay } } : {}),
     }, key('subscription')));
     const { paymentIntentId, clientSecret } = firstInvoicePayment(subscription);
-    return { subscriptionId: subscription.id, paymentIntentId, clientSecret };
+    // What the first invoice charges for the surcharge, as Stripe worked it
+    // out (prorated with the plan on a shared billing day, Decision 259). The
+    // month's amount if the invoice came back without its lines.
+    const firstInvoice = typeof subscription.latest_invoice === 'object' ? subscription.latest_invoice : null;
+    const surchargeAmount = !surchargeProductId
+      ? 0
+      : firstInvoice?.lines?.data
+        ? invoiceSurchargeAmount(firstInvoice, surchargeProductId)
+        : surcharge!.amount;
+    return { subscriptionId: subscription.id, paymentIntentId, clientSecret, surchargeAmount };
   }
 
   // ---------------------------------------------------------------------------
@@ -693,13 +737,38 @@ export class PaymentsService {
   async migrateSubscriptionToNewPrice(connectedAccountId: string, stripeSubscriptionId: string, newPriceId: string): Promise<void> {
     const stripe = this.stripeClient.scopedClient(connectedAccountId);
     const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
-    const item = subscription.items.data[0];
+    // Decision 406: a Subscription with a card surcharge has a second item
+    // (stripe-subscription-surcharge.ts); only the plan's item takes the new
+    // Price.
+    const { planItem: item, surchargeItem } = splitSubscriptionItems(subscription);
     if (!item) {
       throw new Error(`Stripe Subscription ${stripeSubscriptionId} has no Subscription Item to migrate.`);
     }
+    const items: Stripe.SubscriptionUpdateParams.Item[] = [{ id: item.id, price: newPriceId }];
+    let metadata: Record<string, string> | undefined;
+    // The surcharge stays the same % of the price: re-priced at the rate the
+    // Subscription started with (its metadata), not the School's rate today,
+    // which running Subscriptions don't follow. Same product, so every later
+    // invoice's line is still found as the surcharge.
+    const bps = Number(subscription.metadata?.[SUBSCRIPTION_SURCHARGE_METADATA.bps] ?? 0);
+    const surchargeProduct = subscription.metadata?.[SUBSCRIPTION_SURCHARGE_METADATA.product];
+    if (surchargeItem && surchargeProduct && bps > 0) {
+      const newPrice = await stripe.prices.retrieve(newPriceId);
+      const amount = cardSurchargeAmount(fromStripeAmount(newPrice.unit_amount ?? 0, newPrice.currency), bps);
+      items.push(
+        amount > 0
+          ? {
+              id: surchargeItem.id,
+              price_data: { currency: newPrice.currency, product: surchargeProduct, unit_amount: toStripeAmount(amount, newPrice.currency), recurring: { interval: 'month' } },
+            }
+          : { id: surchargeItem.id, deleted: true },
+      );
+      metadata = { [SUBSCRIPTION_SURCHARGE_METADATA.amount]: String(amount) };
+    }
     await stripe.subscriptions.update(stripeSubscriptionId, {
-      items: [{ id: item.id, price: newPriceId }],
+      items,
       proration_behavior: 'none',
+      ...(metadata ? { metadata } : {}),
     });
   }
 

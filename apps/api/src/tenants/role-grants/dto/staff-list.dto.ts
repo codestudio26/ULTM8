@@ -105,6 +105,10 @@ export class StaffAccessDto {
   @ApiProperty({ description: "Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409)." })
   @IsBoolean()
   freezeMemberships!: boolean;
+
+  @ApiProperty({ description: "See attendance statistics for their branches (off by default; Decision 317 item 3)." })
+  @IsBoolean()
+  attendanceStats!: boolean;
 }
 
 export class StaffAccessResponseDto {
