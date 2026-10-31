@@ -769,4 +769,8 @@ export const serverMessages: Record<string, string> = {
   "This class hasn't started yet. Check them in instead.": "このクラスはまだ始まっていません。代わりにチェックインしてください。",
   "This date is not valid.": "この日付は無効です。",
   "Attendance can only be logged from {v1} to {v2}.": "出席を記録できるのは {v1} から {v2} までです。",
+  "The School owner hasn't let you import data.": "スクールのオーナーからデータのインポートを許可されていません。",
+  "A row number is past the end of this import.": "行番号がこのインポートの最後を超えています。",
+  "Import not found": "インポートが見つかりません",
+  "Each row number can only be sent once.": "各行番号は一度だけ送信できます。",
 };

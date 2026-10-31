@@ -21341,6 +21341,227 @@
           }
         ]
       }
+    },
+    "/v1/schools/{schoolId}/imports/limits": {
+      "get": {
+        "operationId": "DataImportsController_limits",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportLimitsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports/preview": {
+      "post": {
+        "operationId": "DataImportsController_preview",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PreviewImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports": {
+      "post": {
+        "operationId": "DataImportsController_start",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartImportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataImportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports/{importId}/rows": {
+      "post": {
+        "operationId": "DataImportsController_importRows",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "importId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportRowsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportRowsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/imports/{importId}": {
+      "get": {
+        "operationId": "DataImportsController_find",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "importId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataImportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "data-imports"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -24556,6 +24777,10 @@
           "memberFiles": {
             "type": "boolean",
             "description": "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)."
+          },
+          "importData": {
+            "type": "boolean",
+            "description": "Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13)."
           }
         },
         "required": [
@@ -24570,7 +24795,8 @@
           "exportStudents",
           "freezeMemberships",
           "attendanceStats",
-          "memberFiles"
+          "memberFiles",
+          "importData"
         ]
       },
       "StaffRoleDto": {
@@ -42274,6 +42500,358 @@
         },
         "required": [
           "studentIds"
+        ]
+      },
+      "ImportLimitsDto": {
+        "type": "object",
+        "properties": {
+          "maxRows": {
+            "type": "number"
+          },
+          "maxRowsPerRequest": {
+            "type": "number"
+          },
+          "attendanceMaxDaysBack": {
+            "type": "number",
+            "description": "Past attendance can be imported this many days back (Decision 317 item 4)."
+          },
+          "columns": {
+            "type": "object",
+            "description": "Each kind's columns, in template order.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "required": [
+          "maxRows",
+          "maxRowsPerRequest",
+          "attendanceMaxDaysBack",
+          "columns"
+        ]
+      },
+      "ImportKind": {
+        "type": "string",
+        "enum": [
+          "MEMBERS",
+          "MEMBERSHIPS",
+          "ATTENDANCE"
+        ]
+      },
+      "ImportRowDto": {
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "number",
+            "minimum": 2,
+            "maximum": 2001,
+            "description": "The line in the file; the header row is line 1."
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Cells by column name, as the template names them."
+          }
+        },
+        "required": [
+          "rowNumber",
+          "values"
+        ]
+      },
+      "PreviewImportDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ImportKind"
+          },
+          "rows": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowDto"
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "rows"
+        ]
+      },
+      "ImportRowOutcome": {
+        "type": "string",
+        "description": "READY: a preview row that would be imported. CREATED: imported.",
+        "enum": [
+          "READY",
+          "CREATED",
+          "SKIPPED",
+          "ERROR"
+        ]
+      },
+      "ImportRowCode": {
+        "type": "string",
+        "description": "What will be or was done, or why the row is skipped or refused. FAILED: see message.",
+        "enum": [
+          "NEW_MEMBER",
+          "NEW_CHILD_NEW_GUARDIAN",
+          "NEW_CHILD_GUARDIAN_INVITED",
+          "NEW_MEMBERSHIP",
+          "NEW_ATTENDANCE",
+          "EMAIL_EXISTS",
+          "DUPLICATE_IN_FILE",
+          "INVITE_PENDING",
+          "ALREADY_MEMBER",
+          "ALREADY_IMPORTED",
+          "ALREADY_ATTENDED",
+          "MISSING_VALUE",
+          "TOO_LONG",
+          "INVALID_EMAIL",
+          "INVALID_PHONE",
+          "INVALID_DATE",
+          "INVALID_BIRTH_DATE",
+          "FUTURE_DATE",
+          "INVALID_GENDER",
+          "INVALID_TIME",
+          "INVALID_NUMBER",
+          "BRANCH_REQUIRED",
+          "NO_BRANCHES",
+          "UNKNOWN_BRANCH",
+          "NOT_YOUR_BRANCH",
+          "BELTS_FORMAT",
+          "BELTS_OFF",
+          "UNKNOWN_STYLE",
+          "UNKNOWN_BELT",
+          "GUARDIAN_NAME_REQUIRED",
+          "GUARDIAN_UNDER_18",
+          "CHILD_OWNER_ONLY",
+          "NOT_A_MEMBER",
+          "AMBIGUOUS_MEMBER",
+          "UNKNOWN_PLAN",
+          "AMBIGUOUS_PLAN",
+          "PLAN_IS_SUBSCRIPTION",
+          "PLAN_NOT_IMPORTABLE",
+          "NOT_A_CLASS_PACK",
+          "END_BEFORE_START",
+          "WAIVER_NEEDED",
+          "GENERAL_ACCESS_CONFLICT",
+          "UNKNOWN_CLASS",
+          "AMBIGUOUS_CLASS",
+          "CLASS_CANCELLED",
+          "CLASS_NOT_STARTED",
+          "OUT_OF_RANGE",
+          "FAILED"
+        ]
+      },
+      "ImportWarningCode": {
+        "type": "string",
+        "enum": [
+          "BELT_NOT_SET",
+          "BELTS_AFTER_ACCEPT",
+          "CHILD_PHONE_NOT_USED",
+          "EMAIL_NOT_SENT"
+        ]
+      },
+      "ImportWarningDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ImportWarningCode"
+          },
+          "message": {
+            "type": "string",
+            "description": "In English."
+          },
+          "style": {
+            "type": "string",
+            "description": "BELT_NOT_SET: the style."
+          },
+          "reason": {
+            "type": "string",
+            "description": "BELT_NOT_SET: why, in the API's own words."
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ]
+      },
+      "ImportRowResultDto": {
+        "type": "object",
+        "properties": {
+          "rowNumber": {
+            "type": "number"
+          },
+          "outcome": {
+            "$ref": "#/components/schemas/ImportRowOutcome"
+          },
+          "code": {
+            "$ref": "#/components/schemas/ImportRowCode"
+          },
+          "column": {
+            "type": "string",
+            "nullable": true,
+            "description": "The column the problem is in."
+          },
+          "message": {
+            "type": "string",
+            "description": "In English; for FAILED, the reason the API gave."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportWarningDto"
+            }
+          }
+        },
+        "required": [
+          "rowNumber",
+          "outcome",
+          "code",
+          "column",
+          "message",
+          "warnings"
+        ]
+      },
+      "ImportCountsDto": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "number",
+            "description": "Preview: rows that would be imported. Import: rows imported."
+          },
+          "skipped": {
+            "type": "number"
+          },
+          "errors": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "ok",
+          "skipped",
+          "errors"
+        ]
+      },
+      "ImportPreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ImportKind"
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowResultDto"
+            }
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCountsDto"
+          }
+        },
+        "required": [
+          "kind",
+          "rows",
+          "counts"
+        ]
+      },
+      "StartImportDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ImportKind"
+          },
+          "totalRows": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 2000,
+            "description": "How many rows the file has (at most 2000)."
+          },
+          "fileName": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "kind",
+          "totalRows"
+        ]
+      },
+      "DataImportResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ImportKind"
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true
+          },
+          "totalRows": {
+            "type": "number"
+          },
+          "rowsDone": {
+            "type": "number",
+            "description": "Rows sent so far."
+          },
+          "counts": {
+            "$ref": "#/components/schemas/ImportCountsDto"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "rows": {
+            "description": "Each row sent so far, in file order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowResultDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "fileName",
+          "totalRows",
+          "rowsDone",
+          "counts",
+          "createdAt",
+          "rows"
+        ]
+      },
+      "ImportRowsDto": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowDto"
+            }
+          }
+        },
+        "required": [
+          "rows"
+        ]
+      },
+      "ImportRowsResponseDto": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ImportRowResultDto"
+            }
+          }
+        },
+        "required": [
+          "rows"
         ]
       }
     }

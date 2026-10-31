@@ -769,4 +769,8 @@ export const serverMessages: Record<string, string> = {
   "This class hasn't started yet. Check them in instead.": "Ce cours n’a pas encore commencé. Enregistrez plutôt leur arrivée.",
   "This date is not valid.": "Cette date n’est pas valide.",
   "Attendance can only be logged from {v1} to {v2}.": "La présence ne peut être saisie que du {v1} au {v2}.",
+  "The School owner hasn't let you import data.": "Le propriétaire de l’école ne vous a pas autorisé à importer des données.",
+  "A row number is past the end of this import.": "Un numéro de ligne dépasse la fin de cet import.",
+  "Import not found": "Import introuvable",
+  "Each row number can only be sent once.": "Chaque numéro de ligne ne peut être envoyé qu’une seule fois.",
 };
