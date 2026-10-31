@@ -30,6 +30,7 @@ import { OpenMatsModule } from './open-mats/open-mats.module';
 import { ChargesModule } from './charges/charges.module';
 import { CardSurchargeModule } from './card-surcharge/card-surcharge.module';
 import { LateFeesModule } from './late-fees/late-fees.module';
+import { RostersModule } from './rosters/rosters.module';
 import { AcademiesModule } from './academies/academies.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationBroadcastModule } from './notifications/broadcast/notification-broadcast.module';
@@ -104,6 +105,7 @@ import { validateEnv } from './common/config/validate-env';
     CardSurchargeModule,
     ChargesModule,
     LateFeesModule,
+    RostersModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

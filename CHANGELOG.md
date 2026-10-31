@@ -339,6 +339,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   staff with "Can cancel charges" can **Waive** it; the student app labels it
   "Late fee" too. **Needs a database migration**
   (`20270116000000_late_fees`).
+- **Rosters and reminders** (Decision 317 items 6 and 7):
+  - **Rosters**: named lists of students for staff. Students → "Manage
+    rosters" creates, renames and deletes them and adds or removes students.
+    The Students list has a Roster filter, and a class's Roll call can show
+    one roster's booked students. Being on a roster doesn't change who can
+    book, and students never see rosters. Staff see and change only the
+    students of their own branches; Branch Staff need the Students switch to
+    change rosters.
+  - **Membership ending soon**: a daily reminder to the member 7 days before a
+    membership ends (a child's Guardian gets it as "For {name}: …"), once per
+    end date. Friend Passes and visit passes get none.
+  - **Member absent**: a daily alert to the School's owners when a member
+    hasn't checked in for the number of weeks set on the School page
+    ("Absence alert (weeks)"; empty, the default, turns it off). Once per
+    absence; a new check-in starts a new one.
+  - **Memberships ending soon** (weekly report): on the first day of the
+    School's week, the owners get one notice listing the memberships ending in
+    the next 7 days (the same memberships as the reminder above). Nothing is
+    sent when none are ending.
+  - The "+ Log attendance" student picker can be narrowed to a roster.
+  - Migration `20270126000000_rosters_and_reminders`.
 - **Paying a promotion fee** (backlog 3.6 step 6; Decisions 300, 303) — when a
   student, or a Guardian for a child, accepts a promotion fee, it becomes an
   invoice on the student's balance: the rank it is for, the fee with the

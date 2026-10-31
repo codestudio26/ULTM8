@@ -6644,6 +6644,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/rosters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RostersController_list"];
+        put?: never;
+        post: operations["RostersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rosters/{rosterId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["RostersController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["RostersController_rename"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rosters/{rosterId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RostersController_students"];
+        put?: never;
+        post: operations["RostersController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/rosters/{rosterId}/students/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["RostersController_removeStudent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6802,6 +6866,8 @@ export interface components {
             checkInOpensMinutesBeforeStart?: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 317 item 7: staff are told when a member hasn't checked in for this many weeks (1-52). Null (the default) turns absence alerts off. */
+            absenceAlertWeeks?: number | null;
             /** @description Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90). */
             freezeMaxDaysPer12Months?: number;
             /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
@@ -6963,6 +7029,8 @@ export interface components {
             chargeNoticeRefund: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 317 item 7: weeks without a check-in before staff get an absence alert. Null: off. */
+            absenceAlertWeeks?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
             heardFromOptions?: string[] | null;
             /**
@@ -7051,6 +7119,8 @@ export interface components {
             checkInOpensMinutesBeforeStart?: number;
             /** @description Decision 391: days a Visitor's visit pass lasts. No default; null turns visit passes off. */
             visitorPeriodDays?: number | null;
+            /** @description Decision 317 item 7: staff are told when a member hasn't checked in for this many weeks (1-52). Null (the default) turns absence alerts off. */
+            absenceAlertWeeks?: number | null;
             /** @description Decision 404: the most days a membership can be frozen in any 12 months (1-365, default 90). */
             freezeMaxDaysPer12Months?: number;
             /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
@@ -12914,6 +12984,26 @@ export interface components {
             graceDays: number;
             /** @description "I confirm late fees are legal where my School operates." Required (true) to switch late fees on, or to save them while on. */
             legalConfirmed?: boolean;
+        };
+        RosterDto: {
+            id: string;
+            name: string;
+            /** @description How many current students the caller covers are on it. */
+            memberCount: number;
+        };
+        RosterListDto: {
+            items: components["schemas"]["RosterDto"][];
+        };
+        RosterNameDto: {
+            name: string;
+        };
+        RosterStudentsDto: {
+            /** @description The current students on this roster that the caller covers. */
+            studentIds: string[];
+        };
+        AddRosterStudentsDto: {
+            /** @description Students of this School to add. Ones already on the roster are left as they are. */
+            studentIds: string[];
         };
     };
     responses: never;
@@ -24071,6 +24161,167 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["LateFeeSettingsDto"];
                 };
+            };
+        };
+    };
+    RostersController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterListDto"];
+                };
+            };
+        };
+    };
+    RostersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RosterNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterDto"];
+                };
+            };
+        };
+    };
+    RostersController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RostersController_rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RosterNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterDto"];
+                };
+            };
+        };
+    };
+    RostersController_students: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterStudentsDto"];
+                };
+            };
+        };
+    };
+    RostersController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddRosterStudentsDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RosterStudentsDto"];
+                };
+            };
+        };
+    };
+    RostersController_removeStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                rosterId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
