@@ -15,6 +15,20 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Check-in rules: overdue payments and belt progress** (backlog 3.5) — two
+  more rules on Check-in → Check-in rules, for every way in (app, coach's
+  scan, front desk, tablet):
+  - **Block check-in for overdue payments**: No (the default, as before),
+    after 7 days or after 14 days. A member who still owes on an invoice that
+    long after its due date is refused with "This School doesn't check members
+    in while a payment is overdue", shown to staff and to the member. Paid
+    and cancelled invoices never count.
+  - **Show belt progress on the check-in screen**: on by default, as before.
+    When off, the welcome card on the front desk and the tablet no longer
+    shows the classes toward the next belt.
+
+  The owner, and Branch Staff with "Change check-in rules", change them.
+  Needs migration `20270123000000_check_in_rules_rest`.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The

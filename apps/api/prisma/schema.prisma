@@ -1152,6 +1152,13 @@ model School {
   checkInSeveralClasses          Boolean                         @default(true)
   /// Decision 404: frozen members may still check in. Off by default.
   checkInFrozenMembers           Boolean                         @default(false)
+  /// Backlog §3.5: the welcome card on the front desk and the tablet shows the
+  /// member's classes toward their next belt. On by default (what it did).
+  checkInShowBeltProgress        Boolean                         @default(true)
+  /// Backlog §3.5: refuse check-in to a member with a charge still owed more
+  /// than this many days after its due date: 7 or 14. Null (default): never
+  /// refused for an overdue payment, as before.
+  checkInBlockOverdueDays        Int?
   /// Decision 404: the most days a membership can be frozen in any 12 months
   /// (1-365, default 90), and an optional one-off fee in minor units of the
   /// School's currency, charged when a freeze is approved.

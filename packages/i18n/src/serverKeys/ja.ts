@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "このスクールでは、メンバーは所属支部でのみチェックインできます。",
     checkInVisitorsOff: "このスクールでは現在、ビジターパスでのチェックインを受け付けていません。",
     checkInOneClass: "このスクールでは一度に1つのクラスにのみチェックインできます。",
+    checkInPaymentOverdue: "このスクールでは支払いが延滞している間はチェックインできません。アプリか受付でお支払いください。",
     packUsedUp: "この回数券は残りがありません。チェックインするには同じ回数券を購入してください。",
     membershipFrozen: "このメンバーシップは休会中のため、休会が終わるまで予約やチェックインには使えません。",
     freezeTooShort: "休会は7日以上にしてください。",
