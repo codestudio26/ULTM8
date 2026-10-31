@@ -2702,6 +2702,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "Все статусы участников",
       filterNone: "Без статуса участника",
       columnStatus: "Статус участника",
+      fieldFilterLabel: "Поле участника",
+      fieldFilterAll: "Поле не выбрано",
+      fieldFilterValue: "Значение",
+      fieldFilterContains: "Содержит",
+      fieldFilterAny: "Любое значение",
     },
     notes: {
       title: "Заметки",

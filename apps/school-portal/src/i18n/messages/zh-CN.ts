@@ -2585,6 +2585,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "所有会员状态",
       filterNone: "无会员状态",
       columnStatus: "会员状态",
+      fieldFilterLabel: "会员字段",
+      fieldFilterAll: "未选择字段",
+      fieldFilterValue: "值",
+      fieldFilterContains: "包含",
+      fieldFilterAny: "任意值",
     },
     notes: {
       title: "备注",

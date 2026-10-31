@@ -284,7 +284,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   and deleted (deleting one clears it from every student). A **Member fields**
   card on the student's page sets the student's member status and values,
   each checked against its field's type. The Students list gains a **Member
-  status** filter and column. Staff-only, like tags: no member or Guardian
+  status** filter and column, and a **Member field** filter: pick a field,
+  then a value (a drop-down's choice or yes/no; a number or date matches
+  exactly; text matches when the value contains it). Staff-only, like tags: no member or Guardian
   screen or API reply shows them, and they are for the staff who can edit the
   student's details. Erased with the student's account and with the School.
   **Needs a database migration** (`20270131000000_custom_member_fields`).

@@ -6084,6 +6084,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_fieldMatches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/custom-member-fields/{fieldId}": {
         parameters: {
             query?: never;
@@ -12107,6 +12123,10 @@ export interface components {
         CustomMemberFieldOrderDto: {
             /** @description Every one of the School's field ids, in the new order. */
             fieldIds: string[];
+        };
+        CustomFieldMatchesDto: {
+            /** @description The students whose value matches that the caller covers. */
+            studentIds: string[];
         };
         CustomMemberFieldUpdateDto: {
             name?: string;
@@ -23174,6 +23194,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CustomMemberFieldListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_fieldMatches: {
+        parameters: {
+            query: {
+                /** @description A choice, "true"/"false", a number or a YYYY-MM-DD date to match exactly, or text the value contains (ignoring case). */
+                value: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomFieldMatchesDto"];
                 };
             };
         };

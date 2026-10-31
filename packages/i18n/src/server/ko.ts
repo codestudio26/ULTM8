@@ -661,6 +661,7 @@ export const serverMessages: Record<string, string> = {
   "A drop-down can have at most 50 choices.": "드롭다운의 선택지는 최대 50개예요.",
   "A choice can't be empty.": "선택지는 비워 둘 수 없어요.",
   "A choice can be at most 50 characters.": "선택지는 최대 50자까지 쓸 수 있어요.",
+  "Choose a value to filter by.": "필터할 값을 고르세요.",
   "The School owner hasn't let you export the student list.": "학교 소유자가 학생 목록 내보내기를 허용하지 않았어요.",
   "The School owner hasn't let you freeze memberships.": "학교 소유자가 멤버십 일시정지를 허용하지 않았어요.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "접근 스위치는 지점 직원용입니다. 코치는 역할에 따른 권한을, 소유자는 모든 권한을 가집니다.",

@@ -661,6 +661,7 @@ export const serverMessages: Record<string, string> = {
   "A drop-down can have at most 50 choices.": "下拉列表最多 50 个选项。",
   "A choice can't be empty.": "选项不能为空。",
   "A choice can be at most 50 characters.": "选项最多 50 个字符。",
+  "Choose a value to filter by.": "请选择要筛选的值。",
   "The School owner hasn't let you export the student list.": "学校所有者未允许你导出学员名单。",
   "The School owner hasn't let you freeze memberships.": "学校所有者未允许你冻结会员资格。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",

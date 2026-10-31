@@ -2780,6 +2780,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "كل حالات الأعضاء",
       filterNone: "بلا حالة عضو",
       columnStatus: "حالة العضو",
+      fieldFilterLabel: "حقل العضو",
+      fieldFilterAll: "لم يُختر حقل",
+      fieldFilterValue: "القيمة",
+      fieldFilterContains: "يحتوي على",
+      fieldFilterAny: "أي قيمة",
     },
     notes: {
       title: "الملاحظات",

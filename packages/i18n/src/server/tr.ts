@@ -661,6 +661,7 @@ export const serverMessages: Record<string, string> = {
   "A drop-down can have at most 50 choices.": "Açılır listenin en fazla 50 seçeneği olabilir.",
   "A choice can't be empty.": "Seçenek boş olamaz.",
   "A choice can be at most 50 characters.": "Seçenek en fazla 50 karakter olabilir.",
+  "Choose a value to filter by.": "Filtrelemek için bir değer seçin.",
   "The School owner hasn't let you export the student list.": "Okul sahibi öğrenci listesini dışa aktarmana izin vermedi.",
   "The School owner hasn't let you freeze memberships.": "Okul sahibi üyelikleri dondurmana izin vermedi.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",

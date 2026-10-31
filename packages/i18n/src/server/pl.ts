@@ -661,6 +661,7 @@ export const serverMessages: Record<string, string> = {
   "A drop-down can have at most 50 choices.": "Lista rozwijana może mieć najwyżej 50 opcji.",
   "A choice can't be empty.": "Opcja nie może być pusta.",
   "A choice can be at most 50 characters.": "Opcja może mieć najwyżej 50 znaków.",
+  "Choose a value to filter by.": "Wybierz wartość do filtrowania.",
   "The School owner hasn't let you export the student list.": "Właściciel Szkoły nie pozwolił ci eksportować listy uczniów.",
   "The School owner hasn't let you freeze memberships.": "Właściciel Szkoły nie pozwolił ci zamrażać karnetów.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Przełączniki dostępu dotyczą personelu oddziału. Instruktorzy mają prawa swojej roli, a właściciele mają wszystkie prawa.",

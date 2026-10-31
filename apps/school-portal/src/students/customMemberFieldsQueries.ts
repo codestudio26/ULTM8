@@ -41,6 +41,25 @@ export function useCustomStatusAssignments(schoolId: string | null, enabled = tr
   });
 }
 
+/** The covered students whose value for a field matches (the Students list's
+ * Member field filter): exact for a choice, yes/no, number or date; text
+ * contains it. */
+export function useCustomFieldMatches(schoolId: string | null, fieldId: string | null, value: string) {
+  return useQuery({
+    queryKey: ['customFieldMatches', schoolId, fieldId, value],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/custom-member-fields/{fieldId}/students', {
+          params: { path: { schoolId: schoolId!, fieldId: fieldId! }, query: { value } },
+        }),
+      ),
+    enabled: !!schoolId && !!fieldId && value.trim() !== '',
+    // Keep the last answer on screen while the next value's loads.
+    placeholderData: (previous) => previous,
+    retry: false,
+  });
+}
+
 export function useStudentCustomFields(schoolId: string | null, studentId: string | null) {
   return useQuery({
     queryKey: ['studentCustomFields', schoolId, studentId],
@@ -55,7 +74,7 @@ function useInvalidate(schoolId: string) {
   const queryClient = useQueryClient();
   return () =>
     Promise.all(
-      ['customMemberFields', 'customMemberStatuses', 'customStatusAssignments', 'studentCustomFields'].map((key) => queryClient.invalidateQueries({ queryKey: [key, schoolId] })),
+      ['customMemberFields', 'customMemberStatuses', 'customStatusAssignments', 'customFieldMatches', 'studentCustomFields'].map((key) => queryClient.invalidateQueries({ queryKey: [key, schoolId] })),
     );
 }
 

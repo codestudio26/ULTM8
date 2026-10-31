@@ -2585,6 +2585,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "모든 회원 상태",
       filterNone: "회원 상태 없음",
       columnStatus: "회원 상태",
+      fieldFilterLabel: "회원 항목",
+      fieldFilterAll: "선택한 항목 없음",
+      fieldFilterValue: "값",
+      fieldFilterContains: "포함",
+      fieldFilterAny: "모든 값",
     },
     notes: {
       title: "메모",

@@ -1,10 +1,12 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CustomMemberFieldsService } from './custom-member-fields.service';
 import {
+  CustomFieldFilterQueryDto,
+  CustomFieldMatchesDto,
   CustomMemberFieldCreateDto,
   CustomMemberFieldDto,
   CustomMemberFieldListDto,
@@ -46,6 +48,19 @@ export class CustomMemberFieldsController {
   @Put('custom-member-fields/order')
   reorderFields(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() dto: CustomMemberFieldOrderDto) {
     return this.fields.reorderFields(user.sub, schoolId, dto.fieldIds);
+  }
+
+  /** The covered students whose value for this field matches (the Students
+   * list's Member field filter). */
+  @ApiOkResponse({ type: CustomFieldMatchesDto })
+  @Get('custom-member-fields/:fieldId/students')
+  fieldMatches(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('fieldId', ParseUUIDPipe) fieldId: string,
+    @Query() query: CustomFieldFilterQueryDto,
+  ) {
+    return this.fields.fieldMatches(user.sub, schoolId, fieldId, query.value);
   }
 
   /** Rename a field, or change a drop-down's choices. */

@@ -18454,6 +18454,59 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}/students": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_fieldMatches",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fieldId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "value",
+            "required": true,
+            "in": "query",
+            "description": "A choice, \"true\"/\"false\", a number or a YYYY-MM-DD date to match exactly, or text the value contains (ignoring case).",
+            "schema": {
+              "maxLength": 500,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFieldMatchesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/custom-member-fields/{fieldId}": {
       "patch": {
         "operationId": "CustomMemberFieldsController_updateField",
@@ -38005,6 +38058,21 @@
         },
         "required": [
           "fieldIds"
+        ]
+      },
+      "CustomFieldMatchesDto": {
+        "type": "object",
+        "properties": {
+          "studentIds": {
+            "description": "The students whose value matches that the caller covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "studentIds"
         ]
       },
       "CustomMemberFieldUpdateDto": {

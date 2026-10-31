@@ -2624,6 +2624,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "Alle ledenstatussen",
       filterNone: "Geen ledenstatus",
       columnStatus: "Ledenstatus",
+      fieldFilterLabel: "Ledenveld",
+      fieldFilterAll: "Geen veld gekozen",
+      fieldFilterValue: "Waarde",
+      fieldFilterContains: "Bevat",
+      fieldFilterAny: "Elke waarde",
     },
     notes: {
       title: "Notities",

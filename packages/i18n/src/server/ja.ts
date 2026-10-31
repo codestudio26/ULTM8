@@ -661,6 +661,7 @@ export const serverMessages: Record<string, string> = {
   "A drop-down can have at most 50 choices.": "ドロップダウンの選択肢は50個までです。",
   "A choice can't be empty.": "選択肢は空にできません。",
   "A choice can be at most 50 characters.": "選択肢は50文字以内にしてください。",
+  "Choose a value to filter by.": "絞り込む値を選んでください。",
   "The School owner hasn't let you export the student list.": "スクールのオーナーが生徒リストのエクスポートを許可していません。",
   "The School owner hasn't let you freeze memberships.": "スクールのオーナーがメンバーシップの休会を許可していません。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "アクセス設定は支部スタッフ用です。コーチには役割に応じた権限があり、オーナーにはすべての権限があります。",

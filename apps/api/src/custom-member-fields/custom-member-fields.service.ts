@@ -169,19 +169,29 @@ export class CustomMemberFieldsService {
   async statusAssignments(callerId: string, schoolId: string) {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
-    let rows = await this.prismaJobs.studentCustomStatus.findMany({ where: { schoolId }, select: { studentId: true, statusId: true } });
-    if (!(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
-      const coverage = await this.tenantAuth.staffBranchCoverage(callerId, schoolId);
-      if (coverage.hasBranches) {
-        const homes = await this.prismaJobs.studentHomeBranch.findMany({
-          where: { schoolId, studentId: { in: rows.map((r) => r.studentId) }, branchId: { in: [...coverage.branchIds] } },
-          select: { studentId: true },
-        });
-        const covered = new Set(homes.map((h) => h.studentId));
-        rows = rows.filter((r) => covered.has(r.studentId));
-      }
-    }
-    return { items: rows };
+    const rows = await this.prismaJobs.studentCustomStatus.findMany({ where: { schoolId }, select: { studentId: true, statusId: true } });
+    const covered = await this.coveredOf(callerId, schoolId, rows.map((r) => r.studentId));
+    return { items: rows.filter((r) => covered.has(r.studentId)) };
+  }
+
+  /** The students whose value for this field matches, for the Students list's
+   * Member field filter (Decision 315 item 14: fields are list filters too).
+   * A drop-down, yes/no, number or date matches the value exactly (a number
+   * by value, so 72.50 finds 72.5); text matches when it contains the value,
+   * ignoring case. Staff other than the owner get only the students they
+   * cover. */
+  async fieldMatches(callerId: string, schoolId: string, fieldId: string, raw: string) {
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
+    const field = await this.findField(schoolId, fieldId);
+    const value = this.normalise(field, raw);
+    if (value === null) throw new BadRequestException('Choose a value to filter by.');
+    const rows = await this.prismaJobs.customMemberFieldValue.findMany({
+      where: { schoolId, fieldId, value: field.type === CustomMemberFieldType.TEXT ? { contains: value, mode: 'insensitive' } : value },
+      select: { studentId: true },
+    });
+    const covered = await this.coveredOf(callerId, schoolId, rows.map((r) => r.studentId));
+    return { studentIds: rows.map((r) => r.studentId).filter((id) => covered.has(id)) };
   }
 
   // ---- One student ----
@@ -237,6 +247,20 @@ export class CustomMemberFieldsService {
   }
 
   // ---- Helpers ----
+
+  /** Of these students, the ones the caller covers: all of them for the owner
+   * or when the School has no branches, else those whose home branch the
+   * caller covers (as the tag filter does). */
+  private async coveredOf(callerId: string, schoolId: string, studentIds: string[]): Promise<Set<string>> {
+    if (studentIds.length === 0 || (await this.tenantAuth.isSchoolOwner(callerId, schoolId))) return new Set(studentIds);
+    const coverage = await this.tenantAuth.staffBranchCoverage(callerId, schoolId);
+    if (!coverage.hasBranches) return new Set(studentIds);
+    const homes = await this.prismaJobs.studentHomeBranch.findMany({
+      where: { schoolId, studentId: { in: studentIds }, branchId: { in: [...coverage.branchIds] } },
+      select: { studentId: true },
+    });
+    return new Set(homes.map((h) => h.studentId));
+  }
 
   private async fieldsOf(schoolId: string) {
     return (await this.prismaJobs.customMemberField.findMany({ where: { schoolId }, select: FIELD_SELECT })).sort(byPosition);

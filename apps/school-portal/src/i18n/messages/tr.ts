@@ -2624,6 +2624,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "Tüm üye durumları",
       filterNone: "Üye durumu yok",
       columnStatus: "Üye durumu",
+      fieldFilterLabel: "Üye alanı",
+      fieldFilterAll: "Alan seçilmedi",
+      fieldFilterValue: "Değer",
+      fieldFilterContains: "İçerir",
+      fieldFilterAny: "Herhangi bir değer",
     },
     notes: {
       title: "Notlar",

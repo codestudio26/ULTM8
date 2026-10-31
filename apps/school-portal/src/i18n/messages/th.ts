@@ -2585,6 +2585,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "สถานะสมาชิกทั้งหมด",
       filterNone: "ไม่มีสถานะสมาชิก",
       columnStatus: "สถานะสมาชิก",
+      fieldFilterLabel: "ฟิลด์สมาชิก",
+      fieldFilterAll: "ยังไม่ได้เลือกฟิลด์",
+      fieldFilterValue: "ค่า",
+      fieldFilterContains: "มีคำว่า",
+      fieldFilterAny: "ค่าใดก็ได้",
     },
     notes: {
       title: "บันทึก",

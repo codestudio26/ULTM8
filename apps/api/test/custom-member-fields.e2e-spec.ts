@@ -218,6 +218,43 @@ describeIfDb('Custom member fields and statuses', () => {
     expect(value(await as('owner').get(valuesOf(users.kid.id)), fields.dropdown.id)).toBeNull();
   });
 
+  it('the Students list filters by a field value: a choice, yes/no, number or date exactly, text by contains', async () => {
+    await as('owner').put(valuesOf(users.ana.id)).send({ values: [{ fieldId: fields.yesNo.id, value: 'true' }, { fieldId: fields.date.id, value: '2026-01-01' }] });
+    await as('owner').put(valuesOf(users.kid.id)).send({
+      values: [
+        { fieldId: fields.text.id, value: 'owes nothing' },
+        { fieldId: fields.number.id, value: '72.5' },
+        { fieldId: fields.yesNo.id, value: 'false' },
+        { fieldId: fields.date.id, value: '2026-02-28' },
+      ],
+    });
+    const match = async (fieldId: string, value: string, who = 'owner') => {
+      const res = await as(who).get(`${fieldsOf(schoolId)}/${fieldId}/students`).query({ value });
+      expect(res.status).toBe(200);
+      return [...(res.body.studentIds as string[])].sort();
+    };
+    const both = [users.ana.id, users.kid.id].sort();
+    expect(await match(fields.text.id, 'OWES')).toEqual(both);
+    expect(await match(fields.text.id, 'fees')).toEqual([users.ana.id]);
+    expect(await match(fields.number.id, '72.50')).toEqual(both);
+    expect(await match(fields.number.id, '72')).toEqual([]);
+    expect(await match(fields.dropdown.id, 'A2')).toEqual([users.ana.id]);
+    expect(await match(fields.yesNo.id, 'true')).toEqual([users.ana.id]);
+    expect(await match(fields.yesNo.id, 'false')).toEqual([users.kid.id]);
+    expect(await match(fields.date.id, '2026-02-28', 'coach')).toEqual([users.kid.id]);
+
+    // A value that can't be the field's is refused, as is no value at all.
+    const filter = (fieldId: string) => as('owner').get(`${fieldsOf(schoolId)}/${fieldId}/students`);
+    expect((await filter(fields.dropdown.id).query({ value: 'B9' })).status).toBe(400);
+    expect((await filter(fields.date.id).query({ value: '2026-2-28' })).status).toBe(400);
+    expect((await filter(fields.number.id).query({ value: 'ten' })).status).toBe(400);
+    expect((await filter(fields.yesNo.id).query({ value: ' ' })).status).toBe(400);
+    expect((await filter(fields.text.id)).status).toBe(400);
+    expect((await filter(randomUUID()).query({ value: '1' })).status).toBe(404);
+    // Members can't use it.
+    expect((await as('ana').get(`${fieldsOf(schoolId)}/${fields.text.id}/students`).query({ value: 'owes' })).status).toBe(403);
+  });
+
   it("staff set a student's status, and the Students list reads each student's status", async () => {
     const statuses = (await as('owner').get(statusesOf(schoolId))).body.items as Array<{ id: string; name: string }>;
     const secret = statuses.find((s) => s.name === SECRET_STATUS)!;
@@ -258,6 +295,7 @@ describeIfDb('Custom member fields and statuses', () => {
     expect((await as('staff').delete(`${fieldsOf(schoolId)}/${fields.number.id}`)).status).toBe(403);
     expect((await as('staff').post(statusesOf(schoolId)).send({ name: 'Nope' })).status).toBe(403);
     expect((await as('staff').get(`${statusesOf(schoolId)}/students`)).status).toBe(403);
+    expect((await as('staff').get(`${fieldsOf(schoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(403);
     await superuser.staffPermission.updateMany({ where: { schoolId, userId: users.staff.id }, data: { canManageStudents: true } });
     expect((await as('staff').get(valuesOf(users.ana.id))).status).toBe(200);
   });
@@ -274,6 +312,10 @@ describeIfDb('Custom member fields and statuses', () => {
     expect((await as('otherOwner').patch(`${statusesOf(otherSchoolId)}/${aStatus.id}`).send({ name: 'Mine now' })).status).toBe(404);
     expect((await as('otherOwner').delete(`${statusesOf(otherSchoolId)}/${aStatus.id}`)).status).toBe(404);
     expect((await as('otherOwner').get(`${statusesOf(otherSchoolId)}/students`)).body.items).toEqual([]);
+    // Nor can School B filter by School A's field, under either School.
+    expect((await as('otherOwner').get(`${fieldsOf(otherSchoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(404);
+    expect((await as('otherOwner').get(`${fieldsOf(schoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(403);
+    expect((await as('owner').get(`${fieldsOf(otherSchoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(403);
     // School A's owner can't reach School B's student or lists.
     expect((await as('owner').put(valuesOf(users.otherStudent.id, schoolId)).send({ values: [{ fieldId: fields.number.id, value: '1' }] })).status).toBe(404);
     expect((await as('owner').get(valuesOf(users.otherStudent.id, otherSchoolId))).status).toBeGreaterThanOrEqual(403);

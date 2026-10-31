@@ -2624,6 +2624,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "Todos os status de membro",
       filterNone: "Sem status de membro",
       columnStatus: "Status de membro",
+      fieldFilterLabel: "Campo de membro",
+      fieldFilterAll: "Nenhum campo escolhido",
+      fieldFilterValue: "Valor",
+      fieldFilterContains: "Contém",
+      fieldFilterAny: "Qualquer valor",
     },
     notes: {
       title: "Anotações",

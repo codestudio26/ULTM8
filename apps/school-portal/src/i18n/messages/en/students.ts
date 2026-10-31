@@ -70,6 +70,11 @@ export const students = {
     filterAll: "All member statuses",
     filterNone: "No member status",
     columnStatus: "Member status",
+    fieldFilterLabel: "Member field",
+    fieldFilterAll: "No field chosen",
+    fieldFilterValue: "Value",
+    fieldFilterContains: "Contains",
+    fieldFilterAny: "Any value",
   },
   notes: {
     title: "Notes",

@@ -563,6 +563,7 @@ export const SERVER_MESSAGES: string[] = [
   "A drop-down can have at most 50 choices.",
   "A choice can't be empty.",
   "A choice can be at most 50 characters.",
+  "Choose a value to filter by.",
   "The School owner hasn't let you export the student list.",
   "The School owner hasn't let you freeze memberships.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.",

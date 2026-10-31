@@ -2585,6 +2585,11 @@ export const messages: PartialMessages<EnglishMessages> = {
       filterAll: "すべての会員ステータス",
       filterNone: "会員ステータスなし",
       columnStatus: "会員ステータス",
+      fieldFilterLabel: "会員項目",
+      fieldFilterAll: "項目を選択していません",
+      fieldFilterValue: "値",
+      fieldFilterContains: "含む",
+      fieldFilterAny: "すべての値",
     },
     notes: {
       title: "メモ",

@@ -128,6 +128,22 @@ export class StudentCustomStatusAssignmentListDto {
   items!: StudentCustomStatusAssignmentDto[];
 }
 
+/** The Students list's Member field filter: the value to match. */
+export class CustomFieldFilterQueryDto {
+  @ApiProperty({
+    maxLength: CUSTOM_TEXT_VALUE_MAX,
+    description: 'A choice, "true"/"false", a number or a YYYY-MM-DD date to match exactly, or text the value contains (ignoring case).',
+  })
+  @IsString()
+  @MaxLength(CUSTOM_TEXT_VALUE_MAX, { message: 'A value can be at most 500 characters.' })
+  value!: string;
+}
+
+export class CustomFieldMatchesDto {
+  @ApiProperty({ type: [String], description: 'The students whose value matches that the caller covers.' })
+  studentIds!: string[];
+}
+
 export class StudentCustomFieldValueDto extends CustomMemberFieldDto {
   @ApiProperty({
     type: String,
