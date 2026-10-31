@@ -3823,6 +3823,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "Seçin…",
     postalExample: "örn. {example}",
     legacyNotice: "Bu adres, adreslerin ayrı alanları olmadan önce tek satır olarak kaydedildi. Güncellemek için ülkeyi seçip her alanı kontrol edin ya da olduğu gibi bırakın.",
+    search: "Adres ara",
+    searchPlaceholder: "Sokak adını ve numarayı yazmaya başlayın",
+    searchHint: "Aşağıdaki alanları doldurmak için bir sonuç seçin. Sonra yine düzenleyebilirsiniz.",
+    searchNoResults: "Eşleşen adres yok. Adresi aşağıdaki alanlara girin.",
+    searchFailed: "Adres arama şu anda çalışmıyor. Adresi aşağıdaki alanlara girin.",
+    searchAttribution: "Google tarafından desteklenmektedir",
     city: {
       city: "Şehir",
       town: "İlçe",

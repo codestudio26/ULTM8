@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ADDRESS_TEXT,
   AddressFields,
+  AddressLookupProvider,
   AddressTextProvider,
   postalAddressFromRecord,
   preparePostalAddress,
@@ -49,19 +50,74 @@ describe('AddressFields (Decision 276)', () => {
     expect(screen.getByLabelText('Address line 1')).toHaveValue('1 Main St');
   });
 
-  it('fills every field from an autocomplete suggestion', async () => {
+  it('has no search box without a provider', () => {
+    render(<Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'GB' }} />);
+    expect(screen.queryByLabelText('Search address')).not.toBeInTheDocument();
+  });
+
+  it('fills every field from a search result, replacing what was there', async () => {
     const user = userEvent.setup();
     const provider: AddressAutocompleteProvider = {
-      suggest: vi.fn().mockResolvedValue([{ id: 'p1', label: '10 Downing Street, London' }]),
-      resolve: vi.fn().mockResolvedValue({ line1: '10 Downing Street', city: 'London', postalCode: 'SW1A 2AA', country: 'GB' }),
+      suggest: vi.fn().mockResolvedValue([{ id: 'p1', label: '10 Downing Street', secondary: 'London, UK' }]),
+      resolve: vi.fn().mockResolvedValue({ line1: '10 Downing Street', line2: '', city: 'London', region: '', postalCode: 'SW1A 2AA', country: 'GB' }),
     };
-    render(<Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'GB' }} autocomplete={provider} />);
-    await user.type(screen.getByLabelText('Address line 1'), '10 Down');
-    const option = await screen.findByRole('option', { name: '10 Downing Street, London' });
+    render(<Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'GB', line2: 'Old flat' }} autocomplete={provider} />);
+    await user.type(screen.getByLabelText('Search address'), '10 Down');
+    const option = await screen.findByRole('option', { name: /10 Downing Street/ });
+    expect(screen.getByText('Powered by Google')).toBeInTheDocument();
     await user.click(option);
     await waitFor(() => expect(screen.getByLabelText('Postcode')).toHaveValue('SW1A 2AA'));
+    expect(screen.getByLabelText('Address line 1')).toHaveValue('10 Downing Street');
+    expect(screen.getByLabelText(/Address line 2/)).toHaveValue('');
     expect(screen.getByLabelText('Town/City')).toHaveValue('London');
+    expect(screen.getByLabelText('Search address')).toHaveValue('');
     expect(provider.suggest).toHaveBeenCalledWith('10 Down', 'GB');
+    expect(provider.resolve).toHaveBeenCalledWith('p1');
+  });
+
+  it('picks with the keyboard, and takes its provider from AddressLookupProvider', async () => {
+    const user = userEvent.setup();
+    const provider: AddressAutocompleteProvider = {
+      suggest: vi.fn().mockResolvedValue([
+        { id: 'a', label: '1 Main St, Springfield' },
+        { id: 'b', label: '1 Main St, Shelbyville' },
+      ]),
+      resolve: vi.fn().mockResolvedValue({ line1: '1 Main St', city: 'Shelbyville', region: 'IL', postalCode: '62565', country: 'US' }),
+    };
+    render(
+      <AddressLookupProvider provider={provider}>
+        <Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'US' }} />
+      </AddressLookupProvider>,
+    );
+    await user.type(screen.getByLabelText('Search address'), '1 Main');
+    await screen.findAllByRole('option', { name: /1 Main St/ });
+    await user.keyboard('{ArrowDown}{ArrowDown}{Enter}');
+    await waitFor(() => expect(provider.resolve).toHaveBeenCalledWith('b'));
+    await waitFor(() => expect(screen.getByLabelText('City')).toHaveValue('Shelbyville'));
+  });
+
+  it('says when nothing matches or the search fails, and leaves the fields alone', async () => {
+    const user = userEvent.setup();
+    const provider: AddressAutocompleteProvider = {
+      suggest: vi.fn().mockResolvedValueOnce([]).mockRejectedValueOnce(new Error('503')),
+      resolve: vi.fn(),
+    };
+    render(<Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'GB' }} autocomplete={provider} />);
+    const box = screen.getByLabelText('Search address');
+    await user.type(box, 'zzzz');
+    expect(await screen.findByText(ADDRESS_TEXT.searchNoResults)).toBeInTheDocument();
+    await user.type(box, 'y');
+    expect(await screen.findByText(ADDRESS_TEXT.searchFailed)).toBeInTheDocument();
+    expect(screen.getByLabelText('Address line 1')).toHaveValue('');
+  });
+
+  it('hides the search box when a null provider is given', () => {
+    render(
+      <AddressLookupProvider provider={null}>
+        <Harness initial={{ ...EMPTY_POSTAL_ADDRESS, country: 'GB' }} />
+      </AddressLookupProvider>,
+    );
+    expect(screen.queryByLabelText('Search address')).not.toBeInTheDocument();
   });
 });
 

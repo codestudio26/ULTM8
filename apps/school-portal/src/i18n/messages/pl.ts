@@ -3913,6 +3913,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "Wybierz…",
     postalExample: "np. {example}",
     legacyNotice: "Ten adres został zapisany w jednym wierszu, zanim adresy miały osobne pola. Wybierz kraj i sprawdź każde pole, aby go zaktualizować, albo zostaw go bez zmian.",
+    search: "Wyszukaj adres",
+    searchPlaceholder: "Zacznij wpisywać ulicę i numer",
+    searchHint: "Wybierz wynik, aby wypełnić pola poniżej. Nadal możesz je edytować.",
+    searchNoResults: "Brak pasującego adresu. Wpisz go w polach poniżej.",
+    searchFailed: "Wyszukiwanie adresu nie działa w tej chwili. Wpisz adres w polach poniżej.",
+    searchAttribution: "Technologia Google",
     city: {
       city: "Miasto",
       town: "Miejscowość",

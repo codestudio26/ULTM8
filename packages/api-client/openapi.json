@@ -21606,6 +21606,150 @@
           }
         ]
       }
+    },
+    "/v1/address-lookup/status": {
+      "get": {
+        "operationId": "AddressLookupController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressLookupStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "address-lookup"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/address-lookup/autocomplete": {
+      "get": {
+        "operationId": "AddressLookupController_autocomplete",
+        "parameters": [
+          {
+            "name": "language",
+            "required": false,
+            "in": "query",
+            "description": "Language for the results, as a BCP 47 tag (the app’s current language, e.g. \"pt-BR\"). Defaults to the request’s Accept-Language.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionToken",
+            "required": false,
+            "in": "query",
+            "description": "Groups one search and the chosen result into one Google session (cheaper, Google’s recommended use). Any string of letters, digits, \"-\" or \"_\", up to 36 characters; a new UUID per search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "description": "What the person has typed so far.",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "required": false,
+            "in": "query",
+            "description": "Only suggest addresses in this country (ISO 3166-1 alpha-2, e.g. \"GB\").",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressAutocompleteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "address-lookup"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/address-lookup/details": {
+      "get": {
+        "operationId": "AddressLookupController_details",
+        "parameters": [
+          {
+            "name": "language",
+            "required": false,
+            "in": "query",
+            "description": "Language for the results, as a BCP 47 tag (the app’s current language, e.g. \"pt-BR\"). Defaults to the request’s Accept-Language.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionToken",
+            "required": false,
+            "in": "query",
+            "description": "Groups one search and the chosen result into one Google session (cheaper, Google’s recommended use). Any string of letters, digits, \"-\" or \"_\", up to 36 characters; a new UUID per search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "placeId",
+            "required": true,
+            "in": "query",
+            "description": "A `placeId` from an autocomplete suggestion.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDetailsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "address-lookup"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -42999,6 +43143,121 @@
         },
         "required": [
           "rows"
+        ]
+      },
+      "AddressLookupStatusDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "False until the server has a Google Places API key; the apps then hide the search box."
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "AddressSuggestionDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "The whole suggestion as one line."
+          },
+          "mainText": {
+            "type": "string",
+            "description": "The main part, usually the street and number."
+          },
+          "secondaryText": {
+            "type": "string",
+            "description": "The rest, usually the town and country. May be empty."
+          }
+        },
+        "required": [
+          "placeId",
+          "text",
+          "mainText",
+          "secondaryText"
+        ]
+      },
+      "AddressAutocompleteResponseDto": {
+        "type": "object",
+        "properties": {
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressSuggestionDto"
+            }
+          }
+        },
+        "required": [
+          "suggestions"
+        ]
+      },
+      "LookedUpPostalAddressDto": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string"
+          },
+          "line2": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string",
+            "description": "For countries with a fixed list (US, CA, AU, AE, BR, MY), the list value."
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2."
+          }
+        },
+        "required": [
+          "line1",
+          "line2",
+          "city",
+          "region",
+          "postalCode",
+          "country"
+        ]
+      },
+      "AddressDetailsResponseDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string"
+          },
+          "postalAddress": {
+            "description": "Ready to send as `postalAddress`; fields Google didn’t give are empty.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LookedUpPostalAddressDto"
+              }
+            ]
+          },
+          "formattedAddress": {
+            "type": "string",
+            "description": "The address as one line, in the country’s own order (what the API stores in `address`)."
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "True when every field the country requires is filled and valid, so it can be saved as it is."
+          }
+        },
+        "required": [
+          "placeId",
+          "postalAddress",
+          "formattedAddress",
+          "complete"
         ]
       }
     }

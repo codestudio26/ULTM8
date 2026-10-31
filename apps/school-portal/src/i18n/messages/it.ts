@@ -3823,6 +3823,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "Seleziona…",
     postalExample: "es. {example}",
     legacyNotice: "Questo indirizzo è stato salvato su un'unica riga, prima che gli indirizzi avessero campi separati. Scegli il paese e controlla ogni campo per aggiornarlo, oppure lascialo così com'è.",
+    search: "Cerca indirizzo",
+    searchPlaceholder: "Inizia a scrivere via e numero civico",
+    searchHint: "Scegli un risultato per compilare i campi qui sotto. Puoi comunque modificarli.",
+    searchNoResults: "Nessun indirizzo corrispondente. Inseriscilo nei campi qui sotto.",
+    searchFailed: "La ricerca dell'indirizzo non funziona al momento. Inserisci l'indirizzo nei campi qui sotto.",
+    searchAttribution: "Con tecnologia Google",
     city: {
       city: "Città",
       town: "Località",

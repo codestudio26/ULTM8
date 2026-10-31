@@ -3823,6 +3823,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "Kiezen…",
     postalExample: "bijv. {example}",
     legacyNotice: "Dit adres is als één regel opgeslagen, voordat adressen aparte velden hadden. Kies het land en controleer elk veld om het bij te werken, of laat het zoals het is.",
+    search: "Adres zoeken",
+    searchPlaceholder: "Begin met het typen van straat en huisnummer",
+    searchHint: "Kies een resultaat om de velden hieronder in te vullen. Je kunt ze daarna nog aanpassen.",
+    searchNoResults: "Geen overeenkomend adres. Vul het in de velden hieronder in.",
+    searchFailed: "Adres zoeken werkt nu niet. Vul het adres in de velden hieronder in.",
+    searchAttribution: "Mogelijk gemaakt door Google",
     city: {
       city: "Plaats",
       town: "Plaats",

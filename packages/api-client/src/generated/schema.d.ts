@@ -7044,6 +7044,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/address-lookup/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AddressLookupController_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/address-lookup/autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AddressLookupController_autocomplete"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/address-lookup/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AddressLookupController_details"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -13660,6 +13708,41 @@ export interface components {
         };
         ImportRowsResponseDto: {
             rows: components["schemas"]["ImportRowResultDto"][];
+        };
+        AddressLookupStatusDto: {
+            /** @description False until the server has a Google Places API key; the apps then hide the search box. */
+            enabled: boolean;
+        };
+        AddressSuggestionDto: {
+            placeId: string;
+            /** @description The whole suggestion as one line. */
+            text: string;
+            /** @description The main part, usually the street and number. */
+            mainText: string;
+            /** @description The rest, usually the town and country. May be empty. */
+            secondaryText: string;
+        };
+        AddressAutocompleteResponseDto: {
+            suggestions: components["schemas"]["AddressSuggestionDto"][];
+        };
+        LookedUpPostalAddressDto: {
+            line1: string;
+            line2: string;
+            city: string;
+            /** @description For countries with a fixed list (US, CA, AU, AE, BR, MY), the list value. */
+            region: string;
+            postalCode: string;
+            /** @description ISO 3166-1 alpha-2. */
+            country: string;
+        };
+        AddressDetailsResponseDto: {
+            placeId: string;
+            /** @description Ready to send as `postalAddress`; fields Google didn’t give are empty. */
+            postalAddress: components["schemas"]["LookedUpPostalAddressDto"];
+            /** @description The address as one line, in the country’s own order (what the API stores in `address`). */
+            formattedAddress: string;
+            /** @description True when every field the country requires is filled and valid, so it can be saved as it is. */
+            complete: boolean;
         };
     };
     responses: never;
@@ -25590,6 +25673,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DataImportResponseDto"];
+                };
+            };
+        };
+    };
+    AddressLookupController_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressLookupStatusDto"];
+                };
+            };
+        };
+    };
+    AddressLookupController_autocomplete: {
+        parameters: {
+            query: {
+                /** @description Language for the results, as a BCP 47 tag (the app’s current language, e.g. "pt-BR"). Defaults to the request’s Accept-Language. */
+                language?: string;
+                /** @description Groups one search and the chosen result into one Google session (cheaper, Google’s recommended use). Any string of letters, digits, "-" or "_", up to 36 characters; a new UUID per search. */
+                sessionToken?: string;
+                /** @description What the person has typed so far. */
+                q: string;
+                /** @description Only suggest addresses in this country (ISO 3166-1 alpha-2, e.g. "GB"). */
+                country?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressAutocompleteResponseDto"];
+                };
+            };
+        };
+    };
+    AddressLookupController_details: {
+        parameters: {
+            query: {
+                /** @description Language for the results, as a BCP 47 tag (the app’s current language, e.g. "pt-BR"). Defaults to the request’s Accept-Language. */
+                language?: string;
+                /** @description Groups one search and the chosen result into one Google session (cheaper, Google’s recommended use). Any string of letters, digits, "-" or "_", up to 36 characters; a new UUID per search. */
+                sessionToken?: string;
+                /** @description A `placeId` from an autocomplete suggestion. */
+                placeId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressDetailsResponseDto"];
                 };
             };
         };

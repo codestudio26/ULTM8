@@ -3778,6 +3778,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "请选择…",
     postalExample: "例如 {example}",
     legacyNotice: "此地址是在地址分为多个字段之前以单行保存的。请选择国家/地区并检查各字段以更新，或保持原样。",
+    search: "搜索地址",
+    searchPlaceholder: "开始输入街道和门牌号",
+    searchHint: "选择一个结果即可填写下方字段，之后仍可修改。",
+    searchNoResults: "没有匹配的地址。请在下方字段中填写。",
+    searchFailed: "地址搜索暂时无法使用。请在下方字段中填写地址。",
+    searchAttribution: "由 Google 提供技术支持",
     city: {
       city: "城市",
       town: "镇",

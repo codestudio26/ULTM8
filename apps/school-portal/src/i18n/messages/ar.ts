@@ -4003,6 +4003,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "اختر…",
     postalExample: "مثال: {example}",
     legacyNotice: "حُفظ هذا العنوان في سطر واحد قبل أن تصبح للعناوين حقول منفصلة. اختر الدولة وراجع كل حقل لتحديثه، أو اتركه كما هو.",
+    search: "البحث عن عنوان",
+    searchPlaceholder: "ابدأ بكتابة اسم الشارع والرقم",
+    searchHint: "اختر نتيجة لملء الحقول أدناه. يمكنك تعديلها بعد ذلك.",
+    searchNoResults: "لا يوجد عنوان مطابق. أدخله في الحقول أدناه.",
+    searchFailed: "البحث عن العناوين لا يعمل حاليًا. أدخل العنوان في الحقول أدناه.",
+    searchAttribution: "مدعوم من Google",
     city: {
       city: "المدينة",
       town: "البلدة",

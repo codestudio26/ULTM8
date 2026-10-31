@@ -3778,6 +3778,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "選択…",
     postalExample: "例: {example}",
     legacyNotice: "この住所は、住所の項目が分かれる前に 1 行で保存されました。更新するには国を選び、各項目を確認してください。このままでもかまいません。",
+    search: "住所を検索",
+    searchPlaceholder: "町名・番地を入力してください",
+    searchHint: "結果を選ぶと下の項目に入力されます。入力後も編集できます。",
+    searchNoResults: "一致する住所がありません。下の項目に入力してください。",
+    searchFailed: "現在、住所検索を利用できません。下の項目に住所を入力してください。",
+    searchAttribution: "Powered by Google",
     city: {
       city: "市区町村",
       town: "町",
