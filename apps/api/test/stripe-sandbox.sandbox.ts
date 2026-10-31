@@ -612,7 +612,13 @@ describeIfSandbox('Stripe sandbox: the real integration against Stripe test mode
       if (res.status !== 201) throw new Error(`purchase: HTTP ${res.status} ${JSON.stringify(res.body)}; ${lines}`);
       check(res.body.outcome === 'requires_checkout' && /^https:\/\/checkout\.stripe\.com\//.test(res.body.checkoutUrl), JSON.stringify(res.body));
       const tx = await su.transaction.findUniqueOrThrow({ where: { id: res.body.transactionId } });
-      check(tx.status === 'PENDING' && tx.stripePaymentIntentId, `Transaction ${tx.status} ${tx.stripePaymentIntentId}`);
+      // Stripe makes the PaymentIntent only when the member pays (#423): the order waits
+      // PENDING with none, and the Session carries the Transaction id to match it later.
+      check(tx.status === 'PENDING' && tx.stripePaymentIntentId === null, `Transaction ${tx.status} ${tx.stripePaymentIntentId}`);
+      if (sessionCall?.id) {
+        const session = await harness.checkout.sessions.retrieve(sessionCall.id, {}, on());
+        check(session.metadata?.transactionId === tx.id, `Session metadata ${JSON.stringify(session.metadata)} doesn't name Transaction ${tx.id}`);
+      }
       return lines;
     });
     await step('4b', 'completing the hosted Checkout page', async () => {
