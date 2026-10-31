@@ -225,6 +225,12 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "ücret ödemesi",
     chargeDueReminderTitle: "Ödemenin vadesi yaklaşıyor",
     chargeDueReminderBody: "{description} için {invoice} faturası: {amount}, vadesi {due}.",
+    // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
+    membershipExpiryTitle: "Üyelik yakında bitiyor",
+    membershipExpiryBody: "{plan} üyeliğiniz {date} tarihinde bitiyor.",
+    absenceAlertTitle: "Üye gelmiyor",
+    absenceAlertBody: "{name}, {date} tarihinden beri giriş yapmadı.",
+    absenceAlertNeverBody: "{name} henüz giriş yapmadı.",
     chargeRefundTitle: "İade",
     chargeRefundCardBody: "{amount} kartınıza iade edildi.",
     chargeRefundMoneyBackBody: "{amount} size geri verildi.",

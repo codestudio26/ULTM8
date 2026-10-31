@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useClass } from '../classes/classQueries';
 import { useClassBookings, type BookingResponse } from '../bookings/bookingQueries';
@@ -8,6 +8,7 @@ import { useInstructorScan } from './attendanceQueries';
 import { QrScanModal } from './QrScanModal';
 import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { useRosterStudents, useRosters } from '../students/rosterQueries';
 
 /** Instructor roll-call (Decision 71's named concept; mechanics shipped Phase
  * 51/Decision 107 as `POST /classes/{id}/attendance-scan`) — the client half
@@ -36,6 +37,11 @@ export function RollCallPage() {
   const instructorScan = useInstructorScan(classId ?? '');
   const [scanningStudentId, setScanningStudentId] = useState<string | null>(null);
   const [rowError, setRowError] = useState<{ studentId: string; message: string } | null>(null);
+  // Decision 317 item 6: take attendance for one roster's students.
+  const [rosterFilter, setRosterFilter] = useState('');
+  const rosters = useRosters(cls?.schoolId ?? null);
+  const rosterMembers = useRosterStudents(cls?.schoolId ?? null, rosterFilter || null);
+  const onRoster = useMemo(() => (rosterFilter ? new Set(rosterMembers.data?.studentIds ?? []) : null), [rosterFilter, rosterMembers.data]);
 
   if (!classId) return null;
   if (classLoading || bookingsLoading) return <Spinner />;
@@ -46,7 +52,8 @@ export function RollCallPage() {
     return <ErrorBanner message={bookingsError instanceof ApiError ? bookingsError.message : t('attendance.rollCall.bookingsLoadFailed')} />;
   }
 
-  const bookings = sortForRollCall(bookingData?.items ?? []);
+  const bookings = sortForRollCall(bookingData?.items ?? []).filter((b) => !onRoster || onRoster.has(b.studentId));
+  const rosterItems = rosters.data?.items ?? [];
 
   function handleManualConfirm(studentId: string) {
     setRowError(null);
@@ -65,6 +72,20 @@ export function RollCallPage() {
         title={cls ? t('attendance.rollCall.titleWithClass', { title: cls.title }) : t('attendance.rollCall.title')}
         subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
       />
+      {rosterItems.length > 0 ? (
+        <Card>
+          <div style={{ maxWidth: 280 }}>
+            <Field label={t('attendance.rollCall.rosterLabel')} htmlFor="roll-call-roster" hint={t('attendance.rollCall.rosterHint')}>
+              <SelectField
+                id="roll-call-roster"
+                value={rosterFilter}
+                onChange={(e) => setRosterFilter(e.target.value)}
+                options={[{ value: '', label: t('attendance.rollCall.rosterAll') }, ...rosterItems.map((r) => ({ value: r.id, label: r.name }))]}
+              />
+            </Field>
+          </div>
+        </Card>
+      ) : null}
       <Card>
         {bookings.length === 0 ? (
           <EmptyState title={t('attendance.rollCall.emptyTitle')} description={t('attendance.rollCall.emptyDescription')} />

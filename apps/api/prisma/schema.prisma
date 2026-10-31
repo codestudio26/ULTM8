@@ -595,6 +595,8 @@ model User {
   childInvitesReceived              ChildInvite[]               @relation("ChildInviteGuardian")
   childInvitesSent                  ChildInvite[]               @relation("ChildInviteCreatedBy")
   childInvitesChild                 ChildInvite[]               @relation("ChildInviteStudent")
+  rosterMemberships                 RosterMember[]              @relation("RosterMemberStudent")
+  absenceAlerts                     StudentAbsenceAlert[]       @relation("StudentAbsenceAlertStudent")
 
   @@index([email])
   @@index([phone])
@@ -1217,6 +1219,10 @@ model School {
   /// show the starting list (Friend, Instagram, Google, Walked past) in the
   /// viewer's language.
   heardFromOptions               Json?
+  /// Decision 317 item 7: staff are told when a member hasn't checked in for
+  /// this many weeks (1-52). The School sets it; null (the default) sends no
+  /// absence alerts.
+  absenceAlertWeeks              Int?
   /// Backlog 3.18: the School's own colours for the belt editor, shared by
   /// every colour row and every style. `#RRGGBB`, upper case, no repeats, at
   /// most 24. Deleting one never changes a belt or stripe already using it.
@@ -1330,6 +1336,8 @@ model School {
   balanceEntries         BalanceEntry[]
   chargeRefunds          ChargeRefund[]
   recurringCharges       RecurringCharge[]
+  rosters                Roster[]
+  absenceAlerts          StudentAbsenceAlert[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -2335,8 +2343,9 @@ model Membership {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  transactions Transaction[]
-  freezes      MembershipFreeze[]
+  transactions    Transaction[]
+  freezes         MembershipFreeze[]
+  expiryReminders MembershipExpiryReminder[]
 
   // Phase 11 — this Membership's credit can fund the Student's own seat on a
   // Booking (sourceMembershipId) or a guest's seat via BookingAttendee.
@@ -5714,4 +5723,77 @@ model RecurringCharge {
   @@index([schoolId, studentId])
   @@index([studentId])
   @@index([nextDate])
+}
+
+/// Decision 317 item 6: a School's named list of members, for staff (to take
+/// attendance or filter the Students list). Being on a roster doesn't change
+/// who can book (Decision 319 item 2). Staff-only: no member-facing endpoint
+/// returns one. Jobs connection only (RLS on, no app grant).
+model Roster {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+
+  createdAt DateTime @default(now())
+
+  members RosterMember[]
+
+  @@unique([schoolId, name])
+  /// Target of RosterMember's (rosterId, schoolId) key, so a roster can only
+  /// ever hold students under its own School.
+  @@unique([id, schoolId])
+}
+
+/// Decision 317 item 6: a student on a roster. Goes when the roster is
+/// deleted or the student's account is erased. Jobs connection only.
+model RosterMember {
+  rosterId String
+  schoolId String
+  roster   Roster @relation(fields: [rosterId, schoolId], references: [id, schoolId], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("RosterMemberStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  addedAt DateTime @default(now())
+
+  @@id([rosterId, studentId])
+  @@index([schoolId, studentId])
+}
+
+/// Decision 317 item 7: the expiry reminder sent for one end date of a
+/// membership (membership-expiry-reminder job). The key is the end date, so a
+/// reminder goes once per end; a freeze that moves the end later allows one
+/// for the new date. Jobs connection only.
+model MembershipExpiryReminder {
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+
+  /// The end reminded about (Membership.expiryDate, or a cancelled
+  /// Subscription's cancelAt).
+  endsAt DateTime
+
+  sentAt DateTime @default(now())
+
+  @@id([membershipId, endsAt])
+}
+
+/// Decision 317 item 7: the absence alert sent to staff for one absence
+/// spell (student-absence-alert job). `absentSince` is the day the spell
+/// started (the last check-in, else when they became a member or came back
+/// from a freeze), so a new check-in starts a new spell. Jobs connection only.
+model StudentAbsenceAlert {
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentAbsenceAlertStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  absentSince DateTime @db.Date
+
+  sentAt DateTime @default(now())
+
+  @@id([schoolId, studentId, absentSince])
 }

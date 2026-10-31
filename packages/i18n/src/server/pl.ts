@@ -713,4 +713,10 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "To jest opłata za promocję. Właściciel szkoły umarza ją lub anuluje w stopniach ucznia, co anuluje tę należność.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Ta szkoła nie ustawiła jeszcze waluty, więc nie można zapłacić opłaty. Zapytaj w szkole.",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Ta opłata jest zapłacona, ale awansu nie można już zastosować. Anuluj opłatę (zapłacona kwota staje się kredytem) lub ponownie oceń ucznia.",
+  "Roster not found": "Nie znaleziono listy",
+  "This School already has a roster with that name.": "Ta szkoła ma już listę o tej nazwie.",
+  "This School already has 100 rosters. Delete one before adding another.": "Ta szkoła ma już 100 list. Usuń jedną, zanim dodasz kolejną.",
+  "This student is not on this roster.": "Tego ucznia nie ma na tej liście.",
+  "A roster name can't be empty.": "Nazwa listy nie może być pusta.",
+  "A roster name can be at most 60 characters.": "Nazwa listy może mieć najwyżej 60 znaków.",
 };

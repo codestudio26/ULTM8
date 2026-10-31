@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Rosters and reminders** (Decision 317 items 6 and 7):
+  - **Rosters**: named lists of students for staff. Students → "Manage
+    rosters" creates, renames and deletes them and adds or removes students.
+    The Students list has a Roster filter, and a class's Roll call can show
+    one roster's booked students. Being on a roster doesn't change who can
+    book, and students never see rosters. Staff see and change only the
+    students of their own branches; Branch Staff need the Students switch to
+    change rosters.
+  - **Membership ending soon**: a daily reminder to the member 7 days before a
+    membership ends (a child's Guardian gets it as "For {name}: …"), once per
+    end date. Friend Passes and visit passes get none.
+  - **Member absent**: a daily alert to the School's owners when a member
+    hasn't checked in for the number of weeks set on the School page
+    ("Absence alert (weeks)"; empty, the default, turns it off). Once per
+    absence; a new check-in starts a new one.
+  - Migration `20270126000000_rosters_and_reminders`.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The

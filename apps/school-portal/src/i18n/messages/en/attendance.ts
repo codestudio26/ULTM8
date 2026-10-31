@@ -29,5 +29,8 @@ export const attendance = {
     confirmPresent: 'Confirm present',
     statusCancelled: 'CANCELLED',
     statusNoShow: 'NO_SHOW',
+    rosterLabel: "Roster",
+    rosterAll: "Everyone booked",
+    rosterHint: "Show only the booked students on one roster.",
   },
 };

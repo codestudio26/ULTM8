@@ -211,6 +211,12 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "請求の支払い",
     chargeDueReminderTitle: "まもなく支払い期限",
     chargeDueReminderBody: "{description} の請求書 {invoice}: {amount} の期限は {due} です。",
+    // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
+    membershipExpiryTitle: "メンバーシップがまもなく終了",
+    membershipExpiryBody: "{plan} メンバーシップは {date} に終了します。",
+    absenceAlertTitle: "メンバーの欠席",
+    absenceAlertBody: "{name}さんは {date} 以降チェックインしていません。",
+    absenceAlertNeverBody: "{name}さんはまだチェックインしていません。",
     chargeRefundTitle: "返金",
     chargeRefundCardBody: "{amount} がカードに返金されました。",
     chargeRefundMoneyBackBody: "{amount} をお返ししました。",

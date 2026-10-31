@@ -36,6 +36,8 @@ export const schools = {
     checkInCodeDigitsHint: 'Staff codes for leaving front-desk mode. Codes already given out keep their length until someone gets a new one. A School with more than 500 members always uses 6 digits, and shorter codes are replaced.',
     visitorPeriod: 'Visit pass length (days)',
     visitorPeriodHint: "How long a Visitor's free visit pass lasts. Leave empty to turn visit passes off.",
+    absenceAlertWeeks: "Absence alert (weeks)",
+    absenceAlertWeeksHint: "Owners are told when a member hasn't checked in for this many weeks. Leave empty to turn absence alerts off.",
     checkInCodeDigits4: '4 digits',
     checkInCodeDigits6: '6 digits',
     lateCancel: 'Cancelling after a class starts',

@@ -239,6 +239,12 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "pagamento de cobrança",
     chargeDueReminderTitle: "Pagamento vence em breve",
     chargeDueReminderBody: "A fatura {invoice} de {description}: {amount} vence em {due}.",
+    // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
+    membershipExpiryTitle: "Plano termina em breve",
+    membershipExpiryBody: "Seu plano {plan} termina em {date}.",
+    absenceAlertTitle: "Membro ausente",
+    absenceAlertBody: "{name} não faz check-in desde {date}.",
+    absenceAlertNeverBody: "{name} ainda não fez check-in.",
     chargeRefundTitle: "Reembolso",
     chargeRefundCardBody: "{amount} foi reembolsado no seu cartão.",
     chargeRefundMoneyBackBody: "{amount} foi devolvido a você.",

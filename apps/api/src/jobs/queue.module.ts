@@ -27,6 +27,8 @@ import {
   LATE_FEE_QUEUE,
   CHARGE_RECURRING_QUEUE,
   LARGE_SCHOOL_CHECK_IN_CODES_QUEUE,
+  MEMBERSHIP_EXPIRY_REMINDER_QUEUE,
+  STUDENT_ABSENCE_ALERT_QUEUE,
 } from './queue.constants';
 
 const logger = new Logger('QueueModule');
@@ -103,6 +105,8 @@ export {
   LATE_FEE_QUEUE,
   CHARGE_RECURRING_QUEUE,
   LARGE_SCHOOL_CHECK_IN_CODES_QUEUE,
+  MEMBERSHIP_EXPIRY_REMINDER_QUEUE,
+  STUDENT_ABSENCE_ALERT_QUEUE,
 };
 
 @Module({
@@ -133,6 +137,8 @@ export {
       { name: LATE_FEE_QUEUE },
       { name: CHARGE_RECURRING_QUEUE },
       { name: LARGE_SCHOOL_CHECK_IN_CODES_QUEUE },
+      { name: MEMBERSHIP_EXPIRY_REMINDER_QUEUE },
+      { name: STUDENT_ABSENCE_ALERT_QUEUE },
     ),
   ],
   exports: [BullModule],

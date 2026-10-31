@@ -281,6 +281,12 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "دفعة رسوم",
     chargeDueReminderTitle: "دفعة مستحقة قريبًا",
     chargeDueReminderBody: "الفاتورة {invoice} لـ {description}: {amount} مستحقة في {due}.",
+    // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
+    membershipExpiryTitle: "عضويتك تنتهي قريبًا",
+    membershipExpiryBody: "تنتهي عضويتك {plan} في {date}.",
+    absenceAlertTitle: "عضو غائب",
+    absenceAlertBody: "لم يسجّل {name} حضوره منذ {date}.",
+    absenceAlertNeverBody: "لم يسجّل {name} حضوره بعد.",
     chargeRefundTitle: "استرداد",
     chargeRefundCardBody: "تم رد {amount} إلى بطاقتك.",
     chargeRefundMoneyBackBody: "تمت إعادة {amount} إليك.",

@@ -16,6 +16,7 @@ import { ChildInvitesCard } from './StudentAccess';
 import { formatLocale } from '../i18n/format';
 import { FreezeRequestsCard } from './FreezeRequestsCard';
 import { formatCalendarDay } from '../membershipPlans/freezeQueries';
+import { useRosterStudents, useRosters } from './rosterQueries';
 
 /** Rows per page (Decision 371, Students Q2). Paged here, in the browser: the
  * roster is fetched whole, as it was before. */
@@ -63,23 +64,29 @@ export function StudentsPage() {
   const [branchFilter, setBranchFilter] = useState('');
   // Decision 404: only students with a membership frozen today.
   const [frozenOnly, setFrozenOnly] = useState(false);
+  // Decision 317 item 6: only the students on one roster.
+  const [rosterFilter, setRosterFilter] = useState('');
+  const rosters = useRosters(schoolId);
+  const rosterMembers = useRosterStudents(schoolId, rosterFilter || null);
   const [pageIndex, setPageIndex] = useState(0);
   const [exporting, setExporting] = useState(false);
   const school = useSchool(schoolId);
   // Decision 399: the owner, or Branch Staff the owner let export.
   const mayExport = !!ownedSchoolId || !!myAccess.data?.access.exportStudents;
   // A new filter starts again on page 1.
-  useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter, frozenOnly]);
+  useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter, frozenOnly, rosterFilter]);
 
+  const onRoster = useMemo(() => (rosterFilter ? new Set(rosterMembers.data?.studentIds ?? []) : null), [rosterFilter, rosterMembers.data]);
   const filtered = useMemo(
     () =>
       (data?.items ?? []).filter(
         (s) =>
           matchesSearch(s, search) &&
           (!frozenOnly || s.frozen) &&
+          (!onRoster || onRoster.has(s.id)) &&
           (!branchFilter || (branchFilter === NO_BRANCH ? !s.homeBranchId : s.homeBranchId === branchFilter)),
       ),
-    [data, search, branchFilter, frozenOnly],
+    [data, search, branchFilter, frozenOnly, onRoster],
   );
 
   // Only the owner, and Branch Staff with the "students" switch, have this
@@ -93,7 +100,7 @@ export function StudentsPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / STUDENTS_PAGE_SIZE));
   const page = Math.min(pageIndex, pageCount - 1);
   const students = filtered.slice(page * STUDENTS_PAGE_SIZE, (page + 1) * STUDENTS_PAGE_SIZE);
-  const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '' || frozenOnly;
+  const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '' || frozenOnly || rosterFilter !== '';
   // Decision 404: the blue Frozen badge, with the day they are back.
   const frozenBadge = (s: StudentSummary) =>
     s.frozen ? (
@@ -174,6 +181,19 @@ export function StudentsPage() {
                 ]}
               />
             </Field>
+          </div>
+          <div style={{ maxWidth: 220 }}>
+            <Field label={t('students.rosters.filterLabel')} htmlFor="students-roster-filter">
+              <SelectField
+                id="students-roster-filter"
+                value={rosterFilter}
+                onChange={(e) => setRosterFilter(e.target.value)}
+                options={[{ value: '', label: t('students.rosters.filterAll') }, ...(rosters.data?.items ?? []).map((r) => ({ value: r.id, label: r.name }))]}
+              />
+            </Field>
+          </div>
+          <div style={{ paddingBottom: 8 }}>
+            <Link to="/students/rosters">{t('students.rosters.manage')}</Link>
           </div>
           <div style={{ paddingBottom: 8 }}>
             <Checkbox label={t('students.frozen.filter')} checked={frozenOnly} onChange={(e) => setFrozenOnly(e.target.checked)} />

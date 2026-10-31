@@ -253,6 +253,12 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "оплата начисления",
     chargeDueReminderTitle: "Скоро срок оплаты",
     chargeDueReminderBody: "Счёт {invoice} за {description}: {amount} нужно оплатить до {due}.",
+    // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
+    membershipExpiryTitle: "Абонемент скоро закончится",
+    membershipExpiryBody: "Ваш абонемент «{plan}» заканчивается {date}.",
+    absenceAlertTitle: "Участник отсутствует",
+    absenceAlertBody: "{name} не отмечался(-ась) с {date}.",
+    absenceAlertNeverBody: "{name} ещё не отмечался(-ась).",
     chargeRefundTitle: "Возврат",
     chargeRefundCardBody: "{amount} возвращено на вашу карту.",
     chargeRefundMoneyBackBody: "Вам вернули {amount}.",

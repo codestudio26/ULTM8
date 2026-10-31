@@ -211,6 +211,12 @@ export const server: PartialMessages<ServerKeys> = {
     chargePaymentLabel: "费用付款",
     chargeDueReminderTitle: "付款即将到期",
     chargeDueReminderBody: "{description} 的发票 {invoice}：{amount} 应于 {due} 付清。",
+    // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
+    membershipExpiryTitle: "会员资格即将到期",
+    membershipExpiryBody: "你的 {plan} 会员资格将于 {date} 结束。",
+    absenceAlertTitle: "会员缺勤",
+    absenceAlertBody: "{name} 自 {date} 起未签到。",
+    absenceAlertNeverBody: "{name} 还没有签到过。",
     chargeRefundTitle: "退款",
     chargeRefundCardBody: "{amount} 已退回你的银行卡。",
     chargeRefundMoneyBackBody: "{amount} 已退还给你。",

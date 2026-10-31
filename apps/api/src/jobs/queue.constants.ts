@@ -109,3 +109,9 @@ export const CHARGE_RECURRING_QUEUE = 'charge-recurring';
 // Decision 417 (stress test round 4 Q1): every 15 minutes, a School that has
 // grown past 500 current Students moves to 6-digit check-in codes.
 export const LARGE_SCHOOL_CHECK_IN_CODES_QUEUE = 'large-school-check-in-codes';
+// Decision 317 item 7: the daily expiry reminder to a member (a child's
+// Guardian gets the usual copy), 7 days before a membership ends.
+export const MEMBERSHIP_EXPIRY_REMINDER_QUEUE = 'membership-expiry-reminder';
+// Decision 317 item 7: the daily absence alert to staff when a member hasn't
+// checked in for the School's number of weeks.
+export const STUDENT_ABSENCE_ALERT_QUEUE = 'student-absence-alert';
