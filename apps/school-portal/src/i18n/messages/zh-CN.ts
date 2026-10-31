@@ -296,7 +296,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "刷卡附加费",
-      subtitle: "在会员通过 App 刷卡支付的金额上加收附加费，以抵扣刷卡手续费。会员付款前即可看到，收据上也会单独列出一行。现金、银行转账付款以及订阅永远不会加收。",
+      subtitle: "在会员通过 App 刷卡支付的金额上加收附加费，以抵扣刷卡手续费。会员付款前即可看到，收据上也会单独列出一行。现金和银行转账付款永远不会加收。订阅会按开始时的百分比在每月付款中加收；此处的更改在会员重新订阅时生效。",
       enabled: "加收刷卡附加费",
       percent: "附加费（%）",
       percentHint: "最多 3%，例如 2.5。",

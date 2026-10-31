@@ -299,7 +299,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "Frais de carte",
-      subtitle: "Ajoutez des frais au montant que les membres paient par carte dans l'app, pour couvrir les frais de carte. Ils les voient avant de payer, sur une ligne à part du reçu. Ils ne s'ajoutent jamais aux paiements en espèces ou par virement, ni aux abonnements.",
+      subtitle: "Ajoutez des frais au montant que les membres paient par carte dans l'app, pour couvrir les frais de carte. Ils les voient avant de payer, sur une ligne à part du reçu. Ils ne s'ajoutent jamais aux paiements en espèces ou par virement. Un abonnement les ajoute à chaque paiement mensuel, au % de son début : un changement ici s'applique quand le membre se réabonne.",
       enabled: "Ajouter des frais de carte",
       percent: "Frais (%)",
       percentHint: "Jusqu'à 3 %, par ex. 2,5.",

@@ -299,7 +299,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "Sovrapprezzo carta",
-      subtitle: "Aggiungi un sovrapprezzo a quanto i membri pagano con carta nell'app, per coprire le commissioni della carta. Lo vedono prima di pagare e come riga a parte sulla ricevuta. Non si aggiunge mai ai pagamenti in contanti o con bonifico, né agli abbonamenti.",
+      subtitle: "Aggiungi un sovrapprezzo a quanto i membri pagano con carta nell'app, per coprire le commissioni della carta. Lo vedono prima di pagare e come riga a parte sulla ricevuta. Non si aggiunge mai ai pagamenti in contanti o con bonifico. Un abbonamento lo aggiunge a ogni pagamento mensile, con la % con cui è iniziato: una modifica qui vale quando il membro si abbona di nuovo.",
       enabled: "Aggiungi un sovrapprezzo sulla carta",
       percent: "Sovrapprezzo (%)",
       percentHint: "Fino al 3%, es. 2,5.",

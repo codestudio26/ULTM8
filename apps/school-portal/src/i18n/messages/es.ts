@@ -299,7 +299,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "Recargo por tarjeta",
-      subtitle: "Añade un recargo a lo que los miembros pagan con tarjeta en la app, para cubrir las comisiones de la tarjeta. Lo ven antes de pagar y como una línea propia en el recibo. Nunca se añade a pagos en efectivo o por transferencia, ni a las suscripciones.",
+      subtitle: "Añade un recargo a lo que los miembros pagan con tarjeta en la app, para cubrir las comisiones de la tarjeta. Lo ven antes de pagar y como una línea propia en el recibo. Nunca se añade a pagos en efectivo o por transferencia. Una suscripción lo añade a cada pago mensual, con el % con que empezó: un cambio aquí se aplica cuando el miembro se vuelve a suscribir.",
       enabled: "Añadir un recargo por tarjeta",
       percent: "Recargo (%)",
       percentHint: "Hasta el 3 %, p. ej. 2,5.",

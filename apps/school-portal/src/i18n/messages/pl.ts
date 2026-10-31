@@ -305,7 +305,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "Dopłata za kartę",
-      subtitle: "Dodaj dopłatę do kwoty, którą członkowie płacą kartą w aplikacji, aby pokryć opłaty za kartę. Widzą ją przed zapłatą i jako osobną pozycję na paragonie. Nigdy nie jest doliczana do płatności gotówką, przelewem ani do subskrypcji.",
+      subtitle: "Dodaj dopłatę do kwoty, którą członkowie płacą kartą w aplikacji, aby pokryć opłaty za kartę. Widzą ją przed zapłatą i jako osobną pozycję na paragonie. Nigdy nie jest doliczana do płatności gotówką ani przelewem. Subskrypcja dolicza ją do każdej miesięcznej płatności według % z chwili jej rozpoczęcia: zmiana tutaj obowiązuje, gdy członek ponownie wykupi subskrypcję.",
       enabled: "Dodaj dopłatę za kartę",
       percent: "Dopłata (%)",
       percentHint: "Do 3%, np. 2,5.",

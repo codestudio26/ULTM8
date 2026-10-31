@@ -851,6 +851,13 @@ export class MembershipsService {
         throw new BadRequestException('This account is restricted to Cash/Bank Transfer payment methods, following a pattern of lost Stripe disputes — this School only accepts Stripe.');
       }
       const transactionId = randomUUID();
+      // Decision 406: the card surcharge, on top of the plan's price for every
+      // card payment below: the one-off ones, and a Subscription's first
+      // payment and renewals (its own recurring item, PaymentsService.
+      // subscribe()). Never cash or a bank transfer. The member saw the same
+      // amount on the plan before paying (AcademiesService).
+      const surchargeBps = await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, plan.schoolId));
+      const surcharge = planCardSurcharge(plan, surchargeBps);
       if (plan.type === 'SUBSCRIPTION') {
         // Payment is still collected fresh, client-side, via Stripe Elements
         // against the returned clientSecret (PaymentsService.subscribe()'s own
@@ -860,7 +867,7 @@ export class MembershipsService {
         // Guardian's vs. a minor's "saved card" — see PurchaseMembershipDto's
         // own header comment for why that's not a design gap this phase needs
         // to resolve, only one to flag for whenever that feature is built.
-        const { subscriptionId, paymentIntentId, clientSecret } = await this.paymentsService.subscribe(
+        const { subscriptionId, paymentIntentId, clientSecret, surchargeAmount } = await this.paymentsService.subscribe(
           studentId,
           plan.schoolId,
           student.email,
@@ -881,7 +888,10 @@ export class MembershipsService {
             plan.stripePriceId,
             plan.newMemberBillingStrategy,
             plan.billingCycleAnchorDay,
+            surcharge,
+            surchargeBps,
           ]),
+          surcharge > 0 ? { amount: surcharge, bps: surchargeBps } : undefined,
         );
         const orderId = await this.createStripeOrder(studentId, { stripePaymentIntentId: paymentIntentId }, transactionId, (tx) =>
           tx.transaction.create({
@@ -892,6 +902,8 @@ export class MembershipsService {
               paymentAccountId: paymentAccount.id,
               membershipPlanId: plan.id,
               amount: plan.price,
+              // What the first invoice charges on top, as its own line.
+              surchargeAmount,
               currency: currency.toUpperCase(),
               status: 'PENDING',
               paymentMethod: 'STRIPE',
@@ -910,15 +922,6 @@ export class MembershipsService {
       // instead of collecting a fresh one, gated by a fresh step-up proof.
       // SUBSCRIPTION already took its own branch above and never reaches
       // here; CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only.
-      // Decision 406: the card surcharge, on top of the plan's price for the
-      // one-off card payments below (never a Subscription, which took its own
-      // branch above, nor cash or a bank transfer). The member saw the same
-      // amount on the plan before paying (AcademiesService).
-      const surcharge = planCardSurcharge(
-        plan,
-        await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, plan.schoolId)),
-      );
-
       if (dto?.payWithSavedCard) {
         return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, surcharge, stepUpToken);
       }

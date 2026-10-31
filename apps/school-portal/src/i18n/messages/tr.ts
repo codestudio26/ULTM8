@@ -299,7 +299,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "Kart ek ücreti",
-      subtitle: "Kart ücretlerini karşılamak için üyelerin uygulamada kartla ödediği tutara bir ek ücret ekleyin. Üyeler bunu ödemeden önce ve makbuzda ayrı bir satır olarak görür. Nakit, havale ödemelerine veya aboneliklere hiçbir zaman eklenmez.",
+      subtitle: "Kart ücretlerini karşılamak için üyelerin uygulamada kartla ödediği tutara bir ek ücret ekleyin. Üyeler bunu ödemeden önce ve makbuzda ayrı bir satır olarak görür. Nakit veya havale ödemelerine hiçbir zaman eklenmez. Abonelik, başladığı yüzdeyle her aylık ödemeye ekler: buradaki bir değişiklik, üye yeniden abone olduğunda geçerli olur.",
       enabled: "Kart ek ücreti ekle",
       percent: "Ek ücret (%)",
       percentHint: "En fazla %3, ör. 2,5.",

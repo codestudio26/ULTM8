@@ -15,6 +15,19 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
+  School's card surcharge applies, a monthly Subscription now carries it too:
+  members see it on the plan before subscribing, and it is added to the first
+  payment and every renewal as its own line (its own item on the Stripe
+  Subscription, so Stripe's invoices and receipts show it). The Transactions
+  page, its CSV and the member's payment history show it apart from the plan's
+  price for the first payment and each renewal, Successful or Failed. A
+  renewal refunded in full in Stripe counts the surcharge as refunded. A
+  running Subscription keeps the % it started with: turning the surcharge off,
+  changing the %, or Platform Admin removing the country applies when the
+  member next subscribes. A Migrate price change keeps the surcharge at the
+  Subscription's own %. The School page's Card surcharge text says so (15
+  languages). No migration.
 - **Fixed: card payments against Stripe's current API** — found on the first
   run against a real Stripe test account. Several calls were written for an
   older Stripe API and failed on the version the app now uses:
