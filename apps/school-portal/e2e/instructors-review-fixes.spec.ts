@@ -85,6 +85,8 @@ test('a new Class offers only active instructors, not archived or revoked ones',
   await page.goto('/classes');
   await page.getByRole('button', { name: /Add class|New class|Create class/ }).first().click();
   const picker = page.getByRole('dialog').getByLabel('Instructor');
+  // The instructor list loads after the page; wait for it before reading the options.
+  await expect(picker.locator('option', { hasText: 'Amy Active' })).toHaveCount(1);
   const options = await picker.locator('option').allInnerTexts();
   expect(options).toContain('Amy Active');
   expect(options.some((o) => o.includes('Arlo'))).toBe(false);

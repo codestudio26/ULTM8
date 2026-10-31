@@ -159,8 +159,13 @@ test('the owner lets a Branch Staff member manage disciplines (Decision 383)', a
   await tick.check();
   // The other switch stays off.
   await expect(dialog.getByLabel('Invite coaches')).not.toBeChecked();
+  const put = page.waitForResponse((r) => r.request().method() === 'PUT' && r.url().includes('/access'));
   await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('Access saved for Bea Desk.')).toBeVisible();
+  expect((await put).status()).toBe(200);
+  // The banner shows once the saved access and the staff lists have reloaded,
+  // which can take longer than the default 5 s on a busy CI runner.
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+  await expect(page.getByText('Access saved for Bea Desk.')).toBeVisible({ timeout: 15_000 });
   await expect.poll(async () => (await db.staffPermission.findFirst({ where: { userId: staff.id } }))?.canManageDisciplines).toBe(true);
 
   // Signed in as them (the later sign-in wins), the page is theirs to edit.
