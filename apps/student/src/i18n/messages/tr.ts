@@ -887,6 +887,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "Kaydet",
       loading: "Yükleniyor…",
     },
+    medical: {
+      title: "Sağlık bilgileri",
+      sharedWith: "Sağlık bilgileri: {school} ile paylaşılıyor",
+      consentedOn: "Onay {date} tarihinde verildi.",
+      awaiting: "Resepsiyondaki kaydında verildi; okulun davetini kabul edene veya reddedene kadar saklanır.",
+      withdraw: "Onayı geri çek",
+      confirm: "Onay geri çekilsin mi? {school} okulundaki sağlık bilgileri hemen silinir. Bu geri alınamaz.",
+      confirmWithdraw: "Geri çek",
+      cancel: "İptal",
+      withdrawFailed: "Onay geri çekilemedi — lütfen tekrar dene.",
+      loadFailed: "Sağlık bilgilerin yüklenemedi — lütfen tekrar dene.",
+    },
   },
   ranks: {
     myRank: {

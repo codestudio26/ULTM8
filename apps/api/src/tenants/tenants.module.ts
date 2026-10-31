@@ -18,7 +18,7 @@ import { StripeClientService } from '../payments/stripe-client.service';
 import { UsersModule } from '../users/users.module';
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 import { QueueModule } from '../jobs/queue.module';
-import { MedicalInfoController } from '../medical-info/medical-info.controller';
+import { MedicalInfoController, MemberMedicalInfoController } from '../medical-info/medical-info.controller';
 import { MedicalInfoService } from '../medical-info/medical-info.service';
 
 /**
@@ -95,11 +95,13 @@ import { MedicalInfoService } from '../medical-info/medical-info.service';
  *
  * Medical information (Decision 315 item 10) lives here too: it is taken when
  * a member joins (SchoolsService.join) and from tablet sign-ups, and read
- * through TenantAuthorizationService's "See medical information" check.
+ * through TenantAuthorizationService's "See medical information" check. The
+ * member (the Guardian for a child) can withdraw consent, and it is deleted
+ * when they leave the School (Decision 419 item 1, RoleGrantsService.revoke).
  */
 @Module({
   imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule],
-  controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController, MedicalInfoController],
+  controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController, MedicalInfoController, MemberMedicalInfoController],
   providers: [SchoolsService, StudentExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService, MedicalInfoService],
 })

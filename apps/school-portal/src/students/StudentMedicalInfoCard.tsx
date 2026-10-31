@@ -22,7 +22,9 @@ function useStudentMedicalInfo(schoolId: string, studentId: string) {
  * Medical information the member (or a child's Guardian) gave at sign-up,
  * with who consented and when. Shown only to School owners and Branch Staff
  * with "See medical information"; the API refuses everyone else, and the
- * card then shows nothing.
+ * card then shows nothing. Once the member (or the Guardian) withdraws
+ * consent, or the member leaves the School, it is deleted and the card says
+ * there is none (Decision 419 item 1).
  */
 export function StudentMedicalInfoCard({ schoolId, studentId }: { schoolId: string; studentId: string }) {
   const t = useT();

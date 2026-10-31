@@ -171,7 +171,7 @@ export const students = {
     consentSelf: "Given with consent by {name} on {date}.",
     consentGuardian: "Given with consent by {name}, their Guardian, on {date}.",
     formerAccount: "a former account",
-    empty: "No medical information was given.",
+    empty: "No medical information.",
     privacy: "Only the School's owners and the staff allowed to see medical information can read this.",
   },
   files: {

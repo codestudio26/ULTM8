@@ -1054,6 +1054,22 @@ export interface paths {
         get: operations["MedicalInfoController_get"];
         put?: never;
         post?: never;
+        delete: operations["MedicalInfoController_withdraw"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{studentId}/medical-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberMedicalInfoController_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8508,6 +8524,19 @@ export interface components {
             /** @description Null when none was given. */
             medicalInfo: components["schemas"]["StudentMedicalInfoDto"] | null;
         };
+        MedicalInfoSharedDto: {
+            schoolId: string;
+            schoolName: string;
+            /** @description When consent was given. */
+            consentedAt: string;
+            /** @description True when a Guardian consented for their child. */
+            consentedByGuardian: boolean;
+            /** @description Given on a front-desk sign-up whose invite the member has not accepted yet. */
+            awaitingAcceptance: boolean;
+        };
+        MedicalInfoSharedListDto: {
+            items: components["schemas"]["MedicalInfoSharedDto"][];
+        };
         CreateMinorDto: {
             firstName: string;
             surname: string;
@@ -12739,6 +12768,7 @@ export interface components {
             StudentCheckInCode: number;
             StudentJoinDate: number;
             StudentCustomStatus: number;
+            StudentMedicalInfo: number;
             WaiverSignature: number;
         };
         MergePreviewDto: {
@@ -15495,6 +15525,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentMedicalInfoResponseDto"];
+                };
+            };
+        };
+    };
+    MedicalInfoController_withdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MemberMedicalInfoController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalInfoSharedListDto"];
                 };
             };
         };

@@ -429,11 +429,22 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   never shown on the Sign-ups list. Only the **School's owners** and Branch
   Staff with the new **See medical information** access switch (off by
   default, for their own branches' students; coaches never) see it, on a new
-  **Medical information** card on the student's page. No member-facing screen
-  or endpoint shows it. It is erased with the student's account (also when a
-  Guardian withdraws a child's baseline consent) and with the School, including
-  a closed School that is kept anonymised for its waivers. **Needs a database
-  migration** (`20270205000000_medical_info`).
+  **Medical information** card on the student's page. The member never sees
+  the text again, but **consent can be withdrawn** (Decision 419 item 1): on
+  **My Profile** in the ULTM8 app (and, for a child, on the Guardian's screen
+  for that child) a "Medical information: shared with {School}" line shows the
+  date consent was given, with a **Withdraw consent** button and a
+  confirmation. Withdrawing deletes that School's copy **at once** (and any
+  medical information still waiting on a sign-up invite there); the
+  student's card then says "No medical information." A child can't withdraw
+  it, only their Guardian. It is also **deleted when the member leaves the
+  School** (removed by the owner; a daily check catches any other way an
+  enrolment ends), with the student's account (also when a Guardian
+  withdraws a child's baseline consent) and with the School, including a
+  closed School that is kept anonymised for its waivers. Merging duplicate
+  members keeps the kept member's medical information, or brings the
+  duplicate's with its consent when the kept member has none. **Needs a
+  database migration** (`20270205000000_medical_info`).
 - **Rosters and reminders** (Decision 317 items 6 and 7):
   - **Rosters**: named lists of students for staff. Students → "Manage
     rosters" creates, renames and deletes them and adds or removes students.

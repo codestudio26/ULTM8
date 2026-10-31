@@ -924,6 +924,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "Zapisz",
       loading: "Wczytywanie…",
     },
+    medical: {
+      title: "Informacje medyczne",
+      sharedWith: "Informacje medyczne: udostępnione {school}",
+      consentedOn: "Zgoda udzielona {date}.",
+      awaiting: "Podane przy zapisie w recepcji; przechowywane, dopóki nie przyjmiesz lub nie odrzucisz zaproszenia szkoły.",
+      withdraw: "Wycofaj zgodę",
+      confirm: "Wycofać zgodę? Informacje medyczne przechowywane przez {school} zostaną od razu usunięte. Tego nie można cofnąć.",
+      confirmWithdraw: "Wycofaj",
+      cancel: "Anuluj",
+      withdrawFailed: "Nie udało się wycofać zgody — spróbuj ponownie.",
+      loadFailed: "Nie udało się wczytać informacji medycznych — spróbuj ponownie.",
+    },
   },
   ranks: {
     myRank: {

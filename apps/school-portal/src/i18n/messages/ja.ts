@@ -2698,7 +2698,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       consentSelf: "{date} に {name} の同意を得て入力されました。",
       consentGuardian: "{date} に保護者の {name} の同意を得て入力されました。",
       formerAccount: "以前のアカウント",
-      empty: "医療情報は入力されていません。",
+      empty: "医療情報はありません。",
       privacy: "これを閲覧できるのは、スクールのオーナーと医療情報の閲覧を許可されたスタッフだけです。",
     },
     files: {

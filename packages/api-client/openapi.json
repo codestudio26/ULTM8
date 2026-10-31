@@ -3224,6 +3224,75 @@
             "bearer": []
           }
         ]
+      },
+      "delete": {
+        "operationId": "MedicalInfoController_withdraw",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "medical-info"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{studentId}/medical-info": {
+      "get": {
+        "operationId": "MemberMedicalInfoController_list",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedicalInfoSharedListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "medical-info"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/guardians/me/minors": {
@@ -26159,6 +26228,50 @@
           "medicalInfo"
         ]
       },
+      "MedicalInfoSharedDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "consentedAt": {
+            "type": "string",
+            "description": "When consent was given."
+          },
+          "consentedByGuardian": {
+            "type": "boolean",
+            "description": "True when a Guardian consented for their child."
+          },
+          "awaitingAcceptance": {
+            "type": "boolean",
+            "description": "Given on a front-desk sign-up whose invite the member has not accepted yet."
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "consentedAt",
+          "consentedByGuardian",
+          "awaitingAcceptance"
+        ]
+      },
+      "MedicalInfoSharedListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MedicalInfoSharedDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
       "CreateMinorDto": {
         "type": "object",
         "properties": {
@@ -40048,6 +40161,9 @@
           "StudentCustomStatus": {
             "type": "number"
           },
+          "StudentMedicalInfo": {
+            "type": "number"
+          },
           "WaiverSignature": {
             "type": "number"
           }
@@ -40086,6 +40202,7 @@
           "StudentCheckInCode",
           "StudentJoinDate",
           "StudentCustomStatus",
+          "StudentMedicalInfo",
           "WaiverSignature"
         ]
       },

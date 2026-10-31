@@ -887,6 +887,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "Speichern",
       loading: "Wird geladen…",
     },
+    medical: {
+      title: "Medizinische Angaben",
+      sharedWith: "Medizinische Angaben: geteilt mit {school}",
+      consentedOn: "Einwilligung erteilt am {date}.",
+      awaiting: "Bei deiner Anmeldung am Empfang gemacht; aufbewahrt, bis du die Einladung der Schule annimmst oder ablehnst.",
+      withdraw: "Einwilligung widerrufen",
+      confirm: "Einwilligung widerrufen? Die medizinischen Angaben bei {school} werden sofort gelöscht. Das kann nicht rückgängig gemacht werden.",
+      confirmWithdraw: "Widerrufen",
+      cancel: "Abbrechen",
+      withdrawFailed: "Die Einwilligung konnte nicht widerrufen werden — bitte versuche es erneut.",
+      loadFailed: "Deine medizinischen Angaben konnten nicht geladen werden — bitte versuche es erneut.",
+    },
   },
   ranks: {
     myRank: {

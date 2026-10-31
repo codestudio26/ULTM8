@@ -887,6 +887,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "Opslaan",
       loading: "Laden…",
     },
+    medical: {
+      title: "Medische informatie",
+      sharedWith: "Medische informatie: gedeeld met {school}",
+      consentedOn: "Toestemming gegeven op {date}.",
+      awaiting: "Gegeven bij je aanmelding aan de balie; bewaard tot je de uitnodiging van de school accepteert of weigert.",
+      withdraw: "Toestemming intrekken",
+      confirm: "Toestemming intrekken? De medische informatie bij {school} wordt meteen verwijderd. Dit kan niet ongedaan worden gemaakt.",
+      confirmWithdraw: "Intrekken",
+      cancel: "Annuleren",
+      withdrawFailed: "Toestemming intrekken is mislukt — probeer het opnieuw.",
+      loadFailed: "Je medische informatie kon niet worden geladen — probeer het opnieuw.",
+    },
   },
   ranks: {
     myRank: {

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -28,10 +28,17 @@ export interface MedicalInfoAtSignUp {
  * - Seen only by the School's owners and Branch Staff the owner switched on
  *   ("See medical information"), for the students of their own branches
  *   (TenantAuthorizationService.assertMaySeeMedicalInfo). No member-facing
- *   endpoint returns it.
+ *   endpoint returns the text.
+ * - Decision 419 item 1: the member (the Guardian for a child) sees which
+ *   Schools hold medical information about them, and when consent was given
+ *   (listShared), and can withdraw consent at any time (withdraw): the stored
+ *   medical information is deleted at once. A child never withdraws for
+ *   themselves.
  * - Erased with the student's account (the row cascades with the User row,
- *   and a Guardian's baseline consent withdrawal deletes it), and with the
- *   School (cascade on delete; deleted outright when a closed School is
+ *   and a Guardian's baseline consent withdrawal deletes it), when the member
+ *   leaves the School (Decision 419 item 1: RoleGrantsService.revoke, and the
+ *   daily entity-offboarding-purge sweep, medical-info-erasure.ts), and with
+ *   the School (cascade on delete; deleted outright when a closed School is
  *   anonymised instead, TenantLifecyclePurgeProcessor).
  *
  * Health data is special-category personal data (GDPR Art. 9, LGPD Art. 11),
@@ -104,6 +111,78 @@ export class MedicalInfoService {
       },
       update: { body, consentedById: consent.byId, consentedByGuardian: consent.byGuardian, consentedAt: consent.at },
     });
+  }
+
+  /**
+   * Decision 419 item 1: who may see that a member's medical information is
+   * shared, and withdraw consent: the member themselves when an adult, or
+   * the Guardian for a child. A child never does (a Guardian-linked account,
+   * or under 18 by date of birth), and staff can't do it for them.
+   */
+  private async assertMemberOrGuardian(callerId: string, studentId: string): Promise<void> {
+    if (callerId === studentId) {
+      const linked = await this.prismaJobs.guardianLink.findFirst({ where: { studentId: callerId, revokedAt: null }, select: { id: true } });
+      const me = await this.prismaAuth.user.findUnique({ where: { id: callerId }, select: { dateOfBirth: true } });
+      if (linked || (me?.dateOfBirth && !isAdultOn(me.dateOfBirth))) {
+        throw new ForbiddenException("A child's medical information is managed by their Guardian.");
+      }
+      return;
+    }
+    const guardian = await this.prismaJobs.guardianLink.findFirst({ where: { guardianId: callerId, studentId, revokedAt: null }, select: { id: true } });
+    if (!guardian) {
+      throw new ForbiddenException('Only the member, or the Guardian for a child, can see or withdraw this.');
+    }
+  }
+
+  /**
+   * GET /students/{studentId}/medical-info (Decision 419 item 1): the Schools
+   * that hold medical information about this member, with when consent was
+   * given and whether a Guardian gave it. Never the text itself. A tablet
+   * sign-up still waiting for the member to accept its invite counts too
+   * (awaitingAcceptance).
+   */
+  async listShared(callerId: string, studentId: string) {
+    await this.assertMemberOrGuardian(callerId, studentId);
+    const [rows, invites] = await Promise.all([
+      this.prismaJobs.studentMedicalInfo.findMany({
+        where: { studentId },
+        select: { schoolId: true, consentedAt: true, consentedByGuardian: true, school: { select: { name: true } } },
+      }),
+      this.prismaJobs.signUp.findMany({
+        where: { userId: studentId, status: 'INVITED', medicalInfo: { not: null }, medicalConsentAt: { not: null } },
+        select: { schoolId: true, medicalConsentAt: true, school: { select: { name: true } } },
+      }),
+    ]);
+    const items = new Map<string, { schoolId: string; schoolName: string; consentedAt: string; consentedByGuardian: boolean; awaitingAcceptance: boolean }>();
+    for (const r of rows) {
+      items.set(r.schoolId, { schoolId: r.schoolId, schoolName: r.school.name, consentedAt: r.consentedAt.toISOString(), consentedByGuardian: r.consentedByGuardian, awaitingAcceptance: false });
+    }
+    for (const i of invites) {
+      if (items.has(i.schoolId)) continue;
+      items.set(i.schoolId, { schoolId: i.schoolId, schoolName: i.school.name, consentedAt: i.medicalConsentAt!.toISOString(), consentedByGuardian: false, awaitingAcceptance: true });
+    }
+    return { items: [...items.values()].sort((a, b) => a.schoolName.localeCompare(b.schoolName) || a.schoolId.localeCompare(b.schoolId)) };
+  }
+
+  /**
+   * DELETE /schools/{schoolId}/students/{studentId}/medical-info (Decision 419
+   * item 1): consent withdrawn by the member (the Guardian for a child). The
+   * stored medical information at that School is deleted at once, with any
+   * medical text still waiting on a sign-up invite there. 404 when that School
+   * holds none.
+   */
+  async withdraw(callerId: string, schoolId: string, studentId: string): Promise<void> {
+    await this.assertMemberOrGuardian(callerId, studentId);
+    const [stored, pending] = await this.prismaJobs.$transaction([
+      this.prismaJobs.studentMedicalInfo.deleteMany({ where: { schoolId, studentId } }),
+      this.prismaJobs.signUp.updateMany({
+        where: { schoolId, userId: studentId, medicalInfo: { not: null } },
+        data: { medicalInfo: null, medicalConsentAt: null },
+      }),
+    ]);
+    if (stored.count === 0 && pending.count === 0) {
+      throw new NotFoundException('No medical information is shared with this School.');
+    }
   }
 
   /** GET /schools/{schoolId}/students/{studentId}/medical-info. */

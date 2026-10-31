@@ -946,6 +946,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "حفظ",
       loading: "جارٍ التحميل…",
     },
+    medical: {
+      title: "المعلومات الطبية",
+      sharedWith: "المعلومات الطبية: تمت مشاركتها مع {school}",
+      consentedOn: "تم إعطاء الموافقة في {date}.",
+      awaiting: "قُدّمت عند تسجيلك في مكتب الاستقبال، وتُحفظ حتى تقبل دعوة المدرسة أو ترفضها.",
+      withdraw: "سحب الموافقة",
+      confirm: "هل تريد سحب الموافقة؟ ستُحذف المعلومات الطبية لدى {school} فورًا. لا يمكن التراجع عن ذلك.",
+      confirmWithdraw: "سحب",
+      cancel: "إلغاء",
+      withdrawFailed: "تعذّر سحب الموافقة — يُرجى المحاولة مرة أخرى.",
+      loadFailed: "تعذّر تحميل معلوماتك الطبية — يُرجى المحاولة مرة أخرى.",
+    },
   },
   ranks: {
     myRank: {

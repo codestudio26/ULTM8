@@ -881,6 +881,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "保存",
       loading: "読み込み中…",
     },
+    medical: {
+      title: "医療情報",
+      sharedWith: "医療情報：{school} と共有中",
+      consentedOn: "{date} に同意しました。",
+      awaiting: "受付での登録時に入力されたものです。スクールの招待を承諾または辞退するまで保管されます。",
+      withdraw: "同意を取り消す",
+      confirm: "同意を取り消しますか？{school} が保管している医療情報はすぐに削除されます。元に戻せません。",
+      confirmWithdraw: "取り消す",
+      cancel: "キャンセル",
+      withdrawFailed: "同意を取り消せませんでした。もう一度お試しください。",
+      loadFailed: "医療情報を読み込めませんでした。もう一度お試しください。",
+    },
   },
   ranks: {
     myRank: {

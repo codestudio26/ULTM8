@@ -880,6 +880,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "保存",
       loading: "加载中…",
     },
+    medical: {
+      title: "医疗信息",
+      sharedWith: "医疗信息：已与 {school} 共享",
+      consentedOn: "于 {date} 同意。",
+      awaiting: "在前台登记时填写；在你接受或拒绝学校的邀请前保留。",
+      withdraw: "撤回同意",
+      confirm: "撤回同意？{school} 保存的医疗信息将立即删除，且无法撤销。",
+      confirmWithdraw: "撤回",
+      cancel: "取消",
+      withdrawFailed: "无法撤回同意，请重试。",
+      loadFailed: "无法加载你的医疗信息，请重试。",
+    },
   },
   ranks: {
     myRank: {

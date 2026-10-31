@@ -80,6 +80,7 @@ const CLEANUP_TABLES = [
   'StudentHomeBranch',
   'StudentCheckInCode',
   'StudentJoinDate',
+  'StudentMedicalInfo',
   'Class',
   'RankStripeTier',
   'Skill',
@@ -288,6 +289,9 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
       data: { id: randomUUID(), schoolId: school, studentId, description: 'Locker', unitAmount: 500, currency: 'GBP', frequency: 'MONTHLY', firstDate: new Date() },
     });
     await superuser.studentNote.create({ data: { id: randomUUID(), schoolId: school, studentId, body: 'Prefers mornings' } });
+    await superuser.studentMedicalInfo.create({
+      data: { id: randomUUID(), schoolId: school, studentId, body: `${p} asthma`, consentedById: studentId, consentedAt: new Date('2025-01-02T03:04:05Z') },
+    });
     await superuser.memberFile.create({
       data: { id: randomUUID(), schoolId: school, studentId, fileName: 'id.pdf', contentType: 'application/pdf', sizeBytes: 10, objectKey: `member-files/${school}/${studentId}/${randomUUID()}.pdf` },
     });
@@ -424,6 +428,13 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
     await superuser.studentCustomStatus.create({ data: { schoolId: schoolA, studentId: users.kate.id, statusId: cat.Astatus1 } });
     // Kid B (merged into Kid A, who has no status) brings his status with him.
     await superuser.studentCustomStatus.create({ data: { schoolId: schoolA, studentId: users.kidB.id, statusId: cat.Astatus2 } });
+    // Both children have medical information from their Guardian: Kid A's is kept.
+    await superuser.studentMedicalInfo.createMany({
+      data: [
+        { id: randomUUID(), schoolId: schoolA, studentId: users.kidA.id, body: 'Kid A allergy', consentedById: users.guardian.id, consentedByGuardian: true, consentedAt: new Date() },
+        { id: randomUUID(), schoolId: schoolA, studentId: users.kidB.id, body: 'Kid B allergy', consentedById: users.guardian.id, consentedByGuardian: true, consentedAt: new Date() },
+      ],
+    });
     await superuser.studentJoinDate.updateMany({ where: { schoolId: schoolA, studentId: users.kate.id }, data: { joinedOn: new Date('2024-06-01') } });
     await superuser.studentJoinDate.updateMany({ where: { schoolId: schoolA, studentId: users.dan.id }, data: { joinedOn: new Date('2021-03-15') } });
     await superuser.studentCheckInCode.createMany({
@@ -580,6 +591,9 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
     // Kid A had no status, so Kid B's comes with the merge.
     expect((await superuser.studentCustomStatus.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kidA.id } })).statusId).toBe(cat.Astatus2);
     expect(await superuser.studentCustomStatus.count({ where: { studentId: users.kidB.id } })).toBe(0);
+    // Kid A had medical information, so it is kept and Kid B's goes.
+    expect((await superuser.studentMedicalInfo.findMany({ where: { schoolId: schoolA, studentId: { in: [users.kidA.id, users.kidB.id] } } })).map((m) => m.body)).toEqual(['Kid A allergy']);
+    expect(same.body.records.StudentMedicalInfo).toBe(0);
     // The Guardian links are the person's, not the School's: untouched.
     expect(await superuser.guardianLink.count({ where: { studentId: users.kidB.id, revokedAt: null } })).toBe(1);
   });
@@ -649,13 +663,24 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
     expect(Object.fromEntries(values.map((v) => [v.fieldId, v.value]))).toEqual({ [cat.Afield1]: 'M (kept)', [cat.Afield2]: '42' });
     expect(res.body.records.CustomMemberFieldValue).toBe(1);
     // One per member at the School: Kate's stays, Dan's goes.
-    for (const table of ['StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate', 'StudentCustomStatus'] as const) {
+    for (const table of ['StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate', 'StudentCustomStatus', 'StudentMedicalInfo'] as const) {
       expect([table, danAfter[table], kateAfter[table]]).toEqual([table, 0, 1]);
     }
     expect((await superuser.studentCheckInCode.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).code).toBe('1111');
     expect((await superuser.studentHomeBranch.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).branchId).toBe(branchA1);
     // Kate's status is set, so it stays.
     expect((await superuser.studentCustomStatus.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).statusId).toBe(cat.Astatus1);
+    // Kate gave no medical information, so Dan's comes with its consent: he
+    // gave it for himself, the same person as Kate.
+    expect(await superuser.studentMedicalInfo.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).toMatchObject({
+      body: 'A asthma',
+      consentedById: users.kate.id,
+      consentedByGuardian: false,
+      consentedAt: new Date('2025-01-02T03:04:05Z'),
+    });
+    expect(res.body.records.StudentMedicalInfo).toBe(1);
+    // Dan's at School B stays his.
+    expect(await superuser.studentMedicalInfo.findFirstOrThrow({ where: { schoolId: schoolB, studentId: users.dan.id } })).toMatchObject({ body: 'B asthma', consentedById: users.dan.id });
     // The earliest join date is kept.
     expect((await superuser.studentJoinDate.findFirstOrThrow({ where: { schoolId: schoolA, studentId: users.kate.id } })).joinedOn.toISOString().slice(0, 10)).toBe('2021-03-15');
 

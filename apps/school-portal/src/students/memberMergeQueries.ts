@@ -46,7 +46,7 @@ export const MERGE_GROUPS = {
   tags: ['StudentTag'],
   customFields: ['CustomMemberFieldValue', 'StudentCustomStatus'],
   files: ['MemberFile'],
-  more: ['ChildInvite', 'SignUp', 'Favorite', 'WatchHistory', 'RosterMember', 'StudentAbsenceAlert', 'StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate'],
+  more: ['ChildInvite', 'SignUp', 'Favorite', 'WatchHistory', 'RosterMember', 'StudentAbsenceAlert', 'StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate', 'StudentMedicalInfo'],
 } as const satisfies Record<string, ReadonlyArray<keyof MergeRecordCounts>>;
 export type MergeGroup = keyof typeof MERGE_GROUPS;
 

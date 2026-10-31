@@ -43,6 +43,7 @@ import { STAFF_ROLES, StaffAccessDto, StaffListQueryDto, StaffMemberDto, StaffRo
 import { StepUpService } from '../../auth/step-up.service';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
 import { recordStaffActivity } from '../staff-activity/staff-activity';
+import { deleteMedicalInfoOfLeavers } from '../../medical-info/medical-info-erasure';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -730,6 +731,7 @@ export class RoleGrantsService {
     // Subscription already cancelled and moves on.
     if (grant.role === 'STUDENT') await this.stopSubscriptionsOfLeavingStudent(callerId, schoolId, targetUserId, roleGrantId);
     let freedClassIds: string[] = [];
+    let leftSchool = false;
     const revoked = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       if (isOwnerGrant && (await mainOwnerGrant(tx, schoolId))?.id === grant.id) {
         throw new ForbiddenException({
@@ -746,6 +748,7 @@ export class RoleGrantsService {
       if (grant.role === 'STUDENT') {
         const stillEnrolled = await tx.roleGrant.count({ where: { userId: targetUserId, schoolId, role: 'STUDENT', revokedAt: null } });
         if (stillEnrolled === 0) {
+          leftSchool = true;
           await tx.studentHomeBranch.deleteMany({ where: { schoolId, studentId: targetUserId } });
           // Someone who has left gives up their seats and waitlist places
           // (Decision 343, S2).
@@ -754,6 +757,17 @@ export class RoleGrantsService {
       }
       return row;
     });
+    // Decision 419 item 1: medical information is deleted when the member
+    // leaves the School. StudentMedicalInfo is on the jobs connection only, so
+    // this runs after the revoke commits; the daily entity-offboarding-purge
+    // sweep deletes it if this fails.
+    if (leftSchool) {
+      try {
+        await deleteMedicalInfoOfLeavers(this.prismaJobs, { schoolId, studentId: targetUserId });
+      } catch (err) {
+        this.logger.warn(`Revoke ${roleGrantId}: medical information not deleted yet (the daily sweep retries) — ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
     // Branch Staff no longer at that branch can't have coach invites open
     // there (Decision 183; security review M1).
     if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, grant.schoolId, targetUserId, grant.branchId);

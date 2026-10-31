@@ -903,6 +903,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "Guardar",
       loading: "Cargando…",
     },
+    medical: {
+      title: "Información médica",
+      sharedWith: "Información médica: compartida con {school}",
+      consentedOn: "Consentimiento dado el {date}.",
+      awaiting: "Dada en tu registro en recepción; se guarda hasta que aceptes o rechaces la invitación de la escuela.",
+      withdraw: "Retirar el consentimiento",
+      confirm: "¿Retirar el consentimiento? La información médica que tiene {school} se elimina de inmediato. No se puede deshacer.",
+      confirmWithdraw: "Retirar",
+      cancel: "Cancelar",
+      withdrawFailed: "No se pudo retirar el consentimiento — inténtalo de nuevo.",
+      loadFailed: "No se pudo cargar tu información médica — inténtalo de nuevo.",
+    },
   },
   ranks: {
     myRank: {

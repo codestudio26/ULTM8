@@ -881,6 +881,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       save: "저장",
       loading: "불러오는 중…",
     },
+    medical: {
+      title: "의료 정보",
+      sharedWith: "의료 정보: {school}과(와) 공유됨",
+      consentedOn: "{date}에 동의함.",
+      awaiting: "프런트 데스크 가입 시 입력한 정보입니다. 학원의 초대를 수락하거나 거절할 때까지 보관됩니다.",
+      withdraw: "동의 철회",
+      confirm: "동의를 철회할까요? {school}이(가) 보관한 의료 정보가 즉시 삭제됩니다. 되돌릴 수 없습니다.",
+      confirmWithdraw: "철회",
+      cancel: "취소",
+      withdrawFailed: "동의를 철회하지 못했습니다. 다시 시도해 주세요.",
+      loadFailed: "의료 정보를 불러오지 못했습니다. 다시 시도해 주세요.",
+    },
   },
   ranks: {
     myRank: {

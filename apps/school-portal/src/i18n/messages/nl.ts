@@ -2737,7 +2737,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       consentSelf: "Gegeven met toestemming van {name} op {date}.",
       consentGuardian: "Gegeven met toestemming van {name}, de voogd, op {date}.",
       formerAccount: "een vroeger account",
-      empty: "Er is geen medische informatie gegeven.",
+      empty: "Geen medische informatie.",
       privacy: "Alleen de eigenaren van de School en medewerkers die medische informatie mogen zien, kunnen dit lezen.",
     },
     files: {

@@ -2737,7 +2737,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       consentSelf: "Mit Einwilligung von {name} am {date} gemacht.",
       consentGuardian: "Mit Einwilligung von {name}, dem Erziehungsberechtigten, am {date} gemacht.",
       formerAccount: "einem früheren Konto",
-      empty: "Es wurden keine medizinischen Angaben gemacht.",
+      empty: "Keine medizinischen Angaben.",
       privacy: "Nur die Inhaber der Schule und Mitarbeiter, die medizinische Angaben sehen dürfen, können das lesen.",
     },
     files: {

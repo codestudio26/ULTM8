@@ -2737,7 +2737,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       consentSelf: "Données avec le consentement de {name} le {date}.",
       consentGuardian: "Données avec le consentement de {name}, son tuteur, le {date}.",
       formerAccount: "un ancien compte",
-      empty: "Aucune information médicale n'a été donnée.",
+      empty: "Aucune information médicale.",
       privacy: "Seuls les propriétaires de l'École et le personnel autorisé à voir les informations médicales peuvent lire ceci.",
     },
     files: {

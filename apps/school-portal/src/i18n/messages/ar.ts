@@ -2893,7 +2893,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       consentSelf: "قُدّمت بموافقة {name} في {date}.",
       consentGuardian: "قُدّمت بموافقة {name}، ولي الأمر، في {date}.",
       formerAccount: "حساب سابق",
-      empty: "لم تُقدَّم أي معلومات طبية.",
+      empty: "لا توجد معلومات طبية.",
       privacy: "لا يقرأ هذا إلا مالكو المدرسة والموظفون المسموح لهم برؤية المعلومات الطبية.",
     },
     files: {

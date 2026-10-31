@@ -9,13 +9,16 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
 import { StepUpService } from '../src/auth/step-up.service';
 import { TenantLifecyclePurgeProcessor } from '../src/jobs/tenant-lifecycle-purge.processor';
+import { EntityOffboardingPurgeProcessor } from '../src/jobs/entity-offboarding-purge.processor';
 
 /**
  * Decision 315 item 10 — medical information at sign-up: optional per School
  * (off by default), explicit consent from the member (the Guardian for a
  * child), seen only by the owner and Branch Staff with "See medical
  * information" for their own branches' students, never on a member-facing
- * endpoint, erased with the account and with the School.
+ * endpoint, erased with the account and with the School. Decision 419 item 1:
+ * the member (the Guardian for a child) sees that it is shared and can
+ * withdraw consent, which deletes it; it is deleted when they leave the School.
  */
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -40,6 +43,8 @@ const ACCESS = {
   exportStudents: false,
   freezeMemberships: false,
   attendanceStats: false,
+  memberFiles: false,
+  importData: false,
   seeMedicalInfo: false,
 };
 
@@ -269,6 +274,9 @@ describeIfDb('Medical information (Decision 315 item 10)', () => {
         ['adult', '/v1/student-notes/me'],
         ['parent', '/v1/guardians/me/minors'],
         ['parent', `/v1/student-notes/me?studentId=${users.kid.id}`],
+        // Decision 419 item 1: the member sees that it is shared, never the text.
+        ['adult', `/v1/students/${users.adult.id}/medical-info`],
+        ['parent', `/v1/students/${users.kid.id}/medical-info`],
       ] as const) {
         const res = await http().get(path).set(as(who));
         expect(res.status).toBeLessThan(500);
@@ -364,6 +372,146 @@ describeIfDb('Medical information (Decision 315 item 10)', () => {
       } finally {
         await superuser.school.update({ where: { id: schoolA.id }, data: { medicalInfoEnabled: true } });
       }
+    });
+  });
+
+  describe('withdrawing consent (Decision 419 item 1)', () => {
+    const shared = (who: string, studentId: string) => http().get(`/v1/students/${studentId}/medical-info`).set(as(who));
+    const withdraw = (who: string, studentId: string, schoolId = schoolA.id) => http().delete(`/v1/schools/${schoolId}/students/${studentId}/medical-info`).set(as(who));
+
+    it('an adult member sees which Schools hold it (never the text) and withdraws it; staff then see none', async () => {
+      // A front-desk sign-up at School B still waiting for them to accept counts too.
+      const invite = await superuser.signUp.create({
+        data: {
+          schoolId: schoolB.id,
+          kind: 'MEMBER',
+          status: 'INVITED',
+          userId: users.adult.id,
+          firstName: 'Adult',
+          surname: 'Med',
+          dateOfBirth: new Date('1995-01-01'),
+          email: users.adult.email,
+          medicalInfo: ALLERGY,
+          medicalConsentAt: new Date('2026-10-01T10:00:00Z'),
+        },
+      });
+
+      const list = await shared('adult', users.adult.id);
+      expect(list.status).toBe(200);
+      expect(list.body.items).toEqual([
+        { schoolId: schoolA.id, schoolName: 'Medical School A', consentedAt: expect.any(String), consentedByGuardian: false, awaitingAcceptance: false },
+        { schoolId: schoolB.id, schoolName: 'Medical School B', consentedAt: '2026-10-01T10:00:00.000Z', consentedByGuardian: false, awaitingAcceptance: true },
+      ]);
+      expect(JSON.stringify(list.body)).not.toMatch(/Asthma|Peanut/);
+
+      // Withdrawing at School B clears the waiting sign-up's text only.
+      expect((await withdraw('adult', users.adult.id, schoolB.id)).status).toBe(204);
+      expect(await superuser.signUp.findUniqueOrThrow({ where: { id: invite.id } })).toMatchObject({ status: 'INVITED', medicalInfo: null, medicalConsentAt: null });
+      expect((await read('owner', users.adult.id)).body.medicalInfo.body).toBe(ASTHMA);
+
+      const res = await withdraw('adult', users.adult.id);
+      expect(res.status).toBe(204);
+      expect(await superuser.studentMedicalInfo.count({ where: { studentId: users.adult.id } })).toBe(0);
+      expect((await read('owner', users.adult.id)).body).toEqual({ medicalInfo: null });
+      expect((await read('staffOn', users.adult.id)).body).toEqual({ medicalInfo: null });
+      expect((await shared('adult', users.adult.id)).body).toEqual({ items: [] });
+      // Still a member: withdrawing consent doesn't end the enrolment.
+      expect(await superuser.roleGrant.count({ where: { userId: users.adult.id, schoolId: schoolA.id, role: 'STUDENT', revokedAt: null } })).toBe(1);
+      // Nothing left to withdraw.
+      expect((await withdraw('adult', users.adult.id)).status).toBe(404);
+      await superuser.signUp.delete({ where: { id: invite.id } });
+    });
+
+    it("a Guardian sees and withdraws their child's; the child never can", async () => {
+      const list = await shared('parent', users.kid.id);
+      expect(list.status).toBe(200);
+      expect(list.body.items).toEqual([
+        { schoolId: schoolA.id, schoolName: 'Medical School A', consentedAt: expect.any(String), consentedByGuardian: true, awaitingAcceptance: false },
+      ]);
+
+      const kidList = await shared('kid', users.kid.id);
+      expect(kidList.status).toBe(403);
+      expect(kidList.body.error.message).toBe("A child's medical information is managed by their Guardian.");
+      expect((await withdraw('kid', users.kid.id)).status).toBe(403);
+      // Nor anyone under 18 by date of birth, Guardian-linked or not.
+      const teen = await superuser.user.create({
+        data: { id: randomUUID(), email: `medical-teen2-${randomUUID()}@example.test`, firstName: 'Teen', surname: 'Med', passcodeHash: 'x', dateOfBirth: new Date('2012-06-01') },
+      });
+      extraUserIds.push(teen.id);
+      await superuser.studentMedicalInfo.create({ data: { id: randomUUID(), schoolId: schoolB.id, studentId: teen.id, body: ALLERGY, consentedAt: new Date() } });
+      tokens.teen2 = jwt.sign({ sub: teen.id, email: teen.email, grants: [] });
+      expect((await withdraw('teen2', teen.id, schoolB.id)).status).toBe(403);
+      expect(await superuser.studentMedicalInfo.count({ where: { studentId: teen.id } })).toBe(1);
+      expect(await superuser.studentMedicalInfo.count({ where: { studentId: users.kid.id } })).toBe(1);
+
+      const res = await withdraw('parent', users.kid.id);
+      expect(res.status).toBe(204);
+      expect(await superuser.studentMedicalInfo.count({ where: { studentId: users.kid.id } })).toBe(0);
+      expect((await read('owner', users.kid.id)).body).toEqual({ medicalInfo: null });
+      expect((await shared('parent', users.kid.id)).body).toEqual({ items: [] });
+
+      // Given again for the erasure tests below.
+      await superuser.studentMedicalInfo.create({
+        data: { id: randomUUID(), schoolId: schoolA.id, studentId: users.kid.id, body: ALLERGY, consentedById: users.parent.id, consentedByGuardian: true, consentedAt: new Date() },
+      });
+    });
+
+    it("nobody else sees or withdraws it: other members, other Guardians, staff, another School's owner", async () => {
+      const someone = await superuser.user.create({
+        data: { id: randomUUID(), email: `medical-cross-${randomUUID()}@example.test`, firstName: 'Cross', surname: 'Med', passcodeHash: 'x', dateOfBirth: new Date('1990-01-01') },
+      });
+      extraUserIds.push(someone.id);
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: someone.id, schoolId: schoolA.id } });
+      await superuser.studentMedicalInfo.create({ data: { id: randomUUID(), schoolId: schoolA.id, studentId: someone.id, body: ASTHMA, consentedById: someone.id, consentedAt: new Date() } });
+
+      for (const who of ['plain', 'parent', 'owner', 'staffOn', 'coach', 'ownerB']) {
+        const list = await shared(who, someone.id);
+        expect([who, list.status]).toEqual([who, 403]);
+        expect([who, (await withdraw(who, someone.id)).status]).toEqual([who, 403]);
+      }
+      // A Guardian for another child, not this one.
+      expect((await shared('parent', users.adult.id)).status).toBe(403);
+      expect((await withdraw('ownerB', someone.id, schoolB.id)).status).toBe(403);
+      // Withdrawing at another School leaves this School's alone.
+      expect((await withdraw('adult', users.adult.id, schoolB.id)).status).toBe(404);
+      expect(await superuser.studentMedicalInfo.count({ where: { studentId: someone.id } })).toBe(1);
+    });
+  });
+
+  describe('leaving the School (Decision 419 item 1)', () => {
+    it("is deleted when the owner removes the student, at that School only", async () => {
+      const leaver = await superuser.user.create({
+        data: { id: randomUUID(), email: `medical-leaver-${randomUUID()}@example.test`, firstName: 'Leaver', surname: 'Med', passcodeHash: 'x', dateOfBirth: new Date('1990-01-01') },
+      });
+      extraUserIds.push(leaver.id);
+      const grantA = await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: leaver.id, schoolId: schoolA.id } });
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: leaver.id, schoolId: schoolB.id } });
+      for (const schoolId of [schoolA.id, schoolB.id]) {
+        await superuser.studentMedicalInfo.create({ data: { id: randomUUID(), schoolId, studentId: leaver.id, body: ASTHMA, consentedById: leaver.id, consentedAt: new Date() } });
+      }
+
+      const res = await http().delete(`/v1/users/${leaver.id}/role-grants/${grantA.id}`).set(as('owner'));
+      expect(res.status).toBe(200);
+      expect(await superuser.studentMedicalInfo.count({ where: { schoolId: schoolA.id, studentId: leaver.id } })).toBe(0);
+      expect((await read('owner', leaver.id)).body).toEqual({ medicalInfo: null });
+      // Still a Student at School B, which keeps theirs.
+      expect(await superuser.studentMedicalInfo.count({ where: { schoolId: schoolB.id, studentId: leaver.id } })).toBe(1);
+    });
+
+    it('the daily sweep deletes it for anyone no longer a Student there, and keeps current students\'', async () => {
+      const drifter = await superuser.user.create({
+        data: { id: randomUUID(), email: `medical-drifter-${randomUUID()}@example.test`, firstName: 'Drifter', surname: 'Med', passcodeHash: 'x', dateOfBirth: new Date('1990-01-01') },
+      });
+      extraUserIds.push(drifter.id);
+      await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: drifter.id, schoolId: schoolA.id, revokedAt: new Date() } });
+      await superuser.studentMedicalInfo.create({ data: { id: randomUUID(), schoolId: schoolA.id, studentId: drifter.id, body: ASTHMA, consentedById: drifter.id, consentedAt: new Date() } });
+      expect(await superuser.studentMedicalInfo.count({ where: { studentId: users.kid.id } })).toBe(1);
+
+      await app.get(EntityOffboardingPurgeProcessor).process({ data: {}, attemptsMade: 1, opts: { attempts: 3 } } as never);
+
+      expect(await superuser.studentMedicalInfo.count({ where: { studentId: drifter.id } })).toBe(0);
+      // The child is still a Student at School A.
+      expect(await superuser.studentMedicalInfo.count({ where: { schoolId: schoolA.id, studentId: users.kid.id } })).toBe(1);
     });
   });
 

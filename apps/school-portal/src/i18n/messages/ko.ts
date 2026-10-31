@@ -2698,7 +2698,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       consentSelf: "{date}에 {name}의 동의로 제공되었습니다.",
       consentGuardian: "{date}에 보호자 {name}의 동의로 제공되었습니다.",
       formerAccount: "이전 계정",
-      empty: "제공된 의료 정보가 없습니다.",
+      empty: "의료 정보가 없습니다.",
       privacy: "학교 소유자와 의료 정보 열람이 허용된 직원만 이 내용을 읽을 수 있습니다.",
     },
     files: {

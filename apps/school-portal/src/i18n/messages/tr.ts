@@ -2737,7 +2737,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       consentSelf: "{name} tarafından {date} tarihinde onayla verildi.",
       consentGuardian: "Velisi {name} tarafından {date} tarihinde onayla verildi.",
       formerAccount: "eski bir hesap",
-      empty: "Sağlık bilgisi verilmedi.",
+      empty: "Sağlık bilgisi yok.",
       privacy: "Bunu yalnızca Okul sahipleri ve sağlık bilgilerini görmesine izin verilen personel okuyabilir.",
     },
     files: {

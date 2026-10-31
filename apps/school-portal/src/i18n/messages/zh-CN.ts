@@ -2698,7 +2698,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       consentSelf: "由 {name} 于 {date} 同意后提供。",
       consentGuardian: "由监护人 {name} 于 {date} 同意后提供。",
       formerAccount: "已注销的账户",
-      empty: "未提供医疗信息。",
+      empty: "没有医疗信息。",
       privacy: "只有学校所有者和被允许查看医疗信息的员工可以阅读此内容。",
     },
     files: {

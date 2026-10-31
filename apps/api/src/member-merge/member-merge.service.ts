@@ -265,6 +265,12 @@ export class MemberMergeService {
       }
       await tx.$executeRaw`DELETE FROM ${t} WHERE "schoolId" = ${schoolId} AND "studentId" = ${duplicateId}`;
     }
+    // Medical information moved from the duplicate keeps its consent; consent
+    // the duplicate gave for themselves is now the kept member's, the same
+    // person (as a waiver they signed themselves, below).
+    await tx.$executeRaw`
+      UPDATE "StudentMedicalInfo" SET "consentedById" = ${keptId}
+      WHERE "schoolId" = ${schoolId} AND "studentId" = ${keptId} AND "consentedById" = ${duplicateId}`;
 
     const waivers = await this.moveWaiverSignatures(tx, schoolId, keptId, duplicateId);
     records.WaiverSignature = waivers.moved;
