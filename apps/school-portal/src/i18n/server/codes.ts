@@ -99,6 +99,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.freezeNotFound');
     case 'FREEZE_FEE_NO_PAYMENTS':
       return t('server.codes.freezeFeeNoPayments');
+    // Merge duplicate members (Decision 315 item 13): the preview lists why.
+    case 'MERGE_BLOCKED':
+      return t('server.codes.mergeBlocked');
     // A free trial of ULTM8 that ended (backlog 3.14).
     case 'TRIAL_ENDED':
       return t('server.codes.trialEnded');

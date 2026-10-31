@@ -22,6 +22,7 @@ import {
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { WaiverFormModal } from './WaiverFormModal';
 import { GuestSignaturesPanel } from './GuestSignaturesPanel';
+import { SignedDocumentsExportModal } from './SignedDocumentsExportModal';
 import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 
@@ -65,6 +66,8 @@ export function WaiversPage() {
   // so this toggle/count never needs a second request.
   const [showArchived, setShowArchived] = useState(false);
   const [confirmingArchive, setConfirmingArchive] = useState<WaiverResponse | null>(null);
+  // Decision 315 item 13: a ZIP of every signed document at the School.
+  const [exportingAll, setExportingAll] = useState(false);
 
   // Only the owner has this page; anyone else goes to their own home screen
   // (Waivers review W12, same as Staff/Instructors/Timetable).
@@ -85,6 +88,9 @@ export function WaiversPage() {
         subtitle={t('waivers.subtitle')}
         actions={
           <div style={{ display: 'flex', gap: 8 }}>
+            <Button variant="secondary" onClick={() => setExportingAll(true)}>
+              {t('waivers.exportAll.button')}
+            </Button>
             <Button variant="secondary" onClick={() => navigate('/waivers/settings')}>
               {t('waivers.settings.open')}
             </Button>
@@ -92,6 +98,7 @@ export function WaiversPage() {
           </div>
         }
       />
+      {exportingAll ? <SignedDocumentsExportModal schoolId={schoolId} onClose={() => setExportingAll(false)} /> : null}
 
       {actionError ? <ErrorBanner message={actionError} /> : null}
 

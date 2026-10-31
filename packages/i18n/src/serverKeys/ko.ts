@@ -55,6 +55,7 @@ export const server: PartialMessages<ServerKeys> = {
     packNotForSale: "이 패키지는 더 이상 판매되지 않습니다. 다른 플랜은 데스크에 문의하세요.",
     rechargeNotPaid: "아직 패키지 결제가 완료되지 않았습니다.",
     trialEnded: "이 도장의 ULTM8 무료 체험이 끝났어요. 구독할 때까지 포털은 읽기 전용이에요. 새 수업, 예약, 결제는 할 수 없어요.",
+    mergeBlocked: "이 두 기록은 아직 병합할 수 없어요. 이유를 보려면 병합을 다시 여세요.",
     correctionNotVerified: "이 스타일의 띠는 아직 도장의 확인을 기다리고 있어요. 확인할 때 수정할 수 있어요.",
     correctionPending: "이 스타일에서 이미 수정을 요청했어요. 도장의 답변을 기다려 주세요.",
     correctionSameRank: "이미 가진 띠예요. 원래 받아야 할 띠를 고르세요.",

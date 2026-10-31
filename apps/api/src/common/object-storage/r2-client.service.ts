@@ -140,6 +140,21 @@ export class R2ClientService {
     await client.send(new PutObjectCommand({ Bucket: this.bucketName, Key: key, Body: body, ContentType: contentType, ContentLength: body.length }));
   }
 
+  /** Reads `key` from the private bucket, or null when there is no such
+   * object. For the signed-documents export (Decision 315 item 13), which
+   * puts each drawn signature or paper photo inside its document. */
+  async getObject(key: string): Promise<Buffer | null> {
+    const client = this.assertConfigured();
+    try {
+      const res = await client.send(new GetObjectCommand({ Bucket: this.bucketName, Key: key }));
+      if (!res.Body) return null;
+      return Buffer.from(await res.Body.transformToByteArray());
+    } catch (err) {
+      if (err instanceof Error && (err.name === 'NoSuchKey' || err.name === 'NotFound')) return null;
+      throw err;
+    }
+  }
+
   /** A presigned GET URL for `key` in the private bucket that downloads it as
    * `fileName` (Content-Disposition: attachment) with `contentType`. Expires
    * in 5 minutes: the caller asks for it at the moment of download. */

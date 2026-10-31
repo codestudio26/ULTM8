@@ -11,6 +11,7 @@ import { MemberFilesCard } from '../students/MemberFilesCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
+import { MergeDuplicateModal } from '../students/MergeDuplicateModal';
 import { VisitorCard } from '../students/VisitorCard';
 import { MemberDetailsCard } from '../students/MemberDetails';
 import { useAttendanceAccess } from '../students/AttendancePage';
@@ -119,6 +120,9 @@ export function StudentGradingPage() {
   const mayLogAttendance = useAttendanceAccess(schoolId).log;
   const [loggingAttendance, setLoggingAttendance] = useState(false);
   const [attendanceLogged, setAttendanceLogged] = useState<string | null>(null);
+  // Decision 315 item 13: merge a duplicate record into this one (owner only).
+  const [merging, setMerging] = useState(false);
+  const [merged, setMerged] = useState<string | null>(null);
   const enrolled = students.data?.items.find((s) => s.id === studentId)?.status === 'ACTIVE';
   // Decision 371 (Q4): who the student's Guardians are. Read for a current
   // student only (the API's own rule, like the profile read).
@@ -193,6 +197,11 @@ export function StudentGradingPage() {
                 {t('grading.student.editProfile')}
               </Button>
             ) : null}
+            {my.isOwner && student && !inactive ? (
+              <Button variant="secondary" onClick={() => setMerging(true)}>
+                {t('students.merge.button')}
+              </Button>
+            ) : null}
             {my.isOwner && inactive ? (
               <Button onClick={() => setReEnrolling(true)}>{t('students.reEnrol.button')}</Button>
             ) : null}
@@ -206,6 +215,10 @@ export function StudentGradingPage() {
       />
 
       {attendanceLogged ? <SuccessBanner message={attendanceLogged} /> : null}
+      {merged ? <SuccessBanner message={merged} /> : null}
+      {merging && student ? (
+        <MergeDuplicateModal schoolId={schoolId} keptId={studentId} keptName={studentName} onClose={() => setMerging(false)} onMerged={setMerged} />
+      ) : null}
       {loggingAttendance ? (
         <LogAttendanceModal
           schoolId={schoolId}

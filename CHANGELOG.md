@@ -166,6 +166,33 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
   gains `memberships` and `total`, and each month `memberships` and `total`.
   15 languages.
+- **Data tools: merge duplicate members, export all signed documents**
+  (Decision 315 item 13; imports are a separate change). **Merge a duplicate**
+  on a student's page: the owner picks the other record of the same person at
+  the School; a preview lists what moves (memberships, payments and charges,
+  bookings and waitlists, belts and grading history, waiver signatures, notes,
+  tags, files and the rest) or why the two can't be merged yet (different
+  Guardians, both on an unlimited membership, the duplicate on a card
+  Subscription, a card payment in progress, a belt in the same style, the same
+  class booked, an open sign-up or invite, and so on). Merging moves the
+  duplicate's records **at this School only** to the kept student, keeps the
+  earlier join date, and ends the duplicate's enrolment there, in one
+  transaction, with a line in the Staff page's activity log. The duplicate's
+  account and login, and anything they have at other Schools, never change.
+  Waiver signatures are legal records: none is deleted or rewritten; where
+  both signed the same waiver, the duplicate's signature stays on the
+  duplicate's record. **Export signed documents** on the Waivers page: a ZIP
+  of every signed waiver at the School (members' and guests', expired ones
+  included), one HTML document per signature with the drawn signature or paper
+  photo inside it (opens in a browser, prints to PDF), and `index.csv`
+  (member, document, version, signed at, signed by, with the Guardian or
+  paper marked), in the owner's language. Made by a background job into the
+  private bucket, downloaded through a 5-minute link, deleted after 24 hours.
+  Both are School-owner only. New endpoints `GET/POST
+  /schools/{schoolId}/students/{studentId}/merge[/preview]` and
+  `/schools/{schoolId}/signed-documents/exports` (`POST`, `GET latest`,
+  `GET {id}`, `GET {id}/download`). 15 languages. **Needs a database
+  migration** (`20270204000000_data_tools_merge_export`).
 - **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
   its own list of tags, managed under **School settings → Student tags** (add,
   rename, delete; deleting a tag takes it off every student). A **Tags** card
