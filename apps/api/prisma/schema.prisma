@@ -1347,6 +1347,7 @@ model School {
   recurringCharges       RecurringCharge[]
   rosters                Roster[]
   absenceAlerts          StudentAbsenceAlert[]
+  membershipEndingReports MembershipEndingReport[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
   // "tenant column" one level up is franchiseId.
@@ -5850,4 +5851,23 @@ model StudentAbsenceAlert {
   sentAt DateTime @default(now())
 
   @@id([schoolId, studentId, absentSince])
+}
+
+/// Decision 317 item 7: the weekly report to staff of memberships ending soon
+/// (membership-ending-report job), one row per School per week, so it goes
+/// once a week. `weekStart` is the first day of the School's week (its
+/// weekStartsOn, in its time zone). Written even when nothing was ending.
+/// Jobs connection only.
+model MembershipEndingReport {
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  weekStart DateTime @db.Date
+
+  /// How many memberships it listed (0: nothing was sent).
+  listed Int
+
+  sentAt DateTime @default(now())
+
+  @@id([schoolId, weekStart])
 }

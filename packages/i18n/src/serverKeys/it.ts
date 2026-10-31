@@ -246,6 +246,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "Iscritto assente",
     absenceAlertBody: "{name} non fa il check-in dal {date}.",
     absenceAlertNeverBody: "{name} non ha ancora fatto il check-in.",
+    membershipEndingReportTitle: "Abbonamenti in scadenza",
+    membershipEndingReportBody: "Abbonamenti che terminano nei prossimi 7 giorni: {list}.",
     chargeRefundTitle: "Rimborso",
     chargeRefundCardBody: "{amount} sono stati rimborsati sulla tua carta.",
     chargeRefundMoneyBackBody: "{amount} ti sono stati restituiti.",

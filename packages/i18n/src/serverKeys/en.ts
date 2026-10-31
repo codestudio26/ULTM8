@@ -218,6 +218,8 @@ export const server = {
     absenceAlertTitle: "Member absent",
     absenceAlertBody: "{name} hasn't checked in since {date}.",
     absenceAlertNeverBody: "{name} hasn't checked in yet.",
+    membershipEndingReportTitle: "Memberships ending soon",
+    membershipEndingReportBody: "Memberships ending in the next 7 days: {list}.",
     // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
     chargeRefundTitle: "Refund",
     chargeRefundCardBody: "{amount} was refunded to your card.",

@@ -232,6 +232,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "Üye gelmiyor",
     absenceAlertBody: "{name}, {date} tarihinden beri giriş yapmadı.",
     absenceAlertNeverBody: "{name} henüz giriş yapmadı.",
+    membershipEndingReportTitle: "Yakında biten üyelikler",
+    membershipEndingReportBody: "Önümüzdeki 7 gün içinde biten üyelikler: {list}.",
     chargeRefundTitle: "İade",
     chargeRefundCardBody: "{amount} kartınıza iade edildi.",
     chargeRefundMoneyBackBody: "{amount} size geri verildi.",

@@ -79,3 +79,19 @@ ALTER TABLE "StudentAbsenceAlert" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "StudentAbsenceAlert" FORCE ROW LEVEL SECURITY;
 GRANT SELECT, INSERT, DELETE ON "StudentAbsenceAlert" TO ultm8_jobs;
 CREATE POLICY "student_absence_alert_jobs_all" ON "StudentAbsenceAlert" FOR ALL TO ultm8_jobs USING (true) WITH CHECK (true);
+
+-- One row per School per week for the weekly report to staff of memberships
+-- ending soon: it goes once a week. Written by its job only (ultm8_jobs).
+CREATE TABLE "MembershipEndingReport" (
+    "schoolId" TEXT NOT NULL,
+    "weekStart" DATE NOT NULL,
+    "listed" INTEGER NOT NULL,
+    "sentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "MembershipEndingReport_pkey" PRIMARY KEY ("schoolId","weekStart")
+);
+ALTER TABLE "MembershipEndingReport" ADD CONSTRAINT "MembershipEndingReport_schoolId_fkey" FOREIGN KEY ("schoolId") REFERENCES "School"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "MembershipEndingReport" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "MembershipEndingReport" FORCE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, DELETE ON "MembershipEndingReport" TO ultm8_jobs;
+CREATE POLICY "membership_ending_report_jobs_all" ON "MembershipEndingReport" FOR ALL TO ultm8_jobs USING (true) WITH CHECK (true);

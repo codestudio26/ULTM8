@@ -288,6 +288,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "عضو غائب",
     absenceAlertBody: "لم يسجّل {name} حضوره منذ {date}.",
     absenceAlertNeverBody: "لم يسجّل {name} حضوره بعد.",
+    membershipEndingReportTitle: "عضويات تنتهي قريبًا",
+    membershipEndingReportBody: "العضويات التي تنتهي خلال الأيام السبعة القادمة: {list}.",
     chargeRefundTitle: "استرداد",
     chargeRefundCardBody: "تم رد {amount} إلى بطاقتك.",
     chargeRefundMoneyBackBody: "تمت إعادة {amount} إليك.",

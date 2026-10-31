@@ -218,6 +218,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "회원 결석",
     absenceAlertBody: "{name}님이 {date} 이후 체크인하지 않았습니다.",
     absenceAlertNeverBody: "{name}님이 아직 체크인하지 않았습니다.",
+    membershipEndingReportTitle: "곧 종료되는 멤버십",
+    membershipEndingReportBody: "앞으로 7일 안에 종료되는 멤버십: {list}.",
     chargeRefundTitle: "환불",
     chargeRefundCardBody: "{amount}이(가) 카드로 환불되었습니다.",
     chargeRefundMoneyBackBody: "{amount}을(를) 돌려드렸습니다.",

@@ -15,7 +15,14 @@ const REPEATABLE_JOB_ID = 'membership-expiry-reminder';
 export const EXPIRY_REMINDER_DAYS = 7;
 /** Not reminded: a Friend Pass only covers a guest, and a visit pass is a
  * Visitor's free pass, not a membership (Decision 391; no reminder asked for). */
-const NOT_REMINDED_TYPES: MembershipPlanType[] = ['FRIEND_PASS', 'VISIT_PASS'];
+export const NOT_REMINDED_TYPES: MembershipPlanType[] = ['FRIEND_PASS', 'VISIT_PASS'];
+
+/** When a membership ends: its expiry date, or a cancelled Subscription's
+ * cancelAt, whichever comes first and is still ahead. Null: no end (a
+ * renewing Subscription). Shared with the weekly membership-ending-report. */
+export function membershipEnd(m: { expiryDate: Date | null; cancelAt: Date | null }, now: Date): Date | null {
+  return [m.expiryDate, m.cancelAt].filter((d): d is Date => !!d && d > now).sort((a, b) => a.getTime() - b.getTime())[0] ?? null;
+}
 
 /** The notice's English text, translated in the apps by its shape (@ultm8/i18n server/translate.ts). */
 export function membershipExpiryNotice(planTitle: string, endDay: string) {
@@ -130,7 +137,7 @@ export class MembershipExpiryReminderProcessor extends WorkerHost {
       if (!zoneOf.has(m.schoolId)) continue; // closed School
       if (!enrolled.has(`${m.schoolId}:${m.studentId}`)) continue;
       if (!isMembershipLive(m, now)) continue;
-      const end = [m.expiryDate, m.cancelAt].filter((d): d is Date => !!d && d > now).sort((a, b) => a.getTime() - b.getTime())[0];
+      const end = membershipEnd(m, now);
       if (!end) continue;
       const zone = zoneOf.get(m.schoolId);
       const today = dayIn(now, zone);

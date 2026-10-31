@@ -17,6 +17,7 @@ import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { MembershipExpiryReminderProcessor } from '../src/jobs/membership-expiry-reminder.processor';
 import { StudentAbsenceAlertProcessor } from '../src/jobs/student-absence-alert.processor';
+import { MembershipEndingReportProcessor } from '../src/jobs/membership-ending-report.processor';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -34,6 +35,7 @@ describeIfDb('Reminders (Decision 317 item 7)', () => {
   let app: INestApplication;
   let expiryJob: MembershipExpiryReminderProcessor;
   let absenceJob: StudentAbsenceAlertProcessor;
+  let reportJob: MembershipEndingReportProcessor;
   const su = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
 
@@ -41,6 +43,8 @@ describeIfDb('Reminders (Decision 317 item 7)', () => {
   const quietSchoolId = randomUUID();
   /** The absence alert's own School, so the expiry tests' members don't count. */
   const absSchoolId = randomUUID();
+  /** The weekly report's own School (weeks start on Monday). */
+  const reportSchoolId = randomUUID();
   const userIds: string[] = [];
   const plans: Record<string, string> = {};
   const tokens: Record<string, string> = {};
@@ -126,12 +130,14 @@ describeIfDb('Reminders (Decision 317 item 7)', () => {
     await app.init();
     expiryJob = app.get(MembershipExpiryReminderProcessor);
     absenceJob = app.get(StudentAbsenceAlertProcessor);
+    reportJob = app.get(MembershipEndingReportProcessor);
 
     await su.school.createMany({
       data: [
         { id: schoolId, name: 'Reminders School', timezone: 'UTC' },
         { id: quietSchoolId, name: 'Reminders Quiet School', timezone: 'UTC' },
         { id: absSchoolId, name: 'Reminders Absence School', timezone: 'UTC' },
+        { id: reportSchoolId, name: 'Reminders Report School', timezone: 'UTC', weekStartsOn: 'MONDAY' },
       ],
     });
     owner = await mkUser('owner');
@@ -154,7 +160,7 @@ describeIfDb('Reminders (Decision 317 item 7)', () => {
   });
 
   afterAll(async () => {
-    const where = { schoolId: { in: [schoolId, quietSchoolId, absSchoolId] } };
+    const where = { schoolId: { in: [schoolId, quietSchoolId, absSchoolId, reportSchoolId] } };
     await su.notification.deleteMany({ where: { userId: { in: userIds } } });
     await su.booking.deleteMany({ where });
     await su.class.deleteMany({ where });
@@ -163,7 +169,7 @@ describeIfDb('Reminders (Decision 317 item 7)', () => {
     await su.membershipPlan.deleteMany({ where });
     await su.guardianLink.deleteMany({ where: { studentId: { in: userIds } } });
     await su.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
-    await su.school.deleteMany({ where: { id: { in: [schoolId, quietSchoolId, absSchoolId] } } });
+    await su.school.deleteMany({ where: { id: { in: [schoolId, quietSchoolId, absSchoolId, reportSchoolId] } } });
     await su.user.deleteMany({ where: { id: { in: userIds } } });
     await su.$disconnect();
     await app.close();
@@ -307,6 +313,68 @@ describeIfDb('Reminders (Decision 317 item 7)', () => {
       await settle();
       expect(await count(quietOwner.id, ABSENT)).toBe(0);
       expect(await su.studentAbsenceAlert.count({ where: { schoolId: quietSchoolId } })).toBe(0);
+    });
+  });
+
+  describe('Weekly report to staff of memberships ending soon', () => {
+    const REPORT = 'Memberships ending soon';
+    /** Days from NOW to the next Monday (1 to 7). */
+    const toMonday = ((8 - (at(0).getUTCDay() || 7)) % 7) || 7;
+
+    it("goes once a week to every owner, on the School's first day of the week, listing the next 7 days' ends", async () => {
+      const m0 = toMonday;
+      const repOwner = await mkUser('repOwner');
+      const repCo = await mkUser('repCo');
+      await su.roleGrant.createMany({
+        data: [
+          { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: repOwner.id, schoolId: reportSchoolId, isMainOwner: true },
+          { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: repCo.id, schoolId: reportSchoolId },
+        ],
+      });
+      const sid = reportSchoolId;
+      const ann = await mkStudent('ann', sid);
+      await mkMembership(ann.id, 'WEEKLY_PASS', { expiryDate: at(m0 + 2), sid });
+      const bob = await mkStudent('bob', sid);
+      await mkMembership(bob.id, 'SUBSCRIPTION', { cancelAt: at(m0 + 5), sid });
+      const cat = await mkStudent('cat', sid);
+      await mkMembership(cat.id, 'TRIAL_MEMBERSHIP', { expiryDate: at(m0 + 9), sid });
+      const dot = await mkStudent('dot', sid);
+      await mkMembership(dot.id, 'FRIEND_PASS', { expiryDate: at(m0 + 3), sid });
+      await mkMembership(dot.id, 'VISIT_PASS', { expiryDate: at(m0 + 3), sid });
+      await mkMembership(dot.id, 'CLASS_PACK', { expiryDate: at(m0 + 3), classesRemaining: 0, sid });
+      const gus = await mkStudent('gus', sid);
+      await mkMembership(gus.id, 'WEEKLY_PASS', { expiryDate: at(m0 + 3), sid });
+      await su.roleGrant.updateMany({ where: { userId: gus.id }, data: { revokedAt: new Date() } });
+
+      await reportJob.run(at(m0));
+      await reportJob.run(at(m0));
+      const first = await notices(repOwner.id, REPORT, 1);
+      expect(first[0]).toMatchObject({
+        body: `Memberships ending in the next 7 days: ann Rem: WEEKLY_PASS plan (${day(m0 + 2)}); bob Rem: SUBSCRIPTION plan (${day(m0 + 5)}).`,
+        type: 'MEMBERSHIP_ENDING_REPORT',
+        schoolId: reportSchoolId,
+      });
+      expect(await notices(repCo.id, REPORT, 1)).toHaveLength(1);
+      // Later the same week: nothing more.
+      await reportJob.run(at(m0 + 3));
+      await settle();
+      expect(await count(repOwner.id, REPORT)).toBe(1);
+      expect(await su.membershipEndingReport.count({ where: { schoolId: reportSchoolId } })).toBe(1);
+      // Nothing to the members themselves.
+      expect(await count(ann.id, REPORT)).toBe(0);
+
+      // The next week: Cat's trial ends then.
+      await reportJob.run(at(m0 + 7));
+      expect((await notices(repOwner.id, REPORT, 2))[1].body).toBe(`Memberships ending in the next 7 days: cat Rem: TRIAL_MEMBERSHIP plan (${day(m0 + 9)}).`);
+    });
+
+    it('sends nothing when nothing is ending, and never to another School', async () => {
+      await reportJob.run(at(toMonday));
+      await settle();
+      expect(await count(quietOwner.id, REPORT)).toBe(0);
+      const rows = await su.membershipEndingReport.findMany({ where: { schoolId: quietSchoolId } });
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((r) => r.listed === 0)).toBe(true);
     });
   });
 });

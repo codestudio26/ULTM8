@@ -1,6 +1,7 @@
 import { SERVER_KEY_LOADERS, createServerTextTranslator, serverKeys } from '@ultm8/i18n';
 import { membershipExpiryNotice } from './membership-expiry-reminder.processor';
 import { absenceAlertNotice } from './student-absence-alert.processor';
+import { membershipEndingReportNotice, weekStartOf } from './membership-ending-report.processor';
 
 /**
  * Decision 317 item 7: the expiry reminder and the absence alert are written
@@ -43,5 +44,27 @@ describe('reminder notices are translated (Decision 317 item 7)', () => {
     // A Guardian's copy (notification-fanout's "For {name}: ").
     const copy = pt.notification({ title: expiry.title, body: `For Kid: ${expiry.body}`, type: 'X' });
     expect(copy.body).toMatch(/^Para Kid: Seu plano Monthly Unlimited termina em /);
+  });
+
+  it('the weekly report: names up to 20, then "+N", with each date translated', async () => {
+    const items = Array.from({ length: 22 }, (_, i) => `Member ${String(i).padStart(2, '0')}: Monthly (2026-11-0${(i % 7) + 1})`);
+    const notice = membershipEndingReportNotice(items);
+    expect(notice.title).toBe('Memberships ending soon');
+    expect(notice.body.startsWith('Memberships ending in the next 7 days: Member 00: Monthly (2026-11-01); Member 01:')).toBe(true);
+    expect(notice.body.endsWith('Member 19: Monthly (2026-11-06); +2.')).toBe(true);
+    const ptKeys = await SERVER_KEY_LOADERS['pt-BR']();
+    const pt = translatorFor({ ...serverKeys, notifications: { ...serverKeys.notifications, ...ptKeys.notifications } });
+    const out = pt.notification({ ...membershipEndingReportNotice(['Ana Souza: Monthly (2026-11-03)']), type: 'X' });
+    expect(out.title).toBe('Planos terminando em breve');
+    expect(out.body).toMatch(/^Planos que terminam nos próximos 7 dias: Ana Souza: Monthly \(.*2026.*\)\.$/);
+    expect(out.body).not.toContain('2026-11-03');
+  });
+
+  it("the School's week starts on its week start day", () => {
+    // 2026-11-04 is a Wednesday.
+    expect(weekStartOf('2026-11-04', 'MONDAY')).toBe('2026-11-02');
+    expect(weekStartOf('2026-11-04', 'SUNDAY')).toBe('2026-11-01');
+    expect(weekStartOf('2026-11-01', 'MONDAY')).toBe('2026-10-26');
+    expect(weekStartOf('2026-11-01', 'SUNDAY')).toBe('2026-11-01');
   });
 });

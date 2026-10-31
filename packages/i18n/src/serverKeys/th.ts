@@ -218,6 +218,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "สมาชิกขาดเรียน",
     absenceAlertBody: "{name} ไม่ได้เช็กอินตั้งแต่ {date}",
     absenceAlertNeverBody: "{name} ยังไม่เคยเช็กอิน",
+    membershipEndingReportTitle: "สมาชิกภาพที่ใกล้หมดอายุ",
+    membershipEndingReportBody: "สมาชิกภาพที่จะสิ้นสุดใน 7 วันข้างหน้า: {list}",
     chargeRefundTitle: "คืนเงิน",
     chargeRefundCardBody: "คืนเงิน {amount} เข้าบัตรของคุณแล้ว",
     chargeRefundMoneyBackBody: "คืนเงิน {amount} ให้คุณแล้ว",

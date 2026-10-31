@@ -33,6 +33,7 @@ import { ChargeDueReminderProcessor, ChargeDueReminderScheduler } from './charge
 import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
 import { MembershipExpiryReminderProcessor, MembershipExpiryReminderScheduler } from './membership-expiry-reminder.processor';
 import { StudentAbsenceAlertProcessor, StudentAbsenceAlertScheduler } from './student-absence-alert.processor';
+import { MembershipEndingReportProcessor, MembershipEndingReportScheduler } from './membership-ending-report.processor';
 import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } from './large-school-check-in-codes.processor';
 
@@ -201,7 +202,9 @@ import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } fr
  * Decision 317 item 7 adds MembershipExpiryReminderProcessor/Scheduler (the
  * member's reminder 7 days before a membership ends) and
  * StudentAbsenceAlertProcessor/Scheduler (staff told when a member hasn't
- * checked in for the School's number of weeks). PrismaJobsService and the
+ * checked in for the School's number of weeks), and
+ * MembershipEndingReportProcessor/Scheduler (the weekly report to the owners
+ * of memberships ending in the next 7 days). PrismaJobsService and the
  * notification queue only; no new module import.
  */
 @Module({
@@ -251,6 +254,8 @@ import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } fr
     MembershipExpiryReminderScheduler,
     StudentAbsenceAlertProcessor,
     StudentAbsenceAlertScheduler,
+    MembershipEndingReportProcessor,
+    MembershipEndingReportScheduler,
     ChargeRecurringProcessor,
     ChargeRecurringScheduler,
     LargeSchoolCheckInCodesProcessor,

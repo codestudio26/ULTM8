@@ -260,6 +260,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "Nieobecny członek",
     absenceAlertBody: "{name} nie zameldował(a) się od {date}.",
     absenceAlertNeverBody: "{name} jeszcze się nie zameldował(a).",
+    membershipEndingReportTitle: "Karnety kończące się wkrótce",
+    membershipEndingReportBody: "Karnety kończące się w ciągu najbliższych 7 dni: {list}.",
     chargeRefundTitle: "Zwrot",
     chargeRefundCardBody: "{amount} zwrócono na twoją kartę.",
     chargeRefundMoneyBackBody: "{amount} zwrócono ci.",

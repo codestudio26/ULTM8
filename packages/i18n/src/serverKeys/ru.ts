@@ -260,6 +260,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "Участник отсутствует",
     absenceAlertBody: "{name} не отмечался(-ась) с {date}.",
     absenceAlertNeverBody: "{name} ещё не отмечался(-ась).",
+    membershipEndingReportTitle: "Абонементы скоро заканчиваются",
+    membershipEndingReportBody: "Абонементы, которые заканчиваются в ближайшие 7 дней: {list}.",
     chargeRefundTitle: "Возврат",
     chargeRefundCardBody: "{amount} возвращено на вашу карту.",
     chargeRefundMoneyBackBody: "Вам вернули {amount}.",

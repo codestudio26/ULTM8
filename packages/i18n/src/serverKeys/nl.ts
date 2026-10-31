@@ -232,6 +232,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "Lid afwezig",
     absenceAlertBody: "{name} heeft sinds {date} niet ingecheckt.",
     absenceAlertNeverBody: "{name} heeft nog niet ingecheckt.",
+    membershipEndingReportTitle: "Lidmaatschappen die bijna aflopen",
+    membershipEndingReportBody: "Lidmaatschappen die in de komende 7 dagen aflopen: {list}.",
     chargeRefundTitle: "Terugbetaling",
     chargeRefundCardBody: "{amount} is teruggestort op je kaart.",
     chargeRefundMoneyBackBody: "{amount} is aan je terugbetaald.",

@@ -238,6 +238,7 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
   'Membership ending soon': 'membershipExpiryTitle',
   'Member absent': 'absenceAlertTitle',
+  'Memberships ending soon': 'membershipEndingReportTitle',
   'Payment dispute': 'chargeDisputeTitle',
   // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
   'Refund': 'chargeRefundTitle',
@@ -463,6 +464,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [/^Your (.+) membership ends on (\d{4}-\d{2}-\d{2})\.$/s, (m, { t, locale }) => n(t, 'membershipExpiryBody', { plan: m[1], date: formatDay(m[2], locale) })],
   [/^(.+) hasn't checked in since (\d{4}-\d{2}-\d{2})\.$/s, (m, { t, locale }) => n(t, 'absenceAlertBody', { name: m[1], date: formatDay(m[2], locale) })],
   [/^(.+) hasn't checked in yet\.$/s, (m, { t }) => n(t, 'absenceAlertNeverBody', { name: m[1] })],
+  // The weekly report: "Name: Plan (YYYY-MM-DD)" joined with "; ", maybe ending "; +N"; only the dates are translated.
+  [
+    /^Memberships ending in the next 7 days: (.+)\.$/s,
+    (m, { t, locale }) => n(t, 'membershipEndingReportBody', { list: m[1].replace(/\((\d{4}-\d{2}-\d{2})\)/g, (_d, day: string) => `(${formatDay(day, locale)})`) }),
+  ],
   [
     /^Invoice (#\d+) for (.+): ([\d.]+) ([A-Z]{3}) is due on (\d{4}-\d{2}-\d{2})\.$/s,
     (m, { t, locale }) => n(t, 'chargeDueReminderBody', { invoice: m[1], description: m[2], amount: formatAmount(m[3], m[4], locale), due: formatDay(m[5], locale) }),

@@ -218,6 +218,8 @@ export const server: PartialMessages<ServerKeys> = {
     absenceAlertTitle: "会员缺勤",
     absenceAlertBody: "{name} 自 {date} 起未签到。",
     absenceAlertNeverBody: "{name} 还没有签到过。",
+    membershipEndingReportTitle: "即将到期的会员资格",
+    membershipEndingReportBody: "未来 7 天内结束的会员资格：{list}。",
     chargeRefundTitle: "退款",
     chargeRefundCardBody: "{amount} 已退回你的银行卡。",
     chargeRefundMoneyBackBody: "{amount} 已退还给你。",
