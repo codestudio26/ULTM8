@@ -17,6 +17,10 @@ import { formatLocale } from '../i18n/format';
 import { FreezeRequestsCard } from './FreezeRequestsCard';
 import { formatCalendarDay } from '../membershipPlans/freezeQueries';
 import { useSchoolTags, useTaggedStudents } from './studentTagsQueries';
+import { useCustomMemberStatuses, useCustomStatusAssignments } from './customMemberFieldsQueries';
+
+/** The Member status filter's "no status" choice (not a status id). */
+const NO_MEMBER_STATUS = '__none__';
 
 /** Rows per page (Decision 371, Students Q2). Paged here, in the browser: the
  * roster is fetched whole, as it was before. */
@@ -68,13 +72,22 @@ export function StudentsPage() {
   const [tagFilter, setTagFilter] = useState('');
   const schoolTags = useSchoolTags(schoolId);
   const tagged = useTaggedStudents(schoolId, tagFilter || null);
+  // Decision 315 item 14: the School's own member statuses, as a filter and a column.
+  const [memberStatusFilter, setMemberStatusFilter] = useState('');
+  const memberStatuses = useCustomMemberStatuses(schoolId);
+  const memberStatusItems = memberStatuses.data?.items ?? [];
+  const assignments = useCustomStatusAssignments(schoolId, memberStatusItems.length > 0);
+  const memberStatusOf = useMemo(() => {
+    const names = new Map((memberStatuses.data?.items ?? []).map((s) => [s.id, s.name]));
+    return new Map((assignments.data?.items ?? []).map((a) => [a.studentId, { id: a.statusId, name: names.get(a.statusId) ?? '' }]));
+  }, [memberStatuses.data, assignments.data]);
   const [pageIndex, setPageIndex] = useState(0);
   const [exporting, setExporting] = useState(false);
   const school = useSchool(schoolId);
   // Decision 399: the owner, or Branch Staff the owner let export.
   const mayExport = !!ownedSchoolId || !!myAccess.data?.access.exportStudents;
   // A new filter starts again on page 1.
-  useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter, frozenOnly, tagFilter]);
+  useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter, frozenOnly, tagFilter, memberStatusFilter]);
 
   const filtered = useMemo(
     () =>
@@ -83,9 +96,10 @@ export function StudentsPage() {
           matchesSearch(s, search) &&
           (!frozenOnly || s.frozen) &&
           (!tagFilter || !!tagged.data?.studentIds.includes(s.id)) &&
+          (!memberStatusFilter || (memberStatusFilter === NO_MEMBER_STATUS ? !memberStatusOf.has(s.id) : memberStatusOf.get(s.id)?.id === memberStatusFilter)) &&
           (!branchFilter || (branchFilter === NO_BRANCH ? !s.homeBranchId : s.homeBranchId === branchFilter)),
       ),
-    [data, search, branchFilter, frozenOnly, tagFilter, tagged.data],
+    [data, search, branchFilter, frozenOnly, tagFilter, tagged.data, memberStatusFilter, memberStatusOf],
   );
 
   // Only the owner, and Branch Staff with the "students" switch, have this
@@ -99,7 +113,7 @@ export function StudentsPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / STUDENTS_PAGE_SIZE));
   const page = Math.min(pageIndex, pageCount - 1);
   const students = filtered.slice(page * STUDENTS_PAGE_SIZE, (page + 1) * STUDENTS_PAGE_SIZE);
-  const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '' || frozenOnly || tagFilter !== '';
+  const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '' || frozenOnly || tagFilter !== '' || memberStatusFilter !== '';
   // Decision 404: the blue Frozen badge, with the day they are back.
   const frozenBadge = (s: StudentSummary) =>
     s.frozen ? (
@@ -193,6 +207,22 @@ export function StudentsPage() {
               </Field>
             </div>
           ) : null}
+          {memberStatusItems.length > 0 ? (
+            <div style={{ maxWidth: 220 }}>
+              <Field label={t('students.customFields.filterLabel')} htmlFor="students-member-status-filter">
+                <SelectField
+                  id="students-member-status-filter"
+                  value={memberStatusFilter}
+                  onChange={(e) => setMemberStatusFilter(e.target.value)}
+                  options={[
+                    { value: '', label: t('students.customFields.filterAll') },
+                    ...memberStatusItems.map((s) => ({ value: s.id, label: s.name })),
+                    { value: NO_MEMBER_STATUS, label: t('students.customFields.filterNone') },
+                  ]}
+                />
+              </Field>
+            </div>
+          ) : null}
           <div style={{ paddingBottom: 8 }}>
             <Checkbox label={t('students.frozen.filter')} checked={frozenOnly} onChange={(e) => setFrozenOnly(e.target.checked)} />
           </div>
@@ -200,7 +230,7 @@ export function StudentsPage() {
           <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('students.viewAria')} />
         </div>
       </Card>
-      {isLoading || (!!tagFilter && tagged.isLoading) ? (
+      {isLoading || (!!tagFilter && tagged.isLoading) || (!!memberStatusFilter && assignments.isLoading) ? (
         <Spinner />
       ) : error ? (
         <ErrorBanner message={error instanceof ApiError ? error.message : t('students.loadFailed')} />
@@ -254,6 +284,9 @@ export function StudentsPage() {
                     </span>
                   ),
                 },
+                ...(memberStatusItems.length > 0
+                  ? [{ key: 'memberStatus', header: t('students.customFields.columnStatus'), render: (s: StudentSummary) => memberStatusOf.get(s.id)?.name || '—' }]
+                  : []),
                 { key: 'enrolledAt', header: t('students.columnEnrolled'), render: (s) => new Date(s.enrolledAt).toLocaleDateString(formatLocale()) },
               ]}
             />

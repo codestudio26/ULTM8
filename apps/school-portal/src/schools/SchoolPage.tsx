@@ -26,6 +26,7 @@ import {
 } from './schoolQueries';
 import { HeardFromCard } from './HeardFromCard';
 import { StudentTagsSettingsCard } from './StudentTagsSettingsCard';
+import { CustomMemberFieldsSettingsCard } from './CustomMemberFieldsSettingsCard';
 import { FreezeSettingsCard } from './FreezeSettingsCard';
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
@@ -97,6 +98,8 @@ export function SchoolPage() {
         <HeardFromCard key={`heard-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Backlog 5.4: the School's own student tags. */}
         <StudentTagsSettingsCard key={`tags-${schoolId}`} schoolId={schoolId} />
+        {/* Decision 315 item 14: the School's own member fields and statuses. */}
+        <CustomMemberFieldsSettingsCard key={`custom-fields-${schoolId}`} schoolId={schoolId} />
         <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />
         <FranchiseAffiliationCard key={`franchise-${schoolId}`} schoolId={schoolId} franchiseId={school.franchiseId ?? null} closed={closed} />
       </fieldset>

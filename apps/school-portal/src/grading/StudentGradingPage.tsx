@@ -6,6 +6,7 @@ import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
 import { StudentTagsCard } from '../students/StudentTagsCard';
+import { StudentCustomFieldsCard } from '../students/StudentCustomFieldsCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
@@ -245,6 +246,9 @@ export function StudentGradingPage() {
 
       {/* Backlog 5.4: staff-only tags, plus "+ tag". */}
       {!inactive ? <StudentTagsCard schoolId={schoolId} studentId={studentId} /> : null}
+
+      {/* Decision 315 item 14: the School's own member fields and status. */}
+      {!inactive ? <StudentCustomFieldsCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 391: Visitor status and visit passes. */}
       {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}
