@@ -607,6 +607,8 @@ model User {
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
   studentNotesWritten               StudentNote[]               @relation("StudentNoteAuthor")
   studentTags                       StudentTag[]                @relation("StudentTagStudent")
+  customFieldValues                 CustomMemberFieldValue[]    @relation("CustomMemberFieldValueStudent")
+  customStatuses                    StudentCustomStatus[]       @relation("StudentCustomStatusStudent")
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
   memberFiles                       MemberFile[]                @relation("MemberFileStudent")
   memberFilesUploaded               MemberFile[]                @relation("MemberFileUploadedBy")
@@ -1353,6 +1355,8 @@ model School {
   rankCorrectionRequests RankCorrectionRequest[]
   studentNotes           StudentNote[]
   schoolTags             SchoolTag[]
+  customMemberFields     CustomMemberField[]
+  customMemberStatuses   CustomMemberStatus[]
   studentExportLogs      StudentExportLog[]
   memberFiles            MemberFile[]
   childInvites           ChildInvite[]
@@ -5402,6 +5406,97 @@ model MemberFile {
 
   @@index([schoolId, studentId, createdAt])
   @@index([studentId])
+}
+
+/// Decision 315 item 14: the type of a School's own member field.
+enum CustomMemberFieldType {
+  TEXT
+  NUMBER
+  DATE
+  DROPDOWN
+  YES_NO
+}
+
+/// Decision 315 item 14: a member field the School adds for its students.
+/// Staff-only: no member-facing endpoint ever returns one. Jobs connection
+/// only (RLS on, no app grant).
+model CustomMemberField {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+  type CustomMemberFieldType
+  /// The choices of a DROPDOWN field, in order; empty for the other types.
+  options String[] @default([])
+  /// Order on the student's page, from 0.
+  position Int
+
+  createdAt DateTime @default(now())
+
+  values CustomMemberFieldValue[]
+
+  @@unique([schoolId, name])
+  /// Target of CustomMemberFieldValue's (fieldId, schoolId) key, so a value
+  /// can only ever sit on a student under the field's own School.
+  @@unique([id, schoolId])
+}
+
+/// Decision 315 item 14: a student's value for one of the School's fields,
+/// stored as text in the field type's own form (a number, YYYY-MM-DD, one of
+/// the drop-down's choices, or "true"/"false"). Erased with the account and
+/// with the field. Jobs connection only.
+model CustomMemberFieldValue {
+  fieldId  String
+  schoolId String
+  field    CustomMemberField @relation(fields: [fieldId, schoolId], references: [id, schoolId], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("CustomMemberFieldValueStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  value String
+
+  updatedAt DateTime @updatedAt
+
+  @@id([fieldId, studentId])
+  @@index([schoolId, studentId])
+}
+
+/// Decision 315 item 14: a member status the School adds (up to 50
+/// characters). Staff-only. Jobs connection only.
+model CustomMemberStatus {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+
+  createdAt DateTime @default(now())
+
+  students StudentCustomStatus[]
+
+  @@unique([schoolId, name])
+  /// Target of StudentCustomStatus's (statusId, schoolId) key.
+  @@unique([id, schoolId])
+}
+
+/// Decision 315 item 14: a student's member status at a School (at most one;
+/// none is fine). Cleared when the status is deleted, erased with the
+/// account. Jobs connection only.
+model StudentCustomStatus {
+  schoolId String
+  statusId String
+  status   CustomMemberStatus @relation(fields: [statusId, schoolId], references: [id, schoolId], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentCustomStatusStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+
+  @@id([schoolId, studentId])
+  @@index([statusId])
 }
 
 /// Backlog 3.9 (Decision 399): one row per student-list export, who made it

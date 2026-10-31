@@ -6,6 +6,7 @@ import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
 import { StudentTagsCard } from '../students/StudentTagsCard';
+import { StudentCustomFieldsCard } from '../students/StudentCustomFieldsCard';
 import { MemberFilesCard } from '../students/MemberFilesCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
@@ -257,6 +258,9 @@ export function StudentGradingPage() {
       {!inactive ? <StudentTagsCard schoolId={schoolId} studentId={studentId} /> : null}
       {/* Decision 315 item 9 (backlog 5.11): Documents, files on the member. */}
       {mayFiles ? <MemberFilesCard schoolId={schoolId} studentId={studentId} canUpload={!inactive} /> : null}
+
+      {/* Decision 315 item 14: the School's own member fields and status. */}
+      {!inactive ? <StudentCustomFieldsCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 391: Visitor status and visit passes. */}
       {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}
