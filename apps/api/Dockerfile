@@ -25,20 +25,20 @@
 # migration in this repo has been verified so far (see this repo's own migration
 # file headers — "verify with a real Postgres run before trusting this").
 
-FROM node:20-bookworm-slim AS pruner
+FROM node:22.23.4-bookworm-slim AS pruner
 WORKDIR /workspace
 RUN corepack enable
 COPY . .
 RUN npx turbo prune @ultm8/api --docker
 
 # ---- Install: only the pruned lockfile subset, for layer-cache efficiency ----
-FROM node:20-bookworm-slim AS installer
+FROM node:22.23.4-bookworm-slim AS installer
 WORKDIR /workspace
 COPY --from=pruner /workspace/out/json/ .
 RUN npm ci
 
 # ---- Build: full pruned source + the installed node_modules from above ----
-FROM node:20-bookworm-slim AS builder
+FROM node:22.23.4-bookworm-slim AS builder
 WORKDIR /workspace
 COPY --from=installer /workspace/ .
 COPY --from=pruner /workspace/out/full/ .
@@ -50,7 +50,7 @@ RUN npx turbo run build --filter=@ultm8/api
 RUN npm prune --omit=dev
 
 # ---- Runtime: the smallest image — no devDependencies, no build tooling ----
-FROM node:20-bookworm-slim AS runner
+FROM node:22.23.4-bookworm-slim AS runner
 WORKDIR /workspace
 ENV NODE_ENV=production
 RUN groupadd --system --gid 1001 ultm8 \

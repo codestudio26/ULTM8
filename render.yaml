@@ -66,8 +66,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # 22.23.4 or later: its time-zone data (2026e) knows British Columbia's move
+      # to permanent UTC-7 on 1 Nov 2026. Node 20 doesn't, and Vancouver classes
+      # would come out an hour off. apps/api/src/common/timezone-data.spec.ts checks it.
       - key: NODE_VERSION
-        value: "20"
+        value: "22.23.4"
 
       # Superuser connection: Supabase's "Session pooler" connection string
       # (port 5432, IPv4-compatible; the direct db.<ref>.supabase.co host is
