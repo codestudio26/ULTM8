@@ -35,7 +35,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * memberships", checked by assertMayFreezeMemberships. "attendanceStats" is
  * Decision 317 item 3's "See attendance statistics", checked by
  * attendanceStatsScope. "memberFiles" is Decision 315 item 9's "See and
- * manage member files", checked by assertMayManageMemberFiles. */
+ * manage member files", checked by assertMayManageMemberFiles. "importData" is
+ * Decision 315 items 12 and 13's "Import data", checked by importScope. */
 export const STAFF_ACCESS = [
   'classes',
   'bookings',
@@ -49,10 +50,11 @@ export const STAFF_ACCESS = [
   'freezeMemberships',
   'attendanceStats',
   'memberFiles',
+  'importData',
 ] as const;
 export type StaffAccess = (typeof STAFF_ACCESS)[number];
 /** The switches staffMay checks. */
-type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'memberFiles'>;
+type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'memberFiles' | 'importData'>;
 export type StaffAccessSet = Record<StaffAccess, boolean>;
 
 /** A Branch Staff member with no StaffPermission row yet has these: what
@@ -71,6 +73,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   freezeMemberships: false,
   attendanceStats: false,
   memberFiles: false,
+  importData: false,
 };
 
 /** What an Instructor may do by role, whatever the switches say (Spec 55
@@ -102,6 +105,7 @@ export function staffAccessFrom(row: {
   canFreezeMemberships: boolean;
   canSeeAttendanceStats: boolean;
   canManageMemberFiles: boolean;
+  canImportData: boolean;
 } | null | undefined): StaffAccessSet {
   if (!row) return { ...DEFAULT_STAFF_ACCESS };
   return {
@@ -117,6 +121,7 @@ export function staffAccessFrom(row: {
     freezeMemberships: row.canFreezeMemberships,
     attendanceStats: row.canSeeAttendanceStats,
     memberFiles: row.canManageMemberFiles,
+    importData: row.canImportData,
   };
 }
 
@@ -134,6 +139,7 @@ export const STAFF_ACCESS_SELECT = {
   canFreezeMemberships: true,
   canSeeAttendanceStats: true,
   canManageMemberFiles: true,
+  canImportData: true,
 } as const;
 
 @Injectable()
@@ -344,6 +350,30 @@ export class TenantAuthorizationService {
     });
     if (!verdict) {
       throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you see attendance statistics." });
+    }
+    return verdict;
+  }
+
+  /**
+   * Decision 315 items 12 and 13: who may import members, memberships and
+   * past attendance from a spreadsheet. The owner, for the whole School; Branch
+   * Staff the owner switched on ("Import data"), for the students of their own
+   * Branches (staffBranchCoverage, the Students page's rule). Anyone else gets
+   * 403 STAFF_ACCESS_OFF. Coaches have no switch (Decision 387 item 4).
+   */
+  async importScope(userId: string, schoolId: string): Promise<{ isOwner: boolean }> {
+    const verdict = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { isOwner: true };
+      if (grants.length === 0) return null;
+      const row = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canImportData: true } });
+      return row?.canImportData ? { isOwner: false } : null;
+    });
+    if (!verdict) {
+      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you import data." });
     }
     return verdict;
   }

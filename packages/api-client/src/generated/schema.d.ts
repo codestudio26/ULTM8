@@ -6708,6 +6708,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/imports/limits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataImportsController_limits"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataImportsController_preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataImportsController_start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports/{importId}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DataImportsController_importRows"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/imports/{importId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DataImportsController_find"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -7765,6 +7845,8 @@ export interface components {
             attendanceStats: boolean;
             /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
             memberFiles: boolean;
+            /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */
+            importData: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -13004,6 +13086,96 @@ export interface components {
         AddRosterStudentsDto: {
             /** @description Students of this School to add. Ones already on the roster are left as they are. */
             studentIds: string[];
+        };
+        ImportLimitsDto: {
+            maxRows: number;
+            maxRowsPerRequest: number;
+            /** @description Past attendance can be imported this many days back (Decision 317 item 4). */
+            attendanceMaxDaysBack: number;
+            /** @description Each kind's columns, in template order. */
+            columns: {
+                [key: string]: string[];
+            };
+        };
+        /** @enum {string} */
+        ImportKind: "MEMBERS" | "MEMBERSHIPS" | "ATTENDANCE";
+        ImportRowDto: {
+            /** @description The line in the file; the header row is line 1. */
+            rowNumber: number;
+            /** @description Cells by column name, as the template names them. */
+            values: {
+                [key: string]: string;
+            };
+        };
+        PreviewImportDto: {
+            kind: components["schemas"]["ImportKind"];
+            rows: components["schemas"]["ImportRowDto"][];
+        };
+        /**
+         * @description READY: a preview row that would be imported. CREATED: imported.
+         * @enum {string}
+         */
+        ImportRowOutcome: "READY" | "CREATED" | "SKIPPED" | "ERROR";
+        /**
+         * @description What will be or was done, or why the row is skipped or refused. FAILED: see message.
+         * @enum {string}
+         */
+        ImportRowCode: "NEW_MEMBER" | "NEW_CHILD_NEW_GUARDIAN" | "NEW_CHILD_GUARDIAN_INVITED" | "NEW_MEMBERSHIP" | "NEW_ATTENDANCE" | "EMAIL_EXISTS" | "DUPLICATE_IN_FILE" | "INVITE_PENDING" | "ALREADY_MEMBER" | "ALREADY_IMPORTED" | "ALREADY_ATTENDED" | "MISSING_VALUE" | "TOO_LONG" | "INVALID_EMAIL" | "INVALID_PHONE" | "INVALID_DATE" | "INVALID_BIRTH_DATE" | "FUTURE_DATE" | "INVALID_GENDER" | "INVALID_TIME" | "INVALID_NUMBER" | "BRANCH_REQUIRED" | "NO_BRANCHES" | "UNKNOWN_BRANCH" | "NOT_YOUR_BRANCH" | "BELTS_FORMAT" | "BELTS_OFF" | "UNKNOWN_STYLE" | "UNKNOWN_BELT" | "GUARDIAN_NAME_REQUIRED" | "GUARDIAN_UNDER_18" | "CHILD_OWNER_ONLY" | "NOT_A_MEMBER" | "AMBIGUOUS_MEMBER" | "UNKNOWN_PLAN" | "AMBIGUOUS_PLAN" | "PLAN_IS_SUBSCRIPTION" | "PLAN_NOT_IMPORTABLE" | "NOT_A_CLASS_PACK" | "END_BEFORE_START" | "WAIVER_NEEDED" | "GENERAL_ACCESS_CONFLICT" | "UNKNOWN_CLASS" | "AMBIGUOUS_CLASS" | "CLASS_CANCELLED" | "CLASS_NOT_STARTED" | "OUT_OF_RANGE" | "FAILED";
+        /** @enum {string} */
+        ImportWarningCode: "BELT_NOT_SET" | "BELTS_AFTER_ACCEPT" | "CHILD_PHONE_NOT_USED" | "EMAIL_NOT_SENT";
+        ImportWarningDto: {
+            code: components["schemas"]["ImportWarningCode"];
+            /** @description In English. */
+            message: string;
+            /** @description BELT_NOT_SET: the style. */
+            style?: string;
+            /** @description BELT_NOT_SET: why, in the API's own words. */
+            reason?: string;
+        };
+        ImportRowResultDto: {
+            rowNumber: number;
+            outcome: components["schemas"]["ImportRowOutcome"];
+            code: components["schemas"]["ImportRowCode"];
+            /** @description The column the problem is in. */
+            column: string | null;
+            /** @description In English; for FAILED, the reason the API gave. */
+            message: string;
+            warnings: components["schemas"]["ImportWarningDto"][];
+        };
+        ImportCountsDto: {
+            /** @description Preview: rows that would be imported. Import: rows imported. */
+            ok: number;
+            skipped: number;
+            errors: number;
+        };
+        ImportPreviewResponseDto: {
+            kind: components["schemas"]["ImportKind"];
+            rows: components["schemas"]["ImportRowResultDto"][];
+            counts: components["schemas"]["ImportCountsDto"];
+        };
+        StartImportDto: {
+            kind: components["schemas"]["ImportKind"];
+            /** @description How many rows the file has (at most 2000). */
+            totalRows: number;
+            fileName?: string;
+        };
+        DataImportResponseDto: {
+            id: string;
+            kind: components["schemas"]["ImportKind"];
+            fileName: string | null;
+            totalRows: number;
+            /** @description Rows sent so far. */
+            rowsDone: number;
+            counts: components["schemas"]["ImportCountsDto"];
+            createdAt: string;
+            /** @description Each row sent so far, in file order. */
+            rows: components["schemas"]["ImportRowResultDto"][];
+        };
+        ImportRowsDto: {
+            rows: components["schemas"]["ImportRowDto"][];
+        };
+        ImportRowsResponseDto: {
+            rows: components["schemas"]["ImportRowResultDto"][];
         };
     };
     responses: never;
@@ -24322,6 +24494,125 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    DataImportsController_limits: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportLimitsDto"];
+                };
+            };
+        };
+    };
+    DataImportsController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewImportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreviewResponseDto"];
+                };
+            };
+        };
+    };
+    DataImportsController_start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartImportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImportResponseDto"];
+                };
+            };
+        };
+    };
+    DataImportsController_importRows: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                importId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportRowsDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportRowsResponseDto"];
+                };
+            };
+        };
+    };
+    DataImportsController_find: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                importId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataImportResponseDto"];
+                };
             };
         };
     };

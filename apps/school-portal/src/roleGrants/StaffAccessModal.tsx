@@ -10,7 +10,7 @@ type AccessKey = keyof StaffAccess;
 const GROUPS: Array<{ heading: TranslationKey; keys: AccessKey[] }> = [
   { heading: 'roleGrants.access.groupSchedule', keys: ['classes', 'cancelClasses'] },
   { heading: 'roleGrants.access.groupCheckIn', keys: ['bookings', 'checkInRules', 'attendanceStats'] },
-  { heading: 'roleGrants.access.groupMembers', keys: ['students', 'exportStudents', 'freezeMemberships', 'memberFiles'] },
+  { heading: 'roleGrants.access.groupMembers', keys: ['students', 'exportStudents', 'freezeMemberships', 'memberFiles', 'importData'] },
   { heading: 'roleGrants.access.groupStaff', keys: ['staffList', 'inviteCoaches'] },
   { heading: 'roleGrants.access.groupDisciplines', keys: ['disciplines'] },
 ];
@@ -28,6 +28,7 @@ const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }>
   freezeMemberships: { label: 'roleGrants.access.freezeMemberships', hint: 'roleGrants.access.freezeMembershipsHint' },
   attendanceStats: { label: 'roleGrants.access.attendanceStats', hint: 'roleGrants.access.attendanceStatsHint' },
   memberFiles: { label: 'roleGrants.access.memberFiles', hint: 'roleGrants.access.memberFilesHint' },
+  importData: { label: 'imports.access.label', hint: 'imports.access.hint' },
 };
 
 /** Decision 387's two presets. "Front desk": bookings and check-in, and
@@ -35,16 +36,17 @@ const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }>
  * disciplines, which change the whole School (Decision 383), the School's
  * check-in rules (Decision 394), exports members' personal data (Decision 399),
  * freezes memberships (Decision 409), sees attendance statistics
- * (Decision 317 item 3: only staff the owner grants it), or sees member files
- * (Decision 315 item 9). */
+ * (Decision 317 item 3: only staff the owner grants it), sees member files
+ * (Decision 315 item 9), or imports data (Decision 315 items 12, 13: only
+ * staff the owner grants it). */
 export const PRESETS: Array<{ name: TranslationKey; access: StaffAccess }> = [
   {
     name: 'roleGrants.access.presetFrontDesk',
-    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false },
+    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false },
   },
   {
     name: 'roleGrants.access.presetBranchManager',
-    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false },
+    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false },
   },
 ];
 

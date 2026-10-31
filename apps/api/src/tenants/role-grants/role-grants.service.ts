@@ -1386,6 +1386,7 @@ function toPermissionColumns(access: StaffAccessSet) {
     canFreezeMemberships: access.freezeMemberships,
     canSeeAttendanceStats: access.attendanceStats,
     canManageMemberFiles: access.memberFiles,
+    canImportData: access.importData,
   };
 }
 

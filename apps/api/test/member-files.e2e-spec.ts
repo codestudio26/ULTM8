@@ -53,6 +53,7 @@ const ACCESS_DEFAULTS = {
   freezeMemberships: false,
   attendanceStats: false,
   memberFiles: false,
+  importData: false,
 };
 
 describeIfDb('Files on a member (backlog 5.11)', () => {

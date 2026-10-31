@@ -31,6 +31,7 @@ import { ChargesModule } from './charges/charges.module';
 import { CardSurchargeModule } from './card-surcharge/card-surcharge.module';
 import { LateFeesModule } from './late-fees/late-fees.module';
 import { RostersModule } from './rosters/rosters.module';
+import { DataImportsModule } from './data-imports/data-imports.module';
 import { AcademiesModule } from './academies/academies.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationBroadcastModule } from './notifications/broadcast/notification-broadcast.module';
@@ -106,6 +107,7 @@ import { validateEnv } from './common/config/validate-env';
     ChargesModule,
     LateFeesModule,
     RostersModule,
+    DataImportsModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
