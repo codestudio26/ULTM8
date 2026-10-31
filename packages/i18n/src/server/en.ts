@@ -561,6 +561,10 @@ export const SERVER_MESSAGES: string[] = [
   "This Guardian already has an invite for this child. Wait for them to answer it in the app.",
   "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.",
   "This temporary passcode has expired. Ask your School for a new one.",
+  "The School owner hasn't let you see attendance statistics.",
+  "You can only see your own Branches' attendance.",
+  "This class hasn't started yet. Check them in instead.",
+  "This date is not valid.",
 ];
 
 export const SERVER_PATTERNS: string[] = [
@@ -735,4 +739,5 @@ export const SERVER_PATTERNS: string[] = [
  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.",
  // A paid promotion fee whose promotion can no longer apply (Decision 414 item 1).
  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.",
+ "Attendance can only be logged from {v1} to {v2}.",
 ];

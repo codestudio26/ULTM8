@@ -719,4 +719,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Bu bir terfi ücretidir. Okul sahibi öğrencinin kuşak sayfasından bu ücreti affeder veya iptal eder; bu da bu ödemeyi iptal eder.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Bu okul henüz para birimini ayarlamadı, bu yüzden ücret ödenemiyor. Okula sor.",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Bu ücret ödendi, ancak terfi artık uygulanamıyor. Ücreti iptal edin (ödenen tutar krediye dönüşür) ya da öğrenciyi yeniden terfi ettirin.",
+  "The School owner hasn't let you see attendance statistics.": "Okul sahibi devam istatistiklerini görmene izin vermedi.",
+  "You can only see your own Branches' attendance.": "Yalnızca kendi şubelerinin devam kayıtlarını görebilirsin.",
+  "This class hasn't started yet. Check them in instead.": "Bu ders henüz başlamadı. Bunun yerine girişlerini yap.",
+  "This date is not valid.": "Bu tarih geçerli değil.",
+  "Attendance can only be logged from {v1} to {v2}.": "Devam yalnızca {v1} ile {v2} arasında kaydedilebilir.",
 };

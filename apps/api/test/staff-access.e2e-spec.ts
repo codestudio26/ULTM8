@@ -32,9 +32,9 @@ if (!hasDb) {
   );
 }
 
-const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false };
-const ALL_ON = { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: true, checkInRules: true, exportStudents: true, freezeMemberships: true };
-const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false };
+const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false };
+const ALL_ON = { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: true, checkInRules: true, exportStudents: true, freezeMemberships: true, attendanceStats: true };
+const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false };
 
 describeIfDb('Staff access switches (Decision 387)', () => {
   let app: INestApplication;

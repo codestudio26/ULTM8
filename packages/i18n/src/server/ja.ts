@@ -719,4 +719,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "これは昇級費です。スクールのオーナーが生徒の昇級画面から免除または取り消すと、この請求も取り消されます。",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "このスクールはまだ通貨を設定していないため、料金を支払えません。スクールにお問い合わせください。",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "この昇級料は支払い済みですが、昇級はもう適用できません。昇級料をキャンセルする（支払われた金額はクレジットになります）か、もう一度昇級させてください。",
+  "The School owner hasn't let you see attendance statistics.": "スクールのオーナーが出席統計の閲覧を許可していません。",
+  "You can only see your own Branches' attendance.": "自分の支部の出席のみ表示できます。",
+  "This class hasn't started yet. Check them in instead.": "このクラスはまだ始まっていません。代わりにチェックインしてください。",
+  "This date is not valid.": "この日付は無効です。",
+  "Attendance can only be logged from {v1} to {v2}.": "出席を記録できるのは {v1} から {v2} までです。",
 };

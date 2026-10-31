@@ -719,4 +719,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "นี่คือค่าเลื่อนระดับ เจ้าของโรงเรียนยกเว้นหรือยกเลิกได้จากหน้าการเลื่อนระดับของนักเรียน ซึ่งจะยกเลิกรายการเรียกเก็บนี้ด้วย",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "โรงเรียนนี้ยังไม่ได้ตั้งค่าสกุลเงิน จึงยังชำระค่าธรรมเนียมไม่ได้ โปรดสอบถามโรงเรียน",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "ค่าธรรมเนียมนี้ชำระแล้ว แต่ไม่สามารถใช้การเลื่อนระดับได้อีกต่อไป ยกเลิกค่าธรรมเนียม (ยอดที่ชำระแล้วจะกลายเป็นเครดิต) หรือประเมินนักเรียนอีกครั้ง",
+  "The School owner hasn't let you see attendance statistics.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณดูสถิติการเข้าเรียน",
+  "You can only see your own Branches' attendance.": "คุณดูการเข้าเรียนได้เฉพาะสาขาของคุณเท่านั้น",
+  "This class hasn't started yet. Check them in instead.": "คลาสนี้ยังไม่เริ่ม ให้เช็กอินแทน",
+  "This date is not valid.": "วันที่นี้ไม่ถูกต้อง",
+  "Attendance can only be logged from {v1} to {v2}.": "บันทึกการเข้าเรียนได้เฉพาะตั้งแต่ {v1} ถึง {v2}",
 };

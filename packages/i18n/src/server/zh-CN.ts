@@ -719,4 +719,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "这是晋级费。学校所有者可在学员的晋级页面免除或取消它，这会同时取消这笔费用。",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "这所学校尚未设置货币，因此无法支付该费用。请咨询学校。",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "此费用已支付，但晋级已无法执行。请取消费用（已付款项将转为余额抵扣），或重新为学员晋级。",
+  "The School owner hasn't let you see attendance statistics.": "学校所有者未允许你查看出勤统计。",
+  "You can only see your own Branches' attendance.": "你只能查看自己分校的出勤。",
+  "This class hasn't started yet. Check them in instead.": "这节课还没开始。请改为为他们签到。",
+  "This date is not valid.": "此日期无效。",
+  "Attendance can only be logged from {v1} to {v2}.": "只能记录 {v1} 至 {v2} 的出勤。",
 };
