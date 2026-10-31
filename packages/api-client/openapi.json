@@ -18520,6 +18520,277 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/students/{studentId}/merge/preview": {
+      "get": {
+        "operationId": "MemberMergeController_preview",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "duplicateId",
+            "required": true,
+            "in": "query",
+            "description": "The duplicate record: merged into the student in the path, then no longer a Student here.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergePreviewDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-merge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/merge": {
+      "post": {
+        "operationId": "MemberMergeController_merge",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MergeDuplicateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MergeResultDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-merge"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/signed-documents/exports": {
+      "post": {
+        "operationId": "SignedDocumentsExportController_request",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSignedDocumentExportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedDocumentExportDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signed-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/signed-documents/exports/latest": {
+      "get": {
+        "operationId": "SignedDocumentsExportController_latest",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LatestSignedDocumentExportDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signed-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/signed-documents/exports/{exportId}": {
+      "get": {
+        "operationId": "SignedDocumentsExportController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedDocumentExportDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signed-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/signed-documents/exports/{exportId}/download": {
+      "get": {
+        "operationId": "SignedDocumentsExportController_download",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "exportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignedDocumentExportDownloadDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "signed-documents"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/add-child-manually": {
       "post": {
         "operationId": "StudentAccessController_addChildManually",
@@ -23946,7 +24217,8 @@
               "INVITE_ACCEPTED",
               "OPEN_MAT_CHANGED",
               "SETTING_CHANGED",
-              "CHARGE_ACCESS_CHANGED"
+              "CHARGE_ACCESS_CHANGED",
+              "MEMBERS_MERGED"
             ]
           },
           "actorId": {
@@ -38199,6 +38471,419 @@
           "url": {
             "type": "string",
             "description": "A link that downloads the file. It works for 5 minutes."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "MergePersonDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "MergeBlockerCode": {
+        "type": "string",
+        "enum": [
+          "GUARDIANS_DIFFER",
+          "BOTH_UNLIMITED_MEMBERSHIPS",
+          "DUPLICATE_HAS_SUBSCRIPTION",
+          "PENDING_CARD_PAYMENT",
+          "OPEN_PACK_RECHARGE",
+          "SAME_STYLE_RANK",
+          "SAME_STYLE_CORRECTION",
+          "SAME_CLASS_BOOKED",
+          "SAME_CLASS_WAITLIST",
+          "OPEN_SIGN_UP",
+          "PENDING_CHILD_INVITE"
+        ]
+      },
+      "MergeBlockerDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/MergeBlockerCode"
+          },
+          "details": {
+            "description": "Style names or class titles the reason is about, when there are any.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "details"
+        ]
+      },
+      "MergeRecordCountsDto": {
+        "type": "object",
+        "properties": {
+          "Membership": {
+            "type": "number"
+          },
+          "MembershipFreeze": {
+            "type": "number"
+          },
+          "PackRecharge": {
+            "type": "number"
+          },
+          "Transaction": {
+            "type": "number"
+          },
+          "Booking": {
+            "type": "number"
+          },
+          "WaitlistEntry": {
+            "type": "number"
+          },
+          "StudentRank": {
+            "type": "number"
+          },
+          "StudentRankSkillStatus": {
+            "type": "number"
+          },
+          "PromotionEvent": {
+            "type": "number"
+          },
+          "PromotionEventNoteLog": {
+            "type": "number"
+          },
+          "SkillSignOffLog": {
+            "type": "number"
+          },
+          "TrainingLog": {
+            "type": "number"
+          },
+          "RankCorrectionRequest": {
+            "type": "number"
+          },
+          "PromotionFeeRequest": {
+            "type": "number"
+          },
+          "Charge": {
+            "type": "number"
+          },
+          "ChargeAllocation": {
+            "type": "number"
+          },
+          "BalanceEntry": {
+            "type": "number"
+          },
+          "ChargeRefund": {
+            "type": "number"
+          },
+          "RecurringCharge": {
+            "type": "number"
+          },
+          "StudentNote": {
+            "type": "number"
+          },
+          "MemberFile": {
+            "type": "number"
+          },
+          "ChildInvite": {
+            "type": "number"
+          },
+          "SignUp": {
+            "type": "number"
+          },
+          "Favorite": {
+            "type": "number"
+          },
+          "WatchHistory": {
+            "type": "number"
+          },
+          "StudentTag": {
+            "type": "number"
+          },
+          "RosterMember": {
+            "type": "number"
+          },
+          "StudentAbsenceAlert": {
+            "type": "number"
+          },
+          "StudentHomeBranch": {
+            "type": "number"
+          },
+          "StudentCheckInCode": {
+            "type": "number"
+          },
+          "StudentJoinDate": {
+            "type": "number"
+          },
+          "WaiverSignature": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "Membership",
+          "MembershipFreeze",
+          "PackRecharge",
+          "Transaction",
+          "Booking",
+          "WaitlistEntry",
+          "StudentRank",
+          "StudentRankSkillStatus",
+          "PromotionEvent",
+          "PromotionEventNoteLog",
+          "SkillSignOffLog",
+          "TrainingLog",
+          "RankCorrectionRequest",
+          "PromotionFeeRequest",
+          "Charge",
+          "ChargeAllocation",
+          "BalanceEntry",
+          "ChargeRefund",
+          "RecurringCharge",
+          "StudentNote",
+          "MemberFile",
+          "ChildInvite",
+          "SignUp",
+          "Favorite",
+          "WatchHistory",
+          "StudentTag",
+          "RosterMember",
+          "StudentAbsenceAlert",
+          "StudentHomeBranch",
+          "StudentCheckInCode",
+          "StudentJoinDate",
+          "WaiverSignature"
+        ]
+      },
+      "MergePreviewDto": {
+        "type": "object",
+        "properties": {
+          "kept": {
+            "description": "The record that is kept.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergePersonDto"
+              }
+            ]
+          },
+          "duplicate": {
+            "description": "The record merged into it.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergePersonDto"
+              }
+            ]
+          },
+          "blockers": {
+            "description": "Why the two records cannot be merged yet; empty when they can.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MergeBlockerDto"
+            }
+          },
+          "records": {
+            "description": "The duplicate's rows at this School, per table.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergeRecordCountsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kept",
+          "duplicate",
+          "blockers",
+          "records"
+        ]
+      },
+      "MergeDuplicateDto": {
+        "type": "object",
+        "properties": {
+          "duplicateId": {
+            "type": "string",
+            "description": "The duplicate record: merged into the student in the path, then no longer a Student here."
+          }
+        },
+        "required": [
+          "duplicateId"
+        ]
+      },
+      "MergeResultDto": {
+        "type": "object",
+        "properties": {
+          "keptStudentId": {
+            "type": "string"
+          },
+          "duplicateStudentId": {
+            "type": "string"
+          },
+          "records": {
+            "description": "Rows moved to the kept record, per table.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MergeRecordCountsDto"
+              }
+            ]
+          },
+          "waiverSignaturesLeft": {
+            "type": "number",
+            "description": "Signed waivers both had signed: the duplicate's copy stays on the duplicate's record."
+          }
+        },
+        "required": [
+          "keptStudentId",
+          "duplicateStudentId",
+          "records",
+          "waiverSignaturesLeft"
+        ]
+      },
+      "SignedDocumentLabelsDto": {
+        "type": "object",
+        "properties": {
+          "member": {
+            "type": "string"
+          },
+          "document": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "signedAt": {
+            "type": "string"
+          },
+          "signedBy": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "guardian": {
+            "type": "string"
+          },
+          "onPaper": {
+            "type": "string"
+          },
+          "guest": {
+            "type": "string"
+          },
+          "signedName": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string"
+          },
+          "recordedBy": {
+            "type": "string"
+          },
+          "textSigned": {
+            "type": "string"
+          },
+          "notRecorded": {
+            "type": "string"
+          },
+          "imageMissing": {
+            "type": "string"
+          },
+          "expired": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateSignedDocumentExportDto": {
+        "type": "object",
+        "properties": {
+          "labels": {
+            "description": "The index's column headings and the documents' words, in the reader's language.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SignedDocumentLabelsDto"
+              }
+            ]
+          }
+        }
+      },
+      "SignedDocumentExportStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "RUNNING",
+          "READY",
+          "FAILED",
+          "EXPIRED"
+        ]
+      },
+      "SignedDocumentExportDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SignedDocumentExportStatus"
+          },
+          "documentCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Signed documents in the ZIP, once it is made."
+          },
+          "sizeBytes": {
+            "type": "number",
+            "nullable": true,
+            "description": "The ZIP's size in bytes, once it is made."
+          },
+          "requestedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who asked for it; null once their account is gone."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the ZIP is deleted (24 hours after it is made)."
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "createdAt"
+        ]
+      },
+      "LatestSignedDocumentExportDto": {
+        "type": "object",
+        "properties": {
+          "export": {
+            "nullable": true,
+            "description": "The School's most recent export, or null.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SignedDocumentExportDto"
+              }
+            ]
+          }
+        }
+      },
+      "SignedDocumentExportDownloadDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "A link that downloads the ZIP. It works for 5 minutes."
           }
         },
         "required": [

@@ -25,6 +25,8 @@ import { FrontDeskModule } from './front-desk/front-desk.module';
 import { StudentNotesModule } from './student-notes/student-notes.module';
 import { StudentTagsModule } from './student-tags/student-tags.module';
 import { MemberFilesModule } from './member-files/member-files.module';
+import { MemberMergeModule } from './member-merge/member-merge.module';
+import { SignedDocumentsModule } from './signed-documents/signed-documents.module';
 import { StudentAccessModule } from './student-access/student-access.module';
 import { OpenMatsModule } from './open-mats/open-mats.module';
 import { ChargesModule } from './charges/charges.module';
@@ -100,6 +102,8 @@ import { validateEnv } from './common/config/validate-env';
     StudentNotesModule,
     StudentTagsModule,
     MemberFilesModule,
+    MemberMergeModule,
+    SignedDocumentsModule,
     StudentAccessModule,
     OpenMatsModule,
     CardSurchargeModule,

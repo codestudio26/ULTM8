@@ -36,6 +36,7 @@ import { StudentAbsenceAlertProcessor, StudentAbsenceAlertScheduler } from './st
 import { MembershipEndingReportProcessor, MembershipEndingReportScheduler } from './membership-ending-report.processor';
 import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } from './large-school-check-in-codes.processor';
+import { SignedDocumentsExportProcessor } from './signed-documents-export.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -260,6 +261,7 @@ import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } fr
     ChargeRecurringScheduler,
     LargeSchoolCheckInCodesProcessor,
     LargeSchoolCheckInCodesScheduler,
+    SignedDocumentsExportProcessor,
   ],
 })
 export class JobsModule {}
