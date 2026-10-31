@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ApiError } from '@ultm8/api-client';
-import { Button, ErrorBanner, Screen } from '../components/ui';
+import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
 import { useAuth, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
@@ -65,6 +65,9 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
   const [branchId, setBranchId] = useState<string | null>(null);
   const [joinedAs, setJoinedAs] = useState<Person | null>(beltsFor ?? null);
   const [note, setNote] = useState<string | null>(null);
+  // Decision 315 item 10: optional medical information, when the School asks.
+  const [medicalInfo, setMedicalInfo] = useState('');
+  const [medicalConsent, setMedicalConsent] = useState(false);
 
   if (joinedAs) {
     return <BeltsStep schoolId={academyId} schoolName={name} person={joinedAs} isMe={joinedAs.studentId === claims?.sub} note={note} navigation={navigation} />;
@@ -91,13 +94,22 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
   ];
   const branches = academy.branches;
   const needsBranch = branches.length > 0;
-  const ready = !!who && (!needsBranch || !!branchId);
+  const askMedical = !!academy.medicalInfoEnabled && !!who;
+  const medicalText = askMedical ? medicalInfo.trim() : '';
+  // Without consent nothing is kept, so joining waits for the tick while there is text.
+  const ready = !!who && (!needsBranch || !!branchId) && (!medicalText || medicalConsent);
 
   async function onJoin() {
     if (!who || !claims) return;
     const isMe = who.studentId === claims.sub;
     try {
-      const res = await join.mutateAsync({ schoolId: academyId, studentId: isMe ? undefined : who.studentId, branchId: branchId ?? undefined });
+      const res = await join.mutateAsync({
+        schoolId: academyId,
+        studentId: isMe ? undefined : who.studentId,
+        branchId: branchId ?? undefined,
+        medicalInfo: medicalText || undefined,
+        medicalConsent: medicalText ? medicalConsent : undefined,
+      });
       // Joining oneself mints a token carrying the new STUDENT grant.
       if (isMe && 'accessToken' in res && typeof res.accessToken === 'string') {
         await applyAccessToken(res.accessToken);
@@ -151,6 +163,36 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
                     <Choice key={b.id} label={b.name} selected={branchId === b.id} onPress={() => setBranchId(b.id)} />
                   ))}
                 </View>
+              </>
+            ) : null}
+
+            {askMedical && who ? (
+              <>
+                <Heading>{t('academies.join.medicalTitle')}</Heading>
+                <Field label={who.studentId === claims?.sub ? t('academies.join.medicalLabelMe') : t('academies.join.medicalLabelOther', { name: who.name })} hint={t('academies.join.medicalHint')}>
+                  <TextField
+                    value={medicalInfo}
+                    onChangeText={setMedicalInfo}
+                    maxLength={2000}
+                    multiline
+                    accessibilityLabel={t('academies.join.medicalTitle')}
+                  />
+                </Field>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2], minHeight: minTouchTarget }}>
+                  <Switch
+                    value={medicalConsent}
+                    onValueChange={setMedicalConsent}
+                    accessibilityLabel={t('academies.join.medicalConsentLabel')}
+                  />
+                  <Text style={{ flex: 1, fontSize: fontSize.body }}>
+                    {who.studentId === claims?.sub
+                      ? t('academies.join.medicalConsentMe', { school: academy.name })
+                      : t('academies.join.medicalConsentOther', { school: academy.name, name: who.name })}
+                  </Text>
+                </View>
+                {medicalText && !medicalConsent ? (
+                  <Text style={{ color: theme.textSecondary, marginTop: spacing[1] }}>{t('academies.join.medicalConsentNeeded')}</Text>
+                ) : null}
               </>
             ) : null}
 

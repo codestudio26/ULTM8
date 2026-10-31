@@ -36,7 +36,7 @@ const ZONE = 'America/Sao_Paulo';
 const RANK_DATE = new Date('2026-01-01T00:00:00Z');
 const ACCESS_DEFAULTS = {
   classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false,
-  disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false,
+  disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false,
 };
 
 describeIfDb('Students → Attendance: statistics and logging past attendance (Decision 317 items 3, 4)', () => {

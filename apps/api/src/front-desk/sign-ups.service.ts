@@ -10,6 +10,7 @@ import { SchoolsService } from '../tenants/schools/schools.service';
 import { RoleGrantsService } from '../tenants/role-grants/role-grants.service';
 import { MembershipsService } from '../memberships/memberships.service';
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service';
+import { MedicalInfoService } from '../medical-info/medical-info.service';
 import { FrontDeskSessionContext } from './front-desk-sessions.service';
 import { ApproveSignUpDto, KioskSignUpDto, SignUpDto } from './dto/sign-up.dto';
 import { heardFromList, REJECTED_SIGN_UP_DAYS } from './sign-up-rules';
@@ -53,6 +54,7 @@ export class SignUpsService {
     private readonly roleGrants: RoleGrantsService,
     private readonly memberships: MembershipsService,
     private readonly delivery: NotificationDeliveryService,
+    private readonly medicalInfo: MedicalInfoService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -74,6 +76,9 @@ export class SignUpsService {
     if (dto.heardFrom && options && !options.includes(dto.heardFrom)) {
       throw new BadRequestException('Choose one of the listed answers to "How did you hear about us?".');
     }
+    // Decision 315 item 10: adults only here, so the person consents for
+    // themselves. Without the tick nothing is kept.
+    const medicalText = await this.medicalInfo.checkAtSignUp(session.schoolId, dto);
     const email = dto.email.trim().toLowerCase();
     // One waiting sign-up per email at a School: a second tap of Send, or the
     // same person again before staff have looked.
@@ -99,6 +104,8 @@ export class SignUpsService {
         emergencyName: dto.emergencyName ?? null,
         emergencyPhone: dto.emergencyPhone ?? null,
         emergencyRelationship: dto.emergencyRelationship ?? null,
+        medicalInfo: medicalText,
+        medicalConsentAt: medicalText ? new Date() : null,
       },
       select: { id: true },
     });
@@ -172,6 +179,7 @@ export class SignUpsService {
       throw err;
     }
     const updated = await this.prismaJobs.signUp.update({ where: { id: claimed.id }, data: { userId }, include: { branch: { select: { name: true } } } });
+    await this.moveMedicalInfo(signUp, userId);
     const visitPassGiven = await this.giveVisitPassIfVisitor(signUp, callerId, userId, school.visitorPeriodDays);
     const emailSent = await this.sendEmail(
       signUp.email,
@@ -253,13 +261,15 @@ export class SignUpsService {
       await this.unclaim(signUp);
       throw err;
     }
+    await this.moveMedicalInfo(signUp, callerId);
     const visitPassGiven = await this.giveVisitPassIfVisitor(signUp, signUp.approvedById ?? callerId, callerId, school.visitorPeriodDays);
     return { schoolId: signUp.schoolId, visitPassGiven, accessToken: joined.accessToken };
   }
 
   async decline(callerId: string, id: string) {
     const signUp = await this.loadInvite(callerId, id);
-    await this.claim(signUp, { status: 'DECLINED', respondedAt: new Date() });
+    // Declined: the account never joins, so its medical information goes now.
+    await this.claim(signUp, { status: 'DECLINED', respondedAt: new Date(), medicalInfo: null, medicalConsentAt: null });
   }
 
   // ---------------------------------------------------------------------------
@@ -320,6 +330,15 @@ export class SignUpsService {
         },
       })
       .catch((err) => this.logger.error(`Sign-up ${signUp.id}: could not be put back after a failed approval — ${err instanceof Error ? err.message : String(err)}`));
+  }
+
+  /** Decision 315 item 10: once the sign-up has joined as `userId`, its
+   * medical information (typed and consented to on the tablet by the person
+   * signing up) moves to the student's record, and leaves the sign-up. */
+  private async moveMedicalInfo(signUp: SignUp, userId: string) {
+    if (!signUp.medicalInfo || !signUp.medicalConsentAt) return;
+    await this.medicalInfo.record(signUp.schoolId, userId, signUp.medicalInfo, { byId: userId, byGuardian: false, at: signUp.medicalConsentAt });
+    await this.prismaJobs.signUp.update({ where: { id: signUp.id }, data: { medicalInfo: null, medicalConsentAt: null } });
   }
 
   /** Decision 391: a Visitor gets a visit pass on joining, when the School

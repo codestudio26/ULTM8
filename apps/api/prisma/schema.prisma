@@ -610,6 +610,8 @@ model User {
   customFieldValues                 CustomMemberFieldValue[]    @relation("CustomMemberFieldValueStudent")
   customStatuses                    StudentCustomStatus[]       @relation("StudentCustomStatusStudent")
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
+  medicalInfo                       StudentMedicalInfo[]        @relation("StudentMedicalInfoStudent")
+  medicalInfoConsentsGiven          StudentMedicalInfo[]        @relation("StudentMedicalInfoConsentedBy")
   memberFiles                       MemberFile[]                @relation("MemberFileStudent")
   memberFilesUploaded               MemberFile[]                @relation("MemberFileUploadedBy")
   dataImports                       DataImport[]                @relation("DataImportCreatedBy")
@@ -1249,6 +1251,9 @@ model School {
   /// show the starting list (Friend, Instagram, Google, Walked past) in the
   /// viewer's language.
   heardFromOptions               Json?
+  /// Decision 315 item 10: the School asks for medical information at
+  /// sign-up (the tablet and joining in the student app). Off by default.
+  medicalInfoEnabled             Boolean                         @default(false)
   /// Decision 317 item 7: staff are told when a member hasn't checked in for
   /// this many weeks (1-52). The School sets it; null (the default) sends no
   /// absence alerts.
@@ -1361,6 +1366,7 @@ model School {
   customMemberFields     CustomMemberField[]
   customMemberStatuses   CustomMemberStatus[]
   studentExportLogs      StudentExportLog[]
+  studentMedicalInfo     StudentMedicalInfo[]
   memberFiles            MemberFile[]
   dataImports            DataImport[]
   signedDocumentExports  SignedDocumentExport[]
@@ -4737,6 +4743,10 @@ model StaffPermission {
   /// their own Branches. Branch Staff only; off by default; owners always
   /// can, for the whole School.
   canSeeAttendanceStats Boolean @default(false)
+  /// Decision 315 item 10: may see students' medical information, for the
+  /// students of their own branches. Branch Staff only; off by default;
+  /// owners always can.
+  canSeeMedicalInfo     Boolean @default(false)
   /// Decision 315 items 12, 13: may import members, memberships and past
   /// attendance from a spreadsheet, for their own Branches. Branch Staff
   /// only; off by default; owners always can.
@@ -5164,6 +5174,12 @@ model SignUp {
   emergencyPhone        String?
   emergencyRelationship String?
 
+  /// Decision 315 item 10: medical information typed on the tablet, with the
+  /// time the person ticked consent (both set or both null). Moved to
+  /// StudentMedicalInfo when the sign-up becomes a member, and cleared here.
+  medicalInfo      String?
+  medicalConsentAt DateTime?
+
   /// The account this sign-up became, or the existing account it invited.
   userId String?
   user   User?   @relation("SignUpUser", fields: [userId], references: [id], onDelete: Cascade)
@@ -5506,6 +5522,38 @@ model StudentCustomStatus {
 
   @@id([schoolId, studentId])
   @@index([statusId])
+}
+
+/// Decision 315 item 10: a student's medical information at one School,
+/// given at sign-up with explicit consent from the member (their Guardian for
+/// a child). Seen only by the School's owners and Branch Staff the owner
+/// switches on ("See medical information"); never on a member-facing
+/// endpoint. Erased with the student's account and with the School. Jobs
+/// connection only (RLS on and forced, no app grant).
+model StudentMedicalInfo {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentMedicalInfoStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  /// Free text, up to 2,000 characters.
+  body String
+
+  /// Who consented: the member, or the Guardian for a child. Null once that
+  /// account is erased (consentedAt and consentedByGuardian stay).
+  consentedById       String?
+  consentedBy         User?    @relation("StudentMedicalInfoConsentedBy", fields: [consentedById], references: [id], onDelete: SetNull)
+  consentedByGuardian Boolean  @default(false)
+  consentedAt         DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, studentId])
+  @@index([studentId])
 }
 
 /// Backlog 3.9 (Decision 399): one row per student-list export, who made it

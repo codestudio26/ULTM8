@@ -74,6 +74,7 @@ export class FrontDeskKioskService {
         checkInCodeDigits: true,
         visitorPeriodDays: true,
         heardFromOptions: true,
+        medicalInfoEnabled: true,
       },
     });
     const branch = session.branchId ? await this.prismaJobs.branch.findUnique({ where: { id: session.branchId }, select: { name: true } }) : null;
@@ -93,6 +94,8 @@ export class FrontDeskKioskService {
       visitorsOn: !!school.visitorPeriodDays,
       locked: session.lockedAt !== null,
       heardFromOptions: heardFromList(school.heardFromOptions),
+      // Decision 315 item 10: the sign-up form asks for medical information.
+      medicalInfoOn: school.medicalInfoEnabled,
     };
   }
 

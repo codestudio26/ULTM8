@@ -53,4 +53,17 @@ export const profile = {
     save: 'Save',
     loading: 'Loading…',
   },
+  /** Decision 419 item 1: which Schools hold medical information, and withdrawing consent. */
+  medical: {
+    title: "Medical information",
+    sharedWith: "Medical information: shared with {school}",
+    consentedOn: "Consent given on {date}.",
+    awaiting: "Given on your front-desk sign-up; kept until you accept or decline the School's invite.",
+    withdraw: "Withdraw consent",
+    confirm: "Withdraw consent? {school}'s copy of this medical information is deleted at once. This can't be undone.",
+    confirmWithdraw: "Withdraw",
+    cancel: "Cancel",
+    withdrawFailed: "Could not withdraw consent — please try again.",
+    loadFailed: "Could not load your medical information — please try again.",
+  },
 };

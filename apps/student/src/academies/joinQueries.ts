@@ -6,11 +6,29 @@ export type DeclareStyle = components['schemas']['DeclareStyleOptionDto'];
 export type DeclareRung = components['schemas']['DeclareRungDto'];
 
 /** POST /schools/{id}/join, for oneself or (with studentId) a guardian's
- * child. A School with branches needs a home branch (Decisions 139, 168). */
+ * child. A School with branches needs a home branch (Decisions 139, 168).
+ * Medical information goes only with consent (Decision 315 item 10). */
 export function useJoinSchool() {
   return useMutation({
-    mutationFn: ({ schoolId, studentId, branchId }: { schoolId: string; studentId?: string; branchId?: string }) =>
-      unwrap(apiClient.POST('/v1/schools/{id}/join', { params: { path: { id: schoolId } }, body: { studentId, branchId } })),
+    mutationFn: ({
+      schoolId,
+      studentId,
+      branchId,
+      medicalInfo,
+      medicalConsent,
+    }: {
+      schoolId: string;
+      studentId?: string;
+      branchId?: string;
+      medicalInfo?: string;
+      medicalConsent?: boolean;
+    }) =>
+      unwrap(
+        apiClient.POST('/v1/schools/{id}/join', {
+          params: { path: { id: schoolId } },
+          body: { studentId, branchId, ...(medicalInfo ? { medicalInfo, medicalConsent } : {}) },
+        }),
+      ),
   });
 }
 

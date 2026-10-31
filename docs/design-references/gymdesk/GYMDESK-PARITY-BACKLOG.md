@@ -586,7 +586,7 @@ password · **Selected membership + credit card payment** · Additional forms / 
 | SF3 | QR code / shareable link to a form | 🟡 QR is used for check-in; sign-up link QR ❌ |
 | SF4 | Staff approval of website sign-ups | ❌ |
 | SF5 | Pick documents to sign during sign-up | 🟡 Waiver signing exists; per-form choice ❌ |
-| SF6 | **Medical conditions** | ❌ Health data is special-category personal data (GDPR Art. 9 / LGPD). Needs a decision |
+| SF6 | **Medical conditions** | ✅ **31 Oct 2026: built** (Decision 315 item 10). Off by default per School; asked on the tablet sign-up and when joining in the app; kept only with the member's consent (the Guardian's for a child); seen by owners and staff with "See medical information". One free-text field for now |
 | SF7 | Pay for a membership inside the form | 🟡 ULTM8 pays via **Stripe hosted Checkout** (Decisions 238/243). Copy the layout, but keep card entry on Stripe's hosted page, not in our own form fields |
 | SF8 | Post sign-up: **redirect link**, rich-text **thank-you message** | ❌ Small |
 | SF9 | **JavaScript conversion snippet** run on the thank-you page | ⚠️ Running School-supplied JavaScript on ULTM8's own pages is a **security risk** (script injection that could reach other users' sessions). Recommend: don't copy. Offer named tracking integrations (e.g. Meta Pixel / Google Analytics IDs) instead |

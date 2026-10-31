@@ -6,6 +6,7 @@ import { Button, ErrorBanner, Field, InlineError, SearchablePickerField, Success
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
 import { useT } from '../i18n/I18nProvider';
+import { MedicalInfoSharing } from './MedicalInfoSharing';
 import {
   useCurrencies,
   useLanguages,
@@ -340,6 +341,9 @@ export function ProfileScreen() {
         loading={updateProfile.isPending}
         disabled={!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth.trim()}
       />
+
+      {/* Decision 419 item 1: which Schools hold medical information, and withdrawing consent. */}
+      <MedicalInfoSharing studentId={profile.data.id} />
     </ScrollView>
   );
 }

@@ -169,6 +169,8 @@ export function KioskApp() {
         onFind={() => setScreen('find')}
         visitorsOn={info.data?.visitorsOn ?? false}
         heardFromOptions={info.data?.heardFromOptions ?? null}
+        medicalInfoOn={info.data?.medicalInfoOn ?? false}
+        schoolName={session.schoolName}
       />
     );
   if (screen === 'find') return <FindMeScreen onBack={() => setScreen('home')} onSignUp={() => setScreen('signup')} />;

@@ -26,6 +26,7 @@ import {
 } from './schoolQueries';
 import { HeardFromCard } from './HeardFromCard';
 import { StudentTagsSettingsCard } from './StudentTagsSettingsCard';
+import { MedicalInfoSettingsCard } from './MedicalInfoSettingsCard';
 import { CustomMemberFieldsSettingsCard } from './CustomMemberFieldsSettingsCard';
 import { FreezeSettingsCard } from './FreezeSettingsCard';
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
@@ -98,6 +99,8 @@ export function SchoolPage() {
         <HeardFromCard key={`heard-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Backlog 5.4: the School's own student tags. */}
         <StudentTagsSettingsCard key={`tags-${schoolId}`} schoolId={schoolId} />
+        {/* Decision 315 item 10: medical information at sign-up, off by default. */}
+        <MedicalInfoSettingsCard key={`medical-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 315 item 14: the School's own member fields and statuses. */}
         <CustomMemberFieldsSettingsCard key={`custom-fields-${schoolId}`} schoolId={schoolId} />
         <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />

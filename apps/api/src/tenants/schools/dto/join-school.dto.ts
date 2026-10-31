@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 /**
  * POST /schools/{id}/join body (Phase 38 — this route had no body at all
@@ -41,4 +41,19 @@ export class JoinSchoolDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  @ApiPropertyOptional({
+    maxLength: 2000,
+    description:
+      "Decision 315 item 10: medical information, only when the School asks for it (School.medicalInfoEnabled). Given by the member joining themselves, or by the Guardian for a child; never by staff. Needs medicalConsent: true, or nothing is stored and the join is refused. Empty means none.",
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  medicalInfo?: string;
+
+  @ApiPropertyOptional({ description: 'Decision 315 item 10: the member (or the Guardian for a child) consents to the School keeping this medical information.' })
+  @IsOptional()
+  @IsBoolean()
+  medicalConsent?: boolean;
 }

@@ -183,6 +183,12 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
   }
 
   private async anonymizeSchool(schoolId: string): Promise<void> {
+    // Decision 315 item 10: students' medical information goes with the
+    // School. A School kept for its Waivers or billing history keeps no
+    // health data: the rows are deleted, and so is any still waiting on a
+    // tablet sign-up. (A School that is deleted takes them by cascade.)
+    await this.prismaJobs.studentMedicalInfo.deleteMany({ where: { schoolId } });
+    await this.prismaJobs.signUp.updateMany({ where: { schoolId, medicalInfo: { not: null } }, data: { medicalInfo: null, medicalConsentAt: null } });
     await this.prismaJobs.school.update({
       where: { id: schoolId },
       data: {

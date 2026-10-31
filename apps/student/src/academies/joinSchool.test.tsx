@@ -82,6 +82,8 @@ describe('JoinSchoolScreen', () => {
     const screen = await render(<JoinSchoolScreen navigation={nav()} route={route()} />);
     expect(screen.queryByText('Home branch')).toBeNull();
     await fireEvent.press(screen.getByLabelText('Me'));
+    // The School doesn't ask for medical information (Decision 315 item 10).
+    expect(screen.queryByText('Medical information')).toBeNull();
     await fireEvent.press(screen.getByText('Join'));
     expect(join).toHaveBeenCalledWith({ schoolId: 'dojo', studentId: undefined, branchId: undefined });
   });
@@ -107,6 +109,24 @@ describe('JoinSchoolScreen', () => {
     await fireEvent.press(screen.getByText('Save'));
     expect(declare).toHaveBeenCalledWith({ studentId: 'kid', disciplineId: 'judo', rankId: 'yellow', stripeTierId: 'y0' });
     expect((navigation as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith('MyGrading', { studentId: 'kid', name: 'Kai Lee' });
+  });
+
+  it('medical information: asked only when the School wants it, and sent only with consent (the Guardian for a child)', async () => {
+    mocked(academies.useAcademy).mockReturnValue(ok({ id: 'dojo', name: 'Alpha Dojo', branches: [], medicalInfoEnabled: true }));
+    mocked(auth.useIsGuardian).mockReturnValue(true);
+    mocked(guardians.useMyMinors).mockReturnValue(ok({ items: [{ studentId: 'kid', firstName: 'Kai', surname: 'Lee' }] }));
+    const screen = await render(<JoinSchoolScreen navigation={nav()} route={route()} />);
+    await fireEvent.press(screen.getByLabelText('Kai Lee'));
+    expect(screen.getByText('Medical information')).toBeTruthy();
+    await fireEvent.changeText(screen.getByLabelText('Medical information'), ' Asthma ');
+    // Text without consent: joining waits.
+    await fireEvent.press(screen.getByText('Join'));
+    expect(join).not.toHaveBeenCalled();
+    expect(screen.getByText(/Turn on consent/)).toBeTruthy();
+    expect(screen.getByText("As Kai Lee's Guardian, I agree that Alpha Dojo keeps this medical information. Only the owner and the staff they allow can see it.")).toBeTruthy();
+    await fireEvent(screen.getByLabelText('Consent to keep medical information'), 'valueChange', true);
+    await fireEvent.press(screen.getByText('Join'));
+    expect(join).toHaveBeenCalledWith({ schoolId: 'dojo', studentId: 'kid', branchId: undefined, medicalInfo: 'Asthma', medicalConsent: true });
   });
 
   it('opened to add a belt later, it goes straight to the belts; with nothing to add it says so', async () => {
