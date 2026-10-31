@@ -18331,6 +18331,616 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/custom-member-fields": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_listFields",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberFieldListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CustomMemberFieldsController_createField",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberFieldCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberFieldDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-fields/order": {
+      "put": {
+        "operationId": "CustomMemberFieldsController_reorderFields",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberFieldOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberFieldListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}/students": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_fieldMatches",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fieldId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "value",
+            "required": true,
+            "in": "query",
+            "description": "A choice, \"true\"/\"false\", a number or a YYYY-MM-DD date to match exactly, or text the value contains (ignoring case).",
+            "schema": {
+              "maxLength": 500,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomFieldMatchesDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}": {
+      "patch": {
+        "operationId": "CustomMemberFieldsController_updateField",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fieldId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberFieldUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberFieldDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CustomMemberFieldsController_deleteField",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fieldId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-statuses": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_listStatuses",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberStatusListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "CustomMemberFieldsController_createStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberStatusNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-statuses/students": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_statusAssignments",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCustomStatusAssignmentListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/custom-member-statuses/{statusId}": {
+      "patch": {
+        "operationId": "CustomMemberFieldsController_renameStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statusId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomMemberStatusNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomMemberStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "CustomMemberFieldsController_deleteStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "statusId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/custom-fields": {
+      "get": {
+        "operationId": "CustomMemberFieldsController_studentValues",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCustomFieldsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "CustomMemberFieldsController_setStudentValues",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCustomFieldValuesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCustomFieldsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/custom-status": {
+      "put": {
+        "operationId": "CustomMemberFieldsController_setStudentStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetStudentCustomStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentCustomFieldsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "custom-member-fields"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/{studentId}/files": {
       "get": {
         "operationId": "MemberFilesController_list",
@@ -38398,6 +39008,308 @@
             "description": "A new tag, added to the School's list. Send this or tagId."
           }
         }
+      },
+      "CustomMemberFieldType": {
+        "type": "string",
+        "enum": [
+          "TEXT",
+          "NUMBER",
+          "DATE",
+          "DROPDOWN",
+          "YES_NO"
+        ]
+      },
+      "CustomMemberFieldDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CustomMemberFieldType"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "position": {
+            "type": "number",
+            "description": "Order on the student page, from 0."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "options",
+          "position"
+        ]
+      },
+      "CustomMemberFieldListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomMemberFieldDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CustomMemberFieldCreateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "type": {
+            "$ref": "#/components/schemas/CustomMemberFieldType"
+          },
+          "options": {
+            "description": "A drop-down's choices, in order. Only for DROPDOWN, which needs at least one.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
+      },
+      "CustomMemberFieldOrderDto": {
+        "type": "object",
+        "properties": {
+          "fieldIds": {
+            "description": "Every one of the School's field ids, in the new order.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "fieldIds"
+        ]
+      },
+      "CustomFieldMatchesDto": {
+        "type": "object",
+        "properties": {
+          "studentIds": {
+            "description": "The students whose value matches that the caller covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "studentIds"
+        ]
+      },
+      "CustomMemberFieldUpdateDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "options": {
+            "description": "A drop-down's new choices, in order. Students whose value is no longer a choice lose it.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "CustomMemberStatusDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "studentCount": {
+            "type": "number",
+            "description": "How many students have this status."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "studentCount"
+        ]
+      },
+      "CustomMemberStatusListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CustomMemberStatusDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "CustomMemberStatusNameDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "StudentCustomStatusAssignmentDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "statusId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentId",
+          "statusId"
+        ]
+      },
+      "StudentCustomStatusAssignmentListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "description": "The students with a status that the caller covers.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentCustomStatusAssignmentDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "StudentCustomFieldValueDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/CustomMemberFieldType"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "position": {
+            "type": "number",
+            "description": "Order on the student page, from 0."
+          },
+          "value": {
+            "type": "string",
+            "nullable": true,
+            "description": "The value as text: a number, YYYY-MM-DD, one of the choices, or \"true\"/\"false\". Null when empty."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "options",
+          "position",
+          "value"
+        ]
+      },
+      "StudentCustomFieldsDto": {
+        "type": "object",
+        "properties": {
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentCustomFieldValueDto"
+            }
+          },
+          "statusId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The student's member status at this School, or null."
+          }
+        },
+        "required": [
+          "fields",
+          "statusId"
+        ]
+      },
+      "SetCustomFieldValueDto": {
+        "type": "object",
+        "properties": {
+          "fieldId": {
+            "type": "string"
+          },
+          "value": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null or empty clears the value."
+          }
+        },
+        "required": [
+          "fieldId",
+          "value"
+        ]
+      },
+      "SetCustomFieldValuesDto": {
+        "type": "object",
+        "properties": {
+          "values": {
+            "description": "Only the fields listed change.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SetCustomFieldValueDto"
+            }
+          }
+        },
+        "required": [
+          "values"
+        ]
+      },
+      "SetStudentCustomStatusDto": {
+        "type": "object",
+        "properties": {
+          "statusId": {
+            "type": "string",
+            "nullable": true,
+            "description": "A status from the School list, or null for none."
+          }
+        },
+        "required": [
+          "statusId"
+        ]
       },
       "MemberFileDto": {
         "type": "object",

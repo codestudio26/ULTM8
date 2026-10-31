@@ -24,6 +24,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { FrontDeskModule } from './front-desk/front-desk.module';
 import { StudentNotesModule } from './student-notes/student-notes.module';
 import { StudentTagsModule } from './student-tags/student-tags.module';
+import { CustomMemberFieldsModule } from './custom-member-fields/custom-member-fields.module';
 import { MemberFilesModule } from './member-files/member-files.module';
 import { MemberMergeModule } from './member-merge/member-merge.module';
 import { SignedDocumentsModule } from './signed-documents/signed-documents.module';
@@ -101,6 +102,7 @@ import { validateEnv } from './common/config/validate-env';
     FrontDeskModule,
     StudentNotesModule,
     StudentTagsModule,
+    CustomMemberFieldsModule,
     MemberFilesModule,
     MemberMergeModule,
     SignedDocumentsModule,
