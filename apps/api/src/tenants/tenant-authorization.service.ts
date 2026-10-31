@@ -34,7 +34,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * assertMayExportStudents. "freezeMemberships" is Decision 409's "Can freeze
  * memberships", checked by assertMayFreezeMemberships. "attendanceStats" is
  * Decision 317 item 3's "See attendance statistics", checked by
- * attendanceStatsScope. */
+ * attendanceStatsScope. "memberFiles" is Decision 315 item 9's "See and
+ * manage member files", checked by assertMayManageMemberFiles. */
 export const STAFF_ACCESS = [
   'classes',
   'bookings',
@@ -47,10 +48,11 @@ export const STAFF_ACCESS = [
   'exportStudents',
   'freezeMemberships',
   'attendanceStats',
+  'memberFiles',
 ] as const;
 export type StaffAccess = (typeof STAFF_ACCESS)[number];
 /** The switches staffMay checks. */
-type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats'>;
+type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'memberFiles'>;
 export type StaffAccessSet = Record<StaffAccess, boolean>;
 
 /** A Branch Staff member with no StaffPermission row yet has these: what
@@ -68,6 +70,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   exportStudents: false,
   freezeMemberships: false,
   attendanceStats: false,
+  memberFiles: false,
 };
 
 /** What an Instructor may do by role, whatever the switches say (Spec 55
@@ -98,6 +101,7 @@ export function staffAccessFrom(row: {
   canExportStudents: boolean;
   canFreezeMemberships: boolean;
   canSeeAttendanceStats: boolean;
+  canManageMemberFiles: boolean;
 } | null | undefined): StaffAccessSet {
   if (!row) return { ...DEFAULT_STAFF_ACCESS };
   return {
@@ -112,6 +116,7 @@ export function staffAccessFrom(row: {
     exportStudents: row.canExportStudents,
     freezeMemberships: row.canFreezeMemberships,
     attendanceStats: row.canSeeAttendanceStats,
+    memberFiles: row.canManageMemberFiles,
   };
 }
 
@@ -128,6 +133,7 @@ export const STAFF_ACCESS_SELECT = {
   canExportStudents: true,
   canFreezeMemberships: true,
   canSeeAttendanceStats: true,
+  canManageMemberFiles: true,
 } as const;
 
 @Injectable()
@@ -365,6 +371,33 @@ export class TenantAuthorizationService {
       throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you freeze memberships." });
     }
     if (verdict === 'staff' && studentId) {
+      await this.assertBranchCoversStudent(await this.staffBranchCoverage(userId, schoolId), schoolId, studentId);
+    }
+    return { isOwner: verdict === 'owner' };
+  }
+
+  /**
+   * Decision 315 item 9 (backlog 5.11): files on a member are seen and
+   * managed by the School's owners, and by Branch Staff the owner switched on
+   * ("See and manage member files") for the students of their own branches
+   * (staffBranchCoverage, the Students page's rule). Coaches and the member
+   * never. Returns whether the caller is an owner.
+   */
+  async assertMayManageMemberFiles(userId: string, schoolId: string, studentId: string): Promise<{ isOwner: boolean }> {
+    const verdict = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return 'owner' as const;
+      if (grants.length === 0) return 'no' as const;
+      const row = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canManageMemberFiles: true } });
+      return row?.canManageMemberFiles ? ('staff' as const) : ('no' as const);
+    });
+    if (verdict === 'no') {
+      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you see member files." });
+    }
+    if (verdict === 'staff') {
       await this.assertBranchCoversStudent(await this.staffBranchCoverage(userId, schoolId), schoolId, studentId);
     }
     return { isOwner: verdict === 'owner' };

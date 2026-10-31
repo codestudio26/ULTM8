@@ -18941,6 +18941,195 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/students/{studentId}/files": {
+      "get": {
+        "operationId": "MemberFilesController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberFileListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-files"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "MemberFilesController_upload",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadMemberFileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberFileDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-files"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/files/{fileId}/download": {
+      "get": {
+        "operationId": "MemberFilesController_download",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberFileDownloadDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-files"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/files/{fileId}": {
+      "delete": {
+        "operationId": "MemberFilesController_remove",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fileId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "member-files"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/add-child-manually": {
       "post": {
         "operationId": "StudentAccessController_addChildManually",
@@ -23774,6 +23963,10 @@
           "attendanceStats": {
             "type": "boolean",
             "description": "See attendance statistics for their branches (off by default; Decision 317 item 3)."
+          },
+          "memberFiles": {
+            "type": "boolean",
+            "description": "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)."
           }
         },
         "required": [
@@ -23787,7 +23980,8 @@
           "checkInRules",
           "exportStudents",
           "freezeMemberships",
-          "attendanceStats"
+          "attendanceStats",
+          "memberFiles"
         ]
       },
       "StaffRoleDto": {
@@ -38525,6 +38719,84 @@
         },
         "required": [
           "statusId"
+        ]
+      },
+      "MemberFileDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string",
+            "description": "The name the file was uploaded with."
+          },
+          "contentType": {
+            "type": "string",
+            "enum": [
+              "application/pdf",
+              "image/jpeg",
+              "image/png"
+            ]
+          },
+          "sizeBytes": {
+            "type": "number",
+            "description": "Size in bytes."
+          },
+          "uploadedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who uploaded it; null once their account is gone."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fileName",
+          "contentType",
+          "sizeBytes",
+          "createdAt"
+        ]
+      },
+      "MemberFileListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberFileDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "UploadMemberFileDto": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "A PDF, JPG or PNG file, up to 10 MB."
+          }
+        },
+        "required": [
+          "file"
+        ]
+      },
+      "MemberFileDownloadDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "A link that downloads the file. It works for 5 minutes."
+          }
+        },
+        "required": [
+          "url"
         ]
       },
       "ChildDetailsDto": {

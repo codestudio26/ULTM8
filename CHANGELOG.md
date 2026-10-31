@@ -212,6 +212,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   - Migration `20270123000000_attendance_stats_and_past`; new endpoints
     `GET /schools/{id}/attendance/stats`, `GET /schools/{id}/attendance/log-classes`
     and `POST /schools/{id}/attendance/logs`.
+- **Files on a member (Documents)** — backlog 5.11, Decision 315 item 9. A new
+  Documents section on the student's page: upload a PDF, JPG or PNG (up to
+  10 MB each), see the list (name, size, date, who uploaded), download and
+  delete. The type is read from the file's content, not only its name, and the
+  size is checked by the server. Files are kept in the private storage bucket
+  and downloaded through a link that works for 5 minutes. Only the School's
+  owners see them, and Branch Staff the owner switches on with the new
+  "See and manage member files" access (off by default, in neither preset),
+  for their own branches' students; the member and their Guardian never do.
+  Files are erased with the member's account and when a closed School is
+  purged (the stored file first, then its record; if storage can't be reached
+  both stay and the next daily sweep tries again). Migration
+  `20270125000000_member_files`.
 - **Currency first** (backlog 3.6; Decision 414 item 6) — until the School has
   set its currency on the School page, no price can be saved: membership
   plans, belt prices for promotion fees, charges, recurring charges, credit,

@@ -7,6 +7,7 @@ import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
 import { StudentTagsCard } from '../students/StudentTagsCard';
 import { StudentCustomFieldsCard } from '../students/StudentCustomFieldsCard';
+import { MemberFilesCard } from '../students/MemberFilesCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
@@ -126,6 +127,8 @@ export function StudentGradingPage() {
   const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === schoolId);
   const staffAccess = useMyStaffAccess(!my.isOwner && isBranchStaff ? schoolId : null);
   const mayFreeze = !my.isOwner && !!staffAccess.data?.access.freezeMemberships;
+  // Decision 315 item 9: the owner, or Branch Staff the owner let see member files.
+  const mayFiles = my.isOwner || !!staffAccess.data?.access.memberFiles;
 
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
@@ -253,6 +256,8 @@ export function StudentGradingPage() {
 
       {/* Backlog 5.4: staff-only tags, plus "+ tag". */}
       {!inactive ? <StudentTagsCard schoolId={schoolId} studentId={studentId} /> : null}
+      {/* Decision 315 item 9 (backlog 5.11): Documents, files on the member. */}
+      {mayFiles ? <MemberFilesCard schoolId={schoolId} studentId={studentId} canUpload={!inactive} /> : null}
 
       {/* Decision 315 item 14: the School's own member fields and status. */}
       {!inactive ? <StudentCustomFieldsCard schoolId={schoolId} studentId={studentId} /> : null}

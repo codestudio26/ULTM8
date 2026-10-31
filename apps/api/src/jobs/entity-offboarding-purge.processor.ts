@@ -7,6 +7,7 @@ import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { ENTITY_OFFBOARDING_PURGE_QUEUE } from './queue.constants';
 import { REJECTED_SIGN_UP_DAYS } from '../front-desk/sign-up-rules';
 import { branchHasHistory, countBranchDependents, describeBranchDependents, hasBranchDependents } from '../tenants/branches/branch-dependents';
+import { eraseMemberFiles } from '../member-files/member-file-erasure';
 
 /** Same daily cadence as tenant-lifecycle-purge's own sweep (Decision 110) —
  * purgeAt is date-granular (90 days out), not a tight real-time window. See
@@ -203,6 +204,13 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
 
     deleted += await this.sweepGuestWaiverSignatures(now);
     deleted += await this.sweepRejectedSignUps(now);
+
+    // Backlog 5.11 (Decision 315 item 9): files on a member are erased with
+    // the account. Deleting the account sets their studentId to null; the
+    // stored file goes here, then the row.
+    const memberFiles = await eraseMemberFiles(this.prismaJobs, this.r2Client, this.logger, { studentId: null });
+    deleted += memberFiles.deleted;
+    skipped += memberFiles.failed;
 
     this.logger.log(
       `entity-offboarding-purge: ${deleted} hard-deleted, ${skipped} skipped (FK-restrict, blocked, or not yet retention-eligible), ` +

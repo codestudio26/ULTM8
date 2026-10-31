@@ -610,6 +610,8 @@ model User {
   customFieldValues                 CustomMemberFieldValue[]    @relation("CustomMemberFieldValueStudent")
   customStatuses                    StudentCustomStatus[]       @relation("StudentCustomStatusStudent")
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
+  memberFiles                       MemberFile[]                @relation("MemberFileStudent")
+  memberFilesUploaded               MemberFile[]                @relation("MemberFileUploadedBy")
   childInvitesReceived              ChildInvite[]               @relation("ChildInviteGuardian")
   childInvitesSent                  ChildInvite[]               @relation("ChildInviteCreatedBy")
   childInvitesChild                 ChildInvite[]               @relation("ChildInviteStudent")
@@ -1350,6 +1352,7 @@ model School {
   customMemberFields     CustomMemberField[]
   customMemberStatuses   CustomMemberStatus[]
   studentExportLogs      StudentExportLog[]
+  memberFiles            MemberFile[]
   childInvites           ChildInvite[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
@@ -4698,6 +4701,11 @@ model StaffPermission {
   /// only; off by default; owners always can.
   canExportStudents Boolean @default(false)
 
+  /// Decision 315 item 9 (backlog 5.11): may see and manage the files on the
+  /// students of their own branches. Branch Staff only; off by default;
+  /// owners always can.
+  canManageMemberFiles Boolean @default(false)
+
   /// Decision 303 item 3: may create charges for the students of their own
   /// branches. Null = the role's default: on for Branch Staff, off for
   /// Instructors. Owners always can.
@@ -5353,6 +5361,41 @@ model StudentTag {
 
   @@id([tagId, studentId])
   @@index([schoolId, studentId])
+}
+
+/// Backlog 5.11 (Decision 315 item 9): a file on a member (PDF, JPG or PNG,
+/// up to 10 MB), kept in the private R2 bucket under objectKey. Seen only by
+/// the School's owners and the Branch Staff they let manage member files;
+/// never by the member. Jobs connection only (RLS on, no app grant).
+/// Erased with the account: studentId is set to null when the account is
+/// deleted, and the daily entity-offboarding-purge deletes the stored file and
+/// then the row. A purged School's files are deleted by tenant-lifecycle-purge
+/// before the School goes.
+model MemberFile {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  /// Null once the student's account is erased (then purged, see above).
+  studentId String?
+  student   User?   @relation("MemberFileStudent", fields: [studentId], references: [id], onDelete: SetNull)
+
+  /// Null once the uploader's own account is erased.
+  uploadedById String?
+  uploadedBy   User?   @relation("MemberFileUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  /// The name the file was uploaded with (no folders).
+  fileName    String
+  /// application/pdf, image/jpeg or image/png, read from the file's content.
+  contentType String
+  sizeBytes   Int
+  objectKey   String @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId, studentId, createdAt])
+  @@index([studentId])
 }
 
 /// Decision 315 item 14: the type of a School's own member field.
