@@ -16,7 +16,12 @@ import { fromStripeAmount } from './stripe-amount';
  * recorded from what Stripe charged, never recomputed from the School's
  * current rate. A Subscription keeps the rate it started with: the School
  * turning the surcharge off or changing its % leaves running Subscriptions as
- * they are, until the member subscribes again (no decision says otherwise).
+ * they are, until the member subscribes again. The one exception (Decision
+ * 419 item 3): Platform Admin taking the School's country off the allow-list
+ * removes the surcharge item from every running Subscription there, from its
+ * next renewal (PaymentsService.removeSubscriptionSurcharge, run by the
+ * card-surcharge-country-removal job). Adding the country back doesn't put it
+ * back on them.
  *
  * The Subscription's metadata says which item is the surcharge. Stripe copies
  * a snapshot of it onto every invoice (Invoice.parent.subscription_details.

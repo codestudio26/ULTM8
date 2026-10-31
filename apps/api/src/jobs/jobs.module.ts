@@ -37,6 +37,7 @@ import { MembershipEndingReportProcessor, MembershipEndingReportScheduler } from
 import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
 import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } from './large-school-check-in-codes.processor';
 import { SignedDocumentsExportProcessor } from './signed-documents-export.processor';
+import { CardSurchargeCountryRemovalProcessor } from './card-surcharge-country-removal.processor';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -207,6 +208,11 @@ import { SignedDocumentsExportProcessor } from './signed-documents-export.proces
  * MembershipEndingReportProcessor/Scheduler (the weekly report to the owners
  * of memberships ending in the next 7 days). PrismaJobsService and the
  * notification queue only; no new module import.
+ *
+ * Decision 419 item 3 adds CardSurchargeCountryRemovalProcessor: one job per
+ * country Platform Admin takes off the card surcharge allow-list, removing the
+ * surcharge item from running Subscriptions there. Event-triggered, no
+ * Scheduler; PaymentsService via the PaymentsModule import above.
  */
 @Module({
   imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule, RanksModule],
@@ -262,6 +268,7 @@ import { SignedDocumentsExportProcessor } from './signed-documents-export.proces
     LargeSchoolCheckInCodesProcessor,
     LargeSchoolCheckInCodesScheduler,
     SignedDocumentsExportProcessor,
+    CardSurchargeCountryRemovalProcessor,
   ],
 })
 export class JobsModule {}
