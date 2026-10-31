@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { eraseMemberFiles } from '../member-files/member-file-erasure';
+import { eraseSignedDocumentExports } from '../signed-documents/signed-documents-erasure';
 import { TENANT_LIFECYCLE_PURGE_QUEUE } from './queue.constants';
 
 /** Once a day is enough — purgeAt is date-granular (90 days out), unlike the
@@ -158,6 +159,11 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
     const files = await eraseMemberFiles(this.prismaJobs, this.r2Client, this.logger, { schoolId });
     if (files.failed > 0) {
       throw new Error(`${files.failed} member file(s) could not be deleted from storage; School ${schoolId} is left for the next sweep.`);
+    }
+    // Decision 315 item 13: and its signed-documents ZIPs.
+    const exports = await eraseSignedDocumentExports(this.prismaJobs, this.r2Client, this.logger, { schoolId });
+    if (exports.failed > 0) {
+      throw new Error(`${exports.failed} signed-documents export(s) could not be deleted from storage; School ${schoolId} is left for the next sweep.`);
     }
     const waiverCount = await this.prismaJobs.waiver.count({ where: { schoolId } });
     if (waiverCount > 0) {

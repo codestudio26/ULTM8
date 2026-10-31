@@ -614,6 +614,7 @@ model User {
   memberFilesUploaded               MemberFile[]                @relation("MemberFileUploadedBy")
   dataImports                       DataImport[]                @relation("DataImportCreatedBy")
   dataImportRows                    DataImportRow[]             @relation("DataImportRowStudent")
+  signedDocumentExports             SignedDocumentExport[]      @relation("SignedDocumentExportRequestedBy")
   childInvitesReceived              ChildInvite[]               @relation("ChildInviteGuardian")
   childInvitesSent                  ChildInvite[]               @relation("ChildInviteCreatedBy")
   childInvitesChild                 ChildInvite[]               @relation("ChildInviteStudent")
@@ -1362,6 +1363,7 @@ model School {
   studentExportLogs      StudentExportLog[]
   memberFiles            MemberFile[]
   dataImports            DataImport[]
+  signedDocumentExports  SignedDocumentExport[]
   childInvites           ChildInvite[]
   signUps                SignUp[]
   packRecharges          PackRecharge[]
@@ -6127,4 +6129,53 @@ model MembershipEndingReport {
   sentAt DateTime @default(now())
 
   @@id([schoolId, weekStart])
+}
+
+/// Decision 315 item 13 (data tools): where an export of every signed
+/// document at a School stands. Built by the signed-documents-export job.
+enum SignedDocumentExportStatus {
+  PENDING
+  /// The job has started building it.
+  RUNNING
+  READY
+  FAILED
+  /// The ZIP was deleted from storage (24 hours after it was made).
+  EXPIRED
+}
+
+/// Decision 315 item 13: one export of every signed waiver at a School as a
+/// ZIP (one HTML document per signature and an index CSV), made by a
+/// background job into the private R2 bucket and downloaded through a
+/// 5-minute signed link. The row stays as the record of who exported and
+/// when; the stored ZIP is deleted 24 hours after it is made (daily sweep),
+/// and with a purged School. Jobs connection only (RLS on, no app grant).
+model SignedDocumentExport {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  /// Null once that account is deleted.
+  requestedById String?
+  requestedBy   User?   @relation("SignedDocumentExportRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
+
+  status SignedDocumentExportStatus @default(PENDING)
+  /// The column headings and words the portal sent, in the reader's
+  /// language (SignedDocumentLabelsDto).
+  labels Json
+
+  documentCount Int?
+  sizeBytes     Int?
+  /// Set while the ZIP is stored; null before it is made and once deleted.
+  objectKey     String? @unique
+  /// Why a FAILED export failed (for support; not shown to the School).
+  error         String?
+
+  createdAt  DateTime  @default(now())
+  finishedAt DateTime?
+  /// When the ZIP is deleted: 24 hours after it was made.
+  expiresAt  DateTime?
+
+  @@index([schoolId, createdAt])
+  @@index([status, expiresAt])
 }

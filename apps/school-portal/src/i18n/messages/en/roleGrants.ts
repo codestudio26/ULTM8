@@ -241,6 +241,7 @@ export const roleGrants = {
     switchOff: '{name} off',
     detailsChanged: "{who} changed {whom}'s display name or work phone.",
     mainOwner: '{who} handed the main owner role to {whom}.',
+    membersMerged: "{who} merged {duplicate} into {whom}.",
     inviteSent: '{who} invited {email} as {role}{at}.',
     inviteCancelled: '{who} cancelled the invite for {email}.',
     inviteAccepted: '{whom} accepted the invite as {role}{at}.',

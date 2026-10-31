@@ -6244,6 +6244,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/merge/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberMergeController_preview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MemberMergeController_merge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/signed-documents/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SignedDocumentsExportController_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/signed-documents/exports/latest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignedDocumentsExportController_latest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/signed-documents/exports/{exportId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignedDocumentsExportController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/signed-documents/exports/{exportId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SignedDocumentsExportController_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/add-child-manually": {
         parameters: {
             query?: never;
@@ -8064,7 +8160,7 @@ export interface components {
         StaffActivityEntryDto: {
             id: string;
             /** @enum {string} */
-            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED";
+            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED" | "MEMBERS_MERGED";
             /** @description Who made the change; null once their account is deleted. */
             actorId: string | null;
             /** @description First name and surname of who made the change. */
@@ -12499,6 +12595,121 @@ export interface components {
         };
         MemberFileDownloadDto: {
             /** @description A link that downloads the file. It works for 5 minutes. */
+            url: string;
+        };
+        MergePersonDto: {
+            id: string;
+            name: string;
+        };
+        /** @enum {string} */
+        MergeBlockerCode: "GUARDIANS_DIFFER" | "BOTH_UNLIMITED_MEMBERSHIPS" | "DUPLICATE_HAS_SUBSCRIPTION" | "PENDING_CARD_PAYMENT" | "OPEN_PACK_RECHARGE" | "SAME_STYLE_RANK" | "SAME_STYLE_CORRECTION" | "SAME_CLASS_BOOKED" | "SAME_CLASS_WAITLIST" | "OPEN_SIGN_UP" | "PENDING_CHILD_INVITE";
+        MergeBlockerDto: {
+            code: components["schemas"]["MergeBlockerCode"];
+            /** @description Style names or class titles the reason is about, when there are any. */
+            details: string[];
+        };
+        MergeRecordCountsDto: {
+            Membership: number;
+            MembershipFreeze: number;
+            PackRecharge: number;
+            Transaction: number;
+            Booking: number;
+            WaitlistEntry: number;
+            StudentRank: number;
+            StudentRankSkillStatus: number;
+            PromotionEvent: number;
+            PromotionEventNoteLog: number;
+            SkillSignOffLog: number;
+            TrainingLog: number;
+            RankCorrectionRequest: number;
+            PromotionFeeRequest: number;
+            Charge: number;
+            ChargeAllocation: number;
+            BalanceEntry: number;
+            ChargeRefund: number;
+            RecurringCharge: number;
+            StudentNote: number;
+            MemberFile: number;
+            ChildInvite: number;
+            SignUp: number;
+            Favorite: number;
+            WatchHistory: number;
+            StudentTag: number;
+            RosterMember: number;
+            StudentAbsenceAlert: number;
+            CustomMemberFieldValue: number;
+            StudentHomeBranch: number;
+            StudentCheckInCode: number;
+            StudentJoinDate: number;
+            StudentCustomStatus: number;
+            WaiverSignature: number;
+        };
+        MergePreviewDto: {
+            /** @description The record that is kept. */
+            kept: components["schemas"]["MergePersonDto"];
+            /** @description The record merged into it. */
+            duplicate: components["schemas"]["MergePersonDto"];
+            /** @description Why the two records cannot be merged yet; empty when they can. */
+            blockers: components["schemas"]["MergeBlockerDto"][];
+            /** @description The duplicate's rows at this School, per table. */
+            records: components["schemas"]["MergeRecordCountsDto"];
+        };
+        MergeDuplicateDto: {
+            /** @description The duplicate record: merged into the student in the path, then no longer a Student here. */
+            duplicateId: string;
+        };
+        MergeResultDto: {
+            keptStudentId: string;
+            duplicateStudentId: string;
+            /** @description Rows moved to the kept record, per table. */
+            records: components["schemas"]["MergeRecordCountsDto"];
+            /** @description Signed waivers both had signed: the duplicate's copy stays on the duplicate's record. */
+            waiverSignaturesLeft: number;
+        };
+        SignedDocumentLabelsDto: {
+            member?: string;
+            document?: string;
+            version?: string;
+            signedAt?: string;
+            signedBy?: string;
+            file?: string;
+            guardian?: string;
+            onPaper?: string;
+            guest?: string;
+            signedName?: string;
+            signature?: string;
+            recordedBy?: string;
+            textSigned?: string;
+            notRecorded?: string;
+            imageMissing?: string;
+            expired?: string;
+        };
+        CreateSignedDocumentExportDto: {
+            /** @description The index's column headings and the documents' words, in the reader's language. */
+            labels?: components["schemas"]["SignedDocumentLabelsDto"];
+        };
+        /** @enum {string} */
+        SignedDocumentExportStatus: "PENDING" | "RUNNING" | "READY" | "FAILED" | "EXPIRED";
+        SignedDocumentExportDto: {
+            id: string;
+            status: components["schemas"]["SignedDocumentExportStatus"];
+            /** @description Signed documents in the ZIP, once it is made. */
+            documentCount?: number | null;
+            /** @description The ZIP's size in bytes, once it is made. */
+            sizeBytes?: number | null;
+            /** @description Who asked for it; null once their account is gone. */
+            requestedByName?: string | null;
+            createdAt: string;
+            finishedAt?: string | null;
+            /** @description When the ZIP is deleted (24 hours after it is made). */
+            expiresAt?: string | null;
+        };
+        LatestSignedDocumentExportDto: {
+            /** @description The School's most recent export, or null. */
+            export?: components["schemas"]["SignedDocumentExportDto"] | null;
+        };
+        SignedDocumentExportDownloadDto: {
+            /** @description A link that downloads the ZIP. It works for 5 minutes. */
             url: string;
         };
         ChildDetailsDto: {
@@ -23977,6 +24188,147 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    MemberMergeController_preview: {
+        parameters: {
+            query: {
+                /** @description The duplicate record: merged into the student in the path, then no longer a Student here. */
+                duplicateId: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergePreviewDto"];
+                };
+            };
+        };
+    };
+    MemberMergeController_merge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeDuplicateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MergeResultDto"];
+                };
+            };
+        };
+    };
+    SignedDocumentsExportController_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSignedDocumentExportDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedDocumentExportDto"];
+                };
+            };
+        };
+    };
+    SignedDocumentsExportController_latest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatestSignedDocumentExportDto"];
+                };
+            };
+        };
+    };
+    SignedDocumentsExportController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                exportId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedDocumentExportDto"];
+                };
+            };
+        };
+    };
+    SignedDocumentsExportController_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                exportId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignedDocumentExportDownloadDto"];
+                };
             };
         };
     };

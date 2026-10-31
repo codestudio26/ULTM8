@@ -55,6 +55,7 @@ export const server: PartialMessages<ServerKeys> = {
     packNotForSale: "Bu paket artık satılmıyor. Başka bir plan için resepsiyona sorun.",
     rechargeNotPaid: "Paketin ödemesi henüz yapılmadı.",
     trialEnded: "Bu okulun ücretsiz ULTM8 deneme süresi sona erdi. Abone olana kadar portal salt okunur: yeni ders, rezervasyon veya ödeme yok.",
+    mergeBlocked: "Bu iki kayıt henüz birleştirilemez. Nedenini görmek için birleştirmeyi yeniden aç.",
     correctionNotVerified: "Bu stildeki kuşağın hâlâ okul tarafından kontrol edilmeyi bekliyor. O zaman düzeltebilirler.",
     correctionPending: "Bu stilde zaten düzeltme istedin. Okulun yanıtını bekle.",
     correctionSameRank: "Bu zaten sahip olduğun kuşak. Olması gereken kuşağı seç.",

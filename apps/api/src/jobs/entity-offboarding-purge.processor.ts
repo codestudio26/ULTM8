@@ -8,6 +8,7 @@ import { ENTITY_OFFBOARDING_PURGE_QUEUE } from './queue.constants';
 import { REJECTED_SIGN_UP_DAYS } from '../front-desk/sign-up-rules';
 import { branchHasHistory, countBranchDependents, describeBranchDependents, hasBranchDependents } from '../tenants/branches/branch-dependents';
 import { eraseMemberFiles } from '../member-files/member-file-erasure';
+import { eraseSignedDocumentExports } from '../signed-documents/signed-documents-erasure';
 
 /** Same daily cadence as tenant-lifecycle-purge's own sweep (Decision 110) —
  * purgeAt is date-granular (90 days out), not a tight real-time window. See
@@ -211,6 +212,11 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     const memberFiles = await eraseMemberFiles(this.prismaJobs, this.r2Client, this.logger, { studentId: null });
     deleted += memberFiles.deleted;
     skipped += memberFiles.failed;
+
+    // Decision 315 item 13: a signed-documents ZIP is kept for 24 hours.
+    const exports = await eraseSignedDocumentExports(this.prismaJobs, this.r2Client, this.logger, { expiresAt: { lte: now } });
+    deleted += exports.deleted;
+    skipped += exports.failed;
 
     this.logger.log(
       `entity-offboarding-purge: ${deleted} hard-deleted, ${skipped} skipped (FK-restrict, blocked, or not yet retention-eligible), ` +
