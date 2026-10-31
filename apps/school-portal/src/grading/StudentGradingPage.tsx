@@ -1,15 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
+import { StudentTagsCard } from '../students/StudentTagsCard';
 import { MemberFilesCard } from '../students/MemberFilesCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
 import { VisitorCard } from '../students/VisitorCard';
+import { useAttendanceAccess } from '../students/AttendancePage';
+import { LogAttendanceModal } from '../students/LogAttendanceModal';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { useSkills, type SkillResponse } from '../skills/skillQueries';
@@ -110,6 +113,10 @@ export function StudentGradingPage() {
   const revokeGrant = useRevokeRoleGrant();
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
   const [reEnrolling, setReEnrolling] = useState(false);
+  // Decision 317 item 4: "+ Log attendance", for staff who may check people in.
+  const mayLogAttendance = useAttendanceAccess(schoolId).log;
+  const [loggingAttendance, setLoggingAttendance] = useState(false);
+  const [attendanceLogged, setAttendanceLogged] = useState<string | null>(null);
   const enrolled = students.data?.items.find((s) => s.id === studentId)?.status === 'ACTIVE';
   // Decision 371 (Q4): who the student's Guardians are. Read for a current
   // student only (the API's own rule, like the profile read).
@@ -174,6 +181,11 @@ export function StudentGradingPage() {
               * assertSchoolOwner. A dedicated page (StudentUpdatePage.tsx at
               * /students/:id/edit), not a Modal — see that page's own header
               * comment for why. */}
+            {student && !inactive && mayLogAttendance ? (
+              <Button variant="secondary" onClick={() => setLoggingAttendance(true)}>
+                {t('students.attendance.logButton')}
+              </Button>
+            ) : null}
             {student && !inactive ? (
               <Button variant="secondary" onClick={() => navigate(`/students/${studentId}/edit`)}>
                 {t('grading.student.editProfile')}
@@ -190,6 +202,16 @@ export function StudentGradingPage() {
           </>
         }
       />
+
+      {attendanceLogged ? <SuccessBanner message={attendanceLogged} /> : null}
+      {loggingAttendance ? (
+        <LogAttendanceModal
+          schoolId={schoolId}
+          student={{ id: studentId, name: studentName }}
+          onClose={() => setLoggingAttendance(false)}
+          onDone={setAttendanceLogged}
+        />
+      ) : null}
 
       {guardians.data && guardians.data.items.length > 0 ? (
         <p data-testid="student-guardians" style={{ margin: '0 0 16px' }}>
@@ -224,6 +246,8 @@ export function StudentGradingPage() {
       {/* Decision 400: staff notes, some shown to the member. */}
       {!inactive ? <StudentNotesCard schoolId={schoolId} studentId={studentId} /> : null}
 
+      {/* Backlog 5.4: staff-only tags, plus "+ tag". */}
+      {!inactive ? <StudentTagsCard schoolId={schoolId} studentId={studentId} /> : null}
       {/* Decision 315 item 9 (backlog 5.11): Documents, files on the member. */}
       {mayFiles ? <MemberFilesCard schoolId={schoolId} studentId={studentId} canUpload={!inactive} /> : null}
 

@@ -32,9 +32,10 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * Decision 394's "Change check-in rules", checked by assertMayManageCheckInRules.
  * "exportStudents" is Decision 399's "Export the student list", checked by
  * assertMayExportStudents. "freezeMemberships" is Decision 409's "Can freeze
- * memberships", checked by assertMayFreezeMemberships. "memberFiles" is
- * Decision 315 item 9's "See and manage member files", checked by
- * assertMayManageMemberFiles. */
+ * memberships", checked by assertMayFreezeMemberships. "attendanceStats" is
+ * Decision 317 item 3's "See attendance statistics", checked by
+ * attendanceStatsScope. "memberFiles" is Decision 315 item 9's "See and
+ * manage member files", checked by assertMayManageMemberFiles. */
 export const STAFF_ACCESS = [
   'classes',
   'bookings',
@@ -46,11 +47,12 @@ export const STAFF_ACCESS = [
   'checkInRules',
   'exportStudents',
   'freezeMemberships',
+  'attendanceStats',
   'memberFiles',
 ] as const;
 export type StaffAccess = (typeof STAFF_ACCESS)[number];
 /** The switches staffMay checks. */
-type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'memberFiles'>;
+type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'memberFiles'>;
 export type StaffAccessSet = Record<StaffAccess, boolean>;
 
 /** A Branch Staff member with no StaffPermission row yet has these: what
@@ -67,6 +69,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   checkInRules: false,
   exportStudents: false,
   freezeMemberships: false,
+  attendanceStats: false,
   memberFiles: false,
 };
 
@@ -97,6 +100,7 @@ export function staffAccessFrom(row: {
   canManageCheckInRules: boolean;
   canExportStudents: boolean;
   canFreezeMemberships: boolean;
+  canSeeAttendanceStats: boolean;
   canManageMemberFiles: boolean;
 } | null | undefined): StaffAccessSet {
   if (!row) return { ...DEFAULT_STAFF_ACCESS };
@@ -111,6 +115,7 @@ export function staffAccessFrom(row: {
     checkInRules: row.canManageCheckInRules,
     exportStudents: row.canExportStudents,
     freezeMemberships: row.canFreezeMemberships,
+    attendanceStats: row.canSeeAttendanceStats,
     memberFiles: row.canManageMemberFiles,
   };
 }
@@ -127,6 +132,7 @@ export const STAFF_ACCESS_SELECT = {
   canManageCheckInRules: true,
   canExportStudents: true,
   canFreezeMemberships: true,
+  canSeeAttendanceStats: true,
   canManageMemberFiles: true,
 } as const;
 
@@ -312,6 +318,34 @@ export class TenantAuthorizationService {
     if (!allowed) {
       throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you export the student list." });
     }
+  }
+
+  /**
+   * Decision 317 item 3 (backlog 5.6): which attendance statistics `userId`
+   * may see. The owner sees the whole School (`branchIds: null`); Branch
+   * Staff the owner switched on ("See attendance statistics") see their own
+   * Branches, or the whole School when one of their grants has no Branch
+   * (the same reading staffMay gives a grant with no branch). Anyone else
+   * gets 403 STAFF_ACCESS_OFF. Coaches have no switch (Decision 387 item 4)
+   * and don't see statistics.
+   */
+  async attendanceStatsScope(userId: string, schoolId: string): Promise<{ isOwner: boolean; branchIds: string[] | null }> {
+    const verdict = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true, branchId: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { isOwner: true, branchIds: null };
+      if (grants.length === 0) return null;
+      const row = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canSeeAttendanceStats: true } });
+      if (!row?.canSeeAttendanceStats) return null;
+      if (grants.some((g) => g.branchId === null)) return { isOwner: false, branchIds: null };
+      return { isOwner: false, branchIds: [...new Set(grants.map((g) => g.branchId as string))] };
+    });
+    if (!verdict) {
+      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you see attendance statistics." });
+    }
+    return verdict;
   }
 
   /**

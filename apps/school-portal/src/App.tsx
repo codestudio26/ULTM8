@@ -28,6 +28,7 @@ import { InstructorDetailPage } from './instructors/InstructorDetailPage';
 import { CompleteInstructorProfilePage } from './instructors/CompleteInstructorProfilePage';
 import { StudentsPage } from './students/StudentsPage';
 import { SignUpsPage } from './students/SignUpsPage';
+import { AttendancePage } from './students/AttendancePage';
 import { CheckInPage } from './frontdesk/CheckInPage';
 import { CheckInRulesPage } from './frontdesk/CheckInRulesPage';
 import { FrontDeskModePage } from './frontdesk/FrontDeskModePage';
@@ -286,6 +287,17 @@ export function App() {
       />
       {/* The locked tablet (Decision 380): no staff login, only its front-desk session. */}
       <Route path="/front-desk/kiosk" element={<KioskApp />} />
+      {/* Decision 317 items 3 and 4: attendance statistics and logging past attendance. */}
+      <Route
+        path="/students/attendance"
+        element={
+          <RequireAuth>
+            <Shell>
+              <AttendancePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
       <Route
         path="/students/sign-ups"
         element={

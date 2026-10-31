@@ -320,7 +320,10 @@ function DeskModal({
   const t = useT();
   const sell = useSellMembership(schoolId, studentId);
   const gift = useGiftFriendPass(schoolId, studentId);
-  const [planId, setPlanId] = useState(plans[0]?.id ?? '');
+  const [pickedPlanId, setPlanId] = useState(plans[0]?.id ?? '');
+  // The plans can arrive after the window opens (or change under it): fall back
+  // to the first one, as the select shows it, so the button never stays disabled.
+  const planId = plans.some((p) => p.id === pickedPlanId) ? pickedPlanId : (plans[0]?.id ?? '');
   const [paymentMethod, setPaymentMethod] = useState<DeskPaymentMethod>('CASH');
   const [error, setError] = useState<string | null>(null);
   const busy = sell.isPending || gift.isPending;

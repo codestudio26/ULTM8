@@ -18,6 +18,7 @@ export function RankPicker({
   onChange,
   suffix,
   heading,
+  ariaLabel,
 }: {
   id: string;
   options: Rung[];
@@ -27,6 +28,8 @@ export function RankPicker({
   suffix?: (rung: Rung) => string | null;
   /** A small grey heading shown above this option, e.g. "ADULT PROGRAM" (backlog 3.20). */
   heading?: (rung: Rung) => string | null;
+  /** A name for the field when no `<Field htmlFor>` labels it, e.g. in a list row. */
+  ariaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -94,6 +97,7 @@ export function RankPicker({
         id={id}
         type="button"
         role="combobox"
+        aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -109,7 +113,7 @@ export function RankPicker({
         </span>
       </button>
       {open ? (
-        <ul id={listId} ref={listRef} role="listbox" aria-labelledby={id} className="ultm8-rank-picker__list">
+        <ul id={listId} ref={listRef} role="listbox" aria-labelledby={ariaLabel ? undefined : id} aria-label={ariaLabel} className="ultm8-rank-picker__list">
           {options.map((r, i) => {
             const selected = r.id === value;
             const title = heading?.(r);

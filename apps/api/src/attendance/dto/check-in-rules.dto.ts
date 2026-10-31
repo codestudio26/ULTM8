@@ -44,6 +44,25 @@ export class CheckInRulesDto {
   @IsBoolean()
   frozenMembers?: boolean;
 
+  @ApiPropertyOptional({
+    description:
+      "Backlog §3.5: the welcome card on the front desk and the tablet shows the member's classes toward their next belt (default on, as before). Always in the response; leave it out of a save to keep it as it is.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  showBeltProgress?: boolean;
+
+  @ApiPropertyOptional({
+    type: Number,
+    enum: [7, 14],
+    nullable: true,
+    description:
+      "Backlog §3.5: refuse check-in (CHECK_IN_PAYMENT_OVERDUE) to a member who still owes on a charge more than 7 or 14 days after its due date, in the School's time zone. Null (default): never refused for an overdue payment, as before. Always in the response; leave it out of a save to keep it as it is.",
+  })
+  @IsOptional() // null (No) and left out both skip the check below.
+  @IsIn([7, 14])
+  blockOverdueDays?: 7 | 14 | null;
+
   @ApiProperty({ enum: [4, 6], description: "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced." })
   @IsIn([4, 6])
   codeDigits!: number;

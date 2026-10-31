@@ -64,7 +64,7 @@ export class AcademyMembershipPlanDto extends PickType(MembershipPlanResponseDto
   'visible',
 ] as const) {
   /** Decision 406: shown before the member pays. */
-  @ApiProperty({ description: "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Subscription or a Friend Pass)." })
+  @ApiProperty({ description: "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment." })
   cardSurchargeAmount!: number;
 }
 

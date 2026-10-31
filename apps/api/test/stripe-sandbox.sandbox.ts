@@ -707,6 +707,10 @@ describeIfSandbox('Stripe sandbox: the real integration against Stripe test mode
   // 6. Subscription renewal with a test clock
   // ===========================================================================
   it('6. Subscription renewal with a Stripe test clock (success, failure, late fee)', async () => {
+    // Decision 406 (backlog 3.8): the School's card surcharge is on, so each
+    // Subscription carries it as its own monthly item, and the first payment
+    // and every renewal record it apart from the plan's price.
+    const monthlySurcharge = Math.floor((monthly.price * SURCHARGE_BPS + 5000) / 10000);
     const clock = await harness.testHelpers.testClocks.create({ frozen_time: Math.floor(Date.now() / 1000), name: runId }, on());
     testClocks.push(clock.id);
     keep('test_clock', clock.id);
@@ -781,6 +785,12 @@ describeIfSandbox('Stripe sandbox: the real integration against Stripe test mode
         await deliver(await findEvent('payment_intent.succeeded', (o) => o.id === sub.intentId));
         const tx = await su.transaction.findUniqueOrThrow({ where: { id: sub.transactionId } });
         check(tx.status === 'SUCCESSFUL' && tx.membershipId, `${sub.label}: Transaction ${tx.status} membership ${tx.membershipId}`);
+        const stripeSub = await harness.subscriptions.retrieve(sub.subscriptionId, {}, on());
+        check(
+          stripeSub.items.data.length === 2 && stripeSub.metadata.cardSurchargeBps === String(SURCHARGE_BPS) && stripeSub.metadata.surchargeAmount === String(monthlySurcharge),
+          `${sub.label}: ${stripeSub.items.data.length} Subscription items, metadata ${JSON.stringify(stripeSub.metadata)}`,
+        );
+        check(tx.amount === monthly.price && tx.surchargeAmount === monthlySurcharge, `${sub.label}: first payment ${tx.amount} + surcharge ${tx.surchargeAmount}`);
         const m = await su.membership.findUniqueOrThrow({ where: { id: tx.membershipId } });
         check(m.stripeSubscriptionId === sub.subscriptionId && m.status === 'ACTIVE', `${sub.label}: Membership ${m.status} ${m.stripeSubscriptionId}`);
         const firstInvoice = (await harness.subscriptions.retrieve(sub.subscriptionId, {}, on())).latest_invoice as string;
@@ -830,8 +840,9 @@ describeIfSandbox('Stripe sandbox: the real integration against Stripe test mode
       const tx = await su.transaction.findUnique({ where: { stripeInvoiceId: inv.id } });
       check(tx, `no Transaction for invoice ${inv.id}`);
       check(tx.kind === 'RENEWAL' && tx.status === 'SUCCESSFUL' && tx.amount === monthly.price && tx.currency === 'GBP', `Transaction ${tx.kind} ${tx.status} ${tx.amount} ${tx.currency}`);
+      check(tx.surchargeAmount === monthlySurcharge && inv.amount_paid === monthly.price + monthlySurcharge, `surcharge ${tx.surchargeAmount}, invoice paid ${inv.amount_paid}`);
       check(tx.stripePaymentIntentId, 'RENEWAL has no PaymentIntent id');
-      return `invoice ${inv.id} -> RENEWAL ${tx.id} ${tx.amount} ${tx.currency}, billingDate ${tx.billingDate?.toISOString()}`;
+      return `invoice ${inv.id} -> RENEWAL ${tx.id} ${tx.amount} + surcharge ${tx.surchargeAmount} ${tx.currency}, billingDate ${tx.billingDate?.toISOString()}`;
     });
 
     const failed: { renewal?: { id: string; billingDate: Date | null } } = {};
@@ -841,7 +852,7 @@ describeIfSandbox('Stripe sandbox: the real integration against Stripe test mode
       await deliver(await findEvent('invoice.payment_failed', (o) => o.id === inv.id));
       const tx = await su.transaction.findUnique({ where: { stripeInvoiceId: inv.id } });
       check(tx, `no Transaction for invoice ${inv.id}`);
-      check(tx.kind === 'RENEWAL' && tx.status === 'FAILED' && tx.amount === monthly.price, `Transaction ${tx.kind} ${tx.status} ${tx.amount}`);
+      check(tx.kind === 'RENEWAL' && tx.status === 'FAILED' && tx.amount === monthly.price && tx.surchargeAmount === monthlySurcharge, `Transaction ${tx.kind} ${tx.status} ${tx.amount} + ${tx.surchargeAmount}`);
       failed.renewal = tx;
       const m = await su.membership.findUnique({ where: { stripeSubscriptionId: failing.subscriptionId } });
       return `invoice ${inv.id} -> RENEWAL ${tx.id} FAILED ${tx.amount}; Membership ${m?.status}; subscription ${(await harness.subscriptions.retrieve(failing.subscriptionId, {}, on())).status}`;

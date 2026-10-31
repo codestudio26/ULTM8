@@ -536,6 +536,12 @@ export const SERVER_MESSAGES: string[] = [
   "Note not found",
   "Only the note's author or a School owner can change it.",
   "A note can't be empty.",
+  "Tag not found",
+  "This School already has a tag with that name.",
+  "This School already has 100 tags. Delete one before adding another.",
+  "Choose a tag or type a new one.",
+  "A tag can't be empty.",
+  "A tag can be at most 40 characters.",
   "The School owner hasn't let you export the student list.",
   "The School owner hasn't let you freeze memberships.",
   "The School owner hasn't let you see member files.",
@@ -562,6 +568,10 @@ export const SERVER_MESSAGES: string[] = [
   "This Guardian already has an invite for this child. Wait for them to answer it in the app.",
   "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.",
   "This temporary passcode has expired. Ask your School for a new one.",
+  "The School owner hasn't let you see attendance statistics.",
+  "You can only see your own Branches' attendance.",
+  "This class hasn't started yet. Check them in instead.",
+  "This date is not valid.",
 ];
 
 export const SERVER_PATTERNS: string[] = [
@@ -736,4 +746,5 @@ export const SERVER_PATTERNS: string[] = [
  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.",
  // A paid promotion fee whose promotion can no longer apply (Decision 414 item 1).
  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.",
+ "Attendance can only be logged from {v1} to {v2}.",
 ];

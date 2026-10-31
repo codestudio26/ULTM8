@@ -13914,6 +13914,158 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/attendance/stats": {
+      "get": {
+        "operationId": "StaffAttendanceController_stats",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only this Branch. Staff may only name one of their own Branches.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "excludePasses",
+            "required": false,
+            "in": "query",
+            "description": "Leave out Trial, Visitor (visit pass) and Friend Pass check-ins. They count by default.",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttendanceStatsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/attendance/log-classes": {
+      "get": {
+        "operationId": "StaffAttendanceController_logClasses",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "The day (YYYY-MM-DD, the School's time zone), today or up to 30 days back. Today when left out.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "Marks the Classes this student has already attended.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogClassesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/attendance/logs": {
+      "post": {
+        "operationId": "StaffAttendanceController_log",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogAttendanceDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoggedAttendanceResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "attendance"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/academies": {
       "get": {
         "operationId": "AcademiesController_findAll",
@@ -17833,6 +17985,352 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/student-tags": {
+      "get": {
+        "operationId": "StudentTagsController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolTagListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-tags"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "StudentTagsController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolTagNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolTagDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-tags"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/student-tags/{tagId}": {
+      "patch": {
+        "operationId": "StudentTagsController_rename",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolTagNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolTagDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-tags"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "StudentTagsController_remove",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "student-tags"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/student-tags/{tagId}/students": {
+      "get": {
+        "operationId": "StudentTagsController_tagged",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaggedStudentsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-tags"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/tags": {
+      "get": {
+        "operationId": "StudentTagsController_studentTags",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentTagListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-tags"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "StudentTagsController_add",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddStudentTagDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentTagListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-tags"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/tags/{tagId}": {
+      "delete": {
+        "operationId": "StudentTagsController_untag",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tagId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "student-tags"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/students/{studentId}/files": {
       "get": {
         "operationId": "MemberFilesController_list",
@@ -20426,6 +20924,19 @@
             "type": "boolean",
             "description": "Decision 404: members whose membership is frozen may still check in (default off)."
           },
+          "checkInShowBeltProgress": {
+            "type": "boolean",
+            "description": "Backlog §3.5: the check-in welcome card shows the member's classes toward their next belt (default on)."
+          },
+          "checkInBlockOverdueDays": {
+            "type": "number",
+            "enum": [
+              7,
+              14
+            ],
+            "nullable": true,
+            "description": "Backlog §3.5: check-in is refused while a charge is owed more than this many days past its due date. Null (default): never."
+          },
           "freezeMaxDaysPer12Months": {
             "type": "number",
             "description": "Decision 404: the most days a membership can be frozen in any 12 months (default 90)."
@@ -20607,6 +21118,7 @@
           "checkInVisitors",
           "checkInSeveralClasses",
           "checkInFrozenMembers",
+          "checkInShowBeltProgress",
           "freezeMaxDaysPer12Months",
           "taxRateBasisPoints",
           "taxInclusive",
@@ -22741,6 +23253,10 @@
             "type": "boolean",
             "description": "Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409)."
           },
+          "attendanceStats": {
+            "type": "boolean",
+            "description": "See attendance statistics for their branches (off by default; Decision 317 item 3)."
+          },
           "memberFiles": {
             "type": "boolean",
             "description": "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)."
@@ -22757,6 +23273,7 @@
           "checkInRules",
           "exportStudents",
           "freezeMemberships",
+          "attendanceStats",
           "memberFiles"
         ]
       },
@@ -31655,6 +32172,22 @@
           "rungId"
         ]
       },
+      "BulkTargetRungDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "rungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) to move to: a higher rung of this style (rungs between are skipped and recorded), or, on a Kids style, a rung of its linked Adult program above the Adult ladder's first belt, for a student who has reached \"Ready for Adult from age\" (backlog 3.20)."
+          }
+        },
+        "required": [
+          "studentId",
+          "rungId"
+        ]
+      },
       "BulkPromoteDto": {
         "type": "object",
         "properties": {
@@ -31695,6 +32228,13 @@
             "items": {
               "$ref": "#/components/schemas/BulkExpectedRungDto"
             }
+          },
+          "targets": {
+            "description": "Each student's \"Promote to\" pick (Decision 281 item 2). A student left out moves up one rung. Send the same picks with the dry run and with the real run.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkTargetRungDto"
+            }
           }
         },
         "required": [
@@ -31714,6 +32254,10 @@
           },
           "toRungId": {
             "type": "string"
+          },
+          "toAdult": {
+            "type": "boolean",
+            "description": "Backlog 3.20: toRungId is on the linked Adult program, so the student moves to the Adult style."
           },
           "reasons": {
             "description": "Why this student needs a look, or why they can't be promoted.",
@@ -33696,6 +34240,19 @@
             "type": "boolean",
             "description": "Members whose membership is frozen may still check in (default off; Decision 404). Always in the response; leave it out of a save to keep it as it is."
           },
+          "showBeltProgress": {
+            "type": "boolean",
+            "description": "Backlog §3.5: the welcome card on the front desk and the tablet shows the member's classes toward their next belt (default on, as before). Always in the response; leave it out of a save to keep it as it is."
+          },
+          "blockOverdueDays": {
+            "type": "number",
+            "enum": [
+              7,
+              14
+            ],
+            "nullable": true,
+            "description": "Backlog §3.5: refuse check-in (CHECK_IN_PAYMENT_OVERDUE) to a member who still owes on a charge more than 7 or 14 days after its due date, in the School's time zone. Null (default): never refused for an overdue payment, as before. Always in the response; leave it out of a save to keep it as it is."
+          },
           "codeDigits": {
             "type": "number",
             "enum": [
@@ -33712,6 +34269,202 @@
           "visitors",
           "severalClasses",
           "codeDigits"
+        ]
+      },
+      "AttendanceStatsResponseDto": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "First day counted (YYYY-MM-DD, the School's time zone): 29 days before today."
+          },
+          "to": {
+            "type": "string",
+            "description": "Today (YYYY-MM-DD, the School's time zone). Classes count once they have started."
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The School's time zone the days are in (UTC when the School has none)."
+          },
+          "branchIds": {
+            "nullable": true,
+            "description": "The Branches counted; null means the whole School.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "excludePasses": {
+            "type": "boolean",
+            "description": "Whether Trial, Visitor and Friend Pass check-ins were left out."
+          },
+          "checkIns": {
+            "type": "number",
+            "description": "Check-ins: members' classes checked in (or logged), plus guests checked in on a Friend Pass."
+          },
+          "guestCheckIns": {
+            "type": "number",
+            "description": "Of checkIns, guests checked in on a Friend Pass."
+          },
+          "loggedCheckIns": {
+            "type": "number",
+            "description": "Of checkIns, attendance staff logged afterwards (STAFF_LOGGED)."
+          },
+          "classes": {
+            "type": "number",
+            "description": "Classes with at least one check-in."
+          },
+          "students": {
+            "type": "number",
+            "description": "Different members with at least one check-in (guests have no account and are not counted)."
+          },
+          "studentsPerClass": {
+            "type": "number",
+            "description": "checkIns / classes, to one decimal (0 when no class had a check-in)."
+          },
+          "classesPerStudent": {
+            "type": "number",
+            "description": "Members' check-ins / students, to one decimal (0 when nobody checked in)."
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "timeZone",
+          "branchIds",
+          "excludePasses",
+          "checkIns",
+          "guestCheckIns",
+          "loggedCheckIns",
+          "classes",
+          "students",
+          "studentsPerClass",
+          "classesPerStudent"
+        ]
+      },
+      "LogClassItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "attended": {
+            "type": "boolean",
+            "description": "The student named in the query has already attended (checked in or logged)."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "startDate",
+          "endDate",
+          "branchId",
+          "attended"
+        ]
+      },
+      "LogClassesResponseDto": {
+        "type": "object",
+        "properties": {
+          "earliestDay": {
+            "type": "string",
+            "description": "The earliest day attendance can be logged for (YYYY-MM-DD): 30 days before today."
+          },
+          "today": {
+            "type": "string",
+            "description": "Today (YYYY-MM-DD, the School's time zone)."
+          },
+          "date": {
+            "type": "string",
+            "description": "The day listed (YYYY-MM-DD)."
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The School's time zone the days are in (UTC when the School has none)."
+          },
+          "items": {
+            "description": "Classes on that day that have started, aren't cancelled or archived, at the caller's Branches.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogClassItemDto"
+            }
+          }
+        },
+        "required": [
+          "earliestDay",
+          "today",
+          "date",
+          "timeZone",
+          "items"
+        ]
+      },
+      "LogAttendanceDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string",
+            "description": "A Class that started in the last 30 days (from the start of that day, School time)."
+          }
+        },
+        "required": [
+          "studentId",
+          "classId"
+        ]
+      },
+      "LoggedAttendanceResponseDto": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "checkInMethod": {
+            "type": "string",
+            "enum": [
+              "STAFF_LOGGED"
+            ]
+          },
+          "checkedInById": {
+            "type": "string",
+            "description": "Who logged it."
+          },
+          "from": {
+            "type": "string",
+            "enum": [
+              "BOOKED",
+              "UPCOMING",
+              "NO_SHOW"
+            ],
+            "description": "BOOKED: a new booking was made, paid for like any staff booking (a Class Pack credit when that is what pays). UPCOMING: their booking was still open and is now checked in. NO_SHOW: their booking had been marked No-Show and is now checked in; it was already paid for, so nothing more is used."
+          }
+        },
+        "required": [
+          "bookingId",
+          "classId",
+          "studentId",
+          "checkInMethod",
+          "checkedInById",
+          "from"
         ]
       },
       "AcademySummaryDto": {
@@ -33840,7 +34593,7 @@
           },
           "cardSurchargeAmount": {
             "type": "number",
-            "description": "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Subscription or a Friend Pass)."
+            "description": "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment."
           }
         },
         "required": [
@@ -36691,6 +37444,110 @@
           },
           "showToMember": {
             "type": "boolean"
+          }
+        }
+      },
+      "SchoolTagDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "studentCount": {
+            "type": "number",
+            "description": "How many students have this tag."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "studentCount"
+        ]
+      },
+      "SchoolTagListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolTagDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "SchoolTagNameDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "TaggedStudentsDto": {
+        "type": "object",
+        "properties": {
+          "studentIds": {
+            "description": "The students with this tag that the caller covers.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "studentIds"
+        ]
+      },
+      "StudentTagDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "StudentTagListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentTagDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AddStudentTagDto": {
+        "type": "object",
+        "properties": {
+          "tagId": {
+            "type": "string",
+            "description": "A tag from the School's list."
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 40,
+            "description": "A new tag, added to the School's list. Send this or tagId."
           }
         }
       },

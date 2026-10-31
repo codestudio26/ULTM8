@@ -13,6 +13,7 @@ import { ProgressBreakdownResponseDto } from '../ranks/dto/student-rank-response
 import { AttendanceService } from '../attendance/attendance.service';
 import { FrontDeskCheckInService, frontDeskLookupOwner } from '../attendance/front-desk-check-in.service';
 import { QrTokenService } from '../attendance/qr-token.service';
+import { loadCheckInRules } from '../attendance/check-in-rules';
 import { DeskCheckInDto } from '../attendance/dto/desk-check-in.dto';
 import { FrontDeskSessionContext, FrontDeskSessionsService } from './front-desk-sessions.service';
 import { StudentCheckInCodesService } from './student-check-in-codes.service';
@@ -164,11 +165,13 @@ export class FrontDeskKioskService {
   async studentCard(session: FrontDeskSessionContext, studentId: string, query: KioskTodayQueryDto): Promise<KioskStudentCardDto> {
     const { from, to } = this.window(query);
     const staffId = session.startedById;
+    // Backlog §3.5: the School may hide belt progress on the check-in screen.
+    const { showBeltProgress } = await loadCheckInRules(this.prismaJobs, session.schoolId);
     const [student, membershipStatus, waivers, eligibility] = await Promise.all([
       this.student(session, studentId),
       this.memberships.getMembershipStatus(staffId, studentId, session.schoolId),
       this.waivers.getStudentWaiverStatus(staffId, studentId, session.schoolId),
-      this.grading.findEligibilityForStudent(staffId, studentId, session.schoolId),
+      showBeltProgress ? this.grading.findEligibilityForStudent(staffId, studentId, session.schoolId) : Promise.resolve({ items: [] as unknown[] }),
     ]);
     const bookings = await this.prismaApp.withTenantContext(staffId, (tx) =>
       tx.booking.findMany({

@@ -106,6 +106,9 @@ export class StaffAccessDto {
   @IsBoolean()
   freezeMemberships!: boolean;
 
+  @ApiProperty({ description: "See attendance statistics for their branches (off by default; Decision 317 item 3)." })
+  @IsBoolean()
+  attendanceStats!: boolean;
   @ApiProperty({ description: "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)." })
   @IsBoolean()
   memberFiles!: boolean;
