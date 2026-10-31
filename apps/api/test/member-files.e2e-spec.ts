@@ -51,6 +51,7 @@ const ACCESS_DEFAULTS = {
   checkInRules: false,
   exportStudents: false,
   freezeMemberships: false,
+  attendanceStats: false,
   memberFiles: false,
 };
 
