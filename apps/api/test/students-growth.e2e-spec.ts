@@ -35,7 +35,7 @@ const HOUR = 3_600_000;
 const DAY = 86_400_000;
 const ACCESS_DEFAULTS = {
   classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false,
-  disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false,
+  disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false,
 };
 
 describeIfDb('Students → Growth (backlog 5.8)', () => {

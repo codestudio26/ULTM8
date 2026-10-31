@@ -3,6 +3,8 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
+import { eraseMemberFiles } from '../member-files/member-file-erasure';
 import { TENANT_LIFECYCLE_PURGE_QUEUE } from './queue.constants';
 
 /** Once a day is enough — purgeAt is date-granular (90 days out), unlike the
@@ -105,7 +107,10 @@ function isForeignKeyRestrictError(err: unknown): boolean {
 export class TenantLifecyclePurgeProcessor extends WorkerHost {
   private readonly logger = new Logger(TenantLifecyclePurgeProcessor.name);
 
-  constructor(private readonly prismaJobs: PrismaJobsService) {
+  constructor(
+    private readonly prismaJobs: PrismaJobsService,
+    private readonly r2Client: R2ClientService,
+  ) {
     super();
   }
 
@@ -146,6 +151,14 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
   }
 
   private async purgeSchool(schoolId: string): Promise<'deleted' | 'anonymized'> {
+    // Backlog 5.11 (Decision 315 item 9): the files on its members go first,
+    // whether the School is then deleted or anonymized. Their rows would
+    // cascade with the School, leaving the stored files behind, so a School
+    // whose files can't all be deleted yet waits for the next sweep.
+    const files = await eraseMemberFiles(this.prismaJobs, this.r2Client, this.logger, { schoolId });
+    if (files.failed > 0) {
+      throw new Error(`${files.failed} member file(s) could not be deleted from storage; School ${schoolId} is left for the next sweep.`);
+    }
     const waiverCount = await this.prismaJobs.waiver.count({ where: { schoolId } });
     if (waiverCount > 0) {
       await this.anonymizeSchool(schoolId);

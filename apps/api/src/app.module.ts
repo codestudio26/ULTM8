@@ -24,11 +24,13 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { FrontDeskModule } from './front-desk/front-desk.module';
 import { StudentNotesModule } from './student-notes/student-notes.module';
 import { StudentTagsModule } from './student-tags/student-tags.module';
+import { MemberFilesModule } from './member-files/member-files.module';
 import { StudentAccessModule } from './student-access/student-access.module';
 import { OpenMatsModule } from './open-mats/open-mats.module';
 import { ChargesModule } from './charges/charges.module';
 import { CardSurchargeModule } from './card-surcharge/card-surcharge.module';
 import { LateFeesModule } from './late-fees/late-fees.module';
+import { RostersModule } from './rosters/rosters.module';
 import { AcademiesModule } from './academies/academies.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { NotificationBroadcastModule } from './notifications/broadcast/notification-broadcast.module';
@@ -97,11 +99,13 @@ import { validateEnv } from './common/config/validate-env';
     FrontDeskModule,
     StudentNotesModule,
     StudentTagsModule,
+    MemberFilesModule,
     StudentAccessModule,
     OpenMatsModule,
     CardSurchargeModule,
     ChargesModule,
     LateFeesModule,
+    RostersModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

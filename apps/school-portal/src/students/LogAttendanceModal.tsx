@@ -5,6 +5,7 @@ import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { useStudents } from './studentQueries';
 import { useLogAttendance, useLogClasses, type LogClassItem } from './attendanceQueries';
+import { useRosterStudents, useRosters } from './rosterQueries';
 
 /** A class's start time, in the School's time zone the API names. */
 function timeOf(iso: string, timeZone: string): string {
@@ -42,6 +43,10 @@ export function LogAttendanceModal({
   const t = useT();
   const students = useStudents(student ? null : schoolId, 'ACTIVE');
   const [studentId, setStudentId] = useState(student?.id ?? '');
+  // Decision 317 item 6: narrow the student picker to one roster.
+  const [rosterId, setRosterId] = useState('');
+  const rosters = useRosters(student ? null : schoolId);
+  const rosterMembers = useRosterStudents(student ? null : schoolId, rosterId || null);
   // Null: the API lists today, the School's (its own time zone).
   const [date, setDate] = useState<string | null>(null);
   const [classId, setClassId] = useState('');
@@ -74,6 +79,20 @@ export function LogAttendanceModal({
     <Modal title={student ? t('students.attendance.log.titleFor', { name: student.name }) : t('students.attendance.log.title')} onClose={onClose}>
       <p className="ultm8-field__hint" style={{ marginTop: 0 }}>{t('students.attendance.log.intro')}</p>
       {error ? <ErrorBanner message={error} /> : null}
+      {!student && (rosters.data?.items ?? []).length > 0 ? (
+        <Field label={t('students.rosters.filterLabel')} htmlFor="log-attendance-roster">
+          <SelectField
+            id="log-attendance-roster"
+            value={rosterId}
+            onChange={(e) => {
+              setRosterId(e.target.value);
+              setStudentId('');
+              setClassId('');
+            }}
+            options={[{ value: '', label: t('students.rosters.filterAll') }, ...(rosters.data?.items ?? []).map((r) => ({ value: r.id, label: r.name }))]}
+          />
+        </Field>
+      ) : null}
       {!student ? (
         <Field label={t('students.attendance.log.student')} htmlFor="log-attendance-student">
           <SelectField
@@ -85,7 +104,9 @@ export function LogAttendanceModal({
             }}
             options={[
               { value: '', label: t('students.attendance.log.studentPlaceholder') },
-              ...(students.data?.items ?? []).map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
+              ...(students.data?.items ?? [])
+                .filter((s) => !rosterId || !!rosterMembers.data?.studentIds.includes(s.id))
+                .map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
             ]}
           />
         </Field>
