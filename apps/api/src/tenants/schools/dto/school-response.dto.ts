@@ -146,6 +146,12 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Decision 404: members whose membership is frozen may still check in (default off).' })
   checkInFrozenMembers!: boolean;
 
+  @ApiProperty({ description: "Backlog §3.5: the check-in welcome card shows the member's classes toward their next belt (default on)." })
+  checkInShowBeltProgress!: boolean;
+
+  @ApiPropertyOptional({ type: Number, enum: [7, 14], nullable: true, description: 'Backlog §3.5: check-in is refused while a charge is owed more than this many days past its due date. Null (default): never.' })
+  checkInBlockOverdueDays!: number | null;
+
   @ApiProperty({ description: 'Decision 404: the most days a membership can be frozen in any 12 months (default 90).' })
   freezeMaxDaysPer12Months!: number;
 

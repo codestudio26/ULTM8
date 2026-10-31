@@ -35,6 +35,15 @@ function codedMessage(err: ApiError): string | null {
         ? translate('lib.apiError.checkInNotOpenAt', { time: formatDateTime(iso) })
         : translate('lib.apiError.checkInNotOpen');
     }
+    // The School's check-in rules (Decision 394, backlog §3.5): the shared wording in @ultm8/i18n.
+    case 'CHECK_IN_WAIVER_REQUIRED':
+      return translate('server.codes.checkInWaiverRequired');
+    case 'CHECK_IN_HOME_BRANCH_ONLY':
+      return translate('server.codes.checkInHomeBranchOnly');
+    case 'CHECK_IN_VISITORS_OFF':
+      return translate('server.codes.checkInVisitorsOff');
+    case 'CHECK_IN_PAYMENT_OVERDUE':
+      return translate('server.codes.checkInPaymentOverdue');
     // Freezing a membership (Decision 404): the shared wording in @ultm8/i18n.
     case 'MEMBERSHIP_FROZEN':
       return translate('server.codes.membershipFrozen');

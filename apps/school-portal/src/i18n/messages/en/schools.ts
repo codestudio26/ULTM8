@@ -1,7 +1,7 @@
 export const schools = {
   cardSurcharge: {
     title: "Card surcharge",
-    subtitle: "Add a surcharge on top of what members pay by card in the app, to cover card fees. They see it before they pay, and as its own line on the receipt. It is never added to cash or bank transfer payments, or to subscriptions.",
+    subtitle: "Add a surcharge on top of what members pay by card in the app, to cover card fees. They see it before they pay, and as its own line on the receipt. It is never added to cash or bank transfer payments. A subscription adds it to every monthly payment, at the % it started with: a change here applies when a member next subscribes.",
     enabled: "Add a card surcharge",
     percent: "Surcharge (%)",
     percentHint: "Up to 3%, e.g. 2.5.",
@@ -84,6 +84,18 @@ export const schools = {
     checkInNote: "Whether frozen members may check in is one of the check-in rules.",
     checkInLink: "Open check-in rules",
     stripeTrialNote: "In Stripe, a frozen card subscription shows as a trial. If your Stripe account sends trial-ending reminder emails, members may get one. You can turn these emails off in your Stripe settings.",
+  },
+  studentTags: {
+    title: "Student tags",
+    subtitle: "Your own labels for students, such as Competition team. Only staff see them, never the student. Staff can also add a new tag while tagging a student.",
+    empty: "No tags yet.",
+    newLabel: "New tag",
+    add: "Add tag",
+    nameLabel: "Name of {tag}",
+    count: "Students: {count}",
+    rename: "Rename",
+    delete: "Delete",
+    confirmDelete: "Delete this tag? It comes off every student who has it.",
   },
   heardFrom: {
     title: 'How did you hear about us?',

@@ -17,6 +17,7 @@ import { formatLocale } from '../i18n/format';
 import { FreezeRequestsCard } from './FreezeRequestsCard';
 import { formatCalendarDay } from '../membershipPlans/freezeQueries';
 import { useRosterStudents, useRosters } from './rosterQueries';
+import { useSchoolTags, useTaggedStudents } from './studentTagsQueries';
 
 /** Rows per page (Decision 371, Students Q2). Paged here, in the browser: the
  * roster is fetched whole, as it was before. */
@@ -68,13 +69,17 @@ export function StudentsPage() {
   const [rosterFilter, setRosterFilter] = useState('');
   const rosters = useRosters(schoolId);
   const rosterMembers = useRosterStudents(schoolId, rosterFilter || null);
+  // Backlog 5.4: only students with this tag.
+  const [tagFilter, setTagFilter] = useState('');
+  const schoolTags = useSchoolTags(schoolId);
+  const tagged = useTaggedStudents(schoolId, tagFilter || null);
   const [pageIndex, setPageIndex] = useState(0);
   const [exporting, setExporting] = useState(false);
   const school = useSchool(schoolId);
   // Decision 399: the owner, or Branch Staff the owner let export.
   const mayExport = !!ownedSchoolId || !!myAccess.data?.access.exportStudents;
   // A new filter starts again on page 1.
-  useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter, frozenOnly, rosterFilter]);
+  useEffect(() => setPageIndex(0), [statusFilter, search, branchFilter, frozenOnly, rosterFilter, tagFilter]);
 
   const onRoster = useMemo(() => (rosterFilter ? new Set(rosterMembers.data?.studentIds ?? []) : null), [rosterFilter, rosterMembers.data]);
   const filtered = useMemo(
@@ -84,9 +89,10 @@ export function StudentsPage() {
           matchesSearch(s, search) &&
           (!frozenOnly || s.frozen) &&
           (!onRoster || onRoster.has(s.id)) &&
+          (!tagFilter || !!tagged.data?.studentIds.includes(s.id)) &&
           (!branchFilter || (branchFilter === NO_BRANCH ? !s.homeBranchId : s.homeBranchId === branchFilter)),
       ),
-    [data, search, branchFilter, frozenOnly, onRoster],
+    [data, search, branchFilter, frozenOnly, onRoster, tagFilter, tagged.data],
   );
 
   // Only the owner, and Branch Staff with the "students" switch, have this
@@ -100,7 +106,7 @@ export function StudentsPage() {
   const pageCount = Math.max(1, Math.ceil(filtered.length / STUDENTS_PAGE_SIZE));
   const page = Math.min(pageIndex, pageCount - 1);
   const students = filtered.slice(page * STUDENTS_PAGE_SIZE, (page + 1) * STUDENTS_PAGE_SIZE);
-  const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '' || frozenOnly || rosterFilter !== '';
+  const filtering = statusFilter !== 'ACTIVE' || search.trim() !== '' || branchFilter !== '' || frozenOnly || rosterFilter !== '' || tagFilter !== '';
   // Decision 404: the blue Frozen badge, with the day they are back.
   const frozenBadge = (s: StudentSummary) =>
     s.frozen ? (
@@ -195,6 +201,18 @@ export function StudentsPage() {
           <div style={{ paddingBottom: 8 }}>
             <Link to="/students/rosters">{t('students.rosters.manage')}</Link>
           </div>
+          {(schoolTags.data?.items ?? []).length > 0 ? (
+            <div style={{ maxWidth: 220 }}>
+              <Field label={t('students.tags.filterLabel')} htmlFor="students-tag-filter">
+                <SelectField
+                  id="students-tag-filter"
+                  value={tagFilter}
+                  onChange={(e) => setTagFilter(e.target.value)}
+                  options={[{ value: '', label: t('students.tags.filterAll') }, ...(schoolTags.data?.items ?? []).map((tag) => ({ value: tag.id, label: tag.name }))]}
+                />
+              </Field>
+            </div>
+          ) : null}
           <div style={{ paddingBottom: 8 }}>
             <Checkbox label={t('students.frozen.filter')} checked={frozenOnly} onChange={(e) => setFrozenOnly(e.target.checked)} />
           </div>
@@ -202,7 +220,7 @@ export function StudentsPage() {
           <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('students.viewAria')} />
         </div>
       </Card>
-      {isLoading ? (
+      {isLoading || (!!tagFilter && tagged.isLoading) || (!!rosterFilter && rosterMembers.isLoading) ? (
         <Spinner />
       ) : error ? (
         <ErrorBanner message={error instanceof ApiError ? error.message : t('students.loadFailed')} />

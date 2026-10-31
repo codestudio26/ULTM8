@@ -591,6 +591,7 @@ model User {
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
   studentNotesWritten               StudentNote[]               @relation("StudentNoteAuthor")
+  studentTags                       StudentTag[]                @relation("StudentTagStudent")
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
   childInvitesReceived              ChildInvite[]               @relation("ChildInviteGuardian")
   childInvitesSent                  ChildInvite[]               @relation("ChildInviteCreatedBy")
@@ -1153,6 +1154,13 @@ model School {
   checkInSeveralClasses          Boolean                         @default(true)
   /// Decision 404: frozen members may still check in. Off by default.
   checkInFrozenMembers           Boolean                         @default(false)
+  /// Backlog §3.5: the welcome card on the front desk and the tablet shows the
+  /// member's classes toward their next belt. On by default (what it did).
+  checkInShowBeltProgress        Boolean                         @default(true)
+  /// Backlog §3.5: refuse check-in to a member with a charge still owed more
+  /// than this many days after its due date: 7 or 14. Null (default): never
+  /// refused for an overdue payment, as before.
+  checkInBlockOverdueDays        Int?
   /// Decision 404: the most days a membership can be frozen in any 12 months
   /// (1-365, default 90), and an optional one-off fee in minor units of the
   /// School's currency, charged when a freeze is approved.
@@ -1326,6 +1334,7 @@ model School {
   notificationBroadcasts NotificationBroadcast[]
   rankCorrectionRequests RankCorrectionRequest[]
   studentNotes           StudentNote[]
+  schoolTags             SchoolTag[]
   studentExportLogs      StudentExportLog[]
   childInvites           ChildInvite[]
   signUps                SignUp[]
@@ -3852,6 +3861,9 @@ enum CheckInMethod {
   /// Decision 384 (handover F3) — the member's own personal check-in code,
   /// typed on the front-desk keypad (by them on the tablet, or by staff).
   PERSONAL_CODE
+  /// Decision 317 item 4 (backlog 5.7): attendance staff logged afterwards,
+  /// up to 30 days back. `checkedInById` is who logged it.
+  STAFF_LOGGED
 }
 
 /// Booking.refundResolution / BookingAttendee.refundResolution — a Developer-level
@@ -4687,6 +4699,10 @@ model StaffPermission {
   /// off by default; owners always can. The School's freeze settings stay
   /// the owner's.
   canFreezeMemberships Boolean  @default(false)
+  /// Decision 317 item 3 (backlog 5.6): may see attendance statistics, for
+  /// their own Branches. Branch Staff only; off by default; owners always
+  /// can, for the whole School.
+  canSeeAttendanceStats Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -5259,6 +5275,44 @@ model StudentNote {
 
   @@index([schoolId, studentId, createdAt])
   @@index([studentId, showToMember])
+}
+
+/// Backlog 5.4 (Decision 315 item 7): the School's own list of tags for its
+/// students. Staff-only: no member-facing endpoint ever returns one. Jobs
+/// connection only (RLS on, no app grant).
+model SchoolTag {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+
+  createdAt DateTime @default(now())
+
+  students StudentTag[]
+
+  @@unique([schoolId, name])
+  /// Target of StudentTag's (tagId, schoolId) key, so a tag can only ever
+  /// sit on a student under its own School.
+  @@unique([id, schoolId])
+}
+
+/// Backlog 5.4 (Decision 315 item 7): a tag on a student. Kept while the
+/// student's account exists and erased with it, like staff notes; goes when
+/// the tag is deleted from the School's list. Jobs connection only.
+model StudentTag {
+  tagId    String
+  schoolId String
+  tag      SchoolTag @relation(fields: [tagId, schoolId], references: [id, schoolId], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentTagStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([tagId, studentId])
+  @@index([schoolId, studentId])
 }
 
 /// Backlog 3.9 (Decision 399): one row per student-list export, who made it

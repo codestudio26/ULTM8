@@ -12,7 +12,7 @@ import { randomUUID } from 'crypto';
  * `expand: ['latest_invoice.payments', 'latest_invoice.confirmation_secret']`:
  * no `payment_intent` on the Invoice; its PaymentIntent is the default
  * InvoicePayment, and its client secret is the Invoice's confirmation secret. */
-export function fakeIncompleteSubscription(paymentIntentId = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`) {
+export function fakeIncompleteSubscription(paymentIntentId = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`, lines?: FakeInvoiceLine[]) {
   const invoiceId = `in_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
   return {
     id: `sub_${randomUUID().replace(/-/g, '').slice(0, 24)}`,
@@ -22,6 +22,8 @@ export function fakeIncompleteSubscription(paymentIntentId = `pi_${randomUUID().
       id: invoiceId,
       object: 'invoice' as const,
       status: 'open' as const,
+      // An Invoice carries its first lines without an expand.
+      ...(lines ? { lines: fakeInvoiceLines(invoiceId, lines) } : {}),
       payments: {
         object: 'list' as const,
         data: [
@@ -63,4 +65,63 @@ export function fakePaymentCheckoutSession(params: { metadata?: Record<string, s
  * from the Session's `payment_intent_data.metadata`. */
 export function checkoutPaymentJob(eventType: string, transactionId: string, stripeAccountId: string, paymentIntentId: string) {
   return { stripeEventId: `evt_${randomUUID()}`, eventType, objectId: paymentIntentId, stripeAccountId, transactionId };
+}
+
+/** One line of a Subscription invoice: what it charged, and the Product of
+ * the Subscription item behind it. */
+export type FakeInvoiceLine = { amount: number; product: string; currency?: string };
+
+function fakeInvoiceLines(invoiceId: string, lines: FakeInvoiceLine[]) {
+  return {
+    object: 'list' as const,
+    has_more: false,
+    data: lines.map((line) => ({
+      id: `il_${randomUUID().replace(/-/g, '').slice(0, 24)}`,
+      object: 'line_item' as const,
+      invoice: invoiceId,
+      amount: line.amount,
+      currency: line.currency ?? 'usd',
+      // On this API version a line's Price and Product are under `pricing`,
+      // and its Subscription item under `parent` (no top-level `price`).
+      pricing: { type: 'price_details', price_details: { price: `price_${randomUUID().replace(/-/g, '').slice(0, 24)}`, product: line.product }, unit_amount_decimal: String(line.amount) },
+      parent: { type: 'subscription_item_details', subscription_item_details: { subscription_item: `si_${randomUUID().replace(/-/g, '').slice(0, 14)}`, proration: false } },
+    })),
+  };
+}
+
+/** `invoices.retrieve(id, { expand: ['payments'] })` for a membership
+ * Subscription's invoice (invoice.paid / invoice.payment_failed): its lines,
+ * its PaymentIntent on `payments`, and the snapshot of the Subscription's
+ * metadata Stripe keeps on `parent.subscription_details`. */
+export function fakeSubscriptionInvoice(params: {
+  subscriptionId: string;
+  lines: FakeInvoiceLine[];
+  id?: string;
+  paymentIntentId?: string;
+  billingReason?: string;
+  currency?: string;
+  paid?: boolean;
+  subscriptionMetadata?: Record<string, string>;
+}) {
+  const id = params.id ?? `in_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+  const total = params.lines.reduce((sum, line) => sum + line.amount, 0);
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    id,
+    object: 'invoice' as const,
+    billing_reason: params.billingReason ?? 'subscription_cycle',
+    currency: params.currency ?? 'usd',
+    amount_due: total,
+    amount_paid: params.paid === false ? 0 : total,
+    created: now,
+    period_start: now - 31 * 86_400,
+    period_end: now,
+    status_transitions: { paid_at: params.paid === false ? null : now },
+    parent: { type: 'subscription_details', subscription_details: { subscription: params.subscriptionId, metadata: params.subscriptionMetadata ?? {} } },
+    lines: fakeInvoiceLines(id, params.lines.map((line) => ({ currency: params.currency, ...line }))),
+    payments: {
+      object: 'list' as const,
+      data: params.paymentIntentId ? [{ id: `inpay_${randomUUID().replace(/-/g, '').slice(0, 24)}`, object: 'invoice_payment' as const, payment: { type: 'payment_intent' as const, payment_intent: params.paymentIntentId } }] : [],
+    },
+  };
 }

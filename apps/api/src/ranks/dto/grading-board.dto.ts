@@ -172,7 +172,23 @@ export class BulkExpectedRungDto {
   rungId!: string;
 }
 
-/** Bulk promote (Decision 130): each student moves up one rung, on one date. */
+/** The rank a coach picked for one student in bulk promote's "Promote to"
+ * (Decision 281 item 2; DESIGN.md "Promote selected: pick the rank"). */
+export class BulkTargetRungDto {
+  @ApiProperty()
+  @IsUUID()
+  studentId!: string;
+
+  @ApiProperty({
+    description:
+      'The rung (stripe tier id) to move to: a higher rung of this style (rungs between are skipped and recorded), or, on a Kids style, a rung of its linked Adult program above the Adult ladder\'s first belt, for a student who has reached "Ready for Adult from age" (backlog 3.20).',
+  })
+  @IsUUID()
+  rungId!: string;
+}
+
+/** Bulk promote (Decision 130): each student moves up one rung, or to the
+ * rank picked for them in `targets`, on one date. */
 export class BulkPromoteDto {
   @ApiProperty()
   @IsUUID()
@@ -224,6 +240,18 @@ export class BulkPromoteDto {
   @ValidateNested({ each: true })
   @Type(() => BulkExpectedRungDto)
   expected?: BulkExpectedRungDto[];
+
+  @ApiPropertyOptional({
+    type: () => [BulkTargetRungDto],
+    description:
+      'Each student\'s "Promote to" pick (Decision 281 item 2). A student left out moves up one rung. Send the same picks with the dry run and with the real run.',
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(200)
+  @ValidateNested({ each: true })
+  @Type(() => BulkTargetRungDto)
+  targets?: BulkTargetRungDto[];
 }
 
 export class BulkPromoteStudentDto {
@@ -235,6 +263,9 @@ export class BulkPromoteStudentDto {
 
   @ApiPropertyOptional()
   toRungId?: string;
+
+  @ApiPropertyOptional({ description: 'Backlog 3.20: toRungId is on the linked Adult program, so the student moves to the Adult style.' })
+  toAdult?: boolean;
 
   @ApiProperty({ type: [String], description: 'Why this student needs a look, or why they can\'t be promoted.' })
   reasons!: string[];

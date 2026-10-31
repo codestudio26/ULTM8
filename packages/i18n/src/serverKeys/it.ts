@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "Questa Scuola registra i membri solo nella loro Sede principale.",
     checkInVisitorsOff: "Questa Scuola al momento non registra i visitatori con un pass visita.",
     checkInOneClass: "Questa Scuola registra le persone a una lezione alla volta.",
+    checkInPaymentOverdue: "Questa Scuola non registra i membri finché un pagamento è in ritardo. Pagalo nell’app o alla reception.",
     packUsedUp: "Questo pacchetto lezioni non ha più lezioni. Acquista lo stesso pacchetto per fare il check-in.",
     membershipFrozen: "Questo abbonamento è sospeso, quindi non può essere usato per prenotare o fare check-in finché la sospensione non termina.",
     freezeTooShort: "Una sospensione deve durare almeno 7 giorni.",

@@ -735,7 +735,7 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
   });
 
   describe('Decision 409: the "Can freeze memberships" switch', () => {
-    const ACCESS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false };
+    const ACCESS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, attendanceStats: false };
 
     it("staff with it act for their own branches' students only; the School's freeze settings stay the owner's; turning it on is logged", async () => {
       const branched = await superuser.school.create({ data: { id: randomUUID(), name: 'Branched Freeze School', defaultCurrency: 'GBP' } });

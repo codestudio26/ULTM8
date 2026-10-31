@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "Deze School checkt leden alleen in bij hun eigen Vestiging.",
     checkInVisitorsOff: "Deze School checkt bezoekers met een bezoekerspas op dit moment niet in.",
     checkInOneClass: "Deze School checkt mensen in voor één les tegelijk.",
+    checkInPaymentOverdue: "Deze School checkt leden niet in zolang een betaling te laat is. Betaal die in de app of bij de balie.",
     packUsedUp: "Deze lessenkaart heeft geen lessen meer. Koop dezelfde kaart om in te checken.",
     membershipFrozen: "Dit lidmaatschap is bevroren en kan pas weer worden gebruikt om te boeken of in te checken als de bevriezing voorbij is.",
     freezeTooShort: "Een bevriezing duurt minstens 7 dagen.",

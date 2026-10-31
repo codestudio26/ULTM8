@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "本学校只在会员的所属分校为其签到。",
     checkInVisitorsOff: "本学校目前不为持访客通行证的访客签到。",
     checkInOneClass: "本学校一次只签到一节课。",
+    checkInPaymentOverdue: "本学校在有逾期付款时不为会员签到。请在应用内或前台付款。",
     packUsedUp: "此课时包已没有剩余课时。购买同样的课时包即可签到。",
     membershipFrozen: "该会员资格已冻结，冻结结束前不能用于预约或签到。",
     freezeTooShort: "冻结至少需要 7 天。",

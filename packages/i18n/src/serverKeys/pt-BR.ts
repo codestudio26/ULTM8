@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "Esta Escola faz o check-in de membros apenas na Unidade principal deles.",
     checkInVisitorsOff: "Esta Escola não faz o check-in de visitantes com passe de visita no momento.",
     checkInOneClass: "Esta Escola faz o check-in em uma aula por vez.",
+    checkInPaymentOverdue: "Esta Escola não faz o check-in de alunos com pagamento em atraso. Pague no app ou na recepção.",
     packUsedUp: "Este pacote de aulas não tem mais aulas. Compre o mesmo pacote para fazer check-in.",
     membershipFrozen: "Este plano está congelado, então não pode ser usado para reservar nem fazer check-in até o fim do congelamento.",
     freezeTooShort: "Um congelamento deve durar pelo menos 7 dias.",

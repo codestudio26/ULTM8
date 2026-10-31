@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "이 학교는 회원을 소속 지점에서만 체크인합니다.",
     checkInVisitorsOff: "이 학교는 현재 방문 패스로 방문자를 체크인하지 않습니다.",
     checkInOneClass: "이 학교는 한 번에 한 수업만 체크인합니다.",
+    checkInPaymentOverdue: "이 학교는 연체된 결제가 있는 동안 회원 체크인을 하지 않습니다. 앱이나 데스크에서 결제해 주세요.",
     packUsedUp: "이 수업 패키지에 남은 수업이 없습니다. 출석 체크하려면 같은 패키지를 구매하세요.",
     membershipFrozen: "이 멤버십은 일시정지 중이므로 일시정지가 끝날 때까지 예약이나 체크인에 사용할 수 없습니다.",
     freezeTooShort: "일시정지는 최소 7일이어야 합니다.",

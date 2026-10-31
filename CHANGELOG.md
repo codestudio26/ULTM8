@@ -15,22 +15,20 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
-- **Rosters and reminders** (Decision 317 items 6 and 7):
-  - **Rosters**: named lists of students for staff. Students → "Manage
-    rosters" creates, renames and deletes them and adds or removes students.
-    The Students list has a Roster filter, and a class's Roll call can show
-    one roster's booked students. Being on a roster doesn't change who can
-    book, and students never see rosters. Staff see and change only the
-    students of their own branches; Branch Staff need the Students switch to
-    change rosters.
-  - **Membership ending soon**: a daily reminder to the member 7 days before a
-    membership ends (a child's Guardian gets it as "For {name}: …"), once per
-    end date. Friend Passes and visit passes get none.
-  - **Member absent**: a daily alert to the School's owners when a member
-    hasn't checked in for the number of weeks set on the School page
-    ("Absence alert (weeks)"; empty, the default, turns it off). Once per
-    absence; a new check-in starts a new one.
-  - Migration `20270126000000_rosters_and_reminders`.
+- **Check-in rules: overdue payments and belt progress** (backlog 3.5) — two
+  more rules on Check-in → Check-in rules, for every way in (app, coach's
+  scan, front desk, tablet):
+  - **Block check-in for overdue payments**: No (the default, as before),
+    after 7 days or after 14 days. A member who still owes on an invoice that
+    long after its due date is refused with "This School doesn't check members
+    in while a payment is overdue", shown to staff and to the member. Paid
+    and cancelled invoices never count.
+  - **Show belt progress on the check-in screen**: on by default, as before.
+    When off, the welcome card on the front desk and the tablet no longer
+    shows the classes toward the next belt.
+
+  The owner, and Branch Staff with "Change check-in rules", change them.
+  Needs migration `20270123000000_check_in_rules_rest`.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The
@@ -54,6 +52,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     purchase ULTM8 refunds, or a whole payment refunded in Stripe), the
     Refunded amount is now what Stripe refunded, card surcharge included (it
     used to leave the surcharge out). Refunds of charges are unchanged.
+- **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
+  School's card surcharge applies, a monthly Subscription now carries it too:
+  members see it on the plan before subscribing, and it is added to the first
+  payment and every renewal as its own line (its own item on the Stripe
+  Subscription, so Stripe's invoices and receipts show it). The Transactions
+  page, its CSV and the member's payment history show it apart from the plan's
+  price for the first payment and each renewal, Successful or Failed. A
+  renewal refunded in full in Stripe counts the surcharge as refunded. A
+  running Subscription keeps the % it started with: turning the surcharge off,
+  changing the %, or Platform Admin removing the country applies when the
+  member next subscribes. A Migrate price change keeps the surcharge at the
+  Subscription's own %. The School page's Card surcharge text says so (15
+  languages). No migration.
 - **Waivers: faster Signatures panel for big Schools** (Decision 418; stress
   test round 4, Q2) — the panel shows the first 100 people with a "Load more"
   button instead of loading everyone first (it took 22 s at a School with
@@ -85,6 +96,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   code screen). It then can't choose 4 digits again. A front-desk tablet
   locks after 10 wrong member codes in a row; a staff member's own code lets
   it carry on.
+- **Grading: pick each student's rank in bulk promote, including the Adult
+  program** (backlog 3.20; Decisions 281 item 2, 397) — each student in the
+  "Promote these students" window has a **Promote to** picker. It starts on
+  their next rank and lists every higher rank, so a student can skip ranks
+  ("Skips N ranks in between. This is recorded on the history."; the report
+  says "(skipped N)"). On a Kids style, a student who has reached "Ready for
+  Adult from age" also gets the **Adult program** group (the Adult ranks above
+  its first belt); picking one moves them to the Adult style as the Grade
+  window already does: history and notes kept, matching skill sign-offs carried
+  over, the class count restarting, "Moved to Adult program." on the history,
+  and "(Adult program)" in the report. The next rank's checks still apply to a
+  skip and to a move into Adult. Changing a pick re-checks only that student.
+  The API takes the picks as `targets` on `POST …/grading/bulk-promote`, and
+  each answer row says `toAdult`. No promotion fee is asked for on a move into
+  Adult: Decision 397 leaves that open. 15 languages.
 - **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
   — every refund sends the member a "Refund" notice with the amount and where
   it went: refunded to the card, given back, or added to the balance as credit
@@ -108,6 +134,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
   gains `memberships` and `total`, and each month `memberships` and `total`.
   15 languages.
+- **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
+  its own list of tags, managed under **School settings → Student tags** (add,
+  rename, delete; deleting a tag takes it off every student). A **Tags** card
+  on the student's page shows the student's tags with **+ tag**: staff pick a
+  tag from the list or type a new one, which joins the list. The Students list
+  gains a **Tag** filter. Tags are staff-only: no member or Guardian screen or
+  API reply ever shows them. Tagging is for the staff who can edit the
+  student's details. A student's tags are erased with their account, like
+  staff notes. **Needs a database migration** (`20270123000000_student_tags`).
 - **A paid promotion fee whose promotion can no longer apply** (Decision 414
   item 1) — when a promotion fee is paid in full but the promotion that waited
   for it can't go through any more (the student's rank or the belt ladder
@@ -135,6 +170,28 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the student app show "No tax". A tax rate is still never typed per charge.
   Late fees and promotion fees always take the School's tax settings.
   Migration `20270119000000_charges_no_tax`.
+- **Students → Attendance: statistics and logging past attendance**
+  (Decision 317 items 3 and 4; backlog 5.6, 5.7) — a new **Attendance** tab
+  on the Students page:
+  - **Statistics for the last 30 days** (days in the School's time zone):
+    check-ins, students per class and classes per student. The owner sees the
+    whole School, with a Branch filter; Branch Staff see their own Branches
+    only when the owner turns on the new **"See attendance statistics"**
+    switch on their Access page (off by default, in neither preset). Coaches
+    don't see statistics. Trial, Visitor and Friend Pass check-ins count, with
+    a tick box to leave them out.
+  - **"+ Log attendance"**, on the tab and on a student's page: staff who can
+    check people in log a class someone came to but wasn't checked in to, up
+    to 30 days back. It counts exactly like a check-in: it books the class
+    when needed, paid for like any staff booking (a Class Pack class is used
+    when that's what pays), counts toward grading and hours trained, and
+    follows the School's check-in rules about the person. It is recorded with
+    its own check-in method (`STAFF_LOGGED`) and who logged it. A booking
+    already marked No-Show is checked in without being paid for again, and a
+    student already checked in to that class is refused.
+  - Migration `20270123000000_attendance_stats_and_past`; new endpoints
+    `GET /schools/{id}/attendance/stats`, `GET /schools/{id}/attendance/log-classes`
+    and `POST /schools/{id}/attendance/logs`.
 - **Currency first** (backlog 3.6; Decision 414 item 6) — until the School has
   set its currency on the School page, no price can be saved: membership
   plans, belt prices for promotion fees, charges, recurring charges, credit,
@@ -180,6 +237,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (its own switch, on by default; none for a charge created less than 3 days
   before it is due). Late fees and automatic payment count what a charge owes
   after refunds. Migration `20270114000000_charges_refunds_reports`.
+- **Fixed: "Give pass" and "Record sale" could stay greyed out** on a student's
+  Memberships card when the window opened before the School's plans had loaded.
+  The first plan is now picked as soon as the list arrives.
 - **Charges and member balance, step 1** (backlog 3.6; Decisions 303, 338,
   411) — staff can charge a student for something outside a membership plan,
   such as a rash guard, from a new **Payments** card on the student's page:
@@ -246,6 +306,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   staff with "Can cancel charges" can **Waive** it; the student app labels it
   "Late fee" too. **Needs a database migration**
   (`20270116000000_late_fees`).
+- **Rosters and reminders** (Decision 317 items 6 and 7):
+  - **Rosters**: named lists of students for staff. Students → "Manage
+    rosters" creates, renames and deletes them and adds or removes students.
+    The Students list has a Roster filter, and a class's Roll call can show
+    one roster's booked students. Being on a roster doesn't change who can
+    book, and students never see rosters. Staff see and change only the
+    students of their own branches; Branch Staff need the Students switch to
+    change rosters.
+  - **Membership ending soon**: a daily reminder to the member 7 days before a
+    membership ends (a child's Guardian gets it as "For {name}: …"), once per
+    end date. Friend Passes and visit passes get none.
+  - **Member absent**: a daily alert to the School's owners when a member
+    hasn't checked in for the number of weeks set on the School page
+    ("Absence alert (weeks)"; empty, the default, turns it off). Once per
+    absence; a new check-in starts a new one.
+  - **Memberships ending soon** (weekly report): on the first day of the
+    School's week, the owners get one notice listing the memberships ending in
+    the next 7 days (the same memberships as the reminder above). Nothing is
+    sent when none are ending.
+  - The "+ Log attendance" student picker can be narrowed to a roster.
+  - Migration `20270126000000_rosters_and_reminders`.
 - **Paying a promotion fee** (backlog 3.6 step 6; Decisions 300, 303) — when a
   student, or a Guardian for a child, accepts a promotion fee, it becomes an
   invoice on the student's balance: the rank it is for, the fee with the
