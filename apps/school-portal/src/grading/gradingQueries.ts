@@ -305,6 +305,7 @@ async function bulkPromoteInBatches(schoolId: string, body: BulkPromoteInput): P
     const inBatch = new Set(studentIds);
     const acknowledged = body.acknowledgedStudentIds?.filter((id) => inBatch.has(id));
     const expected = body.expected?.filter((e) => inBatch.has(e.studentId));
+    const targets = body.targets?.filter((e) => inBatch.has(e.studentId));
     const send = async () =>
       (await unwrap(
         apiClient.POST('/v1/schools/{schoolId}/grading/bulk-promote', {
@@ -314,6 +315,7 @@ async function bulkPromoteInBatches(schoolId: string, body: BulkPromoteInput): P
             studentIds,
             acknowledgedStudentIds: acknowledged?.length ? acknowledged : undefined,
             expected: expected?.length ? expected : undefined,
+            targets: targets?.length ? targets : undefined,
           },
         }),
       )) as BulkPromoteResult;

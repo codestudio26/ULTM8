@@ -44,3 +44,18 @@ export function startingClassesFor(ladder: Rung[], to: Rung): StartingClassesSha
   }
   return { kind: 'TOTAL' };
 }
+
+/** The "Promote to" list for one student (Decision 281 item 2; DESIGN.md
+ * "Promote selected: pick the rank"): every higher rank of their style, then,
+ * for a Kids student who has reached "Ready for Adult from age", the linked
+ * Adult program's ranks above its first belt (Decision 285 item 1). */
+export function promoteToOptions(
+  ladder: Rung[],
+  current: Rung | null,
+  adult: { ladder: Rung[] } | null | undefined,
+  readyForAdult: boolean,
+): { options: Rung[]; adultIds: Set<string>; firstAdultId: string | null } {
+  const adultOptions = current && readyForAdult && adult && adult.ladder.length > 0 ? adult.ladder.filter((r) => r.rankId !== adult.ladder[0].rankId) : [];
+  const options = [...ladder.filter((r) => !current || r.index > current.index), ...adultOptions];
+  return { options, adultIds: new Set(adultOptions.map((r) => r.id)), firstAdultId: adultOptions[0]?.id ?? null };
+}

@@ -31821,6 +31821,22 @@
           "rungId"
         ]
       },
+      "BulkTargetRungDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "rungId": {
+            "type": "string",
+            "description": "The rung (stripe tier id) to move to: a higher rung of this style (rungs between are skipped and recorded), or, on a Kids style, a rung of its linked Adult program above the Adult ladder's first belt, for a student who has reached \"Ready for Adult from age\" (backlog 3.20)."
+          }
+        },
+        "required": [
+          "studentId",
+          "rungId"
+        ]
+      },
       "BulkPromoteDto": {
         "type": "object",
         "properties": {
@@ -31861,6 +31877,13 @@
             "items": {
               "$ref": "#/components/schemas/BulkExpectedRungDto"
             }
+          },
+          "targets": {
+            "description": "Each student's \"Promote to\" pick (Decision 281 item 2). A student left out moves up one rung. Send the same picks with the dry run and with the real run.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkTargetRungDto"
+            }
           }
         },
         "required": [
@@ -31880,6 +31903,10 @@
           },
           "toRungId": {
             "type": "string"
+          },
+          "toAdult": {
+            "type": "boolean",
+            "description": "Backlog 3.20: toRungId is on the linked Adult program, so the student moves to the Adult style."
           },
           "reasons": {
             "description": "Why this student needs a look, or why they can't be promoted.",

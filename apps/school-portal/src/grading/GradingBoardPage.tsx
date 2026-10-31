@@ -99,6 +99,8 @@ export function GradingBoardPage() {
   // Backlog 3.20: Kids and Adult are two linked styles, shown with a switch.
   const pair = programPair(style, disciplines.data?.items ?? []);
   const adultProgram = useAdultProgram(style, disciplines.data?.items ?? [], !!promotingOne?.item.readyForAdult);
+  // Bulk promote's "Adult program" group (Decision 281 item 2), loaded while the window is open.
+  const bulkAdultProgram = useAdultProgram(style, disciplines.data?.items ?? [], promoting);
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
     for (const i of instructors.data?.items ?? []) names.set(i.userId, `${i.firstName} ${i.surname}`.trim());
@@ -505,6 +507,7 @@ export function GradingBoardPage() {
           schoolId={schoolId}
           style={style}
           ladder={ladder}
+          adult={bulkAdultProgram}
           students={selectedItems}
           onRemove={(id) => setSelected((s) => s.filter((x) => x !== id))}
           onDone={() => {

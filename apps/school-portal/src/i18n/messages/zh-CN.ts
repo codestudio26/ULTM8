@@ -1832,7 +1832,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notPromoted: "未晋级：{list}。",
       openReport: "打开可打印报告",
       title: "为这些学员晋级",
-      intro: "每位学员晋升一个级别。拖动行或使用上移、下移按钮设置点名顺序。",
+      intro: "每位学员晋升到“晋升至”中选择的级别,默认为下一级别。拖动行或使用上移、下移按钮设置点名顺序。",
+      promoteToAria: "{name} 晋升至",
+      adultTag: "(成人项目)",
+      skippedTag: {
+        other: "(跳过 {count} 级)",
+      },
       dateLabel: "考级日期",
       dateHint: "留空即为今天。该日期需适用于所有学员。",
       noteLabel: "备注",

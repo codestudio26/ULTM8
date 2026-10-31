@@ -10289,6 +10289,11 @@ export interface components {
             /** @description The student's rung in the dry run (its fromRungId). */
             rungId: string;
         };
+        BulkTargetRungDto: {
+            studentId: string;
+            /** @description The rung (stripe tier id) to move to: a higher rung of this style (rungs between are skipped and recorded), or, on a Kids style, a rung of its linked Adult program above the Adult ladder's first belt, for a student who has reached "Ready for Adult from age" (backlog 3.20). */
+            rungId: string;
+        };
         BulkPromoteDto: {
             disciplineId: string;
             /** @description Up to 200 students (Spec 55). */
@@ -10306,11 +10311,15 @@ export interface components {
             dryRun?: boolean;
             /** @description Each student's rung from the dry run (Decision 284). A listed student who is no longer on it is skipped, not promoted again, so a batch can be sent again safely after a failure. */
             expected?: components["schemas"]["BulkExpectedRungDto"][];
+            /** @description Each student's "Promote to" pick (Decision 281 item 2). A student left out moves up one rung. Send the same picks with the dry run and with the real run. */
+            targets?: components["schemas"]["BulkTargetRungDto"][];
         };
         BulkPromoteStudentDto: {
             studentId: string;
             fromRungId?: string | null;
             toRungId?: string;
+            /** @description Backlog 3.20: toRungId is on the linked Adult program, so the student moves to the Adult style. */
+            toAdult?: boolean;
             /** @description Why this student needs a look, or why they can't be promoted. */
             reasons: string[];
             /** @description Set on a promoted student: their history entry. */

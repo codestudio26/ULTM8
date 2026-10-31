@@ -96,6 +96,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   code screen). It then can't choose 4 digits again. A front-desk tablet
   locks after 10 wrong member codes in a row; a staff member's own code lets
   it carry on.
+- **Grading: pick each student's rank in bulk promote, including the Adult
+  program** (backlog 3.20; Decisions 281 item 2, 397) — each student in the
+  "Promote these students" window has a **Promote to** picker. It starts on
+  their next rank and lists every higher rank, so a student can skip ranks
+  ("Skips N ranks in between. This is recorded on the history."; the report
+  says "(skipped N)"). On a Kids style, a student who has reached "Ready for
+  Adult from age" also gets the **Adult program** group (the Adult ranks above
+  its first belt); picking one moves them to the Adult style as the Grade
+  window already does: history and notes kept, matching skill sign-offs carried
+  over, the class count restarting, "Moved to Adult program." on the history,
+  and "(Adult program)" in the report. The next rank's checks still apply to a
+  skip and to a move into Adult. Changing a pick re-checks only that student.
+  The API takes the picks as `targets` on `POST …/grading/bulk-promote`, and
+  each answer row says `toAdult`. No promotion fee is asked for on a move into
+  Adult: Decision 397 leaves that open. 15 languages.
 - **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
   — every refund sends the member a "Refund" notice with the amount and where
   it went: refunded to the card, given back, or added to the balance as credit
