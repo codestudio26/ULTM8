@@ -299,7 +299,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "Kaarttoeslag",
-      subtitle: "Tel een toeslag op bij wat leden in de app met een kaart betalen, om de kaartkosten te dekken. Ze zien die vóór het betalen en als eigen regel op de bon. Hij wordt nooit opgeteld bij contante betalingen, overboekingen of abonnementen.",
+      subtitle: "Tel een toeslag op bij wat leden in de app met een kaart betalen, om de kaartkosten te dekken. Ze zien die vóór het betalen en als eigen regel op de bon. Hij wordt nooit opgeteld bij contante betalingen of overboekingen. Een abonnement telt hem op bij elke maandbetaling, tegen het % waarmee het begon: een wijziging hier geldt wanneer een lid opnieuw een abonnement neemt.",
       enabled: "Een kaarttoeslag toevoegen",
       percent: "Toeslag (%)",
       percentHint: "Tot 3%, bijv. 2,5.",

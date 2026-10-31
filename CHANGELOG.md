@@ -38,6 +38,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     purchase ULTM8 refunds, or a whole payment refunded in Stripe), the
     Refunded amount is now what Stripe refunded, card surcharge included (it
     used to leave the surcharge out). Refunds of charges are unchanged.
+- **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
+  School's card surcharge applies, a monthly Subscription now carries it too:
+  members see it on the plan before subscribing, and it is added to the first
+  payment and every renewal as its own line (its own item on the Stripe
+  Subscription, so Stripe's invoices and receipts show it). The Transactions
+  page, its CSV and the member's payment history show it apart from the plan's
+  price for the first payment and each renewal, Successful or Failed. A
+  renewal refunded in full in Stripe counts the surcharge as refunded. A
+  running Subscription keeps the % it started with: turning the surcharge off,
+  changing the %, or Platform Admin removing the country applies when the
+  member next subscribes. A Migrate price change keeps the surcharge at the
+  Subscription's own %. The School page's Card surcharge text says so (15
+  languages). No migration.
 - **Waivers: faster Signatures panel for big Schools** (Decision 418; stress
   test round 4, Q2) — the panel shows the first 100 people with a "Load more"
   button instead of loading everyone first (it took 22 s at a School with

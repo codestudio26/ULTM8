@@ -299,7 +299,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "Acréscimo no cartão",
-      subtitle: "Adicione um acréscimo ao que os membros pagam com cartão no app, para cobrir as taxas do cartão. Eles veem antes de pagar e como uma linha própria no recibo. Nunca é somado a pagamentos em dinheiro, transferência bancária ou assinaturas.",
+      subtitle: "Adicione um acréscimo ao que os membros pagam com cartão no app, para cobrir as taxas do cartão. Eles veem antes de pagar e como uma linha própria no recibo. Nunca é somado a pagamentos em dinheiro ou transferência bancária. Uma assinatura o soma a cada pagamento mensal, com a % com que começou: uma mudança aqui vale quando o membro assinar de novo.",
       enabled: "Adicionar acréscimo no cartão",
       percent: "Acréscimo (%)",
       percentHint: "Até 3%, ex.: 2,5.",

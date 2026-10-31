@@ -299,7 +299,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     cardSurcharge: {
       title: "Kartenzuschlag",
-      subtitle: "Füge einen Zuschlag zu dem hinzu, was Mitglieder in der App per Karte zahlen, um die Kartengebühren zu decken. Sie sehen ihn vor dem Bezahlen und als eigene Zeile auf der Quittung. Er wird nie auf Bar- oder Überweisungszahlungen oder auf Abos aufgeschlagen.",
+      subtitle: "Füge einen Zuschlag zu dem hinzu, was Mitglieder in der App per Karte zahlen, um die Kartengebühren zu decken. Sie sehen ihn vor dem Bezahlen und als eigene Zeile auf der Quittung. Er wird nie auf Bar- oder Überweisungszahlungen aufgeschlagen. Ein Abo schlägt ihn auf jede monatliche Zahlung auf, mit dem Prozentsatz, mit dem es begonnen hat: Eine Änderung hier gilt, wenn ein Mitglied neu abschließt.",
       enabled: "Kartenzuschlag hinzufügen",
       percent: "Zuschlag (%)",
       percentHint: "Bis zu 3 %, z. B. 2,5.",
