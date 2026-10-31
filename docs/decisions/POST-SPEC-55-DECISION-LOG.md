@@ -7292,3 +7292,17 @@ Order is unchanged: current students A to Z, then former students (Decision 340,
 ### Recorded by
 
 User (Code), 30 Oct 2026, answering Q2 of stress test round 4: show the first 100 with "Load more" and a server-side search box, and compute the totals once (the recommended answer).
+
+## Decision 419 — Medical consent withdrawal, a fee on the Kids → Adult move, and the card surcharge when a country is removed
+
+**Date:** 31 Oct 2026 · **Status:** Product-owner decision · **Builds on:** Decision 315 item 10 (medical information), Decisions 300, 307, 314, 397 (promotion fee; Kids and Adult programs), Decisions 406, 416 (card surcharge)
+
+### Decision
+
+1. **Medical information: consent can be withdrawn, and withdrawing deletes it.** The member (the Guardian for a child) can see that medical information is shared with the School and withdraw consent at any time in the app. Withdrawing deletes the stored medical information at once; staff then see that there is none. It is also deleted when the member leaves the School (it is no longer needed there), as well as on account erasure and School purge.
+2. **Kids → Adult: the move is charged like any other promotion.** Moving a student from the Kids program into the Adult program (single or bulk) is a promotion to the Adult rank they are given: when the School's promotion fee is on, the fee for that Adult rank is asked for at that rank's own price, the coach can waive it, and with "Allow grading before the fee is paid" off the move waits for the fee like a normal promotion. A School that doesn't want to charge sets that rank's price to 0 or waives it.
+3. **Card surcharge: removing a country stops it on running Subscriptions.** When Platform Admin removes a country from the surcharge allow-list, every running Subscription at a School in that country stops charging the surcharge from its next renewal. An owner's own changes (turning the surcharge off or changing the %) keep applying only when the member next subscribes, as built in #427.
+
+### Recorded by
+
+User (Code), 31 Oct 2026, "go ahead" on the three recommendations (medical withdrawal deletes the data; the Kids → Adult move is charged like a promotion; the surcharge stops when a country is removed).
