@@ -6052,6 +6052,150 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/custom-member-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_listFields"];
+        put?: never;
+        post: operations["CustomMemberFieldsController_createField"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-fields/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CustomMemberFieldsController_reorderFields"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_fieldMatches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-fields/{fieldId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CustomMemberFieldsController_deleteField"];
+        options?: never;
+        head?: never;
+        patch: operations["CustomMemberFieldsController_updateField"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-statuses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_listStatuses"];
+        put?: never;
+        post: operations["CustomMemberFieldsController_createStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-statuses/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_statusAssignments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/custom-member-statuses/{statusId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CustomMemberFieldsController_deleteStatus"];
+        options?: never;
+        head?: never;
+        patch: operations["CustomMemberFieldsController_renameStatus"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/custom-fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CustomMemberFieldsController_studentValues"];
+        put: operations["CustomMemberFieldsController_setStudentValues"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/custom-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CustomMemberFieldsController_setStudentStatus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/{studentId}/files": {
         parameters: {
             query?: never;
@@ -12250,6 +12394,86 @@ export interface components {
             tagId?: string;
             /** @description A new tag, added to the School's list. Send this or tagId. */
             name?: string;
+        };
+        /** @enum {string} */
+        CustomMemberFieldType: "TEXT" | "NUMBER" | "DATE" | "DROPDOWN" | "YES_NO";
+        CustomMemberFieldDto: {
+            id: string;
+            name: string;
+            type: components["schemas"]["CustomMemberFieldType"];
+            options: string[];
+            /** @description Order on the student page, from 0. */
+            position: number;
+        };
+        CustomMemberFieldListDto: {
+            items: components["schemas"]["CustomMemberFieldDto"][];
+        };
+        CustomMemberFieldCreateDto: {
+            name: string;
+            type: components["schemas"]["CustomMemberFieldType"];
+            /** @description A drop-down's choices, in order. Only for DROPDOWN, which needs at least one. */
+            options?: string[];
+        };
+        CustomMemberFieldOrderDto: {
+            /** @description Every one of the School's field ids, in the new order. */
+            fieldIds: string[];
+        };
+        CustomFieldMatchesDto: {
+            /** @description The students whose value matches that the caller covers. */
+            studentIds: string[];
+        };
+        CustomMemberFieldUpdateDto: {
+            name?: string;
+            /** @description A drop-down's new choices, in order. Students whose value is no longer a choice lose it. */
+            options?: string[];
+        };
+        CustomMemberStatusDto: {
+            id: string;
+            name: string;
+            /** @description How many students have this status. */
+            studentCount: number;
+        };
+        CustomMemberStatusListDto: {
+            items: components["schemas"]["CustomMemberStatusDto"][];
+        };
+        CustomMemberStatusNameDto: {
+            name: string;
+        };
+        StudentCustomStatusAssignmentDto: {
+            studentId: string;
+            statusId: string;
+        };
+        StudentCustomStatusAssignmentListDto: {
+            /** @description The students with a status that the caller covers. */
+            items: components["schemas"]["StudentCustomStatusAssignmentDto"][];
+        };
+        StudentCustomFieldValueDto: {
+            id: string;
+            name: string;
+            type: components["schemas"]["CustomMemberFieldType"];
+            options: string[];
+            /** @description Order on the student page, from 0. */
+            position: number;
+            /** @description The value as text: a number, YYYY-MM-DD, one of the choices, or "true"/"false". Null when empty. */
+            value: string | null;
+        };
+        StudentCustomFieldsDto: {
+            fields: components["schemas"]["StudentCustomFieldValueDto"][];
+            /** @description The student's member status at this School, or null. */
+            statusId: string | null;
+        };
+        SetCustomFieldValueDto: {
+            fieldId: string;
+            /** @description Null or empty clears the value. */
+            value: string | null;
+        };
+        SetCustomFieldValuesDto: {
+            /** @description Only the fields listed change. */
+            values: components["schemas"]["SetCustomFieldValueDto"][];
+        };
+        SetStudentCustomStatusDto: {
+            /** @description A status from the School list, or null for none. */
+            statusId: string | null;
         };
         MemberFileDto: {
             id: string;
@@ -23332,6 +23556,335 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    CustomMemberFieldsController_listFields: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberFieldListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_createField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberFieldCreateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberFieldDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_reorderFields: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberFieldOrderDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberFieldListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_fieldMatches: {
+        parameters: {
+            query: {
+                /** @description A choice, "true"/"false", a number or a YYYY-MM-DD date to match exactly, or text the value contains (ignoring case). */
+                value: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomFieldMatchesDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_deleteField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomMemberFieldsController_updateField: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                fieldId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberFieldUpdateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberFieldDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_listStatuses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberStatusListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_createStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberStatusNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberStatusDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_statusAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCustomStatusAssignmentListDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_deleteStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                statusId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CustomMemberFieldsController_renameStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                statusId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomMemberStatusNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomMemberStatusDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_studentValues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCustomFieldsDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_setStudentValues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCustomFieldValuesDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCustomFieldsDto"];
+                };
+            };
+        };
+    };
+    CustomMemberFieldsController_setStudentStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetStudentCustomStatusDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentCustomFieldsDto"];
+                };
             };
         };
     };
