@@ -204,4 +204,82 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
     });
     expect((await move('owner', 'Cy', { targetRungId: rung.Blue.id })).body.error.code).toBe('ADULT_ALREADY');
   });
+
+  describe('bulk promote: "Promote to" with the Adult program group (Decision 281 item 2)', () => {
+    const bulk = (who: string, body: object) => as(who).post(`/v1/schools/${school.id}/grading/bulk-promote`).send({ disciplineId: kids.id, ...body });
+    const rankOf = (student: string) => superuser.studentRank.findFirstOrThrow({ where: { studentId: id[student] } });
+
+    beforeAll(async () => {
+      await kid('Dee', yearsAgo(17));
+      await kid('Eve', yearsAgo(15));
+      await kid('Fay', yearsAgo(12), 'Kids White');
+      await kid('Gil', yearsAgo(16, 3), 'Green');
+    });
+
+    it('the check judges each pick: Adult ranks from the age, skips up the Kids ladder, the rest refused', async () => {
+      const res = await bulk('coach', {
+        studentIds: [id.Dee, id.Eve, id.Fay, id.Gil, id.Cy, id.Ben],
+        dryRun: true,
+        targets: [
+          { studentId: id.Dee, rungId: rung.Blue.id },
+          { studentId: id.Eve, rungId: rung.Blue.id },
+          { studentId: id.Fay, rungId: rung.Green.id },
+          { studentId: id.Gil, rungId: rung.Purple.id },
+          { studentId: id.Cy, rungId: rung.Blue.id },
+          { studentId: id.Ben, rungId: rung['White 1'].id },
+        ],
+      });
+      expect(res.status).toBe(201);
+      const ready = Object.fromEntries((res.body.ready as Array<{ studentId: string; toRungId: string; toAdult?: boolean }>).map((r) => [r.studentId, r]));
+      expect(ready[id.Dee]).toMatchObject({ fromRungId: rung.Grey.id, toRungId: rung.Blue.id, toAdult: true });
+      expect(ready[id.Fay]).toMatchObject({ fromRungId: rung['Kids White'].id, toRungId: rung.Green.id });
+      expect(ready[id.Fay].toAdult).toBeUndefined();
+      // The top Kids rank has no next Kids rank, but can still move into Adult.
+      expect(ready[id.Gil]).toMatchObject({ fromRungId: rung.Green.id, toRungId: rung.Purple.id, toAdult: true });
+      const cannot = Object.fromEntries((res.body.cannotPromote as Array<{ studentId: string; reasons: string[] }>).map((r) => [r.studentId, r.reasons[0]]));
+      expect(cannot).toEqual({
+        [id.Eve]: expect.stringContaining('Ready for Adult from age'),
+        [id.Cy]: 'This student already has a rank in the Adult program.',
+        [id.Ben]: expect.stringContaining("Adult program's first belt"),
+      });
+    });
+
+    it('promotes the batch: kids into Adult with "Moved to Adult program", a skip recorded, no promotion twice', async () => {
+      const targets = [
+        { studentId: id.Dee, rungId: rung.Blue.id },
+        { studentId: id.Fay, rungId: rung.Green.id },
+      ];
+      const expected = [
+        { studentId: id.Dee, rungId: rung.Grey.id },
+        { studentId: id.Fay, rungId: rung['Kids White'].id },
+      ];
+      const res = await bulk('coach', { studentIds: [id.Dee, id.Fay], targets, expected, note: 'Spring Grading Day' });
+      expect(res.status).toBe(201);
+      expect((res.body.ready as unknown[]).length).toBe(2);
+      expect(await rankOf('Dee')).toMatchObject({ disciplineId: adult.id, currentStripeId: rung.Blue.id, classesAttendedTowardCheckpoint: 0 });
+      expect(await rankOf('Fay')).toMatchObject({ disciplineId: kids.id, currentStripeId: rung.Green.id });
+      const ev = (student: string) => superuser.promotionEvent.findFirstOrThrow({ where: { studentId: id[student] } });
+      expect(await ev('Dee')).toMatchObject({ type: 'BULK_PROMOTION', toStripeTierId: rung.Blue.id, note: 'Spring Grading Day', systemNote: 'Moved to Adult program. Promoted in a batch.' });
+      expect(await ev('Fay')).toMatchObject({ type: 'BULK_PROMOTION', rungsSkipped: 1, systemNote: 'Promoted in a batch. Skipped 1 rank in between.' });
+      // The same batch sent again (a lost reply): skipped, not promoted twice.
+      const again = await bulk('coach', { studentIds: [id.Dee, id.Fay], targets, expected });
+      expect(again.body.ready).toEqual([]);
+      expect((again.body.cannotPromote as Array<{ reasons: string[] }>).map((c) => c.reasons[0])).toEqual(['already promoted since the check', 'already promoted since the check']);
+    });
+
+    it('a pick that is not above the current rank, or off both ladders, is refused', async () => {
+      const res = await bulk('owner', {
+        studentIds: [id.Fay, id.Gil],
+        dryRun: true,
+        targets: [
+          { studentId: id.Fay, rungId: rung.Grey.id },
+          { studentId: id.Gil, rungId: randomUUID() },
+        ],
+      });
+      expect((res.body.cannotPromote as Array<{ reasons: string[] }>).map((c) => c.reasons[0])).toEqual([
+        'the rank picked is not above their current rank',
+        'the rank picked is not on this style or its Adult program',
+      ]);
+    });
+  });
 });

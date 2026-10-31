@@ -1820,7 +1820,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notPromoted: "승급되지 않음: {list}.",
       openReport: "인쇄용 보고서 열기",
       title: "이 수련생들 승급",
-      intro: "각 수련생은 한 등급씩 올라갑니다. 행을 끌거나 위로·아래로 버튼으로 호명 순서를 정하세요.",
+      intro: "각 수련생은 '승급할 등급'에서 고른 등급으로 올라갑니다. 처음에는 다음 등급이 선택되어 있습니다. 행을 끌거나 위로·아래로 버튼으로 호명 순서를 정하세요.",
+      promoteToAria: "{name} 승급할 등급",
+      adultTag: "(성인 프로그램)",
+      skippedTag: {
+        other: "({count}단계 건너뜀)",
+      },
       dateLabel: "심사 날짜",
       dateHint: "비워 두면 오늘입니다. 모든 수련생에게 맞는 날짜여야 합니다.",
       noteLabel: "메모",

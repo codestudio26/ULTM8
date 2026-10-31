@@ -830,7 +830,8 @@ export class GradingService {
           reason: type === 'DOWNGRADE' ? dto.reason : null,
           note: dto.note ?? null,
           rungsSkipped: Math.max(0, skipped),
-          systemNote: bulk?.systemNote ?? (skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null),
+          // A batch's own note, and a skip from its "Promote to" pick (Decision 281 item 2).
+          systemNote: [bulk?.systemNote, skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null].filter(Boolean).join(' ') || null,
           startingClasses: type === 'DOWNGRADE' ? null : startingTotal,
           startingClassesByType: startingByType ?? undefined,
         },
@@ -1128,7 +1129,15 @@ export class GradingService {
    * - Can't be promoted (skipped): no next rank, blocked by the style's
    *   "skills required" switch, or not a student this coach may grade.
    * One grading date must suit every student, or the request is refused
-   * (prototype). `dryRun` returns the same three lists without changing
+   * (prototype).
+   * `targets` carries each student's "Promote to" pick (Decision 281 item 2;
+   * DESIGN.md "Promote selected: pick the rank"); a student without one moves
+   * up one rung. A pick may skip rungs (recorded, the next rung's checks still
+   * apply, Decision 289), or on a Kids style be an Adult program rank above the
+   * Adult ladder's first belt for a student who has reached "Ready for Adult
+   * from age" (backlog 3.20, Decisions 285, 397): they move to the Adult style
+   * as the single move does, with no promotion fee (Decision 397 leaves a fee
+   * on the move unresolved). `dryRun` returns the same three lists without changing
    * anything, for the confirm window. Each student is promoted in their own
    * transaction, so one student changed at the same time is skipped, not the
    * whole batch.
@@ -1144,9 +1153,10 @@ export class GradingService {
     if (!(await this.isSchoolOwner(callerId, schoolId))) await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     await this.assertSchoolAcceptsGradingWrites(callerId, schoolId, discipline);
 
-    type Row = { studentId: string; fromRungId?: string | null; toRungId?: string; reasons: string[]; promotionEventId?: string; feeRequestId?: string };
-    const ready: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
-    const needsAcknowledgement: Array<Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean }> = [];
+    type Row = { studentId: string; fromRungId?: string | null; toRungId?: string; toAdult?: boolean; reasons: string[]; promotionEventId?: string; feeRequestId?: string };
+    type Planned = Row & { toRungId: string; sameBelt: boolean; missingSkills: boolean };
+    const ready: Planned[] = [];
+    const needsAcknowledgement: Planned[] = [];
     const cannotPromote: Row[] = [];
     const dateProblems: string[] = [];
 
@@ -1162,6 +1172,12 @@ export class GradingService {
     const batch = { discipline, ladder, authorize };
     // Where each student was when the coach checked the batch (Decision 284).
     const expected = new Map((dto.expected ?? []).map((e) => [e.studentId, e.rungId]));
+    // Each student's "Promote to" pick (Decision 281 item 2).
+    const targets = new Map((dto.targets ?? []).map((t) => [t.studentId, t.rungId]));
+    // The linked Adult program, loaded once if any pick is off this ladder.
+    const offLadder = [...targets.values()].some((rungId) => rungIndex(ladder, rungId) < 0);
+    const adultProgram = offLadder ? await this.adultProgramFor(callerId, discipline) : null;
+    const adultLadder = adultProgram && 'ladder' in adultProgram ? adultProgram.ladder : [];
 
     for (const studentId of dto.studentIds) {
       try {
@@ -1178,12 +1194,22 @@ export class GradingService {
           where: { studentId_disciplineId: { studentId, disciplineId: dto.disciplineId } },
           include: { skillStatuses: { select: { skillId: true, status: true } } },
         });
-        if (!sr) return { cannot: 'no rank in this style' };
-        // Moved since the check: never promote twice when a batch is sent again (Decision 284).
+        const target = targets.get(studentId);
+        const toAdult = target !== undefined && rungIndex(ladder, target) < 0 && rungIndex(adultLadder, target) >= 0;
         const was = expected.get(studentId);
+        if (!sr) {
+          // Moved into Adult by an earlier send of this batch (Decision 284).
+          if (toAdult && was !== undefined && adultProgram && 'adult' in adultProgram) {
+            const now = await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId: adultProgram.adult.id } }, select: { currentStripeId: true } });
+            if (now?.currentStripeId === target) return { cannot: 'already promoted since the check' };
+          }
+          return { cannot: 'no rank in this style' };
+        }
+        // Moved since the check: never promote twice when a batch is sent again (Decision 284).
         if (was !== undefined && sr.currentStripeId !== was) {
           const wasIndex = rungIndex(ladder, was);
-          return { cannot: wasIndex >= 0 && ladder[wasIndex + 1]?.id === sr.currentStripeId ? 'already promoted since the check' : 'rank changed since the check' };
+          const promotedSince = (wasIndex >= 0 && ladder[wasIndex + 1]?.id === sr.currentStripeId) || (target !== undefined && target === sr.currentStripeId);
+          return { cannot: promotedSince ? 'already promoted since the check' : 'rank changed since the check' };
         }
         if (!(await isActiveForGrading(tx, sr, studentId, schoolId))) return { cannot: 'inactive (only active students can be graded)' };
         // A promotion waiting for its fee (Decision 300): not graded again until it settles.
@@ -1194,25 +1220,56 @@ export class GradingService {
         if (waiting) return { cannot: 'a promotion is waiting for its fee' };
         const fromIndex = sr.currentStripeId ? rungIndex(ladder, sr.currentStripeId) : -1;
         const next = fromIndex >= 0 ? ladder[fromIndex + 1] : undefined;
-        if (!next) return { cannot: 'no next rank' };
         const timeZone = await studentTimeZone(tx, studentId, schoolId);
+        // Where to: the pick, or the next rung.
+        let to: Rung | undefined = next;
+        if (target !== undefined && toAdult) {
+          if (fromIndex < 0) return { cannot: 'no next rank' };
+          const adult = adultProgram && 'adult' in adultProgram ? adultProgram.adult : null;
+          to = adultLadder[rungIndex(adultLadder, target)];
+          if (to.rankId === adultLadder[0].rankId) return { cannot: ADULT_FIRST_BELT.message };
+          const student = await tx.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } });
+          if (!hasReachedAge(student?.dateOfBirth ?? null, discipline.readyForAdultAge, localDay(new Date(), timeZone))) return { cannot: ADULT_TOO_YOUNG.message };
+          if (adult && (await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId: adult.id } }, select: { id: true } }))) {
+            return { cannot: ADULT_ALREADY.message };
+          }
+        } else if (target !== undefined) {
+          const targetIndex = rungIndex(ladder, target);
+          if (targetIndex < 0) {
+            // Off this ladder and not a rank of a usable Adult program.
+            return { cannot: adultProgram && 'cannot' in adultProgram ? adultProgram.cannot : 'the rank picked is not on this style or its Adult program' };
+          }
+          if (targetIndex <= fromIndex) return { cannot: 'the rank picked is not above their current rank' };
+          to = ladder[targetIndex];
+        }
+        // A kid on the top Kids rank has no next Kids rank, but can still move into Adult.
+        if (!to || (!next && !toAdult)) return { cannot: 'no next rank' };
         const el = eligibilityOnLadder(ladder, sr, timeZone);
-        if (!el.hasNext) return { cannot: 'no next rank' };
-        const missing = el.timeOnly ? 0 : el.missingSkillIds.length;
+        if (!el.hasNext && !toAdult) return { cannot: 'no next rank' };
+        // The next Kids rank's checks apply to a skip and to a move into Adult (Decision 289).
+        const missing = el.hasNext && !el.timeOnly ? el.missingSkillIds.length : 0;
         if (missing > 0 && discipline.skillsRequiredToGrade) return { cannot: 'required skills not signed off (this style requires them)' };
         const problem = dto.effectiveDate ? gradingDateProblem(dto.effectiveDate, localDay(new Date(), timeZone), localDay(sr.dateOfCurrentRank, timeZone)) : null;
         const reasons: string[] = [];
         if (missing > 0) reasons.push(`${missing} skill${missing > 1 ? 's' : ''} not signed off`);
-        const short = el.requiredDays - el.elapsedDays;
+        const short = el.hasNext ? el.requiredDays - el.elapsedDays : 0;
         if (short > 0) reasons.push(`${short} day${short > 1 ? 's' : ''} short`);
-        return { fromRungId: sr.currentStripeId, toRungId: next.id, sameBelt: next.rankId === sr.currentRankId, missingSkills: missing > 0, reasons, problem };
+        return { fromRungId: sr.currentStripeId, toRungId: to.id, toAdult, sameBelt: !toAdult && to.rankId === sr.currentRankId, missingSkills: missing > 0, reasons, problem };
       });
       if ('cannot' in plan) {
         cannotPromote.push({ studentId, reasons: [plan.cannot as string] });
         continue;
       }
       if (plan.problem) dateProblems.push(`${studentId}: ${plan.problem}`);
-      const row = { studentId, fromRungId: plan.fromRungId, toRungId: plan.toRungId, sameBelt: plan.sameBelt, missingSkills: plan.missingSkills, reasons: plan.reasons };
+      const row: Planned = {
+        studentId,
+        fromRungId: plan.fromRungId,
+        toRungId: plan.toRungId,
+        ...(plan.toAdult ? { toAdult: true } : {}),
+        sameBelt: plan.sameBelt,
+        missingSkills: plan.missingSkills,
+        reasons: plan.reasons,
+      };
       (plan.reasons.length > 0 ? needsAcknowledgement : ready).push(row);
     }
 
@@ -1226,6 +1283,7 @@ export class GradingService {
       studentId: r.studentId,
       fromRungId: r.fromRungId,
       toRungId: r.toRungId,
+      ...(r.toAdult ? { toAdult: true } : {}),
       reasons: r.reasons,
       ...(r.promotionEventId ? { promotionEventId: r.promotionEventId } : {}),
       ...(r.feeRequestId ? { feeRequestId: r.feeRequestId } : {}),
@@ -1252,6 +1310,26 @@ export class GradingService {
       // Decision 130
       const systemNote = row.reasons.length > 0 ? `Promoted in a batch; acknowledged: ${row.reasons.join(', ')}.` : 'Promoted in a batch.';
       try {
+        if (row.toAdult && adultProgram && 'adult' in adultProgram) {
+          // Into the Adult program (backlog 3.20): the caller was authorized
+          // for this student in the Kids style above.
+          const moved = await this.applyMoveToAdult(
+            callerId,
+            row.studentId,
+            discipline,
+            adultProgram.adult,
+            {
+              targetRungId: row.toRungId,
+              expectedCurrentRungId: row.fromRungId ?? null,
+              effectiveDate: dto.effectiveDate,
+              note: dto.note,
+              acknowledgeWithoutSkillSignoff: row.missingSkills,
+            },
+            { systemNote },
+          );
+          promoted.push({ ...strip(row), promotionEventId: moved.promotionEvent.id });
+          continue;
+        }
         const result = await this.changeRung(
           callerId,
           row.studentId,
@@ -1658,7 +1736,38 @@ export class GradingService {
       throw new ConflictException(ADULT_NOT_LINKED);
     }
     await this.assertSchoolAcceptsGradingWrites(callerId, adult.schoolId, adult);
+    return this.applyMoveToAdult(callerId, studentId, kids, adult, dto);
+  }
 
+  /** The Kids style's linked Adult style, for bulk promote's "Adult program"
+   * group: null with the reason when it can't take a student now. */
+  private async adultProgramFor(callerId: string, kids: Discipline): Promise<{ adult: Discipline; ladder: Rung[] } | { cannot: string }> {
+    if (!kids.adultDisciplineId) return { cannot: ADULT_NOT_LINKED.message };
+    const adult = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: kids.adultDisciplineId! } }));
+    if (!adult || adult.schoolId !== kids.schoolId) return { cannot: ADULT_NOT_LINKED.message };
+    try {
+      await this.assertSchoolAcceptsGradingWrites(callerId, adult.schoolId, adult);
+    } catch (err) {
+      if (err instanceof ConflictException) return { cannot: err.message };
+      throw err;
+    }
+    return { adult, ladder: await this.prismaApp.withTenantContext(callerId, (tx) => loadLadder(tx, adult.id)) };
+  }
+
+  /**
+   * The move itself, once the caller is authorized for the Kids style and both
+   * styles accept grading writes. Shared by the single move and bulk promote
+   * (`bulk`: recorded as a batch promotion with the batch's own note).
+   */
+  private async applyMoveToAdult(
+    callerId: string,
+    studentId: string,
+    kids: Discipline,
+    adult: Discipline,
+    dto: MoveToAdultDto,
+    bulk?: { systemNote: string },
+  ) {
+    const disciplineId = kids.id;
     const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
       const existing = await tx.studentRank.findUnique({
         where: { studentId_disciplineId: { studentId, disciplineId } },
@@ -1768,7 +1877,7 @@ export class GradingService {
           studentRankId: existing.id,
           schoolId: kids.schoolId,
           studentId,
-          type: 'PROMOTION',
+          type: bulk ? 'BULK_PROMOTION' : 'PROMOTION',
           performedById: callerId,
           fromRankId: from.rankId,
           toRankId: to.rankId,
@@ -1777,7 +1886,7 @@ export class GradingService {
           acknowledgedWithoutSkillSignoff: missingSkillIds.length > 0,
           effectiveDate: rankDate,
           note: dto.note ?? null,
-          systemNote: 'Moved to Adult program.',
+          systemNote: bulk ? `Moved to Adult program. ${bulk.systemNote}` : 'Moved to Adult program.',
           startingClasses: 0,
         },
       });

@@ -3,7 +3,8 @@ import { Button, Checkbox, ErrorBanner, Field, Modal, Spinner, TextField } from 
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { BeltChip } from './BeltChip';
-import type { Rung } from './ladder';
+import { promoteToOptions, type Rung } from './ladder';
+import { RankPicker } from './RankPicker';
 import { BulkPromotePartialError, type BulkPromoteResult, type BulkPromoteStudent, type GradingBoardItem, useBulkPromote } from './gradingQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 
@@ -22,9 +23,12 @@ interface ReportRow {
 }
 
 /**
- * Promote the ticked students one rank each (Decision 130; prototype
- * BulkPromoteModal): set the calling order (drag, or the Up/Down buttons), one
- * date and one note. The API checks every student first (a dry run) and the
+ * Promote the ticked students (Decision 130; prototype BulkPromoteModal): set
+ * the calling order (drag, or the Up/Down buttons), one date and one note.
+ * Each student has a "Promote to" picker (Decision 281 item 2; DESIGN.md
+ * "Promote selected: pick the rank"), starting on their next rank: any higher
+ * rank (a skip is recorded), and for a Kids student who has reached "Ready
+ * for Adult from age", the linked Adult program's ranks (backlog 3.20). The API checks every student first (a dry run) and the
  * window shows three groups: ready; "Needs a look" (skills not signed off or
  * days short, with the reason) — promoted only with one tick acknowledging
  * them, or remove them; and can't be promoted, which are skipped. Afterwards a
@@ -34,6 +38,7 @@ export function BulkPromoteModal({
   schoolId,
   style,
   ladder,
+  adult,
   students,
   onRemove,
   onDone,
@@ -42,6 +47,8 @@ export function BulkPromoteModal({
   schoolId: string;
   style: DisciplineResponse;
   ladder: Rung[];
+  /** A Kids style's linked Adult program and its ladder, for the "Adult program" group. */
+  adult?: { discipline: DisciplineResponse; ladder: Rung[] } | null;
   students: GradingBoardItem[];
   onRemove: (studentId: string) => void;
   onDone: () => void;
@@ -50,6 +57,8 @@ export function BulkPromoteModal({
   const bulk = useBulkPromote(schoolId);
   const t = useT();
   const [order, setOrder] = useState<string[]>(() => students.map((s) => s.studentId));
+  // "Promote to" picks that differ from the next rank, by student.
+  const [picks, setPicks] = useState<Record<string, string>>({});
   const [date, setDate] = useState('');
   const [note, setNote] = useState('');
   const [check, setCheck] = useState<BulkPromoteResult | null>(null);
@@ -62,19 +71,28 @@ export function BulkPromoteModal({
   const dragId = useRef<string | null>(null);
 
   const byId = (id: string) => students.find((s) => s.studentId === id);
-  const rung = (id: string | null | undefined) => ladder.find((r) => r.id === id) ?? null;
+  const rung = (id: string | null | undefined) => ladder.find((r) => r.id === id) ?? adult?.ladder.find((r) => r.id === id) ?? null;
   const latestCheck = useRef(0);
+  const choicesFor = (s: GradingBoardItem) => promoteToOptions(ladder, rung(s.currentStripeId), adult, s.readyForAdult);
+  const targetsFor = (ids: string[], p: Record<string, string> = picks) =>
+    ids.filter((id) => p[id]).map((id) => ({ studentId: id, rungId: p[id] }));
 
   /** Check the batch (a dry run). Each student's check stands on its own, so
    * removing a student needs no new check; only the date (or a failed check)
    * does. That keeps a large batch inside the API's request limit. */
-  function runCheck(ids: string[]) {
+  function runCheck(ids: string[], p: Record<string, string> = picks) {
     if (report || ids.length === 0) return;
     const mine = ++latestCheck.current;
     setChecking(true);
     setError(null);
     bulk
-      .mutateAsync({ disciplineId: style.id, studentIds: ids, dryRun: true, ...(date && date !== todayLocal() ? { effectiveDate: date } : {}) })
+      .mutateAsync({
+        disciplineId: style.id,
+        studentIds: ids,
+        dryRun: true,
+        ...(date && date !== todayLocal() ? { effectiveDate: date } : {}),
+        ...(targetsFor(ids, p).length > 0 ? { targets: targetsFor(ids, p) } : {}),
+      })
       .then((r) => {
         if (mine === latestCheck.current) setCheck(r);
       })
@@ -109,6 +127,50 @@ export function BulkPromoteModal({
     onRemove(id);
     // A failed check (e.g. the date didn't suit this student) is run again without them.
     if (!check) runCheck(next);
+  }
+
+  /** A new "Promote to" pick is checked for that student alone; their row in
+   * the check is replaced, so the batch needs no new check (Decision 284 item 4). */
+  function pickFor(s: GradingBoardItem, rungId: string) {
+    const id = s.studentId;
+    const next = { ...picks };
+    if (rungId === s.eligibility.nextRungId) delete next[id];
+    else next[id] = rungId;
+    setPicks(next);
+    if (!check) return runCheck(order, next);
+    const mine = ++latestCheck.current;
+    setChecking(true);
+    setError(null);
+    bulk
+      .mutateAsync({
+        disciplineId: style.id,
+        studentIds: [id],
+        dryRun: true,
+        ...(date && date !== todayLocal() ? { effectiveDate: date } : {}),
+        ...(targetsFor([id], next).length > 0 ? { targets: targetsFor([id], next) } : {}),
+      })
+      .then((r) => {
+        if (mine !== latestCheck.current) return;
+        const others = (list: BulkPromoteStudent[]) => list.filter((x) => x.studentId !== id);
+        setCheck((c) =>
+          c
+            ? {
+                ready: [...others(c.ready), ...r.ready],
+                needsAcknowledgement: [...others(c.needsAcknowledgement), ...r.needsAcknowledgement],
+                cannotPromote: [...others(c.cannotPromote), ...r.cannotPromote],
+              }
+            : r,
+        );
+      })
+      .catch((err) => {
+        if (mine === latestCheck.current) {
+          setCheck(null);
+          setError(err instanceof ApiError ? err.message : t('grading.bulk.checkFailed'));
+        }
+      })
+      .finally(() => {
+        if (mine === latestCheck.current) setChecking(false);
+      });
   }
 
   function moveBy(id: string, delta: number) {
@@ -158,6 +220,7 @@ export function BulkPromoteModal({
         ...(note.trim() ? { note: note.trim() } : {}),
         ...(acknowledgedIds.length > 0 ? { acknowledgedStudentIds: acknowledgedIds } : {}),
         ...(expected.length > 0 ? { expected } : {}),
+        ...(targetsFor(ids).length > 0 ? { targets: targetsFor(ids) } : {}),
       });
       finish(join(before, result), batch, []);
     } catch (err) {
@@ -175,6 +238,16 @@ export function BulkPromoteModal({
     return send(toPromote, toPromote, { ready: [], needsAcknowledgement: [], cannotPromote: [] });
   }
 
+  /** "Blue Belt (Adult program)" or "Green Belt (skipped 2)" (DESIGN.md). */
+  function toLabel(r: BulkPromoteStudent): string {
+    const to = rung(r.toRungId);
+    if (!to) return '—';
+    if (r.toAdult) return `${to.name} ${t('grading.bulk.adultTag')}`;
+    const from = rung(r.fromRungId);
+    const skipped = from ? to.index - from.index - 1 : 0;
+    return skipped > 0 ? `${to.name} ${t('grading.bulk.skippedTag', { count: skipped })}` : to.name;
+  }
+
   /** The done window and report, in calling order; `notReached` are students
    * a stopped batch never got to. */
   function finish(result: BulkPromoteResult, batch: string[], notReached: string[]) {
@@ -182,7 +255,7 @@ export function BulkPromoteModal({
     const rows = batch
       .map((id) => result.ready.find((r) => r.studentId === id))
       .filter((r): r is BulkPromoteStudent => !!r)
-      .map((r) => ({ name: nameOf(r.studentId), from: rung(r.fromRungId)?.name ?? '—', to: rung(r.toRungId)?.name ?? '—' }));
+      .map((r) => ({ name: nameOf(r.studentId), from: rung(r.fromRungId)?.name ?? '—', to: toLabel(r) }));
     setPartial(null);
     setReport({
       rows,
@@ -282,7 +355,11 @@ export function BulkPromoteModal({
             if (!s) return null;
             const name = fullName(s);
             const from = rung(s.currentStripeId);
-            const to = rung(s.eligibility.nextRungId);
+            const { options, adultIds, firstAdultId } = choicesFor(s);
+            const toId = picks[id] ?? s.eligibility.nextRungId ?? '';
+            const to = options.find((r) => r.id === toId) ?? null;
+            const toAdult = !!to && adultIds.has(to.id);
+            const skipped = to && from && !toAdult ? to.index - from.index - 1 : 0;
             const flag = flagged(id);
             const skip = blocked(id);
             return (
@@ -311,15 +388,26 @@ export function BulkPromoteModal({
                 <span style={{ width: 20, color: 'var(--text-secondary)' }}>{i + 1}</span>
                 <span style={{ flex: 1, minWidth: 120 }}>
                   <strong>{name}</strong>
+                  {toAdult ? <div style={{ color: 'var(--text-accent)', fontSize: 12 }}>{t('grading.modals.grade.adultNote')}</div> : null}
+                  {skipped > 0 ? <div style={{ color: 'var(--text-accent)', fontSize: 12 }}>{t('grading.modals.grade.skips', { count: skipped })}</div> : null}
                   {flag ? <div style={{ color: 'var(--text-warning)', fontSize: 12 }}>{t('grading.bulk.needsLook', { reasons: flag.reasons.join('; ') })}</div> : null}
                   {skip ? <div style={{ color: 'var(--text-danger)', fontSize: 12 }}>{t('grading.bulk.cantPromote', { reasons: skip.reasons.join('; ') })}</div> : null}
                 </span>
                 {from ? <BeltChip rung={from} /> : null}
                 <span aria-hidden="true">→</span>
-                {to ? <BeltChip rung={to} /> : null}
-                <span className="ultm8-field__hint" style={{ minWidth: 70 }}>
-                  {to?.name}
-                </span>
+                {options.length > 0 ? (
+                  <span style={{ display: 'inline-flex', minWidth: 0, maxWidth: '100%' }}>
+                    <RankPicker
+                      id={`bulk-to-${id}`}
+                      ariaLabel={t('grading.bulk.promoteToAria', { name })}
+                      value={toId}
+                      onChange={(rungId) => pickFor(s, rungId)}
+                      options={options}
+                      suffix={(r) => (adultIds.has(r.id) ? t('grading.modals.grade.adultSuffix') : null)}
+                      heading={(r) => (r.id === firstAdultId ? t('grading.modals.grade.adultHeading') : null)}
+                    />
+                  </span>
+                ) : null}
                 <span style={{ display: 'inline-flex', gap: 4, marginLeft: 'auto' }}>
                   <Button type="button" variant="secondary" onClick={() => moveBy(id, -1)} disabled={i === 0} aria-label={t('grading.bulk.moveUpAria', { name })}>
                     ↑

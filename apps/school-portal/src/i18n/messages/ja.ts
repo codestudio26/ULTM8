@@ -1820,7 +1820,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       notPromoted: "昇級されなかった生徒：{list}。",
       openReport: "印刷用レポートを開く",
       title: "これらの生徒を昇級",
-      intro: "各生徒は1つ上の級に上がります。行をドラッグするか、上へ・下へボタンで呼び出し順を設定します。",
+      intro: "各生徒は「昇級先」で選んだ級に上がります。最初は次の級が選ばれています。行をドラッグするか、上へ・下へボタンで呼び出し順を設定します。",
+      promoteToAria: "{name}の昇級先",
+      adultTag: "(大人プログラム)",
+      skippedTag: {
+        other: "({count}級飛び級)",
+      },
       dateLabel: "審査日",
       dateHint: "空欄の場合は今日です。すべての生徒に適した日付にしてください。",
       noteLabel: "メモ",
