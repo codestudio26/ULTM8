@@ -55,6 +55,7 @@ export const server: PartialMessages<ServerKeys> = {
     packNotForSale: "Questo pacchetto non è più in vendita. Chiedi alla reception un altro piano.",
     rechargeNotPaid: "Il pacchetto non è ancora stato pagato.",
     trialEnded: "La prova gratuita di ULTM8 di questa scuola è terminata. Il portale è in sola lettura finché non si abbona: nessun nuovo corso, prenotazione o pagamento.",
+    mergeBlocked: "Queste due schede non possono ancora essere unite. Riapri l'unione per vedere perché.",
     correctionNotVerified: "La tua cintura in questo stile attende ancora la verifica della scuola. Potranno correggerla allora.",
     correctionPending: "Hai già chiesto una correzione in questo stile. Attendi la risposta della scuola.",
     correctionSameRank: "Questa è già la tua cintura. Scegli la cintura che dovresti avere.",

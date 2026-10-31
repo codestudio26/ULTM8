@@ -61,6 +61,9 @@ function describe(t: T, e: StaffActivityEntry): string {
         .join(', ');
       return t('roleGrants.activity.accessChanged', { ...vars, list });
     }
+    // Decision 315 item 13: a duplicate member merged into the kept one.
+    case 'MEMBERS_MERGED':
+      return t('roleGrants.activity.membersMerged', { ...vars, duplicate: String(d.duplicateName ?? '') || t('roleGrants.activity.someone') });
     case 'SETTING_CHANGED':
       return t(d.mustAcceptFirst ? 'roleGrants.activity.mustAcceptOn' : 'roleGrants.activity.mustAcceptOff', vars);
     default:

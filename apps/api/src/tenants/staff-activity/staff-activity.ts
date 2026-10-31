@@ -19,6 +19,9 @@ export const STAFF_ACTIONS = [
   'OPEN_MAT_CHANGED', // { on }
   'SETTING_CHANGED', // { mustAcceptFirst }
   'CHARGE_ACCESS_CHANGED', // { changes: [{ switch: 'createCharges' | 'cancelCharges', on }] } (Decisions 303, 338)
+  // Decision 315 item 13: a duplicate member merged into the kept one
+  // (targetUserId). { keptName, duplicateId, duplicateName, moved, waiverSignaturesLeft }
+  'MEMBERS_MERGED',
 ] as const;
 export type StaffAction = (typeof STAFF_ACTIONS)[number];
 
