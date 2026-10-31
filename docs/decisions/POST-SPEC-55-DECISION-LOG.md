@@ -7306,3 +7306,17 @@ User (Code), 30 Oct 2026, answering Q2 of stress test round 4: show the first 10
 ### Recorded by
 
 User (Code), 31 Oct 2026, "go ahead" on the three recommendations (medical withdrawal deletes the data; the Kids → Adult move is charged like a promotion; the surcharge stops when a country is removed).
+
+## Decision 420 — Promotion fees: staff with "Can cancel charges" may waive or cancel them, and the Kids → Adult fee has its own Grading Settings switch
+
+**Date:** 31 Oct 2026 · **Status:** Product-owner decision · **Amends:** Decision 419 item 2 · **Builds on:** Decisions 300, 307 (promotion fee), 413 ("Can cancel charges" for late fees)
+
+### Decision
+
+1. **Grading fees stay the owner's choice and are off by default.** The School's promotion fee (Grading Settings) is off until the owner turns it on. This is already how it is built; recorded here for clarity.
+2. **Who may waive or cancel a promotion fee: the owner, or staff the owner has given "Can cancel charges".** Until now only the School owner could waive or cancel a promotion fee (Decisions 300, 307). The owner's power extends to those they grant access: staff with the existing "Can cancel charges" switch (off by default; it already lets staff waive late fees under Decision 413) may now also waive or cancel promotion fees, including the Kids → Adult fee. Owner-only settings (turning the fee on or off, setting rank prices) are unchanged. This replaces Decision 419 item 2's "the coach can waive it".
+3. **Kids → Adult has its own on/off switch in Grading Settings, off by default.** A new switch, "Charge a fee when moving a student from Kids to Adult", works only while the School's promotion fee is on. Off: the move is always free, whatever the Adult rank's price. On: the move is charged like any other promotion, at the Adult rank's own price (a rank with no price stays free), and with "Allow grading before the fee is paid" off it waits for the fee. This replaces Decision 419 item 2's "sets that rank's price to 0": a price of 0 is not accepted; a rank with no price is free.
+
+### Recorded by
+
+User (Code), 31 Oct 2026: "Fee for grading is a owner decision and by default is off"; "owner has those who have been granted access" (chose "Can cancel charges"); "we need on grading setting a toggle with on and off" (confirmed: a Kids → Adult switch, default off).
