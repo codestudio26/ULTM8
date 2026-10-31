@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
+  its own list of tags, managed under **School settings → Student tags** (add,
+  rename, delete; deleting a tag takes it off every student). A **Tags** card
+  on the student's page shows the student's tags with **+ tag**: staff pick a
+  tag from the list or type a new one, which joins the list. The Students list
+  gains a **Tag** filter. Tags are staff-only: no member or Guardian screen or
+  API reply ever shows them. Tagging is for the staff who can edit the
+  student's details. A student's tags are erased with their account, like
+  staff notes. **Needs a database migration** (`20270123000000_student_tags`).
 - **Fixed: card payments against Stripe's current API** — found on the first
   run against a real Stripe test account. Several calls were written for an
   older Stripe API and failed on the version the app now uses:

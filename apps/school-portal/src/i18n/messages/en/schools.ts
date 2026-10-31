@@ -83,6 +83,18 @@ export const schools = {
     checkInLink: "Open check-in rules",
     stripeTrialNote: "In Stripe, a frozen card subscription shows as a trial. If your Stripe account sends trial-ending reminder emails, members may get one. You can turn these emails off in your Stripe settings.",
   },
+  studentTags: {
+    title: "Student tags",
+    subtitle: "Your own labels for students, such as Competition team. Only staff see them, never the student. Staff can also add a new tag while tagging a student.",
+    empty: "No tags yet.",
+    newLabel: "New tag",
+    add: "Add tag",
+    nameLabel: "Name of {tag}",
+    count: "Students: {count}",
+    rename: "Rename",
+    delete: "Delete",
+    confirmDelete: "Delete this tag? It comes off every student who has it.",
+  },
   heardFrom: {
     title: 'How did you hear about us?',
     subtitle: "The choices on the front-desk sign-up form. Until you change them, the starting list shows in each person's language.",

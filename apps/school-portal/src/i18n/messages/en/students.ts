@@ -8,6 +8,18 @@ export const students = {
   title: 'Students',
   subtitle: 'Everyone currently enrolled at your School. Open a student to see and change their ranks.',
   inviteButton: 'Invite a Student',
+  tags: {
+    title: "Tags",
+    add: "+ tag",
+    remove: "Remove {tag}",
+    empty: "No tags yet.",
+    failed: "Could not save the tag. Please try again.",
+    inputLabel: "Tag",
+    placeholder: "Pick a tag or type a new one",
+    save: "Add",
+    filterLabel: "Tag",
+    filterAll: "All tags",
+  },
   notes: {
     title: "Notes",
     newLabel: "New note",

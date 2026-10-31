@@ -591,6 +591,7 @@ model User {
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
   studentNotesWritten               StudentNote[]               @relation("StudentNoteAuthor")
+  studentTags                       StudentTag[]                @relation("StudentTagStudent")
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
   childInvitesReceived              ChildInvite[]               @relation("ChildInviteGuardian")
   childInvitesSent                  ChildInvite[]               @relation("ChildInviteCreatedBy")
@@ -1320,6 +1321,7 @@ model School {
   notificationBroadcasts NotificationBroadcast[]
   rankCorrectionRequests RankCorrectionRequest[]
   studentNotes           StudentNote[]
+  schoolTags             SchoolTag[]
   studentExportLogs      StudentExportLog[]
   childInvites           ChildInvite[]
   signUps                SignUp[]
@@ -5250,6 +5252,44 @@ model StudentNote {
 
   @@index([schoolId, studentId, createdAt])
   @@index([studentId, showToMember])
+}
+
+/// Backlog 5.4 (Decision 315 item 7): the School's own list of tags for its
+/// students. Staff-only: no member-facing endpoint ever returns one. Jobs
+/// connection only (RLS on, no app grant).
+model SchoolTag {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+
+  createdAt DateTime @default(now())
+
+  students StudentTag[]
+
+  @@unique([schoolId, name])
+  /// Target of StudentTag's (tagId, schoolId) key, so a tag can only ever
+  /// sit on a student under its own School.
+  @@unique([id, schoolId])
+}
+
+/// Backlog 5.4 (Decision 315 item 7): a tag on a student. Kept while the
+/// student's account exists and erased with it, like staff notes; goes when
+/// the tag is deleted from the School's list. Jobs connection only.
+model StudentTag {
+  tagId    String
+  schoolId String
+  tag      SchoolTag @relation(fields: [tagId, schoolId], references: [id, schoolId], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentTagStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([tagId, studentId])
+  @@index([schoolId, studentId])
 }
 
 /// Backlog 3.9 (Decision 399): one row per student-list export, who made it
