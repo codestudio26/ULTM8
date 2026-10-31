@@ -9,6 +9,8 @@ import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useStudentProfile, useUpdateStudentProfile, type StudentProfileResponse, type UpdateStudentProfileInput } from './studentQueries';
 import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
+import { dayFromToday } from '../membershipPlans/freezeQueries';
+import { MemberContactFields } from './MemberDetails';
 
 type Form = {
   firstName: string;
@@ -24,10 +26,29 @@ type Form = {
   weightCategory: string;
   kimonoSize: string;
   beltSize: string;
+  joinedOn: string;
+  secondaryPhone: string;
+  secondaryEmail: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelationship: string;
 };
 
 /** The fields that a blank clears (sent as `null`). */
-const CLEARABLE = ['username', 'nationality', 'language', 'currency', 'weightCategory', 'kimonoSize', 'beltSize'] as const;
+const CLEARABLE = [
+  'username',
+  'nationality',
+  'language',
+  'currency',
+  'weightCategory',
+  'kimonoSize',
+  'beltSize',
+  'secondaryPhone',
+  'secondaryEmail',
+  'emergencyContactName',
+  'emergencyContactPhone',
+  'emergencyContactRelationship',
+] as const;
 
 function formFrom(p: StudentProfileResponse): Form {
   return {
@@ -44,6 +65,12 @@ function formFrom(p: StudentProfileResponse): Form {
     weightCategory: p.weightCategory ?? '',
     kimonoSize: p.kimonoSize ?? '',
     beltSize: p.beltSize ?? '',
+    joinedOn: p.joinedOn ?? '',
+    secondaryPhone: p.secondaryPhone ?? '',
+    secondaryEmail: p.secondaryEmail ?? '',
+    emergencyContactName: p.emergencyContactName ?? '',
+    emergencyContactPhone: p.emergencyContactPhone ?? '',
+    emergencyContactRelationship: p.emergencyContactRelationship ?? '',
   };
 }
 
@@ -61,7 +88,10 @@ function formFrom(p: StudentProfileResponse): Form {
  * birth and photo can't be cleared (the API keeps both). Language and
  * Currency are picked from the lists the app serves, as on My Profile.
  * Email and phone aren't here: they're the Student's login/OTP identifiers
- * (see UpdateUserDto's own header comment).
+ * (see UpdateUserDto's own header comment). The secondary phone and email
+ * and the emergency contact (Decision 315 item 5) are only contact details,
+ * so they are; so is the join date at this School (item 4), never later
+ * than today.
  */
 export function StudentUpdatePage() {
   const t = useT();
@@ -116,6 +146,8 @@ export function StudentUpdatePage() {
     if (safeForm.firstName !== safeInitial.firstName) body.firstName = safeForm.firstName;
     if (safeForm.surname !== safeInitial.surname) body.surname = safeForm.surname;
     if (safeForm.dateOfBirth && safeForm.dateOfBirth !== safeInitial.dateOfBirth) body.dateOfBirth = safeForm.dateOfBirth;
+    // Decision 315 item 4: a join date can be changed, not cleared.
+    if (safeForm.joinedOn && safeForm.joinedOn !== safeInitial.joinedOn) body.joinedOn = safeForm.joinedOn;
     if (safeForm.profilePhotoUrl && safeForm.profilePhotoUrl !== safeInitial.profilePhotoUrl) body.profilePhotoUrl = safeForm.profilePhotoUrl;
     for (const key of CLEARABLE) {
       if (safeForm[key] !== safeInitial[key]) body[key] = safeForm[key].trim() || null;
@@ -170,6 +202,9 @@ export function StudentUpdatePage() {
           <Field label={t('students.update.dateOfBirth')} htmlFor="student-update-dob">
             <TextField type="date" value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
           </Field>
+          <Field label={t('students.update.joinedOn')} htmlFor="student-update-joined-on" hint={t('students.update.joinedOnHint')}>
+            <TextField id="student-update-joined-on" type="date" max={dayFromToday(0)} value={form.joinedOn} onChange={(e) => set('joinedOn', e.target.value)} />
+          </Field>
           <Field label={t('students.update.gender')} htmlFor="student-update-gender">
             {/* Decision 315 item 15: Female, Male or not given. */}
             <SelectField
@@ -217,6 +252,7 @@ export function StudentUpdatePage() {
             onChange={(address) => set('address', address)}
             errors={addressErrors}
           />
+          <MemberContactFields idPrefix="student-update" value={form} onChange={(key, value) => set(key, value)} />
           <Field label={t('students.update.weightCategory')} htmlFor="student-update-weight-category" hint={t('students.update.freeTextHint')}>
             <TextField value={form.weightCategory} onChange={(e) => set('weightCategory', e.target.value)} />
           </Field>

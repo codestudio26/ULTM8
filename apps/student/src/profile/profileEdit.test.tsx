@@ -114,4 +114,18 @@ describe('ProfileScreen — clearing a field sends null, not undefined', () => {
     expect(call.language).toBe('en');
     expect(call.currency).toBe('USD');
   });
+
+  it('sends only the contacts that changed (Decision 315 item 5), blank clearing one', async () => {
+    mocked(q.useMyProfile).mockReturnValue({ data: { ...PROFILE, emergencyContactName: 'Ma', secondaryEmail: 'old@example.test' }, isLoading: false, isError: false, error: null });
+    const { getByDisplayValue, getByText } = await render(<ProfileScreen />);
+    await fireEvent.changeText(getByDisplayValue('old@example.test'), '');
+    await fireEvent.changeText(getByDisplayValue('Ma'), 'Mum');
+    await fireEvent.press(getByText('Save'));
+
+    const call = updateProfile.mutate.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(call.secondaryEmail).toBeNull();
+    expect(call.emergencyContactName).toBe('Mum');
+    expect('secondaryPhone' in call).toBe(false);
+    expect('emergencyContactRelationship' in call).toBe(false);
+  });
 });

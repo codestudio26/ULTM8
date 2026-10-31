@@ -1,6 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional } from 'class-validator';
+import { IsIn, IsOptional, Matches } from 'class-validator';
 import { UpdateUserDto } from '../../../users/dto/update-user.dto';
+import { UserResponseDto } from '../../../users/dto/user-response.dto';
+import { JOIN_DATE_FORMAT } from '../student-join-dates';
 import { LANGUAGES } from '../../../settings/constants/languages';
 import { CURRENCIES } from '../../../settings/constants/currencies';
 
@@ -34,4 +36,18 @@ export class UpdateStudentProfileDto extends UpdateUserDto {
   @IsOptional()
   @IsIn(CURRENCIES.map((c) => c.code), { message: 'Choose a currency from the list.' })
   currency?: string | null;
+
+  /** Decision 315 item 4: the day the student joined this School. Staff can
+   * set an earlier day, never a future one (in the School's own calendar). */
+  @ApiPropertyOptional({ description: 'YYYY-MM-DD. The day the student joined this School; not in the future.', example: '2025-09-01' })
+  @IsOptional()
+  @Matches(JOIN_DATE_FORMAT, { message: 'Enter the join date as YYYY-MM-DD.' })
+  joinedOn?: string;
+}
+
+/** The student's profile as staff at a School see it: the account's profile,
+ * plus their join date at this School (Decision 315 item 4). */
+export class StudentProfileResponseDto extends UserResponseDto {
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'YYYY-MM-DD: the day they joined this School.' })
+  joinedOn!: string | null;
 }

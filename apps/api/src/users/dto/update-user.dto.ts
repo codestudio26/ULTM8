@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, IsUrl, MaxLength, MinLength, ValidateNested } from 'class-validator';
+import { IsDateString, IsEmail, IsOptional, IsString, IsUrl, MaxLength, MinLength, ValidateNested } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { PostalAddressDto } from '../../common/address/postal-address.dto';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
@@ -8,6 +8,10 @@ import { GenderField, type Gender } from '../../common/decorators/gender-field.d
 /** Names and username are trimmed before validation, so one made only of
  * spaces is refused as blank (Decision 341, S7). */
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
+/** An optional contact detail: trimmed, and blank means none (null). */
+const blankToNull = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() || null : value);
+/** As blankToNull, lower-cased like every other email (Decision 295). */
+const blankEmailToNull = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() || null : value);
 
 /**
  * `PATCH /users/me` — one partial-update endpoint covering every "edit this one
@@ -156,4 +160,50 @@ export class UpdateUserDto {
   @IsString()
   @MaxLength(50)
   beltSize?: string | null;
+
+  /**
+   * Decision 315 item 5 (backlog 5.2): one secondary phone and one secondary
+   * email, and an emergency contact who is not a Guardian and has no account.
+   * Contact details only, never a login or OTP destination, so unlike
+   * `email`/`phone` they're editable here. Free text with the sign-up's
+   * limits (Decision 392); blank or null clears one. A Guardian-managed child
+   * can't change their own (UsersService.updateMe).
+   */
+  @ApiPropertyOptional({ description: 'Decision 315 item 5. Not a login. Blank or null clears it.', type: String, nullable: true })
+  @Transform(blankToNull)
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  secondaryPhone?: string | null;
+
+  @ApiPropertyOptional({ description: 'Decision 315 item 5. Not a login. Blank or null clears it.', type: String, nullable: true })
+  @Transform(blankEmailToNull)
+  @IsOptional()
+  @IsEmail({}, { message: 'Enter a valid secondary email.' })
+  @MaxLength(254)
+  secondaryEmail?: string | null;
+
+  @ApiPropertyOptional({ description: "Emergency contact's name (Decision 315 item 5). Blank or null clears it.", type: String, nullable: true })
+  @Transform(blankToNull)
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  emergencyContactName?: string | null;
+
+  @ApiPropertyOptional({ description: "Emergency contact's phone (Decision 315 item 5). Blank or null clears it.", type: String, nullable: true })
+  @Transform(blankToNull)
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  emergencyContactPhone?: string | null;
+
+  @ApiPropertyOptional({ description: 'How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it.', type: String, nullable: true })
+  @Transform(blankToNull)
+  @IsOptional()
+  @IsString()
+  @MaxLength(60)
+  emergencyContactRelationship?: string | null;
 }
+
+/** The contact fields of Decision 315 item 5. */
+export const CONTACT_FIELDS = ['secondaryPhone', 'secondaryEmail', 'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelationship'] as const;

@@ -768,7 +768,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
+                  "$ref": "#/components/schemas/StudentProfileResponseDto"
                 }
               }
             }
@@ -819,7 +819,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserResponseDto"
+                  "$ref": "#/components/schemas/StudentProfileResponseDto"
                 }
               }
             }
@@ -21333,6 +21333,11 @@
           "enrolledAt": {
             "type": "string"
           },
+          "joinedOn": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD: the day they joined this School."
+          },
           "status": {
             "$ref": "#/components/schemas/StudentStatus"
           },
@@ -21459,6 +21464,11 @@
           "enrolledAt": {
             "type": "string"
           },
+          "joinedOn": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD: the day they joined this School (Decision 315 item 4)."
+          },
           "homeBranchName": {
             "type": "string",
             "nullable": true
@@ -21577,7 +21587,7 @@
           "updatedAt"
         ]
       },
-      "UserResponseDto": {
+      "StudentProfileResponseDto": {
         "type": "object",
         "properties": {
           "addressLine1": {
@@ -21672,11 +21682,39 @@
             "nullable": true,
             "description": "Free text — no confirmed enum/unit (Decision 220/246)."
           },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5. Not a login."
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5. Not a login."
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5: not a Guardian, no account."
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string"
           },
           "updatedAt": {
             "type": "string"
+          },
+          "joinedOn": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD: the day they joined this School."
           }
         },
         "required": [
@@ -21864,6 +21902,36 @@
             "type": "string",
             "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
             "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "description": "Emergency contact's name (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "description": "Emergency contact's phone (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "description": "How the emergency contact is related, e.g. \"Mother\" (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "joinedOn": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The day the student joined this School; not in the future.",
+            "example": "2025-09-01"
           }
         }
       },
@@ -22960,6 +23028,31 @@
       "CreateStudentManuallyDto": {
         "type": "object",
         "properties": {
+          "secondaryPhone": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "description": "Emergency contact's name (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "description": "Emergency contact's phone (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "description": "How the emergency contact is related, e.g. \"Mother\" (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
           "firstName": {
             "type": "string"
           },
@@ -22976,6 +23069,10 @@
           "branchId": {
             "type": "string",
             "description": "Required when the School has open branches: the home branch."
+          },
+          "joinedOn": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The day they joined; today when omitted. Not in the future."
           }
         },
         "required": [
@@ -24758,6 +24855,142 @@
           "createdAt"
         ]
       },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "addressLine1": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 276 — structured address, line 1."
+          },
+          "addressLine2": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCity": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressRegion": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressPostalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "addressCountry": {
+            "type": "string",
+            "nullable": true,
+            "description": "ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`)."
+          },
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "phoneVerifiedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set once Twilio Verify OTP confirms this phone; null if not yet verified."
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string",
+            "nullable": true
+          },
+          "dateOfBirth": {
+            "type": "string"
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "nullable": true
+          },
+          "language": {
+            "type": "string",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "profilePhotoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "weightCategory": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "kimonoSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "beltSize": {
+            "type": "string",
+            "nullable": true,
+            "description": "Free text — no confirmed enum/unit (Decision 220/246)."
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5. Not a login."
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5. Not a login."
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 315 item 5: not a Guardian, no account."
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "phone",
+          "firstName",
+          "surname",
+          "dateOfBirth",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
       "UpdateUserDto": {
         "type": "object",
         "properties": {
@@ -24831,6 +25064,31 @@
           "beltSize": {
             "type": "string",
             "description": "Free text — no confirmed enum/unit (Decision 220/246). Null clears it.",
+            "nullable": true
+          },
+          "secondaryPhone": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "secondaryEmail": {
+            "type": "string",
+            "description": "Decision 315 item 5. Not a login. Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactName": {
+            "type": "string",
+            "description": "Emergency contact's name (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactPhone": {
+            "type": "string",
+            "description": "Emergency contact's phone (Decision 315 item 5). Blank or null clears it.",
+            "nullable": true
+          },
+          "emergencyContactRelationship": {
+            "type": "string",
+            "description": "How the emergency contact is related, e.g. \"Mother\" (Decision 315 item 5). Blank or null clears it.",
             "nullable": true
           }
         }
@@ -34399,7 +34657,7 @@
           },
           "cardSurchargeAmount": {
             "type": "number",
-            "description": "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Subscription or a Friend Pass)."
+            "description": "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment."
           }
         },
         "required": [
@@ -37422,6 +37680,10 @@
           "branchId": {
             "type": "string",
             "description": "Required when the School has open branches: the child's home branch."
+          },
+          "joinedOn": {
+            "type": "string",
+            "description": "YYYY-MM-DD. The day the child joined; the day they are enrolled when omitted. Not in the future."
           }
         },
         "required": [

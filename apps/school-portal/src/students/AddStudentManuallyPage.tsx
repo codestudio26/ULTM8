@@ -7,8 +7,11 @@ import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useAddStudentManually } from './studentQueries';
 import { useAddChildManually } from './studentAccessQueries';
 import { useT } from '../i18n/I18nProvider';
+import { dayFromToday } from '../membershipPlans/freezeQueries';
+import { MemberContactFields, type MemberContacts } from './MemberDetails';
 
-type Form = {
+type Form = MemberContacts & {
+  joinedOn: string;
   firstName: string;
   surname: string;
   email: string;
@@ -18,7 +21,20 @@ type Form = {
   guardianSurname: string;
   guardianEmail: string;
 };
-const EMPTY: Form = { firstName: '', surname: '', email: '', dateOfBirth: '', branchId: '', guardianFirstName: '', guardianSurname: '', guardianEmail: '' };
+const NO_CONTACTS: MemberContacts = { secondaryPhone: '', secondaryEmail: '', emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelationship: '' };
+/** A new form; the join date starts as today (Decision 315 item 4). */
+const emptyForm = (): Form => ({
+  firstName: '',
+  surname: '',
+  email: '',
+  dateOfBirth: '',
+  branchId: '',
+  guardianFirstName: '',
+  guardianSurname: '',
+  guardianEmail: '',
+  joinedOn: dayFromToday(0),
+  ...NO_CONTACTS,
+});
 
 /** Under 18 on the given day (the API decides; this only picks the form). */
 function isChild(dateOfBirth: string, today = new Date()): boolean {
@@ -41,6 +57,9 @@ type Added =
  * new Guardian gets the account and passcode, and the child is enrolled; a
  * Guardian who already has an account is asked to accept in the app.
  * Someone who already has an account is invited (InviteStudentPage).
+ * The join date starts as today and can be set earlier, never later
+ * (Decision 315 item 4); an adult's secondary phone and email and emergency
+ * contact can be added here too (item 5).
  */
 export function AddStudentManuallyPage() {
   const t = useT();
@@ -49,7 +68,7 @@ export function AddStudentManuallyPage() {
   const { data: branchData } = useBranches(schoolId);
   const addStudent = useAddStudentManually(schoolId);
   const addChild = useAddChildManually(schoolId);
-  const [form, setForm] = useState<Form>(EMPTY);
+  const [form, setForm] = useState<Form>(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState<Added | null>(null);
 
@@ -72,13 +91,20 @@ export function AddStudentManuallyPage() {
       setError(t('students.invite.selectBranch'));
       return;
     }
+    if (form.joinedOn && form.joinedOn > dayFromToday(0)) {
+      setError(t('students.addManually.joinedOnFuture'));
+      return;
+    }
     const branchId = needsBranch ? form.branchId : undefined;
+    // Decision 315 item 4: blank means today.
+    const joinedOn = form.joinedOn || undefined;
     try {
       if (child) {
         const res = await addChild.mutateAsync({
           child: { firstName: form.firstName, surname: form.surname, dateOfBirth: form.dateOfBirth },
           guardian: { firstName: form.guardianFirstName, surname: form.guardianSurname, email: form.guardianEmail },
           branchId,
+          joinedOn,
         });
         const childName = `${form.firstName.trim()} ${form.surname.trim()}`;
         setAdded(
@@ -94,10 +120,15 @@ export function AddStudentManuallyPage() {
             : { kind: 'GUARDIAN_INVITED', child: childName, email: res.guardianEmail, emailSent: res.emailSent },
         );
       } else {
-        const res = await addStudent.mutateAsync({ firstName: form.firstName, surname: form.surname, email: form.email, dateOfBirth: form.dateOfBirth, branchId });
+        // Decision 315 item 5: only the contacts typed in (a blank is none).
+        const contacts: Partial<MemberContacts> = {};
+        for (const key of Object.keys(NO_CONTACTS) as Array<keyof MemberContacts>) {
+          if (form[key].trim()) contacts[key] = form[key].trim();
+        }
+        const res = await addStudent.mutateAsync({ firstName: form.firstName, surname: form.surname, email: form.email, dateOfBirth: form.dateOfBirth, branchId, joinedOn, ...contacts });
         setAdded({ kind: 'ADULT', name: `${res.firstName} ${res.surname}`.trim(), email: res.email, temporaryPasscode: res.temporaryPasscode, emailSent: res.emailSent });
       }
-      setForm(EMPTY);
+      setForm(emptyForm());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
@@ -165,6 +196,12 @@ export function AddStudentManuallyPage() {
                 <TextField id="add-student-email" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
               </Field>
             )}
+            <Field label={t('students.update.joinedOn')} htmlFor="add-student-joined-on" hint={t('students.addManually.joinedOnHint')}>
+              <TextField id="add-student-joined-on" type="date" max={dayFromToday(0)} value={form.joinedOn} onChange={(e) => set('joinedOn', e.target.value)} />
+            </Field>
+            {/* Decision 315 item 5: an adult's other contacts. A child's are
+                added on their page once enrolled. */}
+            {child ? null : <MemberContactFields idPrefix="add-student" value={form} onChange={(key, value) => set(key, value)} collapsed />}
             {needsBranch ? (
               <Field label={t('students.invite.homeBranch')} htmlFor="add-student-branch">
                 <SelectField

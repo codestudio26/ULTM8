@@ -3,6 +3,7 @@ import { ChildInvite } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { assertJoinDateAllowed, setJoinDate } from '../tenants/schools/student-join-dates';
 import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -59,6 +60,7 @@ export class StudentAccessService {
       throw new BadRequestException('This is for children (under 18). Add an adult with their own email instead.');
     }
     await this.roleGrants.assertHomeBranchChoice(callerId, schoolId, dto.branchId);
+    if (dto.joinedOn !== undefined) await assertJoinDateAllowed(this.prismaJobs, schoolId, dto.joinedOn);
 
     const email = dto.guardian.email.trim().toLowerCase();
     const childName = `${dto.child.firstName} ${dto.child.surname}`.trim();
@@ -81,6 +83,7 @@ export class StudentAccessService {
           childSurname: dto.child.surname,
           childDateOfBirth: new Date(dto.child.dateOfBirth),
           childGender: dto.child.gender ?? null,
+          joinedOn: dto.joinedOn ? new Date(`${dto.joinedOn}T00:00:00Z`) : null,
           createdById: callerId,
         },
       });
@@ -117,6 +120,8 @@ export class StudentAccessService {
       await this.removeNewAccounts(guardianId, studentId);
       throw err;
     }
+    // Decision 315 item 4: enrolling made today's date; an earlier one replaces it.
+    if (dto.joinedOn !== undefined) await setJoinDate(this.prismaJobs, schoolId, studentId, dto.joinedOn, callerId);
 
     const emailSent = await this.sendEmail(
       email,
@@ -211,6 +216,10 @@ export class StudentAccessService {
       });
       if (!enrolled) {
         await this.schools.join(callerId, invite.schoolId, { studentId, branchId: invite.branchId ?? undefined });
+        // Decision 315 item 4: the join date the owner chose, set by them.
+        if (invite.joinedOn) {
+          await setJoinDate(this.prismaJobs, invite.schoolId, studentId, invite.joinedOn.toISOString().slice(0, 10), invite.createdById);
+        }
       }
       await this.prismaJobs.childInvite.update({ where: { id: invite.id }, data: { studentId } });
       return { schoolId: invite.schoolId, studentId };
