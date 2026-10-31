@@ -16,6 +16,8 @@ import {
   type ProfilePhotoContentType,
   type UserProfile,
 } from './profileQueries';
+import { AddressSearch } from './AddressSearch';
+import type { AddressDetails } from './addressLookupQueries';
 
 /** Same 5MB/PNG+JPEG+WebP limits `PhotoUploadField` (packages/ui, the web
  * equivalent for Instructor/Branch/Franchise/Class photos) already
@@ -118,6 +120,8 @@ export function ProfileScreen() {
   const [form, setForm] = useState<Form | null>(null);
   const [saved, setSaved] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  // The address last chosen from "Search address", while the text still matches it.
+  const [pickedAddress, setPickedAddress] = useState<AddressDetails | null>(null);
 
   useEffect(() => {
     if (profile.data && form === null) setForm(formFrom(profile.data));
@@ -136,6 +140,7 @@ export function ProfileScreen() {
     for (const key of CONTACT_FIELDS) {
       if (form[key].trim() !== (initial?.[key] ?? '')) contacts[key] = form[key].trim() || null;
     }
+    const usePicked = Boolean(pickedAddress?.complete && form.address.trim() === pickedAddress.formattedAddress.trim());
     updateProfile.mutate(
       {
         firstName: form.firstName.trim(),
@@ -154,7 +159,11 @@ export function ProfileScreen() {
         // Left out when untouched: this screen still edits the one-line text,
         // and sending it would clear a structured (Decision 276) address the
         // School Portal saved, even though the Student never changed it.
-        address: form.address.trim() === (profile.data?.address ?? '') ? undefined : form.address.trim() || null,
+        // A complete address chosen from "Search address" and not edited since
+        // is saved with its separate fields (Decision 276), like the School Portal does.
+        ...(usePicked
+          ? { postalAddress: pickedAddress!.postalAddress }
+          : { address: form.address.trim() === (profile.data?.address ?? '') ? undefined : form.address.trim() || null }),
         // Still `undefined`, not `null`, for these two — neither picker offers
         // a "none" selection, so an empty `form.language`/`form.currency`
         // genuinely can't happen via this screen's own UI today; see this
@@ -273,6 +282,12 @@ export function ProfileScreen() {
       <Field label={t('profile.screen.nationality')}>
         <TextField value={form.nationality} onChangeText={(v) => set('nationality', v)} />
       </Field>
+      <AddressSearch
+        onPicked={(details) => {
+          setPickedAddress(details);
+          set('address', details.formattedAddress);
+        }}
+      />
       <Field label={t('profile.screen.address')}>
         <TextField value={form.address} onChangeText={(v) => set('address', v)} multiline />
       </Field>

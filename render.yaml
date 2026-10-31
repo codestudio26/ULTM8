@@ -185,3 +185,8 @@ services:
         sync: false
       - key: CLOUDFLARE_STREAM_API_TOKEN
         sync: false
+      # Google Places street lookup (Decision 212). Leave unset until the product
+      # owner provides a key with Places API (New) enabled, restricted to this
+      # server; until then the apps hide the address search box.
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false

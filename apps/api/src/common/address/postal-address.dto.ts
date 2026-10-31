@@ -77,7 +77,7 @@ const STRUCTURED_CLEARED = {
 } as const;
 
 let regionNames: Intl.DisplayNames | undefined;
-function countryName(code: string): string {
+export function countryName(code: string): string {
   try {
     regionNames ??= new Intl.DisplayNames(['en'], { type: 'region' });
     return regionNames.of(code) ?? code;

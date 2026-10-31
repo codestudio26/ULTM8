@@ -3778,6 +3778,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "선택…",
     postalExample: "예: {example}",
     legacyNotice: "이 주소는 주소 항목이 나뉘기 전에 한 줄로 저장되었습니다. 업데이트하려면 국가를 선택하고 각 항목을 확인하세요. 그대로 두어도 됩니다.",
+    search: "주소 검색",
+    searchPlaceholder: "도로명과 번호를 입력하세요",
+    searchHint: "결과를 선택하면 아래 항목이 채워집니다. 이후에도 수정할 수 있습니다.",
+    searchNoResults: "일치하는 주소가 없습니다. 아래 항목에 입력하세요.",
+    searchFailed: "지금은 주소 검색을 사용할 수 없습니다. 아래 항목에 주소를 입력하세요.",
+    searchAttribution: "Google 제공",
     city: {
       city: "도시",
       town: "읍/면",

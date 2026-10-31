@@ -12,6 +12,13 @@ jest.mock('./profileQueries', () => ({
   useLanguages: jest.fn(),
   useCurrencies: jest.fn(),
 }));
+// Google Places street lookup: switched off here (no key), so no search box.
+jest.mock('./addressLookupQueries', () => ({
+  useAddressLookupStatus: () => ({ data: { enabled: false } }),
+  fetchAddressSuggestions: jest.fn(),
+  fetchAddressDetails: jest.fn(),
+  newSessionToken: () => 'tok',
+}));
 jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),
   requestCameraPermissionsAsync: jest.fn(),

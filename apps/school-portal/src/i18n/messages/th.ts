@@ -3778,6 +3778,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     chooseRegion: "เลือก…",
     postalExample: "เช่น {example}",
     legacyNotice: "ที่อยู่นี้ถูกบันทึกเป็นบรรทัดเดียวก่อนที่ที่อยู่จะแยกเป็นช่องต่าง ๆ เลือกประเทศและตรวจสอบแต่ละช่องเพื่ออัปเดต หรือปล่อยไว้ตามเดิม",
+    search: "ค้นหาที่อยู่",
+    searchPlaceholder: "เริ่มพิมพ์ชื่อถนนและเลขที่",
+    searchHint: "เลือกผลลัพธ์เพื่อกรอกช่องด้านล่าง คุณยังแก้ไขได้ภายหลัง",
+    searchNoResults: "ไม่พบที่อยู่ที่ตรงกัน กรอกในช่องด้านล่าง",
+    searchFailed: "การค้นหาที่อยู่ใช้งานไม่ได้ในขณะนี้ กรอกที่อยู่ในช่องด้านล่าง",
+    searchAttribution: "ขับเคลื่อนโดย Google",
     city: {
       city: "เมือง",
       town: "เมือง",

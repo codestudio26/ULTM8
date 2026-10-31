@@ -6,6 +6,7 @@ import '@ultm8/ui';
 import { AuthProvider } from './auth/AuthContext';
 import { I18nProvider } from './i18n/I18nProvider';
 import { App } from './App';
+import { AddressLookupBridge } from './lib/AddressLookupBridge';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,7 +23,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
         <AuthProvider>
           <I18nProvider>
-            <App />
+            <AddressLookupBridge>
+              <App />
+            </AddressLookupBridge>
           </I18nProvider>
         </AuthProvider>
       </BrowserRouter>

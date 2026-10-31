@@ -14,6 +14,12 @@ export const address = {
   postalExample: 'e.g. {example}',
   legacyNotice:
     'This address was saved as a single line before addresses had separate fields. Choose the country and check each field to update it, or leave it as it is.',
+  search: 'Search address',
+  searchPlaceholder: 'Start typing the street and number',
+  searchHint: 'Choose a result to fill in the fields below. You can still edit them.',
+  searchNoResults: 'No matching address. Enter it in the fields below.',
+  searchFailed: "Address search isn't working right now. Enter the address in the fields below.",
+  searchAttribution: 'Powered by Google',
   city: { city: 'City', town: 'Town', post_town: 'Town/City', suburb: 'Suburb', district: 'District', area: 'Area' },
   region: {
     state: 'State',

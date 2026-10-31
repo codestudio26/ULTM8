@@ -251,6 +251,28 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   - Migration `20270123000000_attendance_stats_and_past`; new endpoints
     `GET /schools/{id}/attendance/stats`, `GET /schools/{id}/attendance/log-classes`
     and `POST /schools/{id}/attendance/logs`.
+- **Address search with Google Places, switched off until the key is set**
+  (Decision 212; deferred to v1.3 by Decision 267; backlog §3.16 and §4.3) —
+  a **"Search address"** box on every address form in the School Portal (My
+  profile, Update student, School, Branch, Branch settings, Franchise, Create
+  School, Complete instructor profile) and on My Profile in the student app.
+  Typing shows matching addresses in the chosen country; choosing one fills
+  the separate address fields (street, city, region, postcode, country), which
+  can still be edited. In the student app a chosen address that is complete
+  and not edited afterwards is saved with its separate fields too.
+  - **Off until the product owner provides a key.** Without
+    `GOOGLE_PLACES_API_KEY` on the API server, the box is hidden and every
+    form shows its plain fields exactly as before.
+    **To do (product owner): provide a Google Cloud API key with Places API
+    (New) enabled, restricted to the API server, then set
+    `GOOGLE_PLACES_API_KEY` on the API server (Render env var).**
+  - The API calls Google itself, so the key never reaches a browser or the
+    app: new endpoints `GET /address-lookup/status`, `/address-lookup/autocomplete`
+    and `/address-lookup/details` for signed-in users, rate-limited per user,
+    with short timeouts. While switched off, `status` says `enabled: false`
+    and the two lookups answer 503 `ADDRESS_LOOKUP_NOT_CONFIGURED`. Results
+    come in the app's language. New text in all 15 languages.
+  - Not yet tried against a real Google account.
 - **Files on a member (Documents)** — backlog 5.11, Decision 315 item 9. A new
   Documents section on the student's page: upload a PDF, JPG or PNG (up to
   10 MB each), see the list (name, size, date, who uploaded), download and
