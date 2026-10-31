@@ -590,6 +590,13 @@ export const SERVER_MESSAGES: string[] = [
   "This Guardian already has an invite for this child. Wait for them to answer it in the app.",
   "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.",
   "This temporary passcode has expired. Ask your School for a new one.",
+  // Decision 317 item 6 — rosters (apps/api/src/rosters).
+  "Roster not found",
+  "This School already has a roster with that name.",
+  "This School already has 100 rosters. Delete one before adding another.",
+  "This student is not on this roster.",
+  "A roster name can't be empty.",
+  "A roster name can be at most 60 characters.",
   "The School owner hasn't let you see attendance statistics.",
   "You can only see your own Branches' attendance.",
   "This class hasn't started yet. Check them in instead.",

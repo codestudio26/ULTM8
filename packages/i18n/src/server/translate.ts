@@ -235,6 +235,10 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   // Backlog 3.6 step 4 — charge-overdue-notice job and the dispute webhook.
   'Payment overdue': 'chargeOverdueTitle',
   'Payment due soon': 'chargeDueReminderTitle',
+  // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
+  'Membership ending soon': 'membershipExpiryTitle',
+  'Member absent': 'absenceAlertTitle',
+  'Memberships ending soon': 'membershipEndingReportTitle',
   'Payment dispute': 'chargeDisputeTitle',
   // Decision 414 item 4 — the refund notice (charge-ledger.ts refundNotice).
   'Refund': 'chargeRefundTitle',
@@ -455,6 +459,15 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^Invoice (#\d+) for (.+) was due on (\d{4}-\d{2}-\d{2})\. ([\d.]+) ([A-Z]{3}) is still to pay\.$/s,
     (m, { t, locale }) => n(t, 'chargeOverdueBody', { invoice: m[1], description: m[2], due: formatDay(m[3], locale), amount: formatAmount(m[4], m[5], locale) }),
+  ],
+  // Decision 317 item 7 — the membership expiry reminder and the absence alert. Days are YYYY-MM-DD.
+  [/^Your (.+) membership ends on (\d{4}-\d{2}-\d{2})\.$/s, (m, { t, locale }) => n(t, 'membershipExpiryBody', { plan: m[1], date: formatDay(m[2], locale) })],
+  [/^(.+) hasn't checked in since (\d{4}-\d{2}-\d{2})\.$/s, (m, { t, locale }) => n(t, 'absenceAlertBody', { name: m[1], date: formatDay(m[2], locale) })],
+  [/^(.+) hasn't checked in yet\.$/s, (m, { t }) => n(t, 'absenceAlertNeverBody', { name: m[1] })],
+  // The weekly report: "Name: Plan (YYYY-MM-DD)" joined with "; ", maybe ending "; +N"; only the dates are translated.
+  [
+    /^Memberships ending in the next 7 days: (.+)\.$/s,
+    (m, { t, locale }) => n(t, 'membershipEndingReportBody', { list: m[1].replace(/\((\d{4}-\d{2}-\d{2})\)/g, (_d, day: string) => `(${formatDay(day, locale)})`) }),
   ],
   [
     /^Invoice (#\d+) for (.+): ([\d.]+) ([A-Z]{3}) is due on (\d{4}-\d{2}-\d{2})\.$/s,
