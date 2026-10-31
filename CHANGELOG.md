@@ -15,6 +15,9 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fixed: "Give pass" and "Record sale" could stay greyed out** on a student's
+  Memberships card when the window opened before the School's plans had loaded.
+  The first plan is now picked as soon as the list arrives.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The
