@@ -10,5 +10,7 @@ import { StudentAccessService } from './student-access.service';
   imports: [TenantsModule, GuardiansModule, NotificationsModule],
   controllers: [StudentAccessController],
   providers: [StudentAccessService],
+  // Importing members adds a child the same way (DataImportsModule).
+  exports: [StudentAccessService],
 })
 export class StudentAccessModule {}

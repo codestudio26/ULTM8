@@ -31,6 +31,7 @@ import { StaffAttendanceService } from './staff-attendance.service';
   controllers: [AttendanceController, CheckInRulesController, StaffAttendanceController],
   providers: [AttendanceService, QrTokenService, FrontDeskCheckInService, CheckInRulesService, StaffAttendanceService],
   // The locked front-desk tablet (FrontDeskModule, Decision 380) checks in through these.
-  exports: [AttendanceService, FrontDeskCheckInService, QrTokenService],
+  // StaffAttendanceService: importing past attendance logs each row (DataImportsModule).
+  exports: [AttendanceService, FrontDeskCheckInService, QrTokenService, StaffAttendanceService],
 })
 export class AttendanceModule {}

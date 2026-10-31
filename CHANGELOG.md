@@ -334,6 +334,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   read-only; the member is notified of a new invoice, a receipt and a
   cancelled charge. **Needs a database migration**
   (`20270112000000_charges_and_balance`).
+- **Import from a spreadsheet** (backlog 5.13; Decision 315 items 12 and 13) —
+  a new **Students → Import** tab brings in members, memberships and past
+  attendance from a CSV file, with a template to download for each. Every row
+  is checked first in a preview that changes nothing (to import, skipped with
+  the reason, or an error with the reason); then the file is imported in
+  batches, and a batch sent again after a dropped connection imports nothing
+  twice. At most 2,000 rows per file. **Members** are made as Add manually
+  makes them: an account, a temporary passcode by email, the home branch,
+  the join date,
+  gender Female/Male/empty, and belts per style matched by name to the
+  School's own styles and belts. A row whose email already has an account is
+  skipped and listed. A child (under 18) is added with their Guardian's email:
+  a new Guardian gets an account with a temporary passcode; one who already
+  has an account gets an invite to accept in the app. **Memberships** are
+  recorded against the School's plans by name, with their dates and no
+  payment (a Subscription is card-only, so it isn't imported). **Past
+  attendance** is logged as "Log attendance" logs it: up to 30 days back,
+  counting like a check-in, never twice. The owner can import; Branch Staff
+  need the new "Import data" switch and reach only their own branches' students
+  (adding a child stays the owner's). Results can be downloaded as CSV. **Needs
+  a database migration** (`20270202000000_data_imports`).
 - **Freezing a membership: follow-ups** (backlog 3.4; Decision 409) —
   approving a freeze now cancels the member's bookings on the frozen days that
   the frozen membership paid for (no late fee; the place goes to the waitlist),

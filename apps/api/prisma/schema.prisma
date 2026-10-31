@@ -612,6 +612,8 @@ model User {
   studentExports                    StudentExportLog[]          @relation("StudentExportLogExportedBy")
   memberFiles                       MemberFile[]                @relation("MemberFileStudent")
   memberFilesUploaded               MemberFile[]                @relation("MemberFileUploadedBy")
+  dataImports                       DataImport[]                @relation("DataImportCreatedBy")
+  dataImportRows                    DataImportRow[]             @relation("DataImportRowStudent")
   signedDocumentExports             SignedDocumentExport[]      @relation("SignedDocumentExportRequestedBy")
   childInvitesReceived              ChildInvite[]               @relation("ChildInviteGuardian")
   childInvitesSent                  ChildInvite[]               @relation("ChildInviteCreatedBy")
@@ -1360,6 +1362,7 @@ model School {
   customMemberStatuses   CustomMemberStatus[]
   studentExportLogs      StudentExportLog[]
   memberFiles            MemberFile[]
+  dataImports            DataImport[]
   signedDocumentExports  SignedDocumentExport[]
   childInvites           ChildInvite[]
   signUps                SignUp[]
@@ -4734,6 +4737,10 @@ model StaffPermission {
   /// their own Branches. Branch Staff only; off by default; owners always
   /// can, for the whole School.
   canSeeAttendanceStats Boolean @default(false)
+  /// Decision 315 items 12, 13: may import members, memberships and past
+  /// attendance from a spreadsheet, for their own Branches. Branch Staff
+  /// only; off by default; owners always can.
+  canImportData Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -5519,6 +5526,70 @@ model StudentExportLog {
   createdAt DateTime @default(now())
 
   @@index([schoolId, createdAt])
+}
+
+/// Decision 315 items 12, 13: one spreadsheet import (members, memberships
+/// or past attendance), who ran it and when. The rows are sent in batches and
+/// each row's result is kept (DataImportRow), so a batch sent again returns
+/// the same results instead of importing twice. Jobs connection only (RLS on,
+/// no app grant).
+model DataImport {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  /// MEMBERS, MEMBERSHIPS or ATTENDANCE.
+  kind String
+
+  createdById String?
+  createdBy   User?   @relation("DataImportCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  fileName  String?
+  totalRows Int
+
+  createdAt DateTime @default(now())
+
+  rows DataImportRow[]
+
+  @@index([schoolId, createdAt])
+}
+
+/// One spreadsheet row's result in a DataImport. `rowNumber` is its line in
+/// the file (the header is line 1). A new member's imported phone is kept
+/// here: it isn't put on the account, where it would need verifying before
+/// they could sign in. Erased with the member's account. The join date goes
+/// to StudentJoinDate (Decision 315 item 4).
+model DataImportRow {
+  importId String
+  import   DataImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+
+  rowNumber Int
+
+  /// CREATED, SKIPPED or ERROR.
+  outcome  String
+  /// Why it was skipped or refused, or what was done (data-imports/import-rows.ts).
+  code     String?
+  /// The spreadsheet column the problem is in.
+  column   String?
+  message  String?
+  /// Done, with a caveat (e.g. a belt that couldn't be set): [{ code, message }].
+  warnings Json?
+
+  studentId     String?
+  student       User?   @relation("DataImportRowStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  /// What the row made. No foreign keys: this is a record of the import.
+  membershipId  String?
+  bookingId     String?
+  childInviteId String?
+
+  /// A new adult member's imported phone (not put on the account).
+  phone String?
+
+  createdAt DateTime @default(now())
+
+  @@id([importId, rowNumber])
+  @@index([studentId])
 }
 
 /// Decision 408: the Staff page's activity log, who changed what. One row per

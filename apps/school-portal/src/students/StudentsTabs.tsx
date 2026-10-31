@@ -5,6 +5,7 @@ import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { useMaySeeSignUps } from './SignUpsPage';
 import { useSignUps } from './signUpQueries';
 import { useAttendanceAccess } from './AttendancePage';
+import { useMayImport } from './imports/ImportPage';
 
 /** Students and Check-in sit side by side (DESIGN.md → "Check-in and
  * front-desk mode"), with Sign-ups from the tablet for the people who can
@@ -16,6 +17,8 @@ export function StudentsTabs() {
   const maySeeSignUps = useMaySeeSignUps(schoolId);
   // Decision 317 items 3, 4: statistics, or logging past attendance.
   const attendance = useAttendanceAccess(schoolId);
+  // Decision 315 items 12, 13: the owner, or Branch Staff with "Import data".
+  const mayImport = useMayImport(schoolId);
   const waiting = (useSignUps(schoolId, 'WAITING', maySeeSignUps).data?.items ?? []).filter((s) => s.status === 'PENDING').length;
   const tabs: Array<{ to: string; label: TranslationKey; end?: boolean; count?: number }> = [
     { to: '/students', label: 'students.tabs.students', end: true },
@@ -24,6 +27,7 @@ export function StudentsTabs() {
     ...(attendance.stats || attendance.log ? [{ to: '/students/attendance', label: 'students.tabs.attendance' as TranslationKey }] : []),
     // Backlog 5.8: the same people as attendance statistics.
     ...(attendance.stats ? [{ to: '/students/growth', label: 'students.tabs.growth' as TranslationKey }] : []),
+    ...(mayImport ? [{ to: '/students/import', label: 'imports.tab' as TranslationKey }] : []),
   ];
   return (
     <nav className="ultm8-tabs" aria-label={t('students.tabs.aria')}>

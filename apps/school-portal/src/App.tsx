@@ -31,6 +31,7 @@ import { SignUpsPage } from './students/SignUpsPage';
 import { RostersPage } from './students/RostersPage';
 import { AttendancePage } from './students/AttendancePage';
 import { GrowthPage } from './students/GrowthPage';
+import { ImportPage } from './students/imports/ImportPage';
 import { CheckInPage } from './frontdesk/CheckInPage';
 import { CheckInRulesPage } from './frontdesk/CheckInRulesPage';
 import { FrontDeskModePage } from './frontdesk/FrontDeskModePage';
@@ -318,6 +319,17 @@ export function App() {
           <RequireAuth>
             <Shell>
               <GrowthPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* Decision 315 items 12, 13: import members, memberships and past attendance. */}
+      <Route
+        path="/students/import"
+        element={
+          <RequireAuth>
+            <Shell>
+              <ImportPage />
             </Shell>
           </RequireAuth>
         }

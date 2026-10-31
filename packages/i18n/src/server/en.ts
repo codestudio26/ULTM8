@@ -607,6 +607,10 @@ export const SERVER_MESSAGES: string[] = [
   "You can only see your own Branches' growth.",
   "This class hasn't started yet. Check them in instead.",
   "This date is not valid.",
+  "The School owner hasn't let you import data.",
+  "A row number is past the end of this import.",
+  "Import not found",
+  "Each row number can only be sent once.",
 ];
 
 export const SERVER_PATTERNS: string[] = [
