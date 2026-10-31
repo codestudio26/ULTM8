@@ -5,6 +5,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
+import { StudentTagsCard } from '../students/StudentTagsCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
@@ -220,6 +221,9 @@ export function StudentGradingPage() {
 
       {/* Decision 400: staff notes, some shown to the member. */}
       {!inactive ? <StudentNotesCard schoolId={schoolId} studentId={studentId} /> : null}
+
+      {/* Backlog 5.4: staff-only tags, plus "+ tag". */}
+      {!inactive ? <StudentTagsCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 391: Visitor status and visit passes. */}
       {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}

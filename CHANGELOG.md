@@ -105,6 +105,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
   gains `memberships` and `total`, and each month `memberships` and `total`.
   15 languages.
+- **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
+  its own list of tags, managed under **School settings → Student tags** (add,
+  rename, delete; deleting a tag takes it off every student). A **Tags** card
+  on the student's page shows the student's tags with **+ tag**: staff pick a
+  tag from the list or type a new one, which joins the list. The Students list
+  gains a **Tag** filter. Tags are staff-only: no member or Guardian screen or
+  API reply ever shows them. Tagging is for the staff who can edit the
+  student's details. A student's tags are erased with their account, like
+  staff notes. **Needs a database migration** (`20270123000000_student_tags`).
 - **A paid promotion fee whose promotion can no longer apply** (Decision 414
   item 1) — when a promotion fee is paid in full but the promotion that waited
   for it can't go through any more (the student's rank or the belt ladder

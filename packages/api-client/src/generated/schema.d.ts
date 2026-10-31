@@ -5924,6 +5924,86 @@ export interface paths {
         patch: operations["StudentNotesController_update"];
         trace?: never;
     };
+    "/v1/schools/{schoolId}/student-tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentTagsController_list"];
+        put?: never;
+        post: operations["StudentTagsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/student-tags/{tagId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StudentTagsController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["StudentTagsController_rename"];
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/student-tags/{tagId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentTagsController_tagged"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StudentTagsController_studentTags"];
+        put?: never;
+        post: operations["StudentTagsController_add"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/tags/{tagId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StudentTagsController_untag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/add-child-manually": {
         parameters: {
             query?: never;
@@ -11708,6 +11788,35 @@ export interface components {
         UpdateStudentNoteDto: {
             body?: string;
             showToMember?: boolean;
+        };
+        SchoolTagDto: {
+            id: string;
+            name: string;
+            /** @description How many students have this tag. */
+            studentCount: number;
+        };
+        SchoolTagListDto: {
+            items: components["schemas"]["SchoolTagDto"][];
+        };
+        SchoolTagNameDto: {
+            name: string;
+        };
+        TaggedStudentsDto: {
+            /** @description The students with this tag that the caller covers. */
+            studentIds: string[];
+        };
+        StudentTagDto: {
+            id: string;
+            name: string;
+        };
+        StudentTagListDto: {
+            items: components["schemas"]["StudentTagDto"][];
+        };
+        AddStudentTagDto: {
+            /** @description A tag from the School's list. */
+            tagId?: string;
+            /** @description A new tag, added to the School's list. Send this or tagId. */
+            name?: string;
         };
         ChildDetailsDto: {
             firstName: string;
@@ -22392,6 +22501,189 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StudentNoteDto"];
                 };
+            };
+        };
+    };
+    StudentTagsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTagListDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolTagNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTagDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    StudentTagsController_rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchoolTagNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolTagDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_tagged: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaggedStudentsDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_studentTags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentTagListDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddStudentTagDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentTagListDto"];
+                };
+            };
+        };
+    };
+    StudentTagsController_untag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                tagId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
