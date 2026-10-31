@@ -9,6 +9,7 @@ import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
 import { VisitorCard } from '../students/VisitorCard';
+import { MemberDetailsCard } from '../students/MemberDetails';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { useSkills, type SkillResponse } from '../skills/skillQueries';
@@ -211,6 +212,12 @@ export function StudentGradingPage() {
           )}
         </Card>
       </div>
+
+      {/* Decision 315 items 4, 5: join date and other contacts. The same staff
+          who may open the Edit page (Branch Staff need the students switch). */}
+      {!inactive && student && (my.isOwner || !isBranchStaff || staffAccess.data?.access.students) ? (
+        <MemberDetailsCard schoolId={schoolId} studentId={studentId} />
+      ) : null}
 
       {/* Decision 384: the personal check-in code typed at the front desk. */}
       {!inactive ? <StudentCheckInCodeCard schoolId={schoolId} studentId={studentId} /> : null}

@@ -713,4 +713,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "これは昇級費です。スクールのオーナーが生徒の昇級画面から免除または取り消すと、この請求も取り消されます。",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "このスクールはまだ通貨を設定していないため、料金を支払えません。スクールにお問い合わせください。",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "この昇級料は支払い済みですが、昇級はもう適用できません。昇級料をキャンセルする（支払われた金額はクレジットになります）か、もう一度昇級させてください。",
+  "Enter the join date as YYYY-MM-DD.": "入会日は YYYY-MM-DD の形式で入力してください。",
+  "Enter a real join date (YYYY-MM-DD).": "実在する入会日を入力してください（YYYY-MM-DD）。",
+  "The join date can't be in the future.": "入会日を未来の日付にすることはできません。",
+  "Enter a valid secondary email.": "有効なサブのメールアドレスを入力してください。",
+  "A child's contact details are changed by their Guardian or the School.": "お子さまの連絡先は保護者またはスクールが変更します。",
 };

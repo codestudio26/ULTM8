@@ -101,6 +101,9 @@ export function StudentsPage() {
         <Badge variant="info">{t('students.frozen.badge')}</Badge>
       </span>
     ) : null;
+  // Decision 315 item 4: the join date staff can set (the enrolment day for a
+  // row with none).
+  const joinedOf = (s: StudentSummary) => (s.joinedOn ? formatCalendarDay(s.joinedOn) : new Date(s.enrolledAt).toLocaleDateString(formatLocale()));
   // A Guardian-managed child has no email of their own (Decision 341).
   const emailOf = (s: StudentSummary) => (s.guardianManaged ? t('students.managedByGuardian') : s.email);
 
@@ -208,7 +211,7 @@ export function StudentsPage() {
                   </div>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{emailOf(s)}</p>
                   {hasBranches ? <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{s.homeBranchName ?? t('students.branchNone')}</p> : null}
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{t('students.enrolledOn', { date: new Date(s.enrolledAt).toLocaleDateString(formatLocale()) })}</p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{t('students.joinedOn', { date: joinedOf(s) })}</p>
                 </Card>
               ))}
             </CardGrid>
@@ -236,7 +239,7 @@ export function StudentsPage() {
                     </span>
                   ),
                 },
-                { key: 'enrolledAt', header: t('students.columnEnrolled'), render: (s) => new Date(s.enrolledAt).toLocaleDateString(formatLocale()) },
+                { key: 'joined', header: t('students.columnJoined'), render: (s) => joinedOf(s) },
               ]}
             />
           )}

@@ -20,6 +20,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   doesn't know this, so Vancouver classes would have come out an hour off. The
   API (Render, the Docker image) and CI now run Node 22.23.4 (time-zone data
   2026e), and a test fails on any Node whose data is too old.
+
+- **New: member details — join date and other contacts** (Decision 315
+  items 4 and 5; v1.3 backlog 5.1 and 5.2):
+  - **Join date.** Each student has a join date at each School they belong
+    to. It is the day they are added, unless staff set an earlier day (never a
+    future one). Add student has a "Join date" field (today by default), the
+    Students list's "Enrolled" column is now "Joined", and the student's page
+    shows it in a new "Member details" card. Staff change it on Edit profile.
+    Existing students got the day they first joined that School. The student
+    list export uses it too.
+  - **Contacts.** A secondary phone, a secondary email and an emergency
+    contact (name, phone, relationship; not a Guardian, no account). Staff add
+    them on Add student ("+ Secondary phone", "+ Secondary email",
+    "+ Emergency contact", for adults) and on Edit profile, and see them in
+    "Member details". Members edit their own on My Profile in the student
+    app; a child's are kept by the School (a child has no login). They are
+    contact details only, never used to sign in, and are erased with the
+    account.
+  - Migration `20270123000000_member_details`.
+
 - **Fixed: card payments against Stripe's current API** — found on the first
   run against a real Stripe test account. Several calls were written for an
   older Stripe API and failed on the version the app now uses:

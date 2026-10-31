@@ -63,6 +63,21 @@ export class UserResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Free text — no confirmed enum/unit (Decision 220/246).' })
   beltSize!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 315 item 5. Not a login.' })
+  secondaryPhone!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 315 item 5. Not a login.' })
+  secondaryEmail!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 315 item 5: not a Guardian, no account.' })
+  emergencyContactName!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  emergencyContactPhone!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  emergencyContactRelationship!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

@@ -713,4 +713,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Это сбор за повышение. Владелец школы освобождает от него или отменяет его в аттестации ученика, и это отменяет этот счёт.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Эта школа ещё не указала валюту, поэтому сбор нельзя оплатить. Обратитесь в школу.",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Этот сбор оплачен, но повышение больше нельзя применить. Отмените сбор (оплаченное станет кредитом) или аттестуйте ученика заново.",
+  "Enter the join date as YYYY-MM-DD.": "Введите дату вступления в формате ГГГГ-ММ-ДД (YYYY-MM-DD).",
+  "Enter a real join date (YYYY-MM-DD).": "Введите реальную дату вступления (YYYY-MM-DD).",
+  "The join date can't be in the future.": "Дата вступления не может быть в будущем.",
+  "Enter a valid secondary email.": "Введите действительный дополнительный адрес электронной почты.",
+  "A child's contact details are changed by their Guardian or the School.": "Контактные данные ребёнка меняет его опекун или школа.",
 };

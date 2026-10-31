@@ -36,6 +36,8 @@ import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
 import { CreateStaffManuallyDto } from './dto/create-staff-manually.dto';
 import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
+import { CONTACT_FIELDS } from '../../users/dto/update-user.dto';
+import { assertJoinDateAllowed, setJoinDate } from '../schools/student-join-dates';
 import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
 import { STAFF_ROLES, StaffAccessDto, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
 import { StepUpService } from '../../auth/step-up.service';
@@ -455,10 +457,20 @@ export class RoleGrantsService {
     }
 
     await this.assertHomeBranchChoice(callerId, schoolId, dto.branchId);
+    if (dto.joinedOn !== undefined) await assertJoinDateAllowed(this.prismaJobs, schoolId, dto.joinedOn);
 
     const email = dto.email.trim().toLowerCase();
-    const { userId, tempPasscode, expiresAt } = await this.createStudentAccount({ email, firstName: dto.firstName, surname: dto.surname, dateOfBirth: dto.dateOfBirth, schoolId });
+    const { userId, tempPasscode, expiresAt } = await this.createStudentAccount({
+      email,
+      firstName: dto.firstName,
+      surname: dto.surname,
+      dateOfBirth: dto.dateOfBirth,
+      schoolId,
+      contacts: pickContacts(dto),
+    });
     await this.enrolNewAccount(userId, () => this.schoolsService.join(callerId, schoolId, { studentId: userId, branchId: dto.branchId }, { notify: false }));
+    // Decision 315 item 4: enrolling made today's date; an earlier one replaces it.
+    if (dto.joinedOn !== undefined) await setJoinDate(this.prismaJobs, schoolId, userId, dto.joinedOn, callerId);
 
     let emailSent = true;
     try {
@@ -505,7 +517,16 @@ export class RoleGrantsService {
    * it, the only one that may make a new one. 409 if the email already has an
    * account. Enrol a student with enrolNewAccount.
    */
-  async createStudentAccount(data: { email: string; firstName: string; surname: string; dateOfBirth?: string | Date | null; gender?: string | null; schoolId: string }) {
+  async createStudentAccount(data: {
+    email: string;
+    firstName: string;
+    surname: string;
+    dateOfBirth?: string | Date | null;
+    gender?: string | null;
+    schoolId: string;
+    /** Decision 315 item 5, from Add manually. */
+    contacts?: Partial<Record<(typeof CONTACT_FIELDS)[number], string | null>>;
+  }) {
     const email = data.email.trim().toLowerCase();
     const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
     if (existingUser) {
@@ -527,6 +548,7 @@ export class RoleGrantsService {
             surname: data.surname,
             dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
             gender: data.gender ?? undefined,
+            ...data.contacts,
             passcodeHash,
             mustChangePasscode: true,
             temporaryPasscodeExpiresAt: expiresAt,
@@ -1363,4 +1385,14 @@ function toPermissionColumns(access: StaffAccessSet) {
     canExportStudents: access.exportStudents,
     canFreezeMemberships: access.freezeMemberships,
   };
+}
+
+/** The contact fields given (Decision 315 item 5), blanks left out. */
+function pickContacts(dto: Partial<Record<(typeof CONTACT_FIELDS)[number], string | null>>) {
+  const contacts: Partial<Record<(typeof CONTACT_FIELDS)[number], string>> = {};
+  for (const field of CONTACT_FIELDS) {
+    const value = dto[field];
+    if (value) contacts[field] = value;
+  }
+  return contacts;
 }

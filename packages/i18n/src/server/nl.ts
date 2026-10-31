@@ -713,4 +713,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Dit is een promotievergoeding. De schooleigenaar scheldt deze kwijt of annuleert deze via de graduatie van de leerling, waardoor deze kosten worden geannuleerd.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Deze school heeft nog geen valuta ingesteld, dus de vergoeding kan niet worden betaald. Vraag het aan de school.",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Deze vergoeding is betaald, maar de promotie kan niet meer worden toegepast. Annuleer de vergoeding (wat betaald is wordt tegoed) of gradeer de leerling opnieuw.",
+  "Enter the join date as YYYY-MM-DD.": "Vul de inschrijfdatum in als JJJJ-MM-DD (YYYY-MM-DD).",
+  "Enter a real join date (YYYY-MM-DD).": "Vul een echte inschrijfdatum in (YYYY-MM-DD).",
+  "The join date can't be in the future.": "De inschrijfdatum kan niet in de toekomst liggen.",
+  "Enter a valid secondary email.": "Vul een geldig tweede e-mailadres in.",
+  "A child's contact details are changed by their Guardian or the School.": "De contactgegevens van een kind worden gewijzigd door de voogd of de school.",
 };

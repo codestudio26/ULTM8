@@ -713,4 +713,9 @@ export const serverMessages: Record<string, string> = {
   "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.": "Dies ist eine Beförderungsgebühr. Der Schulinhaber erlässt oder storniert sie in der Graduierung des Schülers, wodurch diese Gebühr storniert wird.",
   "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.": "Diese Schule hat ihre Währung noch nicht festgelegt, daher kann die Gebühr nicht bezahlt werden. Frag bei der Schule nach.",
   "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.": "Diese Gebühr ist bezahlt, aber die Beförderung kann nicht mehr angewendet werden. Storniere die Gebühr (das Bezahlte wird zu Guthaben) oder graduiere den Schüler erneut.",
+  "Enter the join date as YYYY-MM-DD.": "Gib das Beitrittsdatum als JJJJ-MM-TT (YYYY-MM-DD) ein.",
+  "Enter a real join date (YYYY-MM-DD).": "Gib ein echtes Beitrittsdatum ein (YYYY-MM-DD).",
+  "The join date can't be in the future.": "Das Beitrittsdatum darf nicht in der Zukunft liegen.",
+  "Enter a valid secondary email.": "Gib eine gültige zweite E-Mail-Adresse ein.",
+  "A child's contact details are changed by their Guardian or the School.": "Die Kontaktdaten eines Kindes ändern sein Erziehungsberechtigter oder die Schule.",
 };

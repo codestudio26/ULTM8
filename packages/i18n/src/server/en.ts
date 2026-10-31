@@ -729,4 +729,10 @@ export const SERVER_PATTERNS: string[] = [
  "This School hasn't set its currency yet, so the fee can't be paid. Ask the School.",
  // A paid promotion fee whose promotion can no longer apply (Decision 414 item 1).
  "This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.",
+ // Member details (Decision 315 items 4, 5).
+ "Enter the join date as YYYY-MM-DD.",
+ "Enter a real join date (YYYY-MM-DD).",
+ "The join date can't be in the future.",
+ "Enter a valid secondary email.",
+ "A child's contact details are changed by their Guardian or the School.",
 ];
