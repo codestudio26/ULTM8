@@ -6748,6 +6748,13 @@ export interface components {
             checkInSeveralClasses: boolean;
             /** @description Decision 404: members whose membership is frozen may still check in (default off). */
             checkInFrozenMembers: boolean;
+            /** @description Backlog §3.5: the check-in welcome card shows the member's classes toward their next belt (default on). */
+            checkInShowBeltProgress: boolean;
+            /**
+             * @description Backlog §3.5: check-in is refused while a charge is owed more than this many days past its due date. Null (default): never.
+             * @enum {number|null}
+             */
+            checkInBlockOverdueDays?: 7 | 14 | null;
             /** @description Decision 404: the most days a membership can be frozen in any 12 months (default 90). */
             freezeMaxDaysPer12Months: number;
             /** @description Decision 404: the freeze fee in minor units of the School's currency; null = no fee. */
@@ -10839,6 +10846,13 @@ export interface components {
             severalClasses: boolean;
             /** @description Members whose membership is frozen may still check in (default off; Decision 404). Always in the response; leave it out of a save to keep it as it is. */
             frozenMembers?: boolean;
+            /** @description Backlog §3.5: the welcome card on the front desk and the tablet shows the member's classes toward their next belt (default on, as before). Always in the response; leave it out of a save to keep it as it is. */
+            showBeltProgress?: boolean;
+            /**
+             * @description Backlog §3.5: refuse check-in (CHECK_IN_PAYMENT_OVERDUE) to a member who still owes on a charge more than 7 or 14 days after its due date, in the School's time zone. Null (default): never refused for an overdue payment, as before. Always in the response; leave it out of a save to keep it as it is.
+             * @enum {number|null}
+             */
+            blockOverdueDays?: 7 | 14 | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced.
              * @enum {number}

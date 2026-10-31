@@ -62,6 +62,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.checkInVisitorsOff');
     case 'CHECK_IN_ONE_CLASS':
       return t('server.codes.checkInOneClass');
+    // Backlog §3.5: "Block check-in for overdue payments".
+    case 'CHECK_IN_PAYMENT_OVERDUE':
+      return t('server.codes.checkInPaymentOverdue');
     // Freezing a membership (Decision 404).
     case 'MEMBERSHIP_FROZEN':
       return t('server.codes.membershipFrozen');

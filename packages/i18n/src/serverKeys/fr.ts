@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "Cette École n’enregistre les membres que dans leur Branche principale.",
     checkInVisitorsOff: "Cette École n’enregistre pas les visiteurs avec un pass visite pour le moment.",
     checkInOneClass: "Cette École enregistre les personnes à un seul cours à la fois.",
+    checkInPaymentOverdue: "Cette École n’enregistre pas les membres tant qu’un paiement est en retard. Réglez-le dans l’app ou à l’accueil.",
     packUsedUp: "Ce carnet de cours n'a plus de cours. Achetez le même carnet pour pointer.",
     membershipFrozen: "Cet abonnement est gelé : il ne permet ni de réserver ni de s'enregistrer jusqu'à la fin du gel.",
     freezeTooShort: "Un gel doit durer au moins 7 jours.",

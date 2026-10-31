@@ -34,6 +34,7 @@ export const server: PartialMessages<ServerKeys> = {
     checkInHomeBranchOnly: "Diese Schule checkt Mitglieder nur an ihrer Heimfiliale ein.",
     checkInVisitorsOff: "Diese Schule checkt Besucher mit Besucherpass derzeit nicht ein.",
     checkInOneClass: "Diese Schule checkt jeweils nur in einen Kurs ein.",
+    checkInPaymentOverdue: "Diese Schule checkt Mitglieder nicht ein, solange eine Zahlung überfällig ist. Bezahle sie in der App oder am Empfang.",
     packUsedUp: "Dieses Kurspaket hat keine Kurse mehr. Kauf dasselbe Paket, um einzuchecken.",
     membershipFrozen: "Diese Mitgliedschaft ist eingefroren und kann bis zum Ende des Einfrierens nicht zum Buchen oder Einchecken genutzt werden.",
     freezeTooShort: "Einfrieren dauert mindestens 7 Tage.",

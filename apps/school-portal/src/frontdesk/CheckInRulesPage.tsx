@@ -9,10 +9,12 @@ import { useT } from '../i18n/I18nProvider';
 import { errorText } from './frontDeskQueries';
 
 type CheckInRules = components['schemas']['CheckInRulesDto'];
-type Form = Omit<CheckInRules, 'opensMinutesBeforeStart' | 'closesMinutesAfterStart'> & {
+type Form = Omit<CheckInRules, 'opensMinutesBeforeStart' | 'closesMinutesAfterStart' | 'blockOverdueDays'> & {
   opensMinutesBeforeStart: string;
   closes: 'end' | 'after';
   closesMinutesAfterStart: string;
+  /** Backlog §3.5: 'no' (default), '7' or '14' days after the due date. */
+  overdue: 'no' | '7' | '14';
 };
 
 export function useCheckInRules(schoolId: string | null) {
@@ -24,9 +26,10 @@ export function useCheckInRules(schoolId: string | null) {
   });
 }
 
-function toForm(r: CheckInRules): Form {
+function toForm({ blockOverdueDays, ...r }: CheckInRules): Form {
   return {
     ...r,
+    overdue: blockOverdueDays === 7 ? '7' : blockOverdueDays === 14 ? '14' : 'no',
     opensMinutesBeforeStart: String(r.opensMinutesBeforeStart),
     closes: r.closesMinutesAfterStart === null ? 'end' : 'after',
     closesMinutesAfterStart: r.closesMinutesAfterStart === null ? '15' : String(r.closesMinutesAfterStart),
@@ -79,6 +82,8 @@ export function CheckInRulesPage() {
       visitors: form.visitors,
       severalClasses: form.severalClasses,
       frozenMembers: form.frozenMembers ?? false,
+      showBeltProgress: form.showBeltProgress ?? true,
+      blockOverdueDays: form.overdue === '7' ? 7 : form.overdue === '14' ? 14 : null,
       codeDigits: form.codeDigits,
     });
   }
@@ -172,6 +177,19 @@ export function CheckInRulesPage() {
               checked={form.frozenMembers ?? false}
               onChange={(on) => set('frozenMembers', on)}
             />
+            {/* Backlog §3.5: No by default (an overdue payment never stopped a check-in). */}
+            <Field label={t('frontDesk.rules.overdue')} htmlFor="rules-overdue" hint={t('frontDesk.rules.overdueHint')}>
+              <SelectField
+                id="rules-overdue"
+                value={form.overdue}
+                onChange={(e) => set('overdue', e.target.value === '7' ? '7' : e.target.value === '14' ? '14' : 'no')}
+                options={[
+                  { value: 'no', label: t('frontDesk.rules.overdueNo') },
+                  { value: '7', label: t('frontDesk.rules.overdue7') },
+                  { value: '14', label: t('frontDesk.rules.overdue14') },
+                ]}
+              />
+            </Field>
 
             <h2 className="fd-eyebrow">{t('frontDesk.rules.deskHeading')}</h2>
             <Switch
@@ -180,6 +198,14 @@ export function CheckInRulesPage() {
               description={t('frontDesk.rules.severalClassesHint')}
               checked={form.severalClasses}
               onChange={(on) => set('severalClasses', on)}
+            />
+            {/* Backlog §3.5: on by default, as the welcome card always was. */}
+            <Switch
+              id="rules-belt-progress"
+              label={t('frontDesk.rules.showBeltProgress')}
+              description={t('frontDesk.rules.showBeltProgressHint')}
+              checked={form.showBeltProgress ?? true}
+              onChange={(on) => set('showBeltProgress', on)}
             />
             <Field label={t('frontDesk.rules.codeDigits')} htmlFor="rules-code-digits" hint={t('frontDesk.rules.codeDigitsHint')}>
               <SelectField

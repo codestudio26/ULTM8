@@ -40,6 +40,7 @@ export const server = {
     checkInHomeBranchOnly: "This School checks members in only at their home Branch.",
     checkInVisitorsOff: "This School doesn't check visitors in on a visit pass at the moment.",
     checkInOneClass: "This School checks people in to one class at a time.",
+    checkInPaymentOverdue: "This School doesn't check members in while a payment is overdue. Pay it in the app or at the desk.",
     packUsedUp: 'This Class Pack has no classes left. Buy the same pack to check in.',
     membershipFrozen: "This membership is frozen, so it can't be used to book or check in until the freeze ends.",
     freezeTooShort: "A freeze must last at least 7 days.",
