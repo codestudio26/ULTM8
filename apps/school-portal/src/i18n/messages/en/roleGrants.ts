@@ -213,6 +213,8 @@ export const roleGrants = {
     freezeMembershipsHint: "Freeze the memberships of their branches' students, and approve, decline or end freezes. The freeze settings stay yours.",
     attendanceStats: 'See attendance statistics',
     attendanceStatsHint: 'See check-ins, students per class and classes per student for their branches over the last 30 days.',
+    seeMedicalInfo: "See medical information",
+    seeMedicalInfoHint: "Read the medical information their branches' students gave at sign-up. Coaches never see it.",
     ownerOnly: "Money (payments, refunds, plans and prices), School settings and owners always stay with the School's owners.",
     saved: 'Access saved for {name}.',
     readOnlyIntro: "The staff at your branches. Only the School's owners can change roles or access.",

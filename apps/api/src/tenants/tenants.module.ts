@@ -18,6 +18,8 @@ import { StripeClientService } from '../payments/stripe-client.service';
 import { UsersModule } from '../users/users.module';
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
 import { QueueModule } from '../jobs/queue.module';
+import { MedicalInfoController } from '../medical-info/medical-info.controller';
+import { MedicalInfoService } from '../medical-info/medical-info.service';
 
 /**
  * Phase 2 scope: School CRUD (no delete), Branch CRUD (no delete), RoleGrant
@@ -90,11 +92,15 @@ import { QueueModule } from '../jobs/queue.module';
  * Exports RoleGrantsService for StaffRemovalModule ("Remove from School"),
  * which can't live here: it cancels classes through BookingsModule, and
  * BookingsModule imports this module.
+ *
+ * Medical information (Decision 315 item 10) lives here too: it is taken when
+ * a member joins (SchoolsService.join) and from tablet sign-ups, and read
+ * through TenantAuthorizationService's "See medical information" check.
  */
 @Module({
   imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule],
-  controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController],
-  providers: [SchoolsService, StudentExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService],
-  exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService],
+  controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController, MedicalInfoController],
+  providers: [SchoolsService, StudentExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
+  exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService, MedicalInfoService],
 })
 export class TenantsModule {}

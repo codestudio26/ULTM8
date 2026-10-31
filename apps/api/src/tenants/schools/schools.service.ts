@@ -40,6 +40,7 @@ import { sendFranchiseNotice } from '../franchises/franchise-notifications';
 import { sendStudentAddedNotice } from './student-added-notice';
 import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
 import { requireSchoolCurrency, setsNewPrice } from '../../common/school-currency';
+import { MedicalInfoService } from '../../medical-info/medical-info.service';
 
 /** Decision 110's retention window, the same one the Platform Admin close uses. */
 const RETENTION_WINDOW_DAYS = 90;
@@ -62,6 +63,7 @@ export class SchoolsService {
     private readonly prismaPlatformAdmin: PrismaPlatformAdminService,
     private readonly stepUp: StepUpService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
+    private readonly medicalInfo: MedicalInfoService,
   ) {}
 
   /**
@@ -329,6 +331,15 @@ export class SchoolsService {
       }
     }
 
+    // Decision 315 item 10: medical information given while joining, with
+    // consent from the member, or the Guardian for a child. Checked before
+    // anything is written; stored once the member has joined.
+    let medicalText: string | null = null;
+    if (dto?.medicalInfo?.trim()) {
+      await this.medicalInfo.assertMayConsent(callerId, studentId, isStaffAction ? 'staff' : isGuardianAction ? 'guardian' : 'self');
+      medicalText = await this.medicalInfo.checkAtSignUp(schoolId, dto);
+    }
+
     const roleGrantId = randomUUID();
 
     let joinWaiverIds: string[] = [];
@@ -426,6 +437,10 @@ export class SchoolsService {
 
       return created;
     });
+
+    if (medicalText) {
+      await this.medicalInfo.record(schoolId, studentId, medicalText, { byId: callerId, byGuardian: isGuardianAction, at: new Date() });
+    }
 
     // Decision 371 — the owner added this student: tell them (Add manually
     // passes notify: false, since its email already says so).
@@ -990,6 +1005,8 @@ export class SchoolsService {
           branchStaffCanRecordPayments: dto.branchStaffCanRecordPayments,
           weekStartsOn: dto.weekStartsOn,
           timetableDefaultLayout: dto.timetableDefaultLayout,
+          // Decision 315 item 10: medical information at sign-up.
+          medicalInfoEnabled: dto.medicalInfoEnabled,
           // Decision 404: freezing memberships.
           freezeMaxDaysPer12Months: dto.freezeMaxDaysPer12Months,
           freezeFeeAmount: dto.freezeFeeAmount,

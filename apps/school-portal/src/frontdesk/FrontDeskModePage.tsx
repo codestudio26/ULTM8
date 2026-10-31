@@ -23,6 +23,8 @@ const EMPTY_SIGN_UP: SignUpInput = {
   emergencyName: '',
   emergencyPhone: '',
   emergencyRelationship: '',
+  medicalInfo: '',
+  medicalConsent: false,
 };
 
 /**
@@ -141,7 +143,9 @@ export function FrontDeskModePage() {
  * Sign-up on the tablet (Decision 392, handover F5): it waits for staff to
  * approve it. Visitor is offered only when the School has set how long a
  * visit pass lasts (Decision 391). Name, date of birth and email are needed;
- * the rest may be left blank.
+ * the rest may be left blank. When the School asks for it (Decision 315
+ * item 10), the last step also takes optional medical information, kept only
+ * with the person's consent: Send waits for the tick while the box has text.
  */
 export function SignUpScreen({
   onBack,
@@ -149,12 +153,16 @@ export function SignUpScreen({
   onFind,
   visitorsOn = false,
   heardFromOptions = null,
+  medicalInfoOn = false,
+  schoolName = '',
 }: {
   onBack: () => void;
   onSent: () => void;
   onFind: () => void;
   visitorsOn?: boolean;
   heardFromOptions?: string[] | null;
+  medicalInfoOn?: boolean;
+  schoolName?: string;
 }) {
   const t = useT();
   const [step, setStep] = useState(1);
@@ -164,8 +172,9 @@ export function SignUpScreen({
   const ready = hasBackend('signUp');
   const send = useKioskSignUp();
   const choices = useHeardFromChoices(heardFromOptions);
+  const medicalNeedsConsent = medicalInfoOn && !!form.medicalInfo.trim() && !form.medicalConsent;
   const stepDone = step === 1 ? !!(form.firstName.trim() && form.surname.trim() && form.dateOfBirth) : step === 2 ? /\S+@\S+\.\S+/.test(form.email.trim()) : true;
-  const field = (key: keyof SignUpInput, label: string, type = 'text', required = false) => (
+  const field = (key: Exclude<keyof SignUpInput, 'medicalConsent'>, label: string, type = 'text', required = false) => (
     <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {required ? `${label} *` : label}
       <input className="ultm8-input" type={type} value={form[key]} onChange={set(key)} required={required} style={{ minHeight: 52, fontSize: 16 }} />
@@ -243,6 +252,32 @@ export function SignUpScreen({
             {field('emergencyPhone', t('frontDesk.signUp.emergencyPhone'), 'tel')}
             {field('emergencyRelationship', t('frontDesk.signUp.emergencyRelationship'))}
           </div>
+          {medicalInfoOn ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {t('frontDesk.signUp.medicalLabel')}
+                <textarea
+                  className="ultm8-input"
+                  rows={3}
+                  maxLength={2000}
+                  value={form.medicalInfo}
+                  onChange={(e) => setForm((f) => ({ ...f, medicalInfo: e.target.value }))}
+                  style={{ fontSize: 16 }}
+                />
+                <span>{t('frontDesk.signUp.medicalHint')}</span>
+              </label>
+              <label className="fd-class__meta" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                <input
+                  type="checkbox"
+                  checked={form.medicalConsent}
+                  onChange={(e) => setForm((f) => ({ ...f, medicalConsent: e.target.checked }))}
+                  style={{ width: 24, height: 24, flex: 'none' }}
+                />
+                <span>{t('frontDesk.signUp.medicalConsent', { school: schoolName })}</span>
+              </label>
+              {medicalNeedsConsent ? <p className="fd-class__meta">{t('frontDesk.signUp.medicalConsentNeeded')}</p> : null}
+            </div>
+          ) : null}
           <div className="fd-note">
             <span className="fd-note__dot" aria-hidden="true" style={{ background: '#9fd3b2' }} />
             <div>
@@ -270,10 +305,10 @@ export function SignUpScreen({
             type="button"
             className="fd-pill fd-pill--go"
             style={{ minWidth: 200 }}
-            disabled={!ready || send.isPending}
+            disabled={!ready || send.isPending || medicalNeedsConsent}
             onClick={() => {
               setError(null);
-              send.mutate(form, { onSuccess: onSent, onError: (err) => setError(errorText(err, t('frontDesk.signUp.failed'))) });
+              send.mutate(medicalInfoOn ? form : { ...form, medicalInfo: '', medicalConsent: false }, { onSuccess: onSent, onError: (err) => setError(errorText(err, t('frontDesk.signUp.failed'))) });
             }}
           >
             {t('frontDesk.signUp.send')} {ready ? null : <SoonTag />}

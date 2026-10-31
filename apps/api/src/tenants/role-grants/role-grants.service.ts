@@ -1363,5 +1363,6 @@ function toPermissionColumns(access: StaffAccessSet) {
     canExportStudents: access.exportStudents,
     canFreezeMemberships: access.freezeMemberships,
     canSeeAttendanceStats: access.attendanceStats,
+    canSeeMedicalInfo: access.seeMedicalInfo,
   };
 }

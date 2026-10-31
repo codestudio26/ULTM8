@@ -203,6 +203,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: [String], nullable: true, description: 'Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer\'s language.' })
   heardFromOptions!: string[] | null;
 
+  @ApiProperty({ description: 'Decision 315 item 10: the School asks for medical information at sign-up (off by default).' })
+  medicalInfoEnabled!: boolean;
+
   @ApiProperty({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here (staff kiosk codes, members\' personal codes).' })
   checkInCodeDigits!: number;
 

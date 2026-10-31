@@ -73,6 +73,14 @@ export const students = {
     shown: "Shown to student",
     staffOnly: "Staff only",
   },
+  medical: {
+    title: "Medical information",
+    consentSelf: "Given with consent by {name} on {date}.",
+    consentGuardian: "Given with consent by {name}, their Guardian, on {date}.",
+    formerAccount: "a former account",
+    empty: "No medical information was given.",
+    privacy: "Only the School's owners and the staff allowed to see medical information can read this.",
+  },
   export: {
     button: "Export",
     title: "Export students",

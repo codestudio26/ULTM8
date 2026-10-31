@@ -1044,6 +1044,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/medical-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MedicalInfoController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/guardians/me/minors": {
         parameters: {
             query?: never;
@@ -6917,6 +6933,8 @@ export interface components {
             visitorPeriodDays?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
             heardFromOptions?: string[] | null;
+            /** @description Decision 315 item 10: the School asks for medical information at sign-up (off by default). */
+            medicalInfoEnabled: boolean;
             /**
              * @description Length of the check-in codes ULTM8 generates here (staff kiosk codes, members' personal codes).
              * @enum {number}
@@ -7088,6 +7106,8 @@ export interface components {
             showFranchiseBranding?: boolean;
             /** @description Confirms a currency change that moves plans without their own currency to the new one. */
             confirmCurrencyChange?: boolean;
+            /** @description Ask for medical information at sign-up, with consent (Decision 315 item 10). Off by default. */
+            medicalInfoEnabled?: boolean;
         };
         /** @enum {string} */
         StudentStatus: "ACTIVE" | "INACTIVE";
@@ -7259,6 +7279,10 @@ export interface components {
             studentId?: string;
             /** @description The student's home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none. */
             branchId?: string;
+            /** @description Decision 315 item 10: medical information, only when the School asks for it (School.medicalInfoEnabled). Given by the member joining themselves, or by the Guardian for a child; never by staff. Needs medicalConsent: true, or nothing is stored and the join is refused. Empty means none. */
+            medicalInfo?: string;
+            /** @description Decision 315 item 10: the member (or the Guardian for a child) consents to the School keeping this medical information. */
+            medicalConsent?: boolean;
         };
         JoinSchoolResponseDto: {
             id: string;
@@ -7604,6 +7628,8 @@ export interface components {
             freezeMemberships: boolean;
             /** @description See attendance statistics for their branches (off by default; Decision 317 item 3). */
             attendanceStats: boolean;
+            /** @description See the medical information of their branches' students (off by default; Decision 315 item 10). */
+            seeMedicalInfo: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -7968,6 +7994,20 @@ export interface components {
             status: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
             /** Format: date-time */
             expiresAt: string;
+        };
+        StudentMedicalInfoDto: {
+            /** @description As the member (or their Guardian) wrote it, up to 2,000 characters. */
+            body: string;
+            /** @description Who gave consent; null once that account is gone. */
+            consentedByName: string | null;
+            /** @description True when a Guardian consented for their child. */
+            consentedByGuardian: boolean;
+            consentedAt: string;
+            updatedAt: string;
+        };
+        StudentMedicalInfoResponseDto: {
+            /** @description Null when none was given. */
+            medicalInfo: components["schemas"]["StudentMedicalInfoDto"] | null;
         };
         CreateMinorDto: {
             firstName: string;
@@ -11096,7 +11136,7 @@ export interface components {
             expiryDurationDays?: number | null;
             classesIncluded?: number | null;
             visible: boolean;
-            /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Subscription or a Friend Pass). */
+            /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment. */
             cardSurchargeAmount: number;
         };
         AcademyClassDto: {
@@ -11126,6 +11166,8 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description Decision 315 item 10: joining asks for medical information (optional, with consent). */
+            medicalInfoEnabled: boolean;
             /** @description The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches. */
             branches: components["schemas"]["AcademyBranchDto"][];
             membershipPlans: components["schemas"]["AcademyMembershipPlanDto"][];
@@ -11594,6 +11636,10 @@ export interface components {
             emergencyName?: string | null;
             emergencyPhone?: string | null;
             emergencyRelationship?: string | null;
+            /** @description Decision 315 item 10: medical information, only when the School asks for it (medicalInfoOn). Needs medicalConsent: true, or nothing is kept and the sign-up is refused. */
+            medicalInfo?: string | null;
+            /** @description Decision 315 item 10: the person consents to the School keeping this medical information. */
+            medicalConsent?: boolean;
         };
         KioskSignUpCreatedDto: {
             id: string;
@@ -11648,6 +11694,8 @@ export interface components {
             locked: boolean;
             /** @description The School's "How did you hear about us?" choices. Null: show the starting list in the tablet's language. */
             heardFromOptions?: string[] | null;
+            /** @description Decision 315 item 10: the sign-up form asks for medical information (optional, with consent). */
+            medicalInfoOn: boolean;
         };
         KioskClassDto: {
             id: string;
@@ -14509,6 +14557,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoachInvitePreviewDto"];
+                };
+            };
+        };
+    };
+    MedicalInfoController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentMedicalInfoResponseDto"];
                 };
             };
         };

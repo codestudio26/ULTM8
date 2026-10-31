@@ -306,6 +306,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   staff with "Can cancel charges" can **Waive** it; the student app labels it
   "Late fee" too. **Needs a database migration**
   (`20270116000000_late_fees`).
+- **Medical information at sign-up** (Decision 315 item 10; Gymdesk SF6) — a
+  new **Medical information at sign-up** card on the School page (owner only)
+  lets a School ask for medical information. It is **off by default**, so
+  nothing changes until an owner turns it on. When on, the front-desk tablet's
+  sign-up form and **joining a School in the ULTM8 app** show an optional
+  "Medical information" box (up to 2,000 characters) and a consent tick box.
+  It is kept **only with consent**: the person signing up consents for
+  themselves, and for a child the **Guardian** consents when joining them in
+  the app (a child can't give it, and staff enrolling someone can't give it
+  for them); without the tick nothing is stored. Who consented and when are
+  recorded. A tablet sign-up's medical information moves to the member when
+  staff approve it (or when an existing account accepts the invite) and is
+  never shown on the Sign-ups list. Only the **School's owners** and Branch
+  Staff with the new **See medical information** access switch (off by
+  default, for their own branches' students; coaches never) see it, on a new
+  **Medical information** card on the student's page. No member-facing screen
+  or endpoint shows it. It is erased with the student's account (also when a
+  Guardian withdraws a child's baseline consent) and with the School, including
+  a closed School that is kept anonymised for its waivers. **Needs a database
+  migration** (`20270131000000_medical_info`).
 - **Paying a promotion fee** (backlog 3.6 step 6; Decisions 300, 303) — when a
   student, or a Guardian for a child, accepts a promotion fee, it becomes an
   invoice on the student's balance: the rank it is for, the fee with the

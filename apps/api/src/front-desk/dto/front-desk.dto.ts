@@ -107,6 +107,9 @@ export class KioskSessionInfoDto {
 
   @ApiPropertyOptional({ type: [String], nullable: true, description: 'The School\'s "How did you hear about us?" choices. Null: show the starting list in the tablet\'s language.' })
   heardFromOptions!: string[] | null;
+
+  @ApiProperty({ description: 'Decision 315 item 10: the sign-up form asks for medical information (optional, with consent).' })
+  medicalInfoOn!: boolean;
 }
 
 /** "Today" as the tablet's own clock sees it. */

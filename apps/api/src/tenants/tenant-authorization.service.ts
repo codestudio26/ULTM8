@@ -34,7 +34,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * assertMayExportStudents. "freezeMemberships" is Decision 409's "Can freeze
  * memberships", checked by assertMayFreezeMemberships. "attendanceStats" is
  * Decision 317 item 3's "See attendance statistics", checked by
- * attendanceStatsScope. */
+ * attendanceStatsScope. "seeMedicalInfo" is Decision 315 item 10's "See
+ * medical information", checked by assertMaySeeMedicalInfo. */
 export const STAFF_ACCESS = [
   'classes',
   'bookings',
@@ -47,10 +48,11 @@ export const STAFF_ACCESS = [
   'exportStudents',
   'freezeMemberships',
   'attendanceStats',
+  'seeMedicalInfo',
 ] as const;
 export type StaffAccess = (typeof STAFF_ACCESS)[number];
 /** The switches staffMay checks. */
-type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats'>;
+type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'seeMedicalInfo'>;
 export type StaffAccessSet = Record<StaffAccess, boolean>;
 
 /** A Branch Staff member with no StaffPermission row yet has these: what
@@ -68,6 +70,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   exportStudents: false,
   freezeMemberships: false,
   attendanceStats: false,
+  seeMedicalInfo: false,
 };
 
 /** What an Instructor may do by role, whatever the switches say (Spec 55
@@ -98,6 +101,7 @@ export function staffAccessFrom(row: {
   canExportStudents: boolean;
   canFreezeMemberships: boolean;
   canSeeAttendanceStats: boolean;
+  canSeeMedicalInfo: boolean;
 } | null | undefined): StaffAccessSet {
   if (!row) return { ...DEFAULT_STAFF_ACCESS };
   return {
@@ -112,6 +116,7 @@ export function staffAccessFrom(row: {
     exportStudents: row.canExportStudents,
     freezeMemberships: row.canFreezeMemberships,
     attendanceStats: row.canSeeAttendanceStats,
+    seeMedicalInfo: row.canSeeMedicalInfo,
   };
 }
 
@@ -128,6 +133,7 @@ export const STAFF_ACCESS_SELECT = {
   canExportStudents: true,
   canFreezeMemberships: true,
   canSeeAttendanceStats: true,
+  canSeeMedicalInfo: true,
 } as const;
 
 @Injectable()
@@ -368,6 +374,31 @@ export class TenantAuthorizationService {
       await this.assertBranchCoversStudent(await this.staffBranchCoverage(userId, schoolId), schoolId, studentId);
     }
     return { isOwner: verdict === 'owner' };
+  }
+
+  /**
+   * Decision 315 item 10: a student's medical information is seen only by
+   * the School's owners and Branch Staff the owner switched on ("See medical
+   * information"), and those staff only for the students of their own
+   * branches (staffBranchCoverage, the Students page's rule). Coaches never.
+   */
+  async assertMaySeeMedicalInfo(userId: string, schoolId: string, studentId: string): Promise<void> {
+    const verdict = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return 'owner' as const;
+      if (grants.length === 0) return 'no' as const;
+      const row = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canSeeMedicalInfo: true } });
+      return row?.canSeeMedicalInfo ? ('staff' as const) : ('no' as const);
+    });
+    if (verdict === 'no') {
+      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you see medical information." });
+    }
+    if (verdict === 'staff') {
+      await this.assertBranchCoversStudent(await this.staffBranchCoverage(userId, schoolId), schoolId, studentId);
+    }
   }
 
   /** staffMay, throwing 403 STAFF_ACCESS_OFF when it says no. */

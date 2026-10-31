@@ -51,6 +51,18 @@ export const academies = {
     whoIsJoining: 'Who is joining?',
     homeBranch: 'Home branch',
     homeBranchHelp: 'The branch you mainly train at. Its coaches look after your grading.',
+    /** Decision 315 item 10: shown only when the School asks for it. */
+    medicalTitle: 'Medical information',
+    medicalLabelMe: 'Anything the coaches should know (optional)',
+    /** {name} is a child's name. */
+    medicalLabelOther: 'Anything the coaches should know about {name} (optional)',
+    medicalHint: 'For example allergies, asthma or injuries. Up to 2,000 characters.',
+    medicalConsentLabel: 'Consent to keep medical information',
+    /** {school} is the School's name. */
+    medicalConsentMe: 'I agree that {school} keeps this medical information. Only the owner and the staff they allow can see it.',
+    /** {name} is a child's name; {school} is the School's name. */
+    medicalConsentOther: "As {name}'s Guardian, I agree that {school} keeps this medical information. Only the owner and the staff they allow can see it.",
+    medicalConsentNeeded: 'Turn on consent to join with this medical information, or leave it empty.',
     joinFailed: 'Could not join — please try again.',
     submit: 'Join',
   },

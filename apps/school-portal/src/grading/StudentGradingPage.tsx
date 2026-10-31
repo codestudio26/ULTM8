@@ -6,6 +6,7 @@ import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
 import { StudentTagsCard } from '../students/StudentTagsCard';
+import { StudentMedicalInfoCard } from '../students/StudentMedicalInfoCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
@@ -124,6 +125,8 @@ export function StudentGradingPage() {
   const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === schoolId);
   const staffAccess = useMyStaffAccess(!my.isOwner && isBranchStaff ? schoolId : null);
   const mayFreeze = !my.isOwner && !!staffAccess.data?.access.freezeMemberships;
+  // Decision 315 item 10: owners, and Branch Staff the owner let see medical information.
+  const maySeeMedical = my.isOwner || !!staffAccess.data?.access.seeMedicalInfo;
 
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
@@ -245,6 +248,8 @@ export function StudentGradingPage() {
 
       {/* Backlog 5.4: staff-only tags, plus "+ tag". */}
       {!inactive ? <StudentTagsCard schoolId={schoolId} studentId={studentId} /> : null}
+      {/* Decision 315 item 10: medical information given at sign-up. */}
+      {maySeeMedical ? <StudentMedicalInfoCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 391: Visitor status and visit passes. */}
       {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}
