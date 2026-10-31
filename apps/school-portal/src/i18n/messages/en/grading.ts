@@ -272,6 +272,7 @@ export const grading = {
     doneTitle: 'Students promoted',
     youPromoted: { one: 'You promoted {count} student.', other: 'You promoted {count} students.' },
     notPromoted: 'Not promoted: {list}.',
+    waitingForFee: 'Waiting for their fee, so not promoted yet (each moves up once their fee is paid or waived): {list}.',
     openReport: 'Open printable report',
     title: 'Promote these students',
     intro: 'Each student moves up to the rank in Promote to, which starts on their next rank. Set the calling order by dragging a row, or with Up and Down.',

@@ -592,6 +592,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Beförderungsgebühr",
       gradedSelf: "Du wurdest zu {rank} graduiert",
       gradedChild: "{name} wurde zu {rank} graduiert",
+      gradedSelfAdult: "Du wurdest ins Erwachsenenprogramm graduiert, zu {rank}",
+      gradedChildAdult: "{name} wurde ins Erwachsenenprogramm graduiert, zu {rank}",
       styleAtSchoolAmount: "{style} bei {school} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "Deine Antwort konnte nicht gesendet werden — bitte versuche es erneut.",

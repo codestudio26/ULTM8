@@ -592,6 +592,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Terfi ücreti",
       gradedSelf: "{rank} seviyesine terfi ettiniz",
       gradedChild: "{name}, {rank} seviyesine terfi etti",
+      gradedSelfAdult: "Yetişkin programına, {rank} seviyesine terfi ettiniz",
+      gradedChildAdult: "{name}, yetişkin programına, {rank} seviyesine terfi etti",
       styleAtSchoolAmount: "{style} · {school} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "Yanıtınız gönderilemedi — lütfen tekrar deneyin.",

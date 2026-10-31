@@ -586,6 +586,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "昇級料",
       gradedSelf: "{rank}に昇級しました",
       gradedChild: "{name}さんが{rank}に昇級しました",
+      gradedSelfAdult: "大人プログラムの{rank}に昇級しました",
+      gradedChildAdult: "{name}さんが大人プログラムの{rank}に昇級しました",
       styleAtSchoolAmount: "{school}の{style} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "回答を送信できませんでした。もう一度お試しください。",

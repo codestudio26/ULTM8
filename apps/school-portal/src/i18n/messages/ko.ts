@@ -1871,6 +1871,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "승급되지 않음: 일괄 처리가 그 전에 멈춤",
       doneTitle: "수련생 승급 완료",
       notPromoted: "승급되지 않음: {list}.",
+      waitingForFee: "심사비 대기 중이라 아직 승급되지 않음(심사비가 결제되거나 면제되면 승급됩니다): {list}.",
       openReport: "인쇄용 보고서 열기",
       title: "이 수련생들 승급",
       intro: "각 수련생은 '승급할 등급'에서 고른 등급으로 올라갑니다. 처음에는 다음 등급이 선택되어 있습니다. 행을 끌거나 위로·아래로 버튼으로 호명 순서를 정하세요.",

@@ -83,6 +83,11 @@ type ApplyingFee = {
   closedById?: string;
 };
 
+/** A move into Adult that waited for its fee can't apply: the Kids style is no
+ * longer linked to the Adult style it was made for (Decision 419 item 2). */
+const ADULT_LINK_CHANGED =
+  "The Kids style is no longer linked to the Adult program this move was made for, so it can't be applied as it was. Cancel the fee and grade the student again.";
+
 const WAITING_MESSAGE = (rung: string) =>
   `This student's promotion to ${rung} is waiting for its fee. It applies once the fee is paid, or the owner can waive or cancel the fee.`;
 
@@ -839,20 +844,7 @@ export class GradingService {
 
       let feeRequest: PromotionFeeRequest | null = null;
       if (applying) {
-        // The request settles in the same transaction as the grade: applied
-        // once, never twice (the expected-rung guard above, and this).
-        const settledAt = new Date();
-        const settled = await tx.promotionFeeRequest.updateMany({
-          where: { id: applying.requestId, status: { in: applying.from }, promotionEventId: null, toDecideAt: null },
-          data: {
-            status: applying.to,
-            promotionEventId: promotionEvent.id,
-            ...(applying.to === 'PAID' ? { paidAt: settledAt } : { waivedAt: settledAt, closedById: applying.closedById ?? null }),
-          },
-        });
-        if (settled.count === 0) {
-          throw new ConflictException('This fee request was changed at the same time — reload and try again.');
-        }
+        await this.settleAppliedFee(tx, applying, promotionEvent.id);
       } else if (fee) {
         // "Allow grading before the fee is paid" on: promoted now, the
         // request waits (Decision 300 item 3).
@@ -864,20 +856,7 @@ export class GradingService {
       return { studentRank, promotionEvent: promotionEvent as typeof promotionEvent | null, toRungName: to.name, feeRequest };
     });
 
-    // A grade up may have cancelled a paid fee whose promotion couldn't apply
-    // (feeForGrade): its charge is cancelled now, so what was paid is credit
-    // toward this grade (Decision 415 item 1). Best-effort: the grade stands,
-    // and the daily catch-up (PromotionFeeService.reconcile) cancels a charge
-    // left open.
-    if (type !== 'DOWNGRADE' && !applying) {
-      try {
-        // Loaded here, not at the top: promotion-fee.service imports this file.
-        const { PromotionFeeService } = await import('./promotion-fee.service');
-        await this.moduleRef.get(PromotionFeeService, { strict: false }).cancelChargesOfClosedFees(discipline.schoolId, studentId);
-      } catch (err) {
-        this.logger.error(`Cancelling the charge of a superseded promotion fee for student ${studentId} failed; the daily catch-up retries.`, err as Error);
-      }
-    }
+    if (type !== 'DOWNGRADE' && !applying) await this.cancelChargesOfSupersededFees(discipline.schoolId, studentId);
 
     if (result.feeRequest) {
       await this.notifyFeeRequested({
@@ -966,6 +945,39 @@ export class GradingService {
   // Promotion fee (Decisions 287, 300, 307)
   // ---------------------------------------------------------------------------
 
+  /** Settles the request of a promotion that waited for its fee, in the same
+   * transaction as the grade: applied once, never twice (the expected-rung
+   * guard, and this). */
+  private async settleAppliedFee(tx: TenantTx, applying: ApplyingFee, promotionEventId: string): Promise<void> {
+    const settledAt = new Date();
+    const settled = await tx.promotionFeeRequest.updateMany({
+      where: { id: applying.requestId, status: { in: applying.from }, promotionEventId: null, toDecideAt: null },
+      data: {
+        status: applying.to,
+        promotionEventId,
+        ...(applying.to === 'PAID' ? { paidAt: settledAt } : { waivedAt: settledAt, closedById: applying.closedById ?? null }),
+      },
+    });
+    if (settled.count === 0) {
+      throw new ConflictException('This fee request was changed at the same time — reload and try again.');
+    }
+  }
+
+  /** A grade up may have cancelled a paid fee whose promotion couldn't apply
+   * (feeForGrade): its charge is cancelled now, so what was paid is credit
+   * toward this grade (Decision 415 item 1). Best-effort: the grade stands,
+   * and the daily catch-up (PromotionFeeService.reconcile) cancels a charge
+   * left open. */
+  private async cancelChargesOfSupersededFees(schoolId: string, studentId: string): Promise<void> {
+    try {
+      // Loaded here, not at the top: promotion-fee.service imports this file.
+      const { PromotionFeeService } = await import('./promotion-fee.service');
+      await this.moduleRef.get(PromotionFeeService, { strict: false }).cancelChargesOfClosedFees(schoolId, studentId);
+    } catch (err) {
+      this.logger.error(`Cancelling the charge of a superseded promotion fee for student ${studentId} failed; the daily catch-up retries.`, err as Error);
+    }
+  }
+
   /**
    * The fee for grading a student up to `to`, inside the grading transaction
    * (under the student's context). Null when the grade is free:
@@ -990,6 +1002,11 @@ export class GradingService {
    * (PromotionFeeService.cancelChargesOfClosedFees), so the money is credit,
    * which pays the new grade's fee once accepted, like any credit. The new
    * grade takes the fee rules like any other grade.
+   *
+   * A move into the linked Adult program (Decision 419 item 2) comes here too,
+   * with the Kids style as `disciplineId` and an Adult rank as `to`: the fee is
+   * that Adult rank's own price, and a promotion waiting for its fee in the
+   * Kids style holds the move as it holds any grade (Decision 314 item 3).
    */
   private async feeForGrade(tx: TenantTx, callerId: string, schoolId: string, studentId: string, disciplineId: string, fromRungId: string, to: Rung) {
     const open = await tx.promotionFeeRequest.findMany({
@@ -1040,6 +1057,8 @@ export class GradingService {
       gradedById: string;
       pendingGrade?: PendingGrade;
       promotionEventId?: string;
+      /** A move into the linked Adult program: the Adult style. */
+      toDisciplineId?: string;
     },
   ) {
     return tx.promotionFeeRequest.create({
@@ -1048,6 +1067,7 @@ export class GradingService {
         schoolId: r.schoolId,
         studentId: r.studentId,
         disciplineId: r.disciplineId,
+        toDisciplineId: r.toDisciplineId ?? null,
         toRungId: r.to.id,
         toRungName: r.to.name,
         expectedCurrentRungId: r.from,
@@ -1084,6 +1104,42 @@ export class GradingService {
   async applyWaitingPromotion(contextUserId: string, request: PromotionFeeRequest, to: 'PAID' | 'WAIVED', closedById?: string) {
     const pg = request.pendingGrade as unknown as PendingGrade | null;
     if (!pg) throw new ConflictException('This fee request has no waiting promotion to apply.');
+    const applying: ApplyingFee = {
+      requestId: request.id,
+      toRungId: request.toRungId,
+      gradedById: request.gradedById,
+      from: to === 'PAID' ? ['ACCEPTED'] : UNSETTLED_STATUSES,
+      to,
+      closedById,
+    };
+    if (pg.type === 'MOVE_TO_ADULT') {
+      // A move into the linked Adult program (Decision 419 item 2): applied
+      // through the move, into the Adult style it was made for.
+      const { kids, adult } = await this.prismaApp.withTenantContext(contextUserId, async (tx) => ({
+        kids: await tx.discipline.findUnique({ where: { id: request.disciplineId } }),
+        adult: request.toDisciplineId ? await tx.discipline.findUnique({ where: { id: request.toDisciplineId } }) : null,
+      }));
+      if (!kids || !adult || kids.adultDisciplineId !== adult.id || adult.schoolId !== kids.schoolId) {
+        throw new ConflictException(ADULT_LINK_CHANGED);
+      }
+      await this.assertSchoolAcceptsGradingWrites(contextUserId, kids.schoolId, kids);
+      await this.assertSchoolAcceptsGradingWrites(contextUserId, adult.schoolId, adult);
+      return this.applyMoveToAdult(
+        contextUserId,
+        request.studentId,
+        kids,
+        adult,
+        {
+          targetRungId: pg.targetRungId,
+          expectedCurrentRungId: pg.expectedCurrentRungId,
+          effectiveDate: pg.effectiveDate,
+          acknowledgeWithoutSkillSignoff: pg.acknowledgeWithoutSkillSignoff,
+          ...(pg.note !== null ? { note: pg.note } : {}),
+        },
+        pg.bulk ? { eventType: 'BULK_PROMOTION', systemNote: pg.bulk.systemNote } : undefined,
+        applying,
+      );
+    }
     const dto: GradingActionDto = {
       expectedCurrentRungId: pg.expectedCurrentRungId,
       effectiveDate: pg.effectiveDate,
@@ -1094,14 +1150,7 @@ export class GradingService {
       ...(pg.startingClasses !== undefined ? { startingClasses: pg.startingClasses } : {}),
       ...(pg.startingClassesByType !== undefined ? { startingClassesByType: pg.startingClassesByType } : {}),
     };
-    return this.changeRung(contextUserId, request.studentId, request.disciplineId, dto, pg.type, pg.bulk, undefined, {
-      requestId: request.id,
-      toRungId: request.toRungId,
-      gradedById: request.gradedById,
-      from: to === 'PAID' ? ['ACCEPTED'] : UNSETTLED_STATUSES,
-      to,
-      closedById,
-    });
+    return this.changeRung(contextUserId, request.studentId, request.disciplineId, dto, pg.type, pg.bulk, undefined, applying);
   }
 
   /** After a grading action commits, check whether the student is now ready
@@ -1136,8 +1185,8 @@ export class GradingService {
    * apply, Decision 289), or on a Kids style be an Adult program rank above the
    * Adult ladder's first belt for a student who has reached "Ready for Adult
    * from age" (backlog 3.20, Decisions 285, 397): they move to the Adult style
-   * as the single move does, with no promotion fee (Decision 397 leaves a fee
-   * on the move unresolved). `dryRun` returns the same three lists without changing
+   * as the single move does, charged like any promotion at that Adult rank's
+   * own price (Decision 419 item 2). `dryRun` returns the same three lists without changing
    * anything, for the confirm window. Each student is promoted in their own
    * transaction, so one student changed at the same time is skipped, not the
    * whole batch.
@@ -1325,9 +1374,14 @@ export class GradingService {
               note: dto.note,
               acknowledgeWithoutSkillSignoff: row.missingSkills,
             },
-            { systemNote },
+            { eventType: 'BULK_PROMOTION', systemNote },
           );
-          promoted.push({ ...strip(row), promotionEventId: moved.promotionEvent.id });
+          // Charged like any promotion (Decision 419 item 2): it may wait for its fee.
+          if (moved.promotionEvent) {
+            promoted.push({ ...strip(row), promotionEventId: moved.promotionEvent.id, ...(moved.feeRequest ? { feeRequestId: moved.feeRequest.id } : {}) });
+          } else {
+            waitingForFee.push({ ...strip(row), ...(moved.feeRequest ? { feeRequestId: moved.feeRequest.id } : {}) });
+          }
           continue;
         }
         const result = await this.changeRung(
@@ -1469,7 +1523,15 @@ export class GradingService {
     // students they cover (promotion_fee_request_staff_read, the board's rule).
     const feeRequests = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.promotionFeeRequest.findMany({
-        where: { schoolId, disciplineId, OR: [{ status: { in: ['PENDING', 'ACCEPTED', 'DECLINED'] } }, { toDecideAt: { not: null }, toDecideResolvedAt: null }] },
+        where: {
+          schoolId,
+          AND: [
+            // A move from a Kids style into this Adult style shows here once it
+            // has applied (the student is on this board then; Decision 419 item 2).
+            { OR: [{ disciplineId }, { toDisciplineId: disciplineId }] },
+            { OR: [{ status: { in: ['PENDING', 'ACCEPTED', 'DECLINED'] } }, { toDecideAt: { not: null }, toDecideResolvedAt: null }] },
+          ],
+        },
         orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       }),
     );
@@ -1505,6 +1567,7 @@ export class GradingService {
         currency: string | null;
         promotionApplied: boolean;
         feeFree: boolean;
+        toAdult: boolean;
       } | null;
     }> = [];
     for (const row of rows) {
@@ -1576,6 +1639,8 @@ export class GradingService {
         currency: r.currency,
         promotionApplied: r.promotionEventId !== null,
         feeFree: found.status === 'toDecide',
+        // A move into the linked Adult program: toRungId is an Adult rank.
+        toAdult: r.toDisciplineId !== null,
       },
     };
   }
@@ -1720,6 +1785,12 @@ export class GradingService {
    * count on the Adult ladder where it has a skill of exactly the same name,
    * and the rest stay visible in their history. Only the class count starts
    * again from zero. Recorded as a promotion, "Moved to Adult program."
+   *
+   * Charged like any other promotion (Decision 419 item 2): with the School's
+   * promotion fee on, the Adult rank's own price is asked for; with "Allow
+   * grading before the fee is paid" off the move waits for it ("Waiting for
+   * fee"), and while a promotion waits for its fee in the Kids style the move
+   * is refused, as any other grade is (Decision 314 item 3).
    */
   async moveToAdult(callerId: string, studentId: string, disciplineId: string, dto: MoveToAdultDto) {
     const kids = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
@@ -1757,7 +1828,11 @@ export class GradingService {
   /**
    * The move itself, once the caller is authorized for the Kids style and both
    * styles accept grading writes. Shared by the single move and bulk promote
-   * (`bulk`: recorded as a batch promotion with the batch's own note).
+   * (`bulk`: recorded as a batch promotion with the batch's own note), and by
+   * a move that waited for its fee (`applying`, from applyWaitingPromotion:
+   * the coach's grade, checked when they made it, applied as they made it).
+   * The promotion fee goes through changeRung's own steps (feeForGrade,
+   * createFeeRequest, settleAppliedFee), with the Adult rank as the grade.
    */
   private async applyMoveToAdult(
     callerId: string,
@@ -1765,7 +1840,8 @@ export class GradingService {
     kids: Discipline,
     adult: Discipline,
     dto: MoveToAdultDto,
-    bulk?: { systemNote: string },
+    bulk?: { eventType: 'BULK_PROMOTION'; systemNote: string },
+    applying?: ApplyingFee,
   ) {
     const disciplineId = kids.id;
     const result = await this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -1779,7 +1855,8 @@ export class GradingService {
       if (await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId: adult.id } }, select: { id: true } })) {
         throw new ConflictException(ADULT_ALREADY);
       }
-      if (!(await isActiveForGrading(tx, existing, studentId, kids.schoolId))) {
+      // A move that waited for its fee was checked when the coach made it.
+      if (!applying && !(await isActiveForGrading(tx, existing, studentId, kids.schoolId))) {
         throw new BadRequestException(INACTIVE_MESSAGE);
       }
       if (dto.expectedCurrentRungId !== undefined && existing.currentStripeId !== dto.expectedCurrentRungId) {
@@ -1787,9 +1864,11 @@ export class GradingService {
       }
       const timeZone = await studentTimeZone(tx, studentId, kids.schoolId);
       const today = localDay(new Date(), timeZone);
-      const student = await tx.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } });
-      if (!hasReachedAge(student?.dateOfBirth ?? null, kids.readyForAdultAge, today)) {
-        throw new ConflictException(ADULT_TOO_YOUNG);
+      if (!applying) {
+        const student = await tx.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } });
+        if (!hasReachedAge(student?.dateOfBirth ?? null, kids.readyForAdultAge, today)) {
+          throw new ConflictException(ADULT_TOO_YOUNG);
+        }
       }
 
       const kidsLadder = await loadLadder(tx, disciplineId);
@@ -1806,6 +1885,9 @@ export class GradingService {
       const to = adultLadder[toIndex];
       if (to.rankId === adultLadder[0].rankId) {
         throw new BadRequestException(ADULT_FIRST_BELT);
+      }
+      if (applying && to.id !== applying.toRungId) {
+        throw new ConflictException('The ladder has changed since this promotion was made, so it can\'t be applied as it was. Cancel the fee and grade the student again.');
       }
 
       // The checks for the student's next Kids rank still apply, as for any skip.
@@ -1839,6 +1921,30 @@ export class GradingService {
           );
         }
         if (dto.effectiveDate !== today) rankDate = startOfLocalDay(dto.effectiveDate, timeZone);
+      }
+
+      // --- Promotion fee: charged like any promotion, at the Adult rank's own
+      // price (Decision 419 item 2), through the same steps as changeRung.
+      // feeForGrade also refuses the move while a promotion waits for its fee
+      // in the Kids style (Decision 314 item 3).
+      const fee = applying ? null : await this.feeForGrade(tx, callerId, kids.schoolId, studentId, disciplineId, from.id, to);
+      if (fee?.waitsForFee) {
+        // "Allow grading before the fee is paid" off: nothing moves yet; the
+        // move is kept and applied once the fee is paid or waived.
+        const pendingGrade: PendingGrade = {
+          type: 'MOVE_TO_ADULT',
+          targetRungId: to.id,
+          expectedCurrentRungId: from.id,
+          effectiveDate: dto.effectiveDate ?? today,
+          note: dto.note ?? null,
+          acknowledgeWithoutSkillSignoff: missingSkillIds.length > 0,
+          ...(bulk ? { bulk } : {}),
+        };
+        const feeRequest = await this.createFeeRequest(tx, {
+          ...fee, schoolId: kids.schoolId, studentId, disciplineId, from: from.id, to, gradedById: callerId, pendingGrade, toDisciplineId: adult.id,
+        });
+        const { skillStatuses: _skills, ...studentRank } = existing;
+        return { studentRank, promotionEvent: null, toRungName: to.name, feeRequest };
       }
 
       const updated = await tx.studentRank.updateMany({
@@ -1878,7 +1984,8 @@ export class GradingService {
           schoolId: kids.schoolId,
           studentId,
           type: bulk ? 'BULK_PROMOTION' : 'PROMOTION',
-          performedById: callerId,
+          // A move that waited for its fee is the coach's grade.
+          performedById: applying ? applying.gradedById : callerId,
           fromRankId: from.rankId,
           toRankId: to.rankId,
           fromStripeTierId: from.id,
@@ -1890,9 +1997,33 @@ export class GradingService {
           startingClasses: 0,
         },
       });
+      let feeRequest: PromotionFeeRequest | null = null;
+      if (applying) {
+        await this.settleAppliedFee(tx, applying, promotionEvent.id);
+      } else if (fee) {
+        // "Allow grading before the fee is paid" on: moved now, the request waits.
+        feeRequest = await this.createFeeRequest(tx, {
+          ...fee, schoolId: kids.schoolId, studentId, disciplineId, from: from.id, to, gradedById: callerId, promotionEventId: promotionEvent.id, toDisciplineId: adult.id,
+        });
+      }
       const studentRank = await tx.studentRank.findUniqueOrThrow({ where: { id: existing.id } });
-      return { studentRank, promotionEvent, toRungName: to.name };
+      return { studentRank, promotionEvent: promotionEvent as typeof promotionEvent | null, toRungName: to.name, feeRequest };
     });
+
+    if (!applying) await this.cancelChargesOfSupersededFees(kids.schoolId, studentId);
+    if (result.feeRequest) {
+      await this.notifyFeeRequested({
+        feeRequestId: result.feeRequest.id,
+        studentId,
+        // The fee is for the Adult rank: named with the Adult style.
+        disciplineName: adult.name,
+        toRungName: result.toRungName,
+        amountMinor: result.feeRequest.amountMinor,
+        currency: result.feeRequest.currency,
+      });
+    }
+    // Waiting for its fee: nothing moved yet.
+    if (!result.promotionEvent) return result;
 
     await this.notifyOfGradingAction({
       promotionEventId: result.promotionEvent.id,

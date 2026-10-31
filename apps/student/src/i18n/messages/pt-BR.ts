@@ -592,6 +592,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Taxa de promoção",
       gradedSelf: "Você foi graduado para {rank}",
       gradedChild: "{name} foi graduado para {rank}",
+      gradedSelfAdult: "Você foi graduado para o programa adulto, para {rank}",
+      gradedChildAdult: "{name} foi graduado para o programa adulto, para {rank}",
       styleAtSchoolAmount: "{style} em {school} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "Não foi possível enviar sua resposta — tente novamente.",

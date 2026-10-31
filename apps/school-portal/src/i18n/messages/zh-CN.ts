@@ -1871,6 +1871,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "未晋级：批处理在此之前停止",
       doneTitle: "学员已晋级",
       notPromoted: "未晋级：{list}。",
+      waitingForFee: "等待费用，因此尚未晋级（费用支付或免除后即晋级）：{list}。",
       openReport: "打开可打印报告",
       title: "为这些学员晋级",
       intro: "每位学员晋升到“晋升至”中选择的级别,默认为下一级别。拖动行或使用上移、下移按钮设置点名顺序。",

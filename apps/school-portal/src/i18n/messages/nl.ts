@@ -1893,6 +1893,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "niet gepromoveerd: de reeks stopte ervoor",
       doneTitle: "Leerlingen gepromoveerd",
       notPromoted: "Niet gepromoveerd: {list}.",
+      waitingForFee: "Wachten op hun vergoeding, dus nog niet gepromoveerd (elk gaat omhoog zodra de vergoeding is betaald of kwijtgescholden): {list}.",
       openReport: "Afdrukbaar rapport openen",
       title: "Deze leerlingen promoveren",
       intro: "Elke leerling gaat naar de graad bij ‘Promoveren naar’, die begint op de volgende graad. Bepaal de oproepvolgorde door een rij te slepen, of met Omhoog en Omlaag.",

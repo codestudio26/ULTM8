@@ -586,6 +586,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "ค่าธรรมเนียมเลื่อนระดับ",
       gradedSelf: "คุณได้เลื่อนระดับเป็น {rank}",
       gradedChild: "{name} ได้เลื่อนระดับเป็น {rank}",
+      gradedSelfAdult: "คุณได้เลื่อนเข้าสู่โปรแกรมผู้ใหญ่ เป็น {rank}",
+      gradedChildAdult: "{name} ได้เลื่อนเข้าสู่โปรแกรมผู้ใหญ่ เป็น {rank}",
       styleAtSchoolAmount: "{style} ที่ {school} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "ไม่สามารถส่งคำตอบของคุณได้ โปรดลองอีกครั้ง",

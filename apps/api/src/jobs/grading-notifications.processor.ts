@@ -270,7 +270,8 @@ export class GradingNotificationsProcessor extends WorkerHost {
       const [recipients, student, discipline] = await Promise.all([
         this.readyRecipients(request.schoolId, request.disciplineId, request.studentId),
         db.user.findUnique({ where: { id: request.studentId }, select: { firstName: true, surname: true } }),
-        db.discipline.findUnique({ where: { id: request.disciplineId }, select: { name: true } }),
+        // The style of the rank planned (the Adult style for a move into it, Decision 419 item 2).
+        db.discipline.findUnique({ where: { id: request.toDisciplineId ?? request.disciplineId }, select: { name: true } }),
       ]);
       const name = student ? `${student.firstName} ${student.surname}` : 'A student';
       for (const userId of recipients) {

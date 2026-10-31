@@ -1893,6 +1893,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "no promovido: el lote se detuvo antes",
       doneTitle: "Alumnos promovidos",
       notPromoted: "No promovidos: {list}.",
+      waitingForFee: "Esperando su cuota, así que aún no promovidos (cada uno sube cuando su cuota se paga o se condona): {list}.",
       openReport: "Abrir informe imprimible",
       title: "Promover a estos alumnos",
       intro: "Cada alumno sube al grado elegido en «Promover a», que empieza en su siguiente grado. Define el orden de llamada arrastrando una fila o con Subir y Bajar.",

@@ -1893,6 +1893,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       notReached: "non promu : le lot s’est arrêté avant",
       doneTitle: "Élèves promus",
       notPromoted: "Non promus : {list}.",
+      waitingForFee: "En attente de leurs frais, donc pas encore promus (chacun est promu dès que ses frais sont payés ou exonérés) : {list}.",
       openReport: "Ouvrir le rapport imprimable",
       title: "Promouvoir ces élèves",
       intro: "Chaque élève monte au grade choisi dans « Promouvoir à », qui commence sur son grade suivant. Définissez l’ordre d’appel en faisant glisser une ligne, ou avec Monter et Descendre.",

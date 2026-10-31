@@ -623,6 +623,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "رسوم الترقية",
       gradedSelf: "تمت ترقيتك إلى {rank}",
       gradedChild: "تمت ترقية {name} إلى {rank}",
+      gradedSelfAdult: "تمت ترقيتك إلى برنامج البالغين، إلى {rank}",
+      gradedChildAdult: "تمت ترقية {name} إلى برنامج البالغين، إلى {rank}",
       styleAtSchoolAmount: "{style} في {school} · {amount}",
       placeAmount: "{place} · {amount}",
       answerError: "تعذّر إرسال ردّك، يُرجى المحاولة مرة أخرى.",
