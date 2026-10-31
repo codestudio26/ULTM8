@@ -62,6 +62,9 @@ export class StudentExportRowDto {
   @ApiProperty()
   enrolledAt!: string;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'YYYY-MM-DD: the day they joined this School (Decision 315 item 4).' })
+  joinedOn!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   homeBranchName!: string | null;
 

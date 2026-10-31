@@ -1,8 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, PickType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsDateString, IsEmail, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsDateString, IsEmail, IsOptional, IsString, IsUUID, Matches, MaxLength, MinLength } from 'class-validator';
 import { NormalizeEmail } from '../../../common/decorators/normalize-email.decorator';
 import { IsBirthDate } from '../../../common/decorators/is-birth-date.decorator';
+import { CONTACT_FIELDS, UpdateUserDto } from '../../../users/dto/update-user.dto';
+import { JOIN_DATE_FORMAT } from '../../schools/student-join-dates';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -13,7 +15,7 @@ const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? val
  * a new passcode chosen at first sign-in. Adults only: a child joins through a
  * Guardian (domain rules §14), so the date of birth is required.
  */
-export class CreateStudentManuallyDto {
+export class CreateStudentManuallyDto extends PickType(UpdateUserDto, CONTACT_FIELDS) {
   @ApiProperty()
   @Transform(trim)
   @IsString()
@@ -42,4 +44,10 @@ export class CreateStudentManuallyDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  /** Decision 315 item 4: defaults to today; an earlier day may be given, never a future one. */
+  @ApiPropertyOptional({ description: 'YYYY-MM-DD. The day they joined; today when omitted. Not in the future.' })
+  @IsOptional()
+  @Matches(JOIN_DATE_FORMAT, { message: 'Enter the join date as YYYY-MM-DD.' })
+  joinedOn?: string;
 }

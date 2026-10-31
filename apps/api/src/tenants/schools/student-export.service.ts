@@ -85,6 +85,7 @@ export class StudentExportService {
         dateOfBirth: u?.dateOfBirth ? u.dateOfBirth.toISOString().slice(0, 10) : null,
         status: r.status as StudentStatusDto,
         enrolledAt: new Date(r.enrolledAt).toISOString(),
+        joinedOn: r.joinedOn ?? null,
         homeBranchName: r.homeBranchName ?? null,
         visitor: r.visitor,
         memberships: live.map((m) => m.membershipPlan.title),
