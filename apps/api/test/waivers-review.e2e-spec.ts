@@ -86,6 +86,10 @@ describeIfDb('Waivers review fixes', () => {
   });
 
   afterAll(async () => {
+    // Close the app first: its own BullMQ workers fan out waiver notices into
+    // Notification, and one still running would add rows mid-cleanup and break
+    // the user delete below.
+    await app.close();
     const userIds = (await superuser.user.findMany({ where: { email: { contains: 'waivers-review-' } }, select: { id: true } })).map((u) => u.id);
     const schoolIds = [school.id, emptySchool.id];
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
@@ -100,7 +104,6 @@ describeIfDb('Waivers review fixes', () => {
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
-    await app.close();
   });
 
   it('W1: after a student leaves, the Signatures panel still loads; their unsigned entry drops out, their signature stays as a former student', async () => {

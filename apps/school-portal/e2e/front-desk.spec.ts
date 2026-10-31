@@ -65,8 +65,11 @@ test('staff check a booked student in by name; the line says only "Checked in âœ
   await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: m.id } });
   await signIn(page, s.ownerToken);
   await page.goto('/students');
-  await page.getByRole('link', { name: 'Check-in' }).click();
-  await expect(page).toHaveURL(/\/check-in$/);
+  // The Students page keeps loading after the first paint; a click that lands
+  // mid re-render can be lost, so wait for the navigation together with it.
+  const checkInLink = page.getByRole('link', { name: 'Check-in' });
+  await expect(checkInLink).toBeVisible();
+  await Promise.all([page.waitForURL(/\/check-in$/), checkInLink.click()]);
 
   await expect(page.getByTestId('fd-class')).toContainText('Fundamentals');
   await page.getByRole('tab', { name: 'Name' }).click();
