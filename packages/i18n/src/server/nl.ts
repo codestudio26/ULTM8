@@ -726,6 +726,7 @@ export const serverMessages: Record<string, string> = {
   "A child's contact details are changed by their Guardian or the School.": "De contactgegevens van een kind worden gewijzigd door de voogd of de school.",
   "The School owner hasn't let you see attendance statistics.": "De eigenaar van de School heeft je niet toegestaan de aanwezigheidsstatistieken te zien.",
   "You can only see your own Branches' attendance.": "Je kunt alleen de aanwezigheid van je eigen vestigingen zien.",
+  "You can only see your own Branches' growth.": "Je kunt alleen de groei van je eigen vestigingen zien.",
   "This class hasn't started yet. Check them in instead.": "Deze les is nog niet begonnen. Check ze in plaats daarvan in.",
   "This date is not valid.": "Deze datum is niet geldig.",
   "Attendance can only be logged from {v1} to {v2}.": "Aanwezigheid kan alleen worden ingevoerd van {v1} tot {v2}.",

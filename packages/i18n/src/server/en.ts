@@ -563,6 +563,7 @@ export const SERVER_MESSAGES: string[] = [
   "This temporary passcode has expired. Ask your School for a new one.",
   "The School owner hasn't let you see attendance statistics.",
   "You can only see your own Branches' attendance.",
+  "You can only see your own Branches' growth.",
   "This class hasn't started yet. Check them in instead.",
   "This date is not valid.",
 ];

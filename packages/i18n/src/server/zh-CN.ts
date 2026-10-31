@@ -726,6 +726,7 @@ export const serverMessages: Record<string, string> = {
   "A child's contact details are changed by their Guardian or the School.": "孩子的联系方式由其监护人或学校修改。",
   "The School owner hasn't let you see attendance statistics.": "学校所有者未允许你查看出勤统计。",
   "You can only see your own Branches' attendance.": "你只能查看自己分校的出勤。",
+  "You can only see your own Branches' growth.": "你只能查看自己分校的增长。",
   "This class hasn't started yet. Check them in instead.": "这节课还没开始。请改为为他们签到。",
   "This date is not valid.": "此日期无效。",
   "Attendance can only be logged from {v1} to {v2}.": "只能记录 {v1} 至 {v2} 的出勤。",

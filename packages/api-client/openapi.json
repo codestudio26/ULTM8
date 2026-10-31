@@ -16318,6 +16318,50 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/growth": {
+      "get": {
+        "operationId": "GrowthController_growth",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Only students whose home Branch is this one. Staff may only name one of their own Branches.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrowthResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "dashboard"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff/{userId}/teaching": {
       "get": {
         "operationId": "StaffRemovalController_teaching",
@@ -36153,6 +36197,109 @@
           "to",
           "today",
           "items"
+        ]
+      },
+      "GrowthMonthDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "The month, YYYY-MM, in the School's time zone."
+          },
+          "newStudents": {
+            "type": "number",
+            "description": "Students whose join date at the School (StudentJoinDate) falls in this month."
+          },
+          "cancelled": {
+            "type": "number",
+            "description": "Students whose Subscription ended by cancellation (Membership.cancelAt) in this month, up to now."
+          }
+        },
+        "required": [
+          "month",
+          "newStudents",
+          "cancelled"
+        ]
+      },
+      "GrowthProgrammeDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The style's name, as the School typed it."
+          },
+          "students": {
+            "type": "number",
+            "description": "Enrolled students holding a rank in this style now."
+          },
+          "newByMonth": {
+            "description": "Students who started this style (their rank in it was created) each month, in the same order as `months`.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "disciplineId",
+          "name",
+          "students",
+          "newByMonth"
+        ]
+      },
+      "GrowthResponseDto": {
+        "type": "object",
+        "properties": {
+          "timeZone": {
+            "type": "string",
+            "description": "The School's time zone the months are in (UTC when the School has none)."
+          },
+          "branchIds": {
+            "nullable": true,
+            "description": "The home Branches counted; null means the whole School.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "activeStudents": {
+            "type": "number",
+            "description": "Active students now (Decision 317 item 5, the Dashboard's count): enrolled, with a Subscription, a Class Pack with credits left, a Weekly Pass or a Trial in effect."
+          },
+          "visitors": {
+            "type": "number",
+            "description": "Enrolled students who are Visitors now (Decision 391: a visit pass and no other membership since)."
+          },
+          "frozen": {
+            "type": "number",
+            "description": "Enrolled students with a membership frozen today (Decision 404)."
+          },
+          "months": {
+            "description": "The last 12 months, oldest first; the last is the current month.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrowthMonthDto"
+            }
+          },
+          "programmes": {
+            "description": "The School's styles that aren't archived, by name.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GrowthProgrammeDto"
+            }
+          }
+        },
+        "required": [
+          "timeZone",
+          "branchIds",
+          "activeStudents",
+          "visitors",
+          "frozen",
+          "months",
+          "programmes"
         ]
       },
       "StaffTeachingResponseDto": {

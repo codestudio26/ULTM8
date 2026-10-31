@@ -726,6 +726,7 @@ export const serverMessages: Record<string, string> = {
   "A child's contact details are changed by their Guardian or the School.": "Bir çocuğun iletişim bilgilerini velisi veya okul değiştirir.",
   "The School owner hasn't let you see attendance statistics.": "Okul sahibi devam istatistiklerini görmene izin vermedi.",
   "You can only see your own Branches' attendance.": "Yalnızca kendi şubelerinin devam kayıtlarını görebilirsin.",
+  "You can only see your own Branches' growth.": "Yalnızca kendi şubelerinin büyümesini görebilirsin.",
   "This class hasn't started yet. Check them in instead.": "Bu ders henüz başlamadı. Bunun yerine girişlerini yap.",
   "This date is not valid.": "Bu tarih geçerli değil.",
   "Attendance can only be logged from {v1} to {v2}.": "Devam yalnızca {v1} ile {v2} arasında kaydedilebilir.",

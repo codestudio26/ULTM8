@@ -142,6 +142,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   sends none (the dispute notice already says the money goes back). The
   owner's notes are never included. New switch "A refund of a payment" among
   the payment notifications on the School page, on by default. 15 languages.
+- **Students → Growth** (backlog 5.8, Gymdesk G1–G5) — a new Growth tab next
+  to Attendance. Tiles for **Active students** (the Dashboard's own count,
+  Decision 317 item 5 / 374, from the same code so the two always agree),
+  **Visitors** (Decision 391), **Frozen** (a membership frozen today, Decision
+  404), **New this month** (by join date, Decision 315 item 4) and **Cancelled
+  this month** (Subscriptions ended by cancellation); a bar chart of new and
+  cancelled students for each of the last 12 months; and a **By style** table
+  (students holding a rank in each style now, and how many started it). Months
+  are calendar months in the School's time zone. The owner sees the whole
+  School with a Branch filter (by home Branch); Branch Staff with "See
+  attendance statistics" see their own Branches' students. New endpoint
+  `GET /schools/{id}/growth`. 15 languages.
 - **Billing reports: total revenue, charges and memberships** (Decision 414
   item 3) — the Overview now shows revenue in two parts and their total, for
   the period and for each month: **Charges** (payments toward charges less

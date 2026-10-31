@@ -726,6 +726,7 @@ export const serverMessages: Record<string, string> = {
   "A child's contact details are changed by their Guardian or the School.": "お子さまの連絡先は保護者またはスクールが変更します。",
   "The School owner hasn't let you see attendance statistics.": "スクールのオーナーが出席統計の閲覧を許可していません。",
   "You can only see your own Branches' attendance.": "自分の支部の出席のみ表示できます。",
+  "You can only see your own Branches' growth.": "自分の支部の成長のみ表示できます。",
   "This class hasn't started yet. Check them in instead.": "このクラスはまだ始まっていません。代わりにチェックインしてください。",
   "This date is not valid.": "この日付は無効です。",
   "Attendance can only be logged from {v1} to {v2}.": "出席を記録できるのは {v1} から {v2} までです。",

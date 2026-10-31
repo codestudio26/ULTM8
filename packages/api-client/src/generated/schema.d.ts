@@ -5380,6 +5380,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/growth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GrowthController_growth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff/{userId}/teaching": {
         parameters: {
             query?: never;
@@ -11600,6 +11616,39 @@ export interface components {
             to: string;
             today: string;
             items: components["schemas"]["BirthdayDto"][];
+        };
+        GrowthMonthDto: {
+            /** @description The month, YYYY-MM, in the School's time zone. */
+            month: string;
+            /** @description Students whose join date at the School (StudentJoinDate) falls in this month. */
+            newStudents: number;
+            /** @description Students whose Subscription ended by cancellation (Membership.cancelAt) in this month, up to now. */
+            cancelled: number;
+        };
+        GrowthProgrammeDto: {
+            disciplineId: string;
+            /** @description The style's name, as the School typed it. */
+            name: string;
+            /** @description Enrolled students holding a rank in this style now. */
+            students: number;
+            /** @description Students who started this style (their rank in it was created) each month, in the same order as `months`. */
+            newByMonth: number[];
+        };
+        GrowthResponseDto: {
+            /** @description The School's time zone the months are in (UTC when the School has none). */
+            timeZone: string;
+            /** @description The home Branches counted; null means the whole School. */
+            branchIds: string[] | null;
+            /** @description Active students now (Decision 317 item 5, the Dashboard's count): enrolled, with a Subscription, a Class Pack with credits left, a Weekly Pass or a Trial in effect. */
+            activeStudents: number;
+            /** @description Enrolled students who are Visitors now (Decision 391: a visit pass and no other membership since). */
+            visitors: number;
+            /** @description Enrolled students with a membership frozen today (Decision 404). */
+            frozen: number;
+            /** @description The last 12 months, oldest first; the last is the current month. */
+            months: components["schemas"]["GrowthMonthDto"][];
+            /** @description The School's styles that aren't archived, by name. */
+            programmes: components["schemas"]["GrowthProgrammeDto"][];
         };
         StaffTeachingResponseDto: {
             /** @description Upcoming classes they teach here (not ended, cancelled or archived). */
@@ -21866,6 +21915,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BirthdaysResponseDto"];
+                };
+            };
+        };
+    };
+    GrowthController_growth: {
+        parameters: {
+            query?: {
+                /** @description Only students whose home Branch is this one. Staff may only name one of their own Branches. */
+                branchId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrowthResponseDto"];
                 };
             };
         };

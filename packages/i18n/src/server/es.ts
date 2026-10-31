@@ -726,6 +726,7 @@ export const serverMessages: Record<string, string> = {
   "A child's contact details are changed by their Guardian or the School.": "Los datos de contacto de un menor los cambia su tutor o la escuela.",
   "The School owner hasn't let you see attendance statistics.": "El propietario de la Escuela no te ha permitido ver las estadísticas de asistencia.",
   "You can only see your own Branches' attendance.": "Solo puedes ver la asistencia de tus propias sedes.",
+  "You can only see your own Branches' growth.": "Solo puedes ver el crecimiento de tus propias sedes.",
   "This class hasn't started yet. Check them in instead.": "Esta clase aún no ha empezado. Regístrales la entrada en su lugar.",
   "This date is not valid.": "Esta fecha no es válida.",
   "Attendance can only be logged from {v1} to {v2}.": "La asistencia solo se puede registrar del {v1} al {v2}.",
