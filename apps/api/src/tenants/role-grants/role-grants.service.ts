@@ -1362,5 +1362,6 @@ function toPermissionColumns(access: StaffAccessSet) {
     canManageCheckInRules: access.checkInRules,
     canExportStudents: access.exportStudents,
     canFreezeMemberships: access.freezeMemberships,
+    canManageMemberFiles: access.memberFiles,
   };
 }

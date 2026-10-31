@@ -15,6 +15,19 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Files on a member (Documents)** — backlog 5.11, Decision 315 item 9. A new
+  Documents section on the student's page: upload a PDF, JPG or PNG (up to
+  10 MB each), see the list (name, size, date, who uploaded), download and
+  delete. The type is read from the file's content, not only its name, and the
+  size is checked by the server. Files are kept in the private storage bucket
+  and downloaded through a link that works for 5 minutes. Only the School's
+  owners see them, and Branch Staff the owner switches on with the new
+  "See and manage member files" access (off by default, in neither preset),
+  for their own branches' students; the member and their Guardian never do.
+  Files are erased with the member's account and when a closed School is
+  purged (the stored file first, then its record; if storage can't be reached
+  both stay and the next daily sweep tries again). Migration
+  `20270125000000_member_files`.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The

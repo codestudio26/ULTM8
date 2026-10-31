@@ -5924,6 +5924,54 @@ export interface paths {
         patch: operations["StudentNotesController_update"];
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberFilesController_list"];
+        put?: never;
+        post: operations["MemberFilesController_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/files/{fileId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberFilesController_download"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/files/{fileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["MemberFilesController_remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/students/add-child-manually": {
         parameters: {
             query?: never;
@@ -7467,6 +7515,8 @@ export interface components {
             exportStudents: boolean;
             /** @description Freeze members' memberships, and approve, decline or end a freeze, for their branches' students (off by default; Decision 409). */
             freezeMemberships: boolean;
+            /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
+            memberFiles: boolean;
         };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
@@ -11708,6 +11758,32 @@ export interface components {
         UpdateStudentNoteDto: {
             body?: string;
             showToMember?: boolean;
+        };
+        MemberFileDto: {
+            id: string;
+            /** @description The name the file was uploaded with. */
+            fileName: string;
+            /** @enum {string} */
+            contentType: "application/pdf" | "image/jpeg" | "image/png";
+            /** @description Size in bytes. */
+            sizeBytes: number;
+            /** @description Who uploaded it; null once their account is gone. */
+            uploadedByName?: string | null;
+            createdAt: string;
+        };
+        MemberFileListDto: {
+            items: components["schemas"]["MemberFileDto"][];
+        };
+        UploadMemberFileDto: {
+            /**
+             * Format: binary
+             * @description A PDF, JPG or PNG file, up to 10 MB.
+             */
+            file: string;
+        };
+        MemberFileDownloadDto: {
+            /** @description A link that downloads the file. It works for 5 minutes. */
+            url: string;
         };
         ChildDetailsDto: {
             firstName: string;
@@ -22392,6 +22468,98 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["StudentNoteDto"];
                 };
+            };
+        };
+    };
+    MemberFilesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberFileListDto"];
+                };
+            };
+        };
+    };
+    MemberFilesController_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["UploadMemberFileDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberFileDto"];
+                };
+            };
+        };
+    };
+    MemberFilesController_download: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberFileDownloadDto"];
+                };
+            };
+        };
+    };
+    MemberFilesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                fileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
