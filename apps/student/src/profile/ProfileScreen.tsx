@@ -42,7 +42,15 @@ type Form = {
   weightCategory: string;
   kimonoSize: string;
   beltSize: string;
+  secondaryPhone: string;
+  secondaryEmail: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelationship: string;
 };
+
+/** Decision 315 item 5: the member's other contacts (not logins). */
+const CONTACT_FIELDS = ['secondaryPhone', 'secondaryEmail', 'emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelationship'] as const;
 
 function formFrom(profile: UserProfile): Form {
   return {
@@ -58,6 +66,11 @@ function formFrom(profile: UserProfile): Form {
     weightCategory: profile.weightCategory ?? '',
     kimonoSize: profile.kimonoSize ?? '',
     beltSize: profile.beltSize ?? '',
+    secondaryPhone: profile.secondaryPhone ?? '',
+    secondaryEmail: profile.secondaryEmail ?? '',
+    emergencyContactName: profile.emergencyContactName ?? '',
+    emergencyContactPhone: profile.emergencyContactPhone ?? '',
+    emergencyContactRelationship: profile.emergencyContactRelationship ?? '',
   };
 }
 
@@ -117,6 +130,12 @@ export function ProfileScreen() {
 
   function handleSave() {
     if (!form || updateProfile.isPending) return;
+    // Decision 315 item 5: only the contacts that changed (blank clears one).
+    const initial = profile.data ? formFrom(profile.data) : null;
+    const contacts: Partial<Record<(typeof CONTACT_FIELDS)[number], string | null>> = {};
+    for (const key of CONTACT_FIELDS) {
+      if (form[key].trim() !== (initial?.[key] ?? '')) contacts[key] = form[key].trim() || null;
+    }
     updateProfile.mutate(
       {
         firstName: form.firstName.trim(),
@@ -145,6 +164,7 @@ export function ProfileScreen() {
         weightCategory: form.weightCategory.trim() || null,
         kimonoSize: form.kimonoSize.trim() || null,
         beltSize: form.beltSize.trim() || null,
+        ...contacts,
       },
       { onSuccess: () => setSaved(true) },
     );
@@ -265,6 +285,24 @@ export function ProfileScreen() {
       </Field>
       <Field label={t('profile.screen.beltSize')} hint={t('profile.screen.beltSizeHint')}>
         <TextField value={form.beltSize} onChangeText={(v) => set('beltSize', v)} />
+      </Field>
+
+      <Field label={t('profile.screen.secondaryPhone')} hint={t('profile.screen.secondaryHint')}>
+        <TextField value={form.secondaryPhone} onChangeText={(v) => set('secondaryPhone', v)} keyboardType="phone-pad" maxLength={40} />
+      </Field>
+      <Field label={t('profile.screen.secondaryEmail')} hint={t('profile.screen.secondaryHint')}>
+        <TextField value={form.secondaryEmail} onChangeText={(v) => set('secondaryEmail', v)} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+      </Field>
+      <Muted>{t('profile.screen.emergencyHeading')}</Muted>
+      <Muted>{t('profile.screen.emergencyHint')}</Muted>
+      <Field label={t('profile.screen.emergencyName')}>
+        <TextField value={form.emergencyContactName} onChangeText={(v) => set('emergencyContactName', v)} maxLength={100} />
+      </Field>
+      <Field label={t('profile.screen.emergencyPhone')}>
+        <TextField value={form.emergencyContactPhone} onChangeText={(v) => set('emergencyContactPhone', v)} keyboardType="phone-pad" maxLength={40} />
+      </Field>
+      <Field label={t('profile.screen.emergencyRelationship')}>
+        <TextField value={form.emergencyContactRelationship} onChangeText={(v) => set('emergencyContactRelationship', v)} maxLength={60} />
       </Field>
 
       <Field

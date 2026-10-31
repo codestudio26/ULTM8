@@ -40,6 +40,7 @@ import { sendFranchiseNotice } from '../franchises/franchise-notifications';
 import { sendStudentAddedNotice } from './student-added-notice';
 import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
 import { requireSchoolCurrency, setsNewPrice } from '../../common/school-currency';
+import { assertJoinDateAllowed, loadJoinDates, setJoinDate } from './student-join-dates';
 
 /** Decision 110's retention window, the same one the Platform Admin close uses. */
 const RETENTION_WINDOW_DAYS = 90;
@@ -841,9 +842,10 @@ export class SchoolsService {
       const homes = await this.homeBranchesOf(callerId, schoolId, matched.map((g) => g.id));
       const visitors = await this.visitorStatusesOf(schoolId, matched.map((g) => g.id));
       const frozen = await loadFrozenStudents(this.prismaJobs, schoolId, matched.map((g) => g.id));
+      const joined = await loadJoinDates(this.prismaJobs, schoolId, matched.map((g) => g.id));
       return {
         items: matched.map((g) =>
-          rosterRow({ ...g, status: StudentStatusDto.ACTIVE, ...homeBranchOf(homes, g.id), ...visitorOf(visitors, g.id), ...frozenOf(frozen, g.id) }),
+          rosterRow({ ...g, status: StudentStatusDto.ACTIVE, joinedOn: joined.get(g.id) ?? null, ...homeBranchOf(homes, g.id), ...visitorOf(visitors, g.id), ...frozenOf(frozen, g.id) }),
         ),
       };
     }
@@ -909,7 +911,10 @@ export class SchoolsService {
     const homes = await this.homeBranchesOf(callerId, schoolId, rows.map((r) => r.id));
     const visitors = await this.visitorStatusesOf(schoolId, rows.map((r) => r.id));
     const frozen = await loadFrozenStudents(this.prismaJobs, schoolId, rows.map((r) => r.id));
-    return { items: rows.map((r) => rosterRow({ ...r, ...homeBranchOf(homes, r.id), ...visitorOf(visitors, r.id), ...frozenOf(frozen, r.id) })) };
+    const joined = await loadJoinDates(this.prismaJobs, schoolId, rows.map((r) => r.id));
+    return {
+      items: rows.map((r) => rosterRow({ ...r, joinedOn: joined.get(r.id) ?? null, ...homeBranchOf(homes, r.id), ...visitorOf(visitors, r.id), ...frozenOf(frozen, r.id) })),
+    };
   }
 
   /** Decision 391: which listed students are Visitors. Branch Staff can't read
@@ -1138,15 +1143,27 @@ export class SchoolsService {
         throw new ForbiddenException('Only the School owner can change a birth date that makes someone an adult or a child.');
       }
     }
-    return this.usersService.updateProfileFor(callerId, studentId, dto);
+    // Decision 315 item 4: the join date, checked before anything is saved.
+    const { joinedOn, ...profile } = dto;
+    if (joinedOn !== undefined) await assertJoinDateAllowed(this.prismaJobs, schoolId, joinedOn);
+    const updated = await this.usersService.updateProfileFor(callerId, studentId, profile);
+    if (joinedOn !== undefined) await setJoinDate(this.prismaJobs, schoolId, studentId, joinedOn, callerId);
+    return this.withJoinDate(schoolId, updated);
   }
 
   /** `GET /schools/{schoolId}/students/{studentId}/profile` — the profile the
-   * edit form opens with (Decision 341, S9). Same access as
-   * updateStudentProfile. */
+   * edit form opens with (Decision 341, S9), and the student's join date at
+   * this School (Decision 315 item 4). Same access as updateStudentProfile. */
   async getStudentProfile(callerId: string, schoolId: string, studentId: string) {
     await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
-    return this.usersService.getProfileFor(callerId, studentId);
+    return this.withJoinDate(schoolId, await this.usersService.getProfileFor(callerId, studentId));
+  }
+
+  /** Adds the student's join date at this School to their profile. Read on
+   * the jobs connection, after the caller's access was checked. */
+  private async withJoinDate<T extends { id: string }>(schoolId: string, profile: T): Promise<T & { joinedOn: string | null }> {
+    const dates = await loadJoinDates(this.prismaJobs, schoolId, [profile.id]);
+    return { ...profile, joinedOn: dates.get(profile.id) ?? null };
   }
 
   /** Decision 371 (Students Q4) — the names of a student's active Guardians,

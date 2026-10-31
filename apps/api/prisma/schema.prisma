@@ -493,6 +493,19 @@ model User {
   kimonoSize     String?
   beltSize       String?
 
+  /// Decision 315 item 5 (backlog 5.2): one secondary phone and one secondary
+  /// email, and an emergency contact (name, phone, relationship) who is not a
+  /// Guardian and has no account. Contact details only: never a login or OTP
+  /// destination. Person-level, on `User` like the address and measurements,
+  /// so edited the same ways (PATCH /users/me, and staff through
+  /// PATCH /schools/{id}/students/{studentId}/profile). Free text, like the
+  /// sign-up's emergency contact (Decision 392). Gone with the User row.
+  secondaryPhone               String?
+  secondaryEmail               String?
+  emergencyContactName         String?
+  emergencyContactPhone        String?
+  emergencyContactRelationship String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -556,6 +569,8 @@ model User {
   frontDeskSessionsEnded            FrontDeskSession[]          @relation("FrontDeskSessionEndedBy")
   staffKioskCodes                   StaffKioskCode[]            @relation("StaffKioskCodeUser")
   studentCheckInCodes               StudentCheckInCode[]        @relation("StudentCheckInCodeStudent")
+  studentJoinDates                  StudentJoinDate[]           @relation("StudentJoinDateStudent")
+  studentJoinDatesSet               StudentJoinDate[]           @relation("StudentJoinDateSetBy")
   bookingAttendeesResolved          BookingAttendee[]           @relation("BookingAttendeeResolvedBy")
   waitlistEntries                   WaitlistEntry[]             @relation("WaitlistEntryStudent")
   guardianLinksAsGuardian           GuardianLink[]              @relation("GuardianLinkGuardian")
@@ -1330,6 +1345,7 @@ model School {
   frontDeskSessions     FrontDeskSession[]
   staffKioskCodes       StaffKioskCode[]
   studentCheckInCodes   StudentCheckInCode[]
+  studentJoinDates      StudentJoinDate[]
 
   notificationBroadcasts NotificationBroadcast[]
   rankCorrectionRequests RankCorrectionRequest[]
@@ -5048,6 +5064,35 @@ model StudentCheckInCode {
   @@index([studentId])
 }
 
+/// Decision 315 item 4 (backlog 5.1): the day a student joined a School.
+/// One per student per School, kept when they leave and come back. A trigger
+/// on RoleGrant makes it the day the STUDENT grant is first given, in the
+/// School's timezone (UTC if it has none); staff can set an earlier day,
+/// never a future one. Students enrolled before this existed got the day of
+/// their first STUDENT grant at the School (migration 20270123000000).
+/// Read and written only on the jobs connection, after the API's own checks.
+model StudentJoinDate {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("StudentJoinDateStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  joinedOn DateTime @db.Date
+
+  /// The staff member who last changed it. Null: set when they joined.
+  setById String?
+  setBy   User?   @relation("StudentJoinDateSetBy", fields: [setById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, studentId])
+  @@index([studentId])
+}
+
 /// Decision 392: who is signing up, as chosen on the tablet.
 enum SignUpKind {
   VISITOR
@@ -5392,6 +5437,9 @@ model ChildInvite {
   childDateOfBirth DateTime
   /// FEMALE, MALE or null (Decision 315 item 15).
   childGender      String?
+  /// Decision 315 item 4: the join date the owner chose (YYYY-MM-DD), set on
+  /// the child's enrolment when the Guardian accepts. Null: the day accepted.
+  joinedOn         DateTime? @db.Date
 
   status ChildInviteStatus @default(PENDING)
 

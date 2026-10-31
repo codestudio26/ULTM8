@@ -42,6 +42,12 @@ export class StudentSummaryResponseDto {
   @ApiProperty()
   enrolledAt!: string;
 
+  /** Decision 315 item 4 (backlog 5.1): the day they joined this School,
+   * YYYY-MM-DD — the day they were added unless staff set an earlier one.
+   * The Students list's "Joined" column. Null only for a row with none. */
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'YYYY-MM-DD: the day they joined this School.' })
+  joinedOn!: string | null;
+
   /** ACTIVE = holds at least one non-revoked STUDENT RoleGrant at this School;
    * INACTIVE = holds only revoked ones. Resolved server-side — never ALL, which is
    * only a request-side filter value (StudentRosterStatusDto), not a row status. */

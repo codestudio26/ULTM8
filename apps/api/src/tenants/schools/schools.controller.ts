@@ -19,8 +19,7 @@ import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { StudentExportQueryDto, StudentExportResponseDto } from './dto/student-export.dto';
 import { StudentExportService } from './student-export.service';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
-import { UpdateStudentProfileDto } from './dto/update-student-profile.dto';
-import { UserResponseDto } from '../../users/dto/user-response.dto';
+import { StudentProfileResponseDto, UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
 import { StudentGuardiansResponseDto } from './dto/student-guardians-response.dto';
 
@@ -108,7 +107,7 @@ export class SchoolsController {
 
   /** The Student's full profile, for the staff edit form (Decision 341) — same
    * access as the PATCH below. */
-  @ApiOkResponse({ type: UserResponseDto })
+  @ApiOkResponse({ type: StudentProfileResponseDto })
   @Get(':id/students/:studentId/profile')
   getStudentProfile(
     @CurrentUser() user: JwtPayload,
@@ -145,7 +144,7 @@ export class SchoolsController {
   /** Staff (School Owner/Manager, Branch Staff, or Instructor) editing a Student's
    * own profile on their behalf — see SchoolsService.updateStudentProfile's own
    * header comment for the full authorization/field-scope account. */
-  @ApiOkResponse({ type: UserResponseDto })
+  @ApiOkResponse({ type: StudentProfileResponseDto })
   @Patch(':id/students/:studentId/profile')
   updateStudentProfile(
     @CurrentUser() user: JwtPayload,

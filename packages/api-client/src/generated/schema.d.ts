@@ -7169,6 +7169,8 @@ export interface components {
             guardianManaged: boolean;
             profilePhotoUrl?: string | null;
             enrolledAt: string;
+            /** @description YYYY-MM-DD: the day they joined this School. */
+            joinedOn?: string | null;
             status: components["schemas"]["StudentStatus"];
             homeBranchId?: string | null;
             homeBranchName?: string | null;
@@ -7205,6 +7207,8 @@ export interface components {
             dateOfBirth?: string | null;
             status: components["schemas"]["StudentStatus"];
             enrolledAt: string;
+            /** @description YYYY-MM-DD: the day they joined this School (Decision 315 item 4). */
+            joinedOn?: string | null;
             homeBranchName?: string | null;
             visitor: boolean;
             /** @description Memberships in effect now, by plan name. */
@@ -7236,7 +7240,7 @@ export interface components {
             createdAt: string;
             updatedAt: string;
         };
-        UserResponseDto: {
+        StudentProfileResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
             addressLine1?: string | null;
             addressLine2?: string | null;
@@ -7266,8 +7270,18 @@ export interface components {
             kimonoSize?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). */
             beltSize?: string | null;
+            /** @description Decision 315 item 5. Not a login. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. */
+            secondaryEmail?: string | null;
+            /** @description Decision 315 item 5: not a Guardian, no account. */
+            emergencyContactName?: string | null;
+            emergencyContactPhone?: string | null;
+            emergencyContactRelationship?: string | null;
             createdAt: string;
             updatedAt: string;
+            /** @description YYYY-MM-DD: the day they joined this School. */
+            joinedOn?: string | null;
         };
         StudentGuardianDto: {
             id: string;
@@ -7323,6 +7337,21 @@ export interface components {
             kimonoSize?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             beltSize?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryEmail?: string | null;
+            /** @description Emergency contact's name (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactName?: string | null;
+            /** @description Emergency contact's phone (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactPhone?: string | null;
+            /** @description How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactRelationship?: string | null;
+            /**
+             * @description YYYY-MM-DD. The day the student joined this School; not in the future.
+             * @example 2025-09-01
+             */
+            joinedOn?: string;
         };
         JoinSchoolDto: {
             /** @description Enroll this person at the School instead of the caller — a Guardian enrolling a linked minor, or School Owner/Manager staff enrolling an already-registered person who found via the invite-candidate lookup (schools/:id/role-grants/invite-candidate). */
@@ -7633,6 +7662,16 @@ export interface components {
             emailSent: boolean;
         };
         CreateStudentManuallyDto: {
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryEmail?: string | null;
+            /** @description Emergency contact's name (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactName?: string | null;
+            /** @description Emergency contact's phone (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactPhone?: string | null;
+            /** @description How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactRelationship?: string | null;
             firstName: string;
             surname: string;
             email: string;
@@ -7640,6 +7679,8 @@ export interface components {
             dateOfBirth: string;
             /** @description Required when the School has open branches: the home branch. */
             branchId?: string;
+            /** @description YYYY-MM-DD. The day they joined; today when omitted. Not in the future. */
+            joinedOn?: string;
         };
         CreateStudentManuallyResponseDto: {
             id: string;
@@ -8178,6 +8219,47 @@ export interface components {
             lastSeenAt: string;
             createdAt: string;
         };
+        UserResponseDto: {
+            /** @description Decision 276 — structured address, line 1. */
+            addressLine1?: string | null;
+            addressLine2?: string | null;
+            addressCity?: string | null;
+            addressRegion?: string | null;
+            addressPostalCode?: string | null;
+            /** @description ISO 3166-1 alpha-2. Null = no structured address yet (the legacy free-text `address`, if any, is still in `address`). */
+            addressCountry?: string | null;
+            id: string;
+            email: string;
+            phone: string;
+            /** @description Set once Twilio Verify OTP confirms this phone; null if not yet verified. */
+            phoneVerifiedAt?: string | null;
+            firstName: string;
+            surname: string;
+            username?: string | null;
+            dateOfBirth: string;
+            gender?: string | null;
+            nationality?: string | null;
+            language?: string | null;
+            currency?: string | null;
+            address?: string | null;
+            profilePhotoUrl?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            weightCategory?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            kimonoSize?: string | null;
+            /** @description Free text — no confirmed enum/unit (Decision 220/246). */
+            beltSize?: string | null;
+            /** @description Decision 315 item 5. Not a login. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. */
+            secondaryEmail?: string | null;
+            /** @description Decision 315 item 5: not a Guardian, no account. */
+            emergencyContactName?: string | null;
+            emergencyContactPhone?: string | null;
+            emergencyContactRelationship?: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
         UpdateUserDto: {
             firstName?: string;
             surname?: string;
@@ -8207,6 +8289,16 @@ export interface components {
             kimonoSize?: string | null;
             /** @description Free text — no confirmed enum/unit (Decision 220/246). Null clears it. */
             beltSize?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryPhone?: string | null;
+            /** @description Decision 315 item 5. Not a login. Blank or null clears it. */
+            secondaryEmail?: string | null;
+            /** @description Emergency contact's name (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactName?: string | null;
+            /** @description Emergency contact's phone (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactPhone?: string | null;
+            /** @description How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it. */
+            emergencyContactRelationship?: string | null;
         };
         ClassStyleInputDto: {
             /** @description A style (Discipline) of this School. */
@@ -12049,6 +12141,8 @@ export interface components {
             guardian: components["schemas"]["GuardianDetailsDto"];
             /** @description Required when the School has open branches: the child's home branch. */
             branchId?: string;
+            /** @description YYYY-MM-DD. The day the child joined; the day they are enrolled when omitted. Not in the future. */
+            joinedOn?: string;
         };
         AddChildManuallyResponseDto: {
             /**
@@ -13324,7 +13418,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
+                    "application/json": components["schemas"]["StudentProfileResponseDto"];
                 };
             };
         };
@@ -13350,7 +13444,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserResponseDto"];
+                    "application/json": components["schemas"]["StudentProfileResponseDto"];
                 };
             };
         };

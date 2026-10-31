@@ -6,7 +6,7 @@ import { apiClient } from '../api';
 export type StudentSummary = components['schemas']['StudentSummaryResponseDto'];
 export type JoinSchoolInput = components['schemas']['JoinSchoolDto'];
 export type UpdateStudentProfileInput = components['schemas']['UpdateStudentProfileDto'];
-export type StudentProfileResponse = components['schemas']['UserResponseDto'];
+export type StudentProfileResponse = components['schemas']['StudentProfileResponseDto'];
 export type StudentLeavingSummary = components['schemas']['StudentLeavingSummaryResponseDto'];
 // GET /schools/:id/students' query params are inlined onto the operation by
 // NestJS Swagger (a query DTO's own properties, not a referenced schema component

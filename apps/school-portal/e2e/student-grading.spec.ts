@@ -225,9 +225,14 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
   // Pre-filled from the roster's own known fields.
   await expect(page.getByLabel('First name')).toHaveValue('Nia');
   await expect(page.getByLabel('Surname')).toHaveValue('Park');
-  // No email/phone field exists on this form at all.
-  await expect(page.getByLabel('Email')).toHaveCount(0);
-  await expect(page.getByLabel('Phone')).toHaveCount(0);
+  // The sign-in email and phone are not on this form. Its only email/phone
+  // fields are the member's other contacts (Decision 315 item 5): the
+  // secondary phone and email, and the emergency contact's phone.
+  await expect(page.getByLabel('Email', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Phone', { exact: true })).toHaveCount(1);
+  await expect(page.getByRole('group', { name: 'Emergency contact' }).getByLabel('Phone', { exact: true })).toHaveCount(1);
+  await expect(page.getByLabel('Secondary email', { exact: true })).toHaveCount(1);
+  await expect(page.getByLabel('Secondary phone', { exact: true })).toHaveCount(1);
 
   await page.getByLabel('Surname').fill('Park-Smith');
   // Decision 276 — country first; the UK form asks for a post town and postcode.
