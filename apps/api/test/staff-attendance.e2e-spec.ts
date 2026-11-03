@@ -35,7 +35,7 @@ const DAY = 86_400_000;
 const ZONE = 'America/Sao_Paulo';
 const RANK_DATE = new Date('2026-01-01T00:00:00Z');
 const ACCESS_DEFAULTS = {
-  classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false,
+  classes: false, bookings: true, students: true, cancelClasses: true, staffList: false,
   disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false,
 };
 

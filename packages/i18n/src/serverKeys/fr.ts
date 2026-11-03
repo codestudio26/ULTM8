@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "Formules facturées dans la devise de l'école : {count}. Donnez-leur leur propre devise avant de l'effacer.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Définissez la devise de votre école sur la page de l'école avant de fixer des prix.",
+    mainOwnerOnly: "Seul le propriétaire principal du compte peut ajouter ou retirer des personnes.",
   },
   errors: {
     beltInHistoryDelete: "Cette ceinture figure dans l’historique de grades des élèves, elle ne peut donc pas être supprimée.",

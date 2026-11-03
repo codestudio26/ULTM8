@@ -89,6 +89,7 @@ export const server = {
     schoolCurrencyInUse: "Membership plans charged in the School's currency: {count}. Give those plans their own currency before clearing it.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Set your School's currency on the School page before setting prices.",
+    mainOwnerOnly: "Only the account's main owner can add or remove people.",
   },
   errors: {
     slotHasBookings: {

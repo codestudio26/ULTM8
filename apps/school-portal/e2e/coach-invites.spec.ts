@@ -2,10 +2,10 @@ import { expect, test } from '@playwright/test';
 import { addBranch, addCoachInvite, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * Coach invites (Decision 183), against the real API: the owner invites and
- * cancels on the Staff page and chooses which Branch Staff may invite (on
- * their Access window, Decision 387); the
- * invited person accepts through the link and keeps their student role.
+ * Coach invites (Decision 183), against the real API: the main owner invites
+ * and cancels on the Staff page (Decision 423 item 10: nobody else adds
+ * people, and "Can invite coaches" is gone); the invited person accepts
+ * through the link and keeps their student role.
  */
 let s: GradingSchool;
 
@@ -34,25 +34,37 @@ test('the owner sends an invite, sees it waiting, and cancels it', async ({ page
   expect(invite.cancelledAt).not.toBeNull();
 });
 
-test('the owner lets a Branch Staff member invite coaches', async ({ page }) => {
+test('only the main owner adds or removes people: a co-owner sees a note instead (Decision 423 item 10)', async ({ page }) => {
   const north = await addBranch(s, 'North');
-  const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
+  await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
+  const coOwner = await addPerson('Cora', 'Partner', [{ role: 'SCHOOL_OWNER_MANAGER', schoolId: s.schoolId }]);
+  await addCoachInvite(s, 'waiting.coach@example.test');
+
+  // The Access window no longer has "Invite coaches".
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
-  // Decision 387: "Can invite coaches" is one of the switches on Access.
   await page.getByRole('button', { name: 'Actions for Bea Desk' }).click();
   await page.getByRole('menuitem', { name: 'Access' }).click();
   const dialog = page.getByRole('dialog', { name: 'Access for Bea Desk' });
-  const toggle = dialog.getByLabel('Invite coaches');
-  await expect(toggle).not.toBeChecked();
-  await toggle.check();
-  await dialog.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('Access saved for Bea Desk.')).toBeVisible();
-  await expect.poll(async () => (await db.staffPermission.findFirst({ where: { userId: staff.id } }))?.canInviteCoaches).toBe(true);
-  await page.reload();
+  await expect(dialog.getByLabel('See the staff list')).toBeVisible();
+  await expect(dialog.getByLabel('Invite coaches')).toHaveCount(0);
+  await page.keyboard.press('Escape');
+
+  // A co-owner: the lists, read only, and the note.
+  await signIn(page, coOwner.token);
+  await page.goto('/staff');
+  await expect(page.getByText("Only the account's main owner can add or remove people.").first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add staff manually' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Find' })).toHaveCount(0);
+  await expect(page.getByLabel("Coach's email")).toHaveCount(0);
+  const row = page.getByRole('row', { name: /waiting\.coach@example\.test/ });
+  await expect(row.getByText('Waiting')).toBeVisible();
+  await expect(row.getByRole('button', { name: /Cancel invite/ })).toHaveCount(0);
+  // Edit details and Access stay; removing and pausing don't show.
   await page.getByRole('button', { name: 'Actions for Bea Desk' }).click();
-  await page.getByRole('menuitem', { name: 'Access' }).click();
-  await expect(page.getByRole('dialog', { name: 'Access for Bea Desk' }).getByLabel('Invite coaches')).toBeChecked();
+  await expect(page.getByRole('menuitem', { name: 'Access' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /Remove/ })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: 'Pause' })).toHaveCount(0);
 });
 
 test('a student accepts through the link and becomes a coach too', async ({ page }) => {

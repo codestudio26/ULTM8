@@ -39,8 +39,8 @@ export function useCancelCoachInvite(schoolId: string) {
   });
 }
 
-/** Branch Staff and their two switches, "Can invite coaches" and "Can manage
- * disciplines" (Decision 383). Owner only. */
+/** Branch Staff and their switch "Can manage disciplines" (Decision 383).
+ * Owner only. */
 export function useStaffPermissions(schoolId: string | null) {
   return useQuery({
     queryKey: ['staff-permissions', schoolId],
@@ -49,9 +49,9 @@ export function useStaffPermissions(schoolId: string | null) {
   });
 }
 
-export type StaffSwitch = 'canInviteCoaches' | 'canManageDisciplines';
+export type StaffSwitch = 'canManageDisciplines';
 
-/** Turns one switch on or off; the other keeps its value. */
+/** Turns the switch on or off. */
 export function useSetStaffPermission(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -68,8 +68,7 @@ export function useSetStaffPermission(schoolId: string) {
 }
 
 /** The caller's own rights (Decision 184): owner, or Branch Staff with
- * "Can invite coaches" for their own branches, and "Can manage disciplines"
- * (Decision 383). */
+ * "Can manage disciplines" (Decision 383). */
 export function useMyStaffPermission(schoolId: string | null) {
   return useQuery({
     queryKey: ['staff-permissions', 'me', schoolId],

@@ -1,7 +1,7 @@
 /**
  * A staff member given a role again starts with today's permissions
  * (Decision 193): removing an Instructor or Branch Staff role clears that
- * person's grading permissions and "Can invite coaches" at the School, once
+ * person's grading permissions and Branch Staff access switches at the School, once
  * they hold no such role there any more. Real HTTP.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -55,13 +55,13 @@ describeIfDb('Re-granted staff start fresh (Decision 193)', () => {
     superuser.roleGrant.create({ data: { id: randomUUID(), role, userId, schoolId: school.id, branchId } });
   const canGrade = (userId: string) =>
     superuser.gradingPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId, disciplineId: bjj.id, canPromote: true } });
-  const canInvite = (userId: string) =>
-    superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId, canInviteCoaches: true } });
+  const canSeeList = (userId: string) =>
+    superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId, canSeeStaffList: true } });
   const revoke = (userId: string, grantId: string) =>
     request(app.getHttpServer()).delete(`/v1/users/${userId}/role-grants/${grantId}`).set('Authorization', `Bearer ${ownerToken}`);
   const gradingRows = (userId: string) => superuser.gradingPermission.count({ where: { userId, schoolId: school.id } });
-  const mayInvite = async (userId: string) =>
-    (await superuser.staffPermission.findUnique({ where: { schoolId_userId: { schoolId: school.id, userId } } }))?.canInviteCoaches ?? false;
+  const maySeeList = async (userId: string) =>
+    (await superuser.staffPermission.findUnique({ where: { schoolId_userId: { schoolId: school.id, userId } } }))?.canSeeStaffList ?? false;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -105,15 +105,15 @@ describeIfDb('Re-granted staff start fresh (Decision 193)', () => {
     expect(await gradingRows(coach.id)).toBe(0);
   });
 
-  it('Branch Staff given the role again start with no grading permissions and can\'t invite coaches', async () => {
+  it('Branch Staff given the role again start with no grading permissions and no staff-list switch', async () => {
     const staff = await mkUser('staff');
     const first = await grant(staff.id, 'BRANCH_STAFF', north.id);
     await canGrade(staff.id);
-    await canInvite(staff.id);
+    await canSeeList(staff.id);
 
     expect((await revoke(staff.id, first.id)).status).toBe(200);
     expect(await gradingRows(staff.id)).toBe(0);
-    expect(await mayInvite(staff.id)).toBe(false);
+    expect(await maySeeList(staff.id)).toBe(false);
 
     const again = await request(app.getHttpServer())
       .post(`/v1/users/${staff.id}/role-grants`)
@@ -121,18 +121,18 @@ describeIfDb('Re-granted staff start fresh (Decision 193)', () => {
       .send({ role: 'BRANCH_STAFF', schoolId: school.id, branchId: north.id });
     expect(again.status).toBe(201);
     expect(await gradingRows(staff.id)).toBe(0);
-    expect(await mayInvite(staff.id)).toBe(false);
+    expect(await maySeeList(staff.id)).toBe(false);
   });
 
-  it('losing only the Branch Staff role takes "Can invite coaches" but keeps grading while they still coach', async () => {
+  it('losing only the Branch Staff role resets the Branch Staff switches but keeps grading while they still coach', async () => {
     const both = await mkUser('both');
     await grant(both.id, 'INSTRUCTOR', south.id);
     const asStaff = await grant(both.id, 'BRANCH_STAFF', north.id);
     await canGrade(both.id);
-    await canInvite(both.id);
+    await canSeeList(both.id);
 
     expect((await revoke(both.id, asStaff.id)).status).toBe(200);
-    expect(await mayInvite(both.id)).toBe(false);
+    expect(await maySeeList(both.id)).toBe(false);
     expect(await gradingRows(both.id)).toBe(1);
   });
 });

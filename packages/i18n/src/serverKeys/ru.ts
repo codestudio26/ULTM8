@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "Тарифы, оплачиваемые в валюте школы: {count}. Задайте этим тарифам свою валюту, прежде чем очищать её.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Укажите валюту школы на странице школы, прежде чем задавать цены.",
+    mainOwnerOnly: "Добавлять и удалять людей может только главный владелец аккаунта.",
   },
   errors: {
     beltInHistoryDelete: "Этот пояс есть в истории аттестаций учеников, поэтому его нельзя удалить.",

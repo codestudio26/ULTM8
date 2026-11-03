@@ -9,6 +9,7 @@ import {
   fetchInviteCandidate,
   useCreateStaffManually,
   useInviteStaff,
+  useIsMainOwner,
   useMyStaffAccess,
   useRevokeRoleGrant,
   useSetStaffSettings,
@@ -55,10 +56,16 @@ import { Trans } from '../i18n/Trans';
  * flow exactly (real User + RoleGrant created immediately, temp passcode emailed,
  * forced change on first login) — minus a third profile-row concern, since "Staff"
  * is just a RoleGrant row (role: BRANCH_STAFF), not a separate profile table.
+ *
+ * Decision 423 item 10 — only the School's main owner adds or removes people:
+ * "Add staff manually", the Find / Give role form, and the list's remove and
+ * pause actions are theirs alone. Co-owners see a short note instead, and
+ * keep everything else on this page.
  */
 export function StaffPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
+  const isMainOwner = useIsMainOwner(schoolId);
   const { data: branchData } = useBranches(schoolId);
   const inviteStaff = useInviteStaff();
   const revokeGrant = useRevokeRoleGrant();
@@ -195,16 +202,23 @@ export function StaffPage() {
         title={t('roleGrants.staff.title')}
         subtitle={t('roleGrants.staff.subtitle')}
         actions={
-          <Button variant="secondary" onClick={() => setAddingManually(true)}>
-            {t('roleGrants.staff.addManuallyButton')}
-          </Button>
+          isMainOwner ? (
+            <Button variant="secondary" onClick={() => setAddingManually(true)}>
+              {t('roleGrants.staff.addManuallyButton')}
+            </Button>
+          ) : undefined
         }
       />
 
       {addManuallyNotice?.kind === 'ok' ? <SuccessBanner message={addManuallyNotice.text} /> : null}
       {addManuallyNotice?.kind === 'warn' ? <ErrorBanner message={addManuallyNotice.text} /> : null}
 
-      <StaffListSection schoolId={schoolId} branches={branches} onRevokeRole={(person, role) => setConfirmingRevoke({ person, role })} />
+      <StaffListSection
+        schoolId={schoolId}
+        branches={branches}
+        canManageRoles={!!isMainOwner}
+        onRevokeRole={(person, role) => setConfirmingRevoke({ person, role })}
+      />
 
       <Card className="ultm8-field">
         <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
@@ -226,7 +240,9 @@ export function StaffPage() {
         </div>
         {inviteNotice?.kind === 'ok' ? <SuccessBanner message={inviteNotice.text} /> : null}
         {inviteNotice?.kind === 'warn' ? <ErrorBanner message={inviteNotice.text} /> : null}
-        {!candidate ? (
+        {isMainOwner === false ? (
+          <p className="ultm8-field">{t('roleGrants.staff.mainOwnerOnly')}</p>
+        ) : !isMainOwner ? null : !candidate ? (
           <form onSubmit={handleFind}>
             {findError ? <ErrorBanner message={findError} /> : null}
             <Field label={t('roleGrants.staff.emailLabel')} htmlFor="invite-email" hint={t('roleGrants.staff.emailHint')}>
@@ -292,7 +308,7 @@ export function StaffPage() {
         )}
       </Card>
 
-      <CoachInvitesSection schoolId={schoolId} />
+      <CoachInvitesSection schoolId={schoolId} canManage={isMainOwner} />
       {/* Decision 386: who may start an open mat from the Check-in page. */}
       <OpenMatPermissions schoolId={schoolId} />
       {/* Decisions 303, 338: who may create and cancel charges. */}

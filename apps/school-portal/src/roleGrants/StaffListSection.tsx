@@ -26,10 +26,12 @@ type StaffRow = StaffMember & { id: string };
  * Staff role they hold here at once (RemoveFromSchoolModal, which asks what
  * happens to the classes they teach).
  *
- * Decision 370 — owners show as "Main owner" or "Co-owner". Any owner can
- * remove a co-owner (the same Revoke); nobody here can remove the main owner,
- * only ULTM8 support. The main owner can make a co-owner the main owner, after
- * re-entering their passcode.
+ * Decision 370 — owners show as "Main owner" or "Co-owner". Nobody here can
+ * remove the main owner, only ULTM8 support. The main owner can make a
+ * co-owner the main owner, after re-entering their passcode.
+ *
+ * Decision 423 item 10 — only the main owner removes, pauses or unpauses
+ * anyone (`canManageRoles`); co-owners keep "Edit details" and "Access".
  *
  * Decision 381 — "Edit details" sets the School's own display name and work
  * phone for someone. The list shows them first, with the person's own account
@@ -50,11 +52,14 @@ export function StaffListSection({
   branches,
   onRevokeRole,
   readOnly = false,
+  canManageRoles = false,
 }: {
   schoolId: string;
   branches: BranchResponse[];
   onRevokeRole: (person: StaffMember, role: StaffRoleEntry) => void;
   readOnly?: boolean;
+  /** The School's main owner (Decision 423 item 10): may remove and pause. */
+  canManageRoles?: boolean;
 }) {
   const t = useT();
   const [search, setSearch] = useState('');
@@ -263,14 +268,18 @@ export function StaffListSection({
                   ...(iAmMainOwner && isCoOwner(p) && p.userId !== claims?.sub
                     ? [{ label: t('roleGrants.list.makeMainOwner'), onClick: () => setHandingOver(p) }]
                     : []),
-                  ...removable(p).map((r) =>
-                    r.role === 'SCHOOL_OWNER_MANAGER'
-                      ? { label: t('roleGrants.list.removeCoOwner'), onClick: () => onRevokeRole(p, r) }
-                      : { label: t('roleGrants.list.removeRole', { role: roleText(r) }), onClick: () => onRevokeRole(p, r) },
-                  ),
-                  ...(pausable(p) ? [{ label: t('roleGrants.list.pause'), onClick: () => setPausing(p) }] : []),
-                  ...(p.paused ? [{ label: t('roleGrants.list.unpause'), onClick: () => void unpause(p) }] : []),
-                  ...(coachRoles(p).length > 0 ? [{ label: t('roleGrants.list.removeFromSchool'), onClick: () => setConfirmingRemove(p) }] : []),
+                  ...(canManageRoles
+                    ? [
+                        ...removable(p).map((r) =>
+                          r.role === 'SCHOOL_OWNER_MANAGER'
+                            ? { label: t('roleGrants.list.removeCoOwner'), onClick: () => onRevokeRole(p, r) }
+                            : { label: t('roleGrants.list.removeRole', { role: roleText(r) }), onClick: () => onRevokeRole(p, r) },
+                        ),
+                        ...(pausable(p) ? [{ label: t('roleGrants.list.pause'), onClick: () => setPausing(p) }] : []),
+                        ...(p.paused ? [{ label: t('roleGrants.list.unpause'), onClick: () => void unpause(p) }] : []),
+                        ...(coachRoles(p).length > 0 ? [{ label: t('roleGrants.list.removeFromSchool'), onClick: () => setConfirmingRemove(p) }] : []),
+                      ]
+                    : []),
                 ];
                 if (actions.length === 0) return null;
                 return <RowActionsMenu label={t('roleGrants.list.actionsAria', { name: shownName(p) })} actions={actions} />;

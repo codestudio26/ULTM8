@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "Planos cobrados na moeda da escola: {count}. Dê a esses planos uma moeda própria antes de limpá-la.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Defina a moeda da sua Escola na página da Escola antes de definir preços.",
+    mainOwnerOnly: "Somente o proprietário principal da conta pode adicionar ou remover pessoas.",
   },
   errors: {
     beltInHistoryDelete: "Esta faixa está no histórico de graduação dos alunos, então não pode ser excluída.",

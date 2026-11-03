@@ -63,7 +63,6 @@ test('the owner picks a preset, changes one switch, and saves', async ({ page })
     canManageStudents: true,
     canCancelClasses: true,
     canSeeStaffList: true,
-    canInviteCoaches: true,
     canManageDisciplines: false,
   });
 });

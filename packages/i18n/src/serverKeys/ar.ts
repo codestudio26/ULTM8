@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "خطط العضوية التي تُحصَّل بعملة المدرسة: {count}. حدّد لهذه الخطط عملتها الخاصة قبل مسح العملة.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "حدّد عملة مدرستك في صفحة المدرسة قبل تحديد الأسعار.",
+    mainOwnerOnly: "لا يمكن إضافة الأشخاص أو إزالتهم إلا للمالك الرئيسي للحساب.",
   },
   errors: {
     beltInHistoryDelete: "هذا الحزام موجود في سجل ترقيات الطلاب، لذا لا يمكن حذفه.",

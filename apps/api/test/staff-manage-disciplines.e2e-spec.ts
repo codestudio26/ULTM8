@@ -130,14 +130,13 @@ describeIfDb('Branch Staff "Can manage disciplines" (Decision 383)', () => {
 
     const given = await allow(true);
     expect(given.status).toBe(200);
-    // The other switch keeps its value.
-    expect(given.body).toMatchObject({ canManageDisciplines: true, canInviteCoaches: false });
-    expect((await as('staff').get(`/v1/schools/${school.id}/staff-permissions/me`)).body).toMatchObject({ canManageDisciplines: true, canInviteCoaches: false });
+    expect(given.body).toMatchObject({ canManageDisciplines: true });
+    expect(given.body).not.toHaveProperty('canInviteCoaches');
+    expect((await as('staff').get(`/v1/schools/${school.id}/staff-permissions/me`)).body).toEqual({ isOwner: false, canManageDisciplines: true });
     const staffList = await as('owner').get(`/v1/schools/${school.id}/staff`);
     expect(staffList.body.items.find((p: { userId: string }) => p.userId === users.staff.id)).toMatchObject({ canManageDisciplines: true });
-    const invite = await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${users.staff.id}`).send({ canInviteCoaches: true });
-    expect(invite.body).toMatchObject({ canManageDisciplines: true, canInviteCoaches: true });
-    await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${users.staff.id}`).send({ canInviteCoaches: false });
+    // "Can invite coaches" is gone (Decision 423 item 10): the old body is refused.
+    expect((await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${users.staff.id}`).send({ canInviteCoaches: true })).status).toBe(400);
   });
 
   it('with it on, edits run with the whole School in view', async () => {

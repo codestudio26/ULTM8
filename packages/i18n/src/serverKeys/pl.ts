@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "Plany rozliczane w walucie szkoły: {count}. Nadaj im własną walutę, zanim ją wyczyścisz.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Ustaw walutę swojej szkoły na stronie szkoły, zanim ustawisz ceny.",
+    mainOwnerOnly: "Tylko główny właściciel konta może dodawać lub usuwać osoby.",
   },
   errors: {
     beltInHistoryDelete: "Ten pas jest w historii stopni uczniów, więc nie można go usunąć.",

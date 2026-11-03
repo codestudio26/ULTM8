@@ -3,8 +3,9 @@ import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
 
 /**
  * Owners on the Staff page (Decision 370): the School's first owner is its
- * main owner; the owner can make someone a co-owner from "Give role"; any
- * owner can remove a co-owner but nobody can remove the main owner here; and
+ * main owner; the main owner can make someone a co-owner from "Give role"
+ * and remove a co-owner, nobody can remove the main owner here (Decision 423
+ * item 10: only the main owner adds or removes people); and
  * the main owner hands the main role to a co-owner after their passcode.
  */
 let s: GradingSchool;
@@ -67,9 +68,13 @@ test('the owner makes someone a co-owner, then hands them the main owner role af
   // Now a co-owner, they can't hand over or remove the new main owner.
   await listRow(page, 'Cara Partner').getByRole('button', { name: 'Actions for Cara Partner' }).click();
   await expect(page.getByRole('menuitem')).toHaveText(['Edit details']);
+  await page.keyboard.press('Escape');
+  // ...nor add anyone any more (Decision 423 item 10).
+  await expect(giveCard(page).getByText("Only the account's main owner can add or remove people.")).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Find' })).toHaveCount(0);
 });
 
-test('an owner removes a co-owner after confirming', async ({ page }) => {
+test('the main owner removes a co-owner after confirming', async ({ page }) => {
   const dan = await addPerson('Dan', 'Partner', [{ role: 'SCHOOL_OWNER_MANAGER', schoolId: s.schoolId }]);
   await signIn(page, s.ownerToken);
   await page.goto('/staff');

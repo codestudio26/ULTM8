@@ -12,6 +12,7 @@ import { createHash, randomBytes, randomUUID } from 'crypto';
 import { Prisma, Role } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
+import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { AuthService } from '../../auth/auth.service';
 import { NotificationDeliveryService } from '../../notifications/notification-delivery.service';
@@ -46,20 +47,24 @@ function statusOf(invite: Pick<InviteRow, 'acceptedAt' | 'cancelledAt' | 'expire
 }
 
 /**
- * Coach invites and "Can invite coaches" (Decision 183).
+ * Coach invites (Decision 183).
  *
- * The owner, or Branch Staff the owner has given "Can invite coaches" for
- * their own branches, invite one person by email. The email carries a link
- * with a random token; only its SHA-256 is stored. The link is single use,
- * works for 7 days and can be cancelled. Accepting it, signed in with the
+ * The School's main owner invites one person by email (Decision 423 item 10:
+ * only the main owner adds people; co-owners and Branch Staff no longer
+ * invite, and the "Can invite coaches" switch is gone). The email carries a
+ * link with a random token; only its SHA-256 is stored. The link is single
+ * use, works for 7 days and can be cancelled. Accepting it, signed in with the
  * invited email, gives that account an INSTRUCTOR RoleGrant at the School (and
- * branch); any other role it holds, such as STUDENT, is kept. Instructors can't
- * be given "Can invite coaches" (Spec 55 §8.2: no instructor management).
+ * branch); any other role it holds, such as STUDENT, is kept.
  *
- * Decision 396: the owner may also invite someone as Branch Staff, which is
- * how "Give role" works when the School's "New staff must accept first" is
- * on. A Branch Staff invite is the owner's only: staff with "Can invite
- * coaches" neither send nor see one.
+ * Decision 396: the main owner may also invite someone as Branch Staff, which
+ * is how "Give role" works when the School's "New staff must accept first" is
+ * on.
+ *
+ * An invite works while its sender is still an owner of the School
+ * (coach_invite_by_token). Every invite sent since Decision 423 was sent by
+ * the main owner; the ones co-owners and Branch Staff had open were cancelled
+ * by migration 20270213000000_main_owner_grants_roles.
  */
 @Injectable()
 export class CoachInvitesService {
@@ -68,27 +73,11 @@ export class CoachInvitesService {
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly authService: AuthService,
     private readonly delivery: NotificationDeliveryService,
   ) {}
-
-  /** The owner may invite to any branch; Branch Staff with "Can invite
-   * coaches" only to a branch where they are Branch Staff. */
-  private async assertMayInvite(callerId: string, schoolId: string, branchId: string | null, role: Role = 'INSTRUCTOR') {
-    const [ownerGrant, permission, staffGrant] = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      Promise.all([
-        tx.roleGrant.findFirst({ where: { userId: callerId, schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null }, select: { id: true } }),
-        tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { canInviteCoaches: true } }),
-        tx.roleGrant.findFirst({ where: { userId: callerId, schoolId, branchId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } }),
-      ]),
-    );
-    if (ownerGrant) return;
-    if (role === 'BRANCH_STAFF') throw new ForbiddenException('Only the School owner can invite Branch Staff.');
-    if (permission?.canInviteCoaches && staffGrant) return;
-    if (permission?.canInviteCoaches) throw new ForbiddenException('You can only invite coaches to your own branches.');
-    throw new ForbiddenException('Only the School owner, or staff given "Can invite coaches", can invite coaches.');
-  }
 
   private portalBaseUrl(): string {
     const url = process.env.PORTAL_BASE_URL?.trim().replace(/\/+$/, '');
@@ -111,7 +100,7 @@ export class CoachInvitesService {
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     // Before the branch checks: staff only see their own branches, so a
     // branch they aren't at would otherwise read as "not this School's".
-    await this.assertMayInvite(callerId, schoolId, branchId, role);
+    await this.tenantAuth.assertSchoolMainOwner(callerId, schoolId);
 
     if (role === 'BRANCH_STAFF' && !branchId) throw new BadRequestException('Branch Staff need a branch (branchId).');
     // Decision 169: a coach belongs to a branch when the School has branches.
@@ -170,20 +159,11 @@ export class CoachInvitesService {
     return { ...this.toResponse(invite, branch?.name ?? null, inviter), emailSent };
   }
 
-  /** The School's invites the caller may manage (RLS: all of them for the
-   * owner, their own branches' for staff with "Can invite coaches"). */
+  /** The School's invites, for its owners: the main owner, who sends and
+   * cancels them, and co-owners, who see them read only (Decision 423 item
+   * 10). */
   async list(callerId: string, schoolId: string) {
-    const isOwner = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.roleGrant.findFirst({ where: { userId: callerId, schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null }, select: { id: true } }),
-    );
-    if (!isOwner) {
-      const permission = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { canInviteCoaches: true } }),
-      );
-      if (!permission?.canInviteCoaches) {
-        throw new ForbiddenException('Only the School owner, or staff given "Can invite coaches", can see coach invites.');
-      }
-    }
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     const { invites, branches } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
       invites: await tx.coachInvite.findMany({ where: { schoolId }, orderBy: { createdAt: 'desc' } }),
       branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
@@ -198,11 +178,17 @@ export class CoachInvitesService {
     };
   }
 
-  /** Cancel a pending invite; its link stops working. */
+  /** Cancel a pending invite; its link stops working. The School's main
+   * owner only (Decision 423 item 10). RLS shows invites to owners alone, so
+   * the invite's School is read first, unscoped: the School's own staff get
+   * the same 403 as on every other add-or-remove path rather than a 404, and
+   * outsiders still get the 404 RLS gave them. */
   async cancel(callerId: string, inviteId: string) {
+    const target = await this.prismaJobs.coachInvite.findUnique({ where: { id: inviteId }, select: { schoolId: true } });
+    if (!target) throw new NotFoundException('Invite not found');
+    await this.tenantAuth.assertSchoolMainOwnerOrNotFound(callerId, target.schoolId, 'Invite not found');
     const invite = await this.prismaApp.withTenantContext(callerId, (tx) => tx.coachInvite.findUnique({ where: { id: inviteId } }));
     if (!invite) throw new NotFoundException('Invite not found');
-    await this.assertMayInvite(callerId, invite.schoolId, invite.branchId, invite.role);
     if (invite.acceptedAt) throw new ConflictException('This invite has already been accepted. Remove the coach role on the Staff page instead.');
     let updated = invite;
     if (!invite.cancelledAt) {
@@ -319,27 +305,26 @@ export class CoachInvitesService {
     return { schoolId: grant.schoolId!, branchId: grant.branchId, role: invite.role as InviteRole, accessToken };
   }
 
-  /** The caller's own invite rights here (Decision 184), for the portal. */
+  /** The caller's own staff permission here (Decision 184), for the portal:
+   * "Can manage disciplines" (Decision 383). */
   async myStaffPermission(callerId: string, schoolId: string) {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const grants = await tx.roleGrant.findMany({
         where: { userId: callerId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
-        select: { role: true, branchId: true },
+        select: { role: true },
       });
-      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { isOwner: true, canInviteCoaches: true, canManageDisciplines: true, branchIds: [] };
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { isOwner: true, canManageDisciplines: true };
       const permission = await tx.staffPermission.findUnique({
         where: { schoolId_userId: { schoolId, userId: callerId } },
-        select: { canInviteCoaches: true, canManageDisciplines: true },
+        select: { canManageDisciplines: true },
       });
-      const branchIds = [...new Set(grants.map((g) => g.branchId).filter((id): id is string => !!id))];
-      const canInviteCoaches = !!permission?.canInviteCoaches && branchIds.length > 0;
       const canManageDisciplines = !!permission?.canManageDisciplines && grants.some((g) => g.role === 'BRANCH_STAFF');
-      return { isOwner: false, canInviteCoaches, canManageDisciplines, branchIds: canInviteCoaches ? branchIds : [] };
+      return { isOwner: false, canManageDisciplines };
     });
   }
 
-  /** Branch Staff at the School and whether each may invite coaches. Owner only. */
+  /** Branch Staff at the School and whether each may manage disciplines. Owner only. */
   async listStaffPermissions(callerId: string, schoolId: string) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     const { grants, permissions } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
@@ -355,53 +340,39 @@ export class CoachInvitesService {
       firstName: names.get(userId)?.firstName ?? '',
       surname: names.get(userId)?.surname ?? '',
       branchIds,
-      canInviteCoaches: byPerson.get(userId)?.canInviteCoaches ?? false,
       canManageDisciplines: byPerson.get(userId)?.canManageDisciplines ?? false,
     }));
     items.sort((a, b) => `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`));
     return { items };
   }
 
-  /** Give or take "Can invite coaches" or "Can manage disciplines" (Decision
-   * 383). Owner only; Branch Staff only. A switch left out keeps its value. */
-  async setStaffPermission(callerId: string, schoolId: string, userId: string, change: { canInviteCoaches?: boolean; canManageDisciplines?: boolean }) {
-    const { canInviteCoaches, canManageDisciplines } = change;
-    if (canInviteCoaches === undefined && canManageDisciplines === undefined) {
-      throw new BadRequestException('Send canInviteCoaches, canManageDisciplines or both.');
-    }
+  /** Give or take "Can manage disciplines" (Decision 383). Owner only;
+   * Branch Staff only. */
+  async setStaffPermission(callerId: string, schoolId: string, userId: string, change: { canManageDisciplines: boolean }) {
+    const { canManageDisciplines } = change;
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const isStaff = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } }),
     );
     if (!isStaff) {
-      throw new BadRequestException(
-        canInviteCoaches === undefined
-          ? '"Can manage disciplines" is for Branch Staff only.'
-          // Spec 55 §8.2
-          : '"Can invite coaches" is for Branch Staff only. Coaches can\'t invite coaches.',
-      );
+      throw new BadRequestException('"Can manage disciplines" is for Branch Staff only.');
     }
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const before = await tx.staffPermission.findUnique({
         where: { schoolId_userId: { schoolId, userId } },
-        select: { canInviteCoaches: true, canManageDisciplines: true },
+        select: { canManageDisciplines: true },
       });
       await tx.staffPermission.upsert({
         where: { schoolId_userId: { schoolId, userId } },
-        create: { id: randomUUID(), schoolId, userId, canInviteCoaches: canInviteCoaches ?? false, canManageDisciplines: canManageDisciplines ?? false, grantedById: callerId },
-        update: { canInviteCoaches, canManageDisciplines, grantedById: callerId },
+        create: { id: randomUUID(), schoolId, userId, canManageDisciplines, grantedById: callerId },
+        update: { canManageDisciplines, grantedById: callerId },
       });
-      // Decision 408: the same switches as on the Access window.
-      const changes = [
-        ...(canInviteCoaches !== undefined && canInviteCoaches !== (before?.canInviteCoaches ?? false) ? [{ switch: 'inviteCoaches', on: canInviteCoaches }] : []),
-        ...(canManageDisciplines !== undefined && canManageDisciplines !== (before?.canManageDisciplines ?? false) ? [{ switch: 'disciplines', on: canManageDisciplines }] : []),
-      ];
-      if (changes.length > 0) {
-        await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'ACCESS_CHANGED', details: { changes } });
+      // Decision 408: the same switch as on the Access window.
+      if (canManageDisciplines !== (before?.canManageDisciplines ?? false)) {
+        await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'ACCESS_CHANGED', details: { changes: [{ switch: 'disciplines', on: canManageDisciplines }] } });
       }
     });
-    if (canInviteCoaches === false) await this.cancelOpenInvitesFrom(callerId, schoolId, userId);
     return (await this.listStaffPermissions(callerId, schoolId)).items.find((i) => i.userId === userId)!;
   }
 
@@ -409,14 +380,13 @@ export class CoachInvitesService {
     return !invite.schoolArchived && !invite.branchArchived && invite.inviterMayInvite;
   }
 
-  /** Cancel the open invites a staff member sent once they may no longer
-   * invite (their "Can invite coaches" turned off, or their Branch Staff role
-   * at that branch removed), so the owner's list matches what still works.
-   * Runs as the owner. */
-  async cancelOpenInvitesFrom(callerId: string, schoolId: string, inviterId: string, branchId?: string | null) {
+  /** Cancel the open invites someone sent once they may no longer invite
+   * (their owner role here removed), so the list matches what still works.
+   * Runs as the main owner. */
+  async cancelOpenInvitesFrom(callerId: string, schoolId: string, inviterId: string) {
     await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.coachInvite.updateMany({
-        where: { schoolId, invitedById: inviterId, acceptedAt: null, cancelledAt: null, ...(branchId !== undefined ? { branchId } : {}) },
+        where: { schoolId, invitedById: inviterId, acceptedAt: null, cancelledAt: null },
         data: { cancelledAt: new Date(), cancelledById: callerId },
       }),
     );

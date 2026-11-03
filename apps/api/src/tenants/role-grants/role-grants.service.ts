@@ -21,6 +21,7 @@ import {
   STAFF_ACCESS_SELECT,
   StaffAccessSet,
   TenantAuthorizationService,
+  mainOwnerGrant,
   staffAccessFrom,
 } from '../tenant-authorization.service';
 import { CoachInvitesService } from '../coach-invites/coach-invites.service';
@@ -129,9 +130,11 @@ export class RoleGrantsService {
    * (Spec §8.2), or — as of Decision 270 — another SCHOOL_OWNER_MANAGER at that same
    * School (co-ownership/succession). See CreateRoleGrantDto's header comment for why
    * every other role/grantor combination remains out of scope.
+   *
+   * Decision 423 item 10: of the School's owners, only the main owner gives roles.
    */
   async create(callerId: string, targetUserId: string, dto: CreateRoleGrantDto) {
-    await this.tenantAuth.assertSchoolOwner(callerId, dto.schoolId);
+    await this.tenantAuth.assertSchoolMainOwner(callerId, dto.schoolId);
     // Decision 110 — a closed School accepts no further writes; Add Manually
     // below already checked this, this path didn't (Decision 296).
     await this.tenantAuth.assertSchoolNotArchived(callerId, dto.schoolId);
@@ -342,11 +345,12 @@ export class RoleGrantsService {
    * create() above already enforces for an existing-user BRANCH_STAFF grant, and the
    * same thing StaffPage.tsx's own `needsBranch` logic already assumes client-side).
    *
-   * School Owner/Manager only — same gate create() above already uses (Spec §8.2).
+   * The School's main owner only — same gate create() above uses (Decision 423
+   * item 10).
    */
   async createStaffManually(callerId: string, schoolId: string, dto: CreateStaffManuallyDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolMainOwner(callerId, schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
@@ -688,14 +692,29 @@ export class RoleGrantsService {
 
   /** Revoke = set revokedAt (soft — RoleGrant is an auditable history, never hard-deleted). */
   async revoke(callerId: string, targetUserId: string, roleGrantId: string) {
+    // Decision 423 item 10: a co-owner, coach or Branch Staff role is removed
+    // by the School's main owner only. RLS hides most staff and owner grants
+    // from Branch Staff and coaches, which would answer them 404, so the
+    // grant's School and role are read first, unscoped, to check the caller
+    // against them: the School's own people get 403 like on every other
+    // add-or-remove path, outsiders the 404 RLS gave them before. A
+    // student's enrolment is not a staff role: any owner still ends it.
+    const target = await this.prismaJobs.roleGrant.findUnique({ where: { id: roleGrantId }, select: { userId: true, schoolId: true, role: true } });
+    if (!target || target.userId !== targetUserId) {
+      throw new NotFoundException('RoleGrant not found');
+    }
+    if (target.schoolId && target.role !== 'STUDENT') {
+      await this.tenantAuth.assertSchoolMainOwnerOrNotFound(callerId, target.schoolId, 'RoleGrant not found');
+    }
     const grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findUnique({ where: { id: roleGrantId } }),
     );
     if (!grant || grant.userId !== targetUserId) {
       throw new NotFoundException('RoleGrant not found');
     }
-    // Decision 370: owners are equal co-owners and may remove each other,
-    // except the main owner, whom only a Platform Admin can remove.
+    // Decision 370: the main owner can't be removed here, only by a Platform
+    // Admin. Decision 423 item 10: the main owner removes co-owners (checked
+    // above); co-owners no longer remove each other.
     const isOwnerGrant = grant.role === 'SCHOOL_OWNER_MANAGER';
     if (!isOwnerGrant && !REVOCABLE_ROLES.includes(grant.role as (typeof REVOCABLE_ROLES)[number])) {
       throw new ForbiddenException('This endpoint may only revoke SCHOOL_OWNER_MANAGER, INSTRUCTOR, BRANCH_STAFF, or STUDENT grants.');
@@ -715,7 +734,6 @@ export class RoleGrantsService {
         await this.recordRoleRemoved(tx, callerId, grant);
         return row;
       });
-      if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, targetUserId, grant.branchId);
       return removed;
     }
     if (grant.revokedAt) {
@@ -768,9 +786,10 @@ export class RoleGrantsService {
         this.logger.warn(`Revoke ${roleGrantId}: medical information not deleted yet (the daily sweep retries) — ${err instanceof Error ? err.message : String(err)}`);
       }
     }
-    // Branch Staff no longer at that branch can't have coach invites open
-    // there (Decision 183; security review M1).
-    if (grant.role === 'BRANCH_STAFF') await this.coachInvites.cancelOpenInvitesFrom(callerId, grant.schoolId, targetUserId, grant.branchId);
+    // A former main owner who is removed as co-owner can't have invites open
+    // here: an invite only works while its sender is still an owner
+    // (coach_invite_by_token), so the list shows them cancelled too.
+    if (isOwnerGrant) await this.coachInvites.cancelOpenInvitesFrom(callerId, grant.schoolId, targetUserId);
     // Enqueued after commit and only logged on failure, like cancelBooking():
     // a Redis hiccup must not undo the revoke.
     for (const classId of freedClassIds) {
@@ -895,7 +914,6 @@ export class RoleGrantsService {
         removedAt: active || paused ? null : new Date(Math.max(...own.map((g) => g.revokedAt!.getTime()))).toISOString(),
         paused,
         pausedAt: paused ? new Date(Math.max(...own.filter((g) => g.pausedAt).map((g) => g.pausedAt!.getTime()))).toISOString() : null,
-        canInviteCoaches: permission?.canInviteCoaches ?? false,
         canManageDisciplines: permission?.canManageDisciplines ?? false,
         mainOwner: main?.userId === userId,
         displayName: permission?.displayName ?? null,
@@ -984,7 +1002,6 @@ export class RoleGrantsService {
         removedAt: null,
         paused: false,
         pausedAt: null,
-        canInviteCoaches: false,
         canManageDisciplines: false,
         mainOwner: own.some((g) => g.isMainOwner),
         displayName: detail?.displayName ?? null,
@@ -1012,9 +1029,9 @@ export class RoleGrantsService {
    * portal's presets are just ticks). Only for someone who holds a Branch
    * Staff role here now, or one that is paused (Decision 390: the switches
    * apply again when they are unpaused); Instructors' rights come from their role (Spec 55
-   * §8.2) and owners have every right. Turning "Invite coaches" off cancels
-   * the coach invites they still have open, as before (Decision 183). Their
-   * next request sees the change: every check reads the switches fresh.
+   * §8.2) and owners have every right. Their next request sees the change:
+   * every check reads the switches fresh. There is no "Invite coaches"
+   * switch any more: only the main owner adds people (Decision 423 item 10).
    */
   async setStaffAccess(callerId: string, schoolId: string, userId: string, dto: StaffAccessDto) {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
@@ -1039,7 +1056,6 @@ export class RoleGrantsService {
         await recordStaffActivity(tx, { schoolId, actorId: callerId, targetUserId: userId, action: 'ACCESS_CHANGED', details: { changes } });
       }
     });
-    if (!access.inviteCoaches) await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, userId);
     return { userId, access };
   }
 
@@ -1053,7 +1069,9 @@ export class RoleGrantsService {
     const owner = grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER');
     const branchStaff = grants.some((g) => g.role === 'BRANCH_STAFF');
     if (owner) {
-      return { owner, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet, cancelCharges: true };
+      // Decision 423 item 10: whether they may add or remove people.
+      const mainOwner = await this.tenantAuth.isSchoolMainOwner(callerId, schoolId);
+      return { owner, mainOwner, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet, cancelCharges: true };
     }
     // One read of the School's StaffPermission row: the Branch Staff switches
     // above, and "Can cancel charges", which Branch Staff and coaches both
@@ -1064,7 +1082,7 @@ export class RoleGrantsService {
     );
     let access: StaffAccessSet = branchStaff ? staffAccessFrom(row) : (Object.fromEntries(STAFF_ACCESS.map((k) => [k, false])) as StaffAccessSet);
     if (grants.some((g) => g.role === 'INSTRUCTOR')) access = { ...access, bookings: true, students: true };
-    return { owner, branchStaff, access, cancelCharges: row?.canCancelCharges ?? false };
+    return { owner, mainOwner: false, branchStaff, access, cancelCharges: row?.canCancelCharges ?? false };
   }
 
   /**
@@ -1116,10 +1134,11 @@ export class RoleGrantsService {
    * POST /schools/{schoolId}/staff/{userId}/remove (Decision 361) — "Remove
    * from School": ends every coach and Branch Staff role the person holds
    * here, at every branch, in one step, with the same clean-up as revoke()
-   * (grading permissions, "Can invite coaches", their open coach invites).
-   * Their account stays, and so does any student role they hold here. Owner
-   * roles are not touched: removing an owner is its own, separate rule (main
-   * owner and co-owners). Their access ends on their next request.
+   * (grading permissions and access switches). Their account stays, and so
+   * does any student role they hold here. Owner roles are not touched:
+   * removing an owner is its own, separate rule (main owner and co-owners).
+   * Their access ends on their next request. The main owner only (Decision
+   * 423 item 10).
    *
    * `alsoInTx` runs inside the same transaction once the roles are ended (not
    * at all when there were none): StaffRemovalService uses it to hand over or
@@ -1134,7 +1153,7 @@ export class RoleGrantsService {
     userId: string,
     alsoInTx?: (tx: Prisma.TransactionClient) => Promise<T>,
   ): Promise<{ removedRoles: number; also?: T }> {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolMainOwner(callerId, schoolId);
 
     const result = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const live = await tx.roleGrant.updateMany({
@@ -1154,7 +1173,6 @@ export class RoleGrantsService {
     if (result.removedRoles === 0) {
       throw new NotFoundException('This person holds no coach or Branch Staff role at this School.');
     }
-    await this.coachInvites.cancelOpenInvitesFrom(callerId, schoolId, userId);
     this.rolesChanged.forget(userId);
     return result;
   }
@@ -1170,10 +1188,11 @@ export class RoleGrantsService {
    * switches, grading permissions, display name, coach profile and the
    * classes they teach all stay as they are. Their access ends on their next
    * request (Decision 361). Owners are not paused: an owner has every right,
-   * and removing one is its own rule (Decision 370).
+   * and removing one is its own rule (Decision 370). Pause and Unpause are
+   * the main owner's only (Decision 423 item 10).
    */
   async pauseStaff(callerId: string, schoolId: string, userId: string) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolMainOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const pausedAt = new Date();
     const pausedRoles = await this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -1205,7 +1224,7 @@ export class RoleGrantsService {
    * branch is named in the answer so the owner can give a role elsewhere.
    */
   async unpauseStaff(callerId: string, schoolId: string, userId: string) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolMainOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const result = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const paused = await tx.roleGrant.findMany({
@@ -1372,20 +1391,6 @@ export class RoleGrantsService {
   }
 }
 
-/**
- * Decision 370 — a School's main owner: the live owner grant flagged
- * isMainOwner, or, where none is flagged (a School whose main owner's account
- * was deleted, or rows written before the flag existed), the earliest live
- * owner grant, the rule the product owner chose for existing Schools.
- */
-export function mainOwnerGrant(tx: Prisma.TransactionClient, schoolId: string) {
-  return tx.roleGrant.findFirst({
-    where: { schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
-    orderBy: [{ isMainOwner: 'desc' }, { grantedAt: 'asc' }, { id: 'asc' }],
-    select: { id: true, userId: true },
-  });
-}
-
 /** A StaffAccessSet as StaffPermission columns (Decision 387). */
 function toPermissionColumns(access: StaffAccessSet) {
   return {
@@ -1394,7 +1399,6 @@ function toPermissionColumns(access: StaffAccessSet) {
     canManageStudents: access.students,
     canCancelClasses: access.cancelClasses,
     canSeeStaffList: access.staffList,
-    canInviteCoaches: access.inviteCoaches,
     canManageDisciplines: access.disciplines,
     canManageCheckInRules: access.checkInRules,
     canExportStudents: access.exportStudents,

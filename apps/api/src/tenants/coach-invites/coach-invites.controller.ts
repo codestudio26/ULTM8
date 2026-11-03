@@ -23,7 +23,7 @@ import {
  * name), so sending is limited per account: 20 an hour (security review L4). */
 const INVITE_SEND_THROTTLE = { identity: { limit: 20, ttl: 3_600_000, getTracker: jwtSubTracker } };
 
-/** Coach invites and "Can invite coaches" (Decision 183). */
+/** Coach invites (Decision 183), sent and cancelled by the School's main owner (Decision 423 item 10). */
 @ApiTags('coach-invites')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)

@@ -11,7 +11,7 @@ const GROUPS: Array<{ heading: TranslationKey; keys: AccessKey[] }> = [
   { heading: 'roleGrants.access.groupSchedule', keys: ['classes', 'cancelClasses'] },
   { heading: 'roleGrants.access.groupCheckIn', keys: ['bookings', 'checkInRules', 'attendanceStats'] },
   { heading: 'roleGrants.access.groupMembers', keys: ['students', 'exportStudents', 'freezeMemberships', 'memberFiles', 'importData', 'seeMedicalInfo'] },
-  { heading: 'roleGrants.access.groupStaff', keys: ['staffList', 'inviteCoaches'] },
+  { heading: 'roleGrants.access.groupStaff', keys: ['staffList'] },
   { heading: 'roleGrants.access.groupDisciplines', keys: ['disciplines'] },
 ];
 
@@ -21,7 +21,6 @@ const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }>
   bookings: { label: 'roleGrants.access.bookings', hint: 'roleGrants.access.bookingsHint' },
   students: { label: 'roleGrants.access.students', hint: 'roleGrants.access.studentsHint' },
   staffList: { label: 'roleGrants.access.staffList', hint: 'roleGrants.access.staffListHint' },
-  inviteCoaches: { label: 'roleGrants.access.inviteCoaches', hint: 'roleGrants.access.inviteCoachesHint' },
   disciplines: { label: 'roleGrants.access.disciplines', hint: 'roleGrants.access.disciplinesHint' },
   checkInRules: { label: 'roleGrants.access.checkInRules', hint: 'roleGrants.access.checkInRulesHint' },
   exportStudents: { label: 'roleGrants.access.exportStudents', hint: 'roleGrants.access.exportStudentsHint' },
@@ -44,11 +43,11 @@ const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }>
 export const PRESETS: Array<{ name: TranslationKey; access: StaffAccess }> = [
   {
     name: 'roleGrants.access.presetFrontDesk',
-    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false },
+    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false },
   },
   {
     name: 'roleGrants.access.presetBranchManager',
-    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false },
+    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false },
   },
 ];
 

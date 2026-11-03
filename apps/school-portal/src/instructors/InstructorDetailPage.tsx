@@ -6,7 +6,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { Avatar } from '../lib/Avatar';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
-import { useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
+import { useIsMainOwner, useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
 import { useBranches } from '../branches/branchQueries';
 import { WEEKDAY_ORDER, weekdayName } from '../timetable/timetableOccurrences';
 import {
@@ -56,6 +56,8 @@ export function InstructorDetailPage() {
   const { data: classesData, isLoading: classesLoading, error: classesError } = useInstructorClasses(instructorId);
   const roleGrants = useUserRoleGrants(instructor?.userId ?? null);
   const revokeGrant = useRevokeRoleGrant();
+  // Decision 423 item 10: only the main owner removes or gives back the coach role.
+  const isMainOwner = useIsMainOwner(schoolId ?? null);
   const { data: branchData } = useBranches(schoolId);
   const { data: slots } = useAllTimetableSlots(schoolId);
   const [confirmingRevoke, setConfirmingRevoke] = useState(false);
@@ -129,7 +131,7 @@ export function InstructorDetailPage() {
                 {t('instructors.detail.resendPasscode')}
               </Button>
             ) : null}
-            {activeGrant ? (
+            {!isMainOwner ? null : activeGrant ? (
               <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
                 {t('instructors.detail.revokeEnrollment')}
               </Button>
@@ -142,6 +144,7 @@ export function InstructorDetailPage() {
         }
       />
       {notice ? <SuccessBanner message={notice} /> : null}
+      {isMainOwner === false ? <p className="ultm8-field">{t('roleGrants.staff.mainOwnerOnly')}</p> : null}
       {certError ? <ErrorBanner message={certError} /> : null}
 
       <div style={{ marginBottom: 24 }}>

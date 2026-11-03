@@ -133,16 +133,16 @@ describeIfDb('Staff display name and work phone (Decision 381)', () => {
     expect(account).toMatchObject({ firstName: 'Carlos', surname: 'Tester', phone: coach.phone });
   });
 
-  it('keeps an existing "Can invite coaches" switch when details are set', async () => {
+  it('keeps an existing "Can manage disciplines" switch when details are set', async () => {
     const { school, branch, own } = await seed('perm');
     const staff = await mkUser('Bea');
     await grant(staff.id, school.id, 'BRANCH_STAFF', branch.id);
-    await superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId: staff.id, canInviteCoaches: true } });
+    await superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId: staff.id, canManageDisciplines: true } });
 
     const res = await as(own, owner(school.id)).patch(`/v1/schools/${school.id}/staff/${staff.id}/details`).send({ displayName: 'Front desk Bea' });
     expect(res.status).toBe(200);
     const perm = await superuser.staffPermission.findUniqueOrThrow({ where: { schoolId_userId: { schoolId: school.id, userId: staff.id } } });
-    expect(perm).toMatchObject({ canInviteCoaches: true, displayName: 'Front desk Bea' });
+    expect(perm).toMatchObject({ canManageDisciplines: true, displayName: 'Front desk Bea' });
   });
 
   it('rejects a bad phone, a long name, a non-staff person and a non-owner', async () => {

@@ -59,9 +59,10 @@ export class StaffRemovalService {
     return { upcomingClasses, activeSlots };
   }
 
-  /** POST /schools/{schoolId}/staff/{userId}/remove (owner only). */
+  /** POST /schools/{schoolId}/staff/{userId}/remove (the main owner only,
+   * Decision 423 item 10). */
   async remove(callerId: string, schoolId: string, userId: string, dto: RemoveFromSchoolDto) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolMainOwner(callerId, schoolId);
     const choice = dto.classes;
     if (choice === 'REASSIGN' && !dto.toUserId) {
       throw new BadRequestException('Choose the coach who takes over their classes.');

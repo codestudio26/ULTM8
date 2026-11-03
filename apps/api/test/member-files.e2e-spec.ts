@@ -46,7 +46,6 @@ const ACCESS_DEFAULTS = {
   students: true,
   cancelClasses: true,
   staffList: false,
-  inviteCoaches: false,
   disciplines: false,
   checkInRules: false,
   exportStudents: false,

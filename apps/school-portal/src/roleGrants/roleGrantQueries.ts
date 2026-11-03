@@ -54,8 +54,9 @@ export function useUserRoleGrants(userId: string | null) {
 }
 
 /** Granting or removing a role changes the Staff page's list (Decision 361)
- * and its "Who can invite coaches" list, which shows every active Branch Staff
- * member (Decision 296: it used to keep showing the old list until a reload). */
+ * and the Branch Staff permission lists, which show every active Branch Staff
+ * member (Decision 296: they used to keep showing the old list until a
+ * reload). A hand-over changes who is the main owner (Decision 423 item 10). */
 function invalidateStaffLists(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: ['staff-permissions'] }),
@@ -74,6 +75,14 @@ export function useMyStaffAccess(schoolId: string | null) {
     queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/staff/me/access', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
   });
+}
+
+/** Decision 423 item 10 — whether the signed-in person is this School's main
+ * owner, the only one who may add or remove co-owners, coaches and Branch
+ * Staff. Undefined while loading: hide the controls until it is true, and
+ * show the "main owner only" note once it is false, so neither flashes. */
+export function useIsMainOwner(schoolId: string | null): boolean | undefined {
+  return useMyStaffAccess(schoolId).data?.mainOwner;
 }
 
 /** Decision 387 — the owner sets a Branch Staff member's six switches. */
