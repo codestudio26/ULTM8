@@ -13,6 +13,7 @@ import type { TranslationKey } from '../i18n/types';
 import { useAnswerFee, useGradingOverview, useMyCorrections, useMyFeeRequests, type FeeRequest, type GradingStyle, type RankCorrection } from './myGradingQueries';
 import { CorrectionCard } from './CorrectionCard';
 import { BeltSwatch } from './BeltSwatch';
+import { feeGradedText, feeStyleName } from './feeCopy';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MyGrading'>;
 
@@ -270,12 +271,12 @@ function FeeCard({
         {t('grading.fee.title')}
       </Text>
       <Text style={{ fontWeight: '600', marginTop: spacing[1] }}>
-        {childName ? t('grading.fee.gradedChild', { name: childName, rank: r.toRungName }) : t('grading.fee.gradedSelf', { rank: r.toRungName })}
+        {feeGradedText(r, childName, t)}
       </Text>
       <Muted>
-        {r.disciplineName && r.schoolName
-          ? t('grading.fee.styleAtSchoolAmount', { style: r.disciplineName, school: r.schoolName, amount })
-          : t('grading.fee.placeAmount', { place: r.disciplineName || r.schoolName || '', amount })}
+        {feeStyleName(r) && r.schoolName
+          ? t('grading.fee.styleAtSchoolAmount', { style: feeStyleName(r)!, school: r.schoolName, amount })
+          : t('grading.fee.placeAmount', { place: feeStyleName(r) || r.schoolName || '', amount })}
       </Muted>
       {answer.error ? <ErrorBanner message={getApiErrorMessage(answer.error, t('grading.fee.answerError'))} /> : null}
       {r.status === 'ACCEPTED' && charge ? (

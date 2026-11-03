@@ -6,6 +6,7 @@ import { formatMoney } from '../lib/formatMoney';
 import { theme, spacing, fontSize, radius } from '../theme/tokens';
 import { useT } from '../i18n/I18nProvider';
 import { feeRequestsQuery, isFeeToAnswer, type FeeRequest } from './myGradingQueries';
+import { feeGradedText, feeStyleName } from './feeCopy';
 
 /** Whose fees to show: the signed-in student (no name), and a guardian's children. */
 export interface FeePerson {
@@ -38,14 +39,12 @@ export function HomeFeeCards({ people, onAnswer }: { people: FeePerson[]; onAnsw
             {t('grading.fee.title')}
           </Text>
           <Text style={{ fontWeight: '600', marginTop: spacing[1] }}>
-            {person.childName
-              ? t('grading.fee.gradedChild', { name: person.childName, rank: r.toRungName })
-              : t('grading.fee.gradedSelf', { rank: r.toRungName })}
+            {feeGradedText(r, person.childName, t)}
           </Text>
           <Text style={{ color: theme.textSecondary, fontSize: fontSize.footnote }}>
-            {r.disciplineName && r.schoolName
-              ? t('grading.fee.styleAtSchoolAmount', { style: r.disciplineName, school: r.schoolName, amount: formatMoney(r.amountMinor, r.currency) })
-              : t('grading.fee.placeAmount', { place: r.disciplineName ?? r.schoolName ?? '', amount: formatMoney(r.amountMinor, r.currency) })}
+            {feeStyleName(r) && r.schoolName
+              ? t('grading.fee.styleAtSchoolAmount', { style: feeStyleName(r)!, school: r.schoolName, amount: formatMoney(r.amountMinor, r.currency) })
+              : t('grading.fee.placeAmount', { place: feeStyleName(r) ?? r.schoolName ?? '', amount: formatMoney(r.amountMinor, r.currency) })}
           </Text>
           <Button title={t('grading.fee.seeAndAnswer')} variant="secondary" onPress={() => onAnswer(person, r)} />
         </View>

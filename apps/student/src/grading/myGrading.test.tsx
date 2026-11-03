@@ -149,6 +149,19 @@ describe('promotion fee', () => {
     expect(answer.mutate).toHaveBeenCalledWith({ id: 'fee1', answer: 'decline' }, expect.anything());
   });
 
+  it('a guardian sees their child\'s move into the Adult program waiting for its fee, and answers it (Decisions 419, 421)', async () => {
+    const move = { ...FEE, id: 'move1', disciplineName: 'BJJ Kids', toDisciplineId: 'adult', toDisciplineName: 'BJJ', toRungName: 'Blue Belt', promotionWaits: true, promotionApplied: false };
+    mocked(q.useMyFeeRequests).mockReturnValue(ok({ items: [move] }));
+    const { getByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: { studentId: 'kid', name: 'Ben' } } as never} />);
+    expect(mocked(q.useMyFeeRequests)).toHaveBeenCalledWith('kid');
+    expect(getByText('Ben was graded into the Adult program, to Blue Belt')).toBeTruthy();
+    // The Adult style, not the Kids one he was graded from.
+    expect(getByText(/^BJJ at /)).toBeTruthy();
+    await fireEvent.press(getByText('See and answer'));
+    await fireEvent.press(getByText(/^Accept /));
+    expect(answer.mutate).toHaveBeenCalledWith({ id: 'move1', answer: 'accept' }, expect.anything());
+  });
+
   it('a guardian answers for their child; an accepted fee waits for payment; settled ones are not shown', async () => {
     mocked(q.useMyFeeRequests).mockReturnValue(
       ok({ items: [FEE, { ...FEE, id: 'fee2', status: 'ACCEPTED', toRungName: 'Blue Belt' }, { ...FEE, id: 'fee3', status: 'PAID', toRungName: 'Purple Belt' }] }),

@@ -104,8 +104,8 @@ export class PromotionFeeService {
   /** Owner only (Decision 297); anyone else gets 403. */
   async updateSettings(callerId: string, schoolId: string, dto: UpdatePromotionFeeSettingsDto) {
     this.assertUuid(schoolId, 'schoolId');
-    if (dto.promotionFeeEnabled === undefined && dto.gradeBeforeFeePaid === undefined) {
-      throw new BadRequestException('Send promotionFeeEnabled, gradeBeforeFeePaid, or both.');
+    if (dto.promotionFeeEnabled === undefined && dto.gradeBeforeFeePaid === undefined && dto.kidsToAdultFeeEnabled === undefined) {
+      throw new BadRequestException('Send at least one of promotionFeeEnabled, gradeBeforeFeePaid and kidsToAdultFeeEnabled.');
     }
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
@@ -115,6 +115,7 @@ export class PromotionFeeService {
         data: {
           ...(dto.promotionFeeEnabled !== undefined ? { promotionFeeEnabled: dto.promotionFeeEnabled } : {}),
           ...(dto.gradeBeforeFeePaid !== undefined ? { promotionFeeGradeBeforePaid: dto.gradeBeforeFeePaid } : {}),
+          ...(dto.kidsToAdultFeeEnabled !== undefined ? { promotionFeeKidsToAdult: dto.kidsToAdultFeeEnabled } : {}),
         },
       }),
     );
@@ -123,10 +124,15 @@ export class PromotionFeeService {
 
   private async readSettings(callerId: string, schoolId: string) {
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.findUnique({ where: { id: schoolId }, select: { promotionFeeEnabled: true, promotionFeeGradeBeforePaid: true, defaultCurrency: true } }),
+      tx.school.findUnique({ where: { id: schoolId }, select: { promotionFeeEnabled: true, promotionFeeGradeBeforePaid: true, promotionFeeKidsToAdult: true, defaultCurrency: true } }),
     );
     if (!school) throw new NotFoundException('School not found');
-    return { promotionFeeEnabled: school.promotionFeeEnabled, gradeBeforeFeePaid: school.promotionFeeGradeBeforePaid, currency: school.defaultCurrency };
+    return {
+      promotionFeeEnabled: school.promotionFeeEnabled,
+      gradeBeforeFeePaid: school.promotionFeeGradeBeforePaid,
+      kidsToAdultFeeEnabled: school.promotionFeeKidsToAdult,
+      currency: school.defaultCurrency,
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -146,7 +152,10 @@ export class PromotionFeeService {
       throw new ForbiddenException('You do not have grading permission at this School. The School owner grants it.');
     }
     if (styles && query.disciplineId && !styles.includes(query.disciplineId)) return { items: [], nextCursor: null };
-    const disciplineFilter = query.disciplineId ? { disciplineId: query.disciplineId } : styles ? { disciplineId: { in: styles } } : {};
+    // A move from a Kids style into its Adult program (Decision 419 item 2)
+    // concerns both styles: the one graded from and the one moved into.
+    const inStyles = (ids: string[]) => ({ OR: [{ disciplineId: { in: ids } }, { toDisciplineId: { in: ids } }] });
+    const disciplineFilter = query.disciplineId ? inStyles([query.disciplineId]) : styles ? inStyles(styles) : {};
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
         (args) =>
@@ -192,14 +201,21 @@ export class PromotionFeeService {
     const rows = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.promotionFeeRequest.findMany({
         where: { studentId, ...(impersonationSchoolId ? { schoolId: impersonationSchoolId } : {}) },
-        include: { school: { select: { name: true } }, discipline: { select: { name: true } } },
+        include: { school: { select: { name: true } }, discipline: { select: { name: true } }, toDiscipline: { select: { name: true } } },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 200,
       }),
     );
     // shape() picks its own fields, so the joined names don't leak into it.
     const shaped = await this.shapeWithCharges(rows);
-    return { items: rows.map((r, i) => ({ ...shaped[i], schoolName: r.school.name, disciplineName: r.discipline.name })) };
+    return {
+      items: rows.map((r, i) => ({
+        ...shaped[i],
+        schoolName: r.school.name,
+        disciplineName: r.discipline.name,
+        ...(r.toDiscipline ? { toDisciplineName: r.toDiscipline.name } : {}),
+      })),
+    };
   }
 
   // ---------------------------------------------------------------------------
@@ -628,12 +644,32 @@ export class PromotionFeeService {
       select: { currentStripeId: true },
     });
     if (!sr || sr.currentStripeId !== pg.expectedCurrentRungId) return true;
+    if (pg.type === 'MOVE_TO_ADULT') return this.moveCannotApplyAsMade(request, pg);
     const ladder = await loadLadder(this.prismaJobs, request.disciplineId);
     const from = pg.expectedCurrentRungId ? rungIndex(ladder, pg.expectedCurrentRungId) : -1;
     if (from < 0) return true;
     const to = pg.type === 'STRIPE_AWARD' ? from + 1 : rungIndex(ladder, pg.targetRungId);
     if (to <= from || ladder[to]?.id !== request.toRungId) return true;
     return pg.type === 'STRIPE_AWARD' && ladder[to].rankId !== ladder[from].rankId;
+  }
+
+  /** A move into the Adult program (Decision 419 item 2), the student still
+   * on the Kids rung it was made from: it can't apply as made when the Kids
+   * style is no longer linked to that Adult style, the student already has an
+   * Adult rank, the Kids rung is gone, or the Adult rank it was for is no
+   * longer above the Adult ladder's first belt. */
+  private async moveCannotApplyAsMade(request: PromotionFeeRequest, pg: PendingGrade): Promise<boolean> {
+    const kids = await this.prismaJobs.discipline.findUnique({ where: { id: request.disciplineId }, select: { adultDisciplineId: true } });
+    if (!request.toDisciplineId || kids?.adultDisciplineId !== request.toDisciplineId) return true;
+    const adultRank = await this.prismaJobs.studentRank.findUnique({
+      where: { studentId_disciplineId: { studentId: request.studentId, disciplineId: request.toDisciplineId } },
+      select: { id: true },
+    });
+    if (adultRank) return true;
+    if (!pg.expectedCurrentRungId || rungIndex(await loadLadder(this.prismaJobs, request.disciplineId), pg.expectedCurrentRungId) < 0) return true;
+    const adultLadder = await loadLadder(this.prismaJobs, request.toDisciplineId);
+    const to = rungIndex(adultLadder, pg.targetRungId);
+    return to < 0 || adultLadder[to].id !== request.toRungId || adultLadder[to].rankId === adultLadder[0].rankId;
   }
 
   /** The School's owner(s), and everyone who may cancel the fee (Decision 421:
@@ -647,7 +683,8 @@ export class PromotionFeeService {
       const [owners, student, discipline] = await Promise.all([
         this.prismaJobs.roleGrant.findMany({ where: { schoolId: request.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null }, select: { userId: true }, distinct: ['userId'] }),
         this.prismaJobs.user.findUnique({ where: { id: request.studentId }, select: { firstName: true, surname: true } }),
-        this.prismaJobs.discipline.findUnique({ where: { id: request.disciplineId }, select: { name: true } }),
+        // The style of the rank the fee is for (the Adult style for a move into it).
+        this.prismaJobs.discipline.findUnique({ where: { id: request.toDisciplineId ?? request.disciplineId }, select: { name: true } }),
       ]);
       const name = student ? `${student.firstName} ${student.surname}`.trim() : 'A student';
       const recipients = new Set(owners.map((o) => o.userId));
@@ -825,6 +862,7 @@ export class PromotionFeeService {
       schoolId: r.schoolId,
       studentId: r.studentId,
       disciplineId: r.disciplineId,
+      toDisciplineId: r.toDisciplineId,
       toRungId: r.toRungId,
       toRungName: r.toRungName,
       expectedCurrentRungId: r.expectedCurrentRungId,

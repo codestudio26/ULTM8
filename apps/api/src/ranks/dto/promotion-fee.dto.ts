@@ -19,6 +19,14 @@ export class UpdatePromotionFeeSettingsDto {
   @IsOptional()
   @IsBoolean()
   gradeBeforeFeePaid?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      '"Charge a fee when moving a student from Kids to Adult" (Decision 420 item 3; off by default). In effect only while the promotion fee is on. Off: the move into the Adult program is always free. On: it is charged like any promotion, at the Adult rank\'s own price.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  kidsToAdultFeeEnabled?: boolean;
 }
 
 export class PromotionFeeSettingsResponseDto {
@@ -27,6 +35,9 @@ export class PromotionFeeSettingsResponseDto {
 
   @ApiProperty({ description: '"Allow grading before the fee is paid".' })
   gradeBeforeFeePaid!: boolean;
+
+  @ApiProperty({ description: '"Charge a fee when moving a student from Kids to Adult" (Decision 420 item 3). In effect only while promotionFeeEnabled is on.' })
+  kidsToAdultFeeEnabled!: boolean;
 
   @ApiPropertyOptional({ type: String, nullable: true, description: 'The School\'s currency (School.defaultCurrency): prices are minor units of it.' })
   currency!: string | null;
@@ -81,6 +92,17 @@ export class PromotionFeeRequestResponseDto {
 
   @ApiPropertyOptional({ description: 'Student app list only: the style\'s name.' })
   disciplineName?: string;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description:
+      'Set only when the grade moves a Kids student into the linked Adult program (backlog 3.20; Decision 419 item 2): the Adult style, where toRungId is. disciplineId stays the Kids style the student was graded from.',
+  })
+  toDisciplineId!: string | null;
+
+  @ApiPropertyOptional({ description: 'Student app list only, for a move into the Adult program: the Adult style\'s name.' })
+  toDisciplineName?: string;
 
   @ApiProperty({ description: 'The rung the grade moves the student to.' })
   toRungId!: string;

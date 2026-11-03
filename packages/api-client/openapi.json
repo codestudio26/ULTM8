@@ -34014,6 +34014,10 @@
           "feeFree": {
             "type": "boolean",
             "description": "\"To decide\" only: promoting to toRungId makes no new fee request (Decision 307)."
+          },
+          "toAdult": {
+            "type": "boolean",
+            "description": "The grade moves a Kids student into the linked Adult program (backlog 3.20; Decision 419 item 2): toRungId is a rank of the Adult style."
           }
         },
         "required": [
@@ -34023,7 +34027,8 @@
           "toRungName",
           "amountMinor",
           "promotionApplied",
-          "feeFree"
+          "feeFree",
+          "toAdult"
         ]
       },
       "GradingBoardItemDto": {
@@ -34768,6 +34773,10 @@
             "type": "boolean",
             "description": "\"Allow grading before the fee is paid\"."
           },
+          "kidsToAdultFeeEnabled": {
+            "type": "boolean",
+            "description": "\"Charge a fee when moving a student from Kids to Adult\" (Decision 420 item 3). In effect only while promotionFeeEnabled is on."
+          },
           "currency": {
             "type": "string",
             "nullable": true,
@@ -34776,7 +34785,8 @@
         },
         "required": [
           "promotionFeeEnabled",
-          "gradeBeforeFeePaid"
+          "gradeBeforeFeePaid",
+          "kidsToAdultFeeEnabled"
         ]
       },
       "UpdatePromotionFeeSettingsDto": {
@@ -34789,6 +34799,10 @@
           "gradeBeforeFeePaid": {
             "type": "boolean",
             "description": "\"Allow grading before the fee is paid\" (off by default). On: a priced promotion applies at once and the fee request waits. Off: the promotion waits (\"Waiting for fee\") until the fee is paid or waived."
+          },
+          "kidsToAdultFeeEnabled": {
+            "type": "boolean",
+            "description": "\"Charge a fee when moving a student from Kids to Adult\" (Decision 420 item 3; off by default). In effect only while the promotion fee is on. Off: the move into the Adult program is always free. On: it is charged like any promotion, at the Adult rank's own price."
           }
         }
       },
@@ -34911,6 +34925,15 @@
           "disciplineName": {
             "type": "string",
             "description": "Student app list only: the style's name."
+          },
+          "toDisciplineId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set only when the grade moves a Kids student into the linked Adult program (backlog 3.20; Decision 419 item 2): the Adult style, where toRungId is. disciplineId stays the Kids style the student was graded from."
+          },
+          "toDisciplineName": {
+            "type": "string",
+            "description": "Student app list only, for a move into the Adult program: the Adult style's name."
           },
           "toRungId": {
             "type": "string",
