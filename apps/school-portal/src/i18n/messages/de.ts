@@ -3915,6 +3915,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Wenn aus, checkt niemand mit einem Besucherpass ein.",
       frozenMembers: "Eingefrorene Mitglieder dürfen einchecken",
       frozenMembersHint: "Wenn aus, kann ein Mitglied mit eingefrorener Mitgliedschaft nicht einchecken.",
+      withoutBooking: "Einchecken ohne Buchung",
+      withoutBookingHint: "Wenn an, können Mitglieder in einen Kurs einchecken, den sie nicht gebucht haben. Der Check-in belegt einen Platz, wenn der Kurs noch einen hat, und nutzt ihre Mitgliedschaft oder ein Kursguthaben, wie beim Buchen. Wenn aus, müssen sie zuerst buchen.",
       overdue: "Check-in bei überfälligen Zahlungen sperren",
       overdueHint: "Mitglieder, die eine Rechnung so lange nach Fälligkeit noch nicht bezahlt haben, können erst nach der Zahlung einchecken.",
       overdueNo: "Nein",

@@ -22647,6 +22647,10 @@
             "nullable": true,
             "description": "Backlog §3.5: check-in is refused while a charge is owed more than this many days past its due date. Null (default): never."
           },
+          "checkInRequireBooking": {
+            "type": "boolean",
+            "description": "Decision 422 item 2: a booking is needed to check in (default on). Off: a member may check in to a Class they haven't booked; the check-in books a place first."
+          },
           "freezeMaxDaysPer12Months": {
             "type": "number",
             "description": "Decision 404: the most days a membership can be frozen in any 12 months (default 90)."
@@ -22838,6 +22842,7 @@
           "checkInSeveralClasses",
           "checkInFrozenMembers",
           "checkInShowBeltProgress",
+          "checkInRequireBooking",
           "freezeMaxDaysPer12Months",
           "taxRateBasisPoints",
           "taxInclusive",
@@ -36385,6 +36390,10 @@
             ],
             "nullable": true,
             "description": "Backlog §3.5: refuse check-in (CHECK_IN_PAYMENT_OVERDUE) to a member who still owes on a charge more than 7 or 14 days after its due date, in the School's time zone. Null (default): never refused for an overdue payment, as before. Always in the response; leave it out of a save to keep it as it is."
+          },
+          "requireBooking": {
+            "type": "boolean",
+            "description": "Decision 422 item 2: a booking is needed to check in (default on, as before). Off (the owner's \"Check in without a booking\"): a member may check in to a Class they haven't booked, at every way in; the check-in first books a place by the booking's own rules (a full Class is refused with CLASS_FULL; membership, credits, waivers and the other check-in rules still apply). Always in the response; leave it out of a save to keep it as it is."
           },
           "codeDigits": {
             "type": "number",

@@ -3870,6 +3870,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "オフの場合、ビジターパスでは誰もチェックインできません。",
       frozenMembers: "休会中のメンバーのチェックインを許可",
       frozenMembersHint: "オフの場合、休会中のメンバーはチェックインできません。",
+      withoutBooking: "予約なしでチェックイン",
+      withoutBookingHint: "オンの場合、メンバーは予約していないクラスにチェックインできます。チェックインは空きがあれば席を確保し、予約と同じようにメンバーシップまたはクラスクレジットを使います。オフの場合は、先に予約が必要です。",
       overdue: "支払い延滞時はチェックインを止める",
       overdueHint: "請求書の期日からこの期間を過ぎても未払いのメンバーは、支払うまでチェックインできません。",
       overdueNo: "しない",

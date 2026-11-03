@@ -1190,6 +1190,11 @@ model School {
   /// than this many days after its due date: 7 or 14. Null (default): never
   /// refused for an overdue payment, as before.
   checkInBlockOverdueDays        Int?
+  /// Decision 422 item 2: a booking is needed to check in. On by default (what
+  /// check-in did). The owner's "Check in without a booking" switch turns it
+  /// off: a member may then check in to a Class they haven't booked, and the
+  /// check-in books a place first, by the same rules as a booking.
+  checkInRequireBooking          Boolean                         @default(true)
   /// Decision 404: the most days a membership can be frozen in any 12 months
   /// (1-365, default 90), and an optional one-off fee in minor units of the
   /// School's currency, charged when a freeze is approved.
