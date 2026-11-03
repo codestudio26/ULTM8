@@ -4,7 +4,16 @@ import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { useStudents } from './studentQueries';
 import { matchesSearch } from './studentSearch';
-import { mergeGroupCounts, useMergeDuplicate, useMergePreview, type MergeBlocker, type MergeBlockerCode, type MergeGroup } from './memberMergeQueries';
+import { beltKeptLine } from './mergeBelts';
+import {
+  mergeGroupCounts,
+  useMergeDuplicate,
+  useMergePreview,
+  type MergeBeltKept,
+  type MergeBlocker,
+  type MergeBlockerCode,
+  type MergeGroup,
+} from './memberMergeQueries';
 
 const BLOCKER_KEYS: Record<MergeBlockerCode, TranslationKey> = {
   GUARDIANS_DIFFER: 'students.merge.blockers.guardiansDiffer',
@@ -12,8 +21,7 @@ const BLOCKER_KEYS: Record<MergeBlockerCode, TranslationKey> = {
   DUPLICATE_HAS_SUBSCRIPTION: 'students.merge.blockers.duplicateSubscription',
   PENDING_CARD_PAYMENT: 'students.merge.blockers.pendingCardPayment',
   OPEN_PACK_RECHARGE: 'students.merge.blockers.openPackRecharge',
-  SAME_STYLE_RANK: 'students.merge.blockers.sameStyleRank',
-  SAME_STYLE_CORRECTION: 'students.merge.blockers.sameStyleCorrection',
+  SAME_STYLE_FEE_ACCEPTED: 'students.merge.blockers.sameStyleFeeAccepted',
   SAME_CLASS_BOOKED: 'students.merge.blockers.sameClassBooked',
   SAME_CLASS_WAITLIST: 'students.merge.blockers.sameClassWaitlist',
   OPEN_SIGN_UP: 'students.merge.blockers.openSignUp',
@@ -39,7 +47,8 @@ const MAX_OPTIONS = 50;
 /**
  * Merge a duplicate member into this one (Decision 315 item 13). The owner
  * picks the other record of the same person; the preview says what moves and
- * anything that stops it. Only this School's records move; the duplicate's
+ * anything that stops it, and, where both have a belt in the same style,
+ * which belt is kept (the higher one, Decision 422 item 8). Only this School's records move; the duplicate's
  * account and login, and anything they have at another School, are not
  * changed.
  */
@@ -72,6 +81,7 @@ export function MergeDuplicateModal({
   const duplicateName = preview.data?.duplicate.name ?? (chosen ? `${chosen.firstName} ${chosen.surname}`.trim() : '');
   const blockers = preview.data?.blockers ?? [];
   const groups = preview.data ? mergeGroupCounts(preview.data.records) : [];
+  const belts = preview.data?.beltsKept ?? [];
 
   async function confirm() {
     setError(null);
@@ -88,6 +98,11 @@ export function MergeDuplicateModal({
     const text = t(BLOCKER_KEYS[b.code]);
     const details = b.details.filter(Boolean);
     return details.length > 0 ? `${text} (${details.join(', ')})` : text;
+  };
+
+  const beltText = (b: MergeBeltKept) => {
+    const line = beltKeptLine(b, keptName, duplicateName);
+    return t(line.key, line.params);
   };
 
   return (
@@ -147,6 +162,23 @@ export function MergeDuplicateModal({
                 ) : (
                   <p style={{ marginTop: 0 }}>{t('students.merge.nothingToMove')}</p>
                 )}
+                {belts.length > 0 ? (
+                  <div data-testid="merge-belts">
+                    <p style={{ marginBottom: 4 }}>{t('students.merge.belts')}</p>
+                    <ul style={{ marginTop: 0 }}>
+                      {belts.map((b) => (
+                        <li key={b.disciplineId}>{beltText(b)}</li>
+                      ))}
+                    </ul>
+                    <p style={{ color: 'var(--text-secondary)' }}>{t('students.merge.beltHistory')}</p>
+                  </div>
+                ) : null}
+                {preview.data.promotionFeesCancelled > 0 ? (
+                  <p>{t('students.merge.feesCancelled', { count: preview.data.promotionFeesCancelled })}</p>
+                ) : null}
+                {preview.data.beltCorrectionsClosed > 0 ? (
+                  <p>{t('students.merge.correctionsClosed', { count: preview.data.beltCorrectionsClosed })}</p>
+                ) : null}
                 <p>{t('students.merge.afterwards', { duplicate: duplicateName })}</p>
                 <p style={{ color: 'var(--text-secondary)' }}>{t('students.merge.waiverNote')}</p>
               </>

@@ -10751,6 +10751,8 @@ export interface components {
             noteEditedById: string | null;
             /** @description When the note was hidden from the student and guardian; null when shown. Students and guardians always get null here, and no note while it is hidden. */
             noteHiddenAt: string | null;
+            /** @description Set on the entries of a belt that was not kept when two duplicate records were merged (Decision 422 item 8): the member record the entry was on. Show it as coming from the merged record. */
+            mergedFromUserId: string | null;
             /** @description When the entry was written (audit timestamp). */
             createdAt: string;
         };
@@ -12794,7 +12796,7 @@ export interface components {
             name: string;
         };
         /** @enum {string} */
-        MergeBlockerCode: "GUARDIANS_DIFFER" | "BOTH_UNLIMITED_MEMBERSHIPS" | "DUPLICATE_HAS_SUBSCRIPTION" | "PENDING_CARD_PAYMENT" | "OPEN_PACK_RECHARGE" | "SAME_STYLE_RANK" | "SAME_STYLE_CORRECTION" | "SAME_CLASS_BOOKED" | "SAME_CLASS_WAITLIST" | "OPEN_SIGN_UP" | "PENDING_CHILD_INVITE";
+        MergeBlockerCode: "GUARDIANS_DIFFER" | "BOTH_UNLIMITED_MEMBERSHIPS" | "DUPLICATE_HAS_SUBSCRIPTION" | "PENDING_CARD_PAYMENT" | "OPEN_PACK_RECHARGE" | "SAME_STYLE_FEE_ACCEPTED" | "SAME_CLASS_BOOKED" | "SAME_CLASS_WAITLIST" | "OPEN_SIGN_UP" | "PENDING_CHILD_INVITE";
         MergeBlockerDto: {
             code: components["schemas"]["MergeBlockerCode"];
             /** @description Style names or class titles the reason is about, when there are any. */
@@ -12837,6 +12839,23 @@ export interface components {
             StudentMedicalInfo: number;
             WaiverSignature: number;
         };
+        /**
+         * @description Whose belt is kept: the duplicate's only when it is higher on the ladder (belt, then stripe or level step).
+         * @enum {string}
+         */
+        MergeBeltKeptFrom: "KEPT" | "DUPLICATE";
+        MergeBeltKeptDto: {
+            disciplineId: string;
+            /** @description The style, as the School named it. */
+            styleName: string;
+            keptFrom: components["schemas"]["MergeBeltKeptFrom"];
+            /** @description The belt that is kept, as the ladder names it. */
+            keptBelt: string;
+            /** @description The other record's belt. Its promotions stay in the history, marked as coming from the merged record. */
+            otherBelt: string;
+            /** @description Both are on the same rung: the kept member's belt is kept, with both records' classes toward the next rung. */
+            sameRung: boolean;
+        };
         MergePreviewDto: {
             /** @description The record that is kept. */
             kept: components["schemas"]["MergePersonDto"];
@@ -12846,6 +12865,12 @@ export interface components {
             blockers: components["schemas"]["MergeBlockerDto"][];
             /** @description The duplicate's rows at this School, per table. */
             records: components["schemas"]["MergeRecordCountsDto"];
+            /** @description Styles both records have a belt in: the higher one is kept (Decision 422 item 8). */
+            beltsKept: components["schemas"]["MergeBeltKeptDto"][];
+            /** @description Unanswered promotion fees for the belt that is not kept (or a second one in the same style) that the merge cancels. */
+            promotionFeesCancelled: number;
+            /** @description Pending belt corrections about the belt that is not kept (or a second one in the same style) that the merge rejects. */
+            beltCorrectionsClosed: number;
         };
         MergeDuplicateDto: {
             /** @description The duplicate record: merged into the student in the path, then no longer a Student here. */
@@ -12858,6 +12883,12 @@ export interface components {
             records: components["schemas"]["MergeRecordCountsDto"];
             /** @description Signed waivers both had signed: the duplicate's copy stays on the duplicate's record. */
             waiverSignaturesLeft: number;
+            /** @description Styles both records had a belt in, and which belt was kept (Decision 422 item 8). */
+            beltsKept: components["schemas"]["MergeBeltKeptDto"][];
+            /** @description Promotion fees the merge cancelled. */
+            promotionFeesCancelled: number;
+            /** @description Belt corrections the merge rejected. */
+            beltCorrectionsClosed: number;
         };
         SignedDocumentLabelsDto: {
             member?: string;
