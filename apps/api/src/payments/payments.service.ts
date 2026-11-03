@@ -88,6 +88,17 @@ function assertConfirmable(status: string): void {
  */
 const CASH_SETTLE_TX_OPTIONS = { maxWaitMs: 10_000 };
 
+/**
+ * The Stripe Connect capabilities every School/Franchise Express account needs
+ * (Decision 86). `card_payments` because every charge is a direct charge on the
+ * connected account; `transfers` because Stripe requires it alongside
+ * `card_payments` on an Express account.
+ */
+const CONNECT_ACCOUNT_CAPABILITIES: Stripe.AccountCreateParams.Capabilities & Stripe.AccountUpdateParams.Capabilities = {
+  card_payments: { requested: true },
+  transfers: { requested: true },
+};
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -343,8 +354,16 @@ export class PaymentsService {
 
     let stripeAccountId = account.stripeConnectedAccountId;
     if (!stripeAccountId) {
-      // Decision 86 — Express, not Standard.
-      const created = await stripe.accounts.create({ type: 'express', country: account.country });
+      // Decision 86 — Express, not Standard. Capabilities requested explicitly:
+      // with none requested Stripe activates only `transfers`, and every charge
+      // this codebase makes is a direct charge ON the connected account (hosted
+      // Checkout, saved-card off-session charges, subscriptions), which Stripe
+      // refuses without `card_payments`.
+      const created = await stripe.accounts.create({
+        type: 'express',
+        country: account.country,
+        capabilities: CONNECT_ACCOUNT_CAPABILITIES,
+      });
       stripeAccountId = created.id;
       try {
         await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -375,12 +394,22 @@ export class PaymentsService {
         }
         throw dbError;
       }
+    } else {
+      // An account created before capabilities were requested on create has only
+      // `transfers`, so it can never take a charge however far onboarding gets.
+      // Request them now, so the Account Link below collects whatever
+      // `card_payments` still needs. Only when `card_payments` was never
+      // requested (absent from `capabilities`): an account that has it, in any
+      // state, is left untouched.
+      const existing = await stripe.accounts.retrieve(stripeAccountId);
+      if (existing.capabilities?.card_payments === undefined) {
+        await stripe.accounts.update(stripeAccountId, { capabilities: CONNECT_ACCOUNT_CAPABILITIES });
+      }
     }
     // Already onboarded once, no fresh Account Link needed to *start* — but Stripe's
     // own Account Links are short-lived/single-use, so re-requesting one against an
     // existing Connected Account (to resume/finish onboarding) is the normal,
-    // supported flow, not an error case — no branch needed here beyond the
-    // `!stripeAccountId` check above.
+    // supported flow, not an error case.
 
     const link = await stripe.accountLinks.create({
       account: stripeAccountId,

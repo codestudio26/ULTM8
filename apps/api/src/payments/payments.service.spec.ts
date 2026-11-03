@@ -495,3 +495,87 @@ describe('PaymentsService — refundOffSessionCharge (Decision 236)', () => {
   });
 });
 
+/**
+ * Decision 86 — Stripe Connect Express onboarding. Every charge is a direct
+ * charge on the connected account, which Stripe refuses unless the account has
+ * `card_payments`; with no capabilities requested it gets only `transfers`.
+ */
+describe('PaymentsService — initiateConnectOnboarding requests card_payments (Decision 86)', () => {
+  const CAPABILITIES = { card_payments: { requested: true }, transfers: { requested: true } };
+  const ENV_KEYS = ['STRIPE_CONNECT_RETURN_URL', 'STRIPE_CONNECT_REFRESH_URL'] as const;
+  const savedEnv: Record<string, string | undefined> = {};
+
+  beforeAll(() => {
+    for (const key of ENV_KEYS) savedEnv[key] = process.env[key];
+    process.env.STRIPE_CONNECT_RETURN_URL = 'https://portal.example.test/return';
+    process.env.STRIPE_CONNECT_REFRESH_URL = 'https://portal.example.test/refresh';
+  });
+  afterAll(() => {
+    for (const key of ENV_KEYS) {
+      if (savedEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = savedEnv[key];
+    }
+  });
+
+  function makeService(stripeConnectedAccountId: string | null, existingCapabilities: Record<string, string> = {}) {
+    const tx = {
+      paymentAccount: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'pa-1', schoolId: 'school-1', franchiseId: null, provider: 'STRIPE', country: 'GB', stripeConnectedAccountId,
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const prismaApp = { withTenantContext: jest.fn((_caller: string, fn: (t: typeof tx) => unknown) => fn(tx)) };
+    const tenantAuth = { assertSchoolOwner: jest.fn().mockResolvedValue(undefined) };
+    const stripe = {
+      accounts: {
+        create: jest.fn().mockResolvedValue({ id: 'acct_new' }),
+        retrieve: jest.fn().mockResolvedValue({ id: 'acct_existing', capabilities: existingCapabilities }),
+        update: jest.fn().mockResolvedValue({ id: 'acct_existing' }),
+        del: jest.fn(),
+      },
+      accountLinks: { create: jest.fn().mockResolvedValue({ url: 'https://connect.stripe.com/setup/e/acct/abc' }) },
+    };
+    const service = new PaymentsService(
+      prismaApp as never, tenantAuth as never, null as never, null as never,
+      { platformClient: () => stripe } as never, null as never, null as never, null as never);
+    return { service, stripe, tx, tenantAuth };
+  }
+
+  it('creates a new Express account with card_payments and transfers requested', async () => {
+    const { service, stripe, tx, tenantAuth } = makeService(null);
+
+    const result = await service.initiateConnectOnboarding('owner', 'pa-1');
+
+    expect(tenantAuth.assertSchoolOwner).toHaveBeenCalledWith('owner', 'school-1');
+    expect(stripe.accounts.create).toHaveBeenCalledWith({ type: 'express', country: 'GB', capabilities: CAPABILITIES });
+    expect(stripe.accounts.update).not.toHaveBeenCalled();
+    expect(tx.paymentAccount.update).toHaveBeenCalledWith({ where: { id: 'pa-1' }, data: { stripeConnectedAccountId: 'acct_new' } });
+    expect(stripe.accountLinks.create).toHaveBeenCalledWith(expect.objectContaining({ account: 'acct_new', type: 'account_onboarding' }));
+    expect(result).toEqual({ onboardingUrl: 'https://connect.stripe.com/setup/e/acct/abc' });
+  });
+
+  it('requests the same capabilities on an existing account that lacks card_payments, before re-issuing its Account Link', async () => {
+    // What an account made before this fix looks like: Stripe gave it transfers only.
+    const { service, stripe } = makeService('acct_existing', { transfers: 'active' });
+
+    await service.initiateConnectOnboarding('owner', 'pa-1');
+
+    expect(stripe.accounts.create).not.toHaveBeenCalled();
+    expect(stripe.accounts.update).toHaveBeenCalledWith('acct_existing', { capabilities: CAPABILITIES });
+    expect(stripe.accountLinks.create).toHaveBeenCalledWith(expect.objectContaining({ account: 'acct_existing', type: 'account_onboarding' }));
+    expect(stripe.accounts.update.mock.invocationCallOrder[0]).toBeLessThan(stripe.accountLinks.create.mock.invocationCallOrder[0]);
+  });
+
+  it('leaves an existing account that already has card_payments (in any state) untouched, and only re-issues its Account Link', async () => {
+    const { service, stripe } = makeService('acct_existing', { card_payments: 'inactive', transfers: 'active' });
+
+    await service.initiateConnectOnboarding('owner', 'pa-1');
+
+    expect(stripe.accounts.retrieve).toHaveBeenCalledWith('acct_existing');
+    expect(stripe.accounts.update).not.toHaveBeenCalled();
+    expect(stripe.accountLinks.create).toHaveBeenCalledWith(expect.objectContaining({ account: 'acct_existing', type: 'account_onboarding' }));
+  });
+});
+
