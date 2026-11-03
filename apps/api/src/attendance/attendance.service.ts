@@ -379,7 +379,7 @@ export class AttendanceService {
     // 90's activities <-> Discipline.name bridge for attendance. Attendance
     // check-in happens regardless of ranking: a style the student has no rank
     // in is skipped.
-    // Imported past attendance (Decision 422 item 6) passes onlySinceLastRankChange.
+    // Imported past attendance (Decision 422 item 6) passes onlySinceRankDate.
     await creditAttendance(tx, studentId, booking, opts);
 
     // Hours trained (Decisions 301 item 1, 306): the class's scheduled

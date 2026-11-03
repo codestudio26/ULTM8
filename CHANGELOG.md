@@ -455,8 +455,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   limit on importing past attendance is gone: any past date from 1 Jan 1900
   is accepted; a future date or a date that doesn't exist is still refused.
   Imported visits count toward belt progress like any other check-in, by
-  grading's own rules (the next belt's class types, its weekly cap, and only
-  classes since the student's last promotion). They never use a Class Pack or
+  grading's own rules (the next belt's class types and its weekly cap), from
+  the day the student's current belt was awarded (Decision 423): a visit on
+  or after that day counts toward the next belt, an earlier one doesn't. The
+  members import takes that date after each belt, e.g. "BJJ: Blue
+  (2024-11-03)"; without one the belt is dated the day of the import. A past
+  attendance file may now have up to 10,000 rows (members and memberships
+  stay at 2,000), still sent 100 at a time. They never use a Class Pack or
   class credit and need no membership, because they were paid for elsewhere:
   before this change an import used a Class Pack credit when nothing else
   paid. A booking already made for the class is checked in, not paid for

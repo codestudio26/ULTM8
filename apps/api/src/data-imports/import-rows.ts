@@ -11,8 +11,17 @@ import { isBirthDate } from '../common/decorators/is-birth-date.decorator';
 export const IMPORT_KINDS = ['MEMBERS', 'MEMBERSHIPS', 'ATTENDANCE'] as const;
 export type ImportKind = (typeof IMPORT_KINDS)[number];
 
-/** At most this many rows in one import (one file). */
+/** At most this many rows in one import (one file) of members or memberships. */
 export const MAX_IMPORT_ROWS = 2000;
+/** Past attendance: a long history in one file (Decision 423). */
+export const MAX_ATTENDANCE_IMPORT_ROWS = 10_000;
+/** The most rows any import may have. */
+export const MAX_ANY_IMPORT_ROWS = Math.max(MAX_IMPORT_ROWS, MAX_ATTENDANCE_IMPORT_ROWS);
+
+/** The most rows one import of this kind may have. */
+export function maxRowsFor(kind: ImportKind): number {
+  return kind === 'ATTENDANCE' ? MAX_ATTENDANCE_IMPORT_ROWS : MAX_IMPORT_ROWS;
+}
 /** At most this many rows in one request; the portal sends a file in batches. */
 export const MAX_ROWS_PER_REQUEST = 100;
 /** Past attendance of any age (Decision 422 item 6), but no date before this
@@ -243,9 +252,11 @@ export function parseCount(values: RowValues, column: string): number | null {
   return Number(value);
 }
 
-/** "Brazilian Jiu-Jitsu: Blue; Judo: Yellow" → [{ style, belt }]. One belt
- * per style. */
-export function parseBelts(values: RowValues): Array<{ style: string; belt: string }> {
+/** "Brazilian Jiu-Jitsu: Blue (2024-11-03); Judo: Yellow" → [{ style, belt,
+ * awardedOn }]. One belt per style. The date in brackets, when given, is the
+ * day the belt was awarded (Decision 423): its rank date, from which imported
+ * past attendance counts toward the next belt. Without it, today. */
+export function parseBelts(values: RowValues, today?: string): Array<{ style: string; belt: string; awardedOn: string | null }> {
   const value = values.get('belts');
   if (!value) return [];
   const pairs = value
@@ -256,12 +267,20 @@ export function parseBelts(values: RowValues): Array<{ style: string; belt: stri
   return pairs.map((pair) => {
     const at = pair.lastIndexOf(':');
     const style = at > 0 ? pair.slice(0, at).trim() : '';
-    const belt = at > 0 ? pair.slice(at + 1).trim() : '';
+    let belt = at > 0 ? pair.slice(at + 1).trim() : '';
+    let awardedOn: string | null = null;
+    const dated = /^(.*?)\s*\(([^()]*)\)$/.exec(belt);
+    if (dated) {
+      belt = dated[1].trim();
+      awardedOn = dated[2].trim();
+      if (!isCalendarDay(awardedOn)) throw rowError('INVALID_DATE', 'A belt\'s date must be written YYYY-MM-DD, as in "BJJ: Blue (2024-11-03)".', 'belts');
+      if (today && awardedOn > today) throw rowError('FUTURE_DATE', "A belt's date can't be in the future.", 'belts');
+    }
     if (!style || !belt) throw rowError('BELTS_FORMAT', 'belts must be written "Style: Belt", separated by ";".', 'belts');
     const key = style.toLowerCase();
     if (seen.has(key)) throw rowError('BELTS_FORMAT', `belts names the style "${style}" twice.`, 'belts');
     seen.add(key);
-    return { style, belt };
+    return { style, belt, awardedOn };
   });
 }
 

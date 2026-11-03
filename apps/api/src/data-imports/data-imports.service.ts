@@ -26,6 +26,7 @@ import {
   IMPORT_KINDS,
   MAX_IMPORT_ROWS,
   MAX_ROWS_PER_REQUEST,
+  maxRowsFor,
   RowProblem,
   RowValues,
   parseBelts,
@@ -69,6 +70,8 @@ interface Belt {
   style: string;
   disciplineId: string;
   rungId: string;
+  /** The day the belt was awarded (YYYY-MM-DD), or null for today (Decision 423). */
+  awardedOn: string | null;
 }
 
 /** What a member row will do, once checked. */
@@ -133,7 +136,8 @@ const READY_MESSAGES: Partial<Record<ImportRowCode, string>> = {
  *   every row and changes nothing. The import itself is started, then its
  *   rows are sent in batches; each row's result is kept, so a batch sent again
  *   (a retry after a dropped connection) returns the same results and imports
- *   nothing twice. At most MAX_IMPORT_ROWS rows per import.
+ *   nothing twice. At most maxRowsFor(kind) rows per import: 2,000, or
+ *   10,000 of past attendance (Decision 423).
  * - **Members** (item 12): made exactly as Add manually makes them. An adult
  *   gets an account with a temporary passcode (Decision 371/403). A child
  *   (under 18) is added with their Guardian's email (AddChildManually): a new
@@ -179,6 +183,7 @@ export class DataImportsService {
     await this.context(callerId, schoolId);
     return {
       maxRows: MAX_IMPORT_ROWS,
+      maxRowsByKind: Object.fromEntries(IMPORT_KINDS.map((k) => [k, maxRowsFor(k)])) as Record<ImportKind, number>,
       maxRowsPerRequest: MAX_ROWS_PER_REQUEST,
       attendanceEarliestDay: ATTENDANCE_EARLIEST_DAY,
       columns: Object.fromEntries(IMPORT_KINDS.map((k) => [k, [...IMPORT_COLUMNS[k]]])) as Record<ImportKind, string[]>,
@@ -196,6 +201,10 @@ export class DataImportsService {
 
   async start(callerId: string, schoolId: string, dto: StartImportDto): Promise<DataImportResponseDto> {
     await this.context(callerId, schoolId);
+    // Past attendance allows a longer file than members or memberships (Decision 423).
+    if (dto.totalRows > maxRowsFor(dto.kind)) {
+      throw new BadRequestException({ code: 'TOO_MANY_ROWS', message: `At most ${maxRowsFor(dto.kind)} rows can be imported in one file of this kind.` });
+    }
     await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
     const created = await this.prismaJobs.dataImport.create({
       data: { schoolId, kind: dto.kind, createdById: callerId, fileName: dto.fileName?.trim() || null, totalRows: dto.totalRows },
@@ -400,7 +409,7 @@ export class DataImportsService {
 
         // Belts per style, matched to the School's own styles and belts by name.
         const warnings: ImportWarning[] = [];
-        const belts: Belt[] = parseBelts(values).map(({ style, belt }) => {
+        const belts: Belt[] = parseBelts(values, ctx.today).map(({ style, belt, awardedOn }) => {
           if (!ctx.ranksOn) throw rowError('BELTS_OFF', 'Ranks are switched off for this School, so belts can\'t be set.', 'belts');
           const discipline = styles.find((s) => sameText(s.name, style));
           if (!discipline) throw rowError('UNKNOWN_STYLE', `This School has no style named "${style}".`, 'belts');
@@ -411,7 +420,7 @@ export class DataImportsService {
             // Grading's own refusal (GradingService.gradeAuthorizer).
             warnings.push({ code: 'BELT_NOT_SET', style: discipline.name, reason: NO_GRADING_PERMISSION, message: `${discipline.name}: ${NO_GRADING_PERMISSION}` });
           }
-          return { style: discipline.name, disciplineId: discipline.id, rungId };
+          return { style: discipline.name, disciplineId: discipline.id, rungId, awardedOn };
         });
         const settable = belts.filter((b) => !promotable || promotable.has(b.disciplineId));
 
@@ -792,7 +801,7 @@ export class DataImportsService {
   private async giveBelts(ctx: ImportContext, studentId: string, belts: Belt[], warnings: ImportWarning[]) {
     for (const belt of belts) {
       try {
-        await this.grading.promote(ctx.callerId, studentId, belt.disciplineId, { targetRungId: belt.rungId });
+        await this.grading.promote(ctx.callerId, studentId, belt.disciplineId, { targetRungId: belt.rungId, ...(belt.awardedOn ? { effectiveDate: belt.awardedOn } : {}) });
       } catch (err) {
         if (!(err instanceof HttpException)) throw err;
         warnings.push({ code: 'BELT_NOT_SET', style: belt.style, reason: messageOf(err), message: `${belt.style}: ${messageOf(err)}` });

@@ -13712,7 +13712,12 @@ export interface components {
             studentIds: string[];
         };
         ImportLimitsDto: {
+            /** @description The most rows a file of members or memberships may have. */
             maxRows: number;
+            /** @description The most rows a file of each kind may have: past attendance allows more (Decision 423). */
+            maxRowsByKind: {
+                [key: string]: number;
+            };
             maxRowsPerRequest: number;
             /** @description The earliest date past attendance can be imported for (YYYY-MM-DD). Any later past date is accepted (Decision 422 item 6). */
             attendanceEarliestDay: string;
@@ -13779,7 +13784,7 @@ export interface components {
         };
         StartImportDto: {
             kind: components["schemas"]["ImportKind"];
-            /** @description How many rows the file has (at most 2000). */
+            /** @description How many rows the file has: at most ImportLimits.maxRowsByKind for its kind (10000 for past attendance). */
             totalRows: number;
             fileName?: string;
         };

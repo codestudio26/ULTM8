@@ -305,6 +305,17 @@ describeIfDb('Spreadsheet imports (Decision 315 items 12, 13)', () => {
     it('caps the rows of an import and of a request', async () => {
       const big = await as('owner').post(`/v1/schools/${school}/imports`).send({ kind: 'MEMBERS', totalRows: 2001 });
       expect(big.status).toBe(400);
+      // Decision 423: past attendance allows 10,000 rows per file; the others stay at 2,000.
+      expect((await as('owner').post(`/v1/schools/${school}/imports`).send({ kind: 'MEMBERSHIPS', totalRows: 2001 })).status).toBe(400);
+      expect((await as('owner').post(`/v1/schools/${school}/imports`).send({ kind: 'ATTENDANCE', totalRows: 10_001 })).status).toBe(400);
+      const long = await as('owner').post(`/v1/schools/${school}/imports`).send({ kind: 'ATTENDANCE', totalRows: 10_000 });
+      expect(long.status).toBe(201);
+      // Its last rows can be sent (row 10,001 is the file's last line).
+      const last = await as('owner').post(`/v1/schools/${school}/imports/${long.body.id}/rows`).send({ rows: [{ rowNumber: 10_001, values: { email: users.ana.email, date: '2020-01-01', time: '07:00', class: 'None' } }] });
+      expect(last.status).toBe(201);
+      expect(last.body.rows[0]).toMatchObject({ rowNumber: 10_001, code: 'UNKNOWN_CLASS' });
+      const limits = await as('owner').get(`/v1/schools/${school}/imports/limits`);
+      expect(limits.body).toMatchObject({ maxRows: 2000, maxRowsPerRequest: 100, maxRowsByKind: { MEMBERS: 2000, MEMBERSHIPS: 2000, ATTENDANCE: 10_000 } });
       const many = await as('owner').post(`/v1/schools/${school}/imports/preview`).send({ kind: 'MEMBERS', rows: Array.from({ length: 101 }, (_, i) => ({ rowNumber: i + 2, values: {} })) });
       expect(many.status).toBe(400);
       const { importId } = await runImport('owner', 'MEMBERS', [adult('capOne')]);
@@ -510,6 +521,80 @@ describeIfDb('Spreadsheet imports (Decision 315 items 12, 13)', () => {
       const readyChecks = (Queue.prototype.add as jest.Mock).mock.calls.filter(([name, data]) => name === 'ready-check' && (data as { studentId: string }).studentId === users.eve.id);
       expect(readyChecks).toHaveLength(1);
     });
+
+    it("counts from the belt's own awarded date: a belt imported with a date two years ago counts later visits, not earlier ones (Decision 423)", async () => {
+      const awarded = DateTime.utc().minus({ years: 2 }).toISODate()!;
+      const members = await runImport('owner', 'MEMBERS', [
+        { first_name: 'Gil', last_name: 'Dated', email: email('gil'), date_of_birth: '1990-01-01', branch: 'Main', belts: `BJJ: White (${awarded})` },
+        { first_name: 'Hal', last_name: 'Dated', email: email('hal'), date_of_birth: '1990-01-01', branch: 'Main', belts: 'BJJ: White (2999-01-01)' },
+        { first_name: 'Ivy', last_name: 'Dated', email: email('ivy'), date_of_birth: '1990-01-01', branch: 'Main', belts: 'BJJ: White (1/2/2024)' },
+      ]);
+      expect(members.res.body.rows.map((r: { code: string; column: string | null }) => [r.code, r.column])).toEqual([['NEW_MEMBER', null], ['FUTURE_DATE', 'belts'], ['INVALID_DATE', 'belts']]);
+      const gil = await superuser.user.findUniqueOrThrow({ where: { email: email('gil') } });
+      const rank = await rankOf(gil.id);
+      // The belt's date is the one given; counting toward the next belt in ULTM8 began at the import.
+      expect(rank.dateOfCurrentRank.toISOString().slice(0, 10)).toBe(awarded);
+      expect(rank.countingSince.getTime()).toBeGreaterThan(Date.now() - 60 * 60_000);
+      expect(rank.classesAttendedTowardCheckpoint).toBe(0);
+
+      const beforeAward = await pastClass(DateTime.utc().minus({ years: 2, days: 10 }), { title: 'Dated' });
+      const onAward = await pastClass(DateTime.fromISO(awarded, { zone: 'utc' }), { title: 'Dated' });
+      const afterAward = await pastClass(DateTime.utc().minus({ years: 1 }), { title: 'Dated' });
+      const { res } = await runImport('owner', 'ATTENDANCE', [beforeAward.row(gil), onAward.row(gil), afterAward.row(gil)]);
+      expect(res.body.rows.map((r: { code: string }) => r.code)).toEqual(['NEW_ATTENDANCE', 'NEW_ATTENDANCE', 'NEW_ATTENDANCE']);
+      // All three are logged as attended; only the two on or after the award day count.
+      expect(await superuser.booking.count({ where: { studentId: gil.id, status: 'COMPLETED' } })).toBe(3);
+      expect((await rankOf(gil.id)).classesAttendedTowardCheckpoint).toBe(2);
+      const eligibility = await as('owner').get(`/v1/students/${gil.id}/eligibility?schoolId=${school}`);
+      expect(eligibility.body.items.find((i: { disciplineId: string }) => i.disciplineId === bjj).progressBreakdown.classes.counted).toBe(2);
+    });
+
+    it('imports a long file in many batches of 100 with flat time per batch', async () => {
+      // IMPORT_STRESS_ROWS=10000 runs a full-size file; the suite uses 500.
+      const total = Number(process.env.IMPORT_STRESS_ROWS ?? 500);
+      const students = 10;
+      const perStudent = Math.ceil(total / students);
+      const labels = Array.from({ length: students }, (_, i) => `stress${i}`);
+      for (const label of labels) {
+        await person(label, [{ role: 'STUDENT', schoolId: school }]);
+        const white = await superuser.studentRank.findFirstOrThrow({ where: { studentId: users.cara.id, disciplineId: bjj } });
+        await superuser.studentRank.create({
+          data: { id: randomUUID(), studentId: users[label].id, disciplineId: bjj, schoolId: school, currentRankId: white.currentRankId, currentStripeId: white.currentStripeId, dateOfCurrentRank: new Date('2000-01-01'), countingSince: new Date('2000-01-01') },
+        });
+      }
+      // One class a day at 07:00, going back far enough for every student.
+      const days = Array.from({ length: perStudent }, (_, d) => DateTime.utc().minus({ days: d + 2 }).set({ hour: 7, minute: 0, second: 0, millisecond: 0 }));
+      await superuser.class.createMany({
+        data: days.map((start) => ({ id: randomUUID(), schoolId: school, branchId: main, title: 'Stress', membershipInclusion: true, styles: [{ disciplineId: bjj, classType: null }], startDate: start.toJSDate(), endDate: start.plus({ hours: 1 }).toJSDate() })),
+      });
+      const rows: Row[] = labels.flatMap((label) => days.map((start) => ({ email: users[label].email, date: start.toISODate()!, time: '07:00', class: 'Stress' }))).slice(0, total);
+
+      const started = await as('owner').post(`/v1/schools/${school}/imports`).send({ kind: 'ATTENDANCE', totalRows: rows.length });
+      expect(started.status).toBe(201);
+      const times: number[] = [];
+      const heapBefore = process.memoryUsage().heapUsed;
+      for (let i = 0; i < rows.length; i += 100) {
+        const batch = rows.slice(i, i + 100).map((values, j) => ({ rowNumber: i + j + 2, values }));
+        const t = Date.now();
+        const res = await as('owner').post(`/v1/schools/${school}/imports/${started.body.id}/rows`).send({ rows: batch });
+        times.push(Date.now() - t);
+        expect(res.status).toBe(201);
+        expect(res.body.rows.every((r: { code: string }) => r.code === 'NEW_ATTENDANCE')).toBe(true);
+      }
+      const t = Date.now();
+      const summary = await as('owner').get(`/v1/schools/${school}/imports/${started.body.id}`);
+      const summaryMs = Date.now() - t;
+      const heapMb = Math.round((process.memoryUsage().heapUsed - heapBefore) / 1e6);
+      const first = times.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, times.length);
+      const lastThree = times.slice(-3).reduce((a, b) => a + b, 0) / Math.min(3, times.length);
+      // eslint-disable-next-line no-console
+      console.log(`[data-imports.e2e-spec] ${rows.length} rows in ${times.length} batches: ${Math.round(times.reduce((a, b) => a + b, 0) / 1000)} s; first batches ${Math.round(first)} ms, last ${Math.round(lastThree)} ms; results ${summaryMs} ms; heap +${heapMb} MB`);
+      expect(summary.body).toMatchObject({ totalRows: rows.length, rowsDone: rows.length, counts: { ok: rows.length, skipped: 0, errors: 0 } });
+      expect(Math.max(...times)).toBeLessThan(30_000);
+      // Each batch only looks at its own rows: later batches are not slower.
+      expect(lastThree).toBeLessThan(first * 3 + 2000);
+      expect(await superuser.booking.count({ where: { studentId: { in: labels.map((l) => users[l].id) }, status: 'COMPLETED', sourceMembershipId: null } })).toBe(rows.length);
+    }, 30 * 60_000);
 
     it("never reaches another School: not its classes, not its students, and no class of this School from there", async () => {
       // The same title and time at both Schools; the other School's student.

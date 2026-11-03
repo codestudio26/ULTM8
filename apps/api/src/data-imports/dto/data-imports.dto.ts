@@ -5,7 +5,7 @@ import {
   IMPORT_KINDS,
   IMPORT_ROW_CODES,
   IMPORT_WARNING_CODES,
-  MAX_IMPORT_ROWS,
+  MAX_ANY_IMPORT_ROWS,
   MAX_ROWS_PER_REQUEST,
   type ImportKind,
   type ImportRowCode,
@@ -16,10 +16,10 @@ import {
 /** One spreadsheet row: its line in the file (the header is line 1) and its
  * cells by column name. */
 export class ImportRowDto {
-  @ApiProperty({ minimum: 2, maximum: MAX_IMPORT_ROWS + 1, description: 'The line in the file; the header row is line 1.' })
+  @ApiProperty({ minimum: 2, maximum: MAX_ANY_IMPORT_ROWS + 1, description: 'The line in the file; the header row is line 1.' })
   @IsInt()
   @Min(2)
-  @Max(MAX_IMPORT_ROWS + 1)
+  @Max(MAX_ANY_IMPORT_ROWS + 1)
   rowNumber!: number;
 
   @ApiProperty({ type: 'object', additionalProperties: { type: 'string' }, description: 'Cells by column name, as the template names them.' })
@@ -48,10 +48,10 @@ export class StartImportDto {
   @IsIn(IMPORT_KINDS)
   kind!: ImportKind;
 
-  @ApiProperty({ minimum: 1, maximum: MAX_IMPORT_ROWS, description: `How many rows the file has (at most ${MAX_IMPORT_ROWS}).` })
+  @ApiProperty({ minimum: 1, maximum: MAX_ANY_IMPORT_ROWS, description: `How many rows the file has: at most ImportLimits.maxRowsByKind for its kind (${MAX_ANY_IMPORT_ROWS} for past attendance).` })
   @IsInt()
   @Min(1)
-  @Max(MAX_IMPORT_ROWS)
+  @Max(MAX_ANY_IMPORT_ROWS)
   totalRows!: number;
 
   @ApiPropertyOptional({ maxLength: 200 })
@@ -160,8 +160,15 @@ export class DataImportResponseDto {
 
 /** The limits the portal shows and batches by. */
 export class ImportLimitsDto {
-  @ApiProperty()
+  @ApiProperty({ description: 'The most rows a file of members or memberships may have.' })
   maxRows!: number;
+
+  @ApiProperty({
+    type: Object,
+    description: 'The most rows a file of each kind may have: past attendance allows more (Decision 423).',
+    additionalProperties: { type: 'number' },
+  })
+  maxRowsByKind!: Record<ImportKind, number>;
 
   @ApiProperty()
   maxRowsPerRequest!: number;

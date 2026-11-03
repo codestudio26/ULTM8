@@ -289,9 +289,10 @@ export class StaffAttendanceService {
    *   so they don't apply to a visit that already happened.
    * - **Belt progress:** checked in through the same completeInTx as every
    *   other way in (the School's check-in rules about the person, the grading
-   *   count with its class types and weekly cap, hours trained), except that a
-   *   class before the student's last rank change belongs to the previous rung
-   *   and counts toward nothing (StudentRank.countingSince).
+   *   count with its class types and weekly cap, hours trained), except that
+   *   only a class on or after the day the current belt was awarded counts
+   *   toward the next one (StudentRank.dateOfCurrentRank, Decision 423); an
+   *   earlier class counts toward nothing.
    *
    * Recorded as STAFF_LOGGED by the importer, as before. The ready-to-grade
    * check is the caller's, once per student after the batch (afterCheckIn).
@@ -329,7 +330,7 @@ export class StaffAttendanceService {
             });
           }
         }
-        await this.attendance.completeInTx(tx, studentId, booking, 'STAFF_LOGGED', callerId, { onlySinceLastRankChange: true });
+        await this.attendance.completeInTx(tx, studentId, booking, 'STAFF_LOGGED', callerId, { onlySinceRankDate: true });
         return { bookingId: booking.id };
       },
       BOOKING_TX_OPTIONS,

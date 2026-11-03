@@ -43080,7 +43080,15 @@
         "type": "object",
         "properties": {
           "maxRows": {
-            "type": "number"
+            "type": "number",
+            "description": "The most rows a file of members or memberships may have."
+          },
+          "maxRowsByKind": {
+            "type": "object",
+            "description": "The most rows a file of each kind may have: past attendance allows more (Decision 423).",
+            "additionalProperties": {
+              "type": "number"
+            }
           },
           "maxRowsPerRequest": {
             "type": "number"
@@ -43102,6 +43110,7 @@
         },
         "required": [
           "maxRows",
+          "maxRowsByKind",
           "maxRowsPerRequest",
           "attendanceEarliestDay",
           "columns"
@@ -43121,7 +43130,7 @@
           "rowNumber": {
             "type": "number",
             "minimum": 2,
-            "maximum": 2001,
+            "maximum": 10001,
             "description": "The line in the file; the header row is line 1."
           },
           "values": {
@@ -43341,8 +43350,8 @@
           "totalRows": {
             "type": "number",
             "minimum": 1,
-            "maximum": 2000,
-            "description": "How many rows the file has (at most 2000)."
+            "maximum": 10000,
+            "description": "How many rows the file has: at most ImportLimits.maxRowsByKind for its kind (10000 for past attendance)."
           },
           "fileName": {
             "type": "string",

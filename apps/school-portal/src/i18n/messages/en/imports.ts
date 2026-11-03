@@ -15,7 +15,7 @@ export const imports = {
   },
   about: {
     MEMBERS:
-      'One row per member: name, email, phone, date of birth, gender (Female, Male or empty), join date, belts ("Style: Belt; Style: Belt") and home branch. Each new member gets an account and an email with a temporary passcode. A row whose email already has an account is skipped and listed. A child (under 18) is added with their Guardian\'s email: a new Guardian gets an account with a temporary passcode; a Guardian who already has one gets an invite to accept in the app.',
+      'One row per member: name, email, phone, date of birth, gender (Female, Male or empty), join date, belts ("Style: Belt (2024-11-03); Style: Belt") and home branch. Each new member gets an account and an email with a temporary passcode. A row whose email already has an account is skipped and listed. A child (under 18) is added with their Guardian\'s email: a new Guardian gets an account with a temporary passcode; a Guardian who already has one gets an invite to accept in the app. A date in brackets after a belt is the day it was awarded (YYYY-MM-DD); past attendance you import from that day on counts toward the next belt.',
     MEMBERSHIPS:
       "One row per membership: the member's email (for a child, their Guardian's email and the child's name), the plan's name as on your Membership plans page, the start date, and if you like the end date and, for a Class Pack, the classes left. It is recorded with no payment. A Subscription is paid by card in the app, so it can't be imported.",
     ATTENDANCE:

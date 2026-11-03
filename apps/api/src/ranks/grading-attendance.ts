@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { DateTime } from 'luxon';
 import {
   AttendedClass,
   ClassTypeRequirement,
@@ -19,8 +20,9 @@ type ClassStyle = { disciplineId: string; classType: string | null };
 const DAY_MS = 86_400_000;
 
 export interface CreditAttendanceOptions {
-  /** Count the class only if it started at or after the last rank change. */
-  onlySinceLastRankChange?: boolean;
+  /** Count the class only if it is on or after the day the current belt was
+   * awarded (StudentRank.dateOfCurrentRank). */
+  onlySinceRankDate?: boolean;
 }
 
 /** Every rung of a style, in ladder order, in the engine's shape. Archived
@@ -79,12 +81,15 @@ const COUNT_EVERYTHING: CountRules = { eligibleClassTypes: [], classCountMode: '
  *   class earlier in the week than ones already counted can only reshuffle the
  *   per-type numbers, never exceed the cap.
  * - The class being checked in always takes part, even if it started just
- *   before the last rank change, unless `onlySinceLastRankChange` is set.
- * - `onlySinceLastRankChange` (imported past attendance, Decision 422 item
- *   6): a class that started before the student's last rank change in that
- *   style (StudentRank.countingSince) belongs to the previous rung, so it
- *   counts toward nothing in that style. An import can reach back years, so
- *   the leeway a check-in at the door gets does not apply.
+ *   before the last rank change, unless `onlySinceRankDate` is set.
+ * - `onlySinceRankDate` (imported past attendance; Decisions 422 item 6 and
+ *   423): the belt's own awarded date (StudentRank.dateOfCurrentRank, as
+ *   typed, back-dated or imported) decides, not the moment the rank row
+ *   last changed (countingSince). A class on or after that day, in the
+ *   class's time zone, counts toward the next belt; an earlier one counts
+ *   toward nothing in that style. The weekly cap then looks at the
+ *   student's classes from that day on. Only imports pass it: every other
+ *   way in keeps counting from countingSince, as before.
  */
 export async function creditAttendance(
   tx: TenantTx,
@@ -109,14 +114,18 @@ export async function creditAttendance(
     const studentRank = await tx.studentRank.findUniqueOrThrow({
       where: { studentId_disciplineId: { studentId, disciplineId: style.disciplineId } },
     });
-    if (opts.onlySinceLastRankChange && cls.startDate < studentRank.countingSince) continue;
+    // Imports: from the start of the day the current belt was awarded.
+    const since = opts.onlySinceRankDate
+      ? DateTime.fromJSDate(studentRank.dateOfCurrentRank, { zone: classTimeZone(cls) }).startOf('day').toJSDate()
+      : studentRank.countingSince;
+    if (opts.onlySinceRankDate && cls.startDate < since) continue;
 
     const req = requirementFor(await loadLadder(tx, style.disciplineId), studentRank.currentStripeId ?? '');
     if (req.kind === 'NEXT' && req.timeOnly) continue;
     const rules = req.kind === 'NEXT' ? req.countRules : COUNT_EVERYTHING;
 
     const thisClass: AttendedClass = { day, at: cls.startDate.toISOString(), classType: style.classType };
-    const others = await sameWeekAttendance(tx, studentId, booking.id, style.disciplineId, cls.startDate, studentRank.countingSince, week);
+    const others = await sameWeekAttendance(tx, studentId, booking.id, style.disciplineId, cls.startDate, since, week);
     const before = countClasses(others, rules);
     const after = countClasses([...others, thisClass], rules);
 
