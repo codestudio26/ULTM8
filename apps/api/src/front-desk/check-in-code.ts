@@ -71,8 +71,11 @@ export async function enforceLargeSchoolCodes(prismaJobs: PrismaJobsService, sch
       tx.$queryRaw<Array<{ id: string; code: string }>>`SELECT "id", "code" FROM "StudentCheckInCode" WHERE "schoolId" = ${schoolId}`,
       tx.$queryRaw<Array<{ id: string; code: string }>>`SELECT "id", "code" FROM "StaffKioskCode" WHERE "schoolId" = ${schoolId}`,
     ]);
-    const freshStudent = freshCodes(students);
-    const freshStaff = freshCodes(staff);
+    // One set of taken codes for both tables, so the switch never gives a
+    // member and a staff member the same new code.
+    const taken = new Set([...students, ...staff].map((r) => r.code));
+    const freshStudent = freshCodes(students, taken);
+    const freshStaff = freshCodes(staff, taken);
     if (freshStudent.size > 0) {
       await tx.$executeRaw`
         UPDATE "StudentCheckInCode" AS c SET "code" = v."code", "updatedAt" = now()
@@ -91,10 +94,10 @@ export async function enforceLargeSchoolCodes(prismaJobs: PrismaJobsService, sch
   return { replaced };
 }
 
-/** New 6-digit codes for the rows whose code is shorter, unique among
- * themselves and unlike any code in use, so no update in between collides. */
-function freshCodes(rows: Array<{ id: string; code: string }>): Map<string, string> {
-  const taken = new Set(rows.map((r) => r.code));
+/** New 6-digit codes for the rows whose code is shorter, unlike every code
+ * in `taken` (the School's member and staff codes, and the ones picked so
+ * far, which are added to it), so no update in between collides. */
+function freshCodes(rows: Array<{ id: string; code: string }>, taken: Set<string>): Map<string, string> {
   const fresh = new Map<string, string>();
   for (const row of rows) {
     if (row.code.length >= 6) continue;
