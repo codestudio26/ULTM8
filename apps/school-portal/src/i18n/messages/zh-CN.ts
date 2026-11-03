@@ -4432,7 +4432,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "收费项：谁可以创建和取消",
-      intro: "分馆员工和教练只能为自己分馆的学员操作。“创建”对分馆员工默认开启、对教练默认关闭；“取消”对所有人默认关闭。负责人始终可以执行两项操作。",
+      intro: "分馆员工和教练只能为自己分馆的学员操作。“创建”对分馆员工默认开启、对教练默认关闭；“取消”对所有人默认关闭。负责人始终可以执行两项操作。有“取消”权限的人还可以免除滞纳金，以及免除或取消晋级费。",
       columnName: "姓名",
       columnCreate: "可以创建收费项",
       columnCancel: "可以取消收费项",

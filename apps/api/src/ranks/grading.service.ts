@@ -72,7 +72,8 @@ function studentRankFromJson(json: Record<string, unknown>) {
 }
 
 /** Applying a promotion that waited for its fee (Decisions 300, 307): the fee
- * was paid, or the owner waived it. The request moves from one of `from` to
+ * was paid, or it was waived (the owner, or staff with "Can cancel charges",
+ * Decision 420 item 2). The request moves from one of `from` to
  * `to` in the same transaction as the grade, so it applies exactly once. */
 type ApplyingFee = {
   requestId: string;
@@ -89,7 +90,7 @@ const ADULT_LINK_CHANGED =
   "The Kids style is no longer linked to the Adult program this move was made for, so it can't be applied as it was. Cancel the fee and grade the student again.";
 
 const WAITING_MESSAGE = (rung: string) =>
-  `This student's promotion to ${rung} is waiting for its fee. It applies once the fee is paid, or the owner can waive or cancel the fee.`;
+  `This student's promotion to ${rung} is waiting for its fee. It applies once the fee is paid, or the owner (or staff with "Can cancel charges") can waive or cancel the fee.`;
 
 /** Only active students are graded up (Decision 283): the coach's "Grading Board" setting when there is one, otherwise a live membership at the School (the board's own rule). */
 // Decision 283
@@ -628,7 +629,8 @@ export class GradingService {
     // batch and loads the ladder once; each student is still authorized.
     batch?: { discipline: Discipline; ladder: Rung[]; authorize: (studentId: string) => Promise<void> },
     // Applying a promotion that waited for its fee (applyWaitingPromotion):
-    // the caller already authorized it (the owner waiving, or the payment).
+    // the caller already authorized it (a waive by the owner or by staff with
+    // "Can cancel charges", Decision 420; or the payment).
     applying?: ApplyingFee,
   ) {
     const discipline =
@@ -1112,12 +1114,13 @@ export class GradingService {
 
   /**
    * Apply a promotion that waited for its fee (Decisions 300, 307): when the
-   * fee is paid, or the owner waives it. Goes through changeRung like any
+   * fee is paid, or it is waived (the owner, or staff with "Can cancel
+   * charges", Decision 420 item 2). Goes through changeRung like any
    * grade, with the coach's grading date and the coach as the grader, and
    * keeps the expected-rung guard, so it can't apply twice or after the
    * student has moved. The request settles in the same transaction.
    * `contextUserId`: whose context reads the style and School (the owner
-   * waiving, or the student when paid). The caller authorizes.
+   * or staff waiving, or the student when paid). The caller authorizes.
    */
   async applyWaitingPromotion(contextUserId: string, request: PromotionFeeRequest, to: 'PAID' | 'WAIVED', closedById?: string) {
     const pg = request.pendingGrade as unknown as PendingGrade | null;

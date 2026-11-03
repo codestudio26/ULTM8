@@ -4478,7 +4478,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "Addebiti: chi può crearli e annullarli",
-      intro: "Personale di sede e istruttori, solo per gli allievi delle proprie sedi. Creare è attivo di default per il personale di sede e disattivo per gli istruttori; annullare è disattivo per tutti. Il titolare può sempre fare entrambe le cose.",
+      intro: "Personale di sede e istruttori, solo per gli allievi delle proprie sedi. Creare è attivo di default per il personale di sede e disattivo per gli istruttori; annullare è disattivo per tutti. Il titolare può sempre fare entrambe le cose. Annullare permette anche di condonare le penali di ritardo, e di condonare o annullare le quote di promozione.",
       columnName: "Nome",
       columnCreate: "Può creare addebiti",
       columnCancel: "Può annullare addebiti",

@@ -143,6 +143,7 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
     await superuser.studentRankSkillStatus.deleteMany({ where });
     await superuser.studentRank.deleteMany({ where });
     await superuser.gradingPermission.deleteMany({ where });
+    await superuser.staffPermission.deleteMany({ where });
     await superuser.skill.deleteMany({ where });
     await superuser.rankStripeTier.deleteMany({ where });
     await superuser.rank.deleteMany({ where });
@@ -347,6 +348,14 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
       });
       await superuser.rankStripeTier.update({ where: { id: rung.Blue.id }, data: { promotionFeeMinor: 3000 } });
       await superuser.rankStripeTier.update({ where: { id: rung.Green.id }, data: { promotionFeeMinor: 1000 } });
+      // Branch Staff with "Can cancel charges" (desk) and without it (clerk):
+      // the School has no branches, so both cover every student.
+      for (const [label, canCancelCharges] of [['desk', true], ['clerk', false]] as const) {
+        await mkUser(label, yearsAgo(30));
+        await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: id[label], schoolId: school.id } });
+        await superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId: id[label], canCreateCharges: true, canCancelCharges } });
+        token[label] = jwt.sign({ sub: id[label], email: `${label}@example.test`, grants: [{ role: 'BRANCH_STAFF', franchiseId: null, schoolId: school.id, branchId: null }] });
+      }
     });
 
     it('fee off: the move is free and applies at once', async () => {
@@ -472,6 +481,21 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
       expect(await rankOf('Kai')).toMatchObject({ disciplineId: adult.id, currentStripeId: rung.Blue.id });
       const event = await superuser.promotionEvent.findUniqueOrThrow({ where: { id: waived.body.promotionEventId } });
       expect(event).toMatchObject({ performedById: id.coach, systemNote: 'Moved to Adult program.' });
+    });
+
+    it('staff with "Can cancel charges" waive a waiting move: it applies, as the coach made it; staff without it cannot (Decision 420 item 2)', async () => {
+      await student('Ned');
+      const requestId = (await move('coach', 'Ned', { targetRungId: rung.Blue.id })).body.feeRequest.id;
+      expect((await feeAction('clerk', requestId, 'waive')).status).toBe(403);
+      expect((await feeAction('clerk', requestId, 'cancel')).status).toBe(403);
+      expect(await rankOf('Ned')).toMatchObject({ disciplineId: kids.id, currentStripeId: rung.Grey.id });
+      const waived = await feeAction('desk', requestId, 'waive');
+      expect(waived.status).toBe(201);
+      expect(waived.body).toMatchObject({ status: 'WAIVED', promotionApplied: true, toDecide: false });
+      expect(await rankOf('Ned')).toMatchObject({ disciplineId: adult.id, currentStripeId: rung.Blue.id });
+      const event = await superuser.promotionEvent.findUniqueOrThrow({ where: { id: waived.body.promotionEventId } });
+      expect(event).toMatchObject({ performedById: id.coach, systemNote: 'Moved to Adult program.' });
+      expect((await superuser.promotionFeeRequest.findUniqueOrThrow({ where: { id: requestId } })).closedById).toBe(id.desk);
     });
 
     it('declined: nothing moves and Kids shows "Fee declined"; waived after, it is "to decide" and the coach moves her fee-free', async () => {
@@ -642,6 +666,15 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
         expect(await rankOf('Sol')).toMatchObject({ disciplineId: kids.id, currentStripeId: rung.Grey.id });
         const notice = await waitFor(() => superuser.notification.findFirst({ where: { userId: id.owner, type: 'GRADING_FEE_BLOCKED' } }), (v) => v !== null);
         expect(notice?.body).toMatch(/fee for Blue \(BJJ\) is paid, but the promotion can't apply/);
+        // Decision 421 item 2: staff who may cancel the fee are told too, once; staff without the switch are not.
+        const notices = await waitFor(
+          () => superuser.notification.findMany({ where: { id: { startsWith: `promotion-fee-blocked-${requestId}-` } } }),
+          (v) => v.length >= 2,
+        );
+        expect(notices.map((n) => n.userId).sort()).toEqual([id.owner, id.desk].sort());
+        expect(notices.find((n) => n.userId === id.desk)?.body).toBe(notice?.body);
+        // desk can act on it: cancelling gives what was paid back as credit.
+        expect((await feeAction('desk', requestId, 'cancel')).body).toMatchObject({ status: 'CANCELLED', toDecide: false });
       } finally {
         await superuser.discipline.update({ where: { id: kids.id }, data: { adultDisciplineId: adult.id } });
       }

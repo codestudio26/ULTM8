@@ -134,12 +134,12 @@ export class PromotionFeeRequestResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'The grading date the coach chose (YYYY-MM-DD), for a promotion that waits or is "to decide".' })
   gradingDate!: string | null;
 
-  @ApiProperty({ description: 'Open "to decide": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request.' })
+  @ApiProperty({ description: 'Open "to decide": the fee was waived or cancelled (by the owner, or staff with "Can cancel charges", Decision 420) and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request.' })
   toDecide!: boolean;
 
   @ApiProperty({
     description:
-      'Paid, but the promotion can no longer apply: the student\'s rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee is then cancelled the same way, so the money is credit toward the new grade). Still ACCEPTED until then.',
+      'Paid, but the promotion can no longer apply: the student\'s rank or the belt ladder changed since the grade (Decision 414 item 1). The owner, or staff with "Can cancel charges" (Decision 420), cancels the fee (what was paid becomes credit) or grades the student again (the fee is then cancelled the same way, so the money is credit toward the new grade). Still ACCEPTED until then.',
   })
   promotionBlocked!: boolean;
 

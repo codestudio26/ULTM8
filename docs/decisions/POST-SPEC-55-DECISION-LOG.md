@@ -7320,3 +7320,26 @@ User (Code), 31 Oct 2026, "go ahead" on the three recommendations (medical withd
 ### Recorded by
 
 User (Code), 31 Oct 2026: "Fee for grading is a owner decision and by default is off"; "owner has those who have been granted access" (chose "Can cancel charges"); "we need on grading setting a toggle with on and off" (confirmed: a Kids → Adult switch, default off).
+
+## Decision 421 — Promotion fees: who is told when a paid promotion can't apply, and the other choices of #447 and #445
+
+**Date:** 3 Nov 2026 · **Status:** Product-owner decision · **Amends:** Decision 414 item 1 · **Builds on:** Decision 420 item 2 (staff with "Can cancel charges" waive or cancel promotion fees), Decisions 307, 313 (the coach decides; the "to decide" reminder), 338 item 1 ("Can cancel charges")
+
+### Decision
+
+1. **Waive fee and Cancel fee on the student's Payments card.** An accepted promotion fee's invoice on the Payments card has its own Waive fee and Cancel fee buttons. The owner, and staff with "Can cancel charges" who cover the student, see them there, as well as on the Grading Board and the student's grading card. They work exactly as waiving or cancelling from grading does.
+2. **"Promotion can't apply" goes to everyone who may cancel the fee.** When a promotion fee is paid in full but its promotion can no longer apply (Decision 414 item 1), the notice goes to the School owner(s) **and** to every staff member and coach with "Can cancel charges" who covers that student. That is the same set of people who may waive or cancel the fee under Decision 420 item 2, with the same branch and School scope. Each person is told once, through the same Notifications channel and with the same text as before. Nobody at another School is told, and nobody at a branch the student doesn't belong to (in a School with branches). This replaces Decision 414 item 1's "the owner(s) told once".
+3. **A coach still decides after a staff cancel.** When staff cancel a fee whose promotion never applied (or waive a declined one), the promotion is left "to decide" for a coach, as after an owner cancel (Decision 307). The staff member doesn't decide it.
+4. **Coaches count too.** "Can cancel charges" lets coaches waive or cancel promotion fees, as it does for Branch Staff, since the switch already applies to both (Decision 338 item 1).
+5. **The Grading Settings hint stays.** The owner's hint "You can waive or cancel a fee at any time on the Grading Board" is unchanged. It is shown to the owner, and it is still true.
+6. **"To decide" reminder for a Kids → Adult move.** When a Kids → Adult move's fee is waived or cancelled and the move is left "to decide", coaches get the same one reminder after 3 days as for any other promotion (Decision 313). A student on the top Kids rank never counts as "fully ready", so the fully-ready check doesn't apply to these moves. Built in #445, not in #447.
+7. **Guardians see a waiting Kids → Adult fee.** In the student app, a Guardian sees a waiting Kids → Adult fee on their child's fee cards and in My grading, as for any promotion fee. Already built in #445.
+
+### How it is built
+
+- Items 1 to 5: #447. The notice (item 2) goes to the owners plus each active Branch Staff or coach at the School who passes the same `chargeAbilities` check waive and cancel use ("Can cancel charges" on, and the student's home branch among theirs, or a School without branches). Each notice id is the request's and the person's, so no one is sent it twice.
+- Items 6 and 7: #445.
+
+### Recorded by
+
+User (Code), 3 Nov 2026, answering the choices on #447: "ok" (items 1, 3, 4 and 5); on item 2, "it should go to every one with the granted permission". On #445: chose "Yes, remind" (item 6); "It should shown on the guardian board too" (item 7).

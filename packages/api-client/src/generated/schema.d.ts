@@ -8258,6 +8258,8 @@ export interface components {
             branchStaff: boolean;
             /** @description What the caller may do. An Instructor's own role gives bookings and students. */
             access: components["schemas"]["StaffAccessDto"];
+            /** @description "Can cancel charges" (Decision 338 item 1; the owner always): cancel charges, waive late fees (Decision 413) and waive or cancel promotion fees (Decision 420 item 2), for the students the caller covers. */
+            cancelCharges: boolean;
         };
         StaffAccessResponseDto: {
             userId: string;
@@ -10949,7 +10951,7 @@ export interface components {
             /** @description Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff. */
             noHomeBranch: boolean;
             /**
-             * @description Promotion fee (Decisions 300, 307, 414): "blocked" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the owner cancels the fee or grades again, and grading is not held up; "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.
+             * @description Promotion fee (Decisions 300, 307, 414): "blocked" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the fee is cancelled (by the owner, or staff with "Can cancel charges") or the student graded again, and grading is not held up; "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the fee was waived or cancelled (by the owner, or staff with "Can cancel charges", Decision 420) and a coach decides whether to promote. Null otherwise.
              * @enum {string|null}
              */
             feeStatus?: "blocked" | "waiting" | "declined" | "toDecide" | null;
@@ -11225,9 +11227,9 @@ export interface components {
             promotionEventId?: string | null;
             /** @description The grading date the coach chose (YYYY-MM-DD), for a promotion that waits or is "to decide". */
             gradingDate?: string | null;
-            /** @description Open "to decide": the owner waived or cancelled the fee and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request. */
+            /** @description Open "to decide": the fee was waived or cancelled (by the owner, or staff with "Can cancel charges", Decision 420) and a coach decides whether to promote (Decision 307). Promoting to toRungId makes no new fee request. */
             toDecide: boolean;
-            /** @description Paid, but the promotion can no longer apply: the student's rank or the belt ladder changed since the grade (Decision 414 item 1). The owner cancels the fee (what was paid becomes credit) or grades the student again (the fee is then cancelled the same way, so the money is credit toward the new grade). Still ACCEPTED until then. */
+            /** @description Paid, but the promotion can no longer apply: the student's rank or the belt ladder changed since the grade (Decision 414 item 1). The owner, or staff with "Can cancel charges" (Decision 420), cancels the fee (what was paid becomes credit) or grades the student again (the fee is then cancelled the same way, so the money is credit toward the new grade). Still ACCEPTED until then. */
             promotionBlocked: boolean;
             /** @description When the paid fee's promotion was first found unable to apply. Kept after the owner decides. */
             promotionBlockedAt?: string | null;

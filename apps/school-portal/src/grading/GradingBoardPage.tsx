@@ -25,6 +25,8 @@ import { GradingTabs } from './GradingTabs';
 import { Avatar, DecideDialog, FeeTag, SelectionPanel, StudentPanel, fullName } from './BoardPanels';
 import { feeRankName } from './feeRank';
 import { programPair, useAdultProgram } from './adultProgram';
+import { mayCloseFee } from './feeAccess';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
 /** Column labels are translation keys, resolved at render time. */
@@ -68,6 +70,8 @@ export function GradingBoardPage() {
   const { claims } = useAuth();
   const disciplines = useDisciplines(schoolId);
   const my = useMyGrading(schoolId);
+  // Decision 420 item 2: staff with "Can cancel charges" waive or cancel fees too.
+  const staffAccess = useMyStaffAccess(schoolId && !my.isOwner ? schoolId : null);
   const feeSettings = usePromotionFeeSettings(schoolId);
   const instructors = useInstructors(schoolId);
   const t = useT();
@@ -457,7 +461,7 @@ export function GradingBoardPage() {
                     schoolId={schoolId}
                     disciplineId={disciplineId}
                     ladder={ladder}
-                    isOwner={my.isOwner}
+                    mayCloseFee={mayCloseFee(my.isOwner, staffAccess.data)}
                     canPromote={canPromote}
                     fee={fee}
                     performerName={performerName}

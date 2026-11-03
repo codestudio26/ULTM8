@@ -4478,7 +4478,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "Cobranças: quem pode criar e cancelar",
-      intro: "Equipe da filial e professores, só para os alunos das próprias filiais. Criar vem ligado para a Equipe da filial e desligado para professores; cancelar vem desligado para todos. O proprietário sempre pode fazer os dois.",
+      intro: "Equipe da filial e professores, só para os alunos das próprias filiais. Criar vem ligado para a Equipe da filial e desligado para professores; cancelar vem desligado para todos. O proprietário sempre pode fazer os dois. Cancelar também permite dispensar multas por atraso, e dispensar ou cancelar taxas de graduação.",
       columnName: "Nome",
       columnCreate: "Pode criar cobranças",
       columnCancel: "Pode cancelar cobranças",

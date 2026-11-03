@@ -4478,7 +4478,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "Frais : qui peut en créer et en annuler",
-      intro: "Personnel de site et instructeurs, uniquement pour les élèves de leurs propres sites. Créer est activé par défaut pour le personnel de site et désactivé pour les instructeurs ; annuler est désactivé pour tous. Le propriétaire peut toujours faire les deux.",
+      intro: "Personnel de site et instructeurs, uniquement pour les élèves de leurs propres sites. Créer est activé par défaut pour le personnel de site et désactivé pour les instructeurs ; annuler est désactivé pour tous. Le propriétaire peut toujours faire les deux. Annuler leur permet aussi de dispenser des frais de retard, et de dispenser ou annuler des frais de promotion.",
       columnName: "Nom",
       columnCreate: "Peut créer des frais",
       columnCancel: "Peut annuler des frais",

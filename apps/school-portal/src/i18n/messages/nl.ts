@@ -4478,7 +4478,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "Kosten: wie mag ze aanmaken en annuleren",
-      intro: "Vestigingsmedewerkers en trainers, alleen voor de leerlingen van hun eigen vestigingen. Aanmaken staat standaard aan voor vestigingsmedewerkers en uit voor trainers; annuleren staat voor iedereen uit. De eigenaar mag altijd allebei.",
+      intro: "Vestigingsmedewerkers en trainers, alleen voor de leerlingen van hun eigen vestigingen. Aanmaken staat standaard aan voor vestigingsmedewerkers en uit voor trainers; annuleren staat voor iedereen uit. De eigenaar mag altijd allebei. Wie mag annuleren, kan ook boetes voor te laat betalen kwijtschelden, en promotievergoedingen kwijtschelden of annuleren.",
       columnName: "Naam",
       columnCreate: "Mag kosten aanmaken",
       columnCancel: "Mag kosten annuleren",

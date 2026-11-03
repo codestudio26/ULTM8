@@ -63,7 +63,7 @@ export function StudentPanel({
   schoolId,
   disciplineId,
   ladder,
-  isOwner,
+  mayCloseFee,
   canPromote,
   fee,
   performerName,
@@ -75,7 +75,8 @@ export function StudentPanel({
   schoolId: string;
   disciplineId: string;
   ladder: Rung[];
-  isOwner: boolean;
+  /** Waive / Cancel on the fee: the owner, or staff with "Can cancel charges" (Decision 420 item 2). */
+  mayCloseFee: boolean;
   canPromote: boolean;
   /** The School's promotion fee settings, when the fee is on. */
   fee: { currency: string | null } | null;
@@ -158,7 +159,7 @@ export function StudentPanel({
                   : t('grading.board.fee.toDecideText', { name: item.firstName })}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-              {item.feeStatus !== 'toDecide' && isOwner ? (
+              {item.feeStatus !== 'toDecide' && mayCloseFee ? (
                 <>
                   {item.feeStatus !== 'blocked' ? (
                     <Button variant="secondary" onClick={() => closeFee('waive')} loading={waive.isPending}>

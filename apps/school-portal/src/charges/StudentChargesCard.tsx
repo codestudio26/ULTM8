@@ -28,6 +28,8 @@ import {
   type StudentCharges,
 } from './chargeQueries';
 import { useWaiveLateFee } from './lateFeeQueries';
+import { useFeeRequestAction } from '../grading/gradingQueries';
+import { mayCloseFeeCharge } from '../grading/feeAccess';
 import { CancelPaymentModal } from '../transactions/CancelPaymentModal';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
@@ -79,8 +81,8 @@ function LateFeeLines({ charge: c }: { charge: Charge }) {
 /**
  * Backlog §3.6 step 6 (Decision 303 item 5): a promotion fee's charge, with
  * the style and grade it is for and a link to that style's grading card on
- * this page. Waived or cancelled from grading, which cancels the charge; the
- * Payments card can't cancel it.
+ * this page. The charge itself is never cancelled here: the fee is waived or
+ * cancelled (PromotionFeeCloseButtons, or from grading), which cancels it.
  */
 function PromotionFeeLines({ charge: c }: { charge: Charge }) {
   const t = useT();
@@ -102,6 +104,31 @@ function PromotionFeeLines({ charge: c }: { charge: Charge }) {
           })}
         </div>
       ) : null}
+    </>
+  );
+}
+
+/**
+ * Decision 420 item 2: the owner, or staff with "Can cancel charges", waive or
+ * cancel an accepted promotion fee from its charge, as from grading. Waiving
+ * a waiting promotion applies it; cancelling leaves it "to decide" for a
+ * coach (Decision 307). Either cancels this charge; anything paid is credit.
+ */
+function PromotionFeeCloseButtons({ requestId }: { requestId: string }) {
+  const t = useT();
+  const waive = useFeeRequestAction('waive');
+  const cancel = useFeeRequestAction('cancel');
+  const error = waive.error ?? cancel.error;
+  const busy = waive.isPending || cancel.isPending;
+  return (
+    <>
+      <Button variant="secondary" onClick={() => waive.mutate(requestId)} loading={waive.isPending} disabled={busy}>
+        {t('grading.board.fee.waive')}
+      </Button>
+      <Button variant="danger" onClick={() => cancel.mutate(requestId)} loading={cancel.isPending} disabled={busy}>
+        {t('grading.board.fee.cancel')}
+      </Button>
+      {error ? <span className="ultm8-field__hint">{error instanceof ApiError ? error.message : t('common.tryAgain')}</span> : null}
     </>
   );
 }
@@ -492,7 +519,9 @@ function ChargesBody({
                         {t('charges.card.resendInvoice')}
                       </Button>
                     ) : null}
-                    {!open(c) ? null : c.promotionFee ? (
+                    {!open(c) ? null : c.promotionFee && mayCloseFeeCharge(data.can.cancel, c.promotionFee) ? (
+                      <PromotionFeeCloseButtons requestId={c.promotionFee.requestId} />
+                    ) : c.promotionFee ? (
                       <span className="ultm8-field__hint">{t('charges.promotionFee.cancelHint')}</span>
                     ) : data.can.cancel && c.lateFee ? (
                       <Button variant="danger" onClick={() => onWaive(c)}>

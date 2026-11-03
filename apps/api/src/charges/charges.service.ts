@@ -276,14 +276,13 @@ export class ChargesService {
     await this.assertMay(callerId, schoolId, found.studentId, 'cancel');
     // Backlog §3.6 step 6: a promotion fee's charge goes with its fee. Waiving
     // and cancelling a fee are different outcomes for the promotion (Decisions
-    // 300, 307), are the owner's alone, and are done from grading, which
-    // cancels the charge. Cancelling the charge here would pick one of them for
-    // the owner, or let staff with "Can cancel charges" do what only the owner
-    // may, so it is refused.
+    // 300, 307), so they are done on the fee itself (the owner, or staff with
+    // "Can cancel charges", Decision 420 item 2), which cancels the charge.
+    // Cancelling the charge here would pick one of them, so it is refused.
     if (found.promotionFeeRequestId) {
       throw new ConflictException({
         code: 'CHARGE_IS_PROMOTION_FEE',
-        message: "This is a promotion fee. The School owner waives or cancels it from the student's grading, which cancels this charge.",
+        message: "This is a promotion fee. Waive or cancel the fee from the student's grading, which cancels this charge.",
       });
     }
     const isLateFee = found.lateFeeOverdueAmount !== null;

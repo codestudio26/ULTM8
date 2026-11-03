@@ -67,16 +67,18 @@ export class PromotionFeeController {
     return this.promotionFeeService.decline(user.sub, id);
   }
 
-  /** The owner waives the fee: a waiting promotion applies now; a declined
-   * one becomes "to decide". Its open charge is cancelled. */
+  /** The owner, or staff with "Can cancel charges" who cover the student
+   * (Decision 420 item 2), waives the fee: a waiting promotion applies now; a
+   * declined one becomes "to decide". Its open charge is cancelled. */
   @ApiOkResponse({ type: PromotionFeeRequestResponseDto })
   @Post('promotion-fee-requests/:id/waive')
   waive(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
     return this.promotionFeeService.waive(user.sub, id);
   }
 
-  /** The owner cancels the fee: a promotion that never applied becomes
-   * "to decide". Its open charge is cancelled. */
+  /** The owner, or staff with "Can cancel charges" who cover the student
+   * (Decision 420 item 2), cancels the fee: a promotion that never applied
+   * becomes "to decide". Its open charge is cancelled. */
   @ApiOkResponse({ type: PromotionFeeRequestResponseDto })
   @Post('promotion-fee-requests/:id/cancel')
   cancel(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
