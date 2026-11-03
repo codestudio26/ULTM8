@@ -3,7 +3,10 @@
  * this week's birthdays (GET /schools/:schoolId/dashboard, PATCH
  * …/dashboard/setup-checklist, GET /schools/:schoolId/birthdays). Real HTTP
  * against a real Postgres, including the school_student_birthdays helper's
- * branch scoping for Branch Staff.
+ * branch scoping for Branch Staff. A member whose only membership is frozen
+ * today isn't Active, and is counted under Frozen on Students → Growth
+ * (Decision 422 item 5); one frozen membership beside one that isn't still
+ * counts as Active; a freeze that ended yesterday counts as Active again.
  *
  * Requires DATABASE_URL, DATABASE_URL_APP, JWT_ACCESS_SECRET.
  */
@@ -39,6 +42,7 @@ describeIfDb('Dashboard: Active students, setup checklist, birthdays (Decision 3
   const now = new Date();
   const todayIso = now.toISOString().slice(0, 10);
   const inTenDays = new Date(now.getTime() + 10 * 86_400_000);
+  const utcDay = (offset: number) => new Date(Date.parse(`${todayIso}T00:00:00.000Z`) + offset * 86_400_000);
   const dob = (d: Date) => new Date(Date.UTC(2012, d.getUTCMonth(), d.getUTCDate()));
 
   const sign = (user: { id: string; email: string }, grants: Array<Record<string, unknown>>) => jwt.sign({ sub: user.id, email: user.email, grants });
@@ -78,6 +82,9 @@ describeIfDb('Dashboard: Active students, setup checklist, birthdays (Decision 3
     await mkUser('revoked', dob(now)); // left the School
     await mkUser('trialOnly', null);
     await mkUser('guestOnly', null);
+    await mkUser('frozenOnly', null);
+    await mkUser('frozenAndPack', null);
+    await mkUser('thawed', null);
 
     branchNorth = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'North' } });
     branchSouth = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'South' } });
@@ -92,6 +99,9 @@ describeIfDb('Dashboard: Active students, setup checklist, birthdays (Decision 3
         { id: randomUUID(), role: 'STUDENT', userId: users.revoked.id, schoolId: school.id, revokedAt: new Date() },
         { id: randomUUID(), role: 'STUDENT', userId: users.trialOnly.id, schoolId: school.id },
         { id: randomUUID(), role: 'STUDENT', userId: users.guestOnly.id, schoolId: school.id },
+        { id: randomUUID(), role: 'STUDENT', userId: users.frozenOnly.id, schoolId: school.id },
+        { id: randomUUID(), role: 'STUDENT', userId: users.frozenAndPack.id, schoolId: school.id },
+        { id: randomUUID(), role: 'STUDENT', userId: users.thawed.id, schoolId: school.id },
       ],
     });
     await superuser.studentHomeBranch.createMany({
@@ -126,9 +136,24 @@ describeIfDb('Dashboard: Active students, setup checklist, birthdays (Decision 3
     await mk(users.trialOnly.id, trial.id, { expiryDate: new Date(now.getTime() + 5 * 86_400_000) });
     await mk(users.guestOnly.id, friend.id, { classesRemaining: 1 });
     await mk(users.revoked.id, sub.id, { frequency: 'RECURRING' });
+
+    // Decision 422 item 5. frozenOnly: a Subscription frozen today (not
+    // active). frozenAndPack: a Subscription frozen today and a Class Pack
+    // with credits that isn't (active). thawed: a Subscription whose freeze
+    // ended yesterday, back today since endsAt is exclusive (active).
+    const freeze = (studentId: string, membershipId: string, startsAt: Date, endsAt: Date) =>
+      superuser.membershipFreeze.create({ data: { id: randomUUID(), membershipId, schoolId: school.id, studentId, status: 'APPROVED', startsAt, endsAt } });
+    const frozenSub = await mk(users.frozenOnly.id, sub.id, { frequency: 'RECURRING' });
+    await freeze(users.frozenOnly.id, frozenSub.id, utcDay(-2), utcDay(5));
+    const twoSub = await mk(users.frozenAndPack.id, sub.id, { frequency: 'RECURRING' });
+    await freeze(users.frozenAndPack.id, twoSub.id, utcDay(-1), utcDay(6));
+    await mk(users.frozenAndPack.id, pack.id, { classesRemaining: 4 });
+    const thawedSub = await mk(users.thawed.id, sub.id, { frequency: 'RECURRING' });
+    await freeze(users.thawed.id, thawedSub.id, utcDay(-7), utcDay(0));
   });
 
   afterAll(async () => {
+    await superuser.membershipFreeze.deleteMany({ where: { schoolId: school.id } });
     await superuser.membership.deleteMany({ where: { schoolId: school.id } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.waiver.deleteMany({ where: { schoolId: school.id } });
@@ -144,8 +169,18 @@ describeIfDb('Dashboard: Active students, setup checklist, birthdays (Decision 3
   it('counts Active students: a live Subscription, Class Pack with credits, Weekly Pass or Trial, enrolled students only, no Friend Pass', async () => {
     const res = await get(`/v1/schools/${school.id}/dashboard`, tokens.owner);
     expect(res.status).toBe(200);
-    // northKid (Subscription) + trialOnly (Trial).
-    expect(res.body.activeStudents).toBe(2);
+    // northKid (Subscription), trialOnly (Trial), frozenAndPack (the Class
+    // Pack isn't frozen) and thawed (freeze ended yesterday). Not frozenOnly.
+    expect(res.body.activeStudents).toBe(4);
+  });
+
+  it('leaves a member frozen today out of Active and counts them under Frozen, as Students → Growth does (Decision 422 item 5)', async () => {
+    const dashboard = await get(`/v1/schools/${school.id}/dashboard`, tokens.owner);
+    const growth = await get(`/v1/schools/${school.id}/growth`, tokens.owner);
+    expect(growth.status).toBe(200);
+    expect(growth.body.activeStudents).toBe(dashboard.body.activeStudents);
+    // frozenOnly and frozenAndPack hold a membership frozen today; thawed doesn't.
+    expect(growth.body.frozen).toBe(2);
   });
 
   it('the setup checklist ticks what the School has, and the owner can hide and show it', async () => {

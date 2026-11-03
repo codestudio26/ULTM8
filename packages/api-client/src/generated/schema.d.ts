@@ -12212,7 +12212,7 @@ export interface components {
             timeZone: string;
             /** @description The home Branches counted; null means the whole School. */
             branchIds: string[] | null;
-            /** @description Active students now (Decision 317 item 5, the Dashboard's count): enrolled, with a Subscription, a Class Pack with credits left, a Weekly Pass or a Trial in effect. */
+            /** @description Active students now (Decision 317 item 5, the Dashboard's count): enrolled, with a Subscription, a Class Pack with credits left, a Weekly Pass or a Trial in effect and not frozen today (Decision 422 item 5). */
             activeStudents: number;
             /** @description Enrolled students who are Visitors now (Decision 391: a visit pass and no other membership since). */
             visitors: number;

@@ -33,7 +33,8 @@ export class SetupChecklistDto {
 export class DashboardOverviewDto {
   /** Students with a current membership (Decision 317 item 5): a Subscription,
    * a Class Pack with credits left, a Weekly Pass or a Trial that's in effect.
-   * Friend Passes (guests) don't count. Whole School. */
+   * Friend Passes (guests) don't count, nor a membership frozen today
+   * (Decision 422 item 5). Whole School. */
   @ApiProperty()
   activeStudents!: number;
 
