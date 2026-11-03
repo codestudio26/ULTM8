@@ -4586,7 +4586,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "Opłaty: kto może je tworzyć i anulować",
-      intro: "Personel oddziału i trenerzy, tylko dla uczniów swoich oddziałów. Tworzenie jest domyślnie włączone dla personelu oddziału i wyłączone dla trenerów; anulowanie jest wyłączone dla wszystkich. Właściciel zawsze może jedno i drugie.",
+      intro: "Personel oddziału i trenerzy, tylko dla uczniów swoich oddziałów. Tworzenie jest domyślnie włączone dla personelu oddziału i wyłączone dla trenerów; anulowanie jest wyłączone dla wszystkich. Właściciel zawsze może jedno i drugie. Anulowanie pozwala też umarzać opłaty za zwłokę oraz umarzać lub anulować opłaty za promocję.",
       columnName: "Imię i nazwisko",
       columnCreate: "Może tworzyć opłaty",
       columnCancel: "Może anulować opłaty",

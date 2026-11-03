@@ -185,17 +185,21 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
     await mkUser('owner');
     await mkUser('ownerB');
     await mkUser('desk'); // Branch Staff with "Can cancel charges"
+    await mkUser('clerk'); // Branch Staff without it
     await su.roleGrant.createMany({
       data: [
         { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.owner.id, schoolId: school.id, isMainOwner: true },
         { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.ownerB.id, schoolId: schoolB.id, isMainOwner: true },
         { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.desk.id, schoolId: school.id },
+        { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.clerk.id, schoolId: school.id },
       ],
     });
     await su.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId: user.desk.id, canCreateCharges: true, canCancelCharges: true } });
+    await su.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId: user.clerk.id, canCreateCharges: true, canCancelCharges: false } });
     sign('owner', 'SCHOOL_OWNER_MANAGER', school.id);
     sign('ownerB', 'SCHOOL_OWNER_MANAGER', schoolB.id);
     sign('desk', 'BRANCH_STAFF', school.id);
+    sign('clerk', 'BRANCH_STAFF', school.id);
   });
 
   afterAll(async () => {
@@ -593,8 +597,9 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
     it('the owner cancels the fee: its charge is cancelled, what was paid becomes credit, and nothing is left "to decide"', async () => {
       const { id, chargeId } = await paidAfterRankChange('kai');
       await waitFor(() => blockedNotices(id), (v) => v.length > 0);
-      // Owner only, and another School sees nothing.
-      expect((await feeAction('desk', id, 'cancel')).status).toBe(403);
+      // The owner, or staff with "Can cancel charges" (Decision 420 item 2);
+      // staff without it are refused, and another School sees nothing.
+      expect((await feeAction('clerk', id, 'cancel')).status).toBe(403);
       expect((await feeAction('ownerB', id, 'cancel')).status).toBe(404);
       const otherSchool = await http().get(`/v1/schools/${schoolB.id}/promotion-fee-requests`).set(as('ownerB'));
       expect(otherSchool.body.items.find((r: { id: string }) => r.id === id)).toBeUndefined();

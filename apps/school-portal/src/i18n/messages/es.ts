@@ -4474,7 +4474,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "Cargos: quién puede crear y cancelar",
-      intro: "Personal de sede e instructores, solo para los alumnos de sus propias sedes. Crear está activado por defecto para el Personal de sede y desactivado para los instructores; cancelar está desactivado para todos. El propietario siempre puede hacer ambas cosas.",
+      intro: "Personal de sede e instructores, solo para los alumnos de sus propias sedes. Crear está activado por defecto para el Personal de sede y desactivado para los instructores; cancelar está desactivado para todos. El propietario siempre puede hacer ambas cosas. Cancelar también les permite condonar recargos por demora, y condonar o cancelar cuotas de promoción.",
       columnName: "Nombre",
       columnCreate: "Puede crear cargos",
       columnCancel: "Puede cancelar cargos",

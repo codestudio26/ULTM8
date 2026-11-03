@@ -231,6 +231,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the owner again.
   The fee can't be waived in this state. The member sees the fee as Paid.
   **Needs a database migration** (`20270120000000_promotion_fee_blocked`).
+- **Staff with "Can cancel charges" can waive or cancel promotion fees**
+  (Decision 420 item 2) — until now only the School owner could. Branch Staff
+  and coaches the owner has given "Can cancel charges" (off by default; it
+  already lets them waive late fees) now see **Waive fee** and **Cancel fee**
+  on a promotion fee on the Grading Board panel and the student's grading card,
+  for the students of their own branches. On the student's Payments card, an
+  accepted promotion fee's invoice now has **Waive fee** and **Cancel fee** too,
+  for the owner and those staff, instead of only "Waive or cancel it in
+  grading". Waiving and cancelling work as before: a waiting promotion is
+  applied by a waive and left for a coach to decide by a cancel, and the
+  invoice is cancelled. Staff without the switch, staff at another branch and
+  another School's staff are still refused. Turning the fee on or off, belt
+  prices and the other Grading Settings stay the owner's. The "Charges: who
+  can create and cancel" card on the Staff page says so, in every language.
 - **"No tax on this item (0% or exempt)" on charges** (backlog 3.6; Decision 414
   item 5) — staff creating a one-off charge or setting up a recurring charge
   can tick it (off by default) for an item tax doesn't apply to, such as

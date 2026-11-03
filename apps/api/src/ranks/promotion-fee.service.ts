@@ -14,6 +14,7 @@ import { insertCharge, lockInvoiceNumbers } from '../charges/charge-insert';
 import { cancelChargeInTx, chargeCancelledNotice } from '../charges/charge-cancel';
 import { chargePaid, chargeRemaining, lockBalance } from '../charges/charge-ledger';
 import { computeCharge, formatInvoiceNumber } from '../charges/charge-maths';
+import { chargeAbilities } from '../charges/charge-abilities';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { GradingService } from './grading.service';
@@ -34,8 +35,8 @@ const owedOn = (c: FeeCharge) => (c.cancelledAt ? 0 : Math.max(0, chargeRemainin
 /** Money as the API's English notices write it ("120.00 BRL"), as ChargesService does. */
 const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency.toUpperCase()}`;
 
-/** Statuses the owner may still waive or cancel ("at any time", Decision 307). */
-const OPEN_FOR_OWNER: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED'];
+/** Statuses that may still be waived or cancelled ("at any time", Decision 307). */
+const OPEN_TO_CLOSE: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED'];
 
 /**
  * Promotion fee (Decisions 287, 297, 300, 303, 307, 313): the School-wide
@@ -47,8 +48,9 @@ const OPEN_FOR_OWNER: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED']
  * - Accept / decline: the payer — the student, or an active Guardian of the
  *   student (Decision 300 item 5), checked as for every other on-behalf
  *   action (GuardiansService.assertGuardianOfStudent).
- * - Waive / cancel: the School owner only (Decisions 300, 307 name only the
- *   owner).
+ * - Waive / cancel: the School owner, or staff the owner has given "Can
+ *   cancel charges" for the students they cover (Decision 420 item 2, the same
+ *   people who may cancel a charge or waive a late fee: chargeAbilities).
  * - Dismiss a "to decide": the owner, or a coach who may promote that student
  *   in that style (Decision 307 item 3). The decisions say a coach decides
  *   "or decides not to" (Decision 313 item 1) but name no action for it; this
@@ -62,7 +64,8 @@ const OPEN_FOR_OWNER: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED']
  * - A fee paid in full whose waiting promotion can no longer apply (the
  *   student's rank or the ladder changed since the grade; Decision 414 item
  *   1): recorded once (promotionBlockedAt), the owner(s) told once, and the
- *   request left Accepted with its money paid until the owner cancels the fee
+ *   request left Accepted with its money paid until the fee is cancelled (by
+ *   the owner, or staff with "Can cancel charges"; Decision 420 item 2)
  *   (cancel(): the money becomes credit) or the student is graded again
  *   (GradingService cancels it the same way, so the money is credit toward
  *   the new grade; Decision 415 item 1). Nothing happens to the money until then.
@@ -258,7 +261,8 @@ export class PromotionFeeService {
   }
 
   // ---------------------------------------------------------------------------
-  // The owner: waive or cancel at any time (Decisions 300 item 3, 307)
+  // Waive or cancel at any time (Decisions 300 item 3, 307): the owner, or
+  // staff with "Can cancel charges" (Decision 420 item 2)
   // ---------------------------------------------------------------------------
 
   /**
@@ -269,8 +273,8 @@ export class PromotionFeeService {
    * - A promotion that already applied: the fee is simply waived.
    */
   async waive(callerId: string, requestId: string) {
-    const request = await this.findForOwner(callerId, requestId);
-    // Paid, with a promotion that can't apply: the owner's two choices are
+    const request = await this.findForCloser(callerId, requestId);
+    // Paid, with a promotion that can't apply: the two choices are
     // cancelling the fee or grading again (Decision 414 item 1), not waiving.
     if (isPromotionBlocked(request)) {
       throw new ConflictException('This fee is paid, but its promotion can no longer apply. Cancel the fee (what was paid becomes credit), or grade the student again.');
@@ -295,10 +299,10 @@ export class PromotionFeeService {
    * A paid fee whose promotion can no longer apply (Decision 414 item 1) is
    * cancelled the same way: its charge is cancelled and what was paid becomes
    * credit. It isn't left "to decide": the promotion can't apply as made, and
-   * the owner who cancels it is the one who decides whether to grade again.
+   * whoever cancels it decides with the coaches whether to grade again.
    */
   async cancel(callerId: string, requestId: string) {
-    const request = await this.findForOwner(callerId, requestId);
+    const request = await this.findForCloser(callerId, requestId);
     await this.close(callerId, request, 'CANCELLED');
     // Step 6: nothing is owed for a cancelled fee; anything paid is credit.
     await this.cancelOpenCharge(request.id, callerId);
@@ -306,13 +310,17 @@ export class PromotionFeeService {
   }
 
   private async close(callerId: string, request: PromotionFeeRequest, to: 'WAIVED' | 'CANCELLED') {
-    if (!OPEN_FOR_OWNER.includes(request.status)) {
+    if (!OPEN_TO_CLOSE.includes(request.status)) {
       throw new ConflictException(`This fee is already ${request.status.toLowerCase()}.`);
     }
     const now = new Date();
     // A paid fee whose promotion can't apply goes to no coach (see cancel()).
     const neverApplied = request.promotionWaits && request.promotionEventId === null && request.promotionBlockedAt === null;
-    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
+    // Written under the student's own context, like every grading write
+    // (Decision 88) and dismiss(): staff with "Can cancel charges" only read
+    // requests (promotion_fee_request_staff_read). The caller was checked
+    // first (findForCloser), and is recorded as closedById.
+    const updated = await this.prismaApp.withTenantContext(request.studentId, (tx) =>
       tx.promotionFeeRequest.updateMany({
         where: { id: request.id, status: request.status, promotionEventId: request.promotionEventId, toDecideAt: null },
         data: {
@@ -689,13 +697,17 @@ export class PromotionFeeService {
     return request;
   }
 
-  private async findForOwner(callerId: string, requestId: string): Promise<PromotionFeeRequest> {
+  /** Waive or cancel (Decision 420 item 2): the School owner, or staff with
+   * "Can cancel charges" who cover the student (chargeAbilities, the same
+   * check as cancelling a charge or waiving a late fee). A request at another
+   * School, or of a student the caller doesn't cover, is already a 404 (find). */
+  private async findForCloser(callerId: string, requestId: string): Promise<PromotionFeeRequest> {
     const request = await this.find(callerId, requestId);
-    try {
-      await this.tenantAuth.assertSchoolOwner(callerId, request.schoolId);
-    } catch (err) {
-      if (!(err instanceof ForbiddenException)) throw err;
-      throw new ForbiddenException('Only the School owner can waive or cancel a promotion fee.');
+    if (!(await this.tenantAuth.isSchoolOwner(callerId, request.schoolId))) {
+      const can = await chargeAbilities(this.prismaApp, this.tenantAuth, callerId, request.schoolId, request.studentId);
+      if (!can.cancel) {
+        throw new ForbiddenException('Only the School owner, or staff they let cancel charges, can waive or cancel a promotion fee.');
+      }
     }
     await this.tenantAuth.assertSchoolNotArchived(callerId, request.schoolId);
     return request;

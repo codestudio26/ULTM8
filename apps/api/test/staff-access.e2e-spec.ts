@@ -139,9 +139,9 @@ describeIfDb('Staff access switches (Decision 387)', () => {
     const { school, ownerApi, staffApi, coachApi } = await seed('me');
     const url = `/v1/schools/${school.id}/staff/me/access`;
 
-    expect((await staffApi.get(url)).body).toEqual({ owner: false, branchStaff: true, access: DEFAULTS });
-    expect((await ownerApi.get(url)).body).toEqual({ owner: true, branchStaff: false, access: ALL_ON });
-    expect((await coachApi.get(url)).body).toEqual({ owner: false, branchStaff: false, access: { ...ALL_OFF, bookings: true, students: true } });
+    expect((await staffApi.get(url)).body).toEqual({ owner: false, branchStaff: true, access: DEFAULTS, cancelCharges: false });
+    expect((await ownerApi.get(url)).body).toEqual({ owner: true, branchStaff: false, access: ALL_ON, cancelCharges: true });
+    expect((await coachApi.get(url)).body).toEqual({ owner: false, branchStaff: false, access: { ...ALL_OFF, bookings: true, students: true }, cancelCharges: false });
 
     const stranger = await mkUser('Sam');
     const res = await as(stranger, []).get(url);

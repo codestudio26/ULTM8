@@ -2,7 +2,8 @@
  * Promotion fee (Decisions 287, 297, 300, 307, 313): the owner's switches and
  * prices, fee requests made at grading (single and bulk), the payer's
  * accept/decline, waiting promotions applied once when paid or waived, "to
- * decide" after a cancel or a waived decline, its one reminder, and the
+ * decide" after a cancel or a waived decline, its one reminder, staff with
+ * "Can cancel charges" waiving or cancelling (Decision 420 item 2), and the
  * tenant boundary. Real HTTP, real queues (Redis), the real ultm8_app and
  * ultm8_jobs roles.
  */
@@ -185,6 +186,7 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
     await superuser.rankStripeTier.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.rank.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.discipline.deleteMany({ where: { schoolId: { in: schools } } });
+    await superuser.staffPermission.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.branch.deleteMany({ where: { schoolId: { in: schools } } });
     // A notification job can still be writing as the suite ends: clear and retry.
@@ -667,6 +669,108 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
           }),
         ),
       ).rejects.toThrow();
+    });
+  });
+
+  describe('staff with "Can cancel charges" waive or cancel (Decision 420 item 2)', () => {
+    let uptown: { id: string };
+
+    beforeAll(async () => {
+      await setFee(true, false);
+      uptown = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Uptown' } });
+      await mkUser('desk'); // Branch Staff, Downtown, with "Can cancel charges"
+      await mkUser('clerk'); // Branch Staff, Downtown, without it
+      await mkUser('upto'); // Branch Staff, Uptown, with it: not the student's branch
+      await mkUser('staffB'); // Branch Staff of another School, with it there
+      await superuser.roleGrant.createMany({
+        data: [
+          { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.desk.id, schoolId: school.id, branchId: downtown.id },
+          { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.clerk.id, schoolId: school.id, branchId: downtown.id },
+          { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.upto.id, schoolId: school.id, branchId: uptown.id },
+          { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.staffB.id, schoolId: schoolB.id },
+        ],
+      });
+      await superuser.staffPermission.createMany({
+        data: [
+          { id: randomUUID(), schoolId: school.id, userId: user.desk.id, canCreateCharges: true, canCancelCharges: true },
+          { id: randomUUID(), schoolId: school.id, userId: user.clerk.id, canCreateCharges: true, canCancelCharges: false },
+          { id: randomUUID(), schoolId: school.id, userId: user.upto.id, canCreateCharges: true, canCancelCharges: true },
+          { id: randomUUID(), schoolId: schoolB.id, userId: user.staffB.id, canCreateCharges: true, canCancelCharges: true },
+        ],
+      });
+      sign('desk', [{ role: 'BRANCH_STAFF', schoolId: school.id, branchId: downtown.id }]);
+      sign('clerk', [{ role: 'BRANCH_STAFF', schoolId: school.id, branchId: downtown.id }]);
+      sign('upto', [{ role: 'BRANCH_STAFF', schoolId: school.id, branchId: uptown.id }]);
+      sign('staffB', [{ role: 'BRANCH_STAFF', schoolId: schoolB.id }]);
+    });
+
+    /** Staff who are refused, and how: without the switch 403; another
+     * branch's staff and another School's staff never see the request (404). */
+    async function expectRefused(id: string, action: 'waive' | 'cancel') {
+      expect((await feeAction('clerk', id, action)).status).toBe(403);
+      expect((await feeAction('carla', id, action)).status).toBe(403); // a coach without the switch
+      expect((await feeAction('upto', id, action)).status).toBe(404);
+      expect((await feeAction('staffB', id, action)).status).toBe(404);
+      expect((await superuser.promotionFeeRequest.findUniqueOrThrow({ where: { id } })).status).toBe('PENDING');
+    }
+
+    it('they waive a waiting promotion: it applies now, as the coach made it; others are refused', async () => {
+      await mkStudent('wynn', 'white-1');
+      const res = await grade('carla', 'wynn', 'stripe-award');
+      const id = res.body.feeRequest.id;
+      await expectRefused(id, 'waive');
+      const waived = await feeAction('desk', id, 'waive');
+      expect(waived.status).toBe(201);
+      expect(waived.body).toMatchObject({ status: 'WAIVED', promotionApplied: true, toDecide: false });
+      expect((await rankOf('wynn')).currentStripeId).toBe(rung['white-2'].id);
+      const row = await superuser.promotionFeeRequest.findUniqueOrThrow({ where: { id } });
+      expect(row.closedById).toBe(user.desk.id);
+      const event = await superuser.promotionEvent.findUniqueOrThrow({ where: { id: waived.body.promotionEventId } });
+      expect(event.performedById).toBe(user.carla.id); // the coach graded; the desk only waived the fee
+      expect((await feeAction('desk', id, 'waive')).status).toBe(409);
+    });
+
+    it('they cancel a waiting promotion: nothing applies and it is "to decide" for a coach; others are refused', async () => {
+      await mkStudent('cato', 'white-1');
+      const res = await grade('carla', 'cato', 'stripe-award');
+      const id = res.body.feeRequest.id;
+      await expectRefused(id, 'cancel');
+      const cancelled = await feeAction('desk', id, 'cancel');
+      expect(cancelled.status).toBe(201);
+      expect(cancelled.body).toMatchObject({ status: 'CANCELLED', promotionApplied: false, toDecide: true });
+      expect((await rankOf('cato')).currentStripeId).toBe(rung['white-1'].id);
+      expect((await superuser.promotionFeeRequest.findUniqueOrThrow({ where: { id } })).closedById).toBe(user.desk.id);
+      // Only a coach decides: the desk has no grading permission.
+      expect((await feeAction('desk', id, 'dismiss')).status).toBe(403);
+      expect((await feeAction('carla', id, 'dismiss')).status).toBe(201);
+    });
+
+    it('waiving an accepted fee cancels its charge in their name', async () => {
+      await mkStudent('abe', 'white-1');
+      const res = await grade('carla', 'abe', 'stripe-award');
+      const id = res.body.feeRequest.id;
+      expect((await feeAction('abe', id, 'accept')).status).toBe(201);
+      const charge = await superuser.charge.findUniqueOrThrow({ where: { promotionFeeRequestId: id } });
+      expect(charge.cancelledAt).toBeNull();
+      // The Payments card's Cancel still refuses a promotion fee's charge: the fee itself is waived or cancelled.
+      const viaCharge = await http().post(`/v1/schools/${school.id}/charges/${charge.id}/cancel`).set(as('desk')).send({ reason: 'x' });
+      expect(viaCharge.status).toBe(409);
+      expect(viaCharge.body.error.code).toBe('CHARGE_IS_PROMOTION_FEE');
+      const waived = await feeAction('desk', id, 'waive');
+      expect(waived.status).toBe(201);
+      expect(waived.body).toMatchObject({ status: 'WAIVED', promotionApplied: true, charge: { status: 'CANCELLED' } });
+      expect((await superuser.charge.findUniqueOrThrow({ where: { id: charge.id } })).cancelledById).toBe(user.desk.id);
+    });
+
+    it('the settings stay the owner\'s, and /staff/me/access says who has the switch', async () => {
+      expect((await http().put(`/v1/schools/${school.id}/promotion-fee-settings`).set(as('desk')).send({ promotionFeeEnabled: false })).status).toBe(403);
+      expect((await superuser.school.findUniqueOrThrow({ where: { id: school.id } })).promotionFeeEnabled).toBe(true);
+      const me = async (who: string, at = school.id) => (await http().get(`/v1/schools/${at}/staff/me/access`).set(as(who))).body.cancelCharges;
+      expect(await me('owner')).toBe(true);
+      expect(await me('desk')).toBe(true);
+      expect(await me('clerk')).toBe(false);
+      expect(await me('carla')).toBe(false); // a coach with no StaffPermission row
+      expect(await me('staffB', schoolB.id)).toBe(true);
     });
   });
 });

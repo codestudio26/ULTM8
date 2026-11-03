@@ -139,6 +139,12 @@ export class MyStaffAccessResponseDto {
 
   @ApiProperty({ type: StaffAccessDto, description: "What the caller may do. An Instructor's own role gives bookings and students." })
   access!: StaffAccessDto;
+
+  @ApiProperty({
+    description:
+      '"Can cancel charges" (Decision 338 item 1; the owner always): cancel charges, waive late fees (Decision 413) and waive or cancel promotion fees (Decision 420 item 2), for the students the caller covers.',
+  })
+  cancelCharges!: boolean;
 }
 
 export class StaffMemberDto {

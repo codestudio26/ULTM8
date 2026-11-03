@@ -4474,7 +4474,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "Gebühren: wer sie anlegen und stornieren darf",
-      intro: "Standortpersonal und Trainer, nur für die Schüler ihrer eigenen Standorte. Anlegen ist für Standortpersonal standardmäßig an und für Trainer aus; Stornieren ist für alle aus. Der Inhaber darf immer beides.",
+      intro: "Standortpersonal und Trainer, nur für die Schüler ihrer eigenen Standorte. Anlegen ist für Standortpersonal standardmäßig an und für Trainer aus; Stornieren ist für alle aus. Der Inhaber darf immer beides. Wer stornieren darf, kann auch Säumnisgebühren erlassen sowie Beförderungsgebühren erlassen oder stornieren.",
       columnName: "Name",
       columnCreate: "Darf Gebühren anlegen",
       columnCancel: "Darf Gebühren stornieren",

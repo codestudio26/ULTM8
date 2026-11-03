@@ -58,6 +58,7 @@ import { DecideDialog } from './BoardPanels';
 import { StudentMembershipsCard } from '../membershipPlans/StudentMembershipsCard';
 import { StudentChargesCard } from '../charges/StudentChargesCard';
 import { formatHours } from './hours';
+import { mayCloseFee } from './feeAccess';
 
 type Lesson = { id: string; title: string; skillIds: string[]; archivedAt?: string | null };
 
@@ -130,12 +131,15 @@ export function StudentGradingPage() {
   const guardians = useStudentGuardians(schoolId, studentId, enrolled);
   // Decision 409: Branch Staff the owner let freeze memberships.
   const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === schoolId);
-  const staffAccess = useMyStaffAccess(!my.isOwner && isBranchStaff ? schoolId : null);
+  // Read for coaches too: "Can cancel charges" (Decision 420 item 2) is theirs as well.
+  const staffAccess = useMyStaffAccess(!my.isOwner ? schoolId : null);
   const mayFreeze = !my.isOwner && !!staffAccess.data?.access.freezeMemberships;
   // Decision 315 item 10: owners, and Branch Staff the owner let see medical information.
   const maySeeMedical = my.isOwner || !!staffAccess.data?.access.seeMedicalInfo;
   // Decision 315 item 9: the owner, or Branch Staff the owner let see member files.
   const mayFiles = my.isOwner || !!staffAccess.data?.access.memberFiles;
+  // Decision 420 item 2: the owner, or staff with "Can cancel charges", waive or cancel a promotion fee.
+  const mayCloseFees = mayCloseFee(my.isOwner, staffAccess.data);
 
   const staffNames = useMemo(() => {
     const names = new Map<string, string>();
@@ -319,6 +323,7 @@ export function StudentGradingPage() {
             performerName={performerName}
             can={(toggle) => !inactive && my.can(discipline.id, toggle)}
             isOwner={my.isOwner}
+            mayCloseFees={mayCloseFees}
             archived={!!discipline.archivedAt}
             firstName={student?.firstName || studentName}
             studentName={studentName}
@@ -439,6 +444,7 @@ function DisciplineGradingCard({
   performerName,
   can: canInStyle,
   isOwner,
+  mayCloseFees,
   archived,
   firstName,
   studentName,
@@ -458,6 +464,8 @@ function DisciplineGradingCard({
   /** What the caller may do in this style; actions they can't use are hidden. */
   can: (toggle: GradingToggle) => boolean;
   isOwner: boolean;
+  /** Waive / Cancel on a promotion fee: the owner, or staff with "Can cancel charges" (Decision 420 item 2). */
+  mayCloseFees: boolean;
   /** The School no longer teaches this style (Decision 309): the rank and
    * history show, read-only but for voiding and notes (Decision 310). */
   archived: boolean;
@@ -563,7 +571,7 @@ function DisciplineGradingCard({
             fee={fee}
             firstName={firstName}
             currency={feeCurrency}
-            isOwner={isOwner}
+            mayClose={mayCloseFees}
             canPromote={can('canPromote')}
             onDecide={() => setDialog('decide')}
             onPromote={() => setDialog({ promoteTo: fee.request.toRungId })}
@@ -880,15 +888,16 @@ function FeeBadge({ status }: { status: 'blocked' | 'waiting' | 'declined' | 'to
 }
 
 /** The promotion fee box (Decisions 300, 307, 313), as on the board's
- * panel: the owner waives or cancels; after a cancel (or waiving a declined
+ * panel: the owner, or staff with "Can cancel charges" (Decision 420 item 2),
+ * waives or cancels; after a cancel (or waiving a declined
  * fee) a coach decides, and nothing promotes on its own. A paid fee whose
- * promotion can't apply (Decision 414 item 1): the owner cancels it (what was
+ * promotion can't apply (Decision 414 item 1): it is cancelled (what was
  * paid becomes credit) or grades again with the card's normal Grade button. */
 function FeeBox({
   fee,
   firstName,
   currency,
-  isOwner,
+  mayClose,
   canPromote,
   onDecide,
   onPromote,
@@ -896,7 +905,7 @@ function FeeBox({
   fee: NonNullable<ReturnType<typeof feeStatusOf>>;
   firstName: string;
   currency: string | null;
-  isOwner: boolean;
+  mayClose: boolean;
   canPromote: boolean;
   onDecide: () => void;
   onPromote: () => void;
@@ -942,7 +951,7 @@ function FeeBox({
       </p>
       {actionError ? <ErrorBanner message={actionError instanceof ApiError ? actionError.message : t('common.tryAgain')} /> : null}
       <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-        {status !== 'toDecide' && isOwner ? (
+        {status !== 'toDecide' && mayClose ? (
           <>
             {status !== 'blocked' ? (
               <Button variant="secondary" onClick={() => closeFee('waive')} loading={waive.isPending}>

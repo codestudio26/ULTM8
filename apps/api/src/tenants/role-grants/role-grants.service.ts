@@ -1053,17 +1053,18 @@ export class RoleGrantsService {
     const owner = grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER');
     const branchStaff = grants.some((g) => g.role === 'BRANCH_STAFF');
     if (owner) {
-      return { owner, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet };
+      return { owner, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet, cancelCharges: true };
     }
-    let access: StaffAccessSet = Object.fromEntries(STAFF_ACCESS.map((k) => [k, false])) as StaffAccessSet;
-    if (branchStaff) {
-      const row = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: STAFF_ACCESS_SELECT }),
-      );
-      access = staffAccessFrom(row);
-    }
+    // One read of the School's StaffPermission row: the Branch Staff switches
+    // above, and "Can cancel charges", which Branch Staff and coaches both
+    // may have (Decision 338 item 1; Decision 420 item 2: it also lets them
+    // waive or cancel promotion fees, so the portal shows those buttons).
+    const row = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { ...STAFF_ACCESS_SELECT, canCancelCharges: true } }),
+    );
+    let access: StaffAccessSet = branchStaff ? staffAccessFrom(row) : (Object.fromEntries(STAFF_ACCESS.map((k) => [k, false])) as StaffAccessSet);
     if (grants.some((g) => g.role === 'INSTRUCTOR')) access = { ...access, bookings: true, students: true };
-    return { owner, branchStaff, access };
+    return { owner, branchStaff, access, cancelCharges: row?.canCancelCharges ?? false };
   }
 
   /**

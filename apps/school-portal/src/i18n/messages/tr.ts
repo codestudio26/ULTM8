@@ -4474,7 +4474,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     permissions: {
       heading: "Ücretler: kim oluşturabilir ve iptal edebilir",
-      intro: "Şube personeli ve eğitmenler, yalnızca kendi şubelerinin öğrencileri için. Oluşturma şube personeli için varsayılan olarak açık, eğitmenler için kapalıdır; iptal herkes için kapalıdır. Okul sahibi her ikisini de her zaman yapabilir.",
+      intro: "Şube personeli ve eğitmenler, yalnızca kendi şubelerinin öğrencileri için. Oluşturma şube personeli için varsayılan olarak açık, eğitmenler için kapalıdır; iptal herkes için kapalıdır. Okul sahibi her ikisini de her zaman yapabilir. İptal yetkisi, gecikme ücretlerini bağışlamayı ve terfi ücretlerini bağışlamayı veya iptal etmeyi de sağlar.",
       columnName: "Ad",
       columnCreate: "Ücret oluşturabilir",
       columnCancel: "Ücret iptal edebilir",

@@ -230,7 +230,7 @@ export const charges = {
   },
   permissions: {
     heading: 'Charges: who can create and cancel',
-    intro: 'Branch Staff and coaches only for the students of their own branches. Creating is on by default for Branch Staff and off for coaches; cancelling is off for everyone. The owner can always do both.',
+    intro: 'Branch Staff and coaches only for the students of their own branches. Creating is on by default for Branch Staff and off for coaches; cancelling is off for everyone. The owner can always do both. Cancelling also lets them waive late fees, and waive or cancel promotion fees.',
     columnName: 'Name',
     columnCreate: 'Can create charges',
     columnCancel: 'Can cancel charges',

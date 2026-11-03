@@ -139,7 +139,7 @@ export class GradingBoardItemDto {
     enum: ['blocked', 'waiting', 'declined', 'toDecide'],
     nullable: true,
     description:
-      'Promotion fee (Decisions 300, 307, 414): "blocked" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the owner cancels the fee or grades again, and grading is not held up; "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the owner waived or cancelled the fee and a coach decides whether to promote. Null otherwise.',
+      'Promotion fee (Decisions 300, 307, 414): "blocked" — the fee is paid but its promotion can no longer apply (the rank or the ladder changed since the grade): the fee is cancelled (by the owner, or staff with "Can cancel charges") or the student graded again, and grading is not held up; "waiting" — the promotion waits for its fee ("Waiting for fee"); "declined" — the fee was declined ("Fee declined"); "toDecide" — the fee was waived or cancelled (by the owner, or staff with "Can cancel charges", Decision 420) and a coach decides whether to promote. Null otherwise.',
   })
   feeStatus!: 'blocked' | 'waiting' | 'declined' | 'toDecide' | null;
 
