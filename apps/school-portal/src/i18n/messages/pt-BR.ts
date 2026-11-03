@@ -3560,7 +3560,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exportAll: {
       button: "Exportar documentos assinados",
       title: "Exportar todos os documentos assinados",
-      intro: "Um arquivo ZIP com todos os termos de responsabilidade assinados nesta escola: um documento por assinatura, que abre no navegador e pode ser impresso em PDF, e uma lista de todos eles (index.csv). Só os proprietários da escola podem exportar.",
+      intro: "Um arquivo ZIP com todos os termos de responsabilidade assinados nesta escola: um PDF por assinatura e uma lista de todos eles (index.csv). Só os proprietários da escola podem exportar.",
       start: "Gerar o ZIP",
       makeNew: "Gerar um novo ZIP",
       preparing: "Gerando o ZIP. Em uma escola grande isso pode levar alguns minutos; você pode fechar e voltar depois.",

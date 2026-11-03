@@ -3517,7 +3517,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exportAll: {
       button: "서명된 문서 내보내기",
       title: "서명된 문서 모두 내보내기",
-      intro: "이 스쿨에서 서명된 모든 면책 동의서를 담은 ZIP 파일이에요. 서명마다 문서 하나(브라우저에서 열고 PDF로 인쇄할 수 있어요)와 전체 목록(index.csv)이 들어 있어요. 스쿨 소유자만 내보낼 수 있어요.",
+      intro: "이 스쿨에서 서명된 모든 면책 동의서를 담은 ZIP 파일이에요. 서명마다 PDF 하나와 전체 목록(index.csv)이 들어 있어요. 스쿨 소유자만 내보낼 수 있어요.",
       start: "ZIP 만들기",
       makeNew: "새 ZIP 만들기",
       preparing: "ZIP을 만들고 있어요. 큰 스쿨은 몇 분 걸릴 수 있어요. 닫고 나중에 다시 와도 돼요.",

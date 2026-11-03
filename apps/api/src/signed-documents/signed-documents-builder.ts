@@ -1,7 +1,8 @@
 import type { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import type { R2ClientService } from '../common/object-storage/r2-client.service';
 import { SIGNED_DOCUMENT_LABEL_DEFAULTS, type SignedDocumentLabels } from './dto/signed-documents.dto';
-import { documentFileName, imageTypeOf, indexCsv, signedDocumentHtml, type SignedDocument } from './signed-document-render';
+import { signedDocumentPdf } from './signed-document-pdf';
+import { documentFileName, imageTypeOf, indexCsv, type SignedDocument } from './signed-document-render';
 import type { ZipWriter } from './zip-writer';
 
 /** Signatures read from the database at a time. */
@@ -20,11 +21,12 @@ export function labelsFrom(stored: unknown): SignedDocumentLabels {
 
 /**
  * Builds the ZIP of every signed document at a School (Decision 315 item
- * 13): one HTML document per signature (members' waivers, including ones
- * that have since expired, and guests' waivers), with the drawn signature or
- * paper photo inside it, and index.csv listing them all. Reads on the jobs
- * connection, for this School only. Unsigned rows are not documents and are
- * left out. Written into `zip`, which the caller finishes (the export job
+ * 13): one PDF per signature (Decision 422 item 10; members' waivers,
+ * including ones that have since expired, and guests' waivers), with the
+ * drawn signature or paper photo inside it, and index.csv listing them all.
+ * Each PDF is made and written into the ZIP before the next is read, so only
+ * one is in memory at a time. Reads on the jobs connection, for this School
+ * only. Unsigned rows are not documents and are left out. Written into `zip`, which the caller finishes (the export job
  * adds member files to the same ZIP first, Decision 422 item 9).
  */
 export async function buildSignedDocumentsZip(
@@ -37,10 +39,11 @@ export async function buildSignedDocumentsZip(
   const school = await prismaJobs.school.findUnique({ where: { id: schoolId }, select: { name: true } });
   const schoolName = school?.name ?? '';
   const index: Array<{ doc: SignedDocument; file: string }> = [];
-  const add = (doc: SignedDocument) => {
+  const add = async (doc: SignedDocument) => {
     const file = documentFileName(index.length + 1, doc);
-    zip.add(file, signedDocumentHtml(doc, schoolName, labels), doc.signedAt);
-    index.push({ doc, file });
+    zip.add(file, await signedDocumentPdf(doc, schoolName, labels), doc.signedAt);
+    // The index needs the details, not the image.
+    index.push({ doc: { ...doc, image: null }, file });
   };
 
   const names = new Map<string, string>();
@@ -87,7 +90,7 @@ export async function buildSignedDocumentsZip(
     if (rows.length === 0) break;
     await nameOf(rows.flatMap((r) => [r.studentId, r.signedById, r.recordedById]));
     for (const r of rows) {
-      add({
+      await add({
         id: r.id,
         kind: 'MEMBER',
         memberName: names.get(r.studentId) ?? '',
@@ -132,7 +135,7 @@ export async function buildSignedDocumentsZip(
     });
     if (rows.length === 0) break;
     for (const r of rows) {
-      add({
+      await add({
         id: r.id,
         kind: 'GUEST',
         memberName: r.guestFullName,

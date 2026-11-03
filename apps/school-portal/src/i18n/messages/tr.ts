@@ -3560,7 +3560,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exportAll: {
       button: "İmzalı belgeleri dışa aktar",
       title: "Tüm imzalı belgeleri dışa aktar",
-      intro: "Bu okuldaki tüm imzalı feragatnamelerin bulunduğu bir ZIP dosyası: her imza için tarayıcıda açılan ve PDF olarak yazdırılabilen bir belge ve hepsinin listesi (index.csv). Yalnızca okul sahipleri dışa aktarabilir.",
+      intro: "Bu okuldaki tüm imzalı feragatnamelerin bulunduğu bir ZIP dosyası: her imza için bir PDF ve hepsinin listesi (index.csv). Yalnızca okul sahipleri dışa aktarabilir.",
       start: "ZIP oluştur",
       makeNew: "Yeni ZIP oluştur",
       preparing: "ZIP oluşturuluyor. Büyük bir okulda birkaç dakika sürebilir; bunu kapatıp sonra dönebilirsin.",

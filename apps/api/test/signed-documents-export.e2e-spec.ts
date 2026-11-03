@@ -1,9 +1,9 @@
 /**
  * Export all signed documents (Decision 315 item 13): the School owner gets a
- * ZIP of every signed waiver at the School (one document per signature, with
- * the drawn signature or paper photo inside it, and index.csv), made by a
- * background job into the private bucket and downloaded through a short-lived
- * signed link. Owner only; this School's signatures only; the ZIP is deleted
+ * ZIP of every signed waiver at the School (one PDF per signature, Decision
+ * 422 item 10, with the drawn signature or paper photo inside it, and
+ * index.csv), made by a background job into the private bucket and
+ * downloaded through a short-lived signed link. Owner only; this School's signatures only; the ZIP is deleted
  * after 24 hours and with a purged School.
  *
  * R2 is replaced by an in-memory store (the member-files spec's approach),
@@ -27,6 +27,7 @@ import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { EntityOffboardingPurgeProcessor } from '../src/jobs/entity-offboarding-purge.processor';
 import { SignedDocumentsExportProcessor } from '../src/jobs/signed-documents-export.processor';
 import { SIGNED_DOCUMENTS_EXPORT_QUEUE } from '../src/jobs/queue.constants';
+import { readPdfText } from '../src/signed-documents/pdf-text-reader';
 import { readZip } from '../src/signed-documents/zip-reader';
 
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -45,8 +46,14 @@ if (!hasDb) {
 type Role = 'SCHOOL_OWNER_MANAGER' | 'BRANCH_STAFF' | 'INSTRUCTOR' | 'STUDENT';
 type Grant = [Role, string, string | null];
 
-const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52]);
-const JPG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00]);
+// Real (tiny) images, since each signed document is now a PDF with the image
+// drawn in it (Decision 422 item 10): a transparent PNG, as drawn signatures
+// are, and a JPEG, as paper photos are.
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAACCAQAAADVobXoAAAAC0lEQVR42mNgQAcAABIAAeRVjecAAAAASUVORK5CYII=', 'base64');
+const JPG = Buffer.from(
+  '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAACAAQDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD0CiiigD//2Q==',
+  'base64',
+);
 const PDF = Buffer.from('%PDF-1.7\n');
 
 describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
@@ -313,11 +320,11 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
     expect(names).toHaveLength(6);
     expect(names[5]).toBe('index.csv');
     expect(names.slice(0, 5)).toEqual([
-      'documents/00001 =Ben Formula - Photo consent.html',
-      'documents/00002 Ana Lima - Liability waiver.html',
-      'documents/00003 Kid Lima - Liability waiver.html',
-      'documents/00004 =Ben Formula - Liability waiver.html',
-      'documents/00005 Gus Guest - Liability waiver.html',
+      'documents/00001 =Ben Formula - Photo consent.pdf',
+      'documents/00002 Ana Lima - Liability waiver.pdf',
+      'documents/00003 Kid Lima - Liability waiver.pdf',
+      'documents/00004 =Ben Formula - Liability waiver.pdf',
+      'documents/00005 Gus Guest - Liability waiver.pdf',
     ]);
 
     const csv = files.get('index.csv')!.toString('utf8');
@@ -327,28 +334,39 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
     expect(lines[0]).toBe('Membro,Documento,Version,Signed at,Assinado por,File');
     expect(lines).toEqual([
       lines[0],
-      "'=Ben Formula,Photo consent (Expired),,2025-01-01 10:30 UTC,Ben Formula,documents/00001 =Ben Formula - Photo consent.html",
-      'Ana Lima,Liability waiver,2,2026-01-10 10:30 UTC,Ana Lima,documents/00002 Ana Lima - Liability waiver.html',
-      'Kid Lima,Liability waiver,3,2026-02-01 10:30 UTC,Paula Lima (Responsável),documents/00003 Kid Lima - Liability waiver.html',
-      "'=Ben Formula,Liability waiver,,2026-03-01 10:30 UTC,Ben Formula (On paper),documents/00004 =Ben Formula - Liability waiver.html",
-      'Gus Guest (Guest),Liability waiver,3,2026-04-01 10:30 UTC,Gus Guest,documents/00005 Gus Guest - Liability waiver.html',
+      "'=Ben Formula,Photo consent (Expired),,2025-01-01 10:30 UTC,Ben Formula,documents/00001 =Ben Formula - Photo consent.pdf",
+      'Ana Lima,Liability waiver,2,2026-01-10 10:30 UTC,Ana Lima,documents/00002 Ana Lima - Liability waiver.pdf',
+      'Kid Lima,Liability waiver,3,2026-02-01 10:30 UTC,Paula Lima (Responsável),documents/00003 Kid Lima - Liability waiver.pdf',
+      "'=Ben Formula,Liability waiver,,2026-03-01 10:30 UTC,Ben Formula (On paper),documents/00004 =Ben Formula - Liability waiver.pdf",
+      'Gus Guest (Guest),Liability waiver,3,2026-04-01 10:30 UTC,Gus Guest,documents/00005 Gus Guest - Liability waiver.pdf',
     ]);
     // Another School's signature and an unsigned row are not in it.
     expect(csv).not.toContain('Bea');
     expect(csv.split('Photo consent').length - 1).toBe(2);
 
-    const ana = files.get('documents/00002 Ana Lima - Liability waiver.html')!.toString('utf8');
+    // Each document is a real PDF (Decision 422 item 10), its words as text.
+    for (const name of names.slice(0, 5)) {
+      const pdf = files.get(name)!;
+      expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      expect(readPdfText(pdf).pages).toBeGreaterThan(0);
+    }
+    const textOf = (name: string) => readPdfText(files.get(name)!).blocks.map((b) => b.text).join(' ');
+    const ana = textOf('documents/00002 Ana Lima - Liability waiver.pdf');
     expect(ana).toContain('Docs School A');
-    expect(ana).toContain(`src="data:image/png;base64,${PNG.toString('base64')}"`);
-    expect(ana).toContain('Text &lt;b&gt;v2&lt;/b&gt;'); // the wording as signed, escaped
+    expect(ana).toContain('Ana Lima');
+    expect(ana).toContain('Text <b>v2</b>'); // the wording as signed, as it was typed
     expect(ana).not.toContain('Current text');
     expect(ana).toContain('abc123');
-    const paper = files.get('documents/00004 =Ben Formula - Liability waiver.html')!.toString('utf8');
-    expect(paper).toContain(`src="data:image/jpeg;base64,${JPG.toString('base64')}"`);
+    expect(ana).toContain('2026-01-10 10:30 UTC');
+    // The drawn signature is drawn in it.
+    expect(files.get('documents/00002 Ana Lima - Liability waiver.pdf')!.toString('latin1')).toMatch(/\/Subtype \/Image/);
+    expect(textOf('documents/00003 Kid Lima - Liability waiver.pdf')).toContain('Paula Lima (Responsável)');
+    const paper = textOf('documents/00004 =Ben Formula - Liability waiver.pdf');
+    expect(files.get('documents/00004 =Ben Formula - Liability waiver.pdf')!.toString('latin1')).toMatch(/\/Filter \/DCTDecode/); // the paper photo
     expect(paper).toContain('Olivia Owner'); // recorded by
-    expect(paper).toContain("The wording signed wasn't kept for this signature.".replace("'", '&#39;'));
-    const expired = files.get('documents/00001 =Ben Formula - Photo consent.html')!.toString('utf8');
-    expect(expired).toContain("The signature image couldn&#39;t be found.");
+    expect(paper).toContain("The wording signed wasn't kept for this signature.");
+    const expired = textOf('documents/00001 =Ben Formula - Photo consent.pdf');
+    expect(expired).toContain("The signature image couldn't be found.");
   });
 
   it('the owner downloads it through a short-lived signed link; nobody else can', async () => {
@@ -370,7 +388,7 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
     expect(await settle(res.body.id)).toBe('READY');
     const row = await superuser.signedDocumentExport.findUniqueOrThrow({ where: { id: res.body.id } });
     const files = readZip(stored.get(row.objectKey!)!);
-    expect([...files.keys()]).toEqual(['documents/00001 Bea Other - School B waiver.html', 'index.csv']);
+    expect([...files.keys()]).toEqual(['documents/00001 Bea Other - School B waiver.pdf', 'index.csv']);
     expect(files.get('index.csv')!.toString('utf8')).not.toContain('Ana');
   });
 
