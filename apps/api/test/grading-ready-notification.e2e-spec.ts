@@ -374,10 +374,7 @@ describeIfDb('Grading notifications (Decisions 145, 178)', () => {
       expect(await readyOnce('ola')).toEqual([user.owner.id]);
     });
 
-    // Merging duplicates (Decision 422 item 8) also lets the jobs role add up
-    // the classes of two belts on the same rung and delete the belt that
-    // isn't kept; it still can't change anyone's rank or history.
-    it('the jobs role may only mark a student as notified, and do what a merge needs; never change a rank (Decision 178.5)', async () => {
+    it('the jobs role may only mark a student as notified, nothing else in grading (Decision 178.5)', async () => {
       const sr = await rankOf('ana');
       const asJobs = (sql: string) =>
         superuser.$transaction(async (tx) => {
@@ -385,12 +382,10 @@ describeIfDb('Grading notifications (Decisions 145, 178)', () => {
           return tx.$executeRawUnsafe(sql, sr.id);
         });
       await expect(asJobs('UPDATE "StudentRank" SET "readyNotifiedAt" = now() WHERE id = $1')).resolves.toBe(1);
+      await expect(asJobs('UPDATE "StudentRank" SET "classesAttendedTowardCheckpoint" = 99 WHERE id = $1')).rejects.toThrow(/permission denied/);
       await expect(asJobs('UPDATE "StudentRank" SET "currentStripeId" = NULL WHERE id = $1')).rejects.toThrow(/permission denied/);
-      await expect(asJobs('UPDATE "StudentRank" SET "currentRankId" = "currentRankId" WHERE id = $1')).rejects.toThrow(/permission denied/);
-      await expect(asJobs('UPDATE "StudentRank" SET "dateOfCurrentRank" = now() WHERE id = $1')).rejects.toThrow(/permission denied/);
-      await expect(asJobs('UPDATE "StudentRank" SET "verificationStatus" = \'VERIFIED\' WHERE id = $1')).rejects.toThrow(/permission denied/);
       await expect(asJobs('DELETE FROM "PromotionEvent" WHERE "studentRankId" = $1')).rejects.toThrow(/permission denied/);
-      await expect(asJobs('UPDATE "PromotionEvent" SET "toRankId" = NULL WHERE "studentRankId" = $1')).rejects.toThrow(/permission denied/);
+      await expect(asJobs('DELETE FROM "StudentRank" WHERE id = $1')).rejects.toThrow(/permission denied/);
       expect((await rankOf('ana')).classesAttendedTowardCheckpoint).toBe(sr.classesAttendedTowardCheckpoint);
     });
   });

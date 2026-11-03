@@ -436,4 +436,102 @@ describeIfDb('Merge duplicate members: same-style belts (Decision 422 item 8)', 
     // Nothing was folded, so nothing is marked.
     expect(await superuser.promotionEvent.count({ where: { studentId: kate.id, schoolId: schoolA, mergedFromUserId: { not: null } } })).toBe(0);
   });
+
+  describe('the database function does the writes, and only for these two members at this School', () => {
+    /** Runs `sql` as the jobs role, in a transaction that is rolled back on error. */
+    const asJobs = (sql: string, ...params: unknown[]) =>
+      superuser.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe('SET LOCAL ROLE ultm8_jobs');
+        return tx.$queryRawUnsafe(sql, ...params);
+      });
+    const callMerge = (school: string, kept: string, dup: string, closer: string, folds: unknown[], fees: string[] = []) =>
+      asJobs('SELECT "merge_student_ranks"($1, $2, $3, $4, $5::jsonb, $6::text[]) AS folded', school, kept, dup, closer, JSON.stringify(folds), fees);
+
+    let kate: { id: string };
+    let dan: { id: string };
+    let outsider: { id: string };
+    let stranger: { id: string };
+    let kateBelt: { id: string };
+    let danBelt: { id: string };
+    let outsiderBelt: { id: string };
+    let danFee: { id: string };
+    let outsiderFee: { id: string };
+    const snapshot = async () => ({
+      ranks: await superuser.studentRank.findMany({ where: { schoolId: { in: schoolIds } }, orderBy: { id: 'asc' } }),
+      events: await superuser.promotionEvent.findMany({ where: { schoolId: { in: schoolIds } }, orderBy: { id: 'asc' } }),
+      statuses: await superuser.studentRankSkillStatus.findMany({ where: { schoolId: { in: schoolIds } }, orderBy: { id: 'asc' } }),
+      fees: await superuser.promotionFeeRequest.findMany({ where: { schoolId: { in: schoolIds } }, orderBy: { id: 'asc' } }),
+    });
+
+    beforeAll(async () => {
+      kate = await mkUser('kate6', [['STUDENT', schoolA]]);
+      dan = await mkUser('dan6', [['STUDENT', schoolA]]);
+      // A Student of School B only, and someone who is nobody's Student.
+      outsider = await mkUser('outsider6', [['STUDENT', schoolB]]);
+      stranger = await mkUser('stranger6', []);
+      await mkUser('ownerB', [['SCHOOL_OWNER_MANAGER', schoolB]]);
+      kateBelt = await mkBelt(kate.id, schoolA, 'A', 'bjj', 'Blue', 0, { statuses: { s1: 'LEARNING' } });
+      danBelt = await mkBelt(dan.id, schoolA, 'A', 'bjj', 'White', 0, { statuses: { s1: 'SIGNED_OFF' } });
+      outsiderBelt = await mkBelt(outsider.id, schoolB, 'B', 'bjj', 'White', 0);
+      danFee = await waitingFee(dan.id, 'bjj', 'AbjjWhite0');
+      outsiderFee = await superuser.promotionFeeRequest.create({
+        data: {
+          id: randomUUID(),
+          schoolId: schoolB,
+          studentId: outsider.id,
+          disciplineId: cat.Bbjj,
+          toRungId: cat.BbjjBlue0,
+          toRungName: 'Blue Belt',
+          expectedCurrentRungId: cat.BbjjWhite0,
+          amountMinor: 2500,
+          promotionWaits: true,
+        },
+      });
+    });
+
+    it('the jobs role still cannot delete or rewrite belts, history or fees directly', async () => {
+      await expect(asJobs('DELETE FROM "StudentRank" WHERE "id" = $1', danBelt.id)).rejects.toThrow(/permission denied/);
+      await expect(asJobs('DELETE FROM "StudentRankSkillStatus" WHERE "studentRankId" = $1', danBelt.id)).rejects.toThrow(/permission denied/);
+      await expect(asJobs('UPDATE "StudentRank" SET "classesAttendedTowardCheckpoint" = 99 WHERE "id" = $1', danBelt.id)).rejects.toThrow(/permission denied/);
+      await expect(asJobs('UPDATE "PromotionEvent" SET "studentRankId" = $1 WHERE "studentRankId" = $2', kateBelt.id, danBelt.id)).rejects.toThrow(/permission denied/);
+      await expect(asJobs('UPDATE "PromotionEvent" SET "mergedFromUserId" = $1 WHERE "studentRankId" = $2', dan.id, danBelt.id)).rejects.toThrow(/permission denied/);
+      await expect(asJobs('UPDATE "SkillSignOffLog" SET "studentRankId" = $1 WHERE "id" = $2', kateBelt.id, randomUUID())).rejects.toThrow(/permission denied/);
+      await expect(asJobs(`UPDATE "PromotionFeeRequest" SET "status" = 'CANCELLED' WHERE "id" = $1`, danFee.id)).rejects.toThrow(/permission denied/);
+      // Nobody else may call the function.
+      await expect(
+        superuser.$transaction(async (tx) => {
+          await tx.$executeRawUnsafe('SET LOCAL ROLE ultm8_app');
+          return tx.$queryRawUnsafe('SELECT "merge_student_ranks"($1, $2, $3, $4, $5::jsonb, $6::text[])', schoolA, kate.id, dan.id, users.ownerA.id, '[]', []);
+        }),
+      ).rejects.toThrow(/permission denied/);
+    });
+
+    it("refuses another School's member, a non-member, another School's belt or fee, and a closer who isn't the owner; nothing changes", async () => {
+      const before = await snapshot();
+      const fold = (keep: string, drop: string) => [{ keep, drop, sameRung: false }];
+      // A Student of another School, or nobody's Student, as one of the two.
+      await expect(callMerge(schoolA, kate.id, outsider.id, users.ownerA.id, fold(kateBelt.id, outsiderBelt.id))).rejects.toThrow(/current Students/);
+      await expect(callMerge(schoolA, kate.id, stranger.id, users.ownerA.id, [])).rejects.toThrow(/current Students/);
+      // Through School B, where Kate and Dan aren't Students.
+      await expect(callMerge(schoolB, kate.id, dan.id, users.ownerB.id, fold(kateBelt.id, danBelt.id))).rejects.toThrow(/current Students/);
+      // The right pair, but another School's belt, or a belt of neither.
+      await expect(callMerge(schoolA, kate.id, dan.id, users.ownerA.id, fold(kateBelt.id, outsiderBelt.id))).rejects.toThrow(/belts in one style/);
+      await expect(callMerge(schoolA, kate.id, dan.id, users.ownerA.id, fold(kateBelt.id, kateBelt.id))).rejects.toThrow(/belts in one style/);
+      // Another School's fee.
+      await expect(callMerge(schoolA, kate.id, dan.id, users.ownerA.id, [], [outsiderFee.id])).rejects.toThrow(/fee to cancel/);
+      // Made by someone who isn't the School's owner.
+      await expect(callMerge(schoolA, kate.id, dan.id, users.ownerB.id, fold(kateBelt.id, danBelt.id))).rejects.toThrow(/School owner/);
+      await expect(callMerge(schoolA, kate.id, dan.id, kate.id, fold(kateBelt.id, danBelt.id))).rejects.toThrow(/School owner/);
+      expect(await snapshot()).toEqual(before);
+    });
+
+    it('folds exactly the planned pair when called correctly', async () => {
+      const [row] = (await callMerge(schoolA, kate.id, dan.id, users.ownerA.id, [{ keep: kateBelt.id, drop: danBelt.id, sameRung: false }], [danFee.id])) as Array<{ folded: number }>;
+      expect(row.folded).toBe(1);
+      expect(await superuser.studentRank.count({ where: { id: danBelt.id } })).toBe(0);
+      expect(await superuser.promotionEvent.count({ where: { studentRankId: kateBelt.id, mergedFromUserId: dan.id } })).toBe(1);
+      expect(await superuser.promotionFeeRequest.findUniqueOrThrow({ where: { id: danFee.id } })).toMatchObject({ status: 'CANCELLED', closedById: users.ownerA.id });
+      expect(await superuser.studentRank.count({ where: { id: outsiderBelt.id } })).toBe(1);
+    });
+  });
 });

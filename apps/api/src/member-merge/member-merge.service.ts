@@ -4,7 +4,7 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { recordStaffActivity } from '../tenants/staff-activity/staff-activity';
 import { UNSETTLED_STATUSES } from '../ranks/promotion-fee';
-import { addClassCounts, furtherSkillStatus, keptBeltOwner, type LadderPosition } from './member-merge-ranks';
+import { keptBeltOwner, type LadderPosition } from './member-merge-ranks';
 import {
   MERGE_TABLES,
   MOVED_BY_STUDENT_ID,
@@ -41,8 +41,6 @@ interface BeltRow {
   studentId: string;
   currentRankId: string;
   currentStripeId: string | null;
-  classesAttendedTowardCheckpoint: number;
-  classesAttendedByType: Prisma.JsonValue;
   position: LadderPosition;
   label: string;
 }
@@ -137,7 +135,7 @@ export class MemberMergeService {
           // Same-style belts first: the belt that isn't kept is folded into
           // the kept one and deleted, so the duplicate's remaining rows can
           // then move as they are.
-          await this.applyStylePlan(tx, schoolId, callerId, plan);
+          await this.applyStylePlan(tx, schoolId, keptId, duplicateId, callerId, plan);
           const belts = summarise(plan);
           const result = await this.moveRows(tx, schoolId, keptId, duplicateId);
 
@@ -285,8 +283,6 @@ export class MemberMergeService {
           disciplineId: true,
           currentRankId: true,
           currentStripeId: true,
-          classesAttendedTowardCheckpoint: true,
-          classesAttendedByType: true,
           currentRank: { select: { order: true, name: true } },
           currentStripe: { select: { order: true, name: true } },
         },
@@ -330,8 +326,6 @@ export class MemberMergeService {
         studentId: r.studentId,
         currentRankId: r.currentRankId,
         currentStripeId: r.currentStripeId,
-        classesAttendedTowardCheckpoint: r.classesAttendedTowardCheckpoint,
-        classesAttendedByType: r.classesAttendedByType,
         position: { rankOrder: r.currentRank.order, tierOrder: r.currentStripe?.order ?? null },
         label: r.currentStripe?.name ?? r.currentRank.name,
       };
@@ -379,80 +373,35 @@ export class MemberMergeService {
   }
 
   /**
-   * Folds the belt that isn't kept into the kept one, in each style. None of
-   * its history is deleted: its history entries and skill sign-off log move
-   * onto the kept belt, the entries marked with the member record they were
-   * on (PromotionEvent.mergedFromUserId). Then only the other StudentRank row
-   * itself is deleted.
+   * The writes for the styles planned above, after the service has decided
+   * everything: merge_student_ranks (migration
+   * 20270212000000_merge_keeps_higher_belt), a narrow SECURITY DEFINER
+   * function the jobs role may only execute. For each belt pair it folds the
+   * belt that isn't kept into the kept one: its history entries and skill
+   * sign-off log move, the entries marked with the member record they were
+   * on (PromotionEvent.mergedFromUserId), and only its StudentRank row is
+   * deleted. On the same rung the further sign-off per skill is kept and the
+   * classes toward the next rung are added up; on a different rung the other
+   * belt's sign-offs go, as on any rank change (Decision 128 item 16). It
+   * also cancels the unanswered fees planned here. It refuses anything that
+   * isn't these two members' rows at this School.
    *
-   * Skill sign-off statuses belong to the current rung only (Decision 128
-   * item 16). On the same rung, the further status of the two is kept for
-   * each skill (Not started < Learning < Signed off) and the other belt's
-   * statuses for skills the kept belt has none for move to it. On a
-   * different rung they go, as on any rank change; the log keeps every
-   * change. Likewise the classes counted toward the next rung: added
-   * together on the same rung; on a different rung the other belt's count
-   * was toward a rung that isn't the kept belt's next one.
+   * Belt corrections are rejected here directly (the jobs role already
+   * answers them, RankCorrectionsService).
    */
-  private async applyStylePlan(tx: Tx, schoolId: string, callerId: string, plan: StylePlan[]) {
-    for (const style of plan) {
-      if (style.belt) {
-        const { winner, loser, sameRung } = style.belt;
-        if (sameRung) {
-          const statuses = await tx.studentRankSkillStatus.findMany({
-            where: { schoolId, studentRankId: { in: [winner.id, loser.id] } },
-            select: { id: true, studentRankId: true, skillId: true, status: true },
-          });
-          const winnerBySkill = new Map(statuses.filter((s) => s.studentRankId === winner.id).map((s) => [s.skillId, s]));
-          const moveIds: string[] = [];
-          const dropIds: string[] = [];
-          for (const s of statuses.filter((x) => x.studentRankId === loser.id)) {
-            const w = winnerBySkill.get(s.skillId);
-            if (!w) {
-              moveIds.push(s.id);
-              continue;
-            }
-            const further = furtherSkillStatus(w.status, s.status);
-            if (further !== w.status) await tx.studentRankSkillStatus.updateMany({ where: { id: w.id, schoolId }, data: { status: further } });
-            dropIds.push(s.id);
-          }
-          if (dropIds.length > 0) await tx.studentRankSkillStatus.deleteMany({ where: { id: { in: dropIds }, schoolId } });
-          if (moveIds.length > 0) {
-            await tx.$executeRaw`
-              UPDATE "StudentRankSkillStatus" SET "studentRankId" = ${winner.id}, "updatedAt" = now()
-              WHERE "id" IN (${Prisma.join(moveIds)}) AND "schoolId" = ${schoolId}`;
-          }
-          await tx.studentRank.updateMany({
-            where: { id: winner.id, schoolId },
-            data: {
-              classesAttendedTowardCheckpoint: winner.classesAttendedTowardCheckpoint + loser.classesAttendedTowardCheckpoint,
-              classesAttendedByType: addClassCounts(winner.classesAttendedByType, loser.classesAttendedByType),
-            },
-          });
-        } else {
-          await tx.studentRankSkillStatus.deleteMany({ where: { studentRankId: loser.id, schoolId } });
-        }
-        // The log references the belt row ON DELETE CASCADE, so it moves first.
-        await tx.$executeRaw`
-          UPDATE "SkillSignOffLog" SET "studentRankId" = ${winner.id} WHERE "studentRankId" = ${loser.id} AND "schoolId" = ${schoolId}`;
-        await tx.$executeRaw`
-          UPDATE "PromotionEvent" SET "studentRankId" = ${winner.id}, "mergedFromUserId" = ${loser.studentId}
-          WHERE "studentRankId" = ${loser.id} AND "schoolId" = ${schoolId}`;
-        await tx.$executeRaw`DELETE FROM "StudentRank" WHERE "id" = ${loser.id} AND "schoolId" = ${schoolId}`;
-      }
-      if (style.feesToCancel.length > 0) {
-        // Re-checked: only a fee still waiting and unanswered (no charge yet) is cancelled.
-        await tx.promotionFeeRequest.updateMany({
-          where: { id: { in: style.feesToCancel }, schoolId, status: 'PENDING', promotionEventId: null, toDecideAt: null },
-          data: { status: 'CANCELLED', cancelledAt: new Date(), closedById: callerId },
-        });
-      }
-      if (style.correctionsToReject.length > 0) {
-        await tx.rankCorrectionRequest.updateMany({
-          where: { id: { in: style.correctionsToReject }, schoolId, status: 'PENDING' },
-          data: { status: 'REJECTED', reviewedById: callerId, reviewedAt: new Date() },
-        });
-      }
+  private async applyStylePlan(tx: Tx, schoolId: string, keptId: string, duplicateId: string, callerId: string, plan: StylePlan[]) {
+    const folds = plan.flatMap((p) => (p.belt ? [{ keep: p.belt.winner.id, drop: p.belt.loser.id, sameRung: p.belt.sameRung }] : []));
+    const feeIds = plan.flatMap((p) => p.feesToCancel);
+    if (folds.length > 0 || feeIds.length > 0) {
+      await tx.$queryRaw`
+        SELECT "merge_student_ranks"(${schoolId}, ${keptId}, ${duplicateId}, ${callerId}, ${JSON.stringify(folds)}::jsonb, ${feeIds}::text[]) AS folded`;
+    }
+    const correctionIds = plan.flatMap((p) => p.correctionsToReject);
+    if (correctionIds.length > 0) {
+      await tx.rankCorrectionRequest.updateMany({
+        where: { id: { in: correctionIds }, schoolId, studentId: { in: [keptId, duplicateId] }, status: 'PENDING' },
+        data: { status: 'REJECTED', reviewedById: callerId, reviewedAt: new Date() },
+      });
     }
   }
 

@@ -281,7 +281,9 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   date correction checks only the kept belt's own history. Preview and result
   gain `beltsKept`, `promotionFeesCancelled` and `beltCorrectionsClosed`; the
   reasons `SAME_STYLE_RANK` and `SAME_STYLE_CORRECTION` are gone. 15
-  languages. **Needs a database migration**
+  languages. The belt writes run through one narrow database function
+  (`merge_student_ranks`) that the background-job role may only call; that
+  role gets no new table rights. **Needs a database migration**
   (`20270212000000_merge_keeps_higher_belt`).
 - **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
   its own list of tags, managed under **School settings → Student tags** (add,
