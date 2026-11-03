@@ -4008,8 +4008,10 @@ model Booking {
 
   status BookingStatus @default(UPCOMING)
 
-  sourceMembershipId String
-  sourceMembership   Membership @relation("BookingSourceMembership", fields: [sourceMembershipId], references: [id])
+  // Null only for past attendance imported from a spreadsheet (Decision 422
+  // item 6): it was paid for elsewhere, so no Membership's credit funds it.
+  sourceMembershipId String?
+  sourceMembership   Membership? @relation("BookingSourceMembership", fields: [sourceMembershipId], references: [id])
 
   // Rank-gate override (§9) — Instructor/Staff-only, always recorded together.
   overriddenById String?

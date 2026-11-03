@@ -18,6 +18,11 @@ type ClassStyle = { disciplineId: string; classType: string | null };
 
 const DAY_MS = 86_400_000;
 
+export interface CreditAttendanceOptions {
+  /** Count the class only if it started at or after the last rank change. */
+  onlySinceLastRankChange?: boolean;
+}
+
 /** Every rung of a style, in ladder order, in the engine's shape. Archived
  * belts are not part of the ladder: nobody can be graded into them (Decision
  * 308). Archiving needs a belt nobody holds or held, so no student is on one. */
@@ -74,12 +79,18 @@ const COUNT_EVERYTHING: CountRules = { eligibleClassTypes: [], classCountMode: '
  *   class earlier in the week than ones already counted can only reshuffle the
  *   per-type numbers, never exceed the cap.
  * - The class being checked in always takes part, even if it started just
- *   before the last rank change.
+ *   before the last rank change, unless `onlySinceLastRankChange` is set.
+ * - `onlySinceLastRankChange` (imported past attendance, Decision 422 item
+ *   6): a class that started before the student's last rank change in that
+ *   style (StudentRank.countingSince) belongs to the previous rung, so it
+ *   counts toward nothing in that style. An import can reach back years, so
+ *   the leeway a check-in at the door gets does not apply.
  */
 export async function creditAttendance(
   tx: TenantTx,
   studentId: string,
   booking: { id: string; classId: string },
+  opts: CreditAttendanceOptions = {},
 ): Promise<void> {
   const cls = await tx.class.findUniqueOrThrow({
     where: { id: booking.classId },
@@ -98,6 +109,7 @@ export async function creditAttendance(
     const studentRank = await tx.studentRank.findUniqueOrThrow({
       where: { studentId_disciplineId: { studentId, disciplineId: style.disciplineId } },
     });
+    if (opts.onlySinceLastRankChange && cls.startDate < studentRank.countingSince) continue;
 
     const req = requirementFor(await loadLadder(tx, style.disciplineId), studentRank.currentStripeId ?? '');
     if (req.kind === 'NEXT' && req.timeOnly) continue;

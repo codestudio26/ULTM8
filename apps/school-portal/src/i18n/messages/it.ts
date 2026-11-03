@@ -4560,7 +4560,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     about: {
       MEMBERS: "Una riga per membro: nome, email, telefono, data di nascita, genere (Female, Male o vuoto), data di iscrizione, cinture (\"Stile: Cintura; Stile: Cintura\") e sede principale. Ogni nuovo membro riceve un account e un’email con un codice di accesso temporaneo. Una riga la cui email ha già un account viene saltata ed elencata. Un bambino (sotto i 18 anni) viene aggiunto con l’email del suo tutore: un nuovo tutore riceve un account con un codice di accesso temporaneo; un tutore che ne ha già uno riceve un invito da accettare nell’app.",
       MEMBERSHIPS: "Una riga per abbonamento: l’email del membro (per un bambino, l’email del tutore e il nome del bambino), il nome del piano come nella pagina dei piani, la data di inizio e, se vuoi, la data di fine e, per un carnet di lezioni, le lezioni rimaste. Viene registrato senza pagamento. Un abbonamento ricorrente si paga con carta nell’app, quindi non si può importare.",
-      ATTENDANCE: "Una riga per lezione frequentata: l’email del membro (per un bambino, l’email del tutore e il nome del bambino), la data, l’ora di inizio (24 ore, ora della tua scuola) e il nome della lezione. Ognuna conta come un check-in (si usa un ingresso del carnet se serve, e conta per gli esami di grado), fino a {days} giorni indietro.",
+      ATTENDANCE: "Una riga per lezione frequentata: l’email del membro (per un bambino, l’email del tutore e il nome del bambino), la data, l’ora di inizio (24 ore, ora della tua scuola) e il nome della lezione. Si può importare qualsiasi data passata. Ognuna conta per gli esami di grado come un check-in (le lezioni prima dell’ultima promozione non contano per la cintura successiva), ma non usa ingressi del carnet né crediti e non richiede un abbonamento: è stata pagata altrove.",
     },
     formatHint: "Scrivi le date come AAAA-MM-GG e gli orari come HH:MM. Salva il file in CSV (separato da virgole o punti e virgola). Fino a {max} righe per file.",
     template: "Scarica il modello",
@@ -4613,7 +4613,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       INVALID_PHONE: "Scrivi il telefono come numero internazionale: + e il prefisso del paese.",
       INVALID_DATE: "Scrivi la data come AAAA-MM-GG.",
       INVALID_BIRTH_DATE: "Non è una data di nascita reale: nel futuro o più di 120 anni fa.",
-      FUTURE_DATE: "La data di iscrizione non può essere nel futuro.",
+      FUTURE_DATE: "Questa data non può essere nel futuro.",
       INVALID_GENDER: "Il genere deve essere Female o Male, oppure vuoto.",
       INVALID_TIME: "Scrivi l’ora come HH:MM (24 ore).",
       INVALID_NUMBER: "Deve essere un numero intero.",
@@ -4642,7 +4642,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       AMBIGUOUS_CLASS: "Più di una lezione con questo nome è iniziata a quest’ora.",
       CLASS_CANCELLED: "Questa lezione è stata annullata.",
       CLASS_NOT_STARTED: "Questa lezione non è ancora iniziata.",
-      OUT_OF_RANGE: "Le presenze passate si possono importare solo fino a {days} giorni indietro.",
+      OUT_OF_RANGE: "Le presenze passate si possono importare solo dal {earliest} in poi.",
       FAILED: "Impossibile importare questa riga.",
     },
     warnings: {

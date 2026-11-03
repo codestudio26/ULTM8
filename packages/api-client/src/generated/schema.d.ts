@@ -9375,7 +9375,8 @@ export interface components {
             schoolId: string;
             branchId?: string | null;
             status: string;
-            sourceMembershipId: string;
+            /** @description The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6). */
+            sourceMembershipId: string | null;
             overriddenById?: string | null;
             overrideReason?: string | null;
             checkInMethod?: string | null;
@@ -9436,7 +9437,8 @@ export interface components {
             schoolId: string;
             branchId?: string | null;
             status: string;
-            sourceMembershipId: string;
+            /** @description The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6). */
+            sourceMembershipId: string | null;
             overriddenById?: string | null;
             overrideReason?: string | null;
             checkInMethod?: string | null;
@@ -13712,8 +13714,8 @@ export interface components {
         ImportLimitsDto: {
             maxRows: number;
             maxRowsPerRequest: number;
-            /** @description Past attendance can be imported this many days back (Decision 317 item 4). */
-            attendanceMaxDaysBack: number;
+            /** @description The earliest date past attendance can be imported for (YYYY-MM-DD). Any later past date is accepted (Decision 422 item 6). */
+            attendanceEarliestDay: string;
             /** @description Each kind's columns, in template order. */
             columns: {
                 [key: string]: string[];

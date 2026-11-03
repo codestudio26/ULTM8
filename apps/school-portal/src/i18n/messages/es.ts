@@ -4560,7 +4560,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     about: {
       MEMBERS: "Una fila por miembro: nombre, correo, teléfono, fecha de nacimiento, género (Female, Male o vacío), fecha de alta, cinturones (\"Estilo: Cinturón; Estilo: Cinturón\") y sede principal. Cada miembro nuevo recibe una cuenta y un correo con un código de acceso temporal. Una fila cuyo correo ya tiene cuenta se omite y se lista. Un niño (menor de 18) se añade con el correo de su tutor: un tutor nuevo recibe una cuenta con un código de acceso temporal; un tutor que ya tiene cuenta recibe una invitación para aceptar en la app.",
       MEMBERSHIPS: "Una fila por membresía: el correo del miembro (para un niño, el correo de su tutor y el nombre del niño), el nombre del plan tal como aparece en tu página de planes, la fecha de inicio y, si quieres, la fecha de fin y, para un bono de clases, las clases que quedan. Se registra sin pago. Una suscripción se paga con tarjeta en la app, así que no se puede importar.",
-      ATTENDANCE: "Una fila por clase a la que alguien asistió: el correo del miembro (para un niño, el correo de su tutor y el nombre del niño), la fecha, la hora de inicio (24 h, hora de tu escuela) y el nombre de la clase. Cada una cuenta como un registro de entrada (se usa una clase del bono si hace falta y cuenta para los grados), hasta {days} días atrás.",
+      ATTENDANCE: "Una fila por clase a la que alguien asistió: el correo del miembro (para un niño, el correo de su tutor y el nombre del niño), la fecha, la hora de inicio (24 h, hora de tu escuela) y el nombre de la clase. Se puede importar cualquier fecha pasada. Cada una cuenta para los grados como un registro de entrada (las clases anteriores a su último ascenso no cuentan para el siguiente cinturón), pero no usa ninguna clase del bono ni crédito de clases y no necesita membresía: se pagó en otro lugar.",
     },
     formatHint: "Escribe las fechas como AAAA-MM-DD y las horas como HH:MM. Guarda el archivo como CSV (separado por comas o puntos y comas). Hasta {max} filas por archivo.",
     template: "Descargar la plantilla",
@@ -4613,7 +4613,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       INVALID_PHONE: "Escribe el teléfono como número internacional: + y el prefijo del país.",
       INVALID_DATE: "Escribe la fecha como AAAA-MM-DD.",
       INVALID_BIRTH_DATE: "No es una fecha de nacimiento real: en el futuro o hace más de 120 años.",
-      FUTURE_DATE: "La fecha de alta no puede ser futura.",
+      FUTURE_DATE: "Esta fecha no puede ser futura.",
       INVALID_GENDER: "El género debe ser Female o Male, o quedar vacío.",
       INVALID_TIME: "Escribe la hora como HH:MM (24 h).",
       INVALID_NUMBER: "Debe ser un número entero.",
@@ -4642,7 +4642,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       AMBIGUOUS_CLASS: "Más de una clase con este nombre empezó a esta hora.",
       CLASS_CANCELLED: "Esta clase se canceló.",
       CLASS_NOT_STARTED: "Esta clase aún no ha empezado.",
-      OUT_OF_RANGE: "La asistencia pasada solo se puede importar hasta {days} días atrás.",
+      OUT_OF_RANGE: "La asistencia pasada solo se puede importar desde el {earliest}.",
       FAILED: "No se pudo importar esta fila.",
     },
     warnings: {

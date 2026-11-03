@@ -4514,7 +4514,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     about: {
       MEMBERS: "회원당 한 행: 이름, 이메일, 전화번호, 생년월일, 성별(Female, Male 또는 빈칸), 가입일, 띠(\"스타일: 띠; 스타일: 띠\"), 소속 지점. 새 회원마다 계정과 임시 비밀번호가 담긴 이메일이 전송됩니다. 이미 계정이 있는 이메일의 행은 건너뛰고 목록에 표시됩니다. 아동(18세 미만)은 보호자 이메일로 추가됩니다. 새 보호자는 임시 비밀번호가 있는 계정을 받고, 이미 계정이 있는 보호자는 앱에서 수락할 초대를 받습니다.",
       MEMBERSHIPS: "회원권당 한 행: 회원 이메일(아동은 보호자 이메일과 아동 이름), 회원권 플랜 페이지에 있는 플랜 이름, 시작일, 원하면 종료일과 수업 패키지의 남은 수업 수. 결제 없이 기록됩니다. 구독은 앱에서 카드로 결제하므로 가져올 수 없습니다.",
-      ATTENDANCE: "참석한 수업당 한 행: 회원 이메일(아동은 보호자 이메일과 아동 이름), 날짜, 시작 시간(24시간제, 스쿨 시간), 수업 이름. 각 행은 체크인처럼 계산되며(필요하면 수업 패키지 1회를 사용하고 승급에 반영됩니다), {days}일 전까지 가져올 수 있습니다.",
+      ATTENDANCE: "참석한 수업당 한 행: 회원 이메일(아동은 보호자 이메일과 아동 이름), 날짜, 시작 시간(24시간제, 스쿨 시간), 수업 이름. 지난 날짜라면 언제든 가져올 수 있습니다. 각 행은 체크인처럼 승급에 반영되지만(마지막 승급 이전의 수업은 다음 띠에 반영되지 않습니다), 수업 패키지나 수업 크레딧을 사용하지 않고 멤버십도 필요하지 않습니다. 다른 곳에서 이미 결제되었기 때문입니다.",
     },
     formatHint: "날짜는 YYYY-MM-DD, 시간은 HH:MM으로 쓰세요. 파일은 CSV(쉼표 또는 세미콜론 구분)로 저장하세요. 파일당 최대 {max}행입니다.",
     template: "템플릿 다운로드",
@@ -4567,7 +4567,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       INVALID_PHONE: "전화번호는 국제 형식으로 쓰세요: +와 국가 번호.",
       INVALID_DATE: "날짜는 YYYY-MM-DD로 쓰세요.",
       INVALID_BIRTH_DATE: "올바른 생년월일이 아닙니다: 미래이거나 120년보다 이전입니다.",
-      FUTURE_DATE: "가입일은 미래일 수 없습니다.",
+      FUTURE_DATE: "이 날짜는 미래일 수 없습니다.",
       INVALID_GENDER: "성별은 Female 또는 Male이거나 빈칸이어야 합니다.",
       INVALID_TIME: "시간은 HH:MM(24시간제)으로 쓰세요.",
       INVALID_NUMBER: "정수여야 합니다.",
@@ -4596,7 +4596,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       AMBIGUOUS_CLASS: "이 시간에 시작한 이 이름의 수업이 여러 개입니다.",
       CLASS_CANCELLED: "이 수업은 취소되었습니다.",
       CLASS_NOT_STARTED: "이 수업은 아직 시작하지 않았습니다.",
-      OUT_OF_RANGE: "지난 출석은 {days}일 전까지만 가져올 수 있습니다.",
+      OUT_OF_RANGE: "지난 출석은 {earliest} 이후의 것만 가져올 수 있습니다.",
       FAILED: "이 행을 가져올 수 없었습니다.",
     },
     warnings: {

@@ -4560,7 +4560,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     about: {
       MEMBERS: "Une ligne par membre : nom, e-mail, téléphone, date de naissance, genre (Female, Male ou vide), date d'adhésion, ceintures (« Style : Ceinture; Style : Ceinture ») et site principal. Chaque nouveau membre reçoit un compte et un e-mail avec un code d'accès temporaire. Une ligne dont l'e-mail a déjà un compte est ignorée et listée. Un enfant (moins de 18 ans) est ajouté avec l'e-mail de son responsable légal : un nouveau responsable reçoit un compte avec un code d'accès temporaire ; un responsable qui en a déjà un reçoit une invitation à accepter dans l'application.",
       MEMBERSHIPS: "Une ligne par abonnement : l'e-mail du membre (pour un enfant, l'e-mail de son responsable légal et le nom de l'enfant), le nom de la formule tel qu'il apparaît sur votre page des formules, la date de début et, si vous le souhaitez, la date de fin et, pour une carte de cours, les cours restants. Il est enregistré sans paiement. Un abonnement récurrent se paie par carte dans l'application, il ne peut donc pas être importé.",
-      ATTENDANCE: "Une ligne par cours suivi : l'e-mail du membre (pour un enfant, l'e-mail de son responsable légal et le nom de l'enfant), la date, l'heure de début (24 h, heure de votre école) et le nom du cours. Chaque ligne compte comme une arrivée (un crédit de carte de cours est utilisé si besoin, et elle compte pour les passages de grade), jusqu'à {days} jours en arrière.",
+      ATTENDANCE: "Une ligne par cours suivi : l'e-mail du membre (pour un enfant, l'e-mail de son responsable légal et le nom de l'enfant), la date, l'heure de début (24 h, heure de votre école) et le nom du cours. Toute date passée est acceptée. Chaque ligne compte pour les passages de grade comme une arrivée (les cours antérieurs au dernier passage de grade ne comptent pas pour la ceinture suivante), mais n’utilise aucun crédit de carte de cours et ne demande aucune adhésion : elle a été payée ailleurs.",
     },
     formatHint: "Écrivez les dates AAAA-MM-JJ et les heures HH:MM. Enregistrez le fichier en CSV (séparé par des virgules ou des points-virgules). Jusqu’à {max} lignes par fichier.",
     template: "Télécharger le modèle",
@@ -4613,7 +4613,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       INVALID_PHONE: "Écrivez le téléphone au format international : + et l’indicatif du pays.",
       INVALID_DATE: "Écrivez la date AAAA-MM-JJ.",
       INVALID_BIRTH_DATE: "Date de naissance impossible : dans le futur ou il y a plus de 120 ans.",
-      FUTURE_DATE: "La date d’adhésion ne peut pas être dans le futur.",
+      FUTURE_DATE: "Cette date ne peut pas être dans le futur.",
       INVALID_GENDER: "Le genre doit être Female ou Male, ou rester vide.",
       INVALID_TIME: "Écrivez l’heure HH:MM (24 h).",
       INVALID_NUMBER: "Doit être un nombre entier.",
@@ -4642,7 +4642,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       AMBIGUOUS_CLASS: "Plusieurs cours de ce nom ont commencé à cette heure.",
       CLASS_CANCELLED: "Ce cours a été annulé.",
       CLASS_NOT_STARTED: "Ce cours n’a pas encore commencé.",
-      OUT_OF_RANGE: "Les présences passées ne peuvent être importées que jusqu’à {days} jours en arrière.",
+      OUT_OF_RANGE: "Les présences passées ne peuvent être importées qu’à partir du {earliest}.",
       FAILED: "Cette ligne n’a pas pu être importée.",
     },
     warnings: {

@@ -166,8 +166,8 @@ export class ImportLimitsDto {
   @ApiProperty()
   maxRowsPerRequest!: number;
 
-  @ApiProperty({ description: 'Past attendance can be imported this many days back (Decision 317 item 4).' })
-  attendanceMaxDaysBack!: number;
+  @ApiProperty({ description: 'The earliest date past attendance can be imported for (YYYY-MM-DD). Any later past date is accepted (Decision 422 item 6).' })
+  attendanceEarliestDay!: string;
 
   @ApiProperty({ type: Object, description: 'Each kind\'s columns, in template order.', additionalProperties: { type: 'array', items: { type: 'string' } } })
   columns!: Record<ImportKind, string[]>;

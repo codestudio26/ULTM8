@@ -7,7 +7,9 @@
  *   Guardian: an invite to accept); gender Female/Male/empty only;
  * - memberships: recorded against the School's own plans, no money moves, a
  *   Subscription is refused;
- * - past attendance: logged as "Log attendance" does, 30 days back, never twice;
+ * - past attendance (Decision 422 item 6): of any age, never in the future or
+ *   before 1900, never twice; it counts toward belt progress by grading's own
+ *   rules, uses no pack or class credit and needs no membership;
  * - a batch sent again returns the same results and imports nothing twice;
  * - the owner, and Branch Staff with "Import data" for their own branches;
  * - no School's import reaches another School's students, plans or classes.
@@ -57,6 +59,7 @@ describeIfDb('Spreadsheet imports (Decision 315 items 12, 13)', () => {
   let bjj: string;
   let white0: string;
   let blue0: string;
+  let judo: string;
   let packPlan: string;
 
   const as = (who: string) => ({
@@ -136,6 +139,28 @@ describeIfDb('Spreadsheet imports (Decision 315 items 12, 13)', () => {
     blue0 = (await superuser.rankStripeTier.create({ data: { id: randomUUID(), rankId: blue.id, schoolId: school, order: 0, count: 0, colour: '#000', name: 'Blue 0', classesRequired: 40 } })).id;
     await superuser.studentRank.create({
       data: { id: randomUUID(), studentId: users.ana.id, disciplineId: bjj, schoolId: school, currentRankId: white.id, currentStripeId: white0, dateOfCurrentRank: new Date('2026-01-01'), countingSince: new Date('2026-01-01') },
+    });
+    // Past attendance of any age (Decision 422 item 6): Cara has been a white
+    // belt since 2010, so years of classes count; Dan has no membership; Eve
+    // takes the large import.
+    await person('cara', [{ role: 'STUDENT', schoolId: school }]);
+    await person('dan', [{ role: 'STUDENT', schoolId: school }]);
+    await person('eve', [{ role: 'STUDENT', schoolId: school }]);
+    for (const label of ['cara', 'eve']) {
+      await superuser.studentRank.create({
+        data: { id: randomUUID(), studentId: users[label].id, disciplineId: bjj, schoolId: school, currentRankId: white.id, currentStripeId: white0, dateOfCurrentRank: new Date('2010-01-01'), countingSince: new Date('2010-01-01') },
+      });
+    }
+    // Judo: Yellow counts Gi classes only, at most one a week.
+    judo = (await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school, name: 'Judo', classTypesOffered: ['Gi', 'No-Gi'] } })).id;
+    const judoWhite = await superuser.rank.create({ data: { id: randomUUID(), disciplineId: judo, schoolId: school, order: 0, name: 'White', primaryColour: '#FFFFFF' } });
+    const judoYellow = await superuser.rank.create({ data: { id: randomUUID(), disciplineId: judo, schoolId: school, order: 1, name: 'Yellow', primaryColour: '#FFFF00' } });
+    const judoWhite0 = (await superuser.rankStripeTier.create({ data: { id: randomUUID(), rankId: judoWhite.id, schoolId: school, order: 0, count: 0, colour: '#000', name: 'White 0', classesRequired: 40 } })).id;
+    await superuser.rankStripeTier.create({
+      data: { id: randomUUID(), rankId: judoYellow.id, schoolId: school, order: 0, count: 0, colour: '#000', name: 'Yellow 0', classesRequired: 40, eligibleClassTypes: ['Gi'], weeklyClassCountCap: 1 },
+    });
+    await superuser.studentRank.create({
+      data: { id: randomUUID(), studentId: users.cara.id, disciplineId: judo, schoolId: school, currentRankId: judoWhite.id, currentStripeId: judoWhite0, dateOfCurrentRank: new Date('2010-01-01'), countingSince: new Date('2010-01-01') },
     });
 
     packPlan = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school, type: 'CLASS_PACK', title: '10 Class Pack', price: 10000, classesIncluded: 10 } })).id;
@@ -316,39 +341,201 @@ describeIfDb('Spreadsheet imports (Decision 315 items 12, 13)', () => {
   });
 
   describe('past attendance', () => {
-    it('logs a class as "Log attendance" does (a Class Pack credit, the grading count), 30 days back, never twice', async () => {
-      const start = DateTime.utc().minus({ days: 3 }).set({ hour: 18, minute: 0, second: 0, millisecond: 0 });
+    /** A class of this School (or another): `daysAgo` days back at 18:00 UTC, or at `when`. */
+    async function pastClass(when: number | DateTime, opts: { schoolId?: string; branchId?: string | null; title?: string; styles?: Array<{ disciplineId: string; classType: string | null }>; capacity?: number } = {}) {
+      const start = (typeof when === 'number' ? DateTime.utc().minus({ days: when }) : when).set({ hour: 18, minute: 0, second: 0, millisecond: 0 });
       const cls = await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school, branchId: main, title: 'Fundamentals', membershipInclusion: true, styles: [{ disciplineId: bjj, classType: null }], startDate: start.toJSDate(), endDate: start.plus({ hours: 1 }).toJSDate() },
+        data: {
+          id: randomUUID(),
+          schoolId: opts.schoolId ?? school,
+          branchId: opts.branchId === undefined ? main : opts.branchId,
+          title: opts.title ?? 'Fundamentals',
+          membershipInclusion: true,
+          capacity: opts.capacity ?? null,
+          styles: opts.styles ?? [{ disciplineId: bjj, classType: null }],
+          startDate: start.toJSDate(),
+          endDate: start.plus({ hours: 1 }).toJSDate(),
+        },
       });
-      const old = DateTime.utc().minus({ days: 40 }).set({ hour: 18, minute: 0, second: 0, millisecond: 0 });
-      await superuser.class.create({
-        data: { id: randomUUID(), schoolId: school, branchId: main, title: 'Fundamentals', membershipInclusion: true, styles: [], startDate: old.toJSDate(), endDate: old.plus({ hours: 1 }).toJSDate() },
-      });
-      const pack = await superuser.membership.findFirstOrThrow({ where: { studentId: users.ana.id, membershipPlanId: packPlan } });
-      const before = (await superuser.studentRank.findFirstOrThrow({ where: { studentId: users.ana.id, disciplineId: bjj } })).classesAttendedTowardCheckpoint;
+      return { cls, row: (who: { email: string }, over: Row = {}): Row => ({ email: who.email, date: start.toISODate()!, time: '18:00', class: cls.title, ...over }) };
+    }
+    const rankOf = (studentId: string, disciplineId = bjj) => superuser.studentRank.findFirstOrThrow({ where: { studentId, disciplineId } });
 
-      const row = { email: users.ana.email, date: start.toISODate()!, time: '18:00', class: 'fundamentals' };
+    it('imports visits from two and ten years ago: they count toward belt progress, use no credit and need no membership', async () => {
+      // A pack with credits left; a student with no membership at all.
+      const pack = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: users.cara.id, schoolId: school, membershipPlanId: packPlan, frequency: 'ONE_TIME', startDate: new Date('2024-01-01'), classesRemaining: 5 },
+      });
+      const twoYears = await pastClass(730);
+      const fortyDays = await pastClass(40);
+      const recent = await pastClass(3);
+      const tenYears = await pastClass(3653);
+      const before = (await rankOf(users.cara.id)).classesAttendedTowardCheckpoint;
+
       const { importId, res } = await runImport('owner', 'ATTENDANCE', [
-        row,
-        { ...row },
-        { email: users.ana.email, date: old.toISODate()!, time: '18:00', class: 'Fundamentals' },
-        { email: users.ana.email, date: start.toISODate()!, time: '19:00', class: 'Fundamentals' },
+        twoYears.row(users.cara),
+        fortyDays.row(users.cara),
+        recent.row(users.cara),
+        tenYears.row(users.cara),
+        twoYears.row(users.dan),
       ]);
       expect(res.status).toBe(201);
-      expect(res.body.rows.map((r: { code: string }) => r.code)).toEqual(['NEW_ATTENDANCE', 'DUPLICATE_IN_FILE', 'OUT_OF_RANGE', 'UNKNOWN_CLASS']);
-      const booking = await superuser.booking.findFirstOrThrow({ where: { studentId: users.ana.id, classId: cls.id } });
-      expect(booking).toMatchObject({ status: 'COMPLETED', checkInMethod: 'STAFF_LOGGED', checkedInById: users.owner.id, sourceMembershipId: pack.id });
-      expect((await superuser.membership.findUniqueOrThrow({ where: { id: pack.id } })).classesRemaining).toBe(pack.classesRemaining! - 1);
-      expect((await superuser.studentRank.findFirstOrThrow({ where: { studentId: users.ana.id, disciplineId: bjj } })).classesAttendedTowardCheckpoint).toBe(before + 1);
+      expect(res.body.rows.map((r: { outcome: string; code: string }) => [r.outcome, r.code])).toEqual(Array(5).fill(['CREATED', 'NEW_ATTENDANCE']));
 
-      // Sent again, and imported again: never counted twice.
-      const retry = await as('owner').post(`/v1/schools/${school}/imports/${importId}/rows`).send({ rows: rowsOf([row]) });
+      // Checked in, by the importer, funded by no membership.
+      const bookings = await superuser.booking.findMany({ where: { studentId: { in: [users.cara.id, users.dan.id] }, classId: { in: [twoYears.cls.id, fortyDays.cls.id, recent.cls.id, tenYears.cls.id] } } });
+      expect(bookings).toHaveLength(5);
+      for (const b of bookings) expect(b).toMatchObject({ status: 'COMPLETED', checkInMethod: 'STAFF_LOGGED', checkedInById: users.owner.id, sourceMembershipId: null });
+      const kept = await superuser.dataImportRow.findUniqueOrThrow({ where: { importId_rowNumber: { importId, rowNumber: 2 } } });
+      expect(bookings.map((b) => b.id)).toContain(kept.bookingId);
+
+      // No credits: the pack still has 5 classes; no new membership anywhere.
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: pack.id } })).classesRemaining).toBe(5);
+      expect(await superuser.membership.count({ where: { studentId: users.dan.id } })).toBe(0);
+
+      // Belt progress: all four of Cara's classes are after her last rank change (2010).
+      expect((await rankOf(users.cara.id)).classesAttendedTowardCheckpoint).toBe(before + 4);
+      // Hours trained: each class's length, as a check-in.
+      expect(await superuser.trainingLog.count({ where: { studentId: users.cara.id, source: 'CHECK_IN', bookingId: { in: bookings.map((b) => b.id) } } })).toBe(4);
+      // The student's progress, as staff see it on the student's grading page.
+      const eligibility = await as('owner').get(`/v1/students/${users.cara.id}/eligibility?schoolId=${school}`);
+      expect(eligibility.status).toBe(200);
+      const bjjRow = eligibility.body.items.find((i: { disciplineId: string }) => i.disciplineId === bjj);
+      expect(bjjRow.progressBreakdown.classes.counted).toBe(before + 4);
+      // And on the Grading Board.
+      const board = await as('owner').get(`/v1/schools/${school}/grading-board?disciplineId=${bjj}`);
+      expect(board.status).toBe(200);
+      const card = (board.body.items as Array<{ studentId: string; eligibility: { countedClasses?: number } }>).find((i) => i.studentId === users.cara.id);
+      expect(card?.eligibility.countedClasses).toBe(before + 4);
+
+      // Sent again, and imported again: never twice.
+      const retry = await as('owner').post(`/v1/schools/${school}/imports/${importId}/rows`).send({ rows: rowsOf([twoYears.row(users.cara)]) });
       expect(retry.body.rows[0]).toMatchObject({ outcome: 'CREATED', code: 'NEW_ATTENDANCE' });
-      const again = await runImport('owner', 'ATTENDANCE', [row]);
+      const again = await runImport('owner', 'ATTENDANCE', [twoYears.row(users.cara)]);
       expect(again.res.body.rows[0]).toMatchObject({ outcome: 'SKIPPED', code: 'ALREADY_ATTENDED' });
-      expect(await superuser.booking.count({ where: { studentId: users.ana.id, classId: cls.id } })).toBe(1);
-      expect((await superuser.studentRank.findFirstOrThrow({ where: { studentId: users.ana.id, disciplineId: bjj } })).classesAttendedTowardCheckpoint).toBe(before + 1);
+      expect(await superuser.booking.count({ where: { studentId: users.cara.id, classId: twoYears.cls.id } })).toBe(1);
+      expect((await rankOf(users.cara.id)).classesAttendedTowardCheckpoint).toBe(before + 4);
+    });
+
+    it('an existing booking for the class is checked in, not paid for again', async () => {
+      const pack = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: users.dan.id, schoolId: school, membershipPlanId: packPlan, frequency: 'ONE_TIME', startDate: new Date('2026-01-01'), classesRemaining: 3 },
+      });
+      const { cls, row } = await pastClass(2);
+      // Booked (its credit spent then) and marked No-Show by the sweep.
+      const booked = await superuser.booking.create({ data: { id: randomUUID(), studentId: users.dan.id, classId: cls.id, schoolId: school, branchId: main, sourceMembershipId: pack.id, status: 'NO_SHOW' } });
+      const { res } = await runImport('owner', 'ATTENDANCE', [row(users.dan)]);
+      expect(res.body.rows[0]).toMatchObject({ outcome: 'CREATED', code: 'NEW_ATTENDANCE' });
+      expect(await superuser.booking.findUniqueOrThrow({ where: { id: booked.id } })).toMatchObject({ status: 'COMPLETED', sourceMembershipId: pack.id, checkInMethod: 'STAFF_LOGGED' });
+      expect(await superuser.booking.count({ where: { studentId: users.dan.id, classId: cls.id } })).toBe(1);
+      expect((await superuser.membership.findUniqueOrThrow({ where: { id: pack.id } })).classesRemaining).toBe(3);
+    });
+
+    it('refuses a future date, a date before 1900 and a date that does not exist', async () => {
+      const tomorrow = DateTime.utc().plus({ days: 1 }).toISODate()!;
+      const future = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: school, branchId: main, title: 'Tomorrow', membershipInclusion: true, styles: [], startDate: new Date(`${tomorrow}T18:00:00Z`), endDate: new Date(`${tomorrow}T19:00:00Z`) },
+      });
+      const res = await preview('owner', 'ATTENDANCE', [
+        { email: users.cara.email, date: tomorrow, time: '18:00', class: future.title },
+        { email: users.cara.email, date: '2999-01-01', time: '18:00', class: 'Fundamentals' },
+        { email: users.cara.email, date: '1899-12-31', time: '18:00', class: 'Fundamentals' },
+        { email: users.cara.email, date: '2025-02-30', time: '18:00', class: 'Fundamentals' },
+        { email: users.cara.email, date: '20/10/2025', time: '18:00', class: 'Fundamentals' },
+        { email: users.cara.email, date: '1900-01-01', time: '18:00', class: 'Fundamentals' },
+      ]);
+      expect(res.status).toBe(201);
+      expect(res.body.rows.map((r: { code: string; column: string | null }) => [r.code, r.column])).toEqual([
+        ['FUTURE_DATE', 'date'],
+        ['FUTURE_DATE', 'date'],
+        ['OUT_OF_RANGE', 'date'],
+        ['INVALID_DATE', 'date'],
+        ['INVALID_DATE', 'date'],
+        // The earliest day itself is accepted: there is just no class then.
+        ['UNKNOWN_CLASS', 'class'],
+      ]);
+      const limits = await as('owner').get(`/v1/schools/${school}/imports/limits`);
+      expect(limits.body.attendanceEarliestDay).toBe('1900-01-01');
+      expect(limits.body.attendanceMaxDaysBack).toBeUndefined();
+    });
+
+    it("respects the grading rules: only classes since the last rank change, the next rank's class types and its weekly cap", async () => {
+      // Ana's last rank change was 1 Jan 2026: a class before it belongs to the previous rung.
+      const beforeChange = await pastClass(DateTime.fromISO('2025-06-02T00:00:00Z', { zone: 'utc' }));
+      const anaBefore = (await rankOf(users.ana.id)).classesAttendedTowardCheckpoint;
+      // Judo: Yellow counts Gi classes only, at most 1 a week.
+      const monday = DateTime.utc().minus({ days: 730 }).startOf('week');
+      const judoClass = (when: DateTime, classType: string) => pastClass(when, { title: `Judo ${classType}`, styles: [{ disciplineId: judo, classType }] });
+      const gi1 = await judoClass(monday, 'Gi');
+      const gi2 = await judoClass(monday.plus({ days: 2 }), 'Gi');
+      const noGi = await judoClass(monday.plus({ days: 3 }), 'No-Gi');
+      const giNextWeek = await judoClass(monday.plus({ days: 8 }), 'Gi');
+      const judoBefore = await rankOf(users.cara.id, judo);
+
+      const { res } = await runImport('owner', 'ATTENDANCE', [
+        beforeChange.row(users.ana),
+        gi1.row(users.cara),
+        gi2.row(users.cara),
+        noGi.row(users.cara),
+        giNextWeek.row(users.cara),
+      ]);
+      expect(res.body.rows.every((r: { code: string }) => r.code === 'NEW_ATTENDANCE')).toBe(true);
+      // Imported, but before Ana's last rank change: it counts toward nothing.
+      expect((await rankOf(users.ana.id)).classesAttendedTowardCheckpoint).toBe(anaBefore);
+      // Gi only, one a week: the two Gi classes of the first week count once, No-Gi not at all.
+      const judoAfter = await rankOf(users.cara.id, judo);
+      expect(judoAfter.classesAttendedTowardCheckpoint).toBe(judoBefore.classesAttendedTowardCheckpoint + 2);
+      expect(judoAfter.classesAttendedByType).toMatchObject({ Gi: 2 });
+    });
+
+    it('imports a large history in batches of 100 rows quickly, each class once', async () => {
+      // 100 weekly classes going back two years, one batch.
+      const classes: Array<Awaited<ReturnType<typeof pastClass>>> = [];
+      for (let w = 1; w <= 100; w++) classes.push(await pastClass(7 * w + 1, { title: 'History', styles: [{ disciplineId: bjj, classType: null }] }));
+      const before = (await rankOf(users.eve.id)).classesAttendedTowardCheckpoint;
+      const started = Date.now();
+      const checked = await preview('owner', 'ATTENDANCE', classes.map((c) => c.row(users.eve)));
+      const previewMs = Date.now() - started;
+      expect(checked.body.counts).toEqual({ ok: 100, skipped: 0, errors: 0 });
+      const t = Date.now();
+      const { res } = await runImport('owner', 'ATTENDANCE', classes.map((c) => c.row(users.eve)));
+      const importMs = Date.now() - t;
+      // eslint-disable-next-line no-console
+      console.log(`[data-imports.e2e-spec] 100 attendance rows: preview ${previewMs} ms, import ${importMs} ms`);
+      expect(res.status).toBe(201);
+      expect(res.body.rows.filter((r: { code: string }) => r.code === 'NEW_ATTENDANCE')).toHaveLength(100);
+      expect(importMs).toBeLessThan(30_000);
+      expect((await rankOf(users.eve.id)).classesAttendedTowardCheckpoint).toBe(before + 100);
+      // The ready-to-grade check: once for the student, not once per row.
+      const readyChecks = (Queue.prototype.add as jest.Mock).mock.calls.filter(([name, data]) => name === 'ready-check' && (data as { studentId: string }).studentId === users.eve.id);
+      expect(readyChecks).toHaveLength(1);
+    });
+
+    it("never reaches another School: not its classes, not its students, and no class of this School from there", async () => {
+      // The same title and time at both Schools; the other School's student.
+      const here = await pastClass(400, { title: 'Twin' });
+      const there = await pastClass(400, { title: 'Twin', schoolId: otherSchool, branchId: null, styles: [] });
+      const { res } = await runImport('owner', 'ATTENDANCE', [
+        here.row(users.otherStudent),
+        here.row(users.cara),
+        { ...here.row(users.cara), class: 'Only There' },
+      ]);
+      expect(res.body.rows.map((r: { code: string }) => r.code)).toEqual(['NOT_A_MEMBER', 'NEW_ATTENDANCE', 'UNKNOWN_CLASS']);
+      // Cara's row matched this School's class, never the other School's twin.
+      expect(await superuser.booking.count({ where: { classId: there.cls.id } })).toBe(0);
+      expect(await superuser.booking.count({ where: { studentId: users.otherStudent.id } })).toBe(0);
+
+      // From the other School: this School's student isn't a member there, and
+      // the row can only match the other School's own class.
+      const own = await runImport('otherOwner', 'ATTENDANCE', [there.row(users.ana), there.row(users.otherStudent)], otherSchool);
+      expect(own.res.body.rows.map((r: { code: string }) => r.code)).toEqual(['NOT_A_MEMBER', 'NEW_ATTENDANCE']);
+      expect(await superuser.booking.count({ where: { studentId: users.ana.id, classId: { in: [here.cls.id, there.cls.id] } } })).toBe(0);
+      const otherBooking = await superuser.booking.findFirstOrThrow({ where: { studentId: users.otherStudent.id } });
+      expect(otherBooking).toMatchObject({ classId: there.cls.id, schoolId: otherSchool, sourceMembershipId: null });
+      // And this School's owner can't send rows into the other School's import.
+      const theirs = await as('otherOwner').post(`/v1/schools/${otherSchool}/imports`).send({ kind: 'ATTENDANCE', totalRows: 1 });
+      const sneak = await as('owner').post(`/v1/schools/${otherSchool}/imports/${theirs.body.id}/rows`).send({ rows: rowsOf([there.row(users.otherStudent)]) });
+      expect([403, 404]).toContain(sneak.status);
     });
   });
 
@@ -362,7 +549,7 @@ describeIfDb('Spreadsheet imports (Decision 315 items 12, 13)', () => {
       expect((await setAccess('staff', { importData: true })).status).toBe(200);
       const limits = await as('staff').get(`/v1/schools/${school}/imports/limits`);
       expect(limits.status).toBe(200);
-      expect(limits.body).toMatchObject({ maxRows: 2000, maxRowsPerRequest: 100, attendanceMaxDaysBack: 30 });
+      expect(limits.body).toMatchObject({ maxRows: 2000, maxRowsPerRequest: 100, attendanceEarliestDay: '1900-01-01' });
 
       const { importId, res } = await runImport('staff', 'MEMBERS', [
         { first_name: 'S', last_name: 'One', email: email('sOne'), date_of_birth: '1990-01-01', branch: 'Main', belts: 'BJJ: White' },

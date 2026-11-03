@@ -28912,7 +28912,9 @@
             "type": "string"
           },
           "sourceMembershipId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6)."
           },
           "overriddenById": {
             "type": "string",
@@ -29141,7 +29143,9 @@
             "type": "string"
           },
           "sourceMembershipId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6)."
           },
           "overriddenById": {
             "type": "string",
@@ -43081,9 +43085,9 @@
           "maxRowsPerRequest": {
             "type": "number"
           },
-          "attendanceMaxDaysBack": {
-            "type": "number",
-            "description": "Past attendance can be imported this many days back (Decision 317 item 4)."
+          "attendanceEarliestDay": {
+            "type": "string",
+            "description": "The earliest date past attendance can be imported for (YYYY-MM-DD). Any later past date is accepted (Decision 422 item 6)."
           },
           "columns": {
             "type": "object",
@@ -43099,7 +43103,7 @@
         "required": [
           "maxRows",
           "maxRowsPerRequest",
-          "attendanceMaxDaysBack",
+          "attendanceEarliestDay",
           "columns"
         ]
       },

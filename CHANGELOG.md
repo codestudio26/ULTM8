@@ -442,6 +442,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   need the new "Import data" switch and reach only their own branches' students
   (adding a child stays the owner's). Results can be downloaded as CSV. **Needs
   a database migration** (`20270202000000_data_imports`).
+- **Import past attendance of any age** (Decision 422 item 6) — the 30-day
+  limit on importing past attendance is gone: any past date from 1 Jan 1900
+  is accepted; a future date or a date that doesn't exist is still refused.
+  Imported visits count toward belt progress like any other check-in, by
+  grading's own rules (the next belt's class types, its weekly cap, and only
+  classes since the student's last promotion). They never use a Class Pack or
+  class credit and need no membership, because they were paid for elsewhere:
+  before this change an import used a Class Pack credit when nothing else
+  paid. A booking already made for the class is checked in, not paid for
+  again. The import screen's text says so in every language. **Needs a
+  database migration** (`20270207000000_imported_attendance`: a booking's
+  paying membership may now be empty, for imported attendance only).
 - **Freezing a membership: follow-ups** (backlog 3.4; Decision 409) —
   approving a freeze now cancels the member's bookings on the frozen days that
   the frozen membership paid for (no late fee; the place goes to the waitlist),

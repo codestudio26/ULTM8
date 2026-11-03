@@ -15,6 +15,9 @@ export type ImportKind = (typeof IMPORT_KINDS)[number];
 export const MAX_IMPORT_ROWS = 2000;
 /** At most this many rows in one request; the portal sends a file in batches. */
 export const MAX_ROWS_PER_REQUEST = 100;
+/** Past attendance of any age (Decision 422 item 6), but no date before this
+ * one: an earlier date is a typing mistake, not a class someone came to. */
+export const ATTENDANCE_EARLIEST_DAY = '1900-01-01';
 /** The longest value a cell may hold. */
 export const MAX_CELL_LENGTH = 200;
 

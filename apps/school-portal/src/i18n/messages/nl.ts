@@ -4560,7 +4560,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     about: {
       MEMBERS: "Eén rij per lid: naam, e-mail, telefoon, geboortedatum, geslacht (Female, Male of leeg), inschrijfdatum, banden (\"Stijl: Band; Stijl: Band\") en thuisvestiging. Elk nieuw lid krijgt een account en een e-mail met een tijdelijke toegangscode. Een rij waarvan de e-mail al een account heeft, wordt overgeslagen en vermeld. Een kind (onder 18) wordt toegevoegd met het e-mailadres van de ouder/voogd: een nieuwe ouder/voogd krijgt een account met een tijdelijke toegangscode; wie er al een heeft, krijgt een uitnodiging om in de app te accepteren.",
       MEMBERSHIPS: "Eén rij per lidmaatschap: het e-mailadres van het lid (voor een kind het e-mailadres van de ouder/voogd en de naam van het kind), de naam van het abonnement zoals op je abonnementenpagina, de begindatum en desgewenst de einddatum en, bij een rittenkaart, de resterende lessen. Het wordt vastgelegd zonder betaling. Een abonnement wordt met een kaart in de app betaald en kan dus niet worden geïmporteerd.",
-      ATTENDANCE: "Eén rij per les waar iemand was: het e-mailadres van het lid (voor een kind het e-mailadres van de ouder/voogd en de naam van het kind), de datum, de begintijd (24 uur, tijd van je school) en de naam van de les. Elke rij telt als een check-in (er wordt zo nodig een les van de rittenkaart gebruikt, en hij telt mee voor graduaties), tot {days} dagen terug.",
+      ATTENDANCE: "Eén rij per les waar iemand was: het e-mailadres van het lid (voor een kind het e-mailadres van de ouder/voogd en de naam van het kind), de datum, de begintijd (24 uur, tijd van je school) en de naam van de les. Elke datum in het verleden kan. Elke rij telt als een check-in mee voor graduaties (lessen van vóór de laatste graduatie tellen niet mee voor de volgende band), maar gebruikt geen les van de rittenkaart of ander tegoed en vraagt geen lidmaatschap: er is elders voor betaald.",
     },
     formatHint: "Schrijf datums als JJJJ-MM-DD en tijden als UU:MM. Sla het bestand op als CSV (komma of puntkomma gescheiden). Tot {max} rijen per bestand.",
     template: "Sjabloon downloaden",
@@ -4613,7 +4613,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       INVALID_PHONE: "Schrijf de telefoon als internationaal nummer: + en de landcode.",
       INVALID_DATE: "Schrijf de datum als JJJJ-MM-DD.",
       INVALID_BIRTH_DATE: "Geen echte geboortedatum: in de toekomst of meer dan 120 jaar geleden.",
-      FUTURE_DATE: "De inschrijfdatum kan niet in de toekomst liggen.",
+      FUTURE_DATE: "Deze datum kan niet in de toekomst liggen.",
       INVALID_GENDER: "Geslacht moet Female of Male zijn, of leeg blijven.",
       INVALID_TIME: "Schrijf de tijd als UU:MM (24 uur).",
       INVALID_NUMBER: "Moet een geheel getal zijn.",
@@ -4642,7 +4642,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       AMBIGUOUS_CLASS: "Meer dan één les met deze naam begon op dit tijdstip.",
       CLASS_CANCELLED: "Deze les is geannuleerd.",
       CLASS_NOT_STARTED: "Deze les is nog niet begonnen.",
-      OUT_OF_RANGE: "Eerdere aanwezigheid kan alleen tot {days} dagen terug worden geïmporteerd.",
+      OUT_OF_RANGE: "Eerdere aanwezigheid kan alleen vanaf {earliest} worden geïmporteerd.",
       FAILED: "Deze rij kon niet worden geïmporteerd.",
     },
     warnings: {
