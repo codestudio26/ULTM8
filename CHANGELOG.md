@@ -86,6 +86,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     purchase ULTM8 refunds, or a whole payment refunded in Stripe), the
     Refunded amount is now what Stripe refunded, card surcharge included (it
     used to leave the surcharge out). Refunds of charges are unchanged.
+- **Fixed: a School or Franchise connected to Stripe could not take card
+  payments** — found in the same Stripe test-mode run. Connecting to Stripe
+  created the Stripe account without asking for card payments, so Stripe
+  enabled only transfers, and after onboarding every payment on it (hosted
+  Checkout, saved-card charges, Subscriptions) was refused. New accounts now
+  ask Stripe for card payments (and transfers) when they are created, and
+  continuing the Stripe setup (**Continue Stripe setup**) on an account created
+  before this fix, which has no card payments, asks for them too (an account
+  that already has them is left as it is), so Stripe's onboarding then collects
+  whatever card payments still need. Until that is done the account shows
+  Action needed, as before.
 - **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
   School's card surcharge applies, a monthly Subscription now carries it too:
   members see it on the plan before subscribing, and it is added to the first
