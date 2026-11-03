@@ -3910,6 +3910,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Als dit uit staat, checkt niemand in met een bezoekerspas.",
       frozenMembers: "Bevroren leden mogen inchecken",
       frozenMembersHint: "Als dit uit staat, kan een lid met een bevroren lidmaatschap niet inchecken.",
+      withoutBooking: "Inchecken zonder boeking",
+      withoutBookingHint: "Als dit aan staat, kunnen leden inchecken voor een les die ze niet hebben geboekt. Het inchecken neemt een plek als de les er nog een heeft en gebruikt hun lidmaatschap of een lestegoed, net als boeken. Als dit uit staat, moeten ze eerst boeken.",
       overdue: "Inchecken blokkeren bij achterstallige betalingen",
       overdueHint: "Leden die een factuur zo lang na de vervaldatum nog niet betaald hebben, kunnen pas inchecken als ze betalen.",
       overdueNo: "Nee",

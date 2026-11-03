@@ -3865,6 +3865,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "끄면 아무도 방문 패스로 체크인할 수 없습니다.",
       frozenMembers: "일시정지된 회원의 체크인 허용",
       frozenMembersHint: "끄면 멤버십이 일시정지된 회원은 체크인할 수 없습니다.",
+      withoutBooking: "예약 없이 체크인",
+      withoutBookingHint: "켜면 회원이 예약하지 않은 수업에도 체크인할 수 있습니다. 체크인은 자리가 있으면 자리를 잡고, 예약할 때처럼 멤버십이나 수업 크레딧을 사용합니다. 끄면 먼저 예약해야 합니다.",
       overdue: "연체 시 체크인 막기",
       overdueHint: "청구서 마감일 이후 이 기간이 지나도 미납인 회원은 결제할 때까지 체크인할 수 없습니다.",
       overdueNo: "안 함",

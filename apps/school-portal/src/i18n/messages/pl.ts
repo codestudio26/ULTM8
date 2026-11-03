@@ -4000,6 +4000,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Gdy wyłączone, nikt nie melduje się z karnetem wizytowym.",
       frozenMembers: "Zezwalaj zamrożonym członkom na zameldowanie",
       frozenMembersHint: "Gdy wyłączone, członek z zamrożonym karnetem nie może się zameldować.",
+      withoutBooking: "Meldowanie bez rezerwacji",
+      withoutBookingHint: "Gdy włączone, członkowie mogą się zameldować na zajęcia, których nie zarezerwowali. Meldowanie zajmuje miejsce, jeśli zajęcia je mają, i korzysta z ich karnetu lub kredytu na zajęcia, tak jak rezerwacja. Gdy wyłączone, muszą najpierw zarezerwować.",
       overdue: "Blokuj meldowanie przy zaległych płatnościach",
       overdueHint: "Członkowie, którzy po takim czasie od terminu wciąż nie zapłacili faktury, nie zameldują się, dopóki nie zapłacą.",
       overdueNo: "Nie",

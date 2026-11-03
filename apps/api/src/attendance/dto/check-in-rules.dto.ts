@@ -63,6 +63,14 @@ export class CheckInRulesDto {
   @IsIn([7, 14])
   blockOverdueDays?: 7 | 14 | null;
 
+  @ApiPropertyOptional({
+    description:
+      "Decision 422 item 2: a booking is needed to check in (default on, as before). Off (the owner's \"Check in without a booking\"): a member may check in to a Class they haven't booked, at every way in; the check-in first books a place by the booking's own rules (a full Class is refused with CLASS_FULL; membership, credits, waivers and the other check-in rules still apply). Always in the response; leave it out of a save to keep it as it is.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  requireBooking?: boolean;
+
   @ApiProperty({ enum: [4, 6], description: "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced." })
   @IsIn([4, 6])
   codeDigits!: number;

@@ -3910,6 +3910,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Kapalıyken, kimse ziyaret kartıyla check-in yapamaz.",
       frozenMembers: "Dondurulmuş üyelerin girişine izin ver",
       frozenMembersHint: "Kapalıyken, üyeliği dondurulmuş bir üye giriş yapamaz.",
+      withoutBooking: "Rezervasyon olmadan giriş",
+      withoutBookingHint: "Açıkken üyeler rezervasyon yapmadıkları bir derse giriş yapabilir. Giriş, derste yer varsa bir yer alır ve rezervasyonda olduğu gibi üyeliklerini veya bir ders kredisini kullanır. Kapalıyken önce rezervasyon yapmaları gerekir.",
       overdue: "Gecikmiş ödemelerde check-in’i engelle",
       overdueHint: "Son ödeme tarihinden bu kadar sonra hâlâ fatura borcu olan üyeler, ödeyene kadar check-in yapamaz.",
       overdueNo: "Hayır",
