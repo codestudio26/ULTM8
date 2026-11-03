@@ -13,7 +13,9 @@ import {
 
 /**
  * Export all signed documents (Decision 315 item 13): a ZIP of every signed
- * waiver at the School, with an index. School owners only.
+ * waiver at the School, with an index, and, when the owner ticks it, every
+ * member file (Decision 422 item 9). School owners only: every route checks
+ * the caller owns the School, so staff (with "Member files" or not) get 403.
  */
 @ApiTags('signed-documents')
 @ApiBearerAuth()
@@ -26,7 +28,7 @@ export class SignedDocumentsExportController {
   @ApiCreatedResponse({ type: SignedDocumentExportDto })
   @Post()
   request(@CurrentUser() user: JwtPayload, @Param('schoolId', ParseUUIDPipe) schoolId: string, @Body() body: CreateSignedDocumentExportDto) {
-    return this.exports.request(user.sub, schoolId, body.labels);
+    return this.exports.request(user.sub, schoolId, body.labels, body.includeMemberFiles === true);
   }
 
   /** The School's most recent export, if any. */

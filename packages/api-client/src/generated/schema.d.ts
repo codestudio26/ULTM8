@@ -12874,6 +12874,11 @@ export interface components {
         CreateSignedDocumentExportDto: {
             /** @description The index's column headings and the documents' words, in the reader's language. */
             labels?: components["schemas"]["SignedDocumentLabelsDto"];
+            /**
+             * @description Decision 422 item 9: also put every file on the School's members' Profile → Documents in the ZIP. Only the School owner may export (staff are refused).
+             * @default false
+             */
+            includeMemberFiles: boolean;
         };
         /** @enum {string} */
         SignedDocumentExportStatus: "PENDING" | "RUNNING" | "READY" | "FAILED" | "EXPIRED";
@@ -12882,6 +12887,10 @@ export interface components {
             status: components["schemas"]["SignedDocumentExportStatus"];
             /** @description Signed documents in the ZIP, once it is made. */
             documentCount?: number | null;
+            /** @description Whether the owner asked for member files to be included (Decision 422 item 9). */
+            includeMemberFiles: boolean;
+            /** @description Member files in the ZIP, once it is made; null when they weren't asked for. */
+            memberFileCount?: number | null;
             /** @description The ZIP's size in bytes, once it is made. */
             sizeBytes?: number | null;
             /** @description Who asked for it; null once their account is gone. */

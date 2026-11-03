@@ -18,6 +18,8 @@ import { JwtService } from '@nestjs/jwt';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
+import { readFileSync } from 'fs';
+import { Readable } from 'stream';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { R2ClientService } from '../src/common/object-storage/r2-client.service';
@@ -45,6 +47,7 @@ type Grant = [Role, string, string | null];
 
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52]);
 const JPG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00]);
+const PDF = Buffer.from('%PDF-1.7\n');
 
 describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
   let app: INestApplication;
@@ -61,6 +64,16 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
       stored.set(key, body);
     }),
     getObject: jest.fn(async (key: string) => stored.get(key) ?? null),
+    // Member files (Decision 422 item 9) are streamed in, in small chunks.
+    getObjectStream: jest.fn(async (key: string) => {
+      const body = stored.get(key);
+      if (!body) return null;
+      return Readable.from(Array.from({ length: Math.ceil(body.length / 7) || 0 }, (_, i) => body.subarray(i * 7, i * 7 + 7)));
+    }),
+    // The ZIP is uploaded from the file it was written to.
+    putObjectFromFile: jest.fn(async (key: string, path: string) => {
+      stored.set(key, readFileSync(path));
+    }),
     deleteObject: jest.fn(async (key: string) => {
       stored.delete(key);
     }),
@@ -106,6 +119,17 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
     });
     return users[label];
   }
+
+  const memberFileBodies: Record<string, Buffer> = {};
+  const short = (label: string) => users[label].id.replace(/-/g, '').slice(0, 8);
+  /** A member file row, its stored copy put in the bucket (left out when `body` is null). */
+  const file = (label: string, schoolId: string, studentId: string | null, fileName: string, contentType: string, body: Buffer | null, at: string) => {
+    const id = randomUUID();
+    const objectKey = `member-files/${schoolId}/${studentId ?? 'erased'}/${id}.${label}`;
+    if (body) stored.set(objectKey, body);
+    memberFileBodies[label] = body ?? Buffer.alloc(0);
+    return { id, schoolId, studentId, uploadedById: users.ownerA.id, fileName, contentType, sizeBytes: body?.length ?? 10, objectKey, createdAt: new Date(at) };
+  };
 
   const waiverA = randomUUID();
   const waiverA2 = randomUUID();
@@ -193,10 +217,31 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
         signedWaiverVersion: 3, signedAt: day('2026-04-01'),
       },
     });
+
+    // Member files (Decision 422 item 9), as Profile → Documents stores them.
+    await mkUser('staffFiles', [['BRANCH_STAFF', schoolA, branchA]]);
+    await superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: schoolA, userId: users.staffFiles.id, canManageMemberFiles: true } });
+    await superuser.memberFile.createMany({
+      data: [
+        file('anaScan', schoolA, users.ana.id, 'Scan.pdf', 'application/pdf', Buffer.concat([PDF, Buffer.alloc(5000, 3)]), '2026-05-01T09:00:00Z'),
+        // Same name, other case: kept apart.
+        file('anaScan2', schoolA, users.ana.id, 'scan.PDF', 'application/pdf', Buffer.concat([PDF, Buffer.from('second')]), '2026-05-02T09:00:00Z'),
+        // A name that tries to leave its folder, and one Windows reserves.
+        file('anaEvil', schoolA, users.ana.id, '../../../etc/passwd', 'application/pdf', Buffer.concat([PDF, Buffer.from('evil')]), '2026-05-03T09:00:00Z'),
+        file('kidCon', schoolA, users.kid.id, 'CON.png', 'image/png', PNG, '2026-05-04T09:00:00Z'),
+        // Its stored copy is gone: left out.
+        file('kidMissing', schoolA, users.kid.id, 'lost.jpg', 'image/jpeg', null, '2026-05-05T09:00:00Z'),
+        file('benPhoto', schoolA, users.ben.id, 'id card.jpg', 'image/jpeg', JPG, '2026-05-06T09:00:00Z'),
+        // Another School's member's file.
+        file('bea', schoolB, users.bea.id, 'bea.pdf', 'application/pdf', Buffer.concat([PDF, Buffer.from('bea')]), '2026-05-08T09:00:00Z'),
+      ],
+    });
   });
 
   afterAll(async () => {
     await superuser.signedDocumentExport.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.memberFile.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.staffPermission.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.guestWaiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.waiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.waiver.deleteMany({ where: { schoolId: { in: schoolIds } } });
@@ -261,6 +306,10 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
     expect(res.body.sizeBytes).toBe(stored.get(row.objectKey!)!.length);
 
     const names = [...files.keys()];
+    // Without the tick (Decision 422 item 9) no member file is in it.
+    expect(res.body).toMatchObject({ includeMemberFiles: false, memberFileCount: null });
+    expect(names.some((n) => n.startsWith('member-files/'))).toBe(false);
+    expect(r2.getObjectStream).not.toHaveBeenCalled();
     expect(names).toHaveLength(6);
     expect(names[5]).toBe('index.csv');
     expect(names.slice(0, 5)).toEqual([
@@ -347,7 +396,7 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
   });
 
   it('an export whose building fails is marked FAILED, and the owner can ask again', async () => {
-    r2.putObject.mockRejectedValueOnce(new Error('R2 is down'));
+    r2.putObjectFromFile.mockRejectedValueOnce(new Error('R2 is down'));
     const res = await as('ownerA').post(exportsOf()).send({});
     expect(res.status).toBe(201);
     expect(await settle(res.body.id)).toBe('FAILED');
@@ -356,5 +405,99 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
     const again = await as('ownerA').post(exportsOf()).send({});
     expect(again.body.id).not.toBe(res.body.id);
     expect(await settle(again.body.id)).toBe('READY');
+  });
+
+  describe('Include member files (Decision 422 item 9)', () => {
+    async function zipOf(id: string) {
+      const row = await superuser.signedDocumentExport.findUniqueOrThrow({ where: { id } });
+      return readZip(stored.get(row.objectKey!)!);
+    }
+
+    it('staff, even with "Member files", are refused, ticked or not; so are another School’s owner and a student', async () => {
+      const before = await superuser.signedDocumentExport.count({ where: { schoolId: schoolA } });
+      expect((await as('staffFiles').post(exportsOf()).send({ includeMemberFiles: true })).status).toBe(403);
+      expect((await as('staffFiles').post(exportsOf()).send({})).status).toBe(403);
+      expect((await as('staffFiles').get(`${exportsOf()}/latest`)).status).toBe(403);
+      expect((await as('staffA').post(exportsOf()).send({ includeMemberFiles: true })).status).toBe(403);
+      expect((await as('ana').post(exportsOf()).send({ includeMemberFiles: true })).status).toBe(403);
+      expect((await as('ownerB').post(exportsOf()).send({ includeMemberFiles: true })).status).toBe(403);
+      // The tick is a yes or no.
+      expect((await as('ownerA').post(exportsOf()).send({ includeMemberFiles: 'yes' })).status).toBe(400);
+      expect(await superuser.signedDocumentExport.count({ where: { schoolId: schoolA } })).toBe(before);
+    });
+
+    it("ticked, the ZIP also holds every member file at the School, each in its member's folder, with safe names", async () => {
+      // An erased account's file is on no one's profile, waiting to be purged.
+      await superuser.memberFile.create({ data: file('erased', schoolA, null, 'erased.pdf', 'application/pdf', Buffer.concat([PDF, Buffer.from('erased')]), '2026-05-07T09:00:00Z') });
+      const res = await as('ownerA').post(exportsOf()).send({ includeMemberFiles: true });
+      expect(res.status).toBe(201);
+      expect(res.body).toMatchObject({ status: 'PENDING', includeMemberFiles: true, memberFileCount: null });
+      expect(await settle(res.body.id)).toBe('READY');
+      const done = await as('ownerA').get(`${exportsOf()}/${res.body.id}`);
+      expect(done.body).toMatchObject({ status: 'READY', documentCount: 5, includeMemberFiles: true, memberFileCount: 5 });
+
+      const files = await zipOf(res.body.id);
+      const ana = `member-files/Ana Lima-${short('ana')}`;
+      const memberFiles = [...files.keys()].filter((n) => n.startsWith('member-files/'));
+      expect(memberFiles.sort()).toEqual(
+        [
+          `${ana}/Scan.pdf`,
+          `${ana}/scan (2).PDF`,
+          `${ana}/_.._.._etc_passwd.pdf`,
+          `member-files/Kid Lima-${short('kid')}/_CON.png`,
+          `member-files/=Ben Formula-${short('ben')}/id card.jpg`,
+        ].sort(),
+      );
+      // Each file is exactly what was uploaded.
+      expect(files.get(`${ana}/Scan.pdf`)!.equals(memberFileBodies.anaScan)).toBe(true);
+      expect(files.get(`${ana}/scan (2).PDF`)!.equals(memberFileBodies.anaScan2)).toBe(true);
+      expect(files.get(`${ana}/_.._.._etc_passwd.pdf`)!.equals(memberFileBodies.anaEvil)).toBe(true);
+      expect(files.get(`member-files/=Ben Formula-${short('ben')}/id card.jpg`)!.equals(JPG)).toBe(true);
+      // No name leaves its folder.
+      for (const name of files.keys()) {
+        expect(name.split('/').some((part) => part === '..' || part === '.' || part === '')).toBe(false);
+        expect(name).not.toMatch(/\\/);
+      }
+      // The signed documents and their index are there as before.
+      expect([...files.keys()].filter((n) => n.startsWith('documents/'))).toHaveLength(5);
+      expect(files.has('index.csv')).toBe(true);
+      // An erased account's file, a file missing from storage and School B's are not.
+      const all = [...files.keys()].join('\n');
+      expect(all).not.toContain('erased');
+      expect(all).not.toContain('lost');
+      expect(all).not.toContain('bea');
+      expect([...files.values()].some((b) => b.equals(memberFileBodies.bea) || b.equals(memberFileBodies.erased))).toBe(false);
+    });
+
+    it("another School's member files are never included: School B's ZIP holds only its own", async () => {
+      const res = await as('ownerB').post(exportsOf(schoolB)).send({ includeMemberFiles: true });
+      expect(await settle(res.body.id)).toBe('READY');
+      expect((await as('ownerB').get(`${exportsOf(schoolB)}/${res.body.id}`)).body).toMatchObject({ memberFileCount: 1, documentCount: 1 });
+      const files = await zipOf(res.body.id);
+      const memberFiles = [...files.keys()].filter((n) => n.startsWith('member-files/'));
+      expect(memberFiles).toEqual([`member-files/Bea Other-${short('bea')}/bea.pdf`]);
+      expect(files.get(memberFiles[0])!.equals(memberFileBodies.bea)).toBe(true);
+      // School A's files never reached School B's export.
+      for (const key of Object.keys(memberFileBodies).filter((k) => k !== 'bea' && memberFileBodies[k].length > 0)) {
+        expect([...files.values()].some((b) => b.equals(memberFileBodies[key]))).toBe(false);
+      }
+    });
+
+    it('unticked, a new export again holds no member file, and the ZIP is still deleted after 24 hours', async () => {
+      const res = await as('ownerA').post(exportsOf()).send({ includeMemberFiles: false });
+      expect(res.body.includeMemberFiles).toBe(false);
+      expect(await settle(res.body.id)).toBe('READY');
+      expect((await as('ownerA').get(`${exportsOf()}/${res.body.id}`)).body.memberFileCount).toBeNull();
+      expect([...(await zipOf(res.body.id)).keys()].some((n) => n.startsWith('member-files/'))).toBe(false);
+
+      // A ticked export's ZIP goes after 24 hours like any other.
+      const ticked = await superuser.signedDocumentExport.findFirstOrThrow({ where: { schoolId: schoolA, includeMemberFiles: true, status: 'READY' } });
+      await superuser.signedDocumentExport.update({ where: { id: ticked.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
+      await entityPurge.process({ data: {}, attemptsMade: 1, opts: { attempts: 3 } } as never);
+      expect(stored.has(ticked.objectKey!)).toBe(false);
+      expect(await superuser.signedDocumentExport.findUnique({ where: { id: ticked.id } })).toMatchObject({ status: 'EXPIRED', objectKey: null });
+      // The members' files themselves are untouched (the erased account's goes, as before).
+      expect(await superuser.memberFile.count({ where: { schoolId: schoolA } })).toBe(6);
+    });
   });
 });

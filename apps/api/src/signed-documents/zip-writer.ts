@@ -14,14 +14,16 @@ const CRC_TABLE = (() => {
   return table;
 })();
 
-export function crc32(data: Buffer): number {
-  let crc = 0xffffffff;
+/** The CRC-32 of `data`; pass the CRC of what came before it to continue
+ * one over several chunks (crc32(b, crc32(a)) is the CRC of a then b). */
+export function crc32(data: Uint8Array, previous = 0): number {
+  let crc = (previous ^ 0xffffffff) >>> 0;
   for (let i = 0; i < data.length; i++) crc = CRC_TABLE[(crc ^ data[i]) & 0xff] ^ (crc >>> 8);
   return (crc ^ 0xffffffff) >>> 0;
 }
 
 /** MS-DOS date and time, as a ZIP entry stores them (2-second steps, UTC). */
-function dosDateTime(d: Date): { time: number; date: number } {
+export function dosDateTime(d: Date): { time: number; date: number } {
   const year = Math.max(1980, d.getUTCFullYear());
   return {
     time: (d.getUTCHours() << 11) | (d.getUTCMinutes() << 5) | Math.floor(d.getUTCSeconds() / 2),
