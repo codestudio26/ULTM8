@@ -34,6 +34,12 @@ export const ADDRESS_TEXT = {
   postalExample: 'e.g. {example}',
   legacyNotice:
     'This address was saved as a single line before addresses had separate fields. Choose the country and check each field to update it, or leave it as it is.',
+  search: 'Search address',
+  searchPlaceholder: 'Start typing the street and number',
+  searchHint: 'Choose a result to fill in the fields below. You can still edit them.',
+  searchNoResults: 'No matching address. Enter it in the fields below.',
+  searchFailed: "Address search isn't working right now. Enter the address in the fields below.",
+  searchAttribution: 'Powered by Google',
   city: { city: 'City', town: 'Town', post_town: 'Town/City', suburb: 'Suburb', district: 'District', area: 'Area' } as Record<CityLabelKey, string>,
   region: {
     state: 'State',
@@ -138,18 +144,28 @@ export function preparePostalAddress(current: PostalAddress, initial?: PostalAdd
 export interface AddressSuggestion {
   id: string;
   label: string;
+  /** Optional second line, e.g. the town and country under the street. */
+  secondary?: string;
 }
 
 /**
- * The seam for address autocomplete (Google Places, Decision 212 — deferred to
- * v1.3 by Decision 267 until a Google Cloud API key exists). Pass an
- * implementation as `autocomplete` and line 1 offers suggestions as the person
- * types; picking one fills every field it can, and the person can still edit
- * them. Without it, the form is plain inputs.
+ * The seam for address search (Google Places, Decision 212). Pass an
+ * implementation as `autocomplete`, or once for every form with
+ * `AddressLookupProvider`, and the form gets a "Search address" box above the
+ * fields: picking a result fills every field it can, and the person can still
+ * edit them. Without one, the form is plain inputs.
  */
 export interface AddressAutocompleteProvider {
   suggest(query: string, country: string): Promise<AddressSuggestion[]>;
   resolve(suggestionId: string): Promise<Partial<PostalAddress>>;
+}
+
+const AddressLookupContext = React.createContext<AddressAutocompleteProvider | null>(null);
+
+/** Gives every `AddressFields` below it the same search provider; `null` (e.g.
+ * while the server's lookup is switched off) leaves the plain fields. */
+export function AddressLookupProvider({ provider, children }: { provider: AddressAutocompleteProvider | null; children: ReactNode }) {
+  return <AddressLookupContext.Provider value={provider}>{children}</AddressLookupContext.Provider>;
 }
 
 /* ---------------------------------------------------------------------- Component */
@@ -178,8 +194,10 @@ export interface AddressFieldsProps {
  * postal-code format — the same rules the API checks (`postalAddress.ts`).
  * Changing the country keeps what's typed in the fields both countries use.
  */
-export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, autocomplete, text: textProp, legend, hint, disabled }: AddressFieldsProps) {
+export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, autocomplete: autocompleteProp, text: textProp, legend, hint, disabled }: AddressFieldsProps) {
   const contextText = React.useContext(AddressTextContext);
+  const contextLookup = React.useContext(AddressLookupContext);
+  const autocomplete = autocompleteProp ?? contextLookup ?? undefined;
   const text = textProp ?? contextText;
   const countryNames = useLocalCountryNames(useUiLocale());
   const format = getAddressFormat(value.country);
@@ -240,19 +258,18 @@ export function AddressFields({ value, onChange, errors = {}, idPrefix, legacy, 
           disabled={disabled}
         />
       </Field>
+      {autocomplete && !disabled ? (
+        <AddressSearch id={`${idPrefix}-search`} value={value} onChange={onChange} provider={autocomplete} text={text} />
+      ) : null}
       <Field label={withOptional('line1')} htmlFor={`${idPrefix}-line1`} error={errorFor('line1')}>
-        {autocomplete ? (
-          <Line1WithSuggestions value={value} onChange={onChange} provider={autocomplete} placeholder={text.line1Placeholder} disabled={disabled} />
-        ) : (
-          <TextField
-            value={value.line1}
-            onChange={(e) => set('line1', e.target.value)}
-            placeholder={text.line1Placeholder}
-            autoComplete="address-line1"
-            maxLength={POSTAL_ADDRESS_MAX_LENGTH.line1}
-            disabled={disabled}
-          />
-        )}
+        <TextField
+          value={value.line1}
+          onChange={(e) => set('line1', e.target.value)}
+          placeholder={text.line1Placeholder}
+          autoComplete="address-line1"
+          maxLength={POSTAL_ADDRESS_MAX_LENGTH.line1}
+          disabled={disabled}
+        />
       </Field>
       <Field label={withOptional('line2')} htmlFor={`${idPrefix}-line2`} error={errorFor('line2')}>
         <TextField
@@ -329,81 +346,157 @@ function useLocalCountryNames(locale: string | undefined): ReadonlyArray<readonl
   }, [locale]);
 }
 
-/** Line 1 with an autocomplete list underneath. Only used when a provider is passed. */
-function Line1WithSuggestions({
+type SearchState = 'idle' | 'done' | 'failed';
+
+/**
+ * "Search address": a combobox above the fields, only shown when a provider is
+ * given. Searches in the chosen country after a short pause in typing;
+ * choosing a result replaces the address with it (the country too, if the
+ * result is elsewhere). Arrow keys move through the results, Enter picks,
+ * Escape closes.
+ */
+function AddressSearch({
+  id,
   value,
   onChange,
   provider,
-  placeholder,
-  disabled,
-  ...fieldProps
+  text,
 }: {
+  id: string;
   value: PostalAddress;
   onChange: (next: PostalAddress) => void;
   provider: AddressAutocompleteProvider;
-  placeholder: string;
-  disabled?: boolean;
-  id?: string;
-  'aria-invalid'?: 'true';
-  'aria-describedby'?: string;
+  text: AddressText;
 }) {
+  const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
-  const query = useRef('');
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [state, setState] = useState<SearchState>('idle');
+  // The latest search asked for; an older answer arriving late is ignored.
+  const latest = useRef('');
 
   useEffect(() => {
-    const q = value.line1.trim();
-    if (q === query.current) return;
-    query.current = q;
+    const q = query.trim();
+    const key = `${value.country}|${q}`;
+    latest.current = key;
     if (q.length < 3) {
       setSuggestions([]);
+      setState('idle');
       return;
     }
     const timer = setTimeout(() => {
       provider
         .suggest(q, value.country)
         .then((found) => {
-          if (query.current === q) setSuggestions(found);
+          if (latest.current !== key) return;
+          setSuggestions(found);
+          setActive(-1);
+          setState('done');
         })
-        .catch(() => setSuggestions([]));
+        .catch(() => {
+          if (latest.current !== key) return;
+          setSuggestions([]);
+          setState('failed');
+        });
     }, 250);
     return () => clearTimeout(timer);
-  }, [value.line1, value.country, provider]);
+  }, [query, value.country, provider]);
 
   async function pick(s: AddressSuggestion) {
+    setOpen(false);
     setSuggestions([]);
     try {
       const resolved = await provider.resolve(s.id);
-      query.current = (resolved.line1 ?? value.line1).trim();
-      onChange({ ...value, ...resolved });
+      const filled: Partial<PostalAddress> = Object.fromEntries(Object.entries(resolved).filter(([, v]) => typeof v === 'string'));
+      onChange({ ...EMPTY_POSTAL_ADDRESS, ...filled, country: filled.country || value.country });
+      setQuery('');
+      setState('idle');
     } catch {
       // Lookup failed: keep what was typed; the person can fill the fields by hand.
+      setState('failed');
     }
   }
 
-  const listId = fieldProps.id ? `${fieldProps.id}-suggestions` : undefined;
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'ArrowDown' && suggestions.length) {
+      e.preventDefault();
+      setOpen(true);
+      setActive((i) => (i + 1) % suggestions.length);
+    } else if (e.key === 'ArrowUp' && suggestions.length) {
+      e.preventDefault();
+      setOpen(true);
+      setActive((i) => (i <= 0 ? suggestions.length - 1 : i - 1));
+    } else if (e.key === 'Enter') {
+      // Never submits the surrounding form from the search box.
+      e.preventDefault();
+      if (open && active >= 0 && suggestions[active]) void pick(suggestions[active]);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+    }
+  }
+
+  const listId = `${id}-suggestions`;
+  const showList = open && suggestions.length > 0;
+  const message =
+    state === 'failed' ? text.searchFailed : state === 'done' && suggestions.length === 0 && query.trim().length >= 3 ? text.searchNoResults : undefined;
   return (
-    <div className="ultm8-combobox">
-      <TextField
-        {...fieldProps}
-        value={value.line1}
-        onChange={(e) => onChange({ ...value, line1: e.target.value })}
-        placeholder={placeholder}
-        autoComplete="off"
-        role="combobox"
-        aria-expanded={suggestions.length > 0}
-        aria-controls={listId}
-        maxLength={POSTAL_ADDRESS_MAX_LENGTH.line1}
-        disabled={disabled}
-      />
-      {suggestions.length > 0 ? (
-        <ul id={listId} role="listbox" className="ultm8-combobox__listbox">
-          {suggestions.map((s) => (
-            <li key={s.id} role="option" aria-selected={false} className="ultm8-combobox__option" onMouseDown={(e) => { e.preventDefault(); void pick(s); }}>
-              {s.label}
+    // Laid out like `Field`, which can't be used here: it would put the input's id on the wrapper.
+    <div className="ultm8-field">
+      <div className="ultm8-field__label-row">
+        <label className="ultm8-field__label" htmlFor={id}>
+          {text.search}
+        </label>
+      </div>
+      <div className="ultm8-combobox">
+        <TextField
+          id={id}
+          type="search"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onKeyDown={onKeyDown}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          placeholder={text.searchPlaceholder}
+          autoComplete="off"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={showList}
+          aria-controls={listId}
+          aria-activedescendant={showList && active >= 0 ? `${listId}-${active}` : undefined}
+          aria-describedby={`${id}-hint`}
+          maxLength={200}
+        />
+        {showList ? (
+          <ul id={listId} role="listbox" aria-label={text.search} className="ultm8-combobox__listbox">
+            {suggestions.map((s, i) => (
+              <li
+                key={s.id}
+                id={`${listId}-${i}`}
+                role="option"
+                aria-selected={i === active}
+                className={`ultm8-combobox__option${i === active ? ' ultm8-combobox__option--active' : ''}`}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  void pick(s);
+                }}
+              >
+                {s.label}
+                {s.secondary ? <span className="ultm8-combobox__option-secondary">{s.secondary}</span> : null}
+              </li>
+            ))}
+            <li role="presentation" className="ultm8-combobox__empty">
+              {text.searchAttribution}
             </li>
-          ))}
-        </ul>
-      ) : null}
+          </ul>
+        ) : null}
+      </div>
+      <span className="ultm8-field__hint" id={`${id}-hint`} aria-live="polite">
+        {message ?? text.searchHint}
+      </span>
     </div>
   );
 }

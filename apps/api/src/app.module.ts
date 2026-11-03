@@ -48,6 +48,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { StaffRemovalModule } from './tenants/staff-removal/staff-removal.module';
 import { HealthModule } from './health/health.module';
+import { AddressLookupModule } from './address-lookup/address-lookup.module';
 import { validateEnv } from './common/config/validate-env';
 
 @Module({
@@ -114,6 +115,7 @@ import { validateEnv } from './common/config/validate-env';
     LateFeesModule,
     RostersModule,
     DataImportsModule,
+    AddressLookupModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

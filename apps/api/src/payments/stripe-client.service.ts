@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import Stripe from 'stripe';
+import { httpsProxyAgentFor } from '../common/http/proxy-agent';
 
 const STRIPE_API_HOST = 'api.stripe.com';
 
@@ -13,18 +14,7 @@ const STRIPE_API_HOST = 'api.stripe.com';
  * proxy is set.
  */
 export function stripeProxyAgent(env: NodeJS.ProcessEnv = process.env): HttpsProxyAgent<string> | undefined {
-  const proxy = env.HTTPS_PROXY || env.https_proxy;
-  if (!proxy) return undefined;
-  const noProxy = (env.NO_PROXY || env.no_proxy || '')
-    .split(',')
-    .map((entry) => entry.trim().toLowerCase())
-    .filter(Boolean);
-  const bypassed = noProxy.some((entry) => {
-    if (entry === '*') return true;
-    const domain = entry.replace(/^\*?\./, '');
-    return STRIPE_API_HOST === domain || STRIPE_API_HOST.endsWith(`.${domain}`);
-  });
-  return bypassed ? undefined : new HttpsProxyAgent(proxy);
+  return httpsProxyAgentFor(STRIPE_API_HOST, env);
 }
 
 /**
