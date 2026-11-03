@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 
 /** The words the export's index and documents use, which the portal sends in
  * the reader's language (as it does for the student-list CSV). Each one left
@@ -50,6 +50,14 @@ export class CreateSignedDocumentExportDto {
   @ValidateNested()
   @Type(() => SignedDocumentLabelsDto)
   labels?: SignedDocumentLabelsDto;
+
+  @ApiPropertyOptional({
+    default: false,
+    description: "Decision 422 item 9: also put every file on the School's members' Profile → Documents in the ZIP. Only the School owner may export (staff are refused).",
+  })
+  @IsOptional()
+  @IsBoolean()
+  includeMemberFiles?: boolean;
 }
 
 export class SignedDocumentExportDto {
@@ -61,6 +69,12 @@ export class SignedDocumentExportDto {
 
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Signed documents in the ZIP, once it is made.' })
   documentCount!: number | null;
+
+  @ApiProperty({ description: 'Whether the owner asked for member files to be included (Decision 422 item 9).' })
+  includeMemberFiles!: boolean;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: "Member files in the ZIP, once it is made; null when they weren't asked for." })
+  memberFileCount!: number | null;
 
   @ApiPropertyOptional({ type: Number, nullable: true, description: "The ZIP's size in bytes, once it is made." })
   sizeBytes!: number | null;

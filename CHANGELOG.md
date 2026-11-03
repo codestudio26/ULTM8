@@ -263,6 +263,25 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `/schools/{schoolId}/signed-documents/exports` (`POST`, `GET latest`,
   `GET {id}`, `GET {id}/download`). 15 languages. **Needs a database
   migration** (`20270204000000_data_tools_merge_export`).
+- **The signed-documents export can include member files** (Decision 422 item
+  9) — the export dialog on the Waivers page gains an **Include member files**
+  tick box, off by default and shown only to the School's owner. Ticked, the
+  ZIP also holds every file on the School's members' **Documents** (Profile),
+  as `member-files/<member name>-<first 8 characters of their id>/<file
+  name>`, each exactly as uploaded. File and folder names are made safe (no
+  folders or `..` in a name, no characters Windows refuses, reserved Windows
+  names renamed, two files of the same name kept apart as "name (2)"). Only
+  this School's files, and only files still on a member (an erased account's
+  files, waiting to be purged, are left out). The export stays owner-only:
+  staff, with "Member files" or not, are refused (403). Files are streamed one
+  at a time into a ZIP written to a temporary file and uploaded from there, so
+  neither the files nor the ZIP are held in memory whole; the ZIP can be up to
+  2 GB (a larger one fails, and the owner is told the export couldn't be
+  made). The ZIP is still deleted after 24 hours. `POST
+  /schools/{schoolId}/signed-documents/exports` takes `includeMemberFiles`;
+  `SignedDocumentExportDto` gains `includeMemberFiles` and `memberFileCount`.
+  15 languages. **Needs a database migration**
+  (`20270208000000_export_member_files`).
 - **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
   its own list of tags, managed under **School settings → Student tags** (add,
   rename, delete; deleting a tag takes it off every student). A **Tags** card

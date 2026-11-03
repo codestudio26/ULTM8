@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { createReadStream, statSync } from 'fs';
 
 /**
  * Thin wrapper around Cloudflare R2 (S3-compatible object storage) — the confirmed
@@ -153,6 +154,30 @@ export class R2ClientService {
       if (err instanceof Error && (err.name === 'NoSuchKey' || err.name === 'NotFound')) return null;
       throw err;
     }
+  }
+
+  /** Reads `key` from the private bucket as a stream of chunks, or null when
+   * there is no such object. For the signed-documents export's member files
+   * (Decision 422 item 9), so no file is held in memory whole. */
+  async getObjectStream(key: string): Promise<AsyncIterable<Uint8Array> | null> {
+    const client = this.assertConfigured();
+    try {
+      const res = await client.send(new GetObjectCommand({ Bucket: this.bucketName, Key: key }));
+      // In Node the body is a Readable, which is async-iterable.
+      return (res.Body as AsyncIterable<Uint8Array> | undefined) ?? null;
+    } catch (err) {
+      if (err instanceof Error && (err.name === 'NoSuchKey' || err.name === 'NotFound')) return null;
+      throw err;
+    }
+  }
+
+  /** Uploads the file at `path` to `key` in the private bucket, streamed from
+   * disk rather than read into memory. For the signed-documents export's ZIP
+   * (Decision 422 item 9), which can be up to 2 GB. */
+  async putObjectFromFile(key: string, path: string, contentType: string): Promise<void> {
+    const client = this.assertConfigured();
+    const { size } = statSync(path);
+    await client.send(new PutObjectCommand({ Bucket: this.bucketName, Key: key, Body: createReadStream(path), ContentType: contentType, ContentLength: size }));
   }
 
   /** A presigned GET URL for `key` in the private bucket that downloads it as

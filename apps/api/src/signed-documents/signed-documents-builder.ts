@@ -2,7 +2,7 @@ import type { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import type { R2ClientService } from '../common/object-storage/r2-client.service';
 import { SIGNED_DOCUMENT_LABEL_DEFAULTS, type SignedDocumentLabels } from './dto/signed-documents.dto';
 import { documentFileName, imageTypeOf, indexCsv, signedDocumentHtml, type SignedDocument } from './signed-document-render';
-import { ZipWriter } from './zip-writer';
+import type { ZipWriter } from './zip-writer';
 
 /** Signatures read from the database at a time. */
 const PAGE = 200;
@@ -24,17 +24,18 @@ export function labelsFrom(stored: unknown): SignedDocumentLabels {
  * that have since expired, and guests' waivers), with the drawn signature or
  * paper photo inside it, and index.csv listing them all. Reads on the jobs
  * connection, for this School only. Unsigned rows are not documents and are
- * left out.
+ * left out. Written into `zip`, which the caller finishes (the export job
+ * adds member files to the same ZIP first, Decision 422 item 9).
  */
 export async function buildSignedDocumentsZip(
   prismaJobs: PrismaJobsService,
   r2: Pick<R2ClientService, 'getObject' | 'isConfigured'>,
   schoolId: string,
   labels: SignedDocumentLabels,
-): Promise<{ zip: Buffer; documentCount: number }> {
+  zip: Pick<ZipWriter, 'add'>,
+): Promise<{ documentCount: number }> {
   const school = await prismaJobs.school.findUnique({ where: { id: schoolId }, select: { name: true } });
   const schoolName = school?.name ?? '';
-  const zip = new ZipWriter();
   const index: Array<{ doc: SignedDocument; file: string }> = [];
   const add = (doc: SignedDocument) => {
     const file = documentFileName(index.length + 1, doc);
@@ -155,5 +156,5 @@ export async function buildSignedDocumentsZip(
   }
 
   zip.add('index.csv', indexCsv(index, labels));
-  return { zip: zip.finish(), documentCount: index.length };
+  return { documentCount: index.length };
 }

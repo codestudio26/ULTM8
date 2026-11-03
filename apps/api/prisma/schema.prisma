@@ -6233,8 +6233,13 @@ model SignedDocumentExport {
   /// The column headings and words the portal sent, in the reader's
   /// language (SignedDocumentLabelsDto).
   labels Json
+  /// Decision 422 item 9: the owner ticked "Include member files", so the
+  /// ZIP also holds every file on the School's members' Profile → Documents.
+  includeMemberFiles Boolean @default(false)
 
   documentCount Int?
+  /// Member files in the ZIP, once it is made; null when they weren't asked for.
+  memberFileCount Int?
   sizeBytes     Int?
   /// Set while the ZIP is stored; null before it is made and once deleted.
   objectKey     String? @unique
