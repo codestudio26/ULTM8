@@ -172,6 +172,8 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
     // Accepting a fee makes its charge (backlog §3.6 step 6): the ledger first.
     await superuser.chargeAllocation.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.balanceEntry.deleteMany({ where: { schoolId: { in: schools } } });
+    await superuser.transaction.deleteMany({ where: { schoolId: { in: schools } } }); // a desk payment (Decision 421 test)
+    await superuser.paymentAccount.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.charge.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.promotionFeeRequest.deleteMany({ where: { schoolId: { in: schools } } });
     await superuser.membership.deleteMany({ where: { schoolId: { in: schools } } });
@@ -760,6 +762,46 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       expect(waived.status).toBe(201);
       expect(waived.body).toMatchObject({ status: 'WAIVED', promotionApplied: true, charge: { status: 'CANCELLED' } });
       expect((await superuser.charge.findUniqueOrThrow({ where: { id: charge.id } })).cancelledById).toBe(user.desk.id);
+    });
+
+    it('"Promotion can\'t apply" goes to the owner and to staff with the switch who cover the student, once each (Decision 421)', async () => {
+      await mkStudent('bea', 'white-1');
+      const res = await grade('carla', 'bea', 'stripe-award');
+      const id = res.body.feeRequest.id;
+      expect((await feeAction('bea', id, 'accept')).status).toBe(201);
+      // The student's rank changes after the grade, then the fee is paid in full.
+      await superuser.studentRank.update({
+        where: { studentId_disciplineId: { studentId: user.bea.id, disciplineId: bjj.id } },
+        data: { currentRankId: rung['white-2'].rankId, currentStripeId: rung['white-2'].id },
+      });
+      const charge = await superuser.charge.findUniqueOrThrow({ where: { promotionFeeRequestId: id } });
+      // A desk payment needs the School's payments set up.
+      await superuser.paymentAccount.create({
+        data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+      });
+      const paid = await http()
+        .post(`/v1/schools/${school.id}/students/${user.bea.id}/charge-payments`)
+        .set(as('owner'))
+        .send({ amount: charge.grossAmount, paymentMethod: 'CASH', sendReceipt: false, chargeId: charge.id });
+      expect(paid.status).toBe(201);
+      expect((await superuser.promotionFeeRequest.findUniqueOrThrow({ where: { id } })).promotionBlockedAt).not.toBeNull();
+
+      const notices = () => superuser.notification.findMany({ where: { id: { startsWith: `promotion-fee-blocked-${id}-` } } });
+      const got = await waitFor(notices, (v) => v.length >= 2);
+      // Not clerk (no switch), carla (a coach without it), upto (another
+      // branch) or staffB (another School).
+      expect(got.map((n) => n.userId).sort()).toEqual([user.owner.id, user.desk.id].sort());
+      expect(got.every((n) => n.schoolId === school.id && n.type === 'GRADING_FEE_BLOCKED')).toBe(true);
+      // Never sent twice: settling again and the daily catch-up add nothing.
+      const fees = app.get(PromotionFeeService);
+      await fees.settlePaidCharges(school.id, user.bea.id);
+      await fees.reconcile();
+      await settle();
+      expect(await notices()).toHaveLength(2);
+      // desk can act on it: cancelling gives what was paid back as credit.
+      const cancelled = await feeAction('desk', id, 'cancel');
+      expect(cancelled.status).toBe(201);
+      expect(cancelled.body).toMatchObject({ status: 'CANCELLED', toDecide: false, charge: { status: 'CANCELLED' } });
     });
 
     it('the settings stay the owner\'s, and /staff/me/access says who has the switch', async () => {

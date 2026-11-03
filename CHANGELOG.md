@@ -245,6 +245,10 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   another School's staff are still refused. Turning the fee on or off, belt
   prices and the other Grading Settings stay the owner's. The "Charges: who
   can create and cancel" card on the Staff page says so, in every language.
+  The **"Promotion can't apply"** notice for a paid fee whose promotion can no
+  longer go through (Decision 414 item 1) now goes to those staff as well as
+  the owner (Decision 421), once each, and never to staff of another branch
+  or School.
 - **"No tax on this item (0% or exempt)" on charges** (backlog 3.6; Decision 414
   item 5) — staff creating a one-off charge or setting up a recurring charge
   can tick it (off by default) for an item tax doesn't apply to, such as

@@ -485,7 +485,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
       return { id, chargeId: c.id };
     }
 
-    it('flagged once, the owner told once; the daily catch-up neither retries it nor tells them again; waiving is refused', async () => {
+    it('flagged once, the owner and staff with "Can cancel charges" told once; the daily catch-up neither retries it nor tells them again; waiving is refused', async () => {
       const { id, chargeId } = await paidAfterRankChange('jon');
       const row = await requestRow(id);
       expect(row).toMatchObject({ status: 'ACCEPTED', promotionEventId: null, paidAt: null, toDecideAt: null });
@@ -496,15 +496,20 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
       expect(paidOn(c)).toBe(1800);
       expect(await promotionsOf('jon')).toBe(0);
 
-      const notices = await waitFor(() => blockedNotices(id), (v) => v.length > 0);
-      expect(notices).toHaveLength(1);
-      expect(notices[0]).toMatchObject({
-        userId: user.owner.id,
-        title: "Promotion can't apply",
-        body: "jon Charge's fee for white-1 (BJJ) is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade. Cancel the fee (what was paid becomes credit) or grade them again.",
-        type: 'GRADING_FEE_BLOCKED',
-        schoolId: school.id,
-      });
+      // Decision 421: the owner, and everyone who may cancel the fee (desk:
+      // "Can cancel charges", in a School with no branches), each told once;
+      // clerk (without it) and another School's owner are not.
+      const notices = await waitFor(() => blockedNotices(id), (v) => v.length >= 2);
+      expect(notices.map((n) => n.userId).sort()).toEqual([user.owner.id, user.desk.id].sort());
+      for (const n of notices) {
+        expect(n).toMatchObject({
+          title: "Promotion can't apply",
+          body: "jon Charge's fee for white-1 (BJJ) is paid, but the promotion can't apply: their rank or the belt ladder changed since the grade. Cancel the fee (what was paid becomes credit) or grade them again.",
+          type: 'GRADING_FEE_BLOCKED',
+          schoolId: school.id,
+        });
+      }
+      expect(notices.some((n) => n.userId === user.clerk.id || n.userId === user.ownerB.id)).toBe(false);
 
       // Shown to the owner on grading: the card's fee box and the board.
       expect(await ownerView('jon', id)).toMatchObject({ status: 'ACCEPTED', promotionBlocked: true, charge: { id: chargeId, status: 'PAID', owedAmount: 0 } });
@@ -520,7 +525,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
       await fees.reconcile();
       expect((await requestRow(id)).promotionBlockedAt!.getTime()).toBe(flaggedAt);
       await new Promise((r) => setTimeout(r, 500));
-      expect(await blockedNotices(id)).toHaveLength(1);
+      expect(await blockedNotices(id)).toHaveLength(2);
 
       // Waiving isn't one of the owner's two choices.
       const waived = await feeAction('owner', id, 'waive');
@@ -565,7 +570,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
       // Closed: the owner can no longer cancel the old fee, and nobody is told again.
       expect((await feeAction('owner', id, 'cancel')).status).toBe(409);
       await fees.reconcile();
-      expect(await blockedNotices(id)).toHaveLength(1);
+      expect(await blockedNotices(id)).toHaveLength(2);
     });
 
     it('graded again to a higher-priced rank, only the difference is left to pay', async () => {
@@ -573,7 +578,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
       await su.rankStripeTier.update({ where: { id: rung['blue-0'].id }, data: { promotionFeeMinor: 2500 } });
       try {
         const { id } = await paidAfterRankChange('nat');
-        await waitFor(() => blockedNotices(id), (v) => v.length > 0);
+        await waitFor(() => blockedNotices(id), (v) => v.length >= 2);
         // From white-1 (where the rank was changed to), the normal Promote to blue-0.
         const res = await http().post(`/v1/students/${user.nat.id}/ranks/${bjj.id}/promote`).set(as('owner')).send({});
         expect(res.status).toBe(201);
@@ -596,7 +601,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
 
     it('the owner cancels the fee: its charge is cancelled, what was paid becomes credit, and nothing is left "to decide"', async () => {
       const { id, chargeId } = await paidAfterRankChange('kai');
-      await waitFor(() => blockedNotices(id), (v) => v.length > 0);
+      await waitFor(() => blockedNotices(id), (v) => v.length >= 2);
       // The owner, or staff with "Can cancel charges" (Decision 420 item 2);
       // staff without it are refused, and another School sees nothing.
       expect((await feeAction('clerk', id, 'cancel')).status).toBe(403);
@@ -620,7 +625,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
       expect(n?.body).toBe("Your charge 'white-1, 18.00 GBP' was cancelled. Nothing to pay. The 18.00 GBP already paid is now credit on your balance.");
       expect(await boardCard('kai')).toMatchObject({ feeStatus: null });
       await fees.reconcile();
-      expect(await blockedNotices(id)).toHaveLength(1);
+      expect(await blockedNotices(id)).toHaveLength(2);
     });
 
     it('a passing failure is not mistaken for it: a fee whose promotion can still apply is never flagged', async () => {
@@ -653,7 +658,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
         expect(row).toMatchObject({ status: 'ACCEPTED', promotionEventId: null });
         expect(row.promotionBlockedAt).not.toBeNull();
         expect(await stripeOf('max')).toBe(rung['white-0'].id);
-        expect(await waitFor(() => blockedNotices(id), (v) => v.length > 0)).toHaveLength(1);
+        expect(await waitFor(() => blockedNotices(id), (v) => v.length >= 2)).toHaveLength(2);
       } finally {
         await su.rankStripeTier.delete({ where: { id: inserted.id } });
         await su.rankStripeTier.update({ where: { id: white1.id }, data: { order: 1 } });

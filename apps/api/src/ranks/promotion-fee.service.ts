@@ -63,7 +63,8 @@ const OPEN_TO_CLOSE: PromotionFeeStatus[] = ['PENDING', 'ACCEPTED', 'DECLINED'];
  *   fee cancels its charge. There is still no endpoint that marks a fee paid.
  * - A fee paid in full whose waiting promotion can no longer apply (the
  *   student's rank or the ladder changed since the grade; Decision 414 item
- *   1): recorded once (promotionBlockedAt), the owner(s) told once, and the
+ *   1): recorded once (promotionBlockedAt), the owner(s) and staff with "Can
+ *   cancel charges" who cover the student told once (Decision 421), and the
  *   request left Accepted with its money paid until the fee is cancelled (by
  *   the owner, or staff with "Can cancel charges"; Decision 420 item 2)
  *   (cancel(): the money becomes credit) or the student is graded again
@@ -595,7 +596,8 @@ export class PromotionFeeService {
    *   the grade no longer lands on the same rung (a stripe award moves to the
    *   next stripe of the same belt).
    * If so, the request is marked once (promotionBlockedAt, only while it is
-   * still Accepted and unapplied) and the owner(s) told once. Returns true
+   * still Accepted and unapplied) and the owner(s), and staff who may cancel
+   * it, told once. Returns true
    * when the request is (now or already) in that state.
    */
   private async flagIfCannotApply(studentId: string, requestId: string): Promise<boolean> {
@@ -610,7 +612,7 @@ export class PromotionFeeService {
           data: { promotionBlockedAt: new Date() },
         }),
       );
-      if (flagged.count === 1) await this.notifyOwnersBlocked(request);
+      if (flagged.count === 1) await this.notifyBlocked(request);
       return true;
     } catch (err) {
       this.logger.error(`Promotion fee ${requestId}: checking whether its promotion can still apply failed; tried again on the next run.`, err as Error);
@@ -634,11 +636,13 @@ export class PromotionFeeService {
     return pg.type === 'STRIPE_AWARD' && ladder[to].rankId !== ladder[from].rankId;
   }
 
-  /** The School's owner(s) are told, once per owner (the notice id is the
-   * request's and the owner's), in the app's Notifications, opening grading
-   * (Decision 414 item 1). Best-effort, as every notice: the portal shows
-   * the state on the student's grading card either way. */
-  private async notifyOwnersBlocked(request: PromotionFeeRequest): Promise<void> {
+  /** The School's owner(s), and everyone who may cancel the fee (Decision 421:
+   * staff and coaches with "Can cancel charges" who cover the student), are
+   * told once each (the notice id is the request's and the person's), in the
+   * app's Notifications, opening grading (Decision 414 item 1). Best-effort,
+   * as every notice: the portal shows the state on the student's grading card
+   * either way. */
+  private async notifyBlocked(request: PromotionFeeRequest): Promise<void> {
     try {
       const [owners, student, discipline] = await Promise.all([
         this.prismaJobs.roleGrant.findMany({ where: { schoolId: request.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null }, select: { userId: true }, distinct: ['userId'] }),
@@ -646,7 +650,9 @@ export class PromotionFeeService {
         this.prismaJobs.discipline.findUnique({ where: { id: request.disciplineId }, select: { name: true } }),
       ]);
       const name = student ? `${student.firstName} ${student.surname}`.trim() : 'A student';
-      for (const { userId } of owners) {
+      const recipients = new Set(owners.map((o) => o.userId));
+      for (const userId of await this.feeClosersAmongStaff(request, recipients)) recipients.add(userId);
+      for (const userId of recipients) {
         const key = `promotion-fee-blocked-${request.id}-${userId}`;
         await this.fanoutQueue.add(
           'notify',
@@ -663,8 +669,33 @@ export class PromotionFeeService {
         );
       }
     } catch (err) {
-      this.logger.warn(`Failed to enqueue the owner notice for promotion fee ${request.id}: ${err}`);
+      this.logger.warn(`Failed to enqueue the "promotion can't apply" notices for promotion fee ${request.id}: ${err}`);
     }
+  }
+
+  /**
+   * Staff of this School (Branch Staff and coaches, not already in `skip`) who
+   * may cancel this fee right now: the very check waive and cancel use
+   * (chargeAbilities: "Can cancel charges" on, and the student's home branch
+   * among their branches, or a School without branches). Nobody at another
+   * School is ever a candidate; one check failing leaves that person out.
+   */
+  private async feeClosersAmongStaff(request: PromotionFeeRequest, skip: Set<string>): Promise<string[]> {
+    const staff = await this.prismaJobs.roleGrant.findMany({
+      where: { schoolId: request.schoolId, role: { in: ['BRANCH_STAFF', 'INSTRUCTOR'] }, revokedAt: null },
+      select: { userId: true },
+      distinct: ['userId'],
+    });
+    const out: string[] = [];
+    for (const { userId } of staff) {
+      if (skip.has(userId)) continue;
+      try {
+        if ((await chargeAbilities(this.prismaApp, this.tenantAuth, userId, request.schoolId, request.studentId)).cancel) out.push(userId);
+      } catch (err) {
+        this.logger.warn(`Could not check whether ${userId} may cancel promotion fee ${request.id}: ${err}`);
+      }
+    }
+    return out;
   }
 
   /** The member's notice (as ChargesService.notify()): type CHARGE, opening
