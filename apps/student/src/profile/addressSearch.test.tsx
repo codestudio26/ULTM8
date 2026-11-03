@@ -5,6 +5,12 @@ import * as q from './profileQueries';
 import * as lookup from './addressLookupQueries';
 import { ProfileScreen } from './ProfileScreen';
 
+// The Profile screen's medical information section (#435) is tested on its own
+// (medicalInfoSharing.test.tsx); here no School holds any.
+jest.mock('./medicalInfoQueries', () => ({
+  useMedicalInfoShared: () => ({ data: { items: [] }, isLoading: false, isError: false, error: null }),
+  useWithdrawMedicalInfo: () => ({ mutate: () => undefined, isPending: false, isError: false, error: null }),
+}));
 jest.mock('./profileQueries', () => ({
   useMyProfile: jest.fn(),
   useUpdateProfile: jest.fn(),
