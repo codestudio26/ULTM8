@@ -201,6 +201,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   School with a Branch filter (by home Branch); Branch Staff with "See
   attendance statistics" see their own Branches' students. New endpoint
   `GET /schools/{id}/growth`. 15 languages.
+- **Frozen members are no longer counted as Active** (Decision 422 item 5) —
+  on Students → Growth and on the Dashboard, a member whose membership is
+  frozen today is left out of **Active students** and counted only under
+  **Frozen**. It uses the same frozen test as booking and check-in (Decision
+  404). A member who also holds another membership in effect that isn't
+  frozen still counts as Active. Once a freeze ends, the member counts as
+  Active again from the day they are back. Other "active" counts (membership
+  plan member counts, the per-headcount franchise fee, the Students list and
+  export) are unchanged.
 - **Billing reports: total revenue, charges and memberships** (Decision 414
   item 3) — the Overview now shows revenue in two parts and their total, for
   the period and for each month: **Charges** (payments toward charges less

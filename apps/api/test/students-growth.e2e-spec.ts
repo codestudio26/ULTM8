@@ -1,7 +1,9 @@
 /**
  * Students → Growth (backlog 5.8, Gymdesk G1–G5): GET /schools/{id}/growth.
  * - Active is the Dashboard's count (Decision 317 item 5 / 374), and the two
- *   endpoints agree; Visitors and frozen members are their own numbers;
+ *   endpoints agree; Visitors and frozen members are their own numbers, and
+ *   a member frozen today isn't Active (Decision 422 item 5) unless another
+ *   membership of theirs isn't frozen; a freeze that ended yesterday is Active;
  * - new students per month by join date, cancelled Subscriptions per month,
  *   and new students per style, over the last 12 months in the School's time
  *   zone (a Tokyo School, with instants either side of a month's start);
@@ -118,7 +120,7 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
     south = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'South' } });
     otherBranch = await superuser.branch.create({ data: { id: randomUUID(), schoolId: otherSchool.id, name: 'Elsewhere' } });
 
-    for (const label of ['owner', 'staff', 'coach', 'ana', 'ben', 'cara', 'dan', 'eve', 'fay', 'left', 'otherOwner', 'otherStudent']) await mkUser(label);
+    for (const label of ['owner', 'staff', 'coach', 'ana', 'ben', 'cara', 'dan', 'eve', 'fay', 'gus', 'hal', 'left', 'otherOwner', 'otherStudent']) await mkUser(label);
     const grants: Array<[string, 'SCHOOL_OWNER_MANAGER' | 'BRANCH_STAFF' | 'INSTRUCTOR' | 'STUDENT', string | null, string]> = [
       ['owner', 'SCHOOL_OWNER_MANAGER', null, school.id],
       ['staff', 'BRANCH_STAFF', north.id, school.id],
@@ -129,6 +131,8 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
       ['dan', 'STUDENT', null, school.id],
       ['eve', 'STUDENT', null, school.id],
       ['fay', 'STUDENT', null, school.id],
+      ['gus', 'STUDENT', null, school.id],
+      ['hal', 'STUDENT', null, school.id],
       ['otherOwner', 'SCHOOL_OWNER_MANAGER', null, otherSchool.id],
       ['otherStudent', 'STUDENT', null, otherSchool.id],
     ];
@@ -142,8 +146,8 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
     }
     await superuser.studentHomeBranch.createMany({
       data: [
-        ['ana', north], ['cara', north], ['eve', north],
-        ['ben', south], ['dan', south], ['fay', south],
+        ['ana', north], ['cara', north], ['eve', north], ['gus', north],
+        ['ben', south], ['dan', south], ['fay', south], ['hal', south],
       ].map(([who, branch]) => ({ id: randomUUID(), schoolId: school.id, studentId: users[who as string].id, branchId: (branch as { id: string }).id })),
     });
 
@@ -154,12 +158,31 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
 
     // ana (North): active Subscription.
     await membership('ana', 'SUBSCRIPTION');
-    // ben (South): active Weekly Pass, frozen today: still active, also frozen.
+    // ben (South): active Weekly Pass, frozen today: frozen, not active (Decision 422 item 5).
     const benWeekly = await membership('ben', 'WEEKLY_PASS', { expiryDate: new Date(Date.now() + 60 * DAY) });
     await superuser.membershipFreeze.create({
       data: {
         id: randomUUID(), membershipId: benWeekly.id, schoolId: school.id, studentId: users.ben.id, status: 'APPROVED',
         startsAt: day(nowTokyo.minus({ days: 2 })), endsAt: day(nowTokyo.plus({ days: 10 })),
+      },
+    });
+    // gus (North): a Subscription frozen today and a Class Pack with credits
+    // that isn't: still active (the Class Pack), and frozen.
+    const gusSub = await membership('gus', 'SUBSCRIPTION');
+    await superuser.membershipFreeze.create({
+      data: {
+        id: randomUUID(), membershipId: gusSub.id, schoolId: school.id, studentId: users.gus.id, status: 'APPROVED',
+        startsAt: day(nowTokyo.minus({ days: 3 })), endsAt: day(nowTokyo.plus({ days: 4 })),
+      },
+    });
+    await membership('gus', 'CLASS_PACK', { classesRemaining: 5 });
+    // hal (South): a Subscription whose freeze ended yesterday (back today,
+    // endsAt is exclusive): active again, not frozen.
+    const halSub = await membership('hal', 'SUBSCRIPTION');
+    await superuser.membershipFreeze.create({
+      data: {
+        id: randomUUID(), membershipId: halSub.id, schoolId: school.id, studentId: users.hal.id, status: 'APPROVED',
+        startsAt: day(nowTokyo.minus({ days: 8 })), endsAt: day(nowTokyo),
       },
     });
     // cara (North): a Visitor (a visit pass, nothing since).
@@ -186,6 +209,8 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
     await setJoined('eve', day(twoAgo.plus({ days: 3 })));
     await setJoined('fay', day(thisMonth));
     await setJoined('left', day(lastMonth.plus({ days: 4 })));
+    await setJoined('gus', day(thisMonth.minus({ months: 13 }))); // outside the 12 months
+    await setJoined('hal', day(thisMonth.minus({ months: 13 })));
     await setJoined('otherStudent', day(lastMonth), otherSchool.id);
 
     // Styles: BJJ (live) and Judo (archived). Ranks created either side of last month's start.
@@ -227,15 +252,16 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
   });
 
   describe('the owner, whole School', () => {
-    it('counts Active as the Dashboard does, with Visitors and frozen members as their own numbers', async () => {
+    it('counts Active as the Dashboard does, frozen members out of Active and under Frozen, Visitors on their own', async () => {
       const res = await growth('owner');
       expect(res.status).toBe(200);
       expect(res.body.timeZone).toBe(ZONE);
       expect(res.body.branchIds).toBeNull();
-      // ana (Subscription), ben (Weekly Pass, frozen), fay (Trial).
-      expect(res.body.activeStudents).toBe(3);
+      // ana (Subscription), fay (Trial), gus (a Class Pack that isn't frozen),
+      // hal (freeze ended yesterday). Not ben: his only membership is frozen.
+      expect(res.body.activeStudents).toBe(4);
       expect(res.body.visitors).toBe(1); // cara
-      expect(res.body.frozen).toBe(1); // ben
+      expect(res.body.frozen).toBe(2); // ben, gus (hal's freeze is over)
 
       const dashboard = await as('owner').get(`/v1/schools/${school.id}/dashboard`);
       expect(dashboard.status).toBe(200);
@@ -283,9 +309,9 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
       const res = await growth('owner', `?branchId=${south.id}`);
       expect(res.status).toBe(200);
       expect(res.body.branchIds).toEqual([south.id]);
-      expect(res.body.activeStudents).toBe(2); // ben, fay
+      expect(res.body.activeStudents).toBe(2); // fay, hal (ben is frozen)
       expect(res.body.visitors).toBe(0);
-      expect(res.body.frozen).toBe(1);
+      expect(res.body.frozen).toBe(1); // ben
       expect(monthRow(res.body, M(lastMonth)).cancelled).toBe(1); // dan
       expect(monthRow(res.body, M(twoAgo)).cancelled).toBe(0); // left has no home Branch
       expect(monthRow(res.body, M(lastMonth)).newStudents).toBe(0);
@@ -303,9 +329,9 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
       const on = await growth('staff');
       expect(on.status).toBe(200);
       expect(on.body.branchIds).toEqual([north.id]);
-      expect(on.body.activeStudents).toBe(1); // ana
+      expect(on.body.activeStudents).toBe(2); // ana, gus
       expect(on.body.visitors).toBe(1); // cara
-      expect(on.body.frozen).toBe(0);
+      expect(on.body.frozen).toBe(1); // gus
       expect(monthRow(on.body, M(lastMonth)).newStudents).toBe(1); // ana
       expect(on.body.months.reduce((n: number, m: { cancelled: number }) => n + m.cancelled, 0)).toBe(0);
       expect(on.body.programmes[0].students).toBe(1);

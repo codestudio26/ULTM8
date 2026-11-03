@@ -42,7 +42,7 @@ export class GrowthResponseDto {
   branchIds!: string[] | null;
 
   @ApiProperty({
-    description: 'Active students now (Decision 317 item 5, the Dashboard\'s count): enrolled, with a Subscription, a Class Pack with credits left, a Weekly Pass or a Trial in effect.',
+    description: 'Active students now (Decision 317 item 5, the Dashboard\'s count): enrolled, with a Subscription, a Class Pack with credits left, a Weekly Pass or a Trial in effect and not frozen today (Decision 422 item 5).',
   })
   activeStudents!: number;
 

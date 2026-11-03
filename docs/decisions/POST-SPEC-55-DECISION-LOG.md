@@ -7343,3 +7343,34 @@ User (Code), 31 Oct 2026: "Fee for grading is a owner decision and by default is
 ### Recorded by
 
 User (Code), 3 Nov 2026, answering the choices on #447: "ok" (items 1, 3, 4 and 5); on item 2, "it should go to every one with the granted permission". On #445: chose "Yes, remind" (item 6); "It should shown on the guardian board too" (item 7).
+
+## Decision 422 — Check-in rules, Growth "Active", past-attendance import, merging duplicates and the signed-documents export: the open choices from PRs #426–#440
+
+**Date:** 3 Nov 2026 · **Status:** Product-owner decision · **Builds on:** PR #426 (check-in rules, backlog 3.5), PR #438 (Growth tab), PR #439 (spreadsheet import), PR #440 (merge duplicates, export signed documents; Decision 315 item 13)
+
+### Decision
+
+**Check-in rules (#426)**
+1. **An active membership stays required to check in.** There is no switch to turn it off. Visitors and passes remain the exceptions.
+2. **The owner can switch off "require a booking".** It is a new School setting, off by default, so a booking is still required. When the owner switches it on, a member may check in to a class without having booked it. The check-in takes a place in the class if there is one, and the usual membership and credit rules apply, as for a booking.
+3. **"Overdue payment" stays as built.** It means a staff-created charge, late fees included, that is unpaid past its due date. A failed card renewal does not block check-in; the membership's own failed-payment handling applies.
+4. **There is no "any time" earliest check-in.** The earliest check-in stays 0 to 1,440 minutes (24 hours) before class.
+
+**Growth (#438)**
+5. **Frozen members are not counted as "Active".** They are shown only under "Frozen". This applies both on the Students → Growth tab and on the Dashboard.
+
+**Spreadsheet import (#439)**
+6. **Past attendance of any age can be imported.** The 30-day limit is removed. Imported visits count toward belt progress like any other attendance. They never use pack or class credits, because they were paid for elsewhere.
+
+**Merge duplicate members (#440)**
+7. **Login accounts are never merged.** A merge combines one School's two member records only. Two sign-ins for the same person stay separate accounts.
+8. **When both records have a belt in the same style, the higher current rank is kept.** The merge no longer refuses. The other record's promotions stay in the history, marked as coming from the merged record.
+
+**Export signed documents (#440)**
+9. **The owner's export can include member files.** A tick box on the export adds the files on members' Profile → Documents. Only the owner can export them; staff cannot.
+10. **Each signed document is a real PDF file** in the ZIP, not only a printable web page.
+11. **The export ZIP is kept for 24 hours,** as built, and then deleted. The owner can export again at any time. How long waivers themselves are kept is still an open legal question and is not decided here.
+
+### Recorded by
+
+User (Code), 3 Nov 2026: chose, for each of the eleven questions, the recommended option. Items 1, 3, 4, 7 and 11 confirm what is already built. Items 2, 5, 6, 8, 9 and 10 are to be built.

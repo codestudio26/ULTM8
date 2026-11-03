@@ -13,7 +13,8 @@ import { GrowthResponseDto } from './dto/growth.dto';
  * Students → Growth (backlog 5.8, Gymdesk G1–G5).
  *
  * - **Active** (G1): Decision 317 item 5, counted by loadActiveStudents, the
- *   same code as the Dashboard card (Decision 374), so the two agree.
+ *   same code as the Dashboard card (Decision 374), so the two agree. A
+ *   membership frozen today doesn't make a student active (Decision 422 item 5).
  * - **Visitors** and **Frozen** (G3): the separate numbers Decision 317 item 5
  *   asks for. Visitors as the Students list flags them (Decision 391), frozen
  *   as a freeze covering today (Decision 404).
@@ -64,7 +65,7 @@ export class GrowthService {
       : null;
     const inScope = (studentId: string) => homes === null || homes.has(studentId);
 
-    const { enrolled, active } = await loadActiveStudents(db, schoolId, now);
+    const { enrolled, active } = await loadActiveStudents(db, db, schoolId, now);
     const enrolledHere = [...enrolled].filter(inScope);
     const [visitors, frozen, joins, cancellations, disciplines, ranks] = await Promise.all([
       loadVisitorStatuses(db, schoolId, enrolledHere),
