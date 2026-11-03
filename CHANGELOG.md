@@ -156,8 +156,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   before the fee is paid" off the move waits ("Waiting for fee") and happens
   once the fee is paid or the owner waives it, with the coach's grading date;
   declined shows "Fee declined"; a waived decline or a cancelled fee leaves it
-  "to decide", and moving the student then is fee-free. The student, or a
-  child's Guardian, accepts or declines it in the app, where the card says
+  "to decide", and moving the student then is fee-free; coaches get the same
+  one "Promotion to decide" reminder after 3 days as for any promotion
+  (Decision 421 item 6; the "fully ready" check is skipped, since a kid on the
+  top Kids rank has no next Kids rank). The student, or a
+  child's Guardian (Decision 421 item 7: the Guardian sees a waiting move on
+  Home and in My grading for the child), accepts or declines it in the app, where the card says
   "graded into the Adult program" and names the Adult style; an accepted fee
   is a charge like any other. The fee tags and the Waive / Cancel buttons name
   the rank "Blue Belt (Adult program)"; the Ranks tab shows a move's fee on the

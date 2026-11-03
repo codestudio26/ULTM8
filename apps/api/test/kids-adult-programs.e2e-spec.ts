@@ -13,12 +13,15 @@
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
+import { getQueueToken } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 import request from 'supertest';
 import { PrismaClient } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { GRADING_NOTIFICATIONS_QUEUE } from '../src/jobs/queue.constants';
 import { PromotionFeeService } from '../src/ranks/promotion-fee.service';
 import { giveLiveMembership } from './live-membership';
 
@@ -576,6 +579,53 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
       expect(charge.studentId).toBe(id.Rio);
       expect((await deskPay('Rio', 3000, charge.id)).status).toBe(201);
       expect(await rankOf('Rio')).toMatchObject({ disciplineId: adult.id, currentStripeId: rung.Blue.id });
+    });
+
+    describe('"to decide" reminder for a move (Decision 421 item 6)', () => {
+      const queue = () => app.get<Queue>(getQueueToken(GRADING_NOTIFICATIONS_QUEUE));
+      const remindersFor = (requestId: string) =>
+        superuser.notification.findMany({ where: { type: 'GRADING_TO_DECIDE', id: { startsWith: `grading-to-decide-${requestId}-` } } });
+      const settle = () => new Promise((r) => setTimeout(r, 1500));
+      /** A kid on the top Kids rank (never "fully ready": no next Kids rank), moved, then the fee closed. */
+      async function toDecide(label: string, close: 'cancel' | 'waive-declined', daysAgo: number) {
+        await setFee(true, false);
+        await student(label, 'Green');
+        const requestId = (await move('coach', label, { targetRungId: rung.Blue.id })).body.feeRequest.id as string;
+        if (close === 'waive-declined') expect((await feeAction(label, requestId, 'decline')).status).toBe(201);
+        expect((await feeAction('owner', requestId, close === 'cancel' ? 'cancel' : 'waive')).body.toDecide).toBe(true);
+        await superuser.promotionFeeRequest.update({ where: { id: requestId }, data: { toDecideAt: new Date(Date.now() - daysAgo * 86_400_000) } });
+        return requestId;
+      }
+
+      it('a cancelled or waived move is reminded once, after 3 days, to the owner and the coaches who may promote', async () => {
+        const cancelled = await toDecide('Tam', 'cancel', 4);
+        const waived = await toDecide('Uma', 'waive-declined', 4);
+        const tooSoon = await toDecide('Val', 'cancel', 2);
+        await queue().add('sweep', {}, { removeOnComplete: true });
+        for (const requestId of [cancelled, waived]) {
+          const got = await waitFor(() => remindersFor(requestId), (v) => v.length >= 3);
+          expect(got.map((n) => n.userId).sort()).toEqual([id.owner, id.coach, id.settingsCoach].sort());
+          expect(got[0]).toMatchObject({ title: 'Promotion to decide' });
+          expect(got[0].body).toMatch(/promotion to Blue \(BJJ\) is waiting for your decision/);
+        }
+        await settle();
+        expect(await remindersFor(tooSoon)).toEqual([]);
+        // Never twice.
+        await queue().add('sweep', {}, { removeOnComplete: true });
+        await settle();
+        expect(await remindersFor(cancelled)).toHaveLength(3);
+      });
+
+      it('a move already decided is not reminded', async () => {
+        const dismissed = await toDecide('Wen', 'cancel', 4);
+        expect((await as('coach').post(`/v1/promotion-fee-requests/${dismissed}/dismiss`).send({})).status).toBe(201);
+        const moved = await toDecide('Xia', 'cancel', 4);
+        expect((await move('coach', 'Xia', { targetRungId: rung.Blue.id })).body.feeRequest).toBeNull();
+        await queue().add('sweep', {}, { removeOnComplete: true });
+        await settle();
+        expect(await remindersFor(dismissed)).toEqual([]);
+        expect(await remindersFor(moved)).toEqual([]);
+      });
     });
 
     it('paid, but the Kids style was unlinked meanwhile: the move can\'t apply, and the owner is asked to decide (Decision 414 item 1)', async () => {

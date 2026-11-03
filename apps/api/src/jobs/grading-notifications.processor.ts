@@ -85,7 +85,9 @@ export class GradingNotificationsScheduler implements OnModuleInit {
  * one reminds the "ready to grade" recipients once, 3 days after it became
  * "to decide", and only while the student is fully ready (the engine's
  * `eligible`, the same test as "ready to grade") and still on the rung it was
- * planned from. Once only: PromotionFeeRequest.toDecideRemindedAt, claimed as
+ * planned from. A move into the Adult program skips the "fully ready" test
+ * (a kid on the top Kids rank has no next Kids rank to be ready for) and is
+ * otherwise reminded the same way (Decision 421 item 6). Once only: PromotionFeeRequest.toDecideRemindedAt, claimed as
  * readyNotifiedAt is. Never repeated, never times out. A student not fully
  * ready on day 3 is checked again by each daily sweep and reminded the first
  * day they are (Decision 313 doesn't say whether a student who becomes ready
@@ -254,10 +256,15 @@ export class GradingNotificationsProcessor extends WorkerHost {
     // Still on the rung the promotion was planned from: otherwise it no longer applies.
     if (!sr || sr.currentStripeId !== request.expectedCurrentRungId) return;
 
-    // Fully ready only (Decision 313 item 4): classes, days and every required skill.
-    const ladder = await loadLadder(db, sr.disciplineId);
-    const eligibility = eligibilityOnLadder(ladder, sr, await studentTimeZone(db, sr.studentId, sr.schoolId));
-    if (!eligibility.hasNext || !eligibility.eligible) return;
+    // Fully ready only (Decision 313 item 4): classes, days and every required
+    // skill. Not for a move into the Adult program (toDisciplineId set): a kid
+    // on the top Kids rank has no next Kids rank to be ready for, and the move
+    // is reminded like any other promotion left "to decide" (Decision 421 item 6).
+    if (!request.toDisciplineId) {
+      const ladder = await loadLadder(db, sr.disciplineId);
+      const eligibility = eligibilityOnLadder(ladder, sr, await studentTimeZone(db, sr.studentId, sr.schoolId));
+      if (!eligibility.hasNext || !eligibility.eligible) return;
+    }
 
     const claimedAt = new Date();
     const claim = await db.promotionFeeRequest.updateMany({
