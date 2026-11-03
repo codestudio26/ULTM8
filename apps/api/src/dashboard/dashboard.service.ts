@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { loadActiveStudents } from './active-students';
 import { daysInRange, defaultWeekRange, safeZone } from '../bookings/booking-week';
@@ -17,6 +18,7 @@ import { BirthdaysResponseDto, DashboardOverviewDto, SetupStepKey } from './dto/
 export class DashboardService {
   constructor(
     private readonly prismaApp: PrismaAppService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
   ) {}
 
@@ -25,8 +27,10 @@ export class DashboardService {
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const [school, { active }, branch, style, cls, slot, plan, waiver, account, staff, invite] = await Promise.all([
         tx.school.findUnique({ where: { id: schoolId }, select: { setupChecklistHiddenAt: true } }),
-        // Decision 317 item 5: the same count Students → Growth shows.
-        loadActiveStudents(tx, schoolId),
+        // Decision 317 item 5: the same count Students → Growth shows, frozen
+        // members left out (Decision 422 item 5). Freezes are read on the jobs
+        // connection, after the owner check above.
+        loadActiveStudents(tx, this.prismaJobs, schoolId),
         tx.branch.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }),
         // A style counts once it has at least one belt.
         tx.discipline.findFirst({ where: { schoolId, archivedAt: null, ranks: { some: { archivedAt: null } } }, select: { id: true } }),
