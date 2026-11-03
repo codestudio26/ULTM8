@@ -31,6 +31,7 @@ const DEFAULT_RULES: {
   frozenMembers: boolean;
   showBeltProgress: boolean;
   blockOverdueDays: number | null;
+  requireBooking: boolean;
   codeDigits: number;
 } = {
   opensMinutesBeforeStart: 30,
@@ -44,6 +45,8 @@ const DEFAULT_RULES: {
   // Backlog §3.5: belt progress shown, never refused for an overdue payment.
   showBeltProgress: true,
   blockOverdueDays: null,
+  // Decision 422 item 2: a booking is still needed by default.
+  requireBooking: true,
   codeDigits: 4,
 };
 const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };

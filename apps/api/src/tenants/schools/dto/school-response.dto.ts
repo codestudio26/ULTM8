@@ -152,6 +152,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, enum: [7, 14], nullable: true, description: 'Backlog §3.5: check-in is refused while a charge is owed more than this many days past its due date. Null (default): never.' })
   checkInBlockOverdueDays!: number | null;
 
+  @ApiProperty({ description: "Decision 422 item 2: a booking is needed to check in (default on). Off: a member may check in to a Class they haven't booked; the check-in books a place first." })
+  checkInRequireBooking!: boolean;
+
   @ApiProperty({ description: 'Decision 404: the most days a membership can be frozen in any 12 months (default 90).' })
   freezeMaxDaysPer12Months!: number;
 

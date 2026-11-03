@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { CheckInMethod, PrismaClient } from '@prisma/client';
+import { CheckInMethod, Class, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -8,7 +8,10 @@ import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
 import { creditAttendance } from '../ranks/grading-attendance';
 import { recordCheckInMinutes } from '../ranks/hours-trained';
-import { lockStudentClass } from '../bookings/booking-gates';
+import { assertClassBookable, BOOKING_TX_OPTIONS, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
+import { BookingsService } from '../bookings/bookings.service';
+import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
+import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
@@ -61,6 +64,8 @@ export class AttendanceService {
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly qrTokenService: QrTokenService,
+    private readonly bookings: BookingsService,
+    private readonly subscriptionGate: SubscriptionGateService,
     @InjectQueue(GRADING_NOTIFICATIONS_QUEUE) private readonly gradingNotificationsQueue: Queue,
   ) {}
 
@@ -113,7 +118,11 @@ export class AttendanceService {
       tx.booking.findFirst({ where: { studentId: callerId, classId: dto.classId, status: 'UPCOMING' }, include: { class: true } }),
     );
     if (!booking) {
-      throw new NotFoundException('No Upcoming Booking found for this Student on this Class.');
+      // Decision 422 item 2: unless the School checks members in without a booking.
+      const cls = await this.unbookedClass(callerId, dto.classId);
+      await this.assertWithinWindow(cls);
+      await this.assertCameraConsentNotWithdrawn(callerId);
+      return this.bookAndCheckIn(callerId, cls, 'SELF_SERVICE', null, { callerId, byStaff: false });
     }
 
     await this.assertWithinWindow(booking.class);
@@ -144,7 +153,10 @@ export class AttendanceService {
       tx.booking.findFirst({ where: { studentId, classId, status: 'UPCOMING' }, include: { class: true } }),
     );
     if (!booking) {
-      throw new NotFoundException('No Upcoming Booking found for this Student on this Class.');
+      // Decision 422 item 2: unless the School checks members in without a booking.
+      const cls = await this.unbookedClass(studentId, classId);
+      await this.assertWithinWindow(cls);
+      return this.bookAndCheckIn(studentId, cls, 'SELF_SERVICE_CODE', null, { callerId: studentId, byStaff: false });
     }
     await this.assertWithinWindow(booking.class);
 
@@ -202,7 +214,11 @@ export class AttendanceService {
       tx.booking.findFirst({ where: { studentId: dto.studentId, classId, status: 'UPCOMING' }, include: { class: true } }),
     );
     if (!booking) {
-      throw new NotFoundException('No Upcoming Booking found for this Student on this Class.');
+      // Decision 422 item 2: unless the School checks members in without a
+      // booking. Booked as staff book, as the front desk does (Decision 378).
+      const unbooked = await this.unbookedClass(dto.studentId, classId);
+      await this.assertWithinWindow(unbooked);
+      return this.bookAndCheckIn(dto.studentId, unbooked, method, instructorId, { callerId: instructorId, byStaff: true });
     }
     await this.assertWithinWindow(booking.class);
 
@@ -325,6 +341,65 @@ export class AttendanceService {
         'Camera-tier consent has been withdrawn for this Student — a camera-based check-in is unavailable. Staff can confirm attendance manually instead.',
       );
     }
+  }
+
+  /**
+   * Decision 422 item 2: no Upcoming Booking for this Class. Refused as
+   * before while the School needs a booking to check in (the default);
+   * otherwise the Class, as the Student sees it, for bookAndCheckIn. Read in
+   * the Student's own context, as a booking is: a Class at another School is
+   * never found, so another School's setting changes nothing here.
+   */
+  private async unbookedClass(studentId: string, classId: string): Promise<Class> {
+    const cls = await this.prismaApp.withTenantContext(studentId, (tx) => tx.class.findUnique({ where: { id: classId } }));
+    if (!cls || (await loadCheckInRules(this.prismaJobs, cls.schoolId)).requireBooking) {
+      throw new NotFoundException('No Upcoming Booking found for this Student on this Class.');
+    }
+    return cls;
+  }
+
+  /**
+   * Decision 422 item 2: check a member in to a Class they haven't booked.
+   * It books a place first through BookingsService.bookInTx, the booking's
+   * own rules unchanged (a full Class is CLASS_FULL; the class's waiver, the
+   * rank gate, and the membership that pays, a pack's credit spent as a
+   * booking spends it), then checks in through completeInTx with every
+   * check-in rule. One transaction: a refused check-in books nothing. The
+   * checks before it are bookClass's own. `byStaff`: a coach checking
+   * someone in books as staff do (the booking cut-off and the waitlist queue
+   * don't stop them, as at the front desk); a member's own check-in books as
+   * the member would.
+   */
+  private async bookAndCheckIn(
+    studentId: string,
+    cls: Class,
+    method: CheckInMethod,
+    checkedInById: string | null,
+    as: { callerId: string; byStaff: boolean },
+  ) {
+    if (cls.cancelledAt) {
+      throw new ConflictException('This class has been cancelled by the school.');
+    }
+    assertClassBookable(cls, { byStaff: as.byStaff });
+    await this.subscriptionGate.assertNotDegraded(studentId, cls.schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(studentId, cls.schoolId);
+    const completed = await withSeatLockRetry(() =>
+      this.prismaApp.withTenantContext(
+        studentId,
+        async (tx) => {
+          await lockStudentClass(tx, studentId, cls.id);
+          await lockSchoolOpen(tx, cls.schoolId);
+          // Booked meanwhile (from another device): check that booking in.
+          const booking =
+            (await tx.booking.findFirst({ where: { studentId, classId: cls.id, status: 'UPCOMING' }, select: { id: true, classId: true } })) ??
+            (await this.bookings.bookInTx(tx, { callerId: as.callerId, studentId, cls, dto: as.byStaff ? { studentId } : {}, isStaffAction: as.byStaff, viaKidMode: false }));
+          return this.completeInTx(tx, studentId, booking, method, checkedInById);
+        },
+        BOOKING_TX_OPTIONS,
+      ),
+    );
+    await this.afterCheckIn(studentId);
+    return completed;
   }
 
   private async completeBooking(

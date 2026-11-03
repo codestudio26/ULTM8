@@ -40,6 +40,10 @@ export interface CheckInRules {
   /** Refuse check-in while a charge is still owed more than this many days
    * after its due date; null: never, as before (backlog §3.5). */
   blockOverdueDays: OverdueDays | null;
+  /** A booking is needed to check in (Decision 422 item 2; on, as before).
+   * Off: a member may check in to a Class they haven't booked, and the
+   * check-in books a place first, by the booking's own rules. */
+  requireBooking: boolean;
 }
 
 export const CHECK_IN_RULES_SELECT = {
@@ -52,6 +56,7 @@ export const CHECK_IN_RULES_SELECT = {
   checkInFrozenMembers: true,
   checkInShowBeltProgress: true,
   checkInBlockOverdueDays: true,
+  checkInRequireBooking: true,
 } as const;
 
 type RuleColumns = {
@@ -64,6 +69,7 @@ type RuleColumns = {
   checkInFrozenMembers: boolean;
   checkInShowBeltProgress: boolean;
   checkInBlockOverdueDays: number | null;
+  checkInRequireBooking: boolean;
 };
 
 /** What check-in did before the rules: the column defaults. */
@@ -77,6 +83,7 @@ export const DEFAULT_CHECK_IN_RULES: CheckInRules = {
   frozenMembers: false,
   showBeltProgress: true,
   blockOverdueDays: null,
+  requireBooking: true,
 };
 
 function overdueDaysFrom(value: number | null): OverdueDays | null {
@@ -95,6 +102,7 @@ export function checkInRulesFrom(row: RuleColumns | null | undefined): CheckInRu
     frozenMembers: row.checkInFrozenMembers,
     showBeltProgress: row.checkInShowBeltProgress,
     blockOverdueDays: overdueDaysFrom(row.checkInBlockOverdueDays),
+    requireBooking: row.checkInRequireBooking,
   };
 }
 
