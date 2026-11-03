@@ -7375,7 +7375,7 @@ User (Code), 3 Nov 2026, answering the choices on #447: "ok" (items 1, 3, 4 and 
 
 User (Code), 3 Nov 2026: chose, for each of the eleven questions, the recommended option. Items 1, 3, 4, 7 and 11 confirm what is already built. Items 2, 5, 6, 8, 9 and 10 are to be built.
 
-## Decision 423 — Follow-ups on Decision 422's builds, signed-waiver retention, and who owns the GDPR/LGPD programme
+## Decision 423 — Follow-ups on Decision 422's builds, signed-waiver retention, who owns the GDPR/LGPD programme, and who grants roles
 
 **Date:** 3 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 422 (PRs #450, #451, #452), Decision 245 (GDPR/LGPD technical scoping)
 
@@ -7404,10 +7404,13 @@ User (Code), 3 Nov 2026: chose, for each of the eleven questions, the recommende
    - Brazil (LGPD): ULTM8 names an *encarregado* (the product owner or an outside service). EU (GDPR): an EU representative if ULTM8 has no EU establishment; a full DPO is likely not required yet, to be confirmed by the lawyer.
    - This is handed to a dedicated privacy or compliance person once there are paying Schools. *Not legal advice.*
 
-### Still open
-
-- **Who can grant roles at a School or Franchise.** The product owner said only the person who owns the account's login, the main account owner, may grant roles for that account. Whether that covers every role (owners, staff and coaches, removing co-owners' and staff's ability to invite) or only adding and removing owners is not yet confirmed. Nothing is built until it is.
+**Who can grant roles** (open RoleGrant authority edge; amends Decision 270 item 1 and Decision 80)
+10. **Only the main account owner may add or remove roles for that account.** This is the person who owns the account's login (the School's main owner, `RoleGrant.isMainOwner`; for a Franchise, the Franchise's main owner). It covers every role: owners (co-owners), Branch Staff and coaches.
+    - Co-owners and staff can no longer invite or remove anyone; the staff "Can invite coaches" switch goes.
+    - A Franchise's main owner manages roles for the Franchise account only, not inside its member Schools (Decision 270 item 2 stands).
+    - Students and Guardians keep joining by themselves as today (Decision 270 item 3 stands).
+    - To be built.
 
 ### Recorded by
 
-User (Code), 3 Nov 2026: chose the recommended option on items 1–4; "yes", "no" and asked for a recommendation (10,000) on items 5–7; "ok" on item 8; "agree" and "yes" on item 9. On roles: "Who ever own the log in for that account. Only that person."
+User (Code), 3 Nov 2026: chose the recommended option on items 1–4; "yes", "no" and asked for a recommendation (10,000) on items 5–7; "ok" on item 8; "agree" and "yes" on item 9. On roles (item 10): "Who ever own the log in for that account. Only that person.", "the main account owner", and, asked whether that covers every role or only owners, "Main account holder".
