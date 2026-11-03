@@ -3522,7 +3522,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exportAll: {
       button: "导出已签署文件",
       title: "导出所有已签署文件",
-      intro: "包含本学校所有已签署免责声明的 ZIP 文件：每个签名一份文档（可在浏览器中打开并打印为 PDF），以及所有文档的列表（index.csv）。只有学校所有者可以导出。",
+      intro: "包含本学校所有已签署免责声明的 ZIP 文件：每个签名一份 PDF，以及所有文档的列表（index.csv）。只有学校所有者可以导出。",
       start: "生成 ZIP",
       makeNew: "生成新的 ZIP",
       preparing: "正在生成 ZIP。大型学校可能需要几分钟；你可以关闭此窗口稍后再来。",

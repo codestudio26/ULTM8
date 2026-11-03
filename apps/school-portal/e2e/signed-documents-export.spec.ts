@@ -35,6 +35,8 @@ test('the owner sees "Include member files", off by default; without the tick no
   await expect(box).toBeVisible();
   await expect(box).not.toBeChecked();
   await expect(dialog.getByText('in a member-files folder')).toBeVisible();
+  // Each signature is a PDF in the ZIP (Decision 422 item 10).
+  await expect(dialog.getByText('a PDF for each signature')).toBeVisible();
 
   const sent = page.waitForResponse((r) => r.request().method() === 'POST' && r.url().endsWith(`/v1/schools/${s.schoolId}/signed-documents/exports`));
   await dialog.getByRole('button', { name: 'Make the ZIP' }).click();

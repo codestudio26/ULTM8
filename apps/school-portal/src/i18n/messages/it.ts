@@ -3565,7 +3565,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     exportAll: {
       button: "Esporta documenti firmati",
       title: "Esporta tutti i documenti firmati",
-      intro: "Un file ZIP con tutte le liberatorie firmate in questa scuola: un documento per firma, che si apre nel browser e si stampa in PDF, e un elenco di tutti (index.csv). Solo i titolari della scuola possono esportare.",
+      intro: "Un file ZIP con tutte le liberatorie firmate in questa scuola: un PDF per firma e un elenco di tutti (index.csv). Solo i titolari della scuola possono esportare.",
       start: "Crea lo ZIP",
       makeNew: "Crea un nuovo ZIP",
       preparing: "Creazione dello ZIP in corso. Per una scuola grande può richiedere qualche minuto; puoi chiudere e tornare più tardi.",

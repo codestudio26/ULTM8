@@ -2,7 +2,7 @@ export const waivers = {
   exportAll: {
     button: "Export signed documents",
     title: "Export all signed documents",
-    intro: "A ZIP file of every signed waiver at this School: one document per signature, which opens in a browser and prints to PDF, and a list of them all (index.csv). Only School owners can export.",
+    intro: "A ZIP file of every signed waiver at this School: a PDF for each signature, and a list of them all (index.csv). Only School owners can export.",
     start: "Make the ZIP",
     makeNew: "Make a new ZIP",
     preparing: "Making the ZIP. A large School can take a few minutes; you can close this and come back.",

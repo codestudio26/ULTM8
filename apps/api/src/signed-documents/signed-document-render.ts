@@ -24,9 +24,6 @@ export interface SignedDocument {
   imageMissing: boolean;
 }
 
-const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-export const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch]);
-
 /** A CSV cell: quoted when it holds a comma, quote or line break, and never
  * read as a formula (the portal's csvCell rule). */
 export function csvCell(value: string): string {
@@ -44,7 +41,8 @@ export function imageTypeOf(bytes: Buffer): string | null {
   return null;
 }
 
-/** A file name safe on every system, from the member and the document. */
+/** A file name safe on every system, from the member and the document: the
+ * document's PDF (Decision 422 item 10). */
 export function documentFileName(index: number, doc: SignedDocument): string {
   const clean = (s: string) =>
     s
@@ -53,7 +51,7 @@ export function documentFileName(index: number, doc: SignedDocument): string {
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 60) || '_';
-  return `documents/${String(index).padStart(5, '0')} ${clean(doc.memberName)} - ${clean(doc.title)}.html`;
+  return `documents/${String(index).padStart(5, '0')} ${clean(doc.memberName)} - ${clean(doc.title)}.pdf`;
 }
 
 /** Who signed, for the index: the typed name, marked when a Guardian signed
@@ -76,46 +74,4 @@ export function indexCsv(rows: Array<{ doc: SignedDocument; file: string }>, lab
   ])];
   // A byte-order mark, so spreadsheet apps read the names as UTF-8.
   return Buffer.from(`\ufeff${lines.map((l) => l.map(csvCell).join(',')).join('\r\n')}\r\n`, 'utf8');
-}
-
-/**
- * One signed document as a page that opens in any browser and prints to PDF:
- * what the Waivers page shows for a signature (who, when, the typed and
- * drawn signature, and the wording signed), with the image inside the file.
- */
-export function signedDocumentHtml(doc: SignedDocument, schoolName: string, labels: SignedDocumentLabels): Buffer {
-  const row = (label: string, value: string) => `<dt>${escapeHtml(label)}</dt><dd dir="auto">${escapeHtml(value)}</dd>`;
-  const parts = [
-    row(labels.member, doc.kind === 'GUEST' ? `${doc.memberName} (${labels.guest})` : doc.memberName),
-    row(labels.signedName, signedByCell(doc, labels)),
-  ];
-  if (doc.onPaper) {
-    if (doc.recordedByName) parts.push(row(labels.recordedBy, doc.recordedByName));
-  } else if (doc.signatureText) {
-    parts.push(row(labels.signature, doc.signatureText));
-  }
-  parts.push(row(labels.signedAt, utcStamp(doc.signedAt)));
-  if (doc.version != null) parts.push(row(labels.version, String(doc.version)));
-  if (doc.sha256) parts.push(row('SHA-256', doc.sha256));
-
-  const image = doc.image
-    ? `<p><img alt="${escapeHtml(labels.signature)}" src="data:${doc.image.contentType};base64,${doc.image.bytes.toString('base64')}"></p>`
-    : doc.imageMissing
-      ? `<p class="note">${escapeHtml(labels.imageMissing)}</p>`
-      : '';
-  const body = doc.body != null ? `<div class="text" dir="auto">${escapeHtml(doc.body)}</div>` : `<p class="note">${escapeHtml(labels.notRecorded)}</p>`;
-
-  const html =
-    '<!doctype html><html><head><meta charset="utf-8">' +
-    `<title>${escapeHtml(`${doc.title} - ${doc.memberName}`)}</title>` +
-    '<style>body{font-family:system-ui,sans-serif;max-width:46rem;margin:2rem auto;padding:0 1rem;color:#111}' +
-    'dt{font-size:.8rem;color:#555;margin-top:.6rem}dd{margin:0}img{max-width:100%;max-height:24rem;background:#fff;border:1px solid #ddd}' +
-    '.text{white-space:pre-line;border:1px solid #ddd;padding:1rem;line-height:1.6}.note{color:#555}</style></head><body>' +
-    `<p class="note" dir="auto">${escapeHtml(schoolName)}</p>` +
-    `<h1 dir="auto">${escapeHtml(doc.title)}</h1>` +
-    (doc.expired ? `<p class="note">${escapeHtml(labels.expired)}</p>` : '') +
-    `<dl>${parts.join('')}</dl>${image}` +
-    `<h2>${escapeHtml(labels.textSigned)}</h2>${body}` +
-    '</body></html>';
-  return Buffer.from(html, 'utf8');
 }

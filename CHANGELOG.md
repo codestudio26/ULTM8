@@ -304,6 +304,28 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `SignedDocumentExportDto` gains `includeMemberFiles` and `memberFileCount`.
   15 languages. **Needs a database migration**
   (`20270208000000_export_member_files`).
+- **Each signed document in the export is a real PDF** (Decision 422 item
+  10) — the signed-documents ZIP now holds one PDF per signature in place of
+  the printable web page (same folder and names, `.pdf` instead of `.html`;
+  `index.csv` lists the PDFs). Each PDF shows what the page did: the School,
+  the document's title (and "Expired"), the member (a guest marked), who
+  signed (a Guardian signing for a child, or a paper signature, marked), the
+  typed signature or who recorded the paper one, when it was signed (UTC),
+  the version and SHA-256 of the wording, the drawn signature or paper photo,
+  and the full wording signed, on as many A4 pages as it needs, numbered
+  "1 / 3". The text is real, selectable and searchable text in embedded Noto
+  fonts, in every one of the 15 languages: Arabic right to left and joined,
+  with numbers and Latin words in it the right way round, and Japanese,
+  Chinese, Korean and Thai broken into lines between words. An image that
+  can't be read is reported as missing rather than failing the export. The
+  Japanese/Chinese/Korean font file is checked against the upstream file's
+  SHA-256 when it is first loaded; if it doesn't match it is not used, an
+  error is logged, and an export that needs it fails (exports with no CJK
+  text are unaffected) rather than writing documents with text missing. Made
+  with pdfkit in the export job, one PDF at a time into the ZIP; the 2 GB
+  limit and 24-hour deletion are unchanged. The export dialog's description
+  now says "a PDF for each signature" (15 languages). No API or database
+  change.
 - **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
   its own list of tags, managed under **School settings → Student tags** (add,
   rename, delete; deleting a tag takes it off every student). A **Tags** card
