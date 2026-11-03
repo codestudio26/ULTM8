@@ -209,7 +209,8 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       for (const who of ['owner', 'carla']) {
         const res = await http().get(`/v1/schools/${school.id}/promotion-fee-settings`).set(as(who));
         expect(res.status).toBe(200);
-        expect(res.body).toEqual({ promotionFeeEnabled: false, gradeBeforeFeePaid: false, currency: 'GBP' });
+        // The Kids → Adult switch (Decision 420 item 3) is off by default too.
+        expect(res.body).toEqual({ promotionFeeEnabled: false, gradeBeforeFeePaid: false, kidsToAdultFeeEnabled: false, currency: 'GBP' });
       }
     });
 

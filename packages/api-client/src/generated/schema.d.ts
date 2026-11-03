@@ -11153,6 +11153,8 @@ export interface components {
             promotionFeeEnabled: boolean;
             /** @description "Allow grading before the fee is paid". */
             gradeBeforeFeePaid: boolean;
+            /** @description "Charge a fee when moving a student from Kids to Adult" (Decision 420 item 3). In effect only while promotionFeeEnabled is on. */
+            kidsToAdultFeeEnabled: boolean;
             /** @description The School's currency (School.defaultCurrency): prices are minor units of it. */
             currency?: string | null;
         };
@@ -11161,6 +11163,8 @@ export interface components {
             promotionFeeEnabled?: boolean;
             /** @description "Allow grading before the fee is paid" (off by default). On: a priced promotion applies at once and the fee request waits. Off: the promotion waits ("Waiting for fee") until the fee is paid or waived. */
             gradeBeforeFeePaid?: boolean;
+            /** @description "Charge a fee when moving a student from Kids to Adult" (Decision 420 item 3; off by default). In effect only while the promotion fee is on. Off: the move into the Adult program is always free. On: it is charged like any promotion, at the Adult rank's own price. */
+            kidsToAdultFeeEnabled?: boolean;
         };
         PromotionFeeChargeSummaryDto: {
             id: string;

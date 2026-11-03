@@ -500,7 +500,7 @@ export function usePromotionFeeSettings(schoolId: string | null) {
 export function useUpdatePromotionFeeSettings(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { promotionFeeEnabled?: boolean; gradeBeforeFeePaid?: boolean }) =>
+    mutationFn: (body: { promotionFeeEnabled?: boolean; gradeBeforeFeePaid?: boolean; kidsToAdultFeeEnabled?: boolean }) =>
       unwrap(apiClient.PUT('/v1/schools/{schoolId}/promotion-fee-settings', { params: { path: { schoolId } }, body })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['promotion-fee-settings', schoolId] }),
   });

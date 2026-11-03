@@ -347,7 +347,8 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
     });
 
     it('fee off: the move is free and applies at once', async () => {
-      await setFee(false);
+      // The School's defaults: both the fee and the Kids → Adult switch off.
+      await setFee(false, false, false);
       await student('Hugo');
       const res = await move('coach', 'Hugo', { targetRungId: rung.Blue.id });
       expect(res.status).toBe(201);

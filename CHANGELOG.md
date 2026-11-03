@@ -145,10 +145,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   each answer row says `toAdult`. No promotion fee is asked for on a move into
   Adult: Decision 397 leaves that open. 15 languages.
 - **Grading: the move from Kids to Adult is charged like any promotion**
-  (backlog 3.20; Decision 419 item 2) — moving a student into the Adult
-  program, from the Grade window or in bulk promote, is now a promotion to the
-  Adult rank they are given. With the School's promotion fee on, that Adult
-  rank's own price is asked for (no price means free); with "Allow grading
+  (backlog 3.20; Decision 419 item 2, Decision 420 item 3) — moving a student
+  into the Adult program, from the Grade window or in bulk promote, can now be
+  charged as a promotion to the Adult rank they are given. Grading → Settings
+  has a new owner-only switch under the promotion fee, **"Charge a fee when
+  moving a student from Kids to Adult"**, shown while the promotion fee is on
+  and off by default: off, the move is always free, whatever the Adult rank's
+  price. On, that Adult rank's own price is asked for (no price means free);
+  with "Allow grading
   before the fee is paid" off the move waits ("Waiting for fee") and happens
   once the fee is paid or the owner waives it, with the coach's grading date;
   declined shows "Fee declined"; a waived decline or a cancelled fee leaves it
@@ -163,8 +167,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the students waiting for their fee (any priced grade, not only a move into
   Adult). The API keeps the Kids style as a request's `disciplineId` and adds
   `toDisciplineId` (the Adult style) to fee requests, `toAdult` to the board's
-  fee request, and `toDisciplineName` to the student's list (migration
-  `20270206000000_kids_adult_promotion_fee`). 15 languages.
+  fee request, `toDisciplineName` to the student's list, and
+  `kidsToAdultFeeEnabled` to the promotion fee settings (migration
+  `20270206000000_kids_adult_promotion_fee`, which also adds
+  `School.promotionFeeKidsToAdult`). Decision 420 answers this build's two open
+  points: who may waive (built separately) and "a price of 0" (a rank with no
+  price is free). 15 languages.
 - **Refund notice** (backlog 3.6; Decision 414 item 4, Decision 415 item 4)
   — every refund sends the member a "Refund" notice with the amount and where
   it went: refunded to the card, given back, or added to the balance as credit

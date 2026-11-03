@@ -100,6 +100,10 @@ export const grading = {
       gradeBeforePaid: 'Allow grading before the fee is paid',
       gradeBeforePaidOff: 'Off (the default): the promotion waits until the fee is accepted and paid.',
       gradeBeforePaidOn: 'On: the promotion happens straight away; the fee waits.',
+      /** Decision 420 item 3: shown under the promotion fee switch, while it is on. */
+      kidsToAdult: 'Charge a fee when moving a student from Kids to Adult',
+      kidsToAdultOff: 'Off (the default): moving a student into the Adult program is always free, whatever the Adult rank\'s price.',
+      kidsToAdultOn: 'On: the move is charged like any promotion, at the Adult rank\'s own price.',
       prices: 'Prices',
       pricesLink: 'Set prices in Styles & Belts ›',
       accepts: 'The student accepts first',

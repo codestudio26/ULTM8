@@ -101,7 +101,7 @@ export class PromotionFeeService {
   async updateSettings(callerId: string, schoolId: string, dto: UpdatePromotionFeeSettingsDto) {
     this.assertUuid(schoolId, 'schoolId');
     if (dto.promotionFeeEnabled === undefined && dto.gradeBeforeFeePaid === undefined && dto.kidsToAdultFeeEnabled === undefined) {
-      throw new BadRequestException('Send promotionFeeEnabled, gradeBeforeFeePaid, kidsToAdultFeeEnabled, or any of them together.');
+      throw new BadRequestException('Send at least one of promotionFeeEnabled, gradeBeforeFeePaid and kidsToAdultFeeEnabled.');
     }
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
