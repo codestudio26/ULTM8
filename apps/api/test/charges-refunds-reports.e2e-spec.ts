@@ -13,6 +13,9 @@ import { ChargeAutoPayProcessor } from '../src/jobs/charge-auto-pay.processor';
 import { ChargeOverdueNoticeProcessor } from '../src/jobs/charge-overdue-notice.processor';
 import { ChargeDueReminderProcessor } from '../src/jobs/charge-due-reminder.processor';
 import { LateFeeProcessor } from '../src/jobs/late-fee.processor';
+import { NotificationFanoutProcessor } from '../src/jobs/notification-fanout.processor';
+import type { NotificationFanoutJobData } from '../src/jobs/notification-fanout.types';
+import type { Job } from 'bullmq';
 
 /**
  * Charges and the member balance, step 4 of 6 (v1.3 backlog §3.6; Decision
@@ -94,6 +97,16 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     })),
     platformClient: jest.fn(),
   };
+
+  // The notification worker writes each notice a moment after the request
+  // that sent it. A test can hold back the notices with one title, to check
+  // it never counts on them having landed already (a slow worker in CI).
+  let slowNoticeTitle: string | null = null;
+  const realFanoutProcess = NotificationFanoutProcessor.prototype.process;
+  jest.spyOn(NotificationFanoutProcessor.prototype, 'process').mockImplementation(async function (this: NotificationFanoutProcessor, job: Job<NotificationFanoutJobData>) {
+    if (slowNoticeTitle && job.data.title === slowNoticeTitle) await new Promise((r) => setTimeout(r, 1000));
+    return realFanoutProcess.call(this, job);
+  });
 
   const http = () => request(app.getHttpServer());
   const as = (token: string) => ({
@@ -219,6 +232,7 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
 
   afterEach(() => {
     offSessionStatus = 'succeeded';
+    slowNoticeTitle = null;
   });
 
   afterAll(async () => {
@@ -245,6 +259,7 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     await su.school.deleteMany({ where: { id: { in: schoolIds } } });
     await su.$disconnect();
     await app.close();
+    jest.restoreAllMocks();
   });
 
   describe('Refunds (Decision 338 item 3)', () => {
@@ -403,12 +418,12 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
   });
 
   describe('Stripe: a lost dispute and a refund made in the dashboard', () => {
-    it('a lost dispute is a refund to the card of the disputed amount; the member is told', async () => {
-      const student = await mkStudent('disputed');
+    /** A card payment, disputed and lost; checks the ledger and every notice the member got. */
+    async function lostDispute(label: string) {
+      const student = await mkStudent(label);
       const c = await createCharge(student.id, 6000);
-      const paymentId = await cardPay('disputed', student.id, c.id);
+      const paymentId = await cardPay(label, student.id, c.id);
       const intent = (await tx(paymentId)).stripePaymentIntentId!;
-      const before = (await notices(student.id, 1)).length;
 
       nextDispute = { id: `dp_${randomUUID()}`, status: 'needs_response', amount: 6000, currency: 'brl', payment_intent: intent };
       await event('charge.dispute.created', nextDispute.id);
@@ -422,7 +437,7 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       const rows = await su.chargeRefund.findMany({ where: { transactionId: paymentId } });
       expect(rows).toEqual([expect.objectContaining({ kind: 'DISPUTE_LOST', amount: 6000, refundedById: null })]);
       expect(await tx(paymentId)).toMatchObject({ status: 'DISPUTED', refundedAmount: null });
-      const view = await memberView('disputed', student.id);
+      const view = await memberView(label, student.id);
       expect(view.charges[0]).toMatchObject({ status: 'PAID', owedAmount: 0, refundStatus: 'REFUNDED' });
       expect(view.balances[0]).toMatchObject({ net: 0 });
       const disputeNotices = await notices(student.id, 2, 'Payment dispute');
@@ -430,7 +445,23 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
         'Your card payment of 60.00 BRL is being disputed with your bank.',
         'The dispute on your card payment of 60.00 BRL was decided in your favour. The money goes back to your card.',
       ]);
-      expect((await notices(student.id, before + 2)).length).toBe(before + 2);
+      // Everything the member was sent, by title, once the worker has written
+      // it all: the invoice, the receipt and the two dispute notices, and no
+      // refund notice. Named, not counted from a snapshot taken earlier: the
+      // receipt may still be on its way when the dispute starts.
+      await notices(student.id, 4);
+      await settle();
+      const all = await su.notification.findMany({ where: { userId: student.id, type: 'CHARGE' } });
+      expect(all.map((n) => n.title).sort()).toEqual(['New invoice', 'Payment dispute', 'Payment dispute', 'Payment received']);
+    }
+
+    it('a lost dispute is a refund to the card of the disputed amount; the member is told', async () => {
+      await lostDispute('disputed');
+    });
+
+    it('the same when the receipt is still on its way as the dispute starts', async () => {
+      slowNoticeTitle = 'Payment received';
+      await lostDispute('disputedSlowReceipt');
     });
 
     it('no dispute notice to the member when the School switched it off', async () => {
