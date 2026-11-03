@@ -111,20 +111,41 @@ export function useStyleSkills(disciplineId: string | null) {
   });
 }
 
-/** Classes and weekly slots at the School; the dashboard keeps the coach's own. */
-export function useSchoolClasses(schoolId: string | null) {
+/** Coaches review CP1: the coach's own next 10 classes, asked of the server
+ * soonest first (the web portal's Classes review C17). Reading the School's
+ * first page and keeping the coach's lost them once a School had more than
+ * 20 classes, since that page is in no date order. */
+export function useSchoolClasses(schoolId: string | null, instructorId: string) {
   return useQuery({
-    queryKey: ['coach-classes', schoolId],
-    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/classes', { params: { path: { schoolId: schoolId! } } })),
-    enabled: !!schoolId,
+    queryKey: ['coach-classes', schoolId, instructorId],
+    queryFn: () =>
+      unwrap(
+        apiClient.GET('/v1/schools/{schoolId}/classes', {
+          params: { path: { schoolId: schoolId! }, query: { when: 'upcoming', instructorId, limit: 10 } },
+        }),
+      ),
+    enabled: !!schoolId && !!instructorId,
     staleTime: 60_000,
   });
 }
 
+/** Every weekly slot at the School (archived ones left out by the API), page
+ * by page — CP1: the first page alone held only 20. */
 export function useSchoolTimetable(schoolId: string | null) {
   return useQuery({
     queryKey: ['coach-timetable', schoolId],
-    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! } } })),
+    queryFn: async () => {
+      const fetchPage = (cursor?: string) =>
+        unwrap(apiClient.GET('/v1/schools/{schoolId}/timetable', { params: { path: { schoolId: schoolId! }, query: { limit: 100, cursor } } }));
+      const items: Awaited<ReturnType<typeof fetchPage>>['items'] = [];
+      let cursor: string | undefined;
+      do {
+        const page = await fetchPage(cursor);
+        items.push(...page.items);
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return { items, nextCursor: null };
+    },
     enabled: !!schoolId,
     staleTime: 60_000,
   });

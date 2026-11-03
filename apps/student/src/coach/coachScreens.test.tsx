@@ -118,6 +118,24 @@ describe('CoachDashboardScreen', () => {
     expect(queryByText('My training')).toBeNull(); // not a student here
   });
 
+  it('asks the server for the coach\'s own upcoming classes and marks a cancelled one (Coaches review CP1, CP3)', async () => {
+    grading({}, ['bjj']);
+    mocked(q.useGradingBoard).mockReturnValue(ok({ items: [] }));
+    mocked(q.useSchoolClasses).mockReturnValue(
+      ok({
+        items: [
+          { id: 'c1', instructorId: ME, title: 'Kids BJJ', startDate: '2030-01-08T17:00:00Z', endDate: '2030-01-08T18:00:00Z', cancelledAt: null },
+          { id: 'c2', instructorId: ME, title: 'Open mat', startDate: '2030-01-09T17:00:00Z', endDate: '2030-01-09T18:00:00Z', cancelledAt: '2030-01-01T00:00:00Z' },
+        ],
+      }),
+    );
+    const { getByText, queryByText } = await render(<CoachDashboardScreen navigation={nav()} route={{} as never} />);
+    expect(q.useSchoolClasses).toHaveBeenCalledWith(SCHOOL, ME);
+    expect(getByText(/Kids BJJ$/)).toBeTruthy();
+    expect(getByText(/Open mat · Cancelled$/)).toBeTruthy();
+    expect(queryByText(/Kids BJJ · Cancelled/)).toBeNull();
+  });
+
   it('opens the Grading Board for a style', async () => {
     grading({}, ['bjj']);
     mocked(q.useGradingBoard).mockReturnValue(ok({ items: [] }));

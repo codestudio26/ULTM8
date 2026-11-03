@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { SelectField } from '@ultm8/ui';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
 import { useNotificationCounts } from '../notifications/notificationQueries';
 import { useLanguages } from '../settings/settingsQueries';
@@ -11,8 +11,14 @@ import { GlobalSearch } from './GlobalSearch';
 import type { RoleGrantClaim } from '../auth/types';
 import { useI18n, type TranslateFn } from '../i18n/I18nProvider';
 
-function roleLabel(grants: RoleGrantClaim[] | undefined, t: TranslateFn): string {
-  if (!grants?.length) return '';
+/** Coaches review CP6: the role at the School being worked in (the switcher's
+ * choice), so a coach at one School who is Branch Staff at another reads
+ * right at each; a School-less grant (Franchise owner) always counts. Falls
+ * back to every grant when none matches. */
+function roleLabel(allGrants: RoleGrantClaim[] | undefined, schoolId: string | null, t: TranslateFn): string {
+  if (!allGrants?.length) return '';
+  const here = schoolId ? allGrants.filter((g) => g.schoolId === schoolId || !g.schoolId) : [];
+  const grants = here.length > 0 ? here : allGrants;
   if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return t('layout.roles.owner');
   if (grants.some((g) => g.role === 'BRANCH_STAFF')) return t('layout.roles.branchStaff');
   if (grants.some((g) => g.role === 'INSTRUCTOR')) return t('layout.roles.coach');
@@ -43,6 +49,8 @@ function nativeName(code: string, fallback: string): string {
  */
 export function TopBar() {
   const { claims } = useAuth();
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
   // The counts endpoint covers every page and leaves snoozed notifications out,
   // the same Unread number the Notifications page shows.
   const { data: counts } = useNotificationCounts();
@@ -113,7 +121,7 @@ export function TopBar() {
 
         <SchoolSwitcher />
 
-        {me ? <AccountMenu me={me} roleLabel={roleLabel(claims?.grants, t)} /> : null}
+        {me ? <AccountMenu me={me} roleLabel={roleLabel(claims?.grants, ownedSchoolId ?? coachSchoolId, t)} /> : null}
 
         {languages?.length ? (
           <SelectField

@@ -90,12 +90,57 @@ test('the switcher offers both School names as options', async ({ page }) => {
   await expect(switcher.getByRole('option', { name: secondSchool.name })).toBeAttached();
 });
 
-test('a School Owner never sees the switcher, even with a second, coached School', async ({ page }) => {
-  const owner = await addPerson('Olive', 'Owner', [
+test('an owner who also coaches at another School picks it in the switcher and gets its coach screens (Coaches review CP4, CP6)', async ({ page }) => {
+  const [ownedSchool, coachedSchool] = await Promise.all([
+    db.school.findUniqueOrThrow({ where: { id: s1.schoolId } }),
+    db.school.findUniqueOrThrow({ where: { id: s2.schoolId } }),
+  ]);
+  const person = await addPerson('Owen', 'Coach', [
     { role: 'SCHOOL_OWNER_MANAGER', schoolId: s1.schoolId },
     { role: 'INSTRUCTOR', schoolId: s2.schoolId },
   ]);
-  await signIn(page, owner.token);
-  await page.goto('/dashboard');
-  await expect(page.getByRole('combobox', { name: 'Switch School' })).toHaveCount(0);
+  await db.gradingPermission.create({ data: { id: randomUUID(), schoolId: s2.schoolId, userId: person.id, disciplineId: s2.disciplineId, canPromote: true } });
+  await signIn(page, person.token);
+  await page.goto('/');
+  await expect(page).toHaveURL(/\/dashboard$/);
+  const nav = page.getByRole('navigation');
+  await expect(nav.getByRole('link', { name: 'Transactions' })).toBeVisible();
+
+  // Typing /coach as an owner goes back to the owner's home: its links would open the owned School.
+  await page.goto('/coach');
+  await expect(page).toHaveURL(/\/dashboard$/);
+
+  const switcher = page.getByRole('combobox', { name: 'Switch School' });
+  await expect(switcher.getByRole('option')).toHaveText([`${ownedSchool.name} · School Owner`, `${coachedSchool.name} · Coach`]);
+  await switcher.selectOption(coachedSchool.id);
+
+  await expect(page).toHaveURL(/\/coach$/);
+  await expect(page.getByRole('heading', { name: 'Coach dashboard' })).toBeVisible();
+  await expect(page.getByText(coachedSchool.name, { exact: true }).first()).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Transactions' })).toHaveCount(0);
+  await expect(page.getByText('Coach', { exact: true })).toBeVisible(); // role in the header (CP6)
+
+  // The Grading link now opens the coached School's board, where they may promote.
+  await page.getByRole('link', { name: 'Open the Grading Board' }).click();
+  await expect(page).toHaveURL(/\/grading$/);
+  await expect(page.getByRole('combobox', { name: 'Switch School' })).toHaveValue(coachedSchool.id);
+  await expect(page.getByRole('link', { name: 'Permissions', exact: true })).toHaveCount(0);
+
+  // And back to owning.
+  await page.getByRole('combobox', { name: 'Switch School' }).selectOption(ownedSchool.id);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByText('School Owner', { exact: true })).toBeVisible();
+});
+
+test('the header names the role held at the School being viewed (Coaches review CP6)', async ({ page }) => {
+  const [firstId, secondId] = [s1.schoolId, s2.schoolId].sort();
+  const person = await addPerson('Rae', 'Roles', [
+    { role: 'INSTRUCTOR', schoolId: firstId },
+    { role: 'BRANCH_STAFF', schoolId: secondId },
+  ]);
+  await signIn(page, person.token);
+  await page.goto('/coach');
+  await expect(page.getByText('Coach', { exact: true })).toBeVisible();
+  await page.getByRole('combobox', { name: 'Switch School' }).selectOption(secondId);
+  await expect(page.getByText('Branch Staff', { exact: true })).toBeVisible();
 });

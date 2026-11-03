@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AuthCard, Button, ErrorBanner, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { decodeJwtPayload } from '@ultm8/auth';
+import type { JwtClaims } from './types';
 import { useAuth } from './AuthContext';
 import { rememberReturnTo } from './returnTo';
 import { useAcceptCoachInvite, useCoachInviteLink } from '../roleGrants/coachInviteQueries';
@@ -24,7 +26,7 @@ export function CoachInvitePage() {
   const t = useT();
   const { token = '' } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const { accessToken, claims, setAccessToken, logout } = useAuth();
+  const { accessToken, claims, setAccessToken, logout, setActiveCoachSchoolId } = useAuth();
   const link = useCoachInviteLink(token);
   const accept = useAcceptCoachInvite(token);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +70,12 @@ export function CoachInvitePage() {
     setError(null);
     try {
       const result = await accept.mutateAsync();
+      // Coaches review CP4: open the School just joined, even for someone who
+      // owns a School or already coaches at another one.
+      const before = new Set((claims?.grants ?? []).filter((g) => g.role === invite.role).map((g) => g.schoolId));
+      const joined = decodeJwtPayload<JwtClaims>(result.accessToken)?.grants.find((g) => g.role === invite.role && g.schoolId && !before.has(g.schoolId))?.schoolId;
       setAccessToken(result.accessToken);
+      if (joined) setActiveCoachSchoolId(joined);
       setAccepted(true);
     } catch (err) {
       setError(errorText(err, t('auth.coachInvite.acceptFailed')));

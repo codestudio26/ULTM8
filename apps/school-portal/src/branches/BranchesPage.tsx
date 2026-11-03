@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, Table, TextField, ViewToggle, formatTimezone, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useBranches, useCreateBranch, useUnarchiveBranch, type BranchListItem } from './branchQueries';
 import { BranchFormModal } from './BranchFormModal';
@@ -43,6 +43,7 @@ function countryOptions(branches: BranchListItem[]): { value: string; label: str
 export function BranchesPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
+  const knownUser = !!useAuth().claims;
   const navigate = useNavigate();
   // Decision 294 — search (name, city or postcode), a City dropdown and,
   // for a School in more than one country, a Country dropdown. All three
@@ -75,7 +76,10 @@ export function BranchesPage() {
   // use and where it goes (CloseBranchModal), instead of a bare confirmation.
   const [archiving, setArchiving] = useState<BranchListItem | null>(null);
 
-  if (!schoolId) return null;
+  // Coaches review CP5: owner-only — anyone else goes back to their own home
+  // page. Not while the session can't be read yet (a token being refreshed):
+  // then nobody is known to own anything, and the page waits instead.
+  if (!schoolId) return knownUser ? <Navigate to="/" replace /> : null;
 
   const allBranches = data?.items ?? [];
   const archivedCount = allBranches.filter((b) => b.archivedAt).length;

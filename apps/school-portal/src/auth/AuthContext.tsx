@@ -55,6 +55,11 @@ interface AuthContextValue {
    * independently. */
   activeOwnedSchoolId: string | null;
   setActiveOwnedSchoolId: (schoolId: string) => void;
+  /** Coaches review CP4: true while someone who owns a School has picked, in
+   * the header switcher, a different School where they only coach. The
+   * portal then shows them that School's coach screens (`useOwnedSchoolId()`
+   * answers null). Picking a School they own turns it off again. */
+  actingAsCoach: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -72,6 +77,9 @@ const ACTIVE_COACH_SCHOOL_KEY = 'ultm8.activeCoachSchoolId';
  * `useOwnedSchoolId`'s own header comment for why this is a separate key
  * rather than reusing the coach one. */
 const ACTIVE_OWNED_SCHOOL_KEY = 'ultm8.activeOwnedSchoolId';
+/** Coaches review CP4: which side an owner who also coaches elsewhere last
+ * picked ("coach" or nothing). Tab-scoped like the two keys above. */
+const ACTING_AS_COACH_KEY = 'ultm8.actingAsCoach';
 
 function readActiveSchoolId(key: string): string | null {
   try {
@@ -101,16 +109,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [{ accessToken, claims }, setState] = useState(readClaims);
   const [activeCoachSchoolId, setActiveCoachSchoolIdState] = useState(() => readActiveSchoolId(ACTIVE_COACH_SCHOOL_KEY));
   const [activeOwnedSchoolId, setActiveOwnedSchoolIdState] = useState(() => readActiveSchoolId(ACTIVE_OWNED_SCHOOL_KEY));
+  const [actingAsCoach, setActingAsCoachState] = useState(() => readActiveSchoolId(ACTING_AS_COACH_KEY) === 'coach');
   const queryClient = useQueryClient();
 
   const setActiveCoachSchoolId = useCallback((schoolId: string) => {
     writeActiveSchoolId(ACTIVE_COACH_SCHOOL_KEY, schoolId);
     setActiveCoachSchoolIdState(schoolId);
+    // Picking a School to coach at is acting as its coach (CP4); for someone
+    // who owns no School this changes nothing.
+    writeActiveSchoolId(ACTING_AS_COACH_KEY, 'coach');
+    setActingAsCoachState(true);
   }, []);
 
   const setActiveOwnedSchoolId = useCallback((schoolId: string) => {
     writeActiveSchoolId(ACTIVE_OWNED_SCHOOL_KEY, schoolId);
     setActiveOwnedSchoolIdState(schoolId);
+    writeActiveSchoolId(ACTING_AS_COACH_KEY, null);
+    setActingAsCoachState(false);
   }, []);
 
   const applyToken = useCallback((token: string) => {
@@ -123,8 +138,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.clear();
       writeActiveSchoolId(ACTIVE_COACH_SCHOOL_KEY, null);
       writeActiveSchoolId(ACTIVE_OWNED_SCHOOL_KEY, null);
+      writeActiveSchoolId(ACTING_AS_COACH_KEY, null);
       setActiveCoachSchoolIdState(null);
       setActiveOwnedSchoolIdState(null);
+      setActingAsCoachState(false);
       // Refresh token first, then the access token — applyToken is what flips
       // `accessToken` state, so ordering it last means the refresh token is
       // already persisted by the time anything could possibly need it. Same
@@ -172,9 +189,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     sessionStorageTokenStore.clear();
     writeActiveSchoolId(ACTIVE_COACH_SCHOOL_KEY, null);
     writeActiveSchoolId(ACTIVE_OWNED_SCHOOL_KEY, null);
+    writeActiveSchoolId(ACTING_AS_COACH_KEY, null);
     setState({ accessToken: null, claims: null });
     setActiveCoachSchoolIdState(null);
     setActiveOwnedSchoolIdState(null);
+    setActingAsCoachState(false);
     // FOUND ON REVIEW (Phase 24, surfaced by the new Notifications inbox —
     // the first query in this codebase keyed with no per-caller scoping
     // identifier at all, e.g. `['notifications']` vs. every other query's
@@ -240,8 +259,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setActiveCoachSchoolId,
       activeOwnedSchoolId,
       setActiveOwnedSchoolId,
+      actingAsCoach,
     }),
-    [accessToken, claims, login, logout, applyToken, startSession, replaceTokens, activeCoachSchoolId, setActiveCoachSchoolId, activeOwnedSchoolId, setActiveOwnedSchoolId],
+    [accessToken, claims, login, logout, applyToken, startSession, replaceTokens, activeCoachSchoolId, setActiveCoachSchoolId, activeOwnedSchoolId, setActiveOwnedSchoolId, actingAsCoach],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -282,9 +302,13 @@ export function useOwnedSchoolIds(): string[] {
  * in principle also coach at a different School, and each needs to resolve
  * independently. */
 export function useOwnedSchoolId(): string | null {
-  const { activeOwnedSchoolId } = useAuth();
+  const { activeOwnedSchoolId, actingAsCoach, activeCoachSchoolId } = useAuth();
   const schoolIds = useOwnedSchoolIds();
+  const coachSchoolIds = useCoachSchoolIds();
   if (schoolIds.length === 0) return null;
+  // Coaches review CP4: an owner who picked a School where they only coach
+  // works there as its coach, so every page answers as it would for a coach.
+  if (actingAsCoach && activeCoachSchoolId && coachSchoolIds.includes(activeCoachSchoolId) && !schoolIds.includes(activeCoachSchoolId)) return null;
   if (activeOwnedSchoolId && schoolIds.includes(activeOwnedSchoolId)) return activeOwnedSchoolId;
   return schoolIds[0];
 }

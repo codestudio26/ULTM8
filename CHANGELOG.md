@@ -15,6 +15,15 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Coaches portal fixes** (Coaches portal review CP2–CP6, Decision 424) —
+  the coach dashboard no longer lists archived weekly slots, and marks a
+  cancelled class "Cancelled" with no roll call or QR link. An owner who also
+  coaches at another School picks it in the header's School switcher (marked
+  "Coach") and gets that School's coach screens; picking an owned School goes
+  back. Owner-only pages typed in by a coach send them to their dashboard
+  instead of a blank page, and the header shows the role held at the School
+  being viewed. (Track B: the app's coach dashboard now finds the coach's own
+  classes in any size of School.)
 - **Check-in rules: overdue payments and belt progress** (backlog 3.5) — two
   more rules on Check-in → Check-in rules, for every way in (app, coach's
   scan, front desk, tablet):

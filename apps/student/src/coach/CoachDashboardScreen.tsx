@@ -150,7 +150,7 @@ function StyleSummary({ schoolId, style, onPress }: { schoolId: string; style: D
 /** Weekly slots and upcoming classes where they are the instructor. */
 function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
   const t = useT();
-  const classes = useSchoolClasses(schoolId);
+  const classes = useSchoolClasses(schoolId, me);
   const slots = useSchoolTimetable(schoolId);
   const weekly = useMemo(
     () =>
@@ -159,13 +159,8 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
         .sort((a, b) => WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday) || a.startTime.localeCompare(b.startTime)),
     [slots.data, me],
   );
-  const upcoming = useMemo(() => {
-    const now = Date.now();
-    return (classes.data?.items ?? [])
-      .filter((c) => c.instructorId === me && new Date(c.endDate).getTime() >= now)
-      .sort((a, b) => a.startDate.localeCompare(b.startDate))
-      .slice(0, 10);
-  }, [classes.data, me]);
+  // Already the coach's own, not yet ended, soonest first (CP1).
+  const upcoming = classes.data?.items ?? [];
   const error = classes.error ?? slots.error;
   return (
     <Section title={t('coach.dashboard.classesTitle')}>
@@ -196,7 +191,8 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
             <View>
               <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>{t('coach.dashboard.comingUp')}</Text>
               {upcoming.map((c) => (
-                <Text key={c.id}>{t('coach.dashboard.upcomingClass', { date: shortDate(c.startDate), title: c.title })}</Text>
+                // Coaches review CP3: a cancelled class stays listed, marked, so the coach knows not to come.
+                <Text key={c.id}>{t(c.cancelledAt ? 'coach.dashboard.upcomingClassCancelled' : 'coach.dashboard.upcomingClass', { date: shortDate(c.startDate), title: c.title })}</Text>
               ))}
             </View>
           ) : null}

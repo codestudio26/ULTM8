@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { BirthdaysCard } from '../dashboard/BirthdaysCard';
 import { Badge, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useAuth, useCoachSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
@@ -59,7 +59,12 @@ export function CoachDashboardPage() {
   const { claims } = useAuth();
   const school = useSchool(schoolId);
   const isStudentHere = !!claims?.grants.some((g) => g.role === 'STUDENT' && g.schoolId === schoolId);
+  // Coaches review CP4: working as an owner, every link here (Grading, Classes)
+  // would open the owned School, not this one. Coaching elsewhere is picked in
+  // the header's School switcher, which then brings them here.
+  const ownedSchoolId = useOwnedSchoolId();
 
+  if (ownedSchoolId) return <Navigate to="/" replace />;
   if (!schoolId) {
     return (
       <Card>
@@ -139,7 +144,9 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
   const weekly = useMemo(
     () =>
       (slots.data?.items ?? [])
-        .filter((s: TimetableSlotResponse) => s.instructorId === me && s.status === 'ON')
+        // Coaches review CP2: the list holds archived slots too (the owner's
+        // timetable shows them on request); they are not taught any more.
+        .filter((s: TimetableSlotResponse) => s.instructorId === me && s.status === 'ON' && !s.archivedAt)
         .sort((a, b) => WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday) || a.startTime.localeCompare(b.startTime)),
     [slots.data, me],
   );
@@ -175,9 +182,17 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
                 {upcoming.map((c) => (
                   <li key={c.id}>
                     {shortDate(c.startDate)} · {c.title} ·{' '}
-                    {/* Classes review C4: a coach had no way to reach these. */}
-                    <Link to={`/classes/${c.id}/roll-call`}>{t('coach.dashboard.rollCall')}</Link> ·{' '}
-                    <Link to={`/classes/${c.id}/qr-code`}>{t('coach.dashboard.showQr')}</Link>
+                    {c.cancelledAt ? (
+                      // Coaches review CP3: still listed, so the coach knows not
+                      // to come, but with no roll call or QR code to open.
+                      <Badge variant="danger">{t('classes.cancelled')}</Badge>
+                    ) : (
+                      <>
+                        {/* Classes review C4: a coach had no way to reach these. */}
+                        <Link to={`/classes/${c.id}/roll-call`}>{t('coach.dashboard.rollCall')}</Link> ·{' '}
+                        <Link to={`/classes/${c.id}/qr-code`}>{t('coach.dashboard.showQr')}</Link>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>

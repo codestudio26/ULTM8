@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner } from '@ultm8/ui';
 import { GradingTabs } from './GradingTabs';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
@@ -57,11 +58,15 @@ function useSetGradingPermissions(schoolId: string) {
  */
 export function GradingPermissionsPage() {
   const schoolId = useOwnedSchoolId();
+  const knownUser = !!useAuth().claims;
   const permissions = useGradingPermissions(schoolId);
   const disciplines = useDisciplines(schoolId);
   const t = useT();
 
-  if (!schoolId) return null;
+  // Coaches review CP5: owner-only — anyone else goes back to their own home
+  // page. Not while the session can't be read yet (a token being refreshed):
+  // then nobody is known to own anything, and the page waits instead.
+  if (!schoolId) return knownUser ? <Navigate to="/" replace /> : null;
   if (permissions.isLoading || disciplines.isLoading) return <Spinner />;
   const error = permissions.error ?? disciplines.error;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('grading.permissions.loadFailed')} />;

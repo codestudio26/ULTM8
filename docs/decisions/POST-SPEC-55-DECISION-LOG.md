@@ -7414,3 +7414,24 @@ User (Code), 3 Nov 2026: chose, for each of the eleven questions, the recommende
 ### Recorded by
 
 User (Code), 3 Nov 2026: chose the recommended option on items 1–4; "yes", "no" and asked for a recommendation (10,000) on items 5–7; "ok" on item 8; "agree" and "yes" on item 9. On roles (item 10): "Who ever own the log in for that account. Only that person.", "the main account owner", and, asked whether that covers every role or only owners, "Main account holder".
+
+## Decision 424 — Coaches portal review fixes: an owner can work as a coach at another School, and the coach dashboard drops archived and marks cancelled classes
+
+**Date:** 3 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 184, 255 (coach dashboard, School switcher), Classes review C17
+
+### Decision
+
+The Coaches portal review (3 Nov 2026) found six bugs; the user asked for the best fix for each.
+
+1. **CP1 — Mobile coach dashboard (Track B).** It asks the server for the coach's own next 10 classes (`when=upcoming`, `instructorId`), as the web portal has since Classes review C17, and reads every weekly slot page by page. Before, it read only the School's first 20 classes and slots, in no date order, so a coach's classes went missing once a School had more than 20.
+2. **CP2 — Archived weekly slots** are left out of the coach dashboard's "Every week".
+3. **CP3 — Cancelled classes** stay in "Coming up", marked "Cancelled", with no Roll call or QR link (web and mobile), so the coach knows not to come.
+4. **CP4 — An owner who also coaches at another School.** The header's School switcher lists the Schools they own and, marked "Coach", the Schools where they only coach. Picking a coached School shows that School's coach menu and screens, exactly as a coach sees them; picking an owned School goes back to the owner menu. Owning stays the default. Accepting a coach invite opens the School just joined. While working as an owner, the typed `/coach` address goes to the owner's home, since its links would open the owned School. This replaces Decision 255's "an owner never sees the coach side".
+5. **CP5 — Owner-only pages typed in by a coach** (Dashboard, Branches, Grading permissions, Bookings drill-down) go to the person's own home page instead of showing a blank page.
+6. **CP6 — The header's role** is the role held at the School being viewed (the switcher's choice), not the highest role held anywhere.
+
+No API, data model, permission or RLS change: the API already re-checks every request; this changes which School the portal asks about.
+
+### Recorded by
+
+User (Code), 3 Nov 2026: "find the best solution to fix these bugs", on the Coaches portal review's CP1–CP6.

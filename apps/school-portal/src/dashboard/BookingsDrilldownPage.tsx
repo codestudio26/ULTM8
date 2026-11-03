@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { Badge, Card, EmptyState, ErrorBanner, Field, PageHeader, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { useBookingsSummary, type BookingsSummaryClass, type BookingsSummaryDay } from './dashboardQueries';
 import { BranchFilter } from './BranchFilter';
 import { checkRange, formatClassTime, formatDay, MAX_RANGE_DAYS } from './dashboardDates';
@@ -25,6 +25,7 @@ import { useT } from '../i18n/I18nProvider';
 export function BookingsDrilldownPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
+  const knownUser = !!useAuth().claims;
   const [params, setParams] = useSearchParams();
   const branchId = params.get('branch') ?? '';
   const urlFrom = params.get('from') ?? '';
@@ -44,7 +45,10 @@ export function BookingsDrilldownPage() {
   const shownTo = draft.to || (!hasUrlRange ? summary.data?.to ?? '' : '');
   const check = checkRange(shownFrom, shownTo);
 
-  if (!schoolId) return null;
+  // Coaches review CP5: owner-only — anyone else goes back to their own home
+  // page. Not while the session can't be read yet (a token being refreshed):
+  // then nobody is known to own anything, and the page waits instead.
+  if (!schoolId) return knownUser ? <Navigate to="/" replace /> : null;
 
   const update = (changes: Record<string, string>) => {
     const next = new URLSearchParams(params);

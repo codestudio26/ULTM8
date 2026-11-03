@@ -83,16 +83,16 @@ test('the switcher offers both owned School names as options', async ({ page }) 
   await expect(switcher.getByRole('option', { name: secondSchool.name })).toBeAttached();
 });
 
-test('an Owner of one School who also coaches at a second never sees the coach switcher instead', async ({ page }) => {
+test('an Owner of one School who also coaches at a second starts on the School they own', async ({ page }) => {
   const owner = await addPerson('Olive', 'Owner', [
     { role: 'SCHOOL_OWNER_MANAGER', schoolId: s1.schoolId },
     { role: 'INSTRUCTOR', schoolId: s2.schoolId },
   ]);
   await signIn(page, owner.token);
-  await page.goto('/dashboard');
-  // Only one owned School — no switcher at all, even though there's a second,
-  // coached School (Shell.tsx's isCoachOnly logic means this person always
-  // gets the Owner nav, never the Coach one, so the Owner side is what must
-  // resolve, not the coach side).
-  await expect(page.getByRole('combobox', { name: 'Switch School' })).toHaveCount(0);
+  await page.goto('/');
+  // Coaches review CP4: the switcher now also lists the coached School (see
+  // coach-school-switcher.spec.ts), but until they pick it they work as owner.
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('combobox', { name: 'Switch School' })).toHaveValue(s1.schoolId);
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Transactions' })).toBeVisible();
 });
