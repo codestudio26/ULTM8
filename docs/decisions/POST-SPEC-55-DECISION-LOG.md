@@ -7374,3 +7374,43 @@ User (Code), 3 Nov 2026, answering the choices on #447: "ok" (items 1, 3, 4 and 
 ### Recorded by
 
 User (Code), 3 Nov 2026: chose, for each of the eleven questions, the recommended option. Items 1, 3, 4, 7 and 11 confirm what is already built. Items 2, 5, 6, 8, 9 and 10 are to be built.
+
+## Decision 423 — Follow-ups on Decision 422's builds, signed-waiver retention, who owns the GDPR/LGPD programme, and who grants roles
+
+**Date:** 3 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 422 (PRs #450, #451, #452), Decision 245 (GDPR/LGPD technical scoping)
+
+### Decision
+
+**Frozen members (#450)**
+1. **A member with one frozen membership and one active membership counts as Active and also shows under Frozen.**
+
+**Check-in without a booking (#451)**
+2. **The staffed front desk keeps booking a place for an unbooked member when it checks them in, whatever the "Check in without a booking" switch says.** The switch only affects the app QR, the app code and the coach's scan.
+3. **The locked front-desk tablet still asks for the app QR or a code before it books a place for a member found by name**, even with the switch on. A name search doesn't prove who is standing there.
+4. **A member checking themselves in books as a member would**, so the class's booking cut-off and "students are waiting" can still refuse them. **A coach's scan books as staff do**, so those two don't stop it.
+
+**Past-attendance import (#452)**
+5. **Imported visits count toward the next belt from the day the current belt was awarded** (the belt's own date, as typed, back-dated or imported), not from the moment the belt last changed in ULTM8. The members import accepts the award date after each belt, e.g. `BJJ: Blue (2024-11-03)`.
+6. **Imported visits still follow the School's check-in rules about the person** (waiver, home branch only, overdue payment), judged as of today.
+7. **A past-attendance file may have up to 10,000 rows.** Members and memberships files stay at 2,000.
+
+**Signed-waiver retention** (one of the open items in `docs/ULTM8-MASTER-ROADMAP.md`)
+8. **A signed waiver is kept while the person is a member of that School, and for 7 years after they leave.** For a child, it is kept until they turn 18 plus 7 years, if that is later. After that it is deleted automatically. This is one platform-wide default; a per-country rule can be added later, and a School cannot shorten it. *This is a recommendation, not legal advice: a privacy lawyer is to confirm it for each country ULTM8 launches in.* To be built.
+
+**GDPR/LGPD programme owner** (open item in `docs/ULTM8-MASTER-ROADMAP.md`; builds on Decision 245)
+9. **The product owner is the accountable owner of the GDPR/LGPD programme for now, advised by an outside privacy lawyer.**
+   - For member data, each School is the controller and ULTM8 is the processor. For data about ULTM8's own customers (Schools and their staff), ULTM8 is the controller.
+   - The owner is responsible for: a data processing agreement every School accepts; a record of what data is processed and why; a breach-response plan (GDPR's 72-hour notice); handling access and deletion requests; and choosing suppliers.
+   - Brazil (LGPD): ULTM8 names an *encarregado* (the product owner or an outside service). EU (GDPR): an EU representative if ULTM8 has no EU establishment; a full DPO is likely not required yet, to be confirmed by the lawyer.
+   - This is handed to a dedicated privacy or compliance person once there are paying Schools. *Not legal advice.*
+
+**Who can grant roles** (open RoleGrant authority edge; amends Decision 270 item 1 and Decision 80)
+10. **Only the main account owner may add or remove roles for that account.** This is the person who owns the account's login (the School's main owner, `RoleGrant.isMainOwner`; for a Franchise, the Franchise's main owner). It covers every role: owners (co-owners), Branch Staff and coaches.
+    - Co-owners and staff can no longer invite or remove anyone; the staff "Can invite coaches" switch goes.
+    - A Franchise's main owner manages roles for the Franchise account only, not inside its member Schools (Decision 270 item 2 stands).
+    - Students and Guardians keep joining by themselves as today (Decision 270 item 3 stands).
+    - To be built.
+
+### Recorded by
+
+User (Code), 3 Nov 2026: chose the recommended option on items 1–4; "yes", "no" and asked for a recommendation (10,000) on items 5–7; "ok" on item 8; "agree" and "yes" on item 9. On roles (item 10): "Who ever own the log in for that account. Only that person.", "the main account owner", and, asked whether that covers every role or only owners, "Main account holder".
