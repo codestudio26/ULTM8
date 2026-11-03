@@ -2496,8 +2496,10 @@ export class GradingService {
         throw new BadRequestException('That is already the student\'s rank date.');
       }
 
+      // Entries from a belt that a merge didn't keep (Decision 422 item 8)
+      // are history only: the current belt's own entries decide here.
       const recent = await tx.promotionEvent.findMany({
-        where: { studentRankId: existing.id, voidedAt: null, type: { in: [...RANK_CHANGE_TYPES] } },
+        where: { studentRankId: existing.id, voidedAt: null, mergedFromUserId: null, type: { in: [...RANK_CHANGE_TYPES] } },
         orderBy: [{ effectiveDate: 'desc' }, { createdAt: 'desc' }],
         take: 2,
       });

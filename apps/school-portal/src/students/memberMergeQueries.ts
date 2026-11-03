@@ -6,6 +6,7 @@ export type MergePreview = components['schemas']['MergePreviewDto'];
 export type MergeBlocker = components['schemas']['MergeBlockerDto'];
 export type MergeBlockerCode = components['schemas']['MergeBlockerCode'];
 export type MergeRecordCounts = components['schemas']['MergeRecordCountsDto'];
+export type MergeBeltKept = components['schemas']['MergeBeltKeptDto'];
 
 /** What merging `duplicateId` into `keptId` would move, and anything that
  * stops it (Decision 315 item 13). School owners only. */

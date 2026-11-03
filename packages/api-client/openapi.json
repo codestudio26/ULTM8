@@ -33514,6 +33514,11 @@
             "nullable": true,
             "description": "When the note was hidden from the student and guardian; null when shown. Students and guardians always get null here, and no note while it is hidden."
           },
+          "mergedFromUserId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Set on the entries of a belt that was not kept when two duplicate records were merged (Decision 422 item 8): the member record the entry was on. Show it as coming from the merged record."
+          },
           "createdAt": {
             "type": "string",
             "description": "When the entry was written (audit timestamp)."
@@ -33539,6 +33544,7 @@
           "noteEditedAt",
           "noteEditedById",
           "noteHiddenAt",
+          "mergedFromUserId",
           "createdAt"
         ]
       },
@@ -40217,8 +40223,7 @@
           "DUPLICATE_HAS_SUBSCRIPTION",
           "PENDING_CARD_PAYMENT",
           "OPEN_PACK_RECHARGE",
-          "SAME_STYLE_RANK",
-          "SAME_STYLE_CORRECTION",
+          "SAME_STYLE_FEE_ACCEPTED",
           "SAME_CLASS_BOOKED",
           "SAME_CLASS_WAITLIST",
           "OPEN_SIGN_UP",
@@ -40391,6 +40396,49 @@
           "WaiverSignature"
         ]
       },
+      "MergeBeltKeptFrom": {
+        "type": "string",
+        "description": "Whose belt is kept: the duplicate's only when it is higher on the ladder (belt, then stripe or level step).",
+        "enum": [
+          "KEPT",
+          "DUPLICATE"
+        ]
+      },
+      "MergeBeltKeptDto": {
+        "type": "object",
+        "properties": {
+          "disciplineId": {
+            "type": "string"
+          },
+          "styleName": {
+            "type": "string",
+            "description": "The style, as the School named it."
+          },
+          "keptFrom": {
+            "$ref": "#/components/schemas/MergeBeltKeptFrom"
+          },
+          "keptBelt": {
+            "type": "string",
+            "description": "The belt that is kept, as the ladder names it."
+          },
+          "otherBelt": {
+            "type": "string",
+            "description": "The other record's belt. Its promotions stay in the history, marked as coming from the merged record."
+          },
+          "sameRung": {
+            "type": "boolean",
+            "description": "Both are on the same rung: the kept member's belt is kept, with both records' classes toward the next rung."
+          }
+        },
+        "required": [
+          "disciplineId",
+          "styleName",
+          "keptFrom",
+          "keptBelt",
+          "otherBelt",
+          "sameRung"
+        ]
+      },
       "MergePreviewDto": {
         "type": "object",
         "properties": {
@@ -40424,13 +40472,31 @@
                 "$ref": "#/components/schemas/MergeRecordCountsDto"
               }
             ]
+          },
+          "beltsKept": {
+            "description": "Styles both records have a belt in: the higher one is kept (Decision 422 item 8).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MergeBeltKeptDto"
+            }
+          },
+          "promotionFeesCancelled": {
+            "type": "number",
+            "description": "Unanswered promotion fees for the belt that is not kept (or a second one in the same style) that the merge cancels."
+          },
+          "beltCorrectionsClosed": {
+            "type": "number",
+            "description": "Pending belt corrections about the belt that is not kept (or a second one in the same style) that the merge rejects."
           }
         },
         "required": [
           "kept",
           "duplicate",
           "blockers",
-          "records"
+          "records",
+          "beltsKept",
+          "promotionFeesCancelled",
+          "beltCorrectionsClosed"
         ]
       },
       "MergeDuplicateDto": {
@@ -40465,13 +40531,31 @@
           "waiverSignaturesLeft": {
             "type": "number",
             "description": "Signed waivers both had signed: the duplicate's copy stays on the duplicate's record."
+          },
+          "beltsKept": {
+            "description": "Styles both records had a belt in, and which belt was kept (Decision 422 item 8).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MergeBeltKeptDto"
+            }
+          },
+          "promotionFeesCancelled": {
+            "type": "number",
+            "description": "Promotion fees the merge cancelled."
+          },
+          "beltCorrectionsClosed": {
+            "type": "number",
+            "description": "Belt corrections the merge rejected."
           }
         },
         "required": [
           "keptStudentId",
           "duplicateStudentId",
           "records",
-          "waiverSignaturesLeft"
+          "waiverSignaturesLeft",
+          "beltsKept",
+          "promotionFeesCancelled",
+          "beltCorrectionsClosed"
         ]
       },
       "SignedDocumentLabelsDto": {
