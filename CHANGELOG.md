@@ -29,6 +29,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 
   The owner, and Branch Staff with "Change check-in rules", change them.
   Needs migration `20270123000000_check_in_rules_rest`.
+- **Check-in rules: check in without a booking** (Decision 422 item 2) — a
+  new switch on Check-in → Check-in rules, **off by default**, so a booking is
+  still needed, as before. When the owner switches it on, a member can check
+  in to a class they haven't booked, with the app QR, the app code or the
+  coach's scan. The check-in books a place first, by the booking's own rules:
+  a full class is refused with the same message as booking it, and the
+  member's membership pays for it, a Class Pack credit used as a booking uses
+  one. Every check-in rule still applies (the check-in window, waivers, home
+  branch, frozen memberships, overdue payments), and a refused check-in books
+  nothing. The front desk already booked a place when it checked someone in
+  and still does; a locked tablet still needs the app QR or a code to book.
+  Open mats are unchanged. The owner, and Branch Staff with "Change check-in
+  rules", change it. Needs migration
+  `20270207120000_check_in_require_booking`.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The

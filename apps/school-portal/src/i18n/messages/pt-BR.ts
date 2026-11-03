@@ -3913,6 +3913,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Desligado, ninguém faz check-in com passe de visita.",
       frozenMembers: "Permitir check-in de alunos congelados",
       frozenMembersHint: "Desligado, um aluno com o plano congelado não pode fazer check-in.",
+      withoutBooking: "Check-in sem reserva",
+      withoutBookingHint: "Ligado, os alunos podem fazer check-in em uma aula que não reservaram. O check-in ocupa uma vaga se a aula tiver uma e usa o plano ou um crédito de aula, como na reserva. Desligado, eles precisam reservar antes.",
       overdue: "Bloquear o check-in por pagamento em atraso",
       overdueHint: "Alunos que ainda devem uma fatura depois desse prazo após o vencimento não fazem check-in até pagar.",
       overdueNo: "Não",

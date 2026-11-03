@@ -37,6 +37,7 @@ export class CheckInRulesService {
         checkInFrozenMembers: dto.frozenMembers,
         checkInShowBeltProgress: dto.showBeltProgress,
         checkInBlockOverdueDays: dto.blockOverdueDays,
+        checkInRequireBooking: dto.requireBooking,
         checkInCodeDigits: dto.codeDigits,
       },
       select: { ...CHECK_IN_RULES_SELECT, checkInCodeDigits: true },

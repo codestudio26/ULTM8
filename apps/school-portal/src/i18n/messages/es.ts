@@ -3913,6 +3913,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Si está desactivado, nadie se registra con un pase de visita.",
       frozenMembers: "Permitir check-in a miembros congelados",
       frozenMembersHint: "Si está desactivado, un miembro con la membresía congelada no puede hacer check-in.",
+      withoutBooking: "Check-in sin reserva",
+      withoutBookingHint: "Si está activado, los miembros pueden hacer check-in en una clase que no han reservado. El check-in ocupa una plaza si la clase tiene alguna y usa su membresía o un crédito de clase, como al reservar. Si está desactivado, deben reservar primero.",
       overdue: "Bloquear el registro por pagos atrasados",
       overdueHint: "Los miembros que aún deben una factura pasado este plazo desde su vencimiento no pueden registrarse hasta pagar.",
       overdueNo: "No",

@@ -3913,6 +3913,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Se disattivato, nessuno fa il check-in con un pass visita.",
       frozenMembers: "Consenti il check-in ai membri sospesi",
       frozenMembersHint: "Se disattivato, un membro con l'abbonamento sospeso non può fare check-in.",
+      withoutBooking: "Check-in senza prenotazione",
+      withoutBookingHint: "Se attivo, i membri possono fare check-in a una lezione che non hanno prenotato. Il check-in occupa un posto se la lezione ne ha uno e usa il loro abbonamento o un credito lezione, come una prenotazione. Se disattivato, devono prima prenotare.",
       overdue: "Blocca il check-in per pagamenti in ritardo",
       overdueHint: "I membri che devono ancora una fattura dopo questo tempo dalla scadenza non possono fare check-in finché non pagano.",
       overdueNo: "No",

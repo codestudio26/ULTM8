@@ -3913,6 +3913,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Si désactivé, personne ne s’enregistre avec un pass visite.",
       frozenMembers: "Autoriser les membres gelés à s'enregistrer",
       frozenMembersHint: "Désactivé, un membre dont l'abonnement est gelé ne peut pas s'enregistrer.",
+      withoutBooking: "S'enregistrer sans réservation",
+      withoutBookingHint: "Activé, les membres peuvent s'enregistrer à un cours qu'ils n'ont pas réservé. L'enregistrement prend une place s'il en reste une et utilise leur abonnement ou un crédit de cours, comme une réservation. Désactivé, ils doivent d'abord réserver.",
       overdue: "Bloquer l’enregistrement en cas de retard de paiement",
       overdueHint: "Les membres qui doivent encore une facture aussi longtemps après son échéance ne peuvent pas s’enregistrer avant d’avoir payé.",
       overdueNo: "Non",

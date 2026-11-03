@@ -1,21 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { unwrap, type components } from '@ultm8/api-client';
+import { unwrap } from '@ultm8/api-client';
 import { Button, Card, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
 import { apiClient } from '../api';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
 import { errorText } from './frontDeskQueries';
-
-type CheckInRules = components['schemas']['CheckInRulesDto'];
-type Form = Omit<CheckInRules, 'opensMinutesBeforeStart' | 'closesMinutesAfterStart' | 'blockOverdueDays'> & {
-  opensMinutesBeforeStart: string;
-  closes: 'end' | 'after';
-  closesMinutesAfterStart: string;
-  /** Backlog §3.5: 'no' (default), '7' or '14' days after the due date. */
-  overdue: 'no' | '7' | '14';
-};
+import { checkInRulesBody, toCheckInRulesForm as toForm, type CheckInRules, type CheckInRulesForm as Form } from './checkInRulesForm';
 
 export function useCheckInRules(schoolId: string | null) {
   return useQuery({
@@ -24,16 +16,6 @@ export function useCheckInRules(schoolId: string | null) {
     enabled: !!schoolId,
     retry: false,
   });
-}
-
-function toForm({ blockOverdueDays, ...r }: CheckInRules): Form {
-  return {
-    ...r,
-    overdue: blockOverdueDays === 7 ? '7' : blockOverdueDays === 14 ? '14' : 'no',
-    opensMinutesBeforeStart: String(r.opensMinutesBeforeStart),
-    closes: r.closesMinutesAfterStart === null ? 'end' : 'after',
-    closesMinutesAfterStart: r.closesMinutesAfterStart === null ? '15' : String(r.closesMinutesAfterStart),
-  };
 }
 
 /**
@@ -74,18 +56,7 @@ export function CheckInRulesPage() {
     e.preventDefault();
     if (!form) return;
     setSaved(false);
-    save.mutate({
-      opensMinutesBeforeStart: Number(form.opensMinutesBeforeStart),
-      closesMinutesAfterStart: form.closes === 'end' ? null : Number(form.closesMinutesAfterStart),
-      requireWaiver: form.requireWaiver,
-      otherBranches: form.otherBranches,
-      visitors: form.visitors,
-      severalClasses: form.severalClasses,
-      frozenMembers: form.frozenMembers ?? false,
-      showBeltProgress: form.showBeltProgress ?? true,
-      blockOverdueDays: form.overdue === '7' ? 7 : form.overdue === '14' ? 14 : null,
-      codeDigits: form.codeDigits,
-    });
+    save.mutate(checkInRulesBody(form));
   }
 
   return (
@@ -148,6 +119,14 @@ export function CheckInRulesPage() {
             ) : null}
 
             <h2 className="fd-eyebrow">{t('frontDesk.rules.whoHeading')}</h2>
+            {/* Decision 422 item 2: off by default, so a booking is still needed. */}
+            <Switch
+              id="rules-without-booking"
+              label={t('frontDesk.rules.withoutBooking')}
+              description={t('frontDesk.rules.withoutBookingHint')}
+              checked={form.withoutBooking}
+              onChange={(on) => set('withoutBooking', on)}
+            />
             <Switch
               id="rules-waiver"
               label={t('frontDesk.rules.requireWaiver')}

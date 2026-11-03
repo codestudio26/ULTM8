@@ -517,6 +517,20 @@ test('the owner sets the check-in rules from Check-in; one class at a time untic
   await expect(card.getByRole('button', { name: 'Check in to 1 class' })).toBeVisible();
 });
 
+test('the owner switches on "Check in without a booking"; off by default (Decision 422 item 2)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in/rules');
+  const withoutBooking = page.getByRole('switch', { name: 'Check in without a booking' });
+  await expect(withoutBooking).toHaveAttribute('aria-checked', 'false');
+  await withoutBooking.click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Check-in rules saved.')).toBeVisible();
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).checkInRequireBooking).toBe(false);
+
+  await page.reload();
+  await expect(page.getByRole('switch', { name: 'Check in without a booking' })).toHaveAttribute('aria-checked', 'true');
+});
+
 test('a check-in rule the person breaks is shown as its reason (Decision 394)', async ({ page }) => {
   const cls = await classNow();
   const m = await subscribe(s.student.id);
