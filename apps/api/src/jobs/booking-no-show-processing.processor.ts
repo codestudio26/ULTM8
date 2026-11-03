@@ -175,13 +175,15 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
   }
 
   private async chargeNoShowFee(
-    booking: { id: string; studentId: string; schoolId: string; sourceMembershipId: string },
+    booking: { id: string; studentId: string; schoolId: string; sourceMembershipId: string | null },
     amount: number,
   ): Promise<void> {
-    const membership = await this.prismaJobs.membership.findUnique({
-      where: { id: booking.sourceMembershipId },
-      select: { membershipPlan: { select: { currency: true } } },
-    });
+    const membership = booking.sourceMembershipId
+      ? await this.prismaJobs.membership.findUnique({
+          where: { id: booking.sourceMembershipId },
+          select: { membershipPlan: { select: { currency: true } } },
+        })
+      : null;
     const currency = membership?.membershipPlan.currency ?? 'usd';
     let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
     let paymentIntentId: string | null = null;

@@ -28,6 +28,15 @@ export interface SeatRef {
   membershipId: string;
 }
 
+/**
+ * The Student's own seat on a Booking, when a Membership paid for it. Only
+ * past attendance imported from a spreadsheet has none (Decision 422 item 6):
+ * it is checked in as it is made, so it is never cancelled or resolved.
+ */
+export function ownSeat(bookingId: string, sourceMembershipId: string | null): SeatRef[] {
+  return sourceMembershipId ? [{ bookingId, attendeeId: null, membershipId: sourceMembershipId }] : [];
+}
+
 /** A Stripe refund decided inside a transaction, sent once it commits. */
 export interface StripeRefundPlan {
   seat: SeatRef;
@@ -468,7 +477,7 @@ export class CancellationService {
         const updated = await tx.booking.updateMany({ where: { id: booking.id, status: 'UPCOMING' }, data: { status: 'CANCELLED' } });
         if (updated.count === 0) return [];
         const seats: SeatRef[] = [
-          { bookingId: booking.id, attendeeId: null, membershipId: booking.sourceMembershipId },
+          ...ownSeat(booking.id, booking.sourceMembershipId),
           ...booking.attendees.map((a) => ({ bookingId: booking.id, attendeeId: a.id, membershipId: a.membershipId })),
         ];
         const out: Array<{ seat: SeatRef; result: SeatResult }> = [];
@@ -545,7 +554,8 @@ export class CancellationService {
         }),
       ]);
       const rows = [
-        ...bookings.map((b) => ({ bookingId: b.id, attendeeId: null as string | null, studentId: b.studentId, classId: b.classId, branchId: b.branchId, membershipId: b.sourceMembershipId, resolution: b.refundResolution!, refundAmount: b.refundAmount, updatedAt: b.updatedAt })),
+        // Imported past attendance (no Membership, Decision 422 item 6) is never open.
+        ...bookings.flatMap((b) => (b.sourceMembershipId ? [{ ...b, sourceMembershipId: b.sourceMembershipId }] : [])).map((b) => ({ bookingId: b.id, attendeeId: null as string | null, studentId: b.studentId, classId: b.classId, branchId: b.branchId, membershipId: b.sourceMembershipId, resolution: b.refundResolution!, refundAmount: b.refundAmount, updatedAt: b.updatedAt })),
         ...attendees.map((a) => ({ bookingId: a.booking.id, attendeeId: a.id as string | null, studentId: a.booking.studentId, classId: a.booking.classId, branchId: a.booking.branchId, membershipId: a.membershipId, resolution: a.refundResolution!, refundAmount: a.refundAmount, updatedAt: a.updatedAt })),
       ];
       const classes = await tx.class.findMany({
@@ -607,7 +617,10 @@ export class CancellationService {
     }
     const attendee = attendeeId ? booking.attendees.find((a) => a.id === attendeeId) : undefined;
     if (attendeeId && !attendee) throw new NotFoundException('Guest not found on this booking');
-    const seat: SeatRef = { bookingId, attendeeId: attendee?.id ?? null, membershipId: attendee?.membershipId ?? booking.sourceMembershipId };
+    const membershipId = attendee?.membershipId ?? booking.sourceMembershipId;
+    // Imported past attendance (Decision 422 item 6) has no seat to resolve.
+    if (!membershipId) throw new ConflictException('This booking has nothing left to resolve.');
+    const seat: SeatRef = { bookingId, attendeeId: attendee?.id ?? null, membershipId };
     const current = attendee ? attendee.refundResolution : booking.refundResolution;
 
     if (booking.status !== 'CANCELLED' || !current || !OPEN_RESOLUTIONS.includes(current)) {

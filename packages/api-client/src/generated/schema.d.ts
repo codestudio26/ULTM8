@@ -9377,7 +9377,8 @@ export interface components {
             schoolId: string;
             branchId?: string | null;
             status: string;
-            sourceMembershipId: string;
+            /** @description The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6). */
+            sourceMembershipId: string | null;
             overriddenById?: string | null;
             overrideReason?: string | null;
             checkInMethod?: string | null;
@@ -9438,7 +9439,8 @@ export interface components {
             schoolId: string;
             branchId?: string | null;
             status: string;
-            sourceMembershipId: string;
+            /** @description The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6). */
+            sourceMembershipId: string | null;
             overriddenById?: string | null;
             overrideReason?: string | null;
             checkInMethod?: string | null;
@@ -13714,10 +13716,15 @@ export interface components {
             studentIds: string[];
         };
         ImportLimitsDto: {
+            /** @description The most rows a file of members or memberships may have. */
             maxRows: number;
+            /** @description The most rows a file of each kind may have: past attendance allows more (Decision 423). */
+            maxRowsByKind: {
+                [key: string]: number;
+            };
             maxRowsPerRequest: number;
-            /** @description Past attendance can be imported this many days back (Decision 317 item 4). */
-            attendanceMaxDaysBack: number;
+            /** @description The earliest date past attendance can be imported for (YYYY-MM-DD). Any later past date is accepted (Decision 422 item 6). */
+            attendanceEarliestDay: string;
             /** @description Each kind's columns, in template order. */
             columns: {
                 [key: string]: string[];
@@ -13781,7 +13788,7 @@ export interface components {
         };
         StartImportDto: {
             kind: components["schemas"]["ImportKind"];
-            /** @description How many rows the file has (at most 2000). */
+            /** @description How many rows the file has: at most ImportLimits.maxRowsByKind for its kind (10000 for past attendance). */
             totalRows: number;
             fileName?: string;
         };

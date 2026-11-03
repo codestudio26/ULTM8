@@ -30,7 +30,7 @@ const EXAMPLES: Record<ImportKind, Record<string, string>> = {
     date_of_birth: '1990-05-06',
     gender: 'Female',
     join_date: '2024-02-01',
-    belts: 'Brazilian Jiu-Jitsu: Blue',
+    belts: 'Brazilian Jiu-Jitsu: Blue (2024-11-03)',
   },
   MEMBERSHIPS: { email: 'ana.silva@example.com', plan: '10 Class Pack', start_date: '2026-09-01', end_date: '2026-12-31', classes_left: '6' },
   ATTENDANCE: { email: 'ana.silva@example.com', date: '2026-10-20', time: '18:30', class: 'Fundamentals' },
@@ -99,9 +99,9 @@ export function ImportPage() {
   if (!schoolId || access.isLoading) return <Spinner />;
 
   const columns = limits.data?.columns[kind] ?? [];
-  const maxRows = limits.data?.maxRows ?? 2000;
+  const maxRows = limits.data?.maxRowsByKind?.[kind] ?? limits.data?.maxRows ?? 2000;
   const perRequest = limits.data?.maxRowsPerRequest ?? 100;
-  const days = limits.data?.attendanceMaxDaysBack ?? 30;
+  const earliest = limits.data?.attendanceEarliestDay ?? '1900-01-01';
   const rows = parsed?.rows ?? [];
   const tooMany = rows.length > maxRows;
   const busy = phase === 'checking' || phase === 'importing';
@@ -185,7 +185,7 @@ export function ImportPage() {
   };
 
   const detailsOf = (r: ImportRowResult): string[] => {
-    const lines = [r.code === 'FAILED' ? (reasons.get(r.message) ?? r.message) : t(`imports.codes.${r.code}` as TranslationKey, { days })];
+    const lines = [r.code === 'FAILED' ? (reasons.get(r.message) ?? r.message) : t(`imports.codes.${r.code}` as TranslationKey, { earliest })];
     if (r.column && r.outcome === 'ERROR') lines.push(t('imports.inColumn', { column: r.column }));
     for (const w of r.warnings) {
       const text = t(`imports.warnings.${w.code}` as TranslationKey, { style: w.style ?? '' });
@@ -240,7 +240,7 @@ export function ImportPage() {
                   options={KINDS.map((k) => ({ value: k, label: t(`imports.kinds.${k}` as TranslationKey) }))}
                 />
               </Field>
-              <p style={{ margin: 0 }}>{t(`imports.about.${kind}` as TranslationKey, { days })}</p>
+              <p style={{ margin: 0 }}>{t(`imports.about.${kind}` as TranslationKey, { earliest })}</p>
               <p style={{ margin: 0, fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)' }}>{t('imports.formatHint', { max: maxRows })}</p>
               <div>
                 <Button variant="secondary" disabled={!columns.length} onClick={() => downloadCsv(`ultm8-import-${kind.toLowerCase()}.csv`, templateCsv(columns, EXAMPLES[kind]))}>
