@@ -314,6 +314,10 @@ export class GuardiansService {
       // Their home branches go with the enrolments (Decision 341, S13), as
       // RoleGrantsService.revoke does.
       await this.prismaJobs.studentHomeBranch.deleteMany({ where: { studentId: existing.studentId } });
+      // Decision 315 item 10: medical information is erased with the
+      // account, and withdrawing baseline consent is the account-deletion
+      // path for a child.
+      await this.prismaJobs.studentMedicalInfo.deleteMany({ where: { studentId: existing.studentId } });
       this.logger.log(
         `withdrawConsent (BASELINE): revoked ${cascadeResult.count} active RoleGrant(s) for Student ${existing.studentId}.`,
       );

@@ -3183,6 +3183,118 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/students/{studentId}/medical-info": {
+      "get": {
+        "operationId": "MedicalInfoController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentMedicalInfoResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "medical-info"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "MedicalInfoController_withdraw",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "medical-info"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/students/{studentId}/medical-info": {
+      "get": {
+        "operationId": "MemberMedicalInfoController_list",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MedicalInfoSharedListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "medical-info"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/guardians/me/minors": {
       "post": {
         "operationId": "GuardiansController_createMinor",
@@ -21606,6 +21718,150 @@
           }
         ]
       }
+    },
+    "/v1/address-lookup/status": {
+      "get": {
+        "operationId": "AddressLookupController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressLookupStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "address-lookup"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/address-lookup/autocomplete": {
+      "get": {
+        "operationId": "AddressLookupController_autocomplete",
+        "parameters": [
+          {
+            "name": "language",
+            "required": false,
+            "in": "query",
+            "description": "Language for the results, as a BCP 47 tag (the app’s current language, e.g. \"pt-BR\"). Defaults to the request’s Accept-Language.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionToken",
+            "required": false,
+            "in": "query",
+            "description": "Groups one search and the chosen result into one Google session (cheaper, Google’s recommended use). Any string of letters, digits, \"-\" or \"_\", up to 36 characters; a new UUID per search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "description": "What the person has typed so far.",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "required": false,
+            "in": "query",
+            "description": "Only suggest addresses in this country (ISO 3166-1 alpha-2, e.g. \"GB\").",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressAutocompleteResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "address-lookup"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/address-lookup/details": {
+      "get": {
+        "operationId": "AddressLookupController_details",
+        "parameters": [
+          {
+            "name": "language",
+            "required": false,
+            "in": "query",
+            "description": "Language for the results, as a BCP 47 tag (the app’s current language, e.g. \"pt-BR\"). Defaults to the request’s Accept-Language.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sessionToken",
+            "required": false,
+            "in": "query",
+            "description": "Groups one search and the chosen result into one Google session (cheaper, Google’s recommended use). Any string of letters, digits, \"-\" or \"_\", up to 36 characters; a new UUID per search.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "placeId",
+            "required": true,
+            "in": "query",
+            "description": "A `placeId` from an autocomplete suggestion.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddressDetailsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "address-lookup"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
     }
   },
   "info": {
@@ -22474,6 +22730,10 @@
               "type": "string"
             }
           },
+          "medicalInfoEnabled": {
+            "type": "boolean",
+            "description": "Decision 315 item 10: the School asks for medical information at sign-up (off by default)."
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -22588,6 +22848,7 @@
           "chargeNoticeDispute",
           "chargeNoticeDueReminder",
           "chargeNoticeRefund",
+          "medicalInfoEnabled",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -22951,6 +23212,10 @@
           "confirmCurrencyChange": {
             "type": "boolean",
             "description": "Confirms a currency change that moves plans without their own currency to the new one."
+          },
+          "medicalInfoEnabled": {
+            "type": "boolean",
+            "description": "Ask for medical information at sign-up, with consent (Decision 315 item 10). Off by default."
           }
         }
       },
@@ -23598,6 +23863,15 @@
           "branchId": {
             "type": "string",
             "description": "The student's home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none."
+          },
+          "medicalInfo": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "Decision 315 item 10: medical information, only when the School asks for it (School.medicalInfoEnabled). Given by the member joining themselves, or by the Guardian for a child; never by staff. Needs medicalConsent: true, or nothing is stored and the join is refused. Empty means none."
+          },
+          "medicalConsent": {
+            "type": "boolean",
+            "description": "Decision 315 item 10: the member (or the Guardian for a child) consents to the School keeping this medical information."
           }
         }
       },
@@ -24818,6 +25092,10 @@
             "type": "boolean",
             "description": "See attendance statistics for their branches (off by default; Decision 317 item 3)."
           },
+          "seeMedicalInfo": {
+            "type": "boolean",
+            "description": "See the medical information of their branches' students (off by default; Decision 315 item 10)."
+          },
           "memberFiles": {
             "type": "boolean",
             "description": "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)."
@@ -24839,6 +25117,7 @@
           "exportStudents",
           "freezeMemberships",
           "attendanceStats",
+          "seeMedicalInfo",
           "memberFiles",
           "importData"
         ]
@@ -26043,6 +26322,98 @@
           "role",
           "status",
           "expiresAt"
+        ]
+      },
+      "StudentMedicalInfoDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "description": "As the member (or their Guardian) wrote it, up to 2,000 characters."
+          },
+          "consentedByName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Who gave consent; null once that account is gone."
+          },
+          "consentedByGuardian": {
+            "type": "boolean",
+            "description": "True when a Guardian consented for their child."
+          },
+          "consentedAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "body",
+          "consentedByName",
+          "consentedByGuardian",
+          "consentedAt",
+          "updatedAt"
+        ]
+      },
+      "StudentMedicalInfoResponseDto": {
+        "type": "object",
+        "properties": {
+          "medicalInfo": {
+            "nullable": true,
+            "description": "Null when none was given.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/StudentMedicalInfoDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "medicalInfo"
+        ]
+      },
+      "MedicalInfoSharedDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "consentedAt": {
+            "type": "string",
+            "description": "When consent was given."
+          },
+          "consentedByGuardian": {
+            "type": "boolean",
+            "description": "True when a Guardian consented for their child."
+          },
+          "awaitingAcceptance": {
+            "type": "boolean",
+            "description": "Given on a front-desk sign-up whose invite the member has not accepted yet."
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "consentedAt",
+          "consentedByGuardian",
+          "awaitingAcceptance"
+        ]
+      },
+      "MedicalInfoSharedListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MedicalInfoSharedDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "CreateMinorDto": {
@@ -36453,6 +36824,10 @@
             "type": "string",
             "nullable": true
           },
+          "medicalInfoEnabled": {
+            "type": "boolean",
+            "description": "Decision 315 item 10: joining asks for medical information (optional, with consent)."
+          },
           "branches": {
             "description": "The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches.",
             "type": "array",
@@ -36478,6 +36853,7 @@
           "name",
           "activities",
           "facilities",
+          "medicalInfoEnabled",
           "branches",
           "membershipPlans",
           "upcomingClasses"
@@ -38181,6 +38557,16 @@
           "emergencyRelationship": {
             "type": "string",
             "nullable": true
+          },
+          "medicalInfo": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000,
+            "description": "Decision 315 item 10: medical information, only when the School asks for it (medicalInfoOn). Needs medicalConsent: true, or nothing is kept and the sign-up is refused."
+          },
+          "medicalConsent": {
+            "type": "boolean",
+            "description": "Decision 315 item 10: the person consents to the School keeping this medical information."
           }
         },
         "required": [
@@ -38340,6 +38726,10 @@
             "items": {
               "type": "string"
             }
+          },
+          "medicalInfoOn": {
+            "type": "boolean",
+            "description": "Decision 315 item 10: the sign-up form asks for medical information (optional, with consent)."
           }
         },
         "required": [
@@ -38351,7 +38741,8 @@
           "checkInSeveralClasses",
           "checkInCodeDigits",
           "visitorsOn",
-          "locked"
+          "locked",
+          "medicalInfoOn"
         ]
       },
       "KioskClassDto": {
@@ -39928,6 +40319,9 @@
           "StudentCustomStatus": {
             "type": "number"
           },
+          "StudentMedicalInfo": {
+            "type": "number"
+          },
           "WaiverSignature": {
             "type": "number"
           }
@@ -39966,6 +40360,7 @@
           "StudentCheckInCode",
           "StudentJoinDate",
           "StudentCustomStatus",
+          "StudentMedicalInfo",
           "WaiverSignature"
         ]
       },
@@ -43013,6 +43408,121 @@
         },
         "required": [
           "rows"
+        ]
+      },
+      "AddressLookupStatusDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "False until the server has a Google Places API key; the apps then hide the search box."
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "AddressSuggestionDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "The whole suggestion as one line."
+          },
+          "mainText": {
+            "type": "string",
+            "description": "The main part, usually the street and number."
+          },
+          "secondaryText": {
+            "type": "string",
+            "description": "The rest, usually the town and country. May be empty."
+          }
+        },
+        "required": [
+          "placeId",
+          "text",
+          "mainText",
+          "secondaryText"
+        ]
+      },
+      "AddressAutocompleteResponseDto": {
+        "type": "object",
+        "properties": {
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AddressSuggestionDto"
+            }
+          }
+        },
+        "required": [
+          "suggestions"
+        ]
+      },
+      "LookedUpPostalAddressDto": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string"
+          },
+          "line2": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string",
+            "description": "For countries with a fixed list (US, CA, AU, AE, BR, MY), the list value."
+          },
+          "postalCode": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2."
+          }
+        },
+        "required": [
+          "line1",
+          "line2",
+          "city",
+          "region",
+          "postalCode",
+          "country"
+        ]
+      },
+      "AddressDetailsResponseDto": {
+        "type": "object",
+        "properties": {
+          "placeId": {
+            "type": "string"
+          },
+          "postalAddress": {
+            "description": "Ready to send as `postalAddress`; fields Google didn’t give are empty.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LookedUpPostalAddressDto"
+              }
+            ]
+          },
+          "formattedAddress": {
+            "type": "string",
+            "description": "The address as one line, in the country’s own order (what the API stores in `address`)."
+          },
+          "complete": {
+            "type": "boolean",
+            "description": "True when every field the country requires is filled and valid, so it can be saved as it is."
+          }
+        },
+        "required": [
+          "placeId",
+          "postalAddress",
+          "formattedAddress",
+          "complete"
         ]
       }
     }

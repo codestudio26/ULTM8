@@ -12,9 +12,16 @@
  *   and each renewal record it apart from the plan's price (from the
  *   invoice's own surcharge line), a refund in Stripe counts it, and the
  *   School changing its rate leaves a running Subscription as it is;
- * - removing the country stops it, keeping the School's stored %.
+ * - removing the country stops it, keeping the School's stored %, and stops
+ *   it on running Subscriptions at Schools there from their next renewal
+ *   (Decision 419 item 3, the card-surcharge-country-removal job): another
+ *   country's untouched, a re-run changes nothing, a Stripe error on one
+ *   Subscription doesn't stop the rest, and adding the country back doesn't
+ *   put it back on them.
  *
- * Stripe is faked (StripeClientService.scopedClient), recording what was sent.
+ * Stripe is faked (StripeClientService.scopedClient), recording what was sent;
+ * running Subscriptions are kept in a FakeSubscriptionStore, so a renewal
+ * after the removal is built from the items Stripe would still charge.
  *
  * Requires DATABASE_URL, DATABASE_URL_APP, DATABASE_URL_PLATFORM_ADMIN,
  * DATABASE_URL_DISCOVERY, PLATFORM_ADMIN_JWT_SECRET, JWT_ACCESS_SECRET.
@@ -28,10 +35,13 @@ import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
-import { Job } from 'bullmq';
+import { Job, Queue } from 'bullmq';
+import { getQueueToken } from '@nestjs/bullmq';
 import { StripeClientService } from '../src/payments/stripe-client.service';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
-import { fakeIncompleteSubscription, fakePaymentCheckoutSession, fakeSubscriptionInvoice } from './stripe-fakes';
+import { CardSurchargeCountryRemovalProcessor } from '../src/jobs/card-surcharge-country-removal.processor';
+import { CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE } from '../src/jobs/queue.constants';
+import { FakeSubscriptionStore, fakeIncompleteSubscription, fakePaymentCheckoutSession, fakeSubscriptionInvoice } from './stripe-fakes';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const PLATFORM_ADMIN_JWT_SECRET = process.env.PLATFORM_ADMIN_JWT_SECRET;
@@ -48,6 +58,8 @@ if (!hasDb) {
 
 /** A country nothing else in the suite uses, so a parallel run can't see it listed. */
 const COUNTRY = 'UY';
+/** A second listed country, whose Schools' Subscriptions keep their surcharge. */
+const OTHER_COUNTRY = 'EC';
 
 describeIfDb('Card surcharge (Decision 406)', () => {
   let app: INestApplication;
@@ -66,6 +78,8 @@ describeIfDb('Card surcharge (Decision 406)', () => {
   let pack: { id: string };
   let monthly: { id: string };
   let cashPack: { id: string };
+  let abroad: { id: string };
+  let abroadMonthly: { id: string };
 
   // Every Stripe call made, for the assertions below.
   const intents: Array<{ amount: number; metadata?: Record<string, string> }> = [];
@@ -78,6 +92,8 @@ describeIfDb('Card surcharge (Decision 406)', () => {
   const charges = new Map<string, object>();
   const subscriptionUpdates: unknown[] = [];
   const subscriptionCancels: string[] = [];
+  /** Running Subscriptions as Stripe keeps them (retrieve / update / the next renewal). */
+  const store = new FakeSubscriptionStore();
   const fakeStripeClient = {
     scopedClient: jest.fn(() => ({
       paymentIntents: {
@@ -109,11 +125,16 @@ describeIfDb('Card surcharge (Decision 406)', () => {
         // The first invoice charges each item's price, one line per item.
         create: jest.fn(async (params: (typeof subscriptions)[number]) => {
           subscriptions.push(params);
-          return fakeIncompleteSubscription(undefined, params.items.map((i) => ({ amount: i.price_data?.unit_amount ?? 0, product: i.price_data?.product ?? 'prod_plan' })));
+          const items = params.items.map((i) => ({ amount: i.price_data?.unit_amount ?? 0, product: i.price_data?.product ?? 'prod_plan' }));
+          const created = fakeIncompleteSubscription(undefined, items);
+          store.add({ id: created.id, items, metadata: params.metadata });
+          return created;
         }),
+        retrieve: jest.fn((id: string) => store.retrieve(id)),
         update: jest.fn(async (...args: unknown[]) => {
           subscriptionUpdates.push(args);
-          return {};
+          const [id, params] = args as [string, Parameters<FakeSubscriptionStore['update']>[1]];
+          return store.subscriptions.has(id) ? store.update(id, params) : {};
         }),
         cancel: jest.fn(async (id: string) => {
           subscriptionCancels.push(id);
@@ -144,16 +165,16 @@ describeIfDb('Card surcharge (Decision 406)', () => {
   };
   const transaction = (id: string) => su.transaction.findUniqueOrThrow({ where: { id } });
   const eventIds: string[] = [];
-  /** Runs one Stripe webhook job on the card School's connected account. */
-  const webhook = async (eventType: string, objectId: string) => {
+  /** Runs one Stripe webhook job on the card School's connected account (or another School's). */
+  const webhook = async (eventType: string, objectId: string, schoolId = card.id) => {
     const stripeEventId = `evt_${randomUUID()}`;
     eventIds.push(stripeEventId);
-    const account = await su.paymentAccount.findUniqueOrThrow({ where: { schoolId: card.id } });
+    const account = await su.paymentAccount.findUniqueOrThrow({ where: { schoolId } });
     await processor.process({ data: { stripeEventId, eventType, objectId, stripeAccountId: account.stripeConnectedAccountId } } as unknown as Job);
   };
-  const invoiceEvent = (eventType: 'invoice.paid' | 'invoice.payment_failed', invoice: { id: string }) => {
+  const invoiceEvent = (eventType: 'invoice.paid' | 'invoice.payment_failed', invoice: { id: string }, schoolId = card.id) => {
     invoices.set(invoice.id, invoice);
-    return webhook(eventType, invoice.id);
+    return webhook(eventType, invoice.id, schoolId);
   };
 
   const mkUser = async (label: string) => {
@@ -184,11 +205,18 @@ describeIfDb('Card surcharge (Decision 406)', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
     processor = app.get(StripeWebhookProcessingProcessor);
-    await su.cardSurchargeCountry.deleteMany({ where: { countryCode: COUNTRY } });
+    await su.cardSurchargeCountry.deleteMany({ where: { countryCode: { in: [COUNTRY, OTHER_COUNTRY] } } });
 
     card = await su.school.create({ data: { id: randomUUID(), name: `${tag}-card`, addressCountry: COUNTRY, defaultCurrency: 'USD' } });
     cash = await su.school.create({ data: { id: randomUUID(), name: `${tag}-cash`, addressCountry: COUNTRY, defaultCurrency: 'USD' } });
-    schoolIds.push(card.id, cash.id);
+    abroad = await su.school.create({
+      data: { id: randomUUID(), name: `${tag}-abroad`, addressCountry: OTHER_COUNTRY, defaultCurrency: 'USD', cardSurchargeEnabled: true, cardSurchargeBps: 250 },
+    });
+    schoolIds.push(card.id, cash.id, abroad.id);
+    await su.paymentAccount.create({
+      data: { id: randomUUID(), schoolId: abroad.id, provider: 'STRIPE', accountTitle: 'Card', country: OTHER_COUNTRY, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+    });
+    abroadMonthly = await su.membershipPlan.create({ data: { id: randomUUID(), schoolId: abroad.id, type: 'SUBSCRIPTION', title: 'Monthly', price: 5000, currency: 'USD' } });
     const branch = await su.branch.create({ data: { id: randomUUID(), schoolId: card.id, name: 'Main' } });
     await su.paymentAccount.create({
       data: { id: randomUUID(), schoolId: card.id, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
@@ -213,7 +241,7 @@ describeIfDb('Card surcharge (Decision 406)', () => {
   });
 
   afterAll(async () => {
-    await su.cardSurchargeCountry.deleteMany({ where: { countryCode: COUNTRY } });
+    await su.cardSurchargeCountry.deleteMany({ where: { countryCode: { in: [COUNTRY, OTHER_COUNTRY] } } });
     await su.auditLogEntry.deleteMany({ where: { adminUserId: { in: adminIds } } });
     const where = { schoolId: { in: schoolIds } };
     await su.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
@@ -461,22 +489,141 @@ describeIfDb('Card surcharge (Decision 406)', () => {
     expect(await transaction(res.body.transactionId)).toMatchObject({ amount: 1999, surchargeAmount: 0, paymentMethod: 'CASH' });
   });
 
-  it('stops when the country is removed, keeping the School\'s stored %', async () => {
-    const removed = await asAdmin('full').delete(COUNTRY);
-    expect(removed.status).toBe(204);
-    expect((await asAdmin('full').delete(COUNTRY)).status).toBe(404);
-    const logged = await su.auditLogEntry.findMany({ where: { adminUserId: { in: adminIds }, targetId: COUNTRY }, orderBy: { createdAt: 'asc' } });
-    expect(logged.map((l) => l.action)).toEqual(['ADD_CARD_SURCHARGE_COUNTRY', 'REMOVE_CARD_SURCHARGE_COUNTRY']);
+  describe('removing the country (Decision 419 item 3)', () => {
+    type Running = { id: string; product: string; surchargeItem?: string };
+    let members = 0;
+    /** A running Subscription (an Active Membership), with or without its surcharge item, started yesterday. */
+    const running = async (schoolId: string, planId: string, surcharge: boolean): Promise<Running> => {
+      const member = await mkUser(`member${++members}`);
+      const product = `prod_surcharge_${randomUUID().slice(0, 8)}`;
+      const sub = store.add({
+        items: surcharge ? [{ amount: 5000, product: 'prod_plan' }, { amount: 125, product }] : [{ amount: 5000, product: 'prod_plan' }],
+        metadata: surcharge ? { cardSurchargeProduct: product, cardSurchargeBps: '250', surchargeAmount: '125' } : undefined,
+        created: new Date(Date.now() - 86_400_000),
+      });
+      await su.membership.create({ data: { id: randomUUID(), studentId: member.id, membershipPlanId: planId, schoolId, frequency: 'RECURRING', stripeSubscriptionId: sub.id } });
+      return { id: sub.id, product, surchargeItem: surcharge ? sub.items.data[1].id : undefined };
+    };
+    const removalProcessor = () => app.get(CardSurchargeCountryRemovalProcessor);
+    const runRemoval = (removedAt: Date) => removalProcessor().process({ data: { countryCode: COUNTRY, removedAt: removedAt.toISOString() } } as Job);
+    /** The job DELETE enqueued, once the app's own worker has finished it. */
+    const finishedRemoval = async (since: number) => {
+      const queue = app.get<Queue>(getQueueToken(CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE));
+      for (const deadline = Date.now() + 20_000; Date.now() < deadline; ) {
+        const job = (await queue.getJobs(['completed', 'failed'])).find((j) => j.data.countryCode === COUNTRY && Date.parse(j.data.removedAt) >= since);
+        if (job) return job;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      throw new Error('The card-surcharge-country-removal job did not finish.');
+    };
+    const updatesOf = (id: string) => store.updates.filter((u) => u.id === id);
+    let uyA: Running;
+    let uyB: Running;
+    let uyPlain: Running;
+    let ecA: Running;
+    let removedAt: Date;
 
-    expect((await setting('owner').get()).body).toMatchObject({ available: false, enabled: true, bps: 250, applies: false });
-    expect((await setting('owner').put({ enabled: false, bps: 250 })).status).toBe(400);
-    expect((await academyPlans(card.id)).find((p) => p.id === pack.id)?.cardSurchargeAmount).toBe(0);
+    it('stops it, keeping the School\'s stored %, and the job takes it off running Subscriptions there from their next renewal', async () => {
+      expect((await asAdmin('billing').post({ countryCode: OTHER_COUNTRY })).status).toBe(201);
+      uyA = await running(card.id, monthly.id, true);
+      uyB = await running(card.id, monthly.id, true);
+      uyPlain = await running(card.id, monthly.id, false);
+      ecA = await running(abroad.id, abroadMonthly.id, true);
 
-    const res = await buy(pack.id, { useHostedCheckout: true });
-    expect(res.status).toBe(201);
-    expect(sessions[sessions.length - 1].line_items.map((l) => l.price_data.unit_amount)).toEqual([1999]);
-    expect(await transaction(res.body.transactionId)).toMatchObject({ amount: 1999, surchargeAmount: 0 });
-    const stored = await su.school.findUniqueOrThrow({ where: { id: card.id }, select: { cardSurchargeEnabled: true, cardSurchargeBps: true } });
-    expect(stored).toEqual({ cardSurchargeEnabled: true, cardSurchargeBps: 250 });
+      const since = Date.now();
+      const removed = await asAdmin('full').delete(COUNTRY);
+      expect(removed.status).toBe(204);
+      const job = await finishedRemoval(since);
+      expect(job.failedReason).toBeUndefined();
+      expect(job.opts).toMatchObject({ attempts: 3 });
+      removedAt = new Date(job.data.removedAt);
+      expect(job.returnvalue).toEqual({ removed: 2, unchanged: 1, failed: 0 });
+
+      // Each one: the surcharge item removed, no proration (the period already
+      // paid is left as it is), and its metadata cleared.
+      for (const sub of [uyA, uyB]) {
+        expect(updatesOf(sub.id).map((u) => u.params)).toEqual([
+          {
+            items: [{ id: sub.surchargeItem, deleted: true }],
+            proration_behavior: 'none',
+            metadata: { cardSurchargeProduct: '', cardSurchargeBps: '', surchargeAmount: '' },
+          },
+        ]);
+        expect(store.itemAmount(sub.id, sub.product)).toBe(0);
+        expect(store.itemAmount(sub.id, 'prod_plan')).toBe(5000);
+        expect(store.subscriptions.get(sub.id)!.metadata).toEqual({});
+      }
+      // No surcharge to take off, and another country's School: untouched.
+      expect(updatesOf(uyPlain.id)).toHaveLength(0);
+      expect(updatesOf(ecA.id)).toHaveLength(0);
+      expect(store.itemAmount(ecA.id, ecA.product)).toBe(125);
+
+      // The next renewal charges no surcharge, and records none.
+      const next = store.renewal(uyA.id);
+      expect(next.lines.data.map((l) => l.amount)).toEqual([5000]);
+      await invoiceEvent('invoice.paid', next);
+      expect(await su.transaction.findUniqueOrThrow({ where: { stripeInvoiceId: next.id } })).toMatchObject({ kind: 'RENEWAL', amount: 5000, surchargeAmount: 0 });
+      // The other country's still does.
+      const abroadNext = store.renewal(ecA.id);
+      await invoiceEvent('invoice.paid', abroadNext, abroad.id);
+      expect(await su.transaction.findUniqueOrThrow({ where: { stripeInvoiceId: abroadNext.id } })).toMatchObject({ kind: 'RENEWAL', amount: 5000, surchargeAmount: 125 });
+
+      // As before: no new surcharges at the School, its own setting kept.
+      expect((await asAdmin('full').delete(COUNTRY)).status).toBe(404);
+      const logged = await su.auditLogEntry.findMany({ where: { adminUserId: { in: adminIds }, targetId: COUNTRY }, orderBy: { createdAt: 'asc' } });
+      expect(logged.map((l) => l.action)).toEqual(['ADD_CARD_SURCHARGE_COUNTRY', 'REMOVE_CARD_SURCHARGE_COUNTRY']);
+
+      expect((await setting('owner').get()).body).toMatchObject({ available: false, enabled: true, bps: 250, applies: false });
+      expect((await setting('owner').put({ enabled: false, bps: 250 })).status).toBe(400);
+      expect((await academyPlans(card.id)).find((p) => p.id === pack.id)?.cardSurchargeAmount).toBe(0);
+
+      const res = await buy(pack.id, { useHostedCheckout: true });
+      expect(res.status).toBe(201);
+      expect(sessions[sessions.length - 1].line_items.map((l) => l.price_data.unit_amount)).toEqual([1999]);
+      expect(await transaction(res.body.transactionId)).toMatchObject({ amount: 1999, surchargeAmount: 0 });
+      const stored = await su.school.findUniqueOrThrow({ where: { id: card.id }, select: { cardSurchargeEnabled: true, cardSurchargeBps: true } });
+      expect(stored).toEqual({ cardSurchargeEnabled: true, cardSurchargeBps: 250 });
+    });
+
+    it('a re-run changes nothing', async () => {
+      const before = store.updates.length;
+      expect(await runRemoval(removedAt)).toEqual({ removed: 0, unchanged: 3, failed: 0 });
+      expect(store.updates).toHaveLength(before);
+    });
+
+    it("a Stripe error on one Subscription doesn't stop the others; the retry finishes it", async () => {
+      const uyC = await running(card.id, monthly.id, true);
+      const uyD = await running(card.id, monthly.id, true);
+      const uyE = await running(card.id, monthly.id, true);
+      store.failNextUpdate(uyD.id);
+      // The job fails so BullMQ retries it, after doing every other one.
+      await expect(runRemoval(new Date())).rejects.toThrow('1 Subscription(s) still carry the surcharge');
+      expect(store.itemAmount(uyC.id, uyC.product)).toBe(0);
+      expect(store.itemAmount(uyE.id, uyE.product)).toBe(0);
+      expect(store.itemAmount(uyD.id, uyD.product)).toBe(125);
+      expect(store.itemAmount(ecA.id, ecA.product)).toBe(125);
+
+      // The retry: only the one left is changed.
+      const before = store.updates.length;
+      expect(await runRemoval(new Date())).toEqual({ removed: 1, unchanged: 5, failed: 0 });
+      expect(store.updates.slice(before).map((u) => u.id)).toEqual([uyD.id]);
+      expect(store.itemAmount(uyD.id, uyD.product)).toBe(0);
+    });
+
+    it("adding the country back doesn't put it back on running Subscriptions; a new one gets it", async () => {
+      const before = store.updates.length;
+      expect((await asAdmin('billing').post({ countryCode: COUNTRY })).status).toBe(201);
+      expect(store.updates).toHaveLength(before);
+      expect(store.itemAmount(uyA.id, uyA.product)).toBe(0);
+      expect(store.renewal(uyB.id).lines.data.map((l) => l.amount)).toEqual([5000]);
+      // The plan shows it again, and a new Subscription is charged it.
+      expect((await academyPlans(card.id)).find((p) => p.id === monthly.id)?.cardSurchargeAmount).toBe(125);
+      const res = await buy(monthly.id);
+      expect(res.status).toBe(201);
+      const sent = subscriptions[subscriptions.length - 1];
+      expect(sent.items.map((i) => i.price_data?.unit_amount)).toEqual([5000, 125]);
+      expect(sent.metadata).toMatchObject({ cardSurchargeBps: '250', surchargeAmount: '125' });
+      await su.transaction.update({ where: { id: res.body.transactionId }, data: { status: 'FAILED' } });
+    });
   });
 });

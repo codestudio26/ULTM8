@@ -176,4 +176,11 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @IsOptional()
   @IsBoolean()
   confirmCurrencyChange?: boolean;
+
+  /** Decision 315 item 10 — ask for medical information at sign-up (the
+   * front-desk tablet, and joining in the student app). Off by default. */
+  @ApiPropertyOptional({ description: 'Ask for medical information at sign-up, with consent (Decision 315 item 10). Off by default.' })
+  @IsOptional()
+  @IsBoolean()
+  medicalInfoEnabled?: boolean;
 }

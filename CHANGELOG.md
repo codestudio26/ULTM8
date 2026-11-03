@@ -85,6 +85,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   member next subscribes. A Migrate price change keeps the surcharge at the
   Subscription's own %. The School page's Card surcharge text says so (15
   languages). No migration.
+- **Card surcharge: removing a country stops it on running Subscriptions**
+  (Decision 419 item 3) — when Platform Admin takes a country off the card
+  surcharge list, every running Subscription at a School in that country stops
+  charging the surcharge from its next renewal (this replaces "Platform Admin
+  removing the country applies when the member next subscribes" in the entry
+  above). A background job removes the surcharge item from each Stripe
+  Subscription with no proration (the month already paid is left as it is),
+  so the next renewal charges, records and shows no surcharge; one
+  Subscription Stripe refuses doesn't hold up the rest, and the job retries.
+  Adding the country back doesn't put the surcharge back on running
+  Subscriptions; only new ones get it. An owner turning the surcharge off or
+  changing the % still applies only when the member next subscribes. The
+  Platform Admin "Remove country" dialog says so. No migration, no API change.
 - **Waivers: faster Signatures panel for big Schools** (Decision 418; stress
   test round 4, Q2) — the panel shows the first 100 people with a "Load more"
   button instead of loading everyone first (it took 22 s at a School with
@@ -272,6 +285,28 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   - Migration `20270123000000_attendance_stats_and_past`; new endpoints
     `GET /schools/{id}/attendance/stats`, `GET /schools/{id}/attendance/log-classes`
     and `POST /schools/{id}/attendance/logs`.
+- **Address search with Google Places, switched off until the key is set**
+  (Decision 212; deferred to v1.3 by Decision 267; backlog §3.16 and §4.3) —
+  a **"Search address"** box on every address form in the School Portal (My
+  profile, Update student, School, Branch, Branch settings, Franchise, Create
+  School, Complete instructor profile) and on My Profile in the student app.
+  Typing shows matching addresses in the chosen country; choosing one fills
+  the separate address fields (street, city, region, postcode, country), which
+  can still be edited. In the student app a chosen address that is complete
+  and not edited afterwards is saved with its separate fields too.
+  - **Off until the product owner provides a key.** Without
+    `GOOGLE_PLACES_API_KEY` on the API server, the box is hidden and every
+    form shows its plain fields exactly as before.
+    **To do (product owner): provide a Google Cloud API key with Places API
+    (New) enabled, restricted to the API server, then set
+    `GOOGLE_PLACES_API_KEY` on the API server (Render env var).**
+  - The API calls Google itself, so the key never reaches a browser or the
+    app: new endpoints `GET /address-lookup/status`, `/address-lookup/autocomplete`
+    and `/address-lookup/details` for signed-in users, rate-limited per user,
+    with short timeouts. While switched off, `status` says `enabled: false`
+    and the two lookups answer 503 `ADDRESS_LOOKUP_NOT_CONFIGURED`. Results
+    come in the app's language. New text in all 15 languages.
+  - Not yet tried against a real Google account.
 - **Files on a member (Documents)** — backlog 5.11, Decision 315 item 9. A new
   Documents section on the student's page: upload a PDF, JPG or PNG (up to
   10 MB each), see the list (name, size, date, who uploaded), download and
@@ -435,6 +470,37 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   staff with "Can cancel charges" can **Waive** it; the student app labels it
   "Late fee" too. **Needs a database migration**
   (`20270116000000_late_fees`).
+- **Medical information at sign-up** (Decision 315 item 10; Gymdesk SF6) — a
+  new **Medical information at sign-up** card on the School page (owner only)
+  lets a School ask for medical information. It is **off by default**, so
+  nothing changes until an owner turns it on. When on, the front-desk tablet's
+  sign-up form and **joining a School in the ULTM8 app** show an optional
+  "Medical information" box (up to 2,000 characters) and a consent tick box.
+  It is kept **only with consent**: the person signing up consents for
+  themselves, and for a child the **Guardian** consents when joining them in
+  the app (a child can't give it, and staff enrolling someone can't give it
+  for them); without the tick nothing is stored. Who consented and when are
+  recorded. A tablet sign-up's medical information moves to the member when
+  staff approve it (or when an existing account accepts the invite) and is
+  never shown on the Sign-ups list. Only the **School's owners** and Branch
+  Staff with the new **See medical information** access switch (off by
+  default, for their own branches' students; coaches never) see it, on a new
+  **Medical information** card on the student's page. The member never sees
+  the text again, but **consent can be withdrawn** (Decision 419 item 1): on
+  **My Profile** in the ULTM8 app (and, for a child, on the Guardian's screen
+  for that child) a "Medical information: shared with {School}" line shows the
+  date consent was given, with a **Withdraw consent** button and a
+  confirmation. Withdrawing deletes that School's copy **at once** (and any
+  medical information still waiting on a sign-up invite there); the
+  student's card then says "No medical information." A child can't withdraw
+  it, only their Guardian. It is also **deleted when the member leaves the
+  School** (removed by the owner; a daily check catches any other way an
+  enrolment ends), with the student's account (also when a Guardian
+  withdraws a child's baseline consent) and with the School, including a
+  closed School that is kept anonymised for its waivers. Merging duplicate
+  members keeps the kept member's medical information, or brings the
+  duplicate's with its consent when the kept member has none. **Needs a
+  database migration** (`20270205000000_medical_info`).
 - **Rosters and reminders** (Decision 317 items 6 and 7):
   - **Rosters**: named lists of students for staff. Students → "Manage
     rosters" creates, renames and deletes them and adds or removes students.

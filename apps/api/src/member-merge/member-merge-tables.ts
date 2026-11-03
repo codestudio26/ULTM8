@@ -62,8 +62,12 @@ export const MOVED_UNLESS_KEPT_HAS = [
  * none. (StudentJoinDate keeps the earlier of the two dates, Decision 315
  * item 4: a join date is never in the future and staff only move it
  * earlier.) StudentCustomStatus (Decision 315 item 14): the kept member's
- * status if set, else the duplicate's. */
-export const ONE_PER_SCHOOL = ['StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate', 'StudentCustomStatus'] as const;
+ * status if set, else the duplicate's. StudentMedicalInfo (Decision 315 item
+ * 10): the kept member's medical information if they gave any, else the
+ * duplicate's, with its consent (who gave it, when, and whether a Guardian
+ * did); a duplicate who consented for themselves is shown as the kept member,
+ * the same person. */
+export const ONE_PER_SCHOOL = ['StudentHomeBranch', 'StudentCheckInCode', 'StudentJoinDate', 'StudentCustomStatus', 'StudentMedicalInfo'] as const;
 
 export type MergeTable =
   | (typeof MOVED_BY_STUDENT_ID)[number]

@@ -1044,6 +1044,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/medical-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MedicalInfoController_get"];
+        put?: never;
+        post?: never;
+        delete: operations["MedicalInfoController_withdraw"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/students/{studentId}/medical-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberMedicalInfoController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/guardians/me/minors": {
         parameters: {
             query?: never;
@@ -7044,6 +7076,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/address-lookup/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AddressLookupController_status"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/address-lookup/autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AddressLookupController_autocomplete"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/address-lookup/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AddressLookupController_details"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -7369,6 +7449,8 @@ export interface components {
             absenceAlertWeeks?: number | null;
             /** @description Decision 392: the "How did you hear about us?" choices. Null: the starting list, shown in the viewer's language. */
             heardFromOptions?: string[] | null;
+            /** @description Decision 315 item 10: the School asks for medical information at sign-up (off by default). */
+            medicalInfoEnabled: boolean;
             /**
              * @description Length of the check-in codes ULTM8 generates here (staff kiosk codes, members' personal codes).
              * @enum {number}
@@ -7542,6 +7624,8 @@ export interface components {
             showFranchiseBranding?: boolean;
             /** @description Confirms a currency change that moves plans without their own currency to the new one. */
             confirmCurrencyChange?: boolean;
+            /** @description Ask for medical information at sign-up, with consent (Decision 315 item 10). Off by default. */
+            medicalInfoEnabled?: boolean;
         };
         /** @enum {string} */
         StudentStatus: "ACTIVE" | "INACTIVE";
@@ -7742,6 +7826,10 @@ export interface components {
             studentId?: string;
             /** @description The student's home branch (Decisions 139, 168). Required when the School has branches; must be one of them. Not allowed when the School has none. */
             branchId?: string;
+            /** @description Decision 315 item 10: medical information, only when the School asks for it (School.medicalInfoEnabled). Given by the member joining themselves, or by the Guardian for a child; never by staff. Needs medicalConsent: true, or nothing is stored and the join is refused. Empty means none. */
+            medicalInfo?: string;
+            /** @description Decision 315 item 10: the member (or the Guardian for a child) consents to the School keeping this medical information. */
+            medicalConsent?: boolean;
         };
         JoinSchoolResponseDto: {
             id: string;
@@ -8099,6 +8187,8 @@ export interface components {
             freezeMemberships: boolean;
             /** @description See attendance statistics for their branches (off by default; Decision 317 item 3). */
             attendanceStats: boolean;
+            /** @description See the medical information of their branches' students (off by default; Decision 315 item 10). */
+            seeMedicalInfo: boolean;
             /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
             memberFiles: boolean;
             /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */
@@ -8467,6 +8557,33 @@ export interface components {
             status: "PENDING" | "ACCEPTED" | "CANCELLED" | "EXPIRED";
             /** Format: date-time */
             expiresAt: string;
+        };
+        StudentMedicalInfoDto: {
+            /** @description As the member (or their Guardian) wrote it, up to 2,000 characters. */
+            body: string;
+            /** @description Who gave consent; null once that account is gone. */
+            consentedByName: string | null;
+            /** @description True when a Guardian consented for their child. */
+            consentedByGuardian: boolean;
+            consentedAt: string;
+            updatedAt: string;
+        };
+        StudentMedicalInfoResponseDto: {
+            /** @description Null when none was given. */
+            medicalInfo: components["schemas"]["StudentMedicalInfoDto"] | null;
+        };
+        MedicalInfoSharedDto: {
+            schoolId: string;
+            schoolName: string;
+            /** @description When consent was given. */
+            consentedAt: string;
+            /** @description True when a Guardian consented for their child. */
+            consentedByGuardian: boolean;
+            /** @description Given on a front-desk sign-up whose invite the member has not accepted yet. */
+            awaitingAcceptance: boolean;
+        };
+        MedicalInfoSharedListDto: {
+            items: components["schemas"]["MedicalInfoSharedDto"][];
         };
         CreateMinorDto: {
             firstName: string;
@@ -11682,6 +11799,8 @@ export interface components {
             description?: string | null;
             logoUrl?: string | null;
             bannerUrl?: string | null;
+            /** @description Decision 315 item 10: joining asks for medical information (optional, with consent). */
+            medicalInfoEnabled: boolean;
             /** @description The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches. */
             branches: components["schemas"]["AcademyBranchDto"][];
             membershipPlans: components["schemas"]["AcademyMembershipPlanDto"][];
@@ -12183,6 +12302,10 @@ export interface components {
             emergencyName?: string | null;
             emergencyPhone?: string | null;
             emergencyRelationship?: string | null;
+            /** @description Decision 315 item 10: medical information, only when the School asks for it (medicalInfoOn). Needs medicalConsent: true, or nothing is kept and the sign-up is refused. */
+            medicalInfo?: string | null;
+            /** @description Decision 315 item 10: the person consents to the School keeping this medical information. */
+            medicalConsent?: boolean;
         };
         KioskSignUpCreatedDto: {
             id: string;
@@ -12237,6 +12360,8 @@ export interface components {
             locked: boolean;
             /** @description The School's "How did you hear about us?" choices. Null: show the starting list in the tablet's language. */
             heardFromOptions?: string[] | null;
+            /** @description Decision 315 item 10: the sign-up form asks for medical information (optional, with consent). */
+            medicalInfoOn: boolean;
         };
         KioskClassDto: {
             id: string;
@@ -12697,6 +12822,7 @@ export interface components {
             StudentCheckInCode: number;
             StudentJoinDate: number;
             StudentCustomStatus: number;
+            StudentMedicalInfo: number;
             WaiverSignature: number;
         };
         MergePreviewDto: {
@@ -13666,6 +13792,41 @@ export interface components {
         };
         ImportRowsResponseDto: {
             rows: components["schemas"]["ImportRowResultDto"][];
+        };
+        AddressLookupStatusDto: {
+            /** @description False until the server has a Google Places API key; the apps then hide the search box. */
+            enabled: boolean;
+        };
+        AddressSuggestionDto: {
+            placeId: string;
+            /** @description The whole suggestion as one line. */
+            text: string;
+            /** @description The main part, usually the street and number. */
+            mainText: string;
+            /** @description The rest, usually the town and country. May be empty. */
+            secondaryText: string;
+        };
+        AddressAutocompleteResponseDto: {
+            suggestions: components["schemas"]["AddressSuggestionDto"][];
+        };
+        LookedUpPostalAddressDto: {
+            line1: string;
+            line2: string;
+            city: string;
+            /** @description For countries with a fixed list (US, CA, AU, AE, BR, MY), the list value. */
+            region: string;
+            postalCode: string;
+            /** @description ISO 3166-1 alpha-2. */
+            country: string;
+        };
+        AddressDetailsResponseDto: {
+            placeId: string;
+            /** @description Ready to send as `postalAddress`; fields Google didn’t give are empty. */
+            postalAddress: components["schemas"]["LookedUpPostalAddressDto"];
+            /** @description The address as one line, in the country’s own order (what the API stores in `address`). */
+            formattedAddress: string;
+            /** @description True when every field the country requires is filled and valid, so it can be saved as it is. */
+            complete: boolean;
         };
     };
     responses: never;
@@ -15431,6 +15592,69 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CoachInvitePreviewDto"];
+                };
+            };
+        };
+    };
+    MedicalInfoController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentMedicalInfoResponseDto"];
+                };
+            };
+        };
+    };
+    MedicalInfoController_withdraw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MemberMedicalInfoController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicalInfoSharedListDto"];
                 };
             };
         };
@@ -25596,6 +25820,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DataImportResponseDto"];
+                };
+            };
+        };
+    };
+    AddressLookupController_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressLookupStatusDto"];
+                };
+            };
+        };
+    };
+    AddressLookupController_autocomplete: {
+        parameters: {
+            query: {
+                /** @description Language for the results, as a BCP 47 tag (the app’s current language, e.g. "pt-BR"). Defaults to the request’s Accept-Language. */
+                language?: string;
+                /** @description Groups one search and the chosen result into one Google session (cheaper, Google’s recommended use). Any string of letters, digits, "-" or "_", up to 36 characters; a new UUID per search. */
+                sessionToken?: string;
+                /** @description What the person has typed so far. */
+                q: string;
+                /** @description Only suggest addresses in this country (ISO 3166-1 alpha-2, e.g. "GB"). */
+                country?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressAutocompleteResponseDto"];
+                };
+            };
+        };
+    };
+    AddressLookupController_details: {
+        parameters: {
+            query: {
+                /** @description Language for the results, as a BCP 47 tag (the app’s current language, e.g. "pt-BR"). Defaults to the request’s Accept-Language. */
+                language?: string;
+                /** @description Groups one search and the chosen result into one Google session (cheaper, Google’s recommended use). Any string of letters, digits, "-" or "_", up to 36 characters; a new UUID per search. */
+                sessionToken?: string;
+                /** @description A `placeId` from an autocomplete suggestion. */
+                placeId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddressDetailsResponseDto"];
                 };
             };
         };

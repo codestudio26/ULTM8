@@ -56,6 +56,8 @@ const OPTIONAL_VENDOR = [
   'FCM_PRIVATE_KEY',
   'CLOUDFLARE_STREAM_ACCOUNT_ID',
   'CLOUDFLARE_STREAM_API_TOKEN',
+  // Google Places street lookup (Decision 212): the search box stays hidden until set.
+  'GOOGLE_PLACES_API_KEY',
 ] as const;
 
 const DEV_PASSWORD = 'changeme';

@@ -103,7 +103,7 @@ export function CardSurchargePage() {
       {removing ? (
         <Modal title={`Remove ${countryName(removing)}?`} onClose={() => setRemoving(null)}>
           <p style={{ marginTop: 0 }}>
-            Schools there stop adding a card surcharge straight away. Their saved % is kept, but isn't charged or shown unless the country is added again.
+            Schools there stop adding a card surcharge to new payments straight away, and members' running subscriptions there stop paying it from their next renewal. The Schools' saved % is kept, but isn't charged or shown unless the country is added again; adding it back applies to new subscriptions only.
           </p>
           <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
             <Button variant="secondary" onClick={() => setRemoving(null)}>

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsDateString, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsDateString, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
 
@@ -82,6 +82,23 @@ export class KioskSignUpDto {
   @IsString()
   @MaxLength(60)
   emergencyRelationship?: string | null;
+
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    maxLength: 2000,
+    description: 'Decision 315 item 10: medical information, only when the School asks for it (medicalInfoOn). Needs medicalConsent: true, or nothing is kept and the sign-up is refused.',
+  })
+  @Transform(blankToNull)
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  medicalInfo?: string | null;
+
+  @ApiPropertyOptional({ description: 'Decision 315 item 10: the person consents to the School keeping this medical information.' })
+  @IsOptional()
+  @IsBoolean()
+  medicalConsent?: boolean;
 }
 
 export class KioskSignUpCreatedDto {

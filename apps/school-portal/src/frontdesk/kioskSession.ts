@@ -142,13 +142,20 @@ export type KioskSignUpInput = {
   emergencyName: string;
   emergencyPhone: string;
   emergencyRelationship: string;
+  /** Decision 315 item 10: only when the School asks for it. */
+  medicalInfo: string;
+  medicalConsent: boolean;
 };
 
 /** Decision 392 (handover F5): a sign-up waiting for staff approval. */
 export function useKioskSignUp() {
   return useMutation({
     mutationFn: (input: KioskSignUpInput) =>
-      unwrap(kioskClient.POST('/v1/front-desk/kiosk/sign-ups', { body: { ...input, gender: input.gender || null } })),
+      unwrap(
+        kioskClient.POST('/v1/front-desk/kiosk/sign-ups', {
+          body: { ...input, gender: input.gender || null, medicalInfo: input.medicalInfo.trim() || null, medicalConsent: input.medicalConsent },
+        }),
+      ),
   });
 }
 

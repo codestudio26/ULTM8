@@ -97,6 +97,11 @@ export const schools = {
     delete: "Delete",
     confirmDelete: "Delete this tag? It comes off every student who has it.",
   },
+  medicalInfo: {
+    title: 'Medical information at sign-up',
+    subtitle: "Ask people for medical information when they sign up on the front-desk tablet or join in the ULTM8 app. It's optional for them and kept only with their consent (a child's Guardian consents for the child). Only owners and the staff you allow on their Access page can read it.",
+    enabled: 'Ask for medical information',
+  },
   customFields: {
     title: "Member fields and statuses",
     subtitle: "Your own fields and statuses for students, shown on each student's page. Only staff see them, never the student.",

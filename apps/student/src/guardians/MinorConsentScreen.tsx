@@ -6,6 +6,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
 import { ConsentTierRow } from './ConsentTierRow';
 import { BookingDelegationRow } from './BookingDelegationRow';
+import { MedicalInfoSharing } from '../profile/MedicalInfoSharing';
 import { useMyConsentRecords } from './guardianQueries';
 import { useMyBookingDelegations } from './bookingDelegationQueries';
 import type { AppStackParamList } from '../navigation/types';
@@ -59,6 +60,8 @@ export function MinorConsentScreen({ route }: Props) {
         <ConsentTierRow studentId={studentId} tier="BASELINE" record={activeByTier.get('BASELINE')} />
         <ConsentTierRow studentId={studentId} tier="CAMERA" record={activeByTier.get('CAMERA')} />
         <BookingDelegationRow studentId={studentId} delegation={activeDelegation} />
+        {/* Decision 419 item 1: the Guardian sees and withdraws their child's medical information sharing. */}
+        <MedicalInfoSharing studentId={studentId} />
       </ScrollView>
     </Screen>
   );

@@ -5,12 +5,25 @@ import * as ImagePicker from 'expo-image-picker';
 import * as q from './profileQueries';
 import { ProfileScreen } from './ProfileScreen';
 
+// Decision 419 item 1's medical information section has its own tests
+// (medicalInfoSharing.test.tsx); here no School holds any.
+jest.mock('./medicalInfoQueries', () => ({
+  useMedicalInfoShared: () => ({ data: { items: [] }, isLoading: false, isError: false, error: null }),
+  useWithdrawMedicalInfo: () => ({ mutate: () => undefined, isPending: false, isError: false, error: null }),
+}));
 jest.mock('./profileQueries', () => ({
   useMyProfile: jest.fn(),
   useUpdateProfile: jest.fn(),
   useUploadMyProfilePhoto: jest.fn(),
   useLanguages: jest.fn(),
   useCurrencies: jest.fn(),
+}));
+// Google Places street lookup: switched off here (no key), so no search box.
+jest.mock('./addressLookupQueries', () => ({
+  useAddressLookupStatus: () => ({ data: { enabled: false } }),
+  fetchAddressSuggestions: jest.fn(),
+  fetchAddressDetails: jest.fn(),
+  newSessionToken: () => 'tok',
 }));
 jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),
