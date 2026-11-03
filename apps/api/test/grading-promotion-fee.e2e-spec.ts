@@ -612,7 +612,9 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       expect(await remindersFor(id)).toEqual([]);
     });
 
-    it('the jobs role may only mark the reminder as sent', async () => {
+    // Merging duplicates (Decision 422 item 8) also lets it cancel an
+    // unanswered fee for a belt that isn't kept (status, cancelledAt, closedById).
+    it('the jobs role may only mark the reminder as sent, and cancel a fee in a merge', async () => {
       const id = (await superuser.promotionFeeRequest.findFirstOrThrow({ where: { studentId: user.rae.id } })).id;
       const asJobs = (sql: string) =>
         superuser.$transaction(async (tx) => {
@@ -620,7 +622,9 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
           return tx.$executeRawUnsafe(sql, id);
         });
       await expect(asJobs('UPDATE "PromotionFeeRequest" SET "toDecideRemindedAt" = now() WHERE id = $1')).resolves.toBe(1);
-      await expect(asJobs('UPDATE "PromotionFeeRequest" SET "status" = \'PAID\' WHERE id = $1')).rejects.toThrow(/permission denied/);
+      await expect(asJobs('UPDATE "PromotionFeeRequest" SET "paidAt" = now() WHERE id = $1')).rejects.toThrow(/permission denied/);
+      await expect(asJobs('UPDATE "PromotionFeeRequest" SET "amountMinor" = 1 WHERE id = $1')).rejects.toThrow(/permission denied/);
+      await expect(asJobs('UPDATE "PromotionFeeRequest" SET "promotionEventId" = NULL WHERE id = $1')).rejects.toThrow(/permission denied/);
       await expect(asJobs('DELETE FROM "PromotionFeeRequest" WHERE id = $1')).rejects.toThrow(/permission denied/);
     });
   });

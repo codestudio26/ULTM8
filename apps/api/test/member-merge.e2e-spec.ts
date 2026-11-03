@@ -497,6 +497,12 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
       await superuser.booking.create({ data: { id: randomUUID(), studentId: users[who].id, classId: cat.Aclass1, schoolId: schoolA, sourceMembershipId: membershipId } });
       await superuser.waitlistEntry.create({ data: { id: randomUUID(), studentId: users[who].id, classId: cat.Aclass2, schoolId: schoolA, position: who === 'xena' ? 2 : 3 } });
     }
+    // Yuri accepted a promotion fee in Judo; Xena has one waiting there too.
+    for (const [who, status] of [['xena', 'PENDING'], ['yuri', 'ACCEPTED']] as const) {
+      await superuser.promotionFeeRequest.create({
+        data: { id: randomUUID(), schoolId: schoolA, studentId: users[who].id, disciplineId: cat.Ajudo, toRungId: cat.AjudoTier, toRungName: 'White', amountMinor: 1000, promotionWaits: true, status },
+      });
+    }
     await superuser.signUp.create({
       data: { id: randomUUID(), schoolId: schoolA, userId: users.yuri.id, kind: 'MEMBER', firstName: 'Y', surname: 'U', dateOfBirth: new Date('2014-05-05'), email: `su-${randomUUID()}@example.test`, status: 'PENDING' },
     });
@@ -564,11 +570,17 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
         'PENDING_CHILD_INVITE',
         'SAME_CLASS_BOOKED',
         'SAME_CLASS_WAITLIST',
-        'SAME_STYLE_CORRECTION',
-        'SAME_STYLE_RANK',
+        'SAME_STYLE_FEE_ACCEPTED',
       ].sort(),
     );
-    expect(res.body.blockers.find((b: { code: string }) => b.code === 'SAME_STYLE_RANK').details).toEqual(['Judo']);
+    // Both have a Judo belt on the same rung: no longer a reason (Decision
+    // 422 item 8). Xena's is kept, and Yuri's second correction in the style
+    // would be closed; his accepted promotion fee for it stops the merge.
+    expect(res.body.beltsKept).toEqual([
+      { disciplineId: cat.Ajudo, styleName: 'Judo', keptFrom: 'KEPT', keptBelt: 'White', otherBelt: 'White', sameRung: true },
+    ]);
+    expect(res.body.beltCorrectionsClosed).toBe(1);
+    expect(res.body.blockers.find((b: { code: string }) => b.code === 'SAME_STYLE_FEE_ACCEPTED').details).toEqual(['Judo']);
     expect(res.body.blockers.find((b: { code: string }) => b.code === 'SAME_CLASS_BOOKED').details).toEqual(['Fundamentals']);
 
     const before = await countsOf(users.yuri.id, schoolA);

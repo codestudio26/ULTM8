@@ -249,6 +249,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `/schools/{schoolId}/signed-documents/exports` (`POST`, `GET latest`,
   `GET {id}`, `GET {id}/download`). 15 languages. **Needs a database
   migration** (`20270204000000_data_tools_merge_export`).
+- **Merging duplicates keeps the higher belt** (Decision 422 item 8) — a belt
+  in the same style on both records no longer stops a merge. The higher
+  current belt is kept, by the ladder's own order (belt, then stripe or level
+  step); on the same belt and stripe, the kept member's, with both records'
+  classes toward the next grade added up and the further sign-off kept for
+  each skill. The other belt's promotions stay in the history, moved onto the
+  kept belt and marked as coming from the merged record (new
+  `mergedFromUserId` on history entries); its sign-off log moves too, and
+  only its belt row itself is removed. A promotion fee still unanswered for
+  the belt that isn't kept, or a second one waiting in the same style, is
+  cancelled; one already accepted stops the merge until the owner cancels it
+  (new reason `SAME_STYLE_FEE_ACCEPTED`). A belt correction request about the
+  belt that isn't kept, or a second one pending in the same style, is
+  rejected. Kids and Adult programs are separate styles, so both belts are
+  kept. The merge preview lists which belt is kept in each style. The rank
+  date correction checks only the kept belt's own history. Preview and result
+  gain `beltsKept`, `promotionFeesCancelled` and `beltCorrectionsClosed`; the
+  reasons `SAME_STYLE_RANK` and `SAME_STYLE_CORRECTION` are gone. 15
+  languages. **Needs a database migration**
+  (`20270212000000_merge_keeps_higher_belt`).
 - **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
   its own list of tags, managed under **School settings → Student tags** (add,
   rename, delete; deleting a tag takes it off every student). A **Tags** card

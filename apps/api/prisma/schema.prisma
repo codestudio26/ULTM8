@@ -3526,6 +3526,13 @@ model PromotionEvent {
   noteEditedById        String?
   noteEditedBy          User?     @relation("PromotionEventNoteEditedBy", fields: [noteEditedById], references: [id], onDelete: SetNull)
   noteHiddenAt          DateTime?
+  // Decision 422 item 8: merging duplicate members keeps the higher belt
+  // when both records had one in this style. The other belt's entries stay
+  // in the history, moved onto the kept belt and marked with the member
+  // record they were on (the duplicate's, or the kept member's own when the
+  // duplicate's belt was the higher). Null for every other entry. A plain
+  // id, no foreign key: the mark stays even if that account is deleted.
+  mergedFromUserId      String?
 
   createdAt DateTime @default(now())
 

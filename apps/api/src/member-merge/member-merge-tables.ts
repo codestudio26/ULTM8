@@ -12,7 +12,10 @@
 /** Moved as they are, by "studentId": every row of the duplicate's at this
  * School becomes the kept member's. In this order: a promotion-fee Charge is
  * checked against its request's member (Charge_promotion_fee_same_owner), so
- * the requests move before the charges. */
+ * the requests move before the charges. Where both have a belt in the same
+ * style, the merge has already folded the belt that isn't kept into the kept
+ * one (Decision 422 item 8, MemberMergeService.applyStylePlan), so the
+ * duplicate's grading rows left here move as they are. */
 export const MOVED_BY_STUDENT_ID = [
   'Membership',
   'MembershipFreeze',
@@ -99,10 +102,11 @@ export const MERGE_BLOCKERS = [
   'PENDING_CARD_PAYMENT',
   // The duplicate was offered a Class Pack at check-in and hasn't paid yet.
   'OPEN_PACK_RECHARGE',
-  // Both have a belt in the same style; which history wins is a grading call.
-  'SAME_STYLE_RANK',
-  // Both asked for a belt correction in the same style.
-  'SAME_STYLE_CORRECTION',
+  // A promotion fee for the belt that isn't kept (Decision 422 item 8) was
+  // accepted and its charge is on the balance: the owner cancels it first
+  // (anything paid becomes credit). Belts in the same style, and belt
+  // corrections, no longer stop a merge (MemberMergeService.planStyles).
+  'SAME_STYLE_FEE_ACCEPTED',
   // Both are booked into the same upcoming class.
   'SAME_CLASS_BOOKED',
   // Both are on the same class's waitlist.

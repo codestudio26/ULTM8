@@ -78,6 +78,14 @@ export class PromotionEventResponseDto {
   @ApiProperty({ type: String, nullable: true, description: 'When the note was hidden from the student and guardian; null when shown. Students and guardians always get null here, and no note while it is hidden.' })
   noteHiddenAt!: string | null;
 
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    description:
+      'Set on the entries of a belt that was not kept when two duplicate records were merged (Decision 422 item 8): the member record the entry was on. Show it as coming from the merged record.',
+  })
+  mergedFromUserId!: string | null;
+
   @ApiProperty({ description: 'When the entry was written (audit timestamp).' })
   createdAt!: string;
 }
