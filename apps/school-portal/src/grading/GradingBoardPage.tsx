@@ -23,6 +23,7 @@ import { BulkPromoteModal } from './BulkPromoteModal';
 import { GradeModal } from './GradingModals';
 import { GradingTabs } from './GradingTabs';
 import { Avatar, DecideDialog, FeeTag, SelectionPanel, StudentPanel, fullName } from './BoardPanels';
+import { feeRankName } from './feeRank';
 import { programPair, useAdultProgram } from './adultProgram';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
@@ -534,7 +535,7 @@ export function GradingBoardPage() {
         <DecideDialog
           name={fullName(decidingItem)}
           firstName={decidingItem.firstName}
-          rank={decidingItem.feeRequest.toRungName}
+          rank={feeRankName(decidingItem.feeRequest, t)}
           from={ladder.find((r) => r.id === decidingItem.currentStripeId) ?? null}
           to={ladder.find((r) => r.id === decidingItem.feeRequest!.toRungId) ?? null}
           canPromote={canPromote}

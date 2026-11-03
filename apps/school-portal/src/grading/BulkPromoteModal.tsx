@@ -65,7 +65,7 @@ export function BulkPromoteModal({
   const [checking, setChecking] = useState(false);
   const [acknowledged, setAcknowledged] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<{ rows: ReportRow[]; skipped: Array<{ name: string; reasons: string[] }>; date: string } | null>(null);
+  const [report, setReport] = useState<{ rows: ReportRow[]; waiting: ReportRow[]; skipped: Array<{ name: string; reasons: string[] }>; date: string } | null>(null);
   // A batch that stopped part-way (Decision 284): what is done, and who is left to try again.
   const [partial, setPartial] = useState<{ done: BulkPromoteResult; remaining: string[]; batch: string[] } | null>(null);
   const dragId = useRef<string | null>(null);
@@ -200,6 +200,7 @@ export function BulkPromoteModal({
     ready: [...a.ready, ...b.ready],
     needsAcknowledgement: [],
     cannotPromote: [...a.cannotPromote, ...b.cannotPromote],
+    waitingForFee: [...(a.waitingForFee ?? []), ...(b.waitingForFee ?? [])],
   });
 
   /** Promote `ids`, adding to what earlier tries already did. Each student
@@ -235,7 +236,7 @@ export function BulkPromoteModal({
   }
 
   function confirm() {
-    return send(toPromote, toPromote, { ready: [], needsAcknowledgement: [], cannotPromote: [] });
+    return send(toPromote, toPromote, { ready: [], needsAcknowledgement: [], cannotPromote: [], waitingForFee: [] });
   }
 
   /** "Blue Belt (Adult program)" or "Green Belt (skipped 2)" (DESIGN.md). */
@@ -256,9 +257,17 @@ export function BulkPromoteModal({
       .map((id) => result.ready.find((r) => r.studentId === id))
       .filter((r): r is BulkPromoteStudent => !!r)
       .map((r) => ({ name: nameOf(r.studentId), from: rung(r.fromRungId)?.name ?? '—', to: toLabel(r) }));
+    // Priced grades with "Allow grading before the fee is paid" off (Decision
+    // 300 item 6), a move into Adult included (Decision 419 item 2): not
+    // promoted yet; each waits for its fee, shown on the board as "Waiting for fee".
+    const waiting = batch
+      .map((id) => (result.waitingForFee ?? []).find((r) => r.studentId === id))
+      .filter((r): r is BulkPromoteStudent => !!r)
+      .map((r) => ({ name: nameOf(r.studentId), from: rung(r.fromRungId)?.name ?? '—', to: toLabel(r) }));
     setPartial(null);
     setReport({
       rows,
+      waiting,
       // Names now: the board's selection is cleared once the batch is done.
       skipped: [
         ...[...cannot, ...result.cannotPromote.filter((c) => !cannot.some((x) => x.studentId === c.studentId))].map((c) => ({
@@ -309,6 +318,11 @@ export function BulkPromoteModal({
             </li>
           ))}
         </ol>
+        {report.waiting.length > 0 ? (
+          <p role="note" data-testid="bulk-waiting-for-fee" style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--bg-warning)' }}>
+            {t('grading.bulk.waitingForFee', { list: report.waiting.map((r) => `${r.name} (${r.to})`).join(', ') })}
+          </p>
+        ) : null}
         {report.skipped.length > 0 ? (
           <ErrorBanner
             message={t('grading.bulk.notPromoted', { list: report.skipped.map((s) => `${s.name} (${s.reasons.join('; ')})`).join(', ') })}

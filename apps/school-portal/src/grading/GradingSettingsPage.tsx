@@ -60,6 +60,8 @@ export function GradingSettingsPage() {
   const [displays, setDisplays] = useState<Record<string, DisciplineResponse['rankDisplay']>>({});
   const [feeOn, setFeeOn] = useState(false);
   const [beforePaid, setBeforePaid] = useState(false);
+  // Decision 420 item 3: "Charge a fee when moving a student from Kids to Adult".
+  const [kidsToAdult, setKidsToAdult] = useState(false);
   const [openMatOn, setOpenMatOn] = useState(false);
   const [about, setAbout] = useState<About>('columns');
   const [saving, setSaving] = useState(false);
@@ -72,6 +74,7 @@ export function GradingSettingsPage() {
     setDisplays(Object.fromEntries(styles.map((d) => [d.id, d.rankDisplay])));
     setFeeOn(fee.data?.promotionFeeEnabled ?? false);
     setBeforePaid(fee.data?.gradeBeforeFeePaid ?? false);
+    setKidsToAdult(fee.data?.kidsToAdultFeeEnabled ?? false);
     setOpenMatOn(openMat.data?.openMatCountsTowardHours ?? false);
   };
   // Reset when the saved values change, not on every render (the style list is rebuilt each time).
@@ -98,7 +101,11 @@ export function GradingSettingsPage() {
   const ageProblem = (v: string) => (Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 99 ? null : t('grading.settings.columns.adultAgeInvalid'));
   const changedAges = styles.filter((d) => d.adultDisciplineId && canColumns(d) && adultAges[d.id] !== undefined && adultAges[d.id] !== String(d.readyForAdultAge));
   const changedDisplays = styles.filter((d) => canColumns(d) && displays[d.id] !== undefined && displays[d.id] !== d.rankDisplay);
-  const feeChanged = my.isOwner && (feeOn !== (fee.data?.promotionFeeEnabled ?? false) || beforePaid !== (fee.data?.gradeBeforeFeePaid ?? false));
+  const feeChanged =
+    my.isOwner &&
+    (feeOn !== (fee.data?.promotionFeeEnabled ?? false) ||
+      beforePaid !== (fee.data?.gradeBeforeFeePaid ?? false) ||
+      kidsToAdult !== (fee.data?.kidsToAdultFeeEnabled ?? false));
   const openMatChanged = canOpenMat && openMatOn !== (openMat.data?.openMatCountsTowardHours ?? false);
   const dirty = changedColumns.length > 0 || changedAges.length > 0 || changedDisplays.length > 0 || feeChanged || openMatChanged;
   const invalid = changedColumns.some((d) => columnProblem(columns[d.id]) !== null) || changedAges.some((d) => ageProblem(adultAges[d.id]) !== null);
@@ -117,7 +124,7 @@ export function GradingSettingsPage() {
       for (const d of changedDisplays) {
         await setRankDisplay.mutateAsync({ disciplineId: d.id, rankDisplay: displays[d.id] });
       }
-      if (feeChanged) await updateFee.mutateAsync({ promotionFeeEnabled: feeOn, ...(feeOn ? { gradeBeforeFeePaid: beforePaid } : {}) });
+      if (feeChanged) await updateFee.mutateAsync({ promotionFeeEnabled: feeOn, ...(feeOn ? { gradeBeforeFeePaid: beforePaid, kidsToAdultFeeEnabled: kidsToAdult } : {}) });
       if (openMatChanged) await setOpenMat.mutateAsync(openMatOn);
       setSaved(true);
     } catch (err) {
@@ -276,6 +283,18 @@ export function GradingSettingsPage() {
                 />
                 {feeOn ? (
                   <>
+                    {/* Decision 420 item 3: works only while the promotion fee is on; off by default. */}
+                    <Switch
+                      id="fee-kids-to-adult"
+                      label={t('grading.settings.fee.kidsToAdult')}
+                      description={kidsToAdult ? t('grading.settings.fee.kidsToAdultOn') : t('grading.settings.fee.kidsToAdultOff')}
+                      checked={kidsToAdult}
+                      disabled={!my.isOwner}
+                      onChange={(v) => {
+                        setKidsToAdult(v);
+                        setAbout('fee');
+                      }}
+                    />
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                       <div style={{ flex: 1 }}>
                         <Switch

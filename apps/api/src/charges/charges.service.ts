@@ -1191,13 +1191,25 @@ export class ChargesService {
     if (ids.length === 0) return out;
     const requests = await this.prismaJobs.promotionFeeRequest.findMany({
       where: { id: { in: ids } },
-      select: { id: true, disciplineId: true, toRungName: true, status: true, discipline: { select: { name: true } } },
+      select: {
+        id: true, disciplineId: true, toDisciplineId: true, promotionEventId: true, toRungName: true, status: true,
+        discipline: { select: { name: true } }, toDiscipline: { select: { name: true } },
+      },
     });
     const byId = new Map(requests.map((r) => [r.id, r]));
     for (const c of rows) {
       const r = c.promotionFeeRequestId ? byId.get(c.promotionFeeRequestId) : undefined;
       if (!r) continue;
-      out.set(c.id, { requestId: r.id, disciplineId: r.disciplineId, disciplineName: r.discipline.name, toRungName: r.toRungName, status: r.status });
+      // A move into the Adult program (Decision 419 item 2): the fee is for an
+      // Adult rank, so it is named with the Adult style; it links to the style
+      // the student's rank is in (Kids until the move applies).
+      out.set(c.id, {
+        requestId: r.id,
+        disciplineId: r.toDisciplineId && r.promotionEventId ? r.toDisciplineId : r.disciplineId,
+        disciplineName: r.toDiscipline?.name ?? r.discipline.name,
+        toRungName: r.toRungName,
+        status: r.status,
+      });
     }
     return out;
   }

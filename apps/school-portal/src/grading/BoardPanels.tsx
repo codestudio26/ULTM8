@@ -9,6 +9,7 @@ import { useSkills } from '../skills/skillQueries';
 import { formatMoney } from '../lib/money';
 import { formatLocale } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
+import { feeRankName } from './feeRank';
 import { eventRankDisplay, historyTypeLabel } from './historyLabels';
 
 export const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
@@ -104,6 +105,7 @@ export function StudentPanel({
   const nextPrice = next?.tier.promotionFeeMinor ?? null;
   const waiting = item.feeStatus === 'waiting';
   const amount = request ? formatMoney(request.amountMinor, request.currency ?? fee?.currency ?? null) : '';
+  const rank = request ? feeRankName(request, t) : '';
 
   async function closeFee(action: 'waive' | 'cancel') {
     if (!request) return;
@@ -143,16 +145,16 @@ export function StudentPanel({
             <FeeTag item={item} />
             <p style={{ margin: '8px 0 4px', fontWeight: 600 }}>
               {item.feeStatus === 'toDecide'
-                ? t('grading.board.fee.noFeeFor', { rank: request.toRungName })
-                : t('grading.board.fee.amountFor', { amount, rank: request.toRungName })}
+                ? t('grading.board.fee.noFeeFor', { rank })
+                : t('grading.board.fee.amountFor', { amount, rank })}
             </p>
             <p className="ultm8-field__hint" style={{ margin: 0 }}>
               {item.feeStatus === 'blocked'
-                ? t('grading.board.fee.blockedText', { name: item.firstName, rank: request.toRungName })
+                ? t('grading.board.fee.blockedText', { name: item.firstName, rank })
                 : item.feeStatus === 'waiting'
-                ? t('grading.board.fee.waitingText', { name: item.firstName, rank: request.toRungName })
+                ? t('grading.board.fee.waitingText', { name: item.firstName, rank })
                 : item.feeStatus === 'declined'
-                  ? t('grading.board.fee.declinedText', { name: item.firstName, rank: request.toRungName })
+                  ? t('grading.board.fee.declinedText', { name: item.firstName, rank })
                   : t('grading.board.fee.toDecideText', { name: item.firstName })}
             </p>
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
@@ -170,7 +172,7 @@ export function StudentPanel({
               ) : null}
               {item.feeStatus === 'toDecide' && canPromote ? (
                 <>
-                  <Button onClick={() => onPromote(request.toRungId)}>{t('grading.board.fee.promoteTo', { rank: request.toRungName })}</Button>
+                  <Button onClick={() => onPromote(request.toRungId)}>{t('grading.board.fee.promoteTo', { rank })}</Button>
                   <Button variant="secondary" onClick={() => dismiss.mutate(request.id)} loading={dismiss.isPending}>
                     {t('grading.board.fee.dontPromote')}
                   </Button>

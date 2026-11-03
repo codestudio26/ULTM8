@@ -66,6 +66,10 @@ export const grading = {
     gradedSelf: 'You were graded to {rank}',
     /** Shown to a guardian: {name} is their child. */
     gradedChild: '{name} was graded to {rank}',
+    /** Decision 419 item 2: the fee is for a move from the Kids program into the Adult program, at {rank}. */
+    gradedSelfAdult: 'You were graded into the Adult program, to {rank}',
+    /** Shown to a guardian: {name} is their child, moved into the Adult program at {rank}. */
+    gradedChildAdult: '{name} was graded into the Adult program, to {rank}',
     /** {style} at {school}, then the fee amount. */
     styleAtSchoolAmount: '{style} at {school} · {amount}',
     /** {place} is the style or the School, then the fee amount. */
