@@ -699,9 +699,12 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
   });
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // Shown under the field itself, not in the banner at the top.
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
+    setFieldErrors((errs) => ({ ...errs, [key]: undefined }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -718,6 +721,16 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
       footerTwitterUrl: withHttps(form.footerTwitterUrl),
     };
     setForm((f) => ({ ...f, ...links }));
+    // The same checks the API makes (a full web address; an email with an @ and a
+    // domain), so a mistake is pointed out under its own field before saving.
+    const errs: Partial<Record<keyof typeof form, string>> = {};
+    for (const [key, url] of Object.entries(links) as Array<[keyof typeof links, string]>) {
+      if (url && !isWebAddress(url)) errs[key] = t('schools.footerSettings.invalidUrl');
+    }
+    const email = form.footerContactEmail.trim();
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errs.footerContactEmail = t('schools.footerSettings.invalidEmail');
+    setFieldErrors(errs);
+    if (Object.keys(errs).length > 0) return;
     try {
       await updateFooter.mutateAsync({
         footerAboutUs: form.footerAboutUs.trim() || null,
@@ -749,25 +762,25 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
         <Field label={t('schools.footerSettings.aboutUs')} htmlFor="footer-about">
           <TextArea id="footer-about" rows={3} value={form.footerAboutUs} onChange={(e) => set('footerAboutUs', e.target.value)} />
         </Field>
-        <Field label={t('schools.footerSettings.contactEmail')} htmlFor="footer-email">
+        <Field label={t('schools.footerSettings.contactEmail')} htmlFor="footer-email" error={fieldErrors.footerContactEmail}>
           <TextField id="footer-email" type="email" value={form.footerContactEmail} onChange={(e) => set('footerContactEmail', e.target.value)} />
         </Field>
         <Field label={t('schools.footerSettings.contactPhone')} htmlFor="footer-phone">
           <PhoneField value={form.footerContactPhone} onChange={(v) => set('footerContactPhone', v)} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <Field label={t('schools.footerSettings.facebookUrl')} htmlFor="footer-fb">
+        <Field label={t('schools.footerSettings.facebookUrl')} htmlFor="footer-fb" error={fieldErrors.footerFacebookUrl}>
           <TextField id="footer-fb" value={form.footerFacebookUrl} onChange={(e) => set('footerFacebookUrl', e.target.value)} placeholder="https://facebook.com/..." />
         </Field>
-        <Field label={t('schools.footerSettings.instagramUrl')} htmlFor="footer-ig">
+        <Field label={t('schools.footerSettings.instagramUrl')} htmlFor="footer-ig" error={fieldErrors.footerInstagramUrl}>
           <TextField id="footer-ig" value={form.footerInstagramUrl} onChange={(e) => set('footerInstagramUrl', e.target.value)} placeholder="https://instagram.com/..." />
         </Field>
-        <Field label={t('schools.footerSettings.tiktokUrl')} htmlFor="footer-tt">
+        <Field label={t('schools.footerSettings.tiktokUrl')} htmlFor="footer-tt" error={fieldErrors.footerTiktokUrl}>
           <TextField id="footer-tt" value={form.footerTiktokUrl} onChange={(e) => set('footerTiktokUrl', e.target.value)} placeholder="https://tiktok.com/@..." />
         </Field>
-        <Field label={t('schools.footerSettings.youtubeUrl')} htmlFor="footer-yt">
+        <Field label={t('schools.footerSettings.youtubeUrl')} htmlFor="footer-yt" error={fieldErrors.footerYoutubeUrl}>
           <TextField id="footer-yt" value={form.footerYoutubeUrl} onChange={(e) => set('footerYoutubeUrl', e.target.value)} placeholder="https://youtube.com/@..." />
         </Field>
-        <Field label={t('schools.footerSettings.twitterUrl')} htmlFor="footer-x">
+        <Field label={t('schools.footerSettings.twitterUrl')} htmlFor="footer-x" error={fieldErrors.footerTwitterUrl}>
           <TextField id="footer-x" value={form.footerTwitterUrl} onChange={(e) => set('footerTwitterUrl', e.target.value)} placeholder="https://x.com/..." />
         </Field>
         <div style={{ marginTop: 16 }}>
@@ -778,6 +791,17 @@ function FooterSettingsCard({ schoolId, school }: { schoolId: string; school: Sc
       </form>
     </Card>
   );
+}
+
+/** Whether a link (after withHttps) is a full web address with a real-looking domain. */
+export function isWebAddress(url: string): boolean {
+  if (/\s/.test(url)) return false;
+  try {
+    const parsed = new URL(url);
+    return (parsed.protocol === 'https:' || parsed.protocol === 'http:') && /\.[a-z0-9-]{2,}$/i.test(parsed.hostname);
+  } catch {
+    return false;
+  }
 }
 
 /** A web address typed without its scheme gets https:// in front; blank stays blank. */

@@ -486,6 +486,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       tiktokUrl: "TikTokのURL",
       youtubeUrl: "YouTubeのURL",
       twitterUrl: "X（Twitter）のURL",
+      invalidUrl: "https://facebook.com/yourschool のように、完全なWebアドレスを入力してください。",
+      invalidEmail: "info@yourschool.com のように、有効なメールアドレスを入力してください。",
     },
     franchise: {
       title: "フランチャイズへの加盟",

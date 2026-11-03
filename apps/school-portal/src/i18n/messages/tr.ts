@@ -489,6 +489,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       tiktokUrl: "TikTok URL’si",
       youtubeUrl: "YouTube URL’si",
       twitterUrl: "X (Twitter) URL’si",
+      invalidUrl: "https://facebook.com/yourschool gibi tam bir web adresi girin.",
+      invalidEmail: "info@yourschool.com gibi geçerli bir e-posta adresi girin.",
     },
     franchise: {
       title: "Franchise bağlantısı",

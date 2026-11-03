@@ -486,6 +486,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       tiktokUrl: "TikTok 주소",
       youtubeUrl: "YouTube 주소",
       twitterUrl: "X(Twitter) URL",
+      invalidUrl: "https://facebook.com/yourschool처럼 전체 웹 주소를 입력하세요.",
+      invalidEmail: "info@yourschool.com처럼 올바른 이메일 주소를 입력하세요.",
     },
     franchise: {
       title: "프랜차이즈 가맹",
