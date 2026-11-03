@@ -1,7 +1,9 @@
 /// <reference lib="es2022.intl" />
+import { createHash } from 'crypto';
 import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { inflateSync } from 'zlib';
+import { Logger } from '@nestjs/common';
 import bidiFactory from 'bidi-js';
 import * as fontkit from 'fontkit';
 import PDFDocument from 'pdfkit';
@@ -51,10 +53,45 @@ const FONT_FILES: FontFile[] = [
 ];
 
 /** The CJK font file's SHA-256: the upstream file (notofonts/noto-cjk,
- * Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf). A test checks the installed
- * copy against it, so a changed package is noticed. */
+ * Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf). The package that carries it
+ * comes from a small publisher; only this file is read from it (none of its
+ * code runs), and the file is checked against this hash before it is used. */
 export const CJK_FONT_SHA256 = '68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5';
-export const cjkFontPath = () => FONT_FILES[FONT_FILES.length - 1].file();
+const CJK = FONT_FILES.length - 1;
+export const cjkFontPath = () => FONT_FILES[CJK].file();
+
+/** The installed CJK font isn't the upstream file, so it isn't used. */
+export class CjkFontRejectedError extends Error {
+  constructor(actual: string) {
+    super(
+      `The CJK font at ${cjkFontPath()} has SHA-256 ${actual}, not the expected ${CJK_FONT_SHA256}; it was not used. ` +
+        'Reinstall @docx-editor.dev/fonts-cjk at the pinned version.',
+    );
+    this.name = 'CjkFontRejectedError';
+  }
+}
+
+const logger = new Logger('SignedDocumentPdf');
+
+/**
+ * The font file's bytes, checked first for the CJK font: a file that isn't
+ * the upstream one is refused, with an error logged once, and every PDF that
+ * needs it then fails (the export fails with that error) rather than being
+ * written with Japanese, Chinese or Korean text missing. PDFs that need no
+ * CJK font are not affected.
+ */
+function fontBytes(i: number): Buffer {
+  const bytes = readFileSync(FONT_FILES[i].file());
+  if (i === CJK) {
+    const actual = createHash('sha256').update(bytes).digest('hex');
+    if (actual !== CJK_FONT_SHA256) {
+      const err = new CjkFontRejectedError(actual);
+      logger.error(err.message);
+      throw err;
+    }
+  }
+  return bytes;
+}
 
 /**
  * A WOFF font as the plain OpenType file it wraps, each table inflated once.
@@ -94,10 +131,19 @@ export function woffToSfnt(woff: Buffer): Buffer {
 }
 
 const loaded: Array<fontkit.Font | undefined> = [];
+/** A font refused when it was first read (the CJK font, see fontBytes): kept,
+ * so the file is read and hashed only once. */
+let refused: Error | null = null;
 function fontAt(i: number): fontkit.Font {
   let font = loaded[i];
   if (!font) {
-    font = fontkit.create(woffToSfnt(readFileSync(FONT_FILES[i].file()))) as fontkit.Font;
+    if (i === CJK && refused) throw refused;
+    try {
+      font = fontkit.create(woffToSfnt(fontBytes(i))) as fontkit.Font;
+    } catch (err) {
+      if (i === CJK && err instanceof CjkFontRejectedError) refused = err;
+      throw err;
+    }
     loaded[i] = font;
   }
   return font;

@@ -317,7 +317,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   fonts, in every one of the 15 languages: Arabic right to left and joined,
   with numbers and Latin words in it the right way round, and Japanese,
   Chinese, Korean and Thai broken into lines between words. An image that
-  can't be read is reported as missing rather than failing the export. Made
+  can't be read is reported as missing rather than failing the export. The
+  Japanese/Chinese/Korean font file is checked against the upstream file's
+  SHA-256 when it is first loaded; if it doesn't match it is not used, an
+  error is logged, and an export that needs it fails (exports with no CJK
+  text are unaffected) rather than writing documents with text missing. Made
   with pdfkit in the export job, one PDF at a time into the ZIP; the 2 GB
   limit and 24-hour deletion are unchanged. The export dialog's description
   now says "a PDF for each signature" (15 languages). No API or database
