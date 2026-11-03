@@ -281,7 +281,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   /schools/{schoolId}/signed-documents/exports` takes `includeMemberFiles`;
   `SignedDocumentExportDto` gains `includeMemberFiles` and `memberFileCount`.
   15 languages. **Needs a database migration**
-  (`20270207000000_export_member_files`).
+  (`20270208000000_export_member_files`).
 - **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
   its own list of tags, managed under **School settings → Student tags** (add,
   rename, delete; deleting a tag takes it off every student). A **Tags** card
