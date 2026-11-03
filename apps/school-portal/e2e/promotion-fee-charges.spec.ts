@@ -5,8 +5,9 @@ import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fi
 /**
  * Paying a promotion fee as a charge (v1.3 backlog §3.6 step 6; Decision 303
  * item 5), the owner's side: an accepted fee's charge on the student's
- * Payments card ("Promotion fee", the style and grade, a link to grading, and
- * no Cancel: it is waived or cancelled from grading), the style's fee list in
+ * Payments card ("Promotion fee", the style and grade, a link to grading, no
+ * plain Cancel, and Waive fee / Cancel fee for the fee itself, Decision 421
+ * item 1), the style's fee list in
  * grading with the invoice, waiving the fee from grading, which cancels the
  * charge, and a fee paid after the student's rank changed (its promotion
  * can't apply, Decision 414 item 1): shown as such, grading not held up, and
@@ -88,15 +89,20 @@ test.afterAll(async () => {
   await cleanup();
 });
 
-test('the Payments card labels the charge a promotion fee, links it to grading, and offers no Cancel', async ({ page }) => {
+test('the Payments card labels the charge a promotion fee, links it to grading, and offers Waive fee / Cancel fee instead of Cancel', async ({ page }) => {
   await page.goto(`/students/${s.student.id}`);
   const card = page.getByTestId('student-charges');
   await expect(card.getByText('Owes 18.00 GBP')).toBeVisible();
   const row = page.getByRole('row', { name: /^#0000001 Promotion fee/ });
   await expect(row).toContainText('Promotion fee');
   await expect(row).toContainText('BJJ · White 2');
-  await expect(row.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
-  await expect(row).toContainText('Waive or cancel it in grading');
+  // The charge's own Cancel never shows: the fee is waived or cancelled, which
+  // cancels the charge. Decision 421 item 1: the owner (or staff with "Can
+  // cancel charges") does that here too, as in grading.
+  await expect(row.getByRole('button', { name: 'Cancel', exact: true })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: 'Waive fee', exact: true })).toBeVisible();
+  await expect(row.getByRole('button', { name: 'Cancel fee', exact: true })).toBeVisible();
+  await expect(row).not.toContainText('Waive or cancel it in grading');
   await expect(row.getByTestId('promotion-fee-grading-link')).toHaveAttribute('href', `#grading-${s.disciplineId}`);
 
   const fees = page.getByTestId('promotion-fee-list');
