@@ -100,8 +100,8 @@ export class PromotionFeeService {
   /** Owner only (Decision 297); anyone else gets 403. */
   async updateSettings(callerId: string, schoolId: string, dto: UpdatePromotionFeeSettingsDto) {
     this.assertUuid(schoolId, 'schoolId');
-    if (dto.promotionFeeEnabled === undefined && dto.gradeBeforeFeePaid === undefined) {
-      throw new BadRequestException('Send promotionFeeEnabled, gradeBeforeFeePaid, or both.');
+    if (dto.promotionFeeEnabled === undefined && dto.gradeBeforeFeePaid === undefined && dto.kidsToAdultFeeEnabled === undefined) {
+      throw new BadRequestException('Send promotionFeeEnabled, gradeBeforeFeePaid, kidsToAdultFeeEnabled, or any of them together.');
     }
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
@@ -111,6 +111,7 @@ export class PromotionFeeService {
         data: {
           ...(dto.promotionFeeEnabled !== undefined ? { promotionFeeEnabled: dto.promotionFeeEnabled } : {}),
           ...(dto.gradeBeforeFeePaid !== undefined ? { promotionFeeGradeBeforePaid: dto.gradeBeforeFeePaid } : {}),
+          ...(dto.kidsToAdultFeeEnabled !== undefined ? { promotionFeeKidsToAdult: dto.kidsToAdultFeeEnabled } : {}),
         },
       }),
     );
@@ -119,10 +120,15 @@ export class PromotionFeeService {
 
   private async readSettings(callerId: string, schoolId: string) {
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.findUnique({ where: { id: schoolId }, select: { promotionFeeEnabled: true, promotionFeeGradeBeforePaid: true, defaultCurrency: true } }),
+      tx.school.findUnique({ where: { id: schoolId }, select: { promotionFeeEnabled: true, promotionFeeGradeBeforePaid: true, promotionFeeKidsToAdult: true, defaultCurrency: true } }),
     );
     if (!school) throw new NotFoundException('School not found');
-    return { promotionFeeEnabled: school.promotionFeeEnabled, gradeBeforeFeePaid: school.promotionFeeGradeBeforePaid, currency: school.defaultCurrency };
+    return {
+      promotionFeeEnabled: school.promotionFeeEnabled,
+      gradeBeforeFeePaid: school.promotionFeeGradeBeforePaid,
+      kidsToAdultFeeEnabled: school.promotionFeeKidsToAdult,
+      currency: school.defaultCurrency,
+    };
   }
 
   // ---------------------------------------------------------------------------

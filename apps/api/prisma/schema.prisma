@@ -1136,6 +1136,11 @@ model School {
   /// waits until the fee is paid or waived.
   promotionFeeEnabled         Boolean @default(false)
   promotionFeeGradeBeforePaid Boolean @default(false)
+  /// Decision 420 item 3: "Charge a fee when moving a student from Kids to
+  /// Adult", owner only, off by default, and only in effect while
+  /// promotionFeeEnabled is on. Off: the move into the Adult program is always
+  /// free; on: it is charged like any promotion (Decision 419 item 2).
+  promotionFeeKidsToAdult     Boolean @default(false)
 
   classCancellationPolicy        ClassCancellationPolicy         @default(MANUAL)
   /// Decision 291 — the rest of the owner's "Class cancellations" settings. See

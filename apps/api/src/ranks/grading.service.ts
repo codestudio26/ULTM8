@@ -1004,11 +1004,23 @@ export class GradingService {
    * grade takes the fee rules like any other grade.
    *
    * A move into the linked Adult program (Decision 419 item 2) comes here too,
-   * with the Kids style as `disciplineId` and an Adult rank as `to`: the fee is
-   * that Adult rank's own price, and a promotion waiting for its fee in the
-   * Kids style holds the move as it holds any grade (Decision 314 item 3).
+   * with the Kids style as `disciplineId` and an Adult rank as `to`
+   * (`kidsToAdult`): the fee is that Adult rank's own price, only while the
+   * School's "Charge a fee when moving a student from Kids to Adult" switch is
+   * on (Decision 420 item 3), and a promotion waiting for its fee in the Kids
+   * style holds the move as it holds any grade (Decision 314 item 3), switch
+   * or not.
    */
-  private async feeForGrade(tx: TenantTx, callerId: string, schoolId: string, studentId: string, disciplineId: string, fromRungId: string, to: Rung) {
+  private async feeForGrade(
+    tx: TenantTx,
+    callerId: string,
+    schoolId: string,
+    studentId: string,
+    disciplineId: string,
+    fromRungId: string,
+    to: Rung,
+    opts: { kidsToAdult?: boolean } = {},
+  ) {
     const open = await tx.promotionFeeRequest.findMany({
       where: {
         studentId,
@@ -1036,8 +1048,14 @@ export class GradingService {
       if (resolved.count === 0) throw new ConflictException('This promotion was decided at the same time — reload and try again.');
       return null;
     }
-    const school = await tx.school.findUnique({ where: { id: schoolId }, select: { promotionFeeEnabled: true, promotionFeeGradeBeforePaid: true, defaultCurrency: true } });
+    const school = await tx.school.findUnique({
+      where: { id: schoolId },
+      select: { promotionFeeEnabled: true, promotionFeeGradeBeforePaid: true, promotionFeeKidsToAdult: true, defaultCurrency: true },
+    });
     if (!school?.promotionFeeEnabled) return null;
+    // Decision 420 item 3: the move into Adult is charged only while its own
+    // switch is on; off (the default), it is free whatever the rank's price.
+    if (opts.kidsToAdult && !school.promotionFeeKidsToAdult) return null;
     const tier = await tx.rankStripeTier.findUnique({ where: { id: to.id }, select: { promotionFeeMinor: true } });
     if (!tier?.promotionFeeMinor) return null;
     return { amountMinor: tier.promotionFeeMinor, currency: school.defaultCurrency, waitsForFee: !school.promotionFeeGradeBeforePaid };
@@ -1186,7 +1204,8 @@ export class GradingService {
    * Adult ladder's first belt for a student who has reached "Ready for Adult
    * from age" (backlog 3.20, Decisions 285, 397): they move to the Adult style
    * as the single move does, charged like any promotion at that Adult rank's
-   * own price (Decision 419 item 2). `dryRun` returns the same three lists without changing
+   * own price while the Kids → Adult fee switch is on (Decisions 419 item 2,
+   * 420 item 3). `dryRun` returns the same three lists without changing
    * anything, for the confirm window. Each student is promoted in their own
    * transaction, so one student changed at the same time is skipped, not the
    * whole batch.
@@ -1787,7 +1806,8 @@ export class GradingService {
    * again from zero. Recorded as a promotion, "Moved to Adult program."
    *
    * Charged like any other promotion (Decision 419 item 2): with the School's
-   * promotion fee on, the Adult rank's own price is asked for; with "Allow
+   * promotion fee and its "Charge a fee when moving a student from Kids to
+   * Adult" switch on (Decision 420 item 3), the Adult rank's own price is asked for; with "Allow
    * grading before the fee is paid" off the move waits for it ("Waiting for
    * fee"), and while a promotion waits for its fee in the Kids style the move
    * is refused, as any other grade is (Decision 314 item 3).
@@ -1927,7 +1947,7 @@ export class GradingService {
       // price (Decision 419 item 2), through the same steps as changeRung.
       // feeForGrade also refuses the move while a promotion waits for its fee
       // in the Kids style (Decision 314 item 3).
-      const fee = applying ? null : await this.feeForGrade(tx, callerId, kids.schoolId, studentId, disciplineId, from.id, to);
+      const fee = applying ? null : await this.feeForGrade(tx, callerId, kids.schoolId, studentId, disciplineId, from.id, to, { kidsToAdult: true });
       if (fee?.waitsForFee) {
         // "Allow grading before the fee is paid" off: nothing moves yet; the
         // move is kept and applied once the fee is paid or waived.

@@ -310,8 +310,11 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
     const bulk = (who: string, body: object) => as(who).post(`/v1/schools/${school.id}/grading/bulk-promote`).send({ disciplineId: kids.id, ...body });
     const rankOf = (student: string) => superuser.studentRank.findFirstOrThrow({ where: { studentId: id[student] } });
     const requestsOf = (student: string) => superuser.promotionFeeRequest.findMany({ where: { studentId: id[student] }, orderBy: { createdAt: 'asc' } });
-    const setFee = (promotionFeeEnabled: boolean, promotionFeeGradeBeforePaid = false) =>
-      superuser.school.update({ where: { id: school.id }, data: { promotionFeeEnabled, promotionFeeGradeBeforePaid } });
+    // The Kids → Adult switch (Decision 420 item 3) is on unless a case says otherwise.
+    const setFee = (promotionFeeEnabled: boolean, promotionFeeGradeBeforePaid = false, promotionFeeKidsToAdult = true) =>
+      superuser.school.update({ where: { id: school.id }, data: { promotionFeeEnabled, promotionFeeGradeBeforePaid, promotionFeeKidsToAdult } });
+    const settings = (who: string) => as(who).get(`/v1/schools/${school.id}/promotion-fee-settings`);
+    const putSettings = (who: string, body: object) => as(who).put(`/v1/schools/${school.id}/promotion-fee-settings`).send(body);
     const cardOf = async (disciplineId: string, student: string) =>
       ((await board('owner', disciplineId)).body.items as Array<{ studentId: string; feeStatus: string | null; feeRequest: Record<string, unknown> | null }>).find(
         (i) => i.studentId === id[student],
@@ -351,6 +354,42 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
       expect(res.body.feeRequest).toBeNull();
       expect(await rankOf('Hugo')).toMatchObject({ disciplineId: adult.id, currentStripeId: rung.Blue.id });
       expect(await requestsOf('Hugo')).toEqual([]);
+    });
+
+    it('the Kids → Adult switch is off by default and only the owner changes it (Decision 420 item 3)', async () => {
+      expect((await settings('owner')).body).toMatchObject({ promotionFeeEnabled: false, kidsToAdultFeeEnabled: false });
+      expect((await putSettings('coach', { kidsToAdultFeeEnabled: true })).status).toBe(403);
+      expect((await putSettings('settingsCoach', { kidsToAdultFeeEnabled: true })).status).toBe(403);
+      expect((await settings('owner')).body.kidsToAdultFeeEnabled).toBe(false);
+      const on = await putSettings('owner', { promotionFeeEnabled: true, kidsToAdultFeeEnabled: true });
+      expect(on.status).toBe(200);
+      expect(on.body).toMatchObject({ promotionFeeEnabled: true, gradeBeforeFeePaid: false, kidsToAdultFeeEnabled: true });
+      // Staff read it, as the other switches.
+      expect((await settings('coach')).body.kidsToAdultFeeEnabled).toBe(true);
+      expect((await putSettings('owner', { kidsToAdultFeeEnabled: false })).body.kidsToAdultFeeEnabled).toBe(false);
+    });
+
+    it('switch off: the move is free even with the fee on and a priced Adult rank, single and bulk', async () => {
+      await setFee(true, false, false);
+      await student('Hal');
+      await student('Hope');
+      const res = await move('coach', 'Hal', { targetRungId: rung.Blue.id });
+      expect(res.status).toBe(201);
+      expect(res.body.promotionEvent).not.toBeNull();
+      expect(res.body.feeRequest).toBeNull();
+      expect(await rankOf('Hal')).toMatchObject({ disciplineId: adult.id, currentStripeId: rung.Blue.id });
+      const batch = await bulk('coach', { studentIds: [id.Hope], targets: [{ studentId: id.Hope, rungId: rung.Blue.id }] });
+      expect(batch.body.waitingForFee).toEqual([]);
+      expect(batch.body.ready).toEqual([expect.objectContaining({ studentId: id.Hope, toAdult: true })]);
+      expect(batch.body.ready[0].feeRequestId).toBeUndefined();
+      expect(await rankOf('Hope')).toMatchObject({ disciplineId: adult.id, currentStripeId: rung.Blue.id });
+      expect([...(await requestsOf('Hal')), ...(await requestsOf('Hope'))]).toEqual([]);
+      // A normal Kids promotion is still charged: the switch is only for the move.
+      await student('Huw');
+      const kidsGrade = await as('coach').post(`/v1/students/${id.Huw}/ranks/${kids.id}/promote`).send({ targetRungId: rung.Green.id });
+      expect(kidsGrade.body.feeRequest).toMatchObject({ amountMinor: 1000, toDisciplineId: null });
+      // And a Kids promotion waiting for its fee still holds the move, switch or not (Decision 314 item 3).
+      expect((await move('coach', 'Huw', { targetRungId: rung.Blue.id })).status).toBe(409);
     });
 
     it('fee on: an unpriced Adult rank is free', async () => {
