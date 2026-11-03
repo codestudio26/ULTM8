@@ -164,6 +164,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return Number.isFinite(n) ? t('server.codes.schoolCurrencyInUse', { count: n }) : null;
     }
     // Currency first (Decision 414 item 6), from any form that sets a price.
+    // Decision 423 item 10: only the main owner adds or removes people.
+    case 'MAIN_OWNER_ONLY':
+      return t('server.codes.mainOwnerOnly');
     case 'SCHOOL_CURRENCY_REQUIRED':
       return t('server.codes.schoolCurrencyRequired');
     default:

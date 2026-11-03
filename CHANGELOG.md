@@ -701,6 +701,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   first" setting and open mat permission), newest first, with who did it and
   when, and a filter by person. Owners and co-owners only; it starts from
   deploy day.
+- **Only the main owner adds or removes people** (Decision 423 item 10) —
+  at a School, only its main owner can now give or remove a co-owner, coach
+  or Branch Staff role, add staff or instructors manually, send or cancel
+  invites, pause, unpause, Remove from School, or move staff roles when
+  closing a Branch. Co-owners, Branch Staff and coaches get a 403 from the API
+  and, in the portal, a short note ("Only the account's main owner can add or
+  remove people") in place of those controls, in every language. Co-owners
+  keep everything else (Access, Edit details, the invite list read only).
+  The Branch Staff switch "Invite coaches" is gone from the Access window,
+  its presets and the API; the "Invite coaches" page for staff now shows the
+  note. Open invites that co-owners or Branch Staff had sent are cancelled.
+  Students and Guardians still join by themselves, and any owner can still
+  end a student's enrolment. **Needs a database migration**
+  (`20270213000000_main_owner_grants_roles`, drops
+  `StaffPermission.canInviteCoaches`).
 - **Freezing a membership** (backlog 3.4; Decision 404) — the owner can freeze
   a Subscription, Weekly Pass or Trial straight away with a **Freeze** button on
   the student's Memberships card, and approve or decline the freezes members

@@ -176,7 +176,7 @@ describeIfDb('Staff list, Remove from School and instant role changes (Decision 
       await grant(person.id, 'INSTRUCTOR', school.id, north.id);
       await grant(person.id, 'BRANCH_STAFF', school.id, south.id);
       await grant(person.id, 'STUDENT', school.id);
-      await superuser.staffPermission.create({ data: { id: randomUUID(), userId: person.id, schoolId: school.id, canInviteCoaches: true } });
+      await superuser.staffPermission.create({ data: { id: randomUUID(), userId: person.id, schoolId: school.id, canSeeStaffList: true } });
 
       const res = await as(ownerToken).post(`/v1/schools/${school.id}/staff/${person.id}/remove`);
       expect(res.status).toBe(201);
@@ -184,7 +184,7 @@ describeIfDb('Staff list, Remove from School and instant role changes (Decision 
 
       const live = await superuser.roleGrant.findMany({ where: { userId: person.id, revokedAt: null }, select: { role: true } });
       expect(live).toEqual([{ role: 'STUDENT' }]);
-      expect((await superuser.staffPermission.findFirstOrThrow({ where: { userId: person.id } })).canInviteCoaches).toBe(false);
+      expect((await superuser.staffPermission.findFirstOrThrow({ where: { userId: person.id } })).canSeeStaffList).toBe(false);
 
       const removed = await as(ownerToken).get(`/v1/schools/${school.id}/staff`).query({ status: 'removed' });
       expect(removed.body.items.map((i: { userId: string }) => i.userId)).toContain(person.id);

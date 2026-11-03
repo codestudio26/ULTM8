@@ -4,7 +4,7 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaPlatformAdminService } from '../common/prisma/prisma-platform-admin.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { RolesChangedService } from '../common/prisma/roles-changed.service';
-import { mainOwnerGrant } from '../tenants/role-grants/role-grants.service';
+import { mainOwnerGrant } from '../tenants/tenant-authorization.service';
 import { AuditLogService, AuditAction } from './audit-log.service';
 import { ChangeSchoolMainOwnerDto } from './dto/school-owners.dto';
 

@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "Piani addebitati nella valuta della scuola: {count}. Dai a questi piani una valuta propria prima di cancellarla.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Imposta la valuta della tua scuola nella pagina della scuola prima di impostare i prezzi.",
+    mainOwnerOnly: "Solo il proprietario principale dell'account può aggiungere o rimuovere persone.",
   },
   errors: {
     beltInHistoryDelete: "Questa cintura è nello storico dei gradi degli allievi, quindi non può essere eliminata.",

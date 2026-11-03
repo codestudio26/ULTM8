@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "按学校货币收费的会员计划：{count} 个。清空货币前，请先为这些计划设置各自的货币。",
     // Decision 414 item 6.
     schoolCurrencyRequired: "设置价格前，请先在学校页面设置学校的货币。",
+    mainOwnerOnly: "只有账户的主要所有者才能添加或移除人员。",
   },
   errors: {
     beltInHistoryDelete: "此腰带存在于学员的晋级记录中，因此无法删除。",

@@ -1,8 +1,8 @@
 /**
- * Coach invites and "Can invite coaches" (Decision 183): one person, by email,
- * single use, 7 days, cancellable; accepting adds the coach role and keeps the
- * student role; the owner, or Branch Staff given the permission for their own
- * branches, can invite. Real HTTP, real Postgres RLS.
+ * Coach invites (Decision 183): one person, by email, single use, 7 days,
+ * cancellable; accepting adds the coach role and keeps the student role. Only
+ * the School's main owner invites or cancels (Decision 423 item 10; "Can
+ * invite coaches" is gone). Real HTTP, real Postgres RLS.
  */
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -119,11 +119,11 @@ describeIfDb('Coach invites (Decision 183)', () => {
     await mkUser('hire2');
     await superuser.roleGrant.createMany({
       data: [
-        { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.owner.id, schoolId: school.id },
+        { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.owner.id, schoolId: school.id, isMainOwner: true },
         { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.staff.id, schoolId: school.id, branchId: north.id },
         { id: randomUUID(), role: 'INSTRUCTOR', userId: user.coach.id, schoolId: school.id, branchId: north.id },
         { id: randomUUID(), role: 'STUDENT', userId: user.student.id, schoolId: school.id },
-        { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.otherOwner.id, schoolId: other.id },
+        { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.otherOwner.id, schoolId: other.id, isMainOwner: true },
         { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.owner2.id, schoolId: school.id },
       ],
     });
@@ -251,55 +251,57 @@ describeIfDb('Coach invites (Decision 183)', () => {
     expect(res.body).toMatchObject({ status: 'PENDING', emailSent: false });
   });
 
-  it('staff need "Can invite coaches", and then only for their own branches', async () => {
+  it('only the main owner invites or cancels: a co-owner, Branch Staff and a coach get 403 (Decision 423 item 10)', async () => {
+    const open = await invite('owner', { email: `by-main-${randomUUID()}@example.test`, branchId: north.id });
+    expect(open.status).toBe(201);
+    const before = await superuser.coachInvite.count({ where: { schoolId: school.id } });
+    for (const who of ['owner2', 'staff', 'coach']) {
+      const sentBy = await invite(who, { email: `by-${who}@example.test`, branchId: north.id });
+      expect(sentBy.status).toBe(403);
+      expect(sentBy.body.error.code).toBe('MAIN_OWNER_ONLY');
+      const cancelledBy = await as(who).post(`/v1/coach-invites/${open.body.id}/cancel`);
+      expect(cancelledBy.status).toBe(403);
+      expect(cancelledBy.body.error.code).toBe('MAIN_OWNER_ONLY');
+    }
+    expect(await superuser.coachInvite.count({ where: { schoolId: school.id } })).toBe(before);
+    expect((await superuser.coachInvite.findUniqueOrThrow({ where: { id: open.body.id } })).cancelledAt).toBeNull();
+
+    // Branch Staff with every access switch on are no different: the switch
+    // "Can invite coaches" is gone.
+    await superuser.staffPermission.upsert({
+      where: { schoolId_userId: { schoolId: school.id, userId: user.staff.id } },
+      create: { id: randomUUID(), schoolId: school.id, userId: user.staff.id, canSeeStaffList: true, canManageClasses: true },
+      update: { canSeeStaffList: true, canManageClasses: true },
+    });
     expect((await invite('staff', { email: 'by-staff@example.test', branchId: north.id })).status).toBe(403);
+    const oldSwitch = await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${user.staff.id}`).send({ canInviteCoaches: true });
+    expect(oldSwitch.status).toBe(400);
+
+    // Co-owners still see the list, read only; staff and coaches don't.
+    expect((await as('owner2').get(`/v1/schools/${school.id}/coach-invites`)).status).toBe(200);
     expect((await as('staff').get(`/v1/schools/${school.id}/coach-invites`)).status).toBe(403);
+    expect((await as('coach').get(`/v1/schools/${school.id}/coach-invites`)).status).toBe(403);
 
-    // Only the owner sets it, and only for Branch Staff (no coach may invite coaches).
-    expect((await as('staff').put(`/v1/schools/${school.id}/staff-permissions/${user.staff.id}`).send({ canInviteCoaches: true })).status).toBe(403);
-    const forCoach = await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${user.coach.id}`).send({ canInviteCoaches: true });
-    expect(forCoach.status).toBe(400);
-    const given = await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${user.staff.id}`).send({ canInviteCoaches: true });
-    expect(given.status).toBe(200);
-    expect(given.body).toMatchObject({ userId: user.staff.id, branchIds: [north.id], canInviteCoaches: true });
-    const perms = await as('owner').get(`/v1/schools/${school.id}/staff-permissions`);
-    expect(perms.body.items).toEqual([expect.objectContaining({ userId: user.staff.id, firstName: 'staff', canInviteCoaches: true })]);
-
-    const own = await invite('staff', { email: 'by-staff@example.test', branchId: north.id });
-    expect(own.status).toBe(201);
-    const elsewhere = await invite('staff', { email: 'by-staff@example.test', branchId: south.id });
-    expect(elsewhere.status).toBe(403);
-    expect(elsewhere.body.error.message).toContain('your own branches');
-
-    // Staff see and cancel only their own branches' invites.
-    const seen = (await as('staff').get(`/v1/schools/${school.id}/coach-invites`)).body.items as Array<{ branchId: string }>;
-    expect(seen.length).toBeGreaterThan(0);
-    expect(seen.every((i) => i.branchId === north.id)).toBe(true);
-    const southInvite = await superuser.coachInvite.findFirstOrThrow({ where: { branchId: south.id, acceptedAt: null, cancelledAt: null } });
-    expect((await as('staff').post(`/v1/coach-invites/${southInvite.id}/cancel`)).status).toBe(404);
-    expect((await as('staff').post(`/v1/coach-invites/${own.body.id}/cancel`)).status).toBe(201);
-
-    // Taking the permission away stops them.
-    await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${user.staff.id}`).send({ canInviteCoaches: false });
-    expect((await invite('staff', { email: 'again@example.test', branchId: north.id })).status).toBe(403);
+    expect((await as('owner').post(`/v1/coach-invites/${open.body.id}/cancel`)).status).toBe(201);
   });
 
-  it('coaches and students can\'t invite; another School\'s owner can\'t see or cancel', async () => {
+  it('coaches and students can\'t invite; another School\'s main owner can\'t see or cancel', async () => {
     expect((await invite('coach', { email: 'x@example.test', branchId: north.id })).status).toBe(403);
     expect((await invite('student', { email: 'x@example.test', branchId: north.id })).status).toBe(403);
     expect((await invite('otherOwner', { email: 'x@example.test', branchId: north.id })).status).toBe(404);
     expect((await as('otherOwner').get(`/v1/schools/${school.id}/coach-invites`)).status).toBe(403);
-    const mine = await superuser.coachInvite.findFirstOrThrow({ where: { schoolId: school.id } });
+    const mine = await superuser.coachInvite.findFirstOrThrow({ where: { schoolId: school.id, acceptedAt: null, cancelledAt: null } });
+    // Outside the School, the invite stays invisible (404, as RLS answered before).
     expect((await as('otherOwner').post(`/v1/coach-invites/${mine.id}/cancel`)).status).toBe(404);
+    expect((await superuser.coachInvite.findUniqueOrThrow({ where: { id: mine.id } })).cancelledAt).toBeNull();
     expect((await as('otherOwner').get(`/v1/schools/${school.id}/staff-permissions`)).status).toBe(403);
   });
 
-  it('each person can read their own invite rights (for the portal)', async () => {
+  it('each person can read their own staff permission (for the portal)', async () => {
     const mine = (who: string) => as(who).get(`/v1/schools/${school.id}/staff-permissions/me`);
-    expect((await mine('owner')).body).toEqual({ isOwner: true, canInviteCoaches: true, canManageDisciplines: true, branchIds: [] });
-    expect((await mine('coach')).body).toEqual({ isOwner: false, canInviteCoaches: false, canManageDisciplines: false, branchIds: [] });
-    await superuser.staffPermission.update({ where: { schoolId_userId: { schoolId: school.id, userId: user.staff.id } }, data: { canInviteCoaches: true } });
-    expect((await mine('staff')).body).toEqual({ isOwner: false, canInviteCoaches: true, canManageDisciplines: false, branchIds: [north.id] });
+    expect((await mine('owner')).body).toEqual({ isOwner: true, canManageDisciplines: true });
+    expect((await mine('coach')).body).toEqual({ isOwner: false, canManageDisciplines: false });
+    expect((await mine('staff')).body).toEqual({ isOwner: false, canManageDisciplines: false });
     // A plain student (not the one who accepted an invite above).
     const pupil = await mkUser('pupil');
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: pupil.id, schoolId: school.id } });
@@ -342,10 +344,21 @@ describeIfDb('Coach invites (Decision 183)', () => {
 
   describe('"New staff must accept first" (Decision 396)', () => {
     const settings = () => `/v1/schools/${school.id}/staff/settings`;
-    const giveRole = (userId: string, body: object) => as('owner').post(`/v1/users/${userId}/role-grants`).send({ schoolId: school.id, ...body });
+    // owner2 is the main owner for these tests (sending invites is limited
+    // per account, 20 an hour), so "owner" is a co-owner meanwhile.
+    const giveRole = (userId: string, body: object) => as('owner2').post(`/v1/users/${userId}/role-grants`).send({ schoolId: school.id, ...body });
+    const setMain = async (label: string) => {
+      await superuser.roleGrant.updateMany({ where: { schoolId: school.id, role: 'SCHOOL_OWNER_MANAGER' }, data: { isMainOwner: false } });
+      await superuser.roleGrant.updateMany({ where: { schoolId: school.id, role: 'SCHOOL_OWNER_MANAGER', userId: user[label].id, revokedAt: null }, data: { isMainOwner: true } });
+    };
+
+    beforeAll(async () => {
+      await setMain('owner2');
+    });
 
     afterAll(async () => {
       await superuser.school.update({ where: { id: school.id }, data: { staffMustAcceptFirst: false } });
+      await setMain('owner');
     });
 
     it('is off by default; only the owner reads or changes it', async () => {
@@ -395,25 +408,20 @@ describeIfDb('Coach invites (Decision 183)', () => {
       await superuser.coachInvite.update({ where: { id: coachInvite.body.id }, data: { cancelledAt: new Date() } });
     });
 
-    it('staff with "Can invite coaches" can\'t send, see or cancel a Branch Staff invite', async () => {
-      await superuser.staffPermission.upsert({
-        where: { schoolId_userId: { schoolId: school.id, userId: user.staff.id } },
-        create: { id: randomUUID(), schoolId: school.id, userId: user.staff.id, canInviteCoaches: true },
-        update: { canInviteCoaches: true },
-      });
+    it('Branch Staff and a co-owner can\'t send or cancel a Branch Staff invite, and staff can\'t see one (Decision 423 item 10)', async () => {
       const refused = await invite('staff', { email: user.hire2.email, role: 'BRANCH_STAFF', branchId: north.id });
       expect(refused.status).toBe(403);
-      expect(refused.body.error.message).toBe('Only the School owner can invite Branch Staff.');
+      expect(refused.body.error.code).toBe('MAIN_OWNER_ONLY');
+      expect((await invite('owner', { email: user.hire2.email, role: 'BRANCH_STAFF', branchId: north.id })).status).toBe(403);
       const mine = await invite('owner2', { email: user.hire2.email, role: 'BRANCH_STAFF', branchId: north.id });
       expect(mine.status).toBe(201);
-      const seen = (await as('staff').get(`/v1/schools/${school.id}/coach-invites`)).body.items as Array<{ id: string; role: string }>;
-      expect(seen.length).toBeGreaterThan(0);
-      expect(seen.every((i) => i.role === 'INSTRUCTOR')).toBe(true);
-      expect((await as('staff').post(`/v1/coach-invites/${mine.body.id}/cancel`)).status).toBe(404);
-      expect((await as('owner').post(`/v1/coach-invites/${mine.body.id}/cancel`)).status).toBe(201);
+      expect((await as('staff').get(`/v1/schools/${school.id}/coach-invites`)).status).toBe(403);
+      expect((await as('staff').post(`/v1/coach-invites/${mine.body.id}/cancel`)).status).toBe(403);
+      expect((await as('owner').post(`/v1/coach-invites/${mine.body.id}/cancel`)).status).toBe(403);
+      expect((await as('owner2').post(`/v1/coach-invites/${mine.body.id}/cancel`)).status).toBe(201);
     });
 
-    it('a Branch Staff invite from a coach-inviting staff member would not count: only an owner\'s does', async () => {
+    it('a Branch Staff invite from a staff member would not count: only an owner\'s does', async () => {
       // Written straight to the table: the API never lets staff send one.
       const raw = 'x'.repeat(43);
       await superuser.coachInvite.create({

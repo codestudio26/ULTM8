@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "Okulun para birimiyle ücretlendirilen üyelik planları: {count}. Temizlemeden önce bu planlara kendi para birimlerini verin.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Fiyat belirlemeden önce Okul sayfasından okulunuzun para birimini ayarlayın.",
+    mainOwnerOnly: "Yalnızca hesabın ana sahibi kişi ekleyebilir veya kaldırabilir.",
   },
   errors: {
     beltInHistoryDelete: "Bu kuşak öğrencilerin derece geçmişinde yer aldığı için silinemez.",

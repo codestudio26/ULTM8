@@ -127,15 +127,13 @@ export class InstructorsService {
    * Supersedes Decision 206/211's unbuilt account-claim-invitation design for
    * this same problem (Decision 237).
    *
-   * School Owner/Manager only — same gate create() above already uses (Spec
-   * §8.2: Instructor's own confirmed permissions explicitly exclude
-   * "instructor management"), not CoachInvitesService's broader
-   * "Can invite coaches" staff permission — nothing approved here extends that
-   * permission to this new creation path.
+   * The School's main owner only: it gives a coach role, and only the main
+   * owner adds people (Decision 423 item 10; Spec §8.2: Instructor's own
+   * confirmed permissions explicitly exclude "instructor management").
    */
   async createManually(callerId: string, schoolId: string, dto: CreateInstructorManuallyDto) {
     await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolMainOwner(callerId, schoolId);
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 

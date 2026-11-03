@@ -8177,8 +8177,6 @@ export interface components {
             cancelClasses: boolean;
             /** @description See the staff list for their branches, read only (off by default). */
             staffList: boolean;
-            /** @description Invite coaches (off by default; Decision 183). */
-            inviteCoaches: boolean;
             /** @description Manage disciplines, belts and skills for the whole School (off by default; Decision 383). */
             disciplines: boolean;
             /** @description Change the School's check-in rules (off by default; Decision 394). */
@@ -8226,7 +8224,6 @@ export interface components {
             paused: boolean;
             /** @description Decision 390: when they were paused. */
             pausedAt?: string | null;
-            canInviteCoaches: boolean;
             /** @description Branch Staff the owner lets edit styles, belts and skills (Decision 383). */
             canManageDisciplines: boolean;
             /** @description The School's main owner (Decision 370). Other owners are co-owners. */
@@ -8256,6 +8253,8 @@ export interface components {
         MyStaffAccessResponseDto: {
             /** @description School Owner/Manager: every switch is on, by role. */
             owner: boolean;
+            /** @description The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10). False for co-owners and everyone else. */
+            mainOwner: boolean;
             /** @description Holds an active Branch Staff role here. */
             branchStaff: boolean;
             /** @description What the caller may do. An Instructor's own role gives bookings and students. */
@@ -8524,11 +8523,8 @@ export interface components {
         };
         MyStaffPermissionResponseDto: {
             isOwner: boolean;
-            canInviteCoaches: boolean;
             /** @description May edit the School's styles, belts and skills: the owner, or Branch Staff with the switch (Decision 383). */
             canManageDisciplines: boolean;
-            /** @description Branches they may invite to; empty for the owner (any branch) or when they can't invite. */
-            branchIds: string[];
         };
         StaffPermissionResponseDto: {
             userId: string;
@@ -8536,16 +8532,14 @@ export interface components {
             surname: string;
             /** @description Branches where they are Branch Staff. */
             branchIds: string[];
-            canInviteCoaches: boolean;
             canManageDisciplines: boolean;
         };
         StaffPermissionListResponseDto: {
             items: components["schemas"]["StaffPermissionResponseDto"][];
         };
         SetStaffPermissionDto: {
-            canInviteCoaches?: boolean;
             /** @description May edit the School's styles, belts and skills (Decision 383). */
-            canManageDisciplines?: boolean;
+            canManageDisciplines: boolean;
         };
         CoachInvitePreviewDto: {
             schoolName: string;

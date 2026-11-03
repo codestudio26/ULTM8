@@ -31,7 +31,7 @@ if (!hasDb) {
   );
 }
 
-const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
+const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
 
 describeIfDb('Staff activity log (Decision 408)', () => {
   let app: INestApplication;
@@ -175,8 +175,8 @@ describeIfDb('Staff activity log (Decision 408)', () => {
     expect((await other.ownerApi.get(`${base}/activity?userId=not-a-uuid`)).status).toBe(400);
   });
 
-  it('invites sent, cancelled and accepted are logged, also when staff with "Can invite coaches" send them', async () => {
-    const { school, branch, staff, ownerApi, staffApi, log } = await seed('invites');
+  it('invites sent, cancelled and accepted are logged; staff and co-owners can no longer send them (Decision 423 item 10)', async () => {
+    const { school, branch, ownerApi, coOwnerApi, staffApi, own, log } = await seed('invites');
     const newbie = await mkUser('Nina');
     const sentByOwner = await ownerApi.post(`/v1/schools/${school.id}/coach-invites`).send({ email: newbie.email, branchId: branch.id });
     expect(sentByOwner.status).toBe(201);
@@ -184,17 +184,18 @@ describeIfDb('Staff activity log (Decision 408)', () => {
     const accepted = await as(newbie, []).post(`/v1/coach-invite-links/${link}/accept`);
     expect(accepted.status).toBe(201);
 
-    await superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId: staff.id, canInviteCoaches: true } });
-    const byStaff = await staffApi.post(`/v1/schools/${school.id}/coach-invites`).send({ email: 'someone@example.test', branchId: branch.id });
-    expect(byStaff.status).toBe(201);
-    expect((await staffApi.post(`/v1/coach-invites/${byStaff.body.id}/cancel`)).status).toBe(201);
+    expect((await staffApi.post(`/v1/schools/${school.id}/coach-invites`).send({ email: 'someone@example.test', branchId: branch.id })).status).toBe(403);
+    expect((await coOwnerApi.post(`/v1/schools/${school.id}/coach-invites`).send({ email: 'someone@example.test', branchId: branch.id })).status).toBe(403);
+    const another = await ownerApi.post(`/v1/schools/${school.id}/coach-invites`).send({ email: 'someone@example.test', branchId: branch.id });
+    expect(another.status).toBe(201);
+    expect((await ownerApi.post(`/v1/coach-invites/${another.body.id}/cancel`)).status).toBe(201);
 
     const { items } = await log();
     expect(items.map((i) => [i.action, i.actorId])).toEqual([
-      ['INVITE_CANCELLED', staff.id],
-      ['INVITE_SENT', staff.id],
+      ['INVITE_CANCELLED', own.id],
+      ['INVITE_SENT', own.id],
       ['INVITE_ACCEPTED', newbie.id],
-      ['INVITE_SENT', items[3].actorId],
+      ['INVITE_SENT', own.id],
     ]);
     expect(items[0].details).toEqual({ email: 'someone@example.test', role: 'INSTRUCTOR', branchName: branch.name });
     expect(items[2]).toMatchObject({ targetUserId: newbie.id, details: { role: 'INSTRUCTOR', branchName: branch.name } });
@@ -214,6 +215,8 @@ describeIfDb('Staff activity log (Decision 408)', () => {
       // The owner, as themselves: allowed.
       await expect(insert(own.id, 'SETTING_CHANGED', own.id)).resolves.toEqual({ count: 1 });
       await expect(insert(staff.id, 'ROLE_GIVEN')).rejects.toThrow();
+      // Branch Staff no longer log invites: they can't send any (Decision 423 item 10).
+      await expect(insert(staff.id, 'INVITE_SENT')).rejects.toThrow();
       // Someone else's name as the actor.
       await expect(insert(own.id, 'INVITE_ACCEPTED')).rejects.toThrow();
     } finally {

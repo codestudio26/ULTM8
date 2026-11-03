@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "Planes cobrados en la moneda de la escuela: {count}. Dales una moneda propia antes de borrarla.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Define la moneda de tu Escuela en la página de la Escuela antes de poner precios.",
+    mainOwnerOnly: "Solo el propietario principal de la cuenta puede añadir o quitar personas.",
   },
   errors: {
     beltInHistoryDelete: "Este cinturón está en el historial de grados de los alumnos, así que no se puede eliminar.",

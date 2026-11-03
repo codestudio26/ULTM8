@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "Lidmaatschappen in de valuta van de school: {count}. Geef deze een eigen valuta voordat je hem leegmaakt.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "Stel de valuta van je School in op de Schoolpagina voordat je prijzen instelt.",
+    mainOwnerOnly: "Alleen de hoofdeigenaar van het account kan mensen toevoegen of verwijderen.",
   },
   errors: {
     beltInHistoryDelete: "Deze band staat in de graderingsgeschiedenis van leerlingen, dus hij kan niet worden verwijderd.",

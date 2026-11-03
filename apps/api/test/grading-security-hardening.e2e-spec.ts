@@ -1,6 +1,6 @@
 /**
  * Grading and coaching security hardening (Phase 7 security review): a coach
- * invite stops working once its sender may no longer invite or the School
+ * invite stops working once its sender is no longer an owner or the School
  * closes; cancelling races accepting cleanly; database rules narrowed for
  * home branches, coach invites and the branchless-staff student read; invite
  * sending is rate-limited. Real HTTP and real Postgres RLS (the app role).
@@ -39,7 +39,6 @@ describeIfDb('Grading and coaching security hardening (Phase 7)', () => {
   let school: { id: string };
   let north: { id: string };
   let south: { id: string };
-  let staffGrant: { id: string };
 
   async function mkUser(label: string) {
     const u = await superuser.user.create({
@@ -108,12 +107,11 @@ describeIfDb('Grading and coaching security hardening (Phase 7)', () => {
     north = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'North' } });
     south = await superuser.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'South' } });
     for (const label of ['owner', 'staff', 'invitee', 'invitee2', 'invitee3', 'student', 'flood']) await mkUser(label);
-    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.owner.id, schoolId: school.id } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.owner.id, schoolId: school.id, isMainOwner: true } });
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: user.flood.id, schoolId: school.id } });
-    staffGrant = await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.staff.id, schoolId: school.id, branchId: north.id } });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: user.staff.id, schoolId: school.id, branchId: north.id } });
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: user.student.id, schoolId: school.id } });
     await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: school.id, studentId: user.student.id, branchId: north.id } });
-    await superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: school.id, userId: user.staff.id, canInviteCoaches: true } });
     for (const label of Object.keys(user)) await sign(label);
   });
 
@@ -131,30 +129,34 @@ describeIfDb('Grading and coaching security hardening (Phase 7)', () => {
     await app.close();
   });
 
-  it('an invite stops working once its sender may no longer invite there, even if nothing cancelled it', async () => {
-    const { link } = await invite('staff', user.invitee.email, north.id);
+  it('an invite stops working once its sender is no longer an owner there, even if nothing cancelled it', async () => {
+    const exOwner = await mkUser('exOwner');
+    const ownerGrant = await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: exOwner.id, schoolId: school.id } });
+    const { link } = await invite('exOwner', user.invitee.email, north.id);
     expect((await http().get(`/v1/coach-invite-links/${link}`)).body.status).toBe('PENDING');
     // Taken away directly (not through the API, so nothing cancels the invite).
-    await superuser.staffPermission.update({ where: { schoolId_userId: { schoolId: school.id, userId: user.staff.id } }, data: { canInviteCoaches: false } });
+    await superuser.roleGrant.update({ where: { id: ownerGrant.id }, data: { revokedAt: new Date() } });
     expect((await http().get(`/v1/coach-invite-links/${link}`)).body.status).toBe('CANCELLED');
     const res = await as('invitee').post(`/v1/coach-invite-links/${link}/accept`);
     expect(res.status).toBe(410);
     expect(await superuser.roleGrant.count({ where: { userId: user.invitee.id, role: 'INSTRUCTOR' } })).toBe(0);
-    await superuser.staffPermission.update({ where: { schoolId_userId: { schoolId: school.id, userId: user.staff.id } }, data: { canInviteCoaches: true } });
   });
 
-  it('turning "Can invite coaches" off, or removing the staff role, cancels that person\'s open invites', async () => {
-    const first = await invite('staff', user.invitee2.email, north.id);
-    const off = await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${user.staff.id}`).send({ canInviteCoaches: false });
-    expect(off.status).toBe(200);
-    expect((await superuser.coachInvite.findUniqueOrThrow({ where: { id: first.id } })).cancelledAt).not.toBeNull();
+  it('an invite from Branch Staff never works, whatever their access switches (Decision 423 item 10)', async () => {
+    // Written straight to the table: the API no longer lets staff send one.
+    const { link } = await invite('staff', user.invitee.email, north.id);
+    expect((await http().get(`/v1/coach-invite-links/${link}`)).body.status).toBe('CANCELLED');
+    expect((await as('invitee').post(`/v1/coach-invite-links/${link}/accept`)).status).toBe(410);
+  });
 
-    await as('owner').put(`/v1/schools/${school.id}/staff-permissions/${user.staff.id}`).send({ canInviteCoaches: true });
-    const second = await invite('staff', user.invitee2.email, north.id);
-    const revoked = await as('owner').del(`/v1/users/${user.staff.id}/role-grants/${staffGrant.id}`);
+  it('the main owner removing a co-owner cancels that co-owner\'s open invites', async () => {
+    const coOwner = await mkUser('coOwner');
+    const coOwnerGrant = await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: coOwner.id, schoolId: school.id } });
+    const sent = await invite('coOwner', user.invitee2.email, north.id);
+    const revoked = await as('owner').del(`/v1/users/${coOwner.id}/role-grants/${coOwnerGrant.id}`);
     expect(revoked.status).toBe(200);
-    expect((await superuser.coachInvite.findUniqueOrThrow({ where: { id: second.id } })).cancelledAt).not.toBeNull();
-    expect((await as('invitee2').post(`/v1/coach-invite-links/${second.link}/accept`)).status).toBe(410);
+    expect((await superuser.coachInvite.findUniqueOrThrow({ where: { id: sent.id } })).cancelledAt).not.toBeNull();
+    expect((await as('invitee2').post(`/v1/coach-invite-links/${sent.link}/accept`)).status).toBe(410);
   });
 
   it('an invite to a closed School can\'t be accepted', async () => {
@@ -223,6 +225,10 @@ describeIfDb('Grading and coaching security hardening (Phase 7)', () => {
   });
 
   it('sending invites is limited to 20 an hour per account', async () => {
+    // Only the main owner sends invites (Decision 423 item 10): "flood"
+    // becomes the main owner, so its own fresh limit is the one counted.
+    await superuser.roleGrant.updateMany({ where: { schoolId: school.id, role: 'SCHOOL_OWNER_MANAGER' }, data: { isMainOwner: false } });
+    await superuser.roleGrant.updateMany({ where: { schoolId: school.id, role: 'SCHOOL_OWNER_MANAGER', userId: user.flood.id }, data: { isMainOwner: true } });
     const statuses: number[] = [];
     for (let i = 0; i < 21; i++) {
       const res = await as('flood').post(`/v1/schools/${school.id}/coach-invites`).send({ email: `flood${i}@example.test`, branchId: south.id });

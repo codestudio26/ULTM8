@@ -36,7 +36,7 @@ if (!hasDb) {
 }
 
 const ACCESS_DEFAULTS = {
-  classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false,
+  classes: false, bookings: true, students: true, cancelClasses: true, staffList: false,
   disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false,
 };
 

@@ -73,7 +73,7 @@ test('the list filters by role, branch and name, and "Remove from School" ends e
     { role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: south.id },
     { role: 'STUDENT', schoolId: s.schoolId, branchId: north.id },
   ]);
-  await db.staffPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: cal.id, canInviteCoaches: true } });
+  await db.staffPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: cal.id, canSeeStaffList: true } });
   await addPerson('Dee', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
@@ -105,7 +105,7 @@ test('the list filters by role, branch and name, and "Remove from School" ends e
   await expect(listRow(page, 'Cal Coach')).toHaveCount(0);
   const grants = await db.roleGrant.findMany({ where: { userId: cal.id } });
   expect(grants.filter((g) => g.revokedAt === null).map((g) => g.role)).toEqual(['STUDENT']);
-  expect((await db.staffPermission.findFirstOrThrow({ where: { userId: cal.id } })).canInviteCoaches).toBe(false);
+  expect((await db.staffPermission.findFirstOrThrow({ where: { userId: cal.id } })).canSeeStaffList).toBe(false);
 
   // Removed staff stay findable under "Removed".
   await listCard(page).getByLabel('Status').selectOption('removed');

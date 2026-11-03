@@ -4697,11 +4697,10 @@ model GradingPermission {
 }
 
 /// Staff permissions beyond grading (Decision 183), one row per staff member
-/// per School. "Can invite coaches" lets Branch Staff send coach invites for
-/// their own branches; Instructors can't hold it (Spec 55 §8.2: no instructor
-/// management). "Can start open mat sessions" (Decision 386) is for Branch
-/// Staff and coaches alike. The owner sets both. RLS: the owner, or the user
-/// themselves.
+/// per School. "Can start open mat sessions" (Decision 386) is for Branch
+/// Staff and coaches alike. The owner sets them. RLS: the owner, or the user
+/// themselves. There is no "Can invite coaches" any more: only the School's
+/// main owner adds or removes people (Decision 423 item 10).
 model StaffPermission {
   id String @id @default(uuid())
 
@@ -4711,7 +4710,6 @@ model StaffPermission {
   userId String
   user   User   @relation("StaffPermissionUser", fields: [userId], references: [id], onDelete: Cascade)
 
-  canInviteCoaches     Boolean @default(false)
   /// Decision 383: may edit the School's styles, belts and skills.
   canManageDisciplines Boolean @default(false)
 
@@ -4857,8 +4855,9 @@ model StaffKioskCode {
 /// (and a branch when it has branches). The link holds a random token; only
 /// its SHA-256 is stored. Single use, 7 days, cancellable. Accepting it, signed
 /// in with the invited email, gives an INSTRUCTOR RoleGrant; any other role the
-/// person holds is kept. RLS: the owner; Branch Staff with "Can invite coaches"
-/// for their own branches; the token holder (by its hash) to accept.
+/// person holds is kept. Sent and cancelled by the School's main owner only
+/// (Decision 423 item 10). RLS: the School's owners; the token holder (by its
+/// hash) to accept.
 model CoachInvite {
   id String @id @default(uuid())
 

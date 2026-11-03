@@ -1,6 +1,6 @@
 /**
  * Decision 387: the owner's six access switches for Branch Staff (classes,
- * bookings, students, cancelClasses, staffList, inviteCoaches), their
+ * bookings, students, cancelClasses, staffList; "Invite coaches" went with Decision 423), their
  * defaults, the Instructor floor, the read-only staff list, and the reset when
  * the person stops being Branch Staff.
  *
@@ -32,9 +32,9 @@ if (!hasDb) {
   );
 }
 
-const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
-const ALL_ON = { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, inviteCoaches: true, disciplines: true, checkInRules: true, exportStudents: true, freezeMemberships: true, attendanceStats: true, memberFiles: true, importData: true, seeMedicalInfo: true };
-const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
+const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
+const ALL_ON = { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, disciplines: true, checkInRules: true, exportStudents: true, freezeMemberships: true, attendanceStats: true, memberFiles: true, importData: true, seeMedicalInfo: true };
+const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
 
 describeIfDb('Staff access switches (Decision 387)', () => {
   let app: INestApplication;
@@ -139,9 +139,9 @@ describeIfDb('Staff access switches (Decision 387)', () => {
     const { school, ownerApi, staffApi, coachApi } = await seed('me');
     const url = `/v1/schools/${school.id}/staff/me/access`;
 
-    expect((await staffApi.get(url)).body).toEqual({ owner: false, branchStaff: true, access: DEFAULTS, cancelCharges: false });
-    expect((await ownerApi.get(url)).body).toEqual({ owner: true, branchStaff: false, access: ALL_ON, cancelCharges: true });
-    expect((await coachApi.get(url)).body).toEqual({ owner: false, branchStaff: false, access: { ...ALL_OFF, bookings: true, students: true }, cancelCharges: false });
+    expect((await staffApi.get(url)).body).toEqual({ owner: false, mainOwner: false, branchStaff: true, access: DEFAULTS, cancelCharges: false });
+    expect((await ownerApi.get(url)).body).toEqual({ owner: true, mainOwner: true, branchStaff: false, access: ALL_ON, cancelCharges: true });
+    expect((await coachApi.get(url)).body).toEqual({ owner: false, mainOwner: false, branchStaff: false, access: { ...ALL_OFF, bookings: true, students: true }, cancelCharges: false });
 
     const stranger = await mkUser('Sam');
     const res = await as(stranger, []).get(url);
@@ -224,19 +224,17 @@ describeIfDb('Staff access switches (Decision 387)', () => {
     expect((ownerView.body.items as { userId: string; access: unknown }[]).find((i) => i.userId === coach.id)?.access).toBeNull();
   });
 
-  it('inviteCoaches: off by default; turning it off again withdraws open invites', async () => {
-    const { school, branch, staff, staffApi, setAccess } = await seed('invite');
+  it('has no "Invite coaches" switch any more (Decision 423 item 10): the body is refused, and staff with every switch on still cannot invite', async () => {
+    const { school, branch, staffApi, setAccess } = await seed('invite');
     const url = `/v1/schools/${school.id}/coach-invites`;
     const body = { email: `invitee-${tag}-${randomUUID().slice(0, 6)}@example.test`, branchId: branch.id };
 
-    expect((await staffApi.post(url).send(body)).status).toBe(403);
-    await setAccess({ ...DEFAULTS, inviteCoaches: true });
+    expect((await setAccess({ ...DEFAULTS, inviteCoaches: true })).status).toBe(400);
+    expect((await setAccess(ALL_ON)).status).toBe(200);
     const sent = await staffApi.post(url).send(body);
-    expect(sent.status).toBe(201);
-
-    await setAccess(DEFAULTS);
-    const open = await superuser.coachInvite.findMany({ where: { schoolId: school.id, invitedById: staff.id, cancelledAt: null, acceptedAt: null } });
-    expect(open).toEqual([]);
+    expect(sent.status).toBe(403);
+    expect(sent.body.error.code).toBe('MAIN_OWNER_ONLY');
+    expect(await superuser.coachInvite.count({ where: { schoolId: school.id } })).toBe(0);
   });
 
   it('only an owner sets switches, only for Branch Staff, with all six given', async () => {
@@ -268,7 +266,6 @@ describeIfDb('Staff access switches (Decision 387)', () => {
       canManageStudents: true,
       canCancelClasses: true,
       canSeeStaffList: false,
-      canInviteCoaches: false,
       canManageDisciplines: false,
     });
   });

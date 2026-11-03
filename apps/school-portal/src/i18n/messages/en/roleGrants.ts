@@ -21,7 +21,8 @@ export const roleGrants = {
     roleInstructor: 'Instructor',
     roleBranchStaff: 'Branch Staff',
     roleCoOwner: 'Co-owner',
-    coOwnerHint: 'A co-owner runs the School with you and can do everything an owner can, except remove or replace the main owner.',
+    coOwnerHint: "A co-owner runs the School with you and can do everything an owner can, except add or remove people: only the main owner does that.",
+    mainOwnerOnly: "Only the account's main owner can add or remove people.",
     branchLabel: 'Branch',
     branchHint: 'For an instructor who teaches at several branches, give the role once per branch.',
     selectBranch: 'Select a Branch…',
@@ -39,7 +40,7 @@ export const roleGrants = {
     revoke: 'Revoke',
     revokeTitle: 'Remove the {role} role from {name}?',
     revokeDescription:
-      'They lose this role ({branch}) straight away, even if they are signed in. If it was their last coach or staff role here, their grading permissions and "Can invite coaches" are cleared too, so giving the role back starts them fresh.',
+      "They lose this role ({branch}) straight away, even if they are signed in. If it was their last coach or staff role here, their grading permissions and access switches are cleared too, so giving the role back starts them fresh.",
     removeCoOwnerTitle: 'Remove {name} as co-owner?',
     removeCoOwnerDescription:
       'They lose owner access to this School straight away, even if they are signed in. Their account stays, and so do any other roles they hold here.',
@@ -86,7 +87,7 @@ export const roleGrants = {
     removeFromSchool: 'Remove from School',
     removeTitle: 'Remove {name} from your School?',
     removeDescription:
-      'This ends all their coach and staff roles here ({roles}) straight away, even if they are signed in. Their grading permissions and "Can invite coaches" are cleared. Their account stays, and so does any student membership. They will show under "Removed".',
+      "This ends all their coach and staff roles here ({roles}) straight away, even if they are signed in. Their grading permissions and access switches are cleared. Their account stays, and so does any student membership. They will show under \"Removed\".",
     removeFailed: 'Could not remove them.',
     mainOwner: 'Main owner',
     coOwner: 'Co-owner',
@@ -201,7 +202,6 @@ export const roleGrants = {
     staffList: 'See the staff list',
     staffListHint: 'See who works at their branches, read only.',
     inviteCoaches: 'Invite coaches',
-    inviteCoachesHint: 'Send coach invites for their own branches.',
     groupDisciplines: 'Styles and belts',
     disciplines: 'Manage disciplines',
     disciplinesHint: 'Add and edit styles, belts and skills for the whole School. Grade prices stay yours.',

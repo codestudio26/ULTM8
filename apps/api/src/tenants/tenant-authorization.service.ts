@@ -1,5 +1,28 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+
+/**
+ * Decision 370 — a School's main owner: the live owner grant flagged
+ * isMainOwner, or, where none is flagged (a School whose main owner's account
+ * was deleted, or rows written before the flag existed), the earliest live
+ * owner grant, the rule the product owner chose for existing Schools.
+ */
+export function mainOwnerGrant(tx: Prisma.TransactionClient, schoolId: string) {
+  return tx.roleGrant.findFirst({
+    where: { schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+    orderBy: [{ isMainOwner: 'desc' }, { grantedAt: 'asc' }, { id: 'asc' }],
+    select: { id: true, userId: true },
+  });
+}
+
+/** Decision 423 item 10 — the 403 every add-or-remove-people path gives
+ * anyone but the School's main owner. Sent with a code, so the apps show
+ * their own wording. */
+export const MAIN_OWNER_ONLY = {
+  code: 'MAIN_OWNER_ONLY',
+  message: "Only the School's main owner can add or remove people.",
+} as const;
 
 /**
  * Fresh-DB authorization checks for TenantsModule's mutating endpoints.
@@ -45,7 +68,6 @@ export const STAFF_ACCESS = [
   'students',
   'cancelClasses',
   'staffList',
-  'inviteCoaches',
   'disciplines',
   'checkInRules',
   'exportStudents',
@@ -69,7 +91,6 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   students: true,
   cancelClasses: true,
   staffList: false,
-  inviteCoaches: false,
   disciplines: false,
   checkInRules: false,
   exportStudents: false,
@@ -92,7 +113,6 @@ export const STAFF_ACCESS_OFF_MESSAGES: Record<GatedStaffAccess, string> = {
   students: "The School owner hasn't let you see or edit students.",
   cancelClasses: "The School owner hasn't let you cancel classes or give credit back.",
   staffList: "The School owner hasn't let you see the staff list.",
-  inviteCoaches: "The School owner hasn't let you invite coaches.",
 };
 
 /** StaffPermission columns as a StaffAccessSet. */
@@ -102,7 +122,6 @@ export function staffAccessFrom(row: {
   canManageStudents: boolean;
   canCancelClasses: boolean;
   canSeeStaffList: boolean;
-  canInviteCoaches: boolean;
   canManageDisciplines: boolean;
   canManageCheckInRules: boolean;
   canExportStudents: boolean;
@@ -119,7 +138,6 @@ export function staffAccessFrom(row: {
     students: row.canManageStudents,
     cancelClasses: row.canCancelClasses,
     staffList: row.canSeeStaffList,
-    inviteCoaches: row.canInviteCoaches,
     disciplines: row.canManageDisciplines,
     checkInRules: row.canManageCheckInRules,
     exportStudents: row.canExportStudents,
@@ -138,7 +156,6 @@ export const STAFF_ACCESS_SELECT = {
   canManageStudents: true,
   canCancelClasses: true,
   canSeeStaffList: true,
-  canInviteCoaches: true,
   canManageDisciplines: true,
   canManageCheckInRules: true,
   canExportStudents: true,
@@ -175,6 +192,49 @@ export class TenantAuthorizationService {
         'Only that School\'s Owner/Manager may perform this action.',
       );
     }
+  }
+
+  /**
+   * Decision 423 item 10 — only the account's main owner adds or removes
+   * people: co-owners, Branch Staff and coaches, by any path (give a role,
+   * invite, add manually, remove a role, remove from School, pause, unpause,
+   * cancel an invite, move roles when a Branch closes). Throws 403
+   * MAIN_OWNER_ONLY unless `userId` holds a live owner grant at `schoolId`
+   * and is its main owner (mainOwnerGrant). Read fresh on every call, like
+   * assertSchoolOwner, so a hand-over (Decision 370) applies at once. Owners
+   * are never paused (Decision 390), so a live owner grant is an active one.
+   * Students and Guardians join by themselves and are not covered (Decision
+   * 270 item 3).
+   */
+  async assertSchoolMainOwner(userId: string, schoolId: string): Promise<void> {
+    if (!(await this.isSchoolMainOwner(userId, schoolId))) {
+      throw new ForbiddenException(MAIN_OWNER_ONLY);
+    }
+  }
+
+  /**
+   * assertSchoolMainOwner for a row found by id, outside the caller's RLS
+   * view (a RoleGrant or CoachInvite at `schoolId`): the School's own staff
+   * get 403 MAIN_OWNER_ONLY, like on every other add-or-remove path, and
+   * anyone from outside the School gets the same 404 RLS gave them before,
+   * so another tenant still can't tell whether the row exists.
+   */
+  async assertSchoolMainOwnerOrNotFound(userId: string, schoolId: string, notFoundMessage: string): Promise<void> {
+    if (await this.isSchoolMainOwner(userId, schoolId)) return;
+    if (await this.isStaffAtSchool(userId, schoolId)) throw new ForbiddenException(MAIN_OWNER_ONLY);
+    throw new NotFoundException(notFoundMessage);
+  }
+
+  /** assertSchoolMainOwner as a yes/no. */
+  async isSchoolMainOwner(userId: string, schoolId: string): Promise<boolean> {
+    return this.prismaApp.withTenantContext(userId, async (tx) => {
+      const own = await tx.roleGrant.findFirst({
+        where: { userId, schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+        select: { id: true },
+      });
+      if (!own) return false;
+      return (await mainOwnerGrant(tx, schoolId))?.userId === userId;
+    });
   }
 
   /** assertSchoolOwner as a yes/no. */

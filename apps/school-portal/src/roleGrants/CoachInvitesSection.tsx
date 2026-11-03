@@ -24,18 +24,17 @@ const STATUS: Record<CoachInvite['status'], { label: TranslationKey; variant: 'd
 /**
  * Coach invites (Decision 183): email one person a link that makes them a
  * coach at this School (and branch) when they accept it, signed in with that
- * email. The link works once, for 7 days, and can be cancelled. Which Branch
- * Staff may also invite coaches, for their own branches, is one of their
- * access switches on the staff list (Decision 387).
+ * email. The link works once, for 7 days, and can be cancelled. Only the
+ * School's main owner sends and cancels invites (Decision 423 item 10);
+ * co-owners see the list, read only.
  */
 export function CoachInvitesSection({
   schoolId,
-  allowedBranchIds,
+  canManage,
 }: {
   schoolId: string;
-  /** Branch Staff (Decision 183): only their own branches. Omitted for the
-   * owner. */
-  allowedBranchIds?: string[];
+  /** The School's main owner: may send and cancel. Undefined while not known yet. */
+  canManage: boolean | undefined;
 }) {
   const t = useT();
   const { data: branchData } = useBranches(schoolId);
@@ -47,9 +46,8 @@ export function CoachInvitesSection({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
 
-  const allBranches = branchData?.items ?? [];
-  const branches = allowedBranchIds ? allBranches.filter((b) => allowedBranchIds.includes(b.id)) : allBranches;
-  const branchName = (id: string | null) => (id ? allBranches.find((b) => b.id === id)?.name ?? '—' : t('roleGrants.coachInvites.wholeSchool'));
+  const branches = branchData?.items ?? [];
+  const branchName = (id: string | null) => (id ? branches.find((b) => b.id === id)?.name ?? '—' : t('roleGrants.coachInvites.wholeSchool'));
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
@@ -95,6 +93,7 @@ export function CoachInvitesSection({
         {notice?.kind === 'ok' ? <SuccessBanner message={notice.text} /> : null}
         {notice?.kind === 'warn' ? <ErrorBanner message={notice.text} /> : null}
         {error ? <ErrorBanner message={error} /> : null}
+        {canManage ? (
         <form onSubmit={handleSend}>
           <Field label={t('roleGrants.coachInvites.emailLabel')} htmlFor="coach-invite-email">
             <TextField type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -113,6 +112,9 @@ export function CoachInvitesSection({
             {t('roleGrants.coachInvites.sendInvite')}
           </Button>
         </form>
+        ) : canManage === false ? (
+          <p className="ultm8-field">{t('roleGrants.staff.mainOwnerOnly')}</p>
+        ) : null}
 
         <h3 style={{ fontSize: 16, margin: '24px 0 8px' }}>{t('roleGrants.coachInvites.invitesHeading')}</h3>
         {invites.isLoading ? (
@@ -151,7 +153,7 @@ export function CoachInvitesSection({
                 key: 'actions',
                 header: '',
                 render: (i) =>
-                  i.status === 'PENDING' ? (
+                  canManage && i.status === 'PENDING' ? (
                     <Button variant="secondary" onClick={() => handleCancel(i)} aria-label={t('roleGrants.coachInvites.cancelAria', { email: i.email })}>
                       {t('roleGrants.coachInvites.cancel')}
                     </Button>

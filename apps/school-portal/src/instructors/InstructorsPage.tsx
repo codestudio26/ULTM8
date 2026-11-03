@@ -23,6 +23,7 @@ import {
 import { InstructorFormModal } from './InstructorFormModal';
 import { AddInstructorManuallyModal } from './AddInstructorManuallyModal';
 import { InviteToInstructorRoleModal } from './InviteToInstructorRoleModal';
+import { useIsMainOwner } from '../roleGrants/roleGrantQueries';
 import { InstructorBeltsSection } from './InstructorBeltsSection';
 import { useT } from '../i18n/I18nProvider';
 
@@ -53,6 +54,8 @@ export function InstructorsPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const schoolId = useOwnedSchoolId();
+  // Decision 423 item 10: only the main owner gives the coach role.
+  const isMainOwner = useIsMainOwner(schoolId);
   const { data, isLoading, error } = useInstructors(schoolId);
   const { data: branchData } = useBranches(schoolId);
   // Archived styles too: the forms show one a record already has (Decision 310).
@@ -124,17 +127,22 @@ export function InstructorsPage() {
         subtitle={t('instructors.subtitle')}
         actions={
           <>
-            <Button variant="secondary" onClick={() => setInvitingExisting(true)}>
-              {t('instructors.inviteExisting')}
-            </Button>
-            <Button variant="secondary" onClick={() => setAddingManually(true)}>
-              {t('instructors.addManually')}
-            </Button>
+            {isMainOwner ? (
+              <>
+                <Button variant="secondary" onClick={() => setInvitingExisting(true)}>
+                  {t('instructors.inviteExisting')}
+                </Button>
+                <Button variant="secondary" onClick={() => setAddingManually(true)}>
+                  {t('instructors.addManually')}
+                </Button>
+              </>
+            ) : null}
             <Button onClick={() => { setCreatePreset(null); setCreating(true); }}>{t('instructors.addInstructor')}</Button>
           </>
         }
       />
       {actionError ? <ErrorBanner message={actionError} /> : null}
+      {isMainOwner === false ? <p className="ultm8-field">{t('roleGrants.staff.mainOwnerOnly')}</p> : null}
       <Card>
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>

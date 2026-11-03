@@ -212,6 +212,10 @@ export class BranchesService {
   async close(callerId: string, branchId: string, dto: CloseBranchDto) {
     const existing = await this.findOne(callerId, branchId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
+    // Decision 423 item 10: moving staff and coach roles to another Branch
+    // gives roles there, so only the main owner does it. A co-owner can still
+    // close a Branch that has no staff or coach roles left.
+    if (dto.staffTo !== undefined) await this.tenantAuth.assertSchoolMainOwner(callerId, existing.schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
     if (existing.archivedAt) {
       return existing; // idempotent — closing an already-closed Branch is a no-op, not an error.

@@ -4,8 +4,9 @@ import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type Grad
 
 /**
  * Branch Staff get the coach screens (Phase 7; Decisions 181, 183, 184):
- * the dashboard, the Grading Board when they have grading permission, and
- * "Invite coaches" for their own branches when the owner allows it.
+ * the dashboard and the Grading Board when they have grading permission.
+ * They no longer invite coaches: only the main owner adds people (Decision
+ * 423 item 10).
  */
 let s: GradingSchool;
 
@@ -31,22 +32,15 @@ test('Branch Staff with grading permission land on the dashboard and use the boa
   await expect(page.getByRole('listitem', { name: s.student.name })).toBeVisible();
 });
 
-test('with "Can invite coaches" they invite to their own branches only', async ({ page }) => {
+test('Branch Staff no longer invite coaches: the old page says only the main owner adds people (Decision 423 item 10)', async ({ page }) => {
   const north = await addBranch(s, 'North');
-  await addBranch(s, 'South');
   const staff = await addPerson('Bo', 'Front', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
-  await db.staffPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: staff.id, canInviteCoaches: true } });
+  await db.staffPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: staff.id, canSeeStaffList: true, canManageClasses: true } });
   await signIn(page, staff.token);
   await page.goto('/coach');
-  await page.getByRole('navigation').getByRole('link', { name: 'Invite coaches' }).click();
-  await expect(page.getByRole('heading', { name: 'Invite coaches' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'What Branch Staff can do' })).toHaveCount(0);
-
-  const branch = page.getByLabel('Branch');
-  await expect(branch.locator('option')).toHaveText(['Select a branch…', 'North']);
-  await page.getByLabel("Coach's email").fill('north.coach@example.test');
-  await branch.selectOption({ label: 'North' });
-  await page.getByRole('button', { name: 'Send invite' }).click();
-  await expect(page.getByRole('row', { name: /north\.coach@example\.test/ }).getByText('Waiting')).toBeVisible();
-  expect(await db.coachInvite.findFirstOrThrow({ where: { schoolId: s.schoolId } })).toMatchObject({ branchId: north.id, invitedById: staff.id });
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'Invite coaches' })).toHaveCount(0);
+  await page.goto('/coach-invites');
+  await expect(page.getByText("Only the account's main owner can add or remove people.")).toBeVisible();
+  await expect(page.getByLabel("Coach's email")).toHaveCount(0);
+  expect(await db.coachInvite.count({ where: { schoolId: s.schoolId } })).toBe(0);
 });

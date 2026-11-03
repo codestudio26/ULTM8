@@ -126,7 +126,7 @@ describeIfDb('Main owner and co-owners (Decision 370)', () => {
     await app.close();
   });
 
-  it('marks the main owner on the staff list; a co-owner can remove another co-owner but never the main owner', async () => {
+  it('marks the main owner on the staff list; only the main owner removes a co-owner, and nobody removes the main owner (Decision 423 item 10)', async () => {
     const { school, main, co, mainGrant } = await seed('remove');
     const third = await mkUser('Theo');
     const thirdGrant = await ownerGrant(third.id, school.id);
@@ -136,11 +136,19 @@ describeIfDb('Main owner and co-owners (Decision 370)', () => {
 
     const blocked = await as(co, school.id).delete(`/v1/users/${main.id}/role-grants/${mainGrant.id}`);
     expect(blocked.status).toBe(403);
-    expect(blocked.body.error.code).toBe('MAIN_OWNER');
+    expect(blocked.body.error.code).toBe('MAIN_OWNER_ONLY');
     // The main owner can't remove themselves either.
-    expect((await as(main, school.id).delete(`/v1/users/${main.id}/role-grants/${mainGrant.id}`)).status).toBe(403);
+    const self = await as(main, school.id).delete(`/v1/users/${main.id}/role-grants/${mainGrant.id}`);
+    expect(self.status).toBe(403);
+    expect(self.body.error.code).toBe('MAIN_OWNER');
 
-    const removed = await as(co, school.id).delete(`/v1/users/${third.id}/role-grants/${thirdGrant.id}`);
+    // A co-owner can no longer remove another co-owner.
+    const byCo = await as(co, school.id).delete(`/v1/users/${third.id}/role-grants/${thirdGrant.id}`);
+    expect(byCo.status).toBe(403);
+    expect(byCo.body.error.code).toBe('MAIN_OWNER_ONLY');
+    expect((await superuser.roleGrant.findUnique({ where: { id: thirdGrant.id } }))?.revokedAt).toBeNull();
+
+    const removed = await as(main, school.id).delete(`/v1/users/${third.id}/role-grants/${thirdGrant.id}`);
     expect(removed.status).toBe(200);
     expect((await superuser.roleGrant.findUnique({ where: { id: thirdGrant.id } }))?.revokedAt).not.toBeNull();
   });
@@ -150,12 +158,16 @@ describeIfDb('Main owner and co-owners (Decision 370)', () => {
     const first = await mkUser('Fay');
     const later = await mkUser('Lou');
     const firstGrant = await ownerGrant(first.id, school.id, { grantedAt: new Date('2024-01-01') });
-    await ownerGrant(later.id, school.id, { grantedAt: new Date('2025-01-01') });
+    const laterGrant = await ownerGrant(later.id, school.id, { grantedAt: new Date('2025-01-01') });
 
     expect((await staffRow(later, school.id, first.id))?.mainOwner).toBe(true);
     const blocked = await as(later, school.id).delete(`/v1/users/${first.id}/role-grants/${firstGrant.id}`);
     expect(blocked.status).toBe(403);
-    expect(blocked.body.error.code).toBe('MAIN_OWNER');
+    expect(blocked.body.error.code).toBe('MAIN_OWNER_ONLY');
+    const self = await as(first, school.id).delete(`/v1/users/${first.id}/role-grants/${firstGrant.id}`);
+    expect(self.body.error.code).toBe('MAIN_OWNER');
+    // The earliest owner is the one who may remove the other.
+    expect((await as(first, school.id).delete(`/v1/users/${later.id}/role-grants/${laterGrant.id}`)).status).toBe(200);
   });
 
   it('lets the main owner hand over the role after a passcode check, and only them', async () => {

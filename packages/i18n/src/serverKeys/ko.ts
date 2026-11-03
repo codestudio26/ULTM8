@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "학교 통화로 청구되는 회원권 플랜: {count}개. 통화를 지우기 전에 해당 플랜에 자체 통화를 지정하세요.",
     // Decision 414 item 6.
     schoolCurrencyRequired: "가격을 설정하기 전에 학교 페이지에서 학교 통화를 설정하세요.",
+    mainOwnerOnly: "계정의 기본 소유자만 사람을 추가하거나 삭제할 수 있습니다.",
   },
   errors: {
     beltInHistoryDelete: "이 띠는 수련생의 승급 기록에 있어 삭제할 수 없습니다.",

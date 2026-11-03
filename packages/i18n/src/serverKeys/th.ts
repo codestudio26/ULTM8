@@ -82,6 +82,7 @@ export const server: PartialMessages<ServerKeys> = {
     schoolCurrencyInUse: "แผนสมาชิกที่เรียกเก็บเป็นสกุลเงินของโรงเรียน: {count} แผน กำหนดสกุลเงินของแผนเหล่านั้นเองก่อนล้างค่า",
     // Decision 414 item 6.
     schoolCurrencyRequired: "ตั้งค่าสกุลเงินของโรงเรียนในหน้าโรงเรียนก่อนกำหนดราคา",
+    mainOwnerOnly: "เฉพาะเจ้าของหลักของบัญชีเท่านั้นที่เพิ่มหรือนำบุคคลออกได้",
   },
   errors: {
     beltInHistoryDelete: "สายคาดนี้อยู่ในประวัติการเลื่อนระดับของนักเรียน จึงลบไม่ได้",

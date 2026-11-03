@@ -157,8 +157,8 @@ test('the owner lets a Branch Staff member manage disciplines (Decision 383)', a
   const tick = dialog.getByLabel('Manage disciplines');
   await expect(tick).not.toBeChecked();
   await tick.check();
-  // The other switch stays off.
-  await expect(dialog.getByLabel('Invite coaches')).not.toBeChecked();
+  // There is no "Invite coaches" switch any more (Decision 423 item 10).
+  await expect(dialog.getByLabel('Invite coaches')).toHaveCount(0);
   const put = page.waitForResponse((r) => r.request().method() === 'PUT' && r.url().includes('/access'));
   await dialog.getByRole('button', { name: 'Save' }).click();
   expect((await put).status()).toBe(200);
