@@ -171,7 +171,7 @@ export const instructors = {
     searchAgain: 'Search again',
   },
   completeProfile: {
-    title: 'Complete your profile',
+    title: 'My coach profile',
     subtitle: "A few more details for your Instructor profile — all optional, fill in as much as you'd like.",
     saved: 'Your profile was updated.',
     invalidFileType: 'Certification file must be a PDF, PNG, or JPEG.',
@@ -182,6 +182,7 @@ export const instructors = {
     certification: 'Certification',
     certificationHint: 'PDF, PNG, or JPEG',
     consent: 'I consent to holding a certification record on file',
+    consentRequired: 'Tick the consent box to upload a certification.',
     certificationOnFile: 'You already have a certification on file. Upload a file only to replace it.',
     phoneHint: 'The number your School can reach you on. It does not change the number you sign in with.',
   },

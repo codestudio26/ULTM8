@@ -777,4 +777,5 @@ export const serverMessages: Record<string, string> = {
   "A row number is past the end of this import.": "某个行号超出了此次导入的末尾。",
   "Import not found": "未找到导入",
   "Each row number can only be sent once.": "每个行号只能发送一次。",
+  "Tick the consent box to upload a certification.": "请勾选同意框后再上传资格证书。",
 };

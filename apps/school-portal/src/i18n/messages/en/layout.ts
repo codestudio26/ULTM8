@@ -57,7 +57,7 @@ export const layout = {
     notifications: 'Notifications',
     inviteCoaches: 'Invite coaches',
     myBelts: 'My belts',
-    completeProfile: 'Complete your profile',
+    completeProfile: 'My coach profile',
   },
   footer: {
     findSchool: 'Find a school near you',

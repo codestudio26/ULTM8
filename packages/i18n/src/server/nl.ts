@@ -777,4 +777,5 @@ export const serverMessages: Record<string, string> = {
   "A row number is past the end of this import.": "Een rijnummer ligt voorbij het einde van deze import.",
   "Import not found": "Import niet gevonden",
   "Each row number can only be sent once.": "Elk rijnummer kan maar één keer worden verstuurd.",
+  "Tick the consent box to upload a certification.": "Vink het toestemmingsvakje aan om een certificaat te uploaden.",
 };

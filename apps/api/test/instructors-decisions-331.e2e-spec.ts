@@ -176,6 +176,26 @@ describeIfDb('Instructors: Decision 331', () => {
       expect(cleared.body.items[0]).toMatchObject({ bio: null, phone: null, photoUrl: 'https://photos.example.test/me.png' });
     });
 
+    it('needs the consent tick to upload a certification, unless consent is already on file (Decision 425)', async () => {
+      const coach = await mkUser('certconsent');
+      await grant(coach.id);
+      await profile(coach.id);
+      const send = (body: Record<string, unknown>) =>
+        request(http()).patch('/v1/instructors/me/profile').set('Authorization', `Bearer ${coachToken(coach)}`).send(body);
+      const key = `instructor-certifications/${schoolA}/x/cert.pdf`;
+      const refused = await send({ certificationKey: key });
+      expect(refused.status).toBe(400);
+      expect(refused.body.error.message).toBe('Tick the consent box to upload a certification.');
+      expect((await superuser.instructor.findFirstOrThrow({ where: { userId: coach.id } })).certificationKey).toBeNull();
+
+      const ok = await send({ certificationKey: key, certificationConsent: true });
+      expect(ok.status).toBe(200);
+      expect(typeof ok.body.items[0].certificationConsentedAt).toBe('string');
+
+      const replaced = await send({ certificationKey: `${key}.v2` });
+      expect(replaced.status).toBe(200);
+    });
+
     it('rejects a phone that is not E.164', async () => {
       const coach = await mkUser('badphone');
       await grant(coach.id);

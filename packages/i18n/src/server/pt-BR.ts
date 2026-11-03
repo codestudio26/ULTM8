@@ -777,4 +777,5 @@ export const serverMessages: Record<string, string> = {
   "A row number is past the end of this import.": "Um número de linha passa do fim desta importação.",
   "Import not found": "Importação não encontrada",
   "Each row number can only be sent once.": "Cada número de linha só pode ser enviado uma vez.",
+  "Tick the consent box to upload a certification.": "Marque a caixa de consentimento para enviar uma certificação.",
 };

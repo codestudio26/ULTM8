@@ -137,3 +137,24 @@ test('owner-only pages typed in by a coach go back to the coach dashboard, never
     await expect(page.getByRole('heading', { name: 'Coach dashboard' })).toBeVisible();
   }
 });
+
+test('a coach sees the student list, read only, and "Coming up" shows the time and branch (Decision 425 Q2, Q4)', async ({ page }) => {
+  const coach = await coachWith({});
+  await signIn(page, coach.token);
+  await page.goto('/coach');
+  await page.getByRole('navigation').getByRole('link', { name: 'Students', exact: true }).click();
+  await expect(page).toHaveURL(/\/students$/);
+  await expect(page.getByText(s.student.name)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Invite a Student' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add manually' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Manage rosters' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Attendance' })).toBeVisible();
+
+  const north = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'North' } });
+  const start = new Date(Date.now() + 2 * 86_400_000);
+  await db.class.create({ data: { id: randomUUID(), schoolId: s.schoolId, branchId: north.id, instructorId: coach.id, title: 'Evening BJJ', startDate: start, endDate: new Date(start.getTime() + 3_600_000) } });
+  await page.goto('/coach');
+  const row = page.getByRole('region', { name: 'My classes' }).getByRole('listitem').filter({ hasText: 'Evening BJJ' });
+  await expect(row).toContainText('North');
+  await expect(row).toContainText(/\d{1,2}:\d{2}/);
+});

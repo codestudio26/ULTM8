@@ -777,4 +777,5 @@ export const serverMessages: Record<string, string> = {
   "A row number is past the end of this import.": "행 번호가 이 가져오기의 끝을 넘었습니다.",
   "Import not found": "가져오기를 찾을 수 없습니다",
   "Each row number can only be sent once.": "각 행 번호는 한 번만 보낼 수 있습니다.",
+  "Tick the consent box to upload a certification.": "자격증을 업로드하려면 동의 상자에 체크하세요.",
 };

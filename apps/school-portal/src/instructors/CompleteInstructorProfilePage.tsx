@@ -73,6 +73,12 @@ function CompleteInstructorProfileForm({ saved: current }: { saved: InstructorRe
       return;
     }
     setAddressErrors({});
+    // Decision 425 (Q3): a new certification needs the consent tick, unless
+    // consent is already on file.
+    if (certificationFile && !certificationConsent && !current?.certificationConsentedAt) {
+      setError(t('instructors.completeProfile.consentRequired'));
+      return;
+    }
     try {
       const certificationKey = await uploadCertificationIfAny();
       await complete.mutateAsync({

@@ -186,13 +186,14 @@ test('a closed (archived) Franchise is not offered', async ({ page }) => {
   await expect(results(page).getByRole('option', { name: closed.name })).toHaveCount(0);
 });
 
-test('a coach, whose sidebar has none of these pages, gets no search box', async ({ page }) => {
+// Coaches now have a read-only Students page (Decision 425 Q2) but, like
+// Branch Staff, still no header search.
+test('a coach gets no search box', async ({ page }) => {
   const coach = await addPerson('Cody', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, coach.token);
   await page.goto('/coach');
   await expect(page.getByRole('heading', { name: 'Coach dashboard' })).toBeVisible();
   await expect(page.getByRole('combobox', { name: 'Search', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Students' })).toHaveCount(0);
 });
 
 test('works in Portuguese', async ({ page }) => {

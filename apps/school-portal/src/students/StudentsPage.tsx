@@ -51,7 +51,11 @@ export function StudentsPage() {
   // roster too (the API limits it to what they may see); adding and inviting
   // stay the owner's.
   const isBranchStaff = !ownedSchoolId && !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === coachSchoolId);
-  const myAccess = useMyStaffAccess(isBranchStaff ? coachSchoolId : null);
+  // Decision 425 (Q2): coaches see the list too, read only (their role
+  // always has the "students" access).
+  const isCoach = !ownedSchoolId && !isBranchStaff && !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === coachSchoolId);
+  const isStaffHere = isBranchStaff || isCoach;
+  const myAccess = useMyStaffAccess(isStaffHere ? coachSchoolId : null);
   const schoolId = ownedSchoolId ?? (myAccess.data?.access.students ? coachSchoolId : null);
   const navigate = useNavigate();
   // Active/Inactive/All filter (GET /schools/:id/students?status=) — defaults to
@@ -116,10 +120,10 @@ export function StudentsPage() {
     [data, search, branchFilter, frozenOnly, onRoster, tagFilter, tagged.data, memberStatusFilter, memberStatusOf, fieldFiltering, fieldMatches.data],
   );
 
-  // Only the owner, and Branch Staff with the "students" switch, have this
-  // page; anyone else typing /students goes to their own home screen
-  // (Decisions 341, 387). Coaches reach a student from the board.
-  if (isBranchStaff && myAccess.isLoading) return <Spinner />;
+  // Only the owner, Branch Staff with the "students" switch, and coaches
+  // (read only, Decision 425) have this page; anyone else typing /students
+  // goes to their own home screen (Decisions 341, 387).
+  if (isStaffHere && myAccess.isLoading) return <Spinner />;
   if (!schoolId) return <Navigate to="/" replace />;
 
   const branches = branchData?.items ?? [];
@@ -222,9 +226,11 @@ export function StudentsPage() {
               />
             </Field>
           </div>
-          <div style={{ paddingBottom: 8 }}>
-            <Link to="/students/rosters">{t('students.rosters.manage')}</Link>
-          </div>
+          {isCoach ? null : (
+            <div style={{ paddingBottom: 8 }}>
+              <Link to="/students/rosters">{t('students.rosters.manage')}</Link>
+            </div>
+          )}
           {(schoolTags.data?.items ?? []).length > 0 ? (
             <div style={{ maxWidth: 220 }}>
               <Field label={t('students.tags.filterLabel')} htmlFor="students-tag-filter">

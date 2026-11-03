@@ -777,4 +777,5 @@ export const serverMessages: Record<string, string> = {
   "A row number is past the end of this import.": "หมายเลขแถวเกินจุดสิ้นสุดของการนำเข้านี้",
   "Import not found": "ไม่พบการนำเข้า",
   "Each row number can only be sent once.": "ส่งหมายเลขแถวแต่ละหมายเลขได้เพียงครั้งเดียว",
+  "Tick the consent box to upload a certification.": "ติ๊กช่องยินยอมเพื่ออัปโหลดใบรับรอง",
 };

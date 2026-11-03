@@ -125,7 +125,7 @@ test('a revoked instructor can be given the role back from their detail page', a
   expect(await db.roleGrant.count({ where: { userId: coach.id, schoolId: s.schoolId, role: 'INSTRUCTOR', revokedAt: null } })).toBe(1);
 });
 
-test('Complete your profile starts from what the instructor already saved', async ({ page }) => {
+test('My coach profile starts from what the instructor already saved', async ({ page }) => {
   const coach = await addPerson('Cleo', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await db.instructor.create({
     data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId, activities: ['Judo', 'BJJ'], certificationKey: 'instructor-certifications/x/y/z.pdf' },
@@ -133,6 +133,8 @@ test('Complete your profile starts from what the instructor already saved', asyn
 
   await signIn(page, coach.token);
   await page.goto('/complete-instructor-profile');
+  await expect(page.getByRole('heading', { name: 'My coach profile' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'My coach profile' })).toBeVisible();
   await expect(page.getByLabel('Activities')).toHaveValue('Judo, BJJ');
   await expect(page.getByText('You already have a certification on file.', { exact: false })).toBeVisible();
 });

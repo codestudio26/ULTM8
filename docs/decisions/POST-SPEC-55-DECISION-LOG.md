@@ -7435,3 +7435,26 @@ No API, data model, permission or RLS change: the API already re-checks every re
 ### Recorded by
 
 User (Code), 3 Nov 2026: "find the best solution to fix these bugs", on the Coaches portal review's CP1–CP6.
+
+## Decision 425 — Coaches portal: the review's eight questions (Branch Staff classes, read-only Students for coaches, certification consent, class time and branch, "My coach profile")
+
+**Date:** 3 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 184, 217, 331, 387, 424
+
+### Decision
+
+The Coaches portal review (3 Nov 2026) asked eight questions; the user took every recommendation.
+
+1. **Branch Staff dashboard (Q1).** A Branch Staff member's coach dashboard shows "Classes at your branch this week": the not-yet-ended classes starting in the next 7 days that they can see (their branch's, plus School-wide ones, the same rule the Classes page uses through RLS). Roll call and QR links show only when the owner leaves "Handle bookings" on (Decision 387); a cancelled class is marked "Cancelled". Someone who is also an Instructor there keeps "My classes" as well.
+2. **Read-only Students for coaches (Q2).** Coaches (Instructors who are not Branch Staff at that School) get Students in their menu: the student list with its search and filters, and the tabs their role already allows (Attendance). No add, invite or "Manage rosters" link. The API is unchanged: an Instructor already had the "students" access (INSTRUCTOR_FLOOR).
+3. **Certification consent (Q3).** Uploading a certification on the coach's own profile needs the consent tick, checked in the portal and enforced by the API (`PATCH /instructors/me/profile` answers 400 "Tick the consent box to upload a certification." when a certification is sent without consent and any of the coach's profiles has none on file). Replacing a certification once consent is on file needs no new tick.
+4. **Class time and branch (Q4).** "Coming up" on the web coach dashboard shows the start date and time, on the class's own clock (its branch's time zone, else the School's), and the branch name ("Whole School" for a class with no branch). The mobile app's coach screen is unchanged for now: it has no branch list to read names from.
+5. **"My coach profile" (Q5).** The "Complete your profile" menu item and page are renamed "My coach profile", in every language.
+6. **Owner switches for coaches (Q6): not now.** Coaches keep their role's fixed access; the owner's access switches stay for Branch Staff.
+7. **Messaging and SMS invites (Q7): v1.3.**
+8. **Push and open the pull request (Q8):** done, PR #461.
+
+No migration and no data-model or RLS change.
+
+### Recorded by
+
+User (Code), 3 Nov 2026: "all recomended", on the Coaches portal review's questions Q1–Q8.

@@ -97,13 +97,13 @@ test('"Upcoming Booking" is the soonest class, even with more than 20 bookings',
   }
 });
 
-test('a coach typing /students or /students/invite lands on their own home screen', async ({ page }) => {
+// Decision 425 (Q2): coaches now have the student list, read only; inviting
+// stays the owner's.
+test('a coach typing /students/invite lands on their own home screen', async ({ page }) => {
   const coach = await addPerson('Cleo', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, coach.token);
-  for (const path of ['/students', '/students/invite']) {
-    await page.goto(path);
-    await expect(page).not.toHaveURL(new RegExp(`${path}$`));
-  }
+  await page.goto('/students/invite');
+  await expect(page).not.toHaveURL(/\/students\/invite$/);
 });
 
 test('a branch coach can open and edit a student of their own branch', async ({ page }) => {

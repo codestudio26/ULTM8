@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Coaches portal answers** (Decision 425) — Branch Staff see their
+  branch's classes this week on their dashboard, with roll call and QR links
+  when they handle bookings. Coaches get a read-only Students page with the
+  Attendance tab. Uploading a certification needs the consent tick. "Coming
+  up" shows each class's start time and branch. "Complete your profile" is
+  now "My coach profile".
 - **Coaches portal fixes** (Coaches portal review CP2–CP6, Decision 424) —
   the coach dashboard no longer lists archived weekly slots, and marks a
   cancelled class "Cancelled" with no roll call or QR link. An owner who also
