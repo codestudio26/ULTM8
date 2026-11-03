@@ -285,6 +285,25 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (`merge_student_ranks`) that the background-job role may only call; that
   role gets no new table rights. **Needs a database migration**
   (`20270212000000_merge_keeps_higher_belt`).
+- **The signed-documents export can include member files** (Decision 422 item
+  9) — the export dialog on the Waivers page gains an **Include member files**
+  tick box, off by default and shown only to the School's owner. Ticked, the
+  ZIP also holds every file on the School's members' **Documents** (Profile),
+  as `member-files/<member name>-<first 8 characters of their id>/<file
+  name>`, each exactly as uploaded. File and folder names are made safe (no
+  folders or `..` in a name, no characters Windows refuses, reserved Windows
+  names renamed, two files of the same name kept apart as "name (2)"). Only
+  this School's files, and only files still on a member (an erased account's
+  files, waiting to be purged, are left out). The export stays owner-only:
+  staff, with "Member files" or not, are refused (403). Files are streamed one
+  at a time into a ZIP written to a temporary file and uploaded from there, so
+  neither the files nor the ZIP are held in memory whole; the ZIP can be up to
+  2 GB (a larger one fails, and the owner is told the export couldn't be
+  made). The ZIP is still deleted after 24 hours. `POST
+  /schools/{schoolId}/signed-documents/exports` takes `includeMemberFiles`;
+  `SignedDocumentExportDto` gains `includeMemberFiles` and `memberFileCount`.
+  15 languages. **Needs a database migration**
+  (`20270208000000_export_member_files`).
 - **Tags on students** (backlog 5.4; Decision 315 item 7) — each School keeps
   its own list of tags, managed under **School settings → Student tags** (add,
   rename, delete; deleting a tag takes it off every student). A **Tags** card
@@ -487,6 +506,23 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   need the new "Import data" switch and reach only their own branches' students
   (adding a child stays the owner's). Results can be downloaded as CSV. **Needs
   a database migration** (`20270202000000_data_imports`).
+- **Import past attendance of any age** (Decision 422 item 6) — the 30-day
+  limit on importing past attendance is gone: any past date from 1 Jan 1900
+  is accepted; a future date or a date that doesn't exist is still refused.
+  Imported visits count toward belt progress like any other check-in, by
+  grading's own rules (the next belt's class types and its weekly cap), from
+  the day the student's current belt was awarded (Decision 423): a visit on
+  or after that day counts toward the next belt, an earlier one doesn't. The
+  members import takes that date after each belt, e.g. "BJJ: Blue
+  (2024-11-03)"; without one the belt is dated the day of the import. A past
+  attendance file may now have up to 10,000 rows (members and memberships
+  stay at 2,000), still sent 100 at a time. They never use a Class Pack or
+  class credit and need no membership, because they were paid for elsewhere:
+  before this change an import used a Class Pack credit when nothing else
+  paid. A booking already made for the class is checked in, not paid for
+  again. The import screen's text says so in every language. **Needs a
+  database migration** (`20270207000000_imported_attendance`: a booking's
+  paying membership may now be empty, for imported attendance only).
 - **Freezing a membership: follow-ups** (backlog 3.4; Decision 409) —
   approving a freeze now cancels the member's bookings on the frozen days that
   the frozen membership paid for (no late fee; the place goes to the waitlist),

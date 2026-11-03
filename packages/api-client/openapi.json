@@ -28917,7 +28917,9 @@
             "type": "string"
           },
           "sourceMembershipId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6)."
           },
           "overriddenById": {
             "type": "string",
@@ -29146,7 +29148,9 @@
             "type": "string"
           },
           "sourceMembershipId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6)."
           },
           "overriddenById": {
             "type": "string",
@@ -40617,6 +40621,11 @@
                 "$ref": "#/components/schemas/SignedDocumentLabelsDto"
               }
             ]
+          },
+          "includeMemberFiles": {
+            "type": "boolean",
+            "default": false,
+            "description": "Decision 422 item 9: also put every file on the School's members' Profile → Documents in the ZIP. Only the School owner may export (staff are refused)."
           }
         }
       },
@@ -40644,6 +40653,15 @@
             "nullable": true,
             "description": "Signed documents in the ZIP, once it is made."
           },
+          "includeMemberFiles": {
+            "type": "boolean",
+            "description": "Whether the owner asked for member files to be included (Decision 422 item 9)."
+          },
+          "memberFileCount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Member files in the ZIP, once it is made; null when they weren't asked for."
+          },
           "sizeBytes": {
             "type": "number",
             "nullable": true,
@@ -40670,6 +40688,7 @@
         "required": [
           "id",
           "status",
+          "includeMemberFiles",
           "createdAt"
         ]
       },
@@ -43169,14 +43188,22 @@
         "type": "object",
         "properties": {
           "maxRows": {
-            "type": "number"
+            "type": "number",
+            "description": "The most rows a file of members or memberships may have."
+          },
+          "maxRowsByKind": {
+            "type": "object",
+            "description": "The most rows a file of each kind may have: past attendance allows more (Decision 423).",
+            "additionalProperties": {
+              "type": "number"
+            }
           },
           "maxRowsPerRequest": {
             "type": "number"
           },
-          "attendanceMaxDaysBack": {
-            "type": "number",
-            "description": "Past attendance can be imported this many days back (Decision 317 item 4)."
+          "attendanceEarliestDay": {
+            "type": "string",
+            "description": "The earliest date past attendance can be imported for (YYYY-MM-DD). Any later past date is accepted (Decision 422 item 6)."
           },
           "columns": {
             "type": "object",
@@ -43191,8 +43218,9 @@
         },
         "required": [
           "maxRows",
+          "maxRowsByKind",
           "maxRowsPerRequest",
-          "attendanceMaxDaysBack",
+          "attendanceEarliestDay",
           "columns"
         ]
       },
@@ -43210,7 +43238,7 @@
           "rowNumber": {
             "type": "number",
             "minimum": 2,
-            "maximum": 2001,
+            "maximum": 10001,
             "description": "The line in the file; the header row is line 1."
           },
           "values": {
@@ -43430,8 +43458,8 @@
           "totalRows": {
             "type": "number",
             "minimum": 1,
-            "maximum": 2000,
-            "description": "How many rows the file has (at most 2000)."
+            "maximum": 10000,
+            "description": "How many rows the file has: at most ImportLimits.maxRowsByKind for its kind (10000 for past attendance)."
           },
           "fileName": {
             "type": "string",

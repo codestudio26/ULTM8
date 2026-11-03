@@ -10,7 +10,7 @@ import { SchoolsService } from '../tenants/schools/schools.service';
 import { RoleGrantsService } from '../tenants/role-grants/role-grants.service';
 import { StudentAccessService } from '../student-access/student-access.service';
 import { GradingService } from '../ranks/grading.service';
-import { StaffAttendanceService, LOG_ATTENDANCE_MAX_DAYS_BACK } from '../attendance/staff-attendance.service';
+import { StaffAttendanceService } from '../attendance/staff-attendance.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service';
 import { safeZone } from '../bookings/booking-week';
@@ -21,10 +21,12 @@ import { assertCanCreateMembership, GENERAL_ACCESS_TYPES, GeneralAccessConflictE
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import type { AddChildManuallyDto } from '../student-access/dto/student-access.dto';
 import {
+  ATTENDANCE_EARLIEST_DAY,
   IMPORT_COLUMNS,
   IMPORT_KINDS,
   MAX_IMPORT_ROWS,
   MAX_ROWS_PER_REQUEST,
+  maxRowsFor,
   RowProblem,
   RowValues,
   parseBelts,
@@ -68,6 +70,8 @@ interface Belt {
   style: string;
   disciplineId: string;
   rungId: string;
+  /** The day the belt was awarded (YYYY-MM-DD), or null for today (Decision 423). */
+  awardedOn: string | null;
 }
 
 /** What a member row will do, once checked. */
@@ -132,7 +136,8 @@ const READY_MESSAGES: Partial<Record<ImportRowCode, string>> = {
  *   every row and changes nothing. The import itself is started, then its
  *   rows are sent in batches; each row's result is kept, so a batch sent again
  *   (a retry after a dropped connection) returns the same results and imports
- *   nothing twice. At most MAX_IMPORT_ROWS rows per import.
+ *   nothing twice. At most maxRowsFor(kind) rows per import: 2,000, or
+ *   10,000 of past attendance (Decision 423).
  * - **Members** (item 12): made exactly as Add manually makes them. An adult
  *   gets an account with a temporary passcode (Decision 371/403). A child
  *   (under 18) is added with their Guardian's email (AddChildManually): a new
@@ -143,9 +148,11 @@ const READY_MESSAGES: Partial<Record<ImportRowCode, string>> = {
  * - **Memberships** (item 13): recorded against an existing plan, with the
  *   dates given. No Transaction and no Stripe: no money moves. A Subscription
  *   is card-only (Spec 55 §6.1), so it can't be imported this way.
- * - **Past attendance** (item 13): each row is logged exactly as "Log
- *   attendance" logs it (Decision 317 item 4): up to 30 days back, counting
- *   like a check-in, never twice.
+ * - **Past attendance** (item 13; Decision 422 item 6): of any age (no date
+ *   before ATTENDANCE_EARLIEST_DAY, none in the future), never twice. It
+ *   counts toward belt progress like a check-in, but uses no pack or class
+ *   credit and needs no membership: it was paid for elsewhere
+ *   (StaffAttendanceService.importPast).
  *
  * Everything is scoped to the School: rows only ever match its own branches,
  * styles, plans, classes and students.
@@ -176,8 +183,9 @@ export class DataImportsService {
     await this.context(callerId, schoolId);
     return {
       maxRows: MAX_IMPORT_ROWS,
+      maxRowsByKind: Object.fromEntries(IMPORT_KINDS.map((k) => [k, maxRowsFor(k)])) as Record<ImportKind, number>,
       maxRowsPerRequest: MAX_ROWS_PER_REQUEST,
-      attendanceMaxDaysBack: LOG_ATTENDANCE_MAX_DAYS_BACK,
+      attendanceEarliestDay: ATTENDANCE_EARLIEST_DAY,
       columns: Object.fromEntries(IMPORT_KINDS.map((k) => [k, [...IMPORT_COLUMNS[k]]])) as Record<ImportKind, string[]>,
     };
   }
@@ -193,6 +201,10 @@ export class DataImportsService {
 
   async start(callerId: string, schoolId: string, dto: StartImportDto): Promise<DataImportResponseDto> {
     await this.context(callerId, schoolId);
+    // Past attendance allows a longer file than members or memberships (Decision 423).
+    if (dto.totalRows > maxRowsFor(dto.kind)) {
+      throw new BadRequestException({ code: 'TOO_MANY_ROWS', message: `At most ${maxRowsFor(dto.kind)} rows can be imported in one file of this kind.` });
+    }
     await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
     const created = await this.prismaJobs.dataImport.create({
       data: { schoolId, kind: dto.kind, createdById: callerId, fileName: dto.fileName?.trim() || null, totalRows: dto.totalRows },
@@ -224,13 +236,20 @@ export class DataImportsService {
     const todo = rows.filter((r) => !kept.has(r.rowNumber));
     const checked = todo.length ? await this.check(ctx, kind, todo) : [];
 
-    for (const [i, row] of todo.entries()) {
-      const outcome = checked[i];
-      const record: RowRecord =
-        'problem' in outcome
-          ? { result: resultOf(row.rowNumber, outcome, 'CREATED') }
-          : await this.run(ctx, kind, row.rowNumber, outcome);
-      kept.set(row.rowNumber, await this.keep(importId, record));
+    // Past attendance: each student's ready-to-grade check once, after the batch.
+    const attended = new Set<string>();
+    try {
+      for (const [i, row] of todo.entries()) {
+        const outcome = checked[i];
+        const record: RowRecord =
+          'problem' in outcome
+            ? { result: resultOf(row.rowNumber, outcome, 'CREATED') }
+            : await this.run(ctx, kind, row.rowNumber, outcome);
+        if (kind === 'ATTENDANCE' && record.bookingId && 'plan' in outcome) attended.add((outcome.plan as AttendanceRow).studentId);
+        kept.set(row.rowNumber, await this.keep(importId, record));
+      }
+    } finally {
+      for (const studentId of attended) await this.staffAttendance.afterImport(studentId);
     }
     return { rows: rows.map((r) => rowResult(kept.get(r.rowNumber)!)) };
   }
@@ -390,7 +409,7 @@ export class DataImportsService {
 
         // Belts per style, matched to the School's own styles and belts by name.
         const warnings: ImportWarning[] = [];
-        const belts: Belt[] = parseBelts(values).map(({ style, belt }) => {
+        const belts: Belt[] = parseBelts(values, ctx.today).map(({ style, belt, awardedOn }) => {
           if (!ctx.ranksOn) throw rowError('BELTS_OFF', 'Ranks are switched off for this School, so belts can\'t be set.', 'belts');
           const discipline = styles.find((s) => sameText(s.name, style));
           if (!discipline) throw rowError('UNKNOWN_STYLE', `This School has no style named "${style}".`, 'belts');
@@ -401,7 +420,7 @@ export class DataImportsService {
             // Grading's own refusal (GradingService.gradeAuthorizer).
             warnings.push({ code: 'BELT_NOT_SET', style: discipline.name, reason: NO_GRADING_PERMISSION, message: `${discipline.name}: ${NO_GRADING_PERMISSION}` });
           }
-          return { style: discipline.name, disciplineId: discipline.id, rungId };
+          return { style: discipline.name, disciplineId: discipline.id, rungId, awardedOn };
         });
         const settable = belts.filter((b) => !promotable || promotable.has(b.disciplineId));
 
@@ -641,8 +660,6 @@ export class DataImportsService {
       ? await this.prismaJobs.booking.findMany({ where: { classId: { in: classes.map((c) => c.id) }, status: 'COMPLETED' }, select: { classId: true, studentId: true } })
       : [];
     const mayCheckIn = new Map<string | null, boolean>();
-    const earliestDay = DateTime.fromISO(ctx.today, { zone: ctx.zone }).minus({ days: LOG_ATTENDANCE_MAX_DAYS_BACK });
-    const earliest = earliestDay.startOf('day').toJSDate();
     const seen = new Set<string>();
 
     const out: Array<Checked<AttendanceRow>> = [];
@@ -650,7 +667,12 @@ export class DataImportsService {
       out.push(
         await attemptAsync<AttendanceRow>(async () => {
           const studentId = students[i]();
-          parseDay(values, 'date', true);
+          const day = parseDay(values, 'date', true)!;
+          // Decision 422 item 6: any past date, from ATTENDANCE_EARLIEST_DAY on.
+          if (day > ctx.today) throw rowError('FUTURE_DATE', "date can't be in the future.", 'date');
+          if (day < ATTENDANCE_EARLIEST_DAY) {
+            throw rowError('OUT_OF_RANGE', `Attendance can only be imported from ${ATTENDANCE_EARLIEST_DAY} to ${ctx.today}.`, 'date');
+          }
           parseTime(values, 'time');
           const title = values.required('class');
           const start = starts[i];
@@ -660,10 +682,6 @@ export class DataImportsService {
           const cls = matching[0];
           if (cls.cancelledAt) throw rowError('CLASS_CANCELLED', 'This class was cancelled.', 'class');
           if (cls.startDate > ctx.now) throw rowError('CLASS_NOT_STARTED', "This class hasn't started yet.", 'date');
-          // Decision 317 item 4: up to 30 days back, as "Log attendance".
-          if (cls.startDate < earliest) {
-            throw rowError('OUT_OF_RANGE', `Attendance can only be imported from ${earliestDay.toISODate()} to ${ctx.today}.`, 'date');
-          }
           if (!ctx.isOwner) {
             if (!mayCheckIn.has(cls.branchId)) mayCheckIn.set(cls.branchId, await this.tenantAuth.staffMay(ctx.callerId, ctx.schoolId, 'bookings', cls.branchId));
             if (!mayCheckIn.get(cls.branchId)) throw rowError('NOT_YOUR_BRANCH', "The School owner hasn't let you manage bookings and check-in at this class's branch.", 'class');
@@ -783,7 +801,7 @@ export class DataImportsService {
   private async giveBelts(ctx: ImportContext, studentId: string, belts: Belt[], warnings: ImportWarning[]) {
     for (const belt of belts) {
       try {
-        await this.grading.promote(ctx.callerId, studentId, belt.disciplineId, { targetRungId: belt.rungId });
+        await this.grading.promote(ctx.callerId, studentId, belt.disciplineId, { targetRungId: belt.rungId, ...(belt.awardedOn ? { effectiveDate: belt.awardedOn } : {}) });
       } catch (err) {
         if (!(err instanceof HttpException)) throw err;
         warnings.push({ code: 'BELT_NOT_SET', style: belt.style, reason: messageOf(err), message: `${belt.style}: ${messageOf(err)}` });
@@ -834,9 +852,9 @@ export class DataImportsService {
 
   private async runAttendance(ctx: ImportContext, rowNumber: number, row: AttendanceRow): Promise<RowRecord> {
     try {
-      // Exactly "Log attendance" (Decision 317 item 4): its checks, a Class
-      // Pack credit when it needs a booking, grading and hours, STAFF_LOGGED.
-      const logged = await this.staffAttendance.log(ctx.callerId, ctx.schoolId, { studentId: row.studentId, classId: row.classId });
+      // Decision 422 item 6: counts like a check-in (grading, hours,
+      // STAFF_LOGGED), but no credit is used and no membership is needed.
+      const logged = await this.staffAttendance.importPast(ctx.callerId, ctx.schoolId, { studentId: row.studentId, classId: row.classId });
       return {
         result: { rowNumber, outcome: 'CREATED', code: 'NEW_ATTENDANCE', column: null, message: doneMessage('NEW_ATTENDANCE'), warnings: [] },
         bookingId: logged.bookingId,

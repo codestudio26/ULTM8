@@ -15,11 +15,11 @@ export const imports = {
   },
   about: {
     MEMBERS:
-      'One row per member: name, email, phone, date of birth, gender (Female, Male or empty), join date, belts ("Style: Belt; Style: Belt") and home branch. Each new member gets an account and an email with a temporary passcode. A row whose email already has an account is skipped and listed. A child (under 18) is added with their Guardian\'s email: a new Guardian gets an account with a temporary passcode; a Guardian who already has one gets an invite to accept in the app.',
+      'One row per member: name, email, phone, date of birth, gender (Female, Male or empty), join date, belts ("Style: Belt (2024-11-03); Style: Belt") and home branch. Each new member gets an account and an email with a temporary passcode. A row whose email already has an account is skipped and listed. A child (under 18) is added with their Guardian\'s email: a new Guardian gets an account with a temporary passcode; a Guardian who already has one gets an invite to accept in the app. A date in brackets after a belt is the day it was awarded (YYYY-MM-DD); past attendance you import from that day on counts toward the next belt.',
     MEMBERSHIPS:
       "One row per membership: the member's email (for a child, their Guardian's email and the child's name), the plan's name as on your Membership plans page, the start date, and if you like the end date and, for a Class Pack, the classes left. It is recorded with no payment. A Subscription is paid by card in the app, so it can't be imported.",
     ATTENDANCE:
-      "One row per class someone came to: the member's email (for a child, their Guardian's email and the child's name), the class's date, start time (24-hour, your School's time) and name. Each counts like a check-in (a Class Pack credit is used when needed, and it counts toward grading), up to {days} days back.",
+      "One row per class someone came to: the member's email (for a child, their Guardian's email and the child's name), the class's date, start time (24-hour, your School's time) and name. Any past date can be imported. Each counts toward grading like a check-in (classes before the student's last promotion don't count toward the next belt), but uses no Class Pack or class credit and needs no membership: it was paid for elsewhere.",
   },
   formatHint: 'Write dates as YYYY-MM-DD and times as HH:MM. Save the file as CSV (comma or semicolon separated). Up to {max} rows per file.',
   template: 'Download the template',
@@ -72,7 +72,7 @@ export const imports = {
     INVALID_PHONE: 'Write the phone as an international number: + and the country code.',
     INVALID_DATE: 'Write the date as YYYY-MM-DD.',
     INVALID_BIRTH_DATE: 'Not a real date of birth: in the future, or more than 120 years ago.',
-    FUTURE_DATE: "The join date can't be in the future.",
+    FUTURE_DATE: "This date can't be in the future.",
     INVALID_GENDER: 'Gender must be Female or Male, or left empty.',
     INVALID_TIME: 'Write the time as HH:MM (24-hour).',
     INVALID_NUMBER: 'Must be a whole number.',
@@ -101,7 +101,7 @@ export const imports = {
     AMBIGUOUS_CLASS: 'More than one class with this name started at this time.',
     CLASS_CANCELLED: 'This class was cancelled.',
     CLASS_NOT_STARTED: "This class hasn't started yet.",
-    OUT_OF_RANGE: 'Past attendance can only be imported up to {days} days back.',
+    OUT_OF_RANGE: 'Past attendance can only be imported from {earliest} on.',
     FAILED: "This row couldn't be imported.",
   },
   warnings: {

@@ -19,6 +19,8 @@ const EXPORT_SELECT = {
   id: true,
   status: true,
   documentCount: true,
+  includeMemberFiles: true,
+  memberFileCount: true,
   sizeBytes: true,
   objectKey: true,
   createdAt: true,
@@ -32,6 +34,8 @@ type ExportRow = {
   id: string;
   status: SignedDocumentExportDto['status'];
   documentCount: number | null;
+  includeMemberFiles: boolean;
+  memberFileCount: number | null;
   sizeBytes: number | null;
   objectKey: string | null;
   createdAt: Date;
@@ -56,7 +60,10 @@ export class SignedDocumentsExportService {
     @InjectQueue(SIGNED_DOCUMENTS_EXPORT_QUEUE) private readonly queue: Queue<SignedDocumentsExportJobData>,
   ) {}
 
-  async request(callerId: string, schoolId: string, labels: SignedDocumentLabelsDto | undefined): Promise<SignedDocumentExportDto> {
+  /** `includeMemberFiles` (Decision 422 item 9) adds every member file at the
+   * School. The owner check comes first: staff, even with "Member files",
+   * are refused whether they tick it or not. */
+  async request(callerId: string, schoolId: string, labels: SignedDocumentLabelsDto | undefined, includeMemberFiles = false): Promise<SignedDocumentExportDto> {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     if (!this.r2Client.isConfigured()) throw new ServiceUnavailableException(STORAGE_NOT_SET_UP);
 
@@ -74,7 +81,7 @@ export class SignedDocumentsExportService {
     }
     const id = randomUUID();
     const row = await this.prismaJobs.signedDocumentExport.create({
-      data: { id, schoolId, requestedById: callerId, labels: stored },
+      data: { id, schoolId, requestedById: callerId, labels: stored, includeMemberFiles },
       select: EXPORT_SELECT,
     });
     try {
@@ -121,6 +128,8 @@ export class SignedDocumentsExportService {
       id: r.id,
       status: expired ? 'EXPIRED' : r.status,
       documentCount: r.documentCount,
+      includeMemberFiles: r.includeMemberFiles,
+      memberFileCount: r.memberFileCount,
       sizeBytes: r.sizeBytes,
       requestedByName: r.requestedBy ? `${r.requestedBy.firstName} ${r.requestedBy.surname}`.trim() : null,
       createdAt: r.createdAt.toISOString(),

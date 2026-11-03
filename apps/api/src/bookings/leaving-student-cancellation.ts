@@ -57,7 +57,7 @@ export async function cancelPlacesOfLeavingStudent(
     if (result.count === 0) continue;
     bookingsCancelled += 1;
     freed.add(booking.classId);
-    if (resolution === 'REFUNDED') await restoreCredit(tx, booking.sourceMembershipId, logger);
+    if (resolution === 'REFUNDED' && booking.sourceMembershipId) await restoreCredit(tx, booking.sourceMembershipId, logger);
     for (const attendee of booking.attendees) {
       await tx.bookingAttendee.update({ where: { id: attendee.id }, data: { refundResolution: resolution, resolvedById: callerId } });
       if (resolution === 'REFUNDED') await restoreCredit(tx, attendee.membershipId, logger);

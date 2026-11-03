@@ -6,7 +6,8 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { BookingsService } from '../bookings/bookings.service';
-import { assertNotAlreadyAttended, BOOKING_TX_OPTIONS, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
+import { randomUUID } from 'crypto';
+import { assertNotAlreadyAttended, BOOKING_TX_OPTIONS, lockClassShared, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
 import { safeZone } from '../bookings/booking-week';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { localDay } from '../ranks/engine';
@@ -96,7 +97,8 @@ export class StaffAttendanceService {
     // Classes that started from the first day up to now: a class counts once it has started.
     const classWindow = { startDate: { gte: dayStart(from, zone), lte: now } };
     const branchWhere = branchIds ? { branchId: { in: branchIds } } : {};
-    const passWhere = excludePasses ? { sourceMembership: { membershipPlan: { type: { notIn: PASS_PLAN_TYPES } } } } : {};
+    // Imported past attendance has no Membership (Decision 422 item 6) and is no pass.
+    const passWhere = excludePasses ? { OR: [{ sourceMembershipId: null }, { sourceMembership: { membershipPlan: { type: { notIn: PASS_PLAN_TYPES } } } }] } : {};
 
     // Read via ultm8_jobs after the access check above, with the School and
     // Branches named explicitly (Membership rows are never readable by Branch
@@ -267,5 +269,77 @@ export class StaffAttendanceService {
     );
     await this.attendance.afterCheckIn(studentId);
     return { bookingId: result.bookingId, classId, studentId, checkInMethod: 'STAFF_LOGGED', checkedInById: callerId, from: result.from };
+  }
+
+  /**
+   * Past attendance imported from a spreadsheet (Decision 422 item 6), of any
+   * age. The caller (DataImportsService) has already checked the row: the
+   * student is a current student of this School it may reach, the class is
+   * this School's, has started, isn't cancelled or archived, and the caller
+   * may check people in at its Branch. As log(), but:
+   *
+   * - **Any age:** no 30-day window.
+   * - **No credits:** it was paid for elsewhere. A booking already made for
+   *   the class (Upcoming, or marked No-Show) is checked in, as log() does;
+   *   it was paid for when it was made, not by the import. Otherwise the
+   *   booking is made with no Membership behind it (sourceMembershipId null),
+   *   so no pack or class credit is used and no membership is needed. A new
+   *   booking's seat rules (capacity, the waitlist, the belt needed to book,
+   *   the class's waiver to book) are about taking a place in a class to come,
+   *   so they don't apply to a visit that already happened.
+   * - **Belt progress:** checked in through the same completeInTx as every
+   *   other way in (the School's check-in rules about the person, the grading
+   *   count with its class types and weekly cap, hours trained), except that
+   *   only a class on or after the day the current belt was awarded counts
+   *   toward the next one (StudentRank.dateOfCurrentRank, Decision 423); an
+   *   earlier class counts toward nothing.
+   *
+   * Recorded as STAFF_LOGGED by the importer, as before. The ready-to-grade
+   * check is the caller's, once per student after the batch (afterCheckIn).
+   */
+  async importPast(callerId: string, schoolId: string, dto: { studentId: string; classId: string }): Promise<{ bookingId: string }> {
+    const { studentId, classId } = dto;
+    // In the importer's own context: only a Class of this School they can see.
+    const cls = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.class.findFirst({ where: { id: classId, schoolId }, select: { id: true, branchId: true, startDate: true, cancelledAt: true, archivedAt: true } }),
+    );
+    if (!cls) throw new NotFoundException('Class not found');
+    if (cls.cancelledAt) throw new ConflictException('This class has been cancelled by the school.');
+    if (cls.archivedAt) throw new BadRequestException('This Class is archived and can no longer be booked.');
+    if (cls.startDate > new Date()) {
+      throw new BadRequestException({ code: 'LOG_NOT_STARTED', message: "This class hasn't started yet. Check them in instead." });
+    }
+    return withSeatLockRetry(() => this.prismaApp.withTenantContext(
+      studentId,
+      async (tx) => {
+        await lockStudentClass(tx, studentId, classId);
+        await lockSchoolOpen(tx, schoolId);
+        // Re-checked under the lock a whole-class cancel also takes (as bookInTx).
+        const locked = await lockClassShared(tx, classId);
+        await assertNotAlreadyAttended(tx, studentId, classId);
+        let booking = await tx.booking.findFirst({ where: { studentId, classId, status: 'UPCOMING' }, select: { id: true, classId: true } });
+        if (!booking) {
+          const noShow = await tx.booking.findFirst({ where: { studentId, classId, status: 'NO_SHOW' }, orderBy: { createdAt: 'desc' }, select: { id: true, classId: true } });
+          if (noShow) {
+            await tx.booking.updateMany({ where: { id: noShow.id, status: 'NO_SHOW' }, data: { status: 'UPCOMING' } });
+            booking = noShow;
+          } else {
+            booking = await tx.booking.create({
+              data: { id: randomUUID(), studentId, classId, schoolId, branchId: locked ? locked.branchId : cls.branchId, sourceMembershipId: null },
+              select: { id: true, classId: true },
+            });
+          }
+        }
+        await this.attendance.completeInTx(tx, studentId, booking, 'STAFF_LOGGED', callerId, { onlySinceRankDate: true });
+        return { bookingId: booking.id };
+      },
+      BOOKING_TX_OPTIONS,
+    ));
+  }
+
+  /** After importPast commits, once per student: the classes may have made
+   * them ready to grade (Decision 178). */
+  async afterImport(studentId: string): Promise<void> {
+    await this.attendance.afterCheckIn(studentId);
   }
 }

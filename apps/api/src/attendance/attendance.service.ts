@@ -6,7 +6,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { QrTokenService } from './qr-token.service';
 import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
-import { creditAttendance } from '../ranks/grading-attendance';
+import { creditAttendance, type CreditAttendanceOptions } from '../ranks/grading-attendance';
 import { recordCheckInMinutes } from '../ranks/hours-trained';
 import { assertClassBookable, BOOKING_TX_OPTIONS, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
 import { BookingsService } from '../bookings/bookings.service';
@@ -423,7 +423,14 @@ export class AttendanceService {
    * context, after lockStudentClass). completeBooking runs it alone; the front
    * desk's one-step check-in (Decision 378) runs it for several Classes in one
    * transaction. Call afterCheckIn once the transaction has committed. */
-  async completeInTx(tx: TenantTx, studentId: string, booking: { id: string; classId: string }, method: CheckInMethod, checkedInById: string | null) {
+  async completeInTx(
+    tx: TenantTx,
+    studentId: string,
+    booking: { id: string; classId: string },
+    method: CheckInMethod,
+    checkedInById: string | null,
+    opts: CreditAttendanceOptions = {},
+  ) {
     // The School's check-in rules about the person (Decision 394), for every
     // way in: waiver, home Branch, visitors.
     await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id);
@@ -447,7 +454,8 @@ export class AttendanceService {
     // 90's activities <-> Discipline.name bridge for attendance. Attendance
     // check-in happens regardless of ranking: a style the student has no rank
     // in is skipped.
-    await creditAttendance(tx, studentId, booking);
+    // Imported past attendance (Decision 422 item 6) passes onlySinceRankDate.
+    await creditAttendance(tx, studentId, booking, opts);
 
     // Hours trained (Decisions 301 item 1, 306): the class's scheduled
     // length, per style, as a record only. Separate from the class count

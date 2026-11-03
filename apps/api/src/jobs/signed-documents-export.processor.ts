@@ -1,9 +1,14 @@
 import { Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
+import { mkdtemp, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { buildSignedDocumentsZip, labelsFrom } from '../signed-documents/signed-documents-builder';
+import { addMemberFilesToZip } from '../signed-documents/member-files-export';
+import { ZipFileWriter } from '../signed-documents/zip-file-writer';
 import { SIGNED_DOCUMENTS_EXPORT_QUEUE } from './queue.constants';
 
 export interface SignedDocumentsExportJobData {
@@ -22,7 +27,11 @@ export const signedDocumentsExportKey = (schoolId: string, exportId: string) => 
  * the School as a ZIP in the private R2 bucket, downloaded through a
  * 5-minute signed link. Runs as ultm8_jobs (the owner was checked when the
  * export was asked for; every read here names that School). A failure marks
- * the export FAILED, and the owner can ask again.
+ * the export FAILED, and the owner can ask again. When the owner ticked
+ * "Include member files" (Decision 422 item 9) the ZIP also holds every
+ * member file at the School, streamed in one at a time; the ZIP is written
+ * to a temporary file and uploaded from there, and can be up to 2 GB
+ * (ZIP_FILE_MAX_BYTES; a larger one fails).
  */
 @Processor(SIGNED_DOCUMENTS_EXPORT_QUEUE)
 export class SignedDocumentsExportProcessor extends WorkerHost {
@@ -43,14 +52,27 @@ export class SignedDocumentsExportProcessor extends WorkerHost {
   async run(exportId: string): Promise<string> {
     // Claimed atomically, so a retried or doubled job builds it once.
     const claimed = await this.prismaJobs.signedDocumentExport.updateMany({ where: { id: exportId, status: 'PENDING' }, data: { status: 'RUNNING' } });
-    const row = await this.prismaJobs.signedDocumentExport.findUnique({ where: { id: exportId }, select: { schoolId: true, labels: true, status: true } });
+    const row = await this.prismaJobs.signedDocumentExport.findUnique({
+      where: { id: exportId },
+      select: { schoolId: true, labels: true, status: true, includeMemberFiles: true },
+    });
     if (!row || claimed.count === 0) return row?.status ?? 'MISSING';
 
     const objectKey = signedDocumentsExportKey(row.schoolId, exportId);
+    // The ZIP is written to a file of its own, never held in memory whole
+    // (member files can make it large), and uploaded from there.
+    let dir: string | null = null;
+    let zip: ZipFileWriter | null = null;
     try {
       if (!this.r2Client.isConfigured()) throw new Error('R2 is not configured.');
-      const { zip, documentCount } = await buildSignedDocumentsZip(this.prismaJobs, this.r2Client, row.schoolId, labelsFrom(row.labels));
-      await this.r2Client.putObject(objectKey, zip, 'application/zip');
+      dir = await mkdtemp(join(tmpdir(), 'signed-documents-export-'));
+      const zipPath = join(dir, 'export.zip');
+      zip = new ZipFileWriter(zipPath);
+      const { documentCount } = await buildSignedDocumentsZip(this.prismaJobs, this.r2Client, row.schoolId, labelsFrom(row.labels), zip);
+      // Decision 422 item 9: the owner ticked "Include member files".
+      const memberFiles = row.includeMemberFiles ? await addMemberFilesToZip(this.prismaJobs, this.r2Client, row.schoolId, zip, this.logger) : null;
+      const sizeBytes = zip.finish();
+      await this.r2Client.putObjectFromFile(objectKey, zipPath, 'application/zip');
       const now = new Date();
       await this.prismaJobs.signedDocumentExport.update({
         where: { id: exportId },
@@ -58,12 +80,14 @@ export class SignedDocumentsExportProcessor extends WorkerHost {
           status: 'READY',
           objectKey,
           documentCount,
-          sizeBytes: zip.length,
+          memberFileCount: memberFiles?.fileCount ?? null,
+          sizeBytes,
           finishedAt: now,
           expiresAt: new Date(now.getTime() + SIGNED_DOCUMENTS_EXPORT_TTL_MS),
         },
       });
-      this.logger.log(`signed-documents-export: export ${exportId} for School ${row.schoolId} made with ${documentCount} document(s).`);
+      const files = memberFiles ? `, ${memberFiles.fileCount} member file(s) (${memberFiles.missingCount} missing from storage)` : '';
+      this.logger.log(`signed-documents-export: export ${exportId} for School ${row.schoolId} made with ${documentCount} document(s)${files}.`);
       return 'READY';
     } catch (err) {
       this.logger.error(`signed-documents-export: export ${exportId} for School ${row.schoolId} failed — ${String(err)}`);
@@ -72,6 +96,9 @@ export class SignedDocumentsExportProcessor extends WorkerHost {
         data: { status: 'FAILED', error: String(err).slice(0, 500), finishedAt: new Date() },
       });
       return 'FAILED';
+    } finally {
+      zip?.close();
+      if (dir) await rm(dir, { recursive: true, force: true }).catch((err) => this.logger.warn(`signed-documents-export: could not remove ${dir} — ${String(err)}`));
     }
   }
 }

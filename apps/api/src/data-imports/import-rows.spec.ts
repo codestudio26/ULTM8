@@ -58,9 +58,16 @@ describe('spreadsheet import rows (Decision 315 items 12, 13)', () => {
 
   it('reads belts as "Style: Belt; Style: Belt", one belt per style', () => {
     expect(parseBelts(new RowValues({ belts: 'Brazilian Jiu-Jitsu: Blue; Judo: Yellow ;' }))).toEqual([
-      { style: 'Brazilian Jiu-Jitsu', belt: 'Blue' },
-      { style: 'Judo', belt: 'Yellow' },
+      { style: 'Brazilian Jiu-Jitsu', belt: 'Blue', awardedOn: null },
+      { style: 'Judo', belt: 'Yellow', awardedOn: null },
     ]);
+    // Decision 423: the day each belt was awarded, in brackets.
+    expect(parseBelts(new RowValues({ belts: 'BJJ: Blue (2024-11-03); Judo: Yellow' }), '2026-11-03')).toEqual([
+      { style: 'BJJ', belt: 'Blue', awardedOn: '2024-11-03' },
+      { style: 'Judo', belt: 'Yellow', awardedOn: null },
+    ]);
+    expect(problem(() => parseBelts(new RowValues({ belts: 'BJJ: Blue (03/11/2024)' }), '2026-11-03'))).toMatchObject({ code: 'INVALID_DATE', column: 'belts' });
+    expect(problem(() => parseBelts(new RowValues({ belts: 'BJJ: Blue (2027-01-01)' }), '2026-11-03'))).toMatchObject({ code: 'FUTURE_DATE', column: 'belts' });
     expect(parseBelts(new RowValues({}))).toEqual([]);
     expect(problem(() => parseBelts(new RowValues({ belts: 'Blue' })))).toMatchObject({ code: 'BELTS_FORMAT' });
     expect(problem(() => parseBelts(new RowValues({ belts: 'Judo: Yellow; judo: Orange' })))).toMatchObject({ code: 'BELTS_FORMAT' });

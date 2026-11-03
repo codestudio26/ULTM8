@@ -14,7 +14,7 @@ import { SubscriptionGateService } from '../subscription-plans/subscription-gate
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
-import { CancellationService, SeatRef, StripeRefundPlan } from './cancellation.service';
+import { CancellationService, ownSeat, SeatRef, StripeRefundPlan } from './cancellation.service';
 import { lateCancellationFee } from './late-cancellation-fee';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
@@ -437,10 +437,12 @@ export class BookingsService {
         // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
         // fallback MembershipsService.purchase() already applies when charging
         // this exact Membership's own Stripe payments.
-        const sourceMembership = await tx.membership.findUnique({
-          where: { id: resolvedBooking.sourceMembershipId },
-          select: { membershipPlan: { select: { currency: true, cancellationCharge: true } } },
-        });
+        const sourceMembership = resolvedBooking.sourceMembershipId
+          ? await tx.membership.findUnique({
+              where: { id: resolvedBooking.sourceMembershipId },
+              select: { membershipPlan: { select: { currency: true, cancellationCharge: true } } },
+            })
+          : null;
         const fee = lateCancellationFee(cls.cancellationCharge, sourceMembership?.membershipPlan.cancellationCharge ?? null);
         if (fee !== null) {
           cancellationChargeAmount = fee;
@@ -464,7 +466,7 @@ export class BookingsService {
       // resolved by the School's policy: credit back, nothing back, money back,
       // or left for staff. See CancellationService.resolveSeat.
       const seats: SeatRef[] = [
-        { bookingId, attendeeId: null, membershipId: resolvedBooking.sourceMembershipId },
+        ...ownSeat(bookingId, resolvedBooking.sourceMembershipId),
         ...resolvedBooking.attendees.map((a) => ({ bookingId, attendeeId: a.id, membershipId: a.membershipId })),
       ];
       for (const seat of seats) {

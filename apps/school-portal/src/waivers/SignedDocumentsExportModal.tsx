@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
 import { ApiError, unwrap, type components } from '@ultm8/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../api';
+import { useOwnedSchoolIds } from '../auth/AuthContext';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { exportReadyText, exportRequestBody, mayIncludeMemberFiles } from './signedDocumentsExport';
 
 export type SignedDocumentExport = components['schemas']['SignedDocumentExportDto'];
 type Labels = components['schemas']['SignedDocumentLabelsDto'];
@@ -54,15 +56,25 @@ function formatSize(bytes: number, t: TranslateFn): string {
  * Export all signed documents (Decision 315 item 13): a ZIP of every signed
  * waiver at the School, one document per signature and an index. Made in the
  * background; the owner can close this and come back. The ZIP is kept for 24
- * hours. School owners only (this page is the owner's).
+ * hours. School owners only (this page is the owner's). The owner may tick
+ * "Include member files" to add every file on members' Documents (Decision
+ * 422 item 9); the box is shown only to an owner of this School.
  */
 export function SignedDocumentsExportModal({ schoolId, onClose }: { schoolId: string; onClose: () => void }) {
   const t = useT();
   const queryClient = useQueryClient();
   const latest = useLatestSignedDocumentExport(schoolId);
   const [error, setError] = useState<string | null>(null);
+  const canIncludeMemberFiles = mayIncludeMemberFiles(useOwnedSchoolIds(), schoolId);
+  const [includeMemberFiles, setIncludeMemberFiles] = useState(false);
   const start = useMutation({
-    mutationFn: () => unwrap(apiClient.POST('/v1/schools/{schoolId}/signed-documents/exports', { params: { path: { schoolId } }, body: { labels: signedDocumentLabels(t) } })),
+    mutationFn: () =>
+      unwrap(
+        apiClient.POST('/v1/schools/{schoolId}/signed-documents/exports', {
+          params: { path: { schoolId } },
+          body: exportRequestBody(signedDocumentLabels(t), { mayIncludeMemberFiles: canIncludeMemberFiles, includeMemberFiles }),
+        }),
+      ),
     onSuccess: (created) => queryClient.setQueryData(['signedDocumentExport', schoolId], { export: created }),
   });
   const download = useMutation({
@@ -107,15 +119,29 @@ export function SignedDocumentsExportModal({ schoolId, onClose }: { schoolId: st
         </p>
       ) : current?.status === 'READY' ? (
         <div data-testid="export-status">
-          <p style={{ marginBottom: 4 }}>
-            {t('waivers.exportAll.ready', { count: current.documentCount ?? 0, size: formatSize(current.sizeBytes ?? 0, t) })}
-          </p>
+          <p style={{ marginBottom: 4 }}>{exportReadyText(t, current, formatSize(current.sizeBytes ?? 0, t))}</p>
           {current.expiresAt ? <p style={{ marginTop: 0, color: 'var(--text-secondary)' }}>{t('waivers.exportAll.availableUntil', { time: until(current.expiresAt) })}</p> : null}
         </div>
       ) : current?.status === 'FAILED' ? (
         <p data-testid="export-status">{t('waivers.exportAll.failed')}</p>
       ) : current?.status === 'EXPIRED' ? (
         <p data-testid="export-status">{t('waivers.exportAll.expired')}</p>
+      ) : null}
+
+      {canIncludeMemberFiles ? (
+        <div style={{ marginBottom: 12 }}>
+          <Checkbox
+            label={t('waivers.exportAll.includeMemberFiles')}
+            checked={includeMemberFiles}
+            disabled={busy(current) || start.isPending}
+            onChange={(e) => setIncludeMemberFiles(e.target.checked)}
+            data-testid="export-include-member-files"
+            aria-describedby="export-include-member-files-hint"
+          />
+          <p id="export-include-member-files-hint" style={{ margin: 0, color: 'var(--text-secondary)', fontSize: 'var(--font-size-footnote)' }}>
+            {t('waivers.exportAll.includeMemberFilesHint')}
+          </p>
+        </div>
       ) : null}
 
       <div style={{ display: 'flex', gap: 8 }}>

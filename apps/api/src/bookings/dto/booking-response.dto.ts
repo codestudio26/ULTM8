@@ -52,8 +52,8 @@ export class BookingResponseDto {
   @ApiProperty()
   status!: string;
 
-  @ApiProperty()
-  sourceMembershipId!: string;
+  @ApiProperty({ type: String, nullable: true, description: 'The Membership that paid for this seat. Null only for past attendance imported from a spreadsheet (Decision 422 item 6).' })
+  sourceMembershipId!: string | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   overriddenById!: string | null;
