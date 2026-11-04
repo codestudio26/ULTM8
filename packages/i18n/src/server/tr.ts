@@ -777,4 +777,5 @@ export const serverMessages: Record<string, string> = {
   "A row number is past the end of this import.": "Bir satır numarası bu içe aktarmanın sonunu aşıyor.",
   "Import not found": "İçe aktarma bulunamadı",
   "Each row number can only be sent once.": "Her satır numarası yalnızca bir kez gönderilebilir.",
+  "Tick the consent box to upload a certification.": "Sertifika yüklemek için onay kutusunu işaretleyin.",
 };

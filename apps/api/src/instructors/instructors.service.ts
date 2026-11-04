@@ -294,6 +294,11 @@ export class InstructorsService {
     if (existingRows.length === 0) {
       throw new NotFoundException('You have no Instructor profile.');
     }
+    // Decision 425 (Q3) — a certification can't be uploaded without the
+    // consent tick, unless consent is already on file for every row.
+    if (dto.certificationKey && !dto.certificationConsent && existingRows.some((row) => !row.certificationConsentedAt)) {
+      throw new BadRequestException('Tick the consent box to upload a certification.');
+    }
 
     await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.instructor.updateMany({

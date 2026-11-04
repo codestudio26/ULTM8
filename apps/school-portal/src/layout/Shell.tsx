@@ -99,6 +99,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
             CURRICULUM_NAV,
             CLASSES_NAV,
             ...(access?.bookings ?? true ? [CHECK_IN_NAV] : []),
+            // Decision 425 (Q2): coaches see the student list, read only.
+            ...(isInstructor && !isBranchStaff ? [STUDENTS_NAV] : []),
             ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []),
             ...branchStaffNav,
             ...(mayRecordPayments ? [RECORD_PAYMENT_NAV, BILLING_REPORTS_NAV] : []),

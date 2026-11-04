@@ -795,4 +795,5 @@ export const SERVER_PATTERNS: string[] = [
  "Enter a valid secondary email.",
  "A child's contact details are changed by their Guardian or the School.",
  "Attendance can only be logged from {v1} to {v2}.",
+ "Tick the consent box to upload a certification.",
 ];

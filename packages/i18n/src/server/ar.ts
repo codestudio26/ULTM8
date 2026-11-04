@@ -777,4 +777,5 @@ export const serverMessages: Record<string, string> = {
   "A row number is past the end of this import.": "رقم صف يتجاوز نهاية هذا الاستيراد.",
   "Import not found": "لم يتم العثور على الاستيراد",
   "Each row number can only be sent once.": "لا يمكن إرسال رقم كل صف إلا مرة واحدة.",
+  "Tick the consent box to upload a certification.": "ضع علامة في مربع الموافقة لرفع الشهادة.",
 };

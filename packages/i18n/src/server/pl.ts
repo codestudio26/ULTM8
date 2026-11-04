@@ -777,4 +777,5 @@ export const serverMessages: Record<string, string> = {
   "A row number is past the end of this import.": "Numer wiersza wykracza poza koniec tego importu.",
   "Import not found": "Nie znaleziono importu",
   "Each row number can only be sent once.": "Każdy numer wiersza można wysłać tylko raz.",
+  "Tick the consent box to upload a certification.": "Zaznacz pole zgody, aby przesłać certyfikat.",
 };

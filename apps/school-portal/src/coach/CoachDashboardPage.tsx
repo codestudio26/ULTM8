@@ -1,14 +1,17 @@
 import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { BirthdaysCard } from '../dashboard/BirthdaysCard';
 import { Badge, Card, EmptyState, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useAuth, useCoachSchoolId } from '../auth/AuthContext';
+import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useRanks } from '../ranks/rankQueries';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { useTimetableSlots, type TimetableSlotResponse } from '../timetable/timetableQueries';
+import { useBranches } from '../branches/branchQueries';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
+import { classZone, formatInZone } from '../lib/datetime';
 import { notificationLink, useNotificationCounts, useNotifications } from '../notifications/notificationQueries';
 import { useGradingBoard, useMyGrading, useStudentEligibility, type StudentEligibility } from '../grading/gradingQueries';
 import { flattenLadder } from '../grading/ladder';
@@ -28,7 +31,7 @@ const WEEKDAY_LABELS: Record<(typeof WEEKDAYS)[number], TranslationKey> = {
   SATURDAY: 'coach.weekdays.saturday',
   SUNDAY: 'coach.weekdays.sunday',
 };
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
+const WEEK_MS = 7 * 86_400_000;
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -59,7 +62,15 @@ export function CoachDashboardPage() {
   const { claims } = useAuth();
   const school = useSchool(schoolId);
   const isStudentHere = !!claims?.grants.some((g) => g.role === 'STUDENT' && g.schoolId === schoolId);
+  // Decision 425 (Q1): Branch Staff see their branch's classes this week.
+  const isInstructor = !!claims?.grants.some((g) => g.role === 'INSTRUCTOR' && g.schoolId === schoolId);
+  const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === schoolId);
+  // Coaches review CP4: working as an owner, every link here (Grading, Classes)
+  // would open the owned School, not this one. Coaching elsewhere is picked in
+  // the header's School switcher, which then brings them here.
+  const ownedSchoolId = useOwnedSchoolId();
 
+  if (ownedSchoolId) return <Navigate to="/" replace />;
   if (!schoolId) {
     return (
       <Card>
@@ -72,7 +83,8 @@ export function CoachDashboardPage() {
     <>
       <PageHeader title={t('coach.dashboard.title')} subtitle={school.data?.name} />
       <GradingSection schoolId={schoolId} />
-      <ClassesSection schoolId={schoolId} me={claims?.sub ?? ''} />
+      {isInstructor || !isBranchStaff ? <ClassesSection schoolId={schoolId} me={claims?.sub ?? ''} /> : null}
+      {isBranchStaff ? <BranchClassesSection schoolId={schoolId} /> : null}
       {/* Decision 374 (Decision 318 item 2): every member of staff sees this week's birthdays. */}
       <BirthdaysCard schoolId={schoolId} linkToStudent={false} />
       <NotificationsSection />
@@ -139,7 +151,9 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
   const weekly = useMemo(
     () =>
       (slots.data?.items ?? [])
-        .filter((s: TimetableSlotResponse) => s.instructorId === me && s.status === 'ON')
+        // Coaches review CP2: the list holds archived slots too (the owner's
+        // timetable shows them on request); they are not taught any more.
+        .filter((s: TimetableSlotResponse) => s.instructorId === me && s.status === 'ON' && !s.archivedAt)
         .sort((a, b) => WEEKDAYS.indexOf(a.weekday) - WEEKDAYS.indexOf(b.weekday) || a.startTime.localeCompare(b.startTime)),
     [slots.data, me],
   );
@@ -171,21 +185,79 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
           {upcoming.length > 0 ? (
             <div>
               <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('coach.dashboard.comingUp')}</h3>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
-                {upcoming.map((c) => (
-                  <li key={c.id}>
-                    {shortDate(c.startDate)} · {c.title} ·{' '}
-                    {/* Classes review C4: a coach had no way to reach these. */}
-                    <Link to={`/classes/${c.id}/roll-call`}>{t('coach.dashboard.rollCall')}</Link> ·{' '}
-                    <Link to={`/classes/${c.id}/qr-code`}>{t('coach.dashboard.showQr')}</Link>
-                  </li>
-                ))}
-              </ul>
+              <ClassList schoolId={schoolId} classes={upcoming} links />
             </div>
           ) : null}
         </div>
       )}
     </Section>
+  );
+}
+
+/**
+ * Decision 425 (Q1): a Branch Staff member's dashboard shows the classes at
+ * their branch this week (and the School-wide ones, as the Classes page
+ * does), with roll call and QR links when the owner lets them handle
+ * bookings.
+ */
+function BranchClassesSection({ schoolId }: { schoolId: string }) {
+  const t = useT();
+  const [range] = React.useState(() => {
+    const now = Date.now();
+    return { to: new Date(now + WEEK_MS).toISOString() };
+  });
+  const classes = useClasses(schoolId, { when: 'upcoming', startsTo: range.to, limit: 50 });
+  const access = useMyStaffAccess(schoolId);
+  const items: ClassResponse[] = classes.data?.items ?? [];
+  return (
+    <Section title={t('coach.dashboard.branchClasses')}>
+      {classes.isLoading || access.isLoading ? (
+        <Spinner />
+      ) : classes.error ? (
+        <ErrorBanner message={errorText(classes.error, t('coach.dashboard.classesLoadFailed'))} />
+      ) : items.length === 0 ? (
+        <EmptyState title={t('coach.dashboard.noBranchClassesTitle')} description={t('coach.dashboard.noBranchClassesDescription')} />
+      ) : (
+        <ClassList schoolId={schoolId} classes={items} links={!!access.data?.access.bookings} />
+      )}
+    </Section>
+  );
+}
+
+/** One line per class: day and start time on the class's own clock, title,
+ * branch (Decision 425 Q4), then roll call and QR links, or Cancelled. */
+function ClassList({ schoolId, classes, links }: { schoolId: string; classes: ClassResponse[]; links: boolean }) {
+  const t = useT();
+  const school = useSchool(schoolId);
+  const branches = useBranches(schoolId).data?.items ?? [];
+  return (
+    <ul style={{ margin: 0, paddingLeft: 18 }}>
+      {classes.map((c) => {
+        const branch = branches.find((b) => b.id === c.branchId);
+        return (
+          <li key={c.id}>
+            {formatInZone(c.startDate, classZone(branch?.timezone, school.data?.timezone), formatLocale())} · {c.title}
+            {' · '}
+            {branch ? branch.name : t('coach.dashboard.wholeSchool')}
+            {c.cancelledAt ? (
+              <>
+                {' · '}
+                {/* Coaches review CP3: still listed, so the coach knows not
+                  * to come, but with no roll call or QR code to open. */}
+                <Badge variant="danger">{t('classes.cancelled')}</Badge>
+              </>
+            ) : links ? (
+              <>
+                {/* Classes review C4: a coach had no way to reach these. */}
+                {' · '}
+                <Link to={`/classes/${c.id}/roll-call`}>{t('coach.dashboard.rollCall')}</Link> ·{' '}
+                <Link to={`/classes/${c.id}/qr-code`}>{t('coach.dashboard.showQr')}</Link>
+              </>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

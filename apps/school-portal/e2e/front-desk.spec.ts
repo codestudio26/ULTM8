@@ -66,10 +66,14 @@ test('staff check a booked student in by name; the line says only "Checked in âœ
   await signIn(page, s.ownerToken);
   await page.goto('/students');
   // The Students page keeps loading after the first paint; a click that lands
-  // mid re-render can be lost, so wait for the navigation together with it.
+  // mid re-render can be lost (seen on the tablet size in CI), so click again
+  // until the page has moved on.
   const checkInLink = page.getByRole('link', { name: 'Check-in' });
   await expect(checkInLink).toBeVisible();
-  await Promise.all([page.waitForURL(/\/check-in$/), checkInLink.click()]);
+  await expect(async () => {
+    if (!/\/check-in$/.test(page.url())) await checkInLink.click({ timeout: 2_000 });
+    await expect(page).toHaveURL(/\/check-in$/, { timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
 
   await expect(page.getByTestId('fd-class')).toContainText('Fundamentals');
   await page.getByRole('tab', { name: 'Name' }).click();

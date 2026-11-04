@@ -350,6 +350,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       weeklySlot: "{day} {start}–{end} · {title}",
       comingUp: "Yaklaşanlar",
       upcomingClass: "{date} · {title}",
+      upcomingClassCancelled: "{date} · {title} · İptal edildi",
       weekdays: {
         monday: "Pazartesi",
         tuesday: "Salı",

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { Card, ErrorBanner, PageHeader, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { useSchool } from '../schools/schoolQueries';
 import { useBookingsSummary, useDashboardOverview } from './dashboardQueries';
 import { BirthdaysCard } from './BirthdaysCard';
@@ -31,13 +31,17 @@ import { formatDay } from './dashboardDates';
 export function DashboardPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
+  const knownUser = !!useAuth().claims;
   const { data: school } = useSchool(schoolId);
   const [params, setParams] = useSearchParams();
   const branchId = params.get('branch') ?? '';
   const summary = useBookingsSummary(schoolId, null, branchId);
   const overview = useDashboardOverview(schoolId);
 
-  if (!schoolId) return null;
+  // Coaches review CP5: owner-only — anyone else goes back to their own home
+  // page. Not while the session can't be read yet (a token being refreshed):
+  // then nobody is known to own anything, and the page waits instead.
+  if (!schoolId) return knownUser ? <Navigate to="/" replace /> : null;
 
   const setBranch = (id: string) => {
     const next = new URLSearchParams(params);
