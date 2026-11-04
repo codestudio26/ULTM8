@@ -6,6 +6,7 @@ export const waivers = {
     empty: 'No waivers to sign.',
   },
   row: {
+    signingFor: 'Signing for {name}, as their parent.',
     cancel: 'Cancel',
     showLess: 'Show less',
     readFull: 'Read full waiver',

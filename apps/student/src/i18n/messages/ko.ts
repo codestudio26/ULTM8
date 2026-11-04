@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "비밀번호 변경",
     joinPick: {
       notNow: "나중에",
       join: "가입",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "로그아웃",
   },
   auth: {
+    changePasscode: {
+      done: "비밀번호가 변경되었습니다. 다른 기기에서는 로그아웃되었습니다.",
+      submit: "비밀번호 변경",
+      current: "현재 비밀번호",
+      intro: "현재 비밀번호를 입력한 다음 새 6자리 비밀번호를 선택하세요. 다른 기기에서는 로그아웃됩니다.",
+      title: "비밀번호 변경",
+    },
     errors: {
       generic: "문제가 발생했습니다. 다시 시도해 주세요.",
     },
@@ -279,6 +287,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "이 수업의 티켓은 앱에서 판매하지 않습니다. 학원에 문의하세요.",
+      buyFirst: "이 수업의 티켓을 구매한 다음 예약을 다시 누르세요.",
+    },
     waitlist: {
       claimError: "자리를 확보하지 못했어요. 다시 시도해 주세요.",
       claim: "자리 확보",
@@ -654,6 +666,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "플랜을 불러오지 못했습니다. 다시 시도해 주세요.",
+      empty: "이 학원에는 판매 중인 플랜이 없습니다.",
+      intro: "{name} 님의 플랜을 구매하세요. 새 카드나 학원의 다른 결제 방법으로 결제할 수 있습니다.",
+      title: "{name} 님의 플랜",
+    },
+    childWaivers: {
+      loadError: "동의서를 불러오지 못했습니다. 다시 시도해 주세요.",
+      empty: "{name} 님이 서명할 동의서가 없습니다.",
+      title: "{name} 님의 동의서",
+    },
     childBooking: {
       title: "{name} 예약",
       upcomingTitle: "예정된 예약",
@@ -666,6 +689,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "수업을 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     myMinors: {
+      plans: "플랜 구매",
+      waivers: "동의서",
       empty: "아직 연결된 자녀가 없습니다.",
       loadError: "자녀 정보를 불러오지 못했습니다. 다시 시도해 주세요.",
       born: "{date} 출생",
@@ -977,6 +1002,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "서명할 면책 동의서가 없습니다.",
     },
     row: {
+      signingFor: "보호자로서 {name} 님을 대신해 서명합니다.",
       cancel: "취소",
       showLess: "간략히 보기",
       readFull: "면책 동의서 전체 보기",

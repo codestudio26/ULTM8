@@ -73,4 +73,8 @@ export const bookings = {
     spotFree: 'A spot is free for you. Claim it now.',
     title: 'My waitlist',
   },
+  ticket: {
+    noneOnSale: 'No ticket for this class is on sale in the app. Ask the School.',
+    buyFirst: 'Buy this class\'s ticket, then tap Book again.',
+  },
 };

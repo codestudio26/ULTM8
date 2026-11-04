@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Changer le code",
     joinPick: {
       notNow: "Pas maintenant",
       join: "Rejoindre",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Se déconnecter",
   },
   auth: {
+    changePasscode: {
+      done: "Code changé. Vos autres appareils sont déconnectés.",
+      submit: "Changer le code",
+      current: "Code actuel",
+      intro: "Saisissez votre code actuel, puis choisissez-en un nouveau à 6 chiffres. Vos autres appareils seront déconnectés.",
+      title: "Changer le code",
+    },
     errors: {
       generic: "Une erreur s’est produite — veuillez réessayer.",
     },
@@ -280,6 +288,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "Aucun billet pour ce cours n'est en vente dans l'app. Demandez à l'école.",
+      buyFirst: "Achetez le billet de ce cours, puis touchez à nouveau Réserver.",
+    },
     waitlist: {
       claimError: "Impossible de prendre la place — veuillez réessayer.",
       claim: "Prendre la place",
@@ -669,6 +681,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "Impossible de charger les forfaits. Veuillez réessayer.",
+      empty: "Cette école n'a aucun forfait en vente.",
+      intro: "Achetez un forfait pour {name}. Payez avec une nouvelle carte ou les autres moyens de paiement de l'école.",
+      title: "Forfaits pour {name}",
+    },
+    childWaivers: {
+      loadError: "Impossible de charger les décharges. Veuillez réessayer.",
+      empty: "{name} n'a aucune décharge à signer.",
+      title: "Décharges de {name}",
+    },
     childBooking: {
       title: "Réserver pour {name}",
       upcomingTitle: "Réservations à venir",
@@ -681,6 +704,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Impossible de charger les cours — veuillez réessayer.",
     },
     myMinors: {
+      plans: "Acheter un forfait",
+      waivers: "Décharges",
       empty: "Aucun mineur lié pour le moment.",
       loadError: "Impossible de charger vos mineurs — veuillez réessayer.",
       born: "Né(e) le {date}",
@@ -1002,6 +1027,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Aucune décharge à signer.",
     },
     row: {
+      signingFor: "Vous signez pour {name}, en tant que parent.",
       cancel: "Annuler",
       showLess: "Afficher moins",
       readFull: "Lire la décharge en entier",

@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "تغيير الرمز",
     joinPick: {
       notNow: "ليس الآن",
       join: "انضمام",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "تسجيل الخروج",
   },
   auth: {
+    changePasscode: {
+      done: "تم تغيير الرمز. تم تسجيل خروجك من أجهزتك الأخرى.",
+      submit: "تغيير الرمز",
+      current: "الرمز الحالي",
+      intro: "أدخل رمزك الحالي، ثم اختر رمزًا جديدًا من 6 أرقام. سيتم تسجيل خروجك من أجهزتك الأخرى.",
+      title: "تغيير الرمز",
+    },
     errors: {
       generic: "حدث خطأ ما، يُرجى المحاولة مرة أخرى.",
     },
@@ -284,6 +292,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "لا تتوفر تذكرة لهذه الحصة للبيع في التطبيق. اسأل المدرسة.",
+      buyFirst: "اشترِ تذكرة هذه الحصة، ثم اضغط حجز مرة أخرى.",
+    },
     waitlist: {
       claimError: "تعذّر حجز المكان — يُرجى المحاولة مرة أخرى.",
       claim: "احجز المكان",
@@ -691,6 +703,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "تعذّر تحميل الخطط. حاول مرة أخرى.",
+      empty: "لا توجد خطط معروضة للبيع في هذه المدرسة.",
+      intro: "اشترِ خطة لـ {name}. ادفع ببطاقة جديدة أو بطرق الدفع الأخرى لدى المدرسة.",
+      title: "خطط لـ {name}",
+    },
+    childWaivers: {
+      loadError: "تعذّر تحميل الإقرارات. حاول مرة أخرى.",
+      empty: "لا توجد إقرارات على {name} توقيعها.",
+      title: "إقرارات {name}",
+    },
     childBooking: {
       title: "احجز لـ {name}",
       upcomingTitle: "الحجوزات القادمة",
@@ -703,6 +726,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "تعذّر تحميل الصفوف — يُرجى المحاولة مرة أخرى.",
     },
     myMinors: {
+      plans: "شراء خطة",
+      waivers: "الإقرارات",
       empty: "لا يوجد قاصرون مرتبطون بعد.",
       loadError: "تعذّر تحميل القاصرين التابعين لك، يُرجى المحاولة مرة أخرى.",
       born: "تاريخ الميلاد: {date}",
@@ -1047,6 +1072,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "لا توجد إقرارات للتوقيع.",
     },
     row: {
+      signingFor: "أنت توقّع عن {name} بصفتك وليّ الأمر.",
       cancel: "إلغاء",
       showLess: "عرض أقل",
       readFull: "قراءة الإقرار كاملًا",

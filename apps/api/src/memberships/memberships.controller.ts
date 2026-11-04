@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -20,6 +20,7 @@ import {
   PurchaseMembershipResponseDto,
   StudentMembershipListResponseDto,
 } from './dto/membership-response.dto';
+import { ClassTicketPlansDto, ClassTicketPlansQueryDto } from './dto/class-ticket-plans.dto';
 import { MembershipPlanActiveCountResponseDto } from './dto/membership-plan-active-count-response.dto';
 import { MembershipPlanPriceChangeListResponseDto } from './dto/membership-plan-price-change-response.dto';
 
@@ -191,6 +192,15 @@ export class MembershipsController {
   @Get('schools/:schoolId/desk-payments/options')
   deskPaymentOptions(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
     return this.membershipsService.deskPaymentOptions(user.sub, schoolId);
+  }
+
+  /** Decision 428 (Student portal review M4) — which plans are this one-off
+   * Class's own ticket, so the app can offer it when booking says
+   * TICKET_REQUIRED. Read as the Student (or the parent's child). */
+  @ApiOkResponse({ type: ClassTicketPlansDto })
+  @Get('classes/:id/ticket-plans')
+  findClassTicketPlans(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query() query: ClassTicketPlansQueryDto) {
+    return this.membershipsService.findClassTicketPlans(user.sub, id, query.studentId);
   }
 
   @ApiOkResponse({ type: MyMembershipListResponseDto })

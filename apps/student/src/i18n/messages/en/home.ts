@@ -3,6 +3,7 @@ export const home = {
   title: 'ULTM8 Student',
   coachDashboard: 'Coach dashboard',
   myProfile: 'My profile',
+  changePasscode: 'Change passcode',
   browseAcademies: 'Browse academies',
   checkIn: 'Check in',
   myGrading: 'My grading',

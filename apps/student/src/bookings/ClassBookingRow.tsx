@@ -6,6 +6,7 @@ import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatClassTimes, formatTime } from '../lib/formatDate';
 import { useBookClass, useMyBookings, useMyFriendPasses } from './bookingQueries';
 import { BookingGuests } from './BookingGuests';
+import { ClassTicketOffer } from './ClassTicketOffer';
 import { useJoinWaitlist, useMyWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 import { useT } from '../i18n/I18nProvider';
 
@@ -76,6 +77,8 @@ export function ClassBookingRow({
   const [guestCount, setGuestCount] = useState(0);
   const guests = Math.min(guestCount, usablePasses.length);
   const [actionError, setActionError] = useState<string | null>(null);
+  // Decision 428 (M4): the booking said this one-off Class needs its own ticket.
+  const [ticketNeeded, setTicketNeeded] = useState(false);
   const bookClass = useBookClass(studentId);
   const joinWaitlist = useJoinWaitlist(studentId);
   const withdrawWaitlist = useWithdrawWaitlist(studentId);
@@ -90,6 +93,7 @@ export function ClassBookingRow({
       const booking = await bookClass.mutateAsync({ classId: classItem.id, guestPassIds: usablePasses.slice(0, guests).map((p) => p.membershipId) });
       setState({ kind: 'booked', bookingId: booking.id });
       setGuestCount(0);
+      setTicketNeeded(false);
     } catch (err) {
       // Only "full" and "students already waiting" lead to the waitlist
       // (Decision 322); any other refusal — a busy Class, no membership credit —
@@ -98,6 +102,7 @@ export function ClassBookingRow({
         setState({ kind: 'full', reason: err instanceof ApiError && err.code === 'WAITLIST_FIRST' ? 'queue' : 'full' });
       } else {
         setActionError(getApiErrorMessage(err, t('bookings.classRow.bookError')));
+        if (err instanceof ApiError && err.code === 'TICKET_REQUIRED') setTicketNeeded(true);
       }
     }
   }
@@ -143,6 +148,9 @@ export function ClassBookingRow({
       ) : null}
 
       {actionError ? <InlineError message={actionError} /> : null}
+      {ticketNeeded && state.kind === 'idle' && schoolId ? (
+        <ClassTicketOffer classId={classItem.id} schoolId={schoolId} studentId={studentId} />
+      ) : null}
 
       {state.kind === 'idle' && usablePasses.length > 0 ? (
         <View style={{ marginTop: 6 }}>

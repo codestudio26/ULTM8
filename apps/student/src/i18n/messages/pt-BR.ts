@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Alterar senha",
     joinPick: {
       notNow: "Agora não",
       join: "Entrar",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Sair",
   },
   auth: {
+    changePasscode: {
+      done: "Senha alterada. Seus outros aparelhos foram desconectados.",
+      submit: "Alterar senha",
+      current: "Senha atual",
+      intro: "Digite sua senha atual e escolha uma nova de 6 dígitos. Seus outros aparelhos serão desconectados.",
+      title: "Alterar senha",
+    },
     errors: {
       generic: "Algo deu errado — tente novamente.",
     },
@@ -280,6 +288,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "O ingresso desta aula não está à venda no app. Fale com a escola.",
+      buyFirst: "Compre o ingresso desta aula e toque em Reservar de novo.",
+    },
     waitlist: {
       claimError: "Não foi possível garantir a vaga — tente novamente.",
       claim: "Garantir vaga",
@@ -660,6 +672,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "Não foi possível carregar os planos. Tente novamente.",
+      empty: "Esta escola não tem planos à venda.",
+      intro: "Compre um plano para {name}. Pague com um cartão novo ou com as outras formas de pagamento da escola.",
+      title: "Planos para {name}",
+    },
+    childWaivers: {
+      loadError: "Não foi possível carregar os termos. Tente novamente.",
+      empty: "{name} não tem termos para assinar.",
+      title: "Termos de {name}",
+    },
     childBooking: {
       title: "Reservar para {name}",
       upcomingTitle: "Próximas reservas",
@@ -672,6 +695,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Não foi possível carregar as aulas — tente novamente.",
     },
     myMinors: {
+      plans: "Comprar um plano",
+      waivers: "Termos",
       empty: "Nenhum menor vinculado ainda.",
       loadError: "Não foi possível carregar seus menores — tente novamente.",
       born: "Nascido(a) em {date}",
@@ -1000,6 +1025,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Nenhum termo para assinar.",
     },
     row: {
+      signingFor: "Você está assinando por {name}, como responsável.",
       cancel: "Cancelar",
       showLess: "Mostrar menos",
       readFull: "Ler o termo completo",

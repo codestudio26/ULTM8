@@ -18,6 +18,9 @@ import { PlaylistDetailScreen } from '../curriculum/PlaylistDetailScreen';
 import { MinorConsentScreen } from '../guardians/MinorConsentScreen';
 import { ChildBookingScreen } from '../guardians/ChildBookingScreen';
 import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
+import { ChildWaiversScreen } from '../guardians/ChildWaiversScreen';
+import { ChildPlansScreen } from '../guardians/ChildPlansScreen';
+import { ChangePasscodeScreen } from '../auth/ChangePasscodeScreen';
 import { KidModePinScreen } from '../kidmode/KidModePinScreen';
 import { KidModeBookingScreen } from '../kidmode/KidModeBookingScreen';
 import { PendingReviewScreen } from '../kidmode/PendingReviewScreen';
@@ -91,6 +94,17 @@ export function AppNavigator() {
         component={ChildBookingScreen}
         options={({ route }) => ({ title: t('guardians.childBooking.title', { name: route.params.name }) })}
       />
+      <Stack.Screen
+        name="ChildWaivers"
+        component={ChildWaiversScreen}
+        options={({ route }) => ({ title: t('guardians.childWaivers.title', { name: route.params.name }) })}
+      />
+      <Stack.Screen
+        name="ChildPlans"
+        component={ChildPlansScreen}
+        options={({ route }) => ({ title: t('guardians.childPlans.title', { name: route.params.name }) })}
+      />
+      <Stack.Screen name="ChangePasscode" component={ChangePasscodeScreen} options={{ title: t('auth.changePasscode.title') }} />
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: t('navigation.app.kidMode') }} />
       <Stack.Screen
         name="KidModeBooking"

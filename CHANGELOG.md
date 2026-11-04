@@ -15,6 +15,12 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Student portal: parents and passcodes** (Track B, `apps/student`;
+  Decision 428) — a parent signs their child's waivers and buys their child a
+  plan from "My children". Change passcode is on Home (other devices are
+  signed out). A one-off class that needs its own ticket now shows that
+  ticket to buy. New API reads: `GET /guardians/me/minors/:studentId/waivers`
+  and `GET /classes/:id/ticket-plans`. No database change.
 - **Student portal fixes** (Track B, `apps/student`; Student portal review
   SP1–SP13, Decision 427) — the School picked on first launch no longer forces
   the Join screen (Home shows a "Join this School?" card instead). The parent

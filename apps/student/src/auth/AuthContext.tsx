@@ -58,6 +58,10 @@ interface AuthContextValue {
   /** First sign-in with a temporary passcode the School sent (a student the
    * owner added by hand, Decision 371): choose one's own, then signed in. */
   completeFirstLogin: (passcodeChangeToken: string, newPasscode: string) => Promise<void>;
+  /** Decision 428 (Student portal review M3): a signed-in person changes their
+   * own passcode. Every other device is signed out; this one keeps going on
+   * the fresh token pair the API hands back. */
+  changePasscode: (currentPasscode: string, newPasscode: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Swap in a fresh access token the API handed back, e.g. after joining a
    * School, whose new STUDENT grant only exists in a newly minted token. */
@@ -215,6 +219,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [applyToken],
   );
 
+  const changePasscode = useCallback(
+    async (currentPasscode: string, newPasscode: string) => {
+      const result = await unwrap(apiClient.POST('/v1/auth/passcode-change', { body: { currentPasscode, newPasscode } }));
+      if (!result.accessToken || !result.refreshToken) {
+        throw new Error('POST /auth/passcode-change returned no token pair');
+      }
+      await secureTokenStore.setRefreshToken(result.refreshToken);
+      await applyToken(result.accessToken);
+    },
+    [applyToken],
+  );
+
   const logout = useCallback(async () => {
     // Best-effort server-side revoke before the local clear below — without this, a
     // "logged out" refresh token was still live and redeemable (apps/api's /auth/
@@ -350,6 +366,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       claims,
       login,
       completeFirstLogin,
+      changePasscode,
       logout,
       applyAccessToken: applyToken,
       activeCoachSchoolId,
@@ -364,6 +381,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       claims,
       login,
       completeFirstLogin,
+      changePasscode,
       logout,
       applyToken,
       activeCoachSchoolId,

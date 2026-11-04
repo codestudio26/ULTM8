@@ -1,6 +1,8 @@
 /** English text: guardians (Decision 323). */
 export const guardians = {
   myMinors: {
+    plans: 'Buy a plan',
+    waivers: 'Waivers',
     empty: 'No linked minors yet.',
     loadError: 'Failed to load your minors — please try again.',
     born: 'Born {date}',
@@ -63,5 +65,16 @@ export const guardians = {
     enabled: 'Enabled ✓',
     disable: 'Disable Kid Mode',
     enable: 'Enable Kid Mode',
+  },
+  childWaivers: {
+    loadError: 'Could not load the waivers — please try again.',
+    empty: '{name} has no waivers to sign.',
+    title: '{name}\'s waivers',
+  },
+  childPlans: {
+    loadError: 'Could not load the plans — please try again.',
+    empty: 'This School has no plans on sale.',
+    intro: 'Buy a plan for {name}. Pay with a new card or the School\'s other payment options.',
+    title: 'Plans for {name}',
   },
 };

@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Cambia codice",
     joinPick: {
       notNow: "Non ora",
       join: "Iscriviti",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Esci",
   },
   auth: {
+    changePasscode: {
+      done: "Codice cambiato. Gli altri dispositivi sono stati disconnessi.",
+      submit: "Cambia codice",
+      current: "Codice attuale",
+      intro: "Inserisci il codice attuale, poi scegline uno nuovo di 6 cifre. Gli altri dispositivi verranno disconnessi.",
+      title: "Cambia codice",
+    },
     errors: {
       generic: "Qualcosa è andato storto — riprova.",
     },
@@ -280,6 +288,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "Nessun biglietto per questa lezione è in vendita nell'app. Chiedi alla scuola.",
+      buyFirst: "Acquista il biglietto di questa lezione, poi tocca di nuovo Prenota.",
+    },
     waitlist: {
       claimError: "Impossibile prendere il posto — riprova.",
       claim: "Prendi il posto",
@@ -669,6 +681,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "Impossibile caricare i piani. Riprova.",
+      empty: "Questa scuola non ha piani in vendita.",
+      intro: "Acquista un piano per {name}. Paga con una nuova carta o con gli altri metodi di pagamento della scuola.",
+      title: "Piani per {name}",
+    },
+    childWaivers: {
+      loadError: "Impossibile caricare le liberatorie. Riprova.",
+      empty: "{name} non ha liberatorie da firmare.",
+      title: "Liberatorie di {name}",
+    },
     childBooking: {
       title: "Prenota per {name}",
       upcomingTitle: "Prossime prenotazioni",
@@ -681,6 +704,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Impossibile caricare le lezioni — riprova.",
     },
     myMinors: {
+      plans: "Acquista un piano",
+      waivers: "Liberatorie",
       empty: "Ancora nessun minore collegato.",
       loadError: "Impossibile caricare i tuoi minori — riprova.",
       born: "Nato/a il {date}",
@@ -1002,6 +1027,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Nessuna liberatoria da firmare.",
     },
     row: {
+      signingFor: "Firmi per {name}, come genitore.",
       cancel: "Annulla",
       showLess: "Mostra meno",
       readFull: "Leggi la liberatoria completa",

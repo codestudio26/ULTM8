@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Code ändern",
     joinPick: {
       notNow: "Nicht jetzt",
       join: "Beitreten",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Abmelden",
   },
   auth: {
+    changePasscode: {
+      done: "Code geändert. Deine anderen Geräte sind abgemeldet.",
+      submit: "Code ändern",
+      current: "Aktueller Code",
+      intro: "Gib deinen aktuellen Code ein und wähle dann einen neuen 6-stelligen. Deine anderen Geräte werden abgemeldet.",
+      title: "Code ändern",
+    },
     errors: {
       generic: "Etwas ist schiefgelaufen — bitte versuche es erneut.",
     },
@@ -280,6 +288,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "Für diesen Kurs ist in der App kein Ticket erhältlich. Frag die Schule.",
+      buyFirst: "Kaufe das Ticket für diesen Kurs und tippe dann erneut auf Buchen.",
+    },
     waitlist: {
       claimError: "Der Platz konnte nicht gesichert werden — bitte erneut versuchen.",
       claim: "Platz sichern",
@@ -660,6 +672,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "Tarife konnten nicht geladen werden. Bitte versuche es erneut.",
+      empty: "Diese Schule hat keine Tarife im Angebot.",
+      intro: "Kaufe einen Tarif für {name}. Bezahle mit einer neuen Karte oder den anderen Zahlungsarten der Schule.",
+      title: "Tarife für {name}",
+    },
+    childWaivers: {
+      loadError: "Verzichtserklärungen konnten nicht geladen werden. Bitte versuche es erneut.",
+      empty: "{name} hat keine Verzichtserklärungen zu unterschreiben.",
+      title: "Verzichtserklärungen von {name}",
+    },
     childBooking: {
       title: "Für {name} buchen",
       upcomingTitle: "Kommende Buchungen",
@@ -672,6 +695,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Die Kurse konnten nicht geladen werden — bitte versuche es erneut.",
     },
     myMinors: {
+      plans: "Tarif kaufen",
+      waivers: "Verzichtserklärungen",
       empty: "Noch keine verknüpften Minderjährigen.",
       loadError: "Deine Minderjährigen konnten nicht geladen werden — bitte versuche es erneut.",
       born: "Geboren am {date}",
@@ -984,6 +1009,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Keine Haftungsausschlüsse zu unterschreiben.",
     },
     row: {
+      signingFor: "Du unterschreibst als Elternteil für {name}.",
       cancel: "Abbrechen",
       showLess: "Weniger anzeigen",
       readFull: "Ganze Verzichtserklärung lesen",

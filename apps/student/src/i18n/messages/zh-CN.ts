@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "更改密码",
     joinPick: {
       notNow: "暂不",
       join: "加入",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "退出登录",
   },
   auth: {
+    changePasscode: {
+      done: "密码已更改。你的其他设备已退出登录。",
+      submit: "更改密码",
+      current: "当前密码",
+      intro: "输入当前密码，然后选择一个新的 6 位密码。你的其他设备将被退出登录。",
+      title: "更改密码",
+    },
     errors: {
       generic: "出了点问题，请重试。",
     },
@@ -279,6 +287,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "这节课的门票没有在应用内出售，请咨询学校。",
+      buyFirst: "请先购买这节课的门票，然后再次点击预约。",
+    },
     waitlist: {
       claimError: "无法抢占名额，请重试。",
       claim: "抢占名额",
@@ -654,6 +666,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "无法加载套餐，请重试。",
+      empty: "这所学校没有在售套餐。",
+      intro: "为 {name} 购买套餐。可用新银行卡或学校的其他付款方式支付。",
+      title: "{name} 的套餐",
+    },
+    childWaivers: {
+      loadError: "无法加载免责声明，请重试。",
+      empty: "{name} 没有需要签署的免责声明。",
+      title: "{name} 的免责声明",
+    },
     childBooking: {
       title: "为 {name} 预约",
       upcomingTitle: "即将到来的预约",
@@ -666,6 +689,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "无法加载课程，请重试。",
     },
     myMinors: {
+      plans: "购买套餐",
+      waivers: "免责声明",
       empty: "还没有关联的未成年人。",
       loadError: "无法加载你的未成年人，请重试。",
       born: "出生于 {date}",
@@ -976,6 +1001,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "没有需要签署的免责声明。",
     },
     row: {
+      signingFor: "你正以家长身份代 {name} 签署。",
       cancel: "取消",
       showLess: "收起",
       readFull: "阅读完整免责声明",

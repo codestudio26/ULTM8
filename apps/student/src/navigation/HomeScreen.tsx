@@ -82,6 +82,7 @@ export function HomeScreen({ navigation }: Props) {
       />
       {isCoach ? <Button title={t('home.coachDashboard')} onPress={() => navigation.navigate('CoachDashboard')} /> : null}
       <Button title={t('home.myProfile')} variant="secondary" onPress={() => navigation.navigate('Profile')} />
+      <Button title={t('home.changePasscode')} variant="secondary" onPress={() => navigation.navigate('ChangePasscode')} />
       <Button title={t('home.browseAcademies')} onPress={() => navigation.navigate('Academies')} />
       <Button title={t('home.checkIn')} onPress={() => navigation.navigate('QrCheckIn')} />
       {isStudent ? <Button title={t('home.myGrading')} onPress={() => navigation.navigate('MyGrading')} /> : null}

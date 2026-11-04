@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Сменить код",
     joinPick: {
       notNow: "Не сейчас",
       join: "Вступить",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Выйти",
   },
   auth: {
+    changePasscode: {
+      done: "Код изменён. На других устройствах выполнен выход.",
+      submit: "Сменить код",
+      current: "Текущий код",
+      intro: "Введите текущий код, затем выберите новый из 6 цифр. На других устройствах будет выполнен выход.",
+      title: "Сменить код",
+    },
     errors: {
       generic: "Что-то пошло не так — попробуйте ещё раз.",
     },
@@ -282,6 +290,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "Билет на это занятие не продаётся в приложении. Спросите в школе.",
+      buyFirst: "Купите билет на это занятие, затем снова нажмите «Записаться».",
+    },
     waitlist: {
       claimError: "Не удалось занять место — попробуйте ещё раз.",
       claim: "Занять место",
@@ -677,6 +689,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "Не удалось загрузить абонементы. Попробуйте ещё раз.",
+      empty: "В этой школе нет абонементов в продаже.",
+      intro: "Купите абонемент для {name}. Оплатите новой картой или другим способом оплаты школы.",
+      title: "Абонементы для {name}",
+    },
+    childWaivers: {
+      loadError: "Не удалось загрузить документы. Попробуйте ещё раз.",
+      empty: "У {name} нет документов для подписи.",
+      title: "Отказы от ответственности: {name}",
+    },
     childBooking: {
       title: "Запись: {name}",
       upcomingTitle: "Предстоящие записи",
@@ -689,6 +712,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Не удалось загрузить занятия — попробуйте ещё раз.",
     },
     myMinors: {
+      plans: "Купить абонемент",
+      waivers: "Документы",
       empty: "Привязанных подопечных пока нет.",
       loadError: "Не удалось загрузить ваших подопечных — попробуйте ещё раз.",
       born: "Дата рождения: {date}",
@@ -1023,6 +1048,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Нет отказов для подписания.",
     },
     row: {
+      signingFor: "Вы подписываете за {name} как родитель.",
       cancel: "Отмена",
       showLess: "Свернуть",
       readFull: "Прочитать отказ полностью",

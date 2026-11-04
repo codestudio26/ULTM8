@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Zmień kod",
     joinPick: {
       notNow: "Nie teraz",
       join: "Dołącz",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Wyloguj się",
   },
   auth: {
+    changePasscode: {
+      done: "Kod zmieniony. Twoje inne urządzenia zostały wylogowane.",
+      submit: "Zmień kod",
+      current: "Obecny kod",
+      intro: "Wpisz obecny kod, a potem wybierz nowy, 6-cyfrowy. Twoje inne urządzenia zostaną wylogowane.",
+      title: "Zmień kod",
+    },
     errors: {
       generic: "Coś poszło nie tak — spróbuj ponownie.",
     },
@@ -282,6 +290,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "Bilet na te zajęcia nie jest sprzedawany w aplikacji. Zapytaj szkołę.",
+      buyFirst: "Kup bilet na te zajęcia, a potem ponownie dotknij Zarezerwuj.",
+    },
     waitlist: {
       claimError: "Nie udało się zająć miejsca — spróbuj ponownie.",
       claim: "Zajmij miejsce",
@@ -677,6 +689,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "Nie udało się wczytać planów. Spróbuj ponownie.",
+      empty: "Ta szkoła nie ma planów w sprzedaży.",
+      intro: "Kup plan dla: {name}. Zapłać nową kartą lub innymi metodami płatności szkoły.",
+      title: "Plany dla: {name}",
+    },
+    childWaivers: {
+      loadError: "Nie udało się wczytać oświadczeń. Spróbuj ponownie.",
+      empty: "{name} nie ma oświadczeń do podpisania.",
+      title: "Oświadczenia: {name}",
+    },
     childBooking: {
       title: "Rezerwacja dla: {name}",
       upcomingTitle: "Nadchodzące rezerwacje",
@@ -689,6 +712,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Nie udało się wczytać zajęć — spróbuj ponownie.",
     },
     myMinors: {
+      plans: "Kup plan",
+      waivers: "Oświadczenia",
       empty: "Brak powiązanych podopiecznych.",
       loadError: "Nie udało się wczytać Twoich podopiecznych — spróbuj ponownie.",
       born: "Ur. {date}",
@@ -1023,6 +1048,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Brak oświadczeń do podpisania.",
     },
     row: {
+      signingFor: "Podpisujesz za {name} jako rodzic.",
       cancel: "Anuluj",
       showLess: "Pokaż mniej",
       readFull: "Przeczytaj całe oświadczenie",

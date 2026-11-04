@@ -17,6 +17,7 @@ import { WaiverSignaturesQueryDto } from './dto/waiver-signatures-query.dto';
 import { PaperSignatureUploadUrlDto, RecordPaperSignatureDto, RemindResponseDto } from './dto/paper-signature.dto';
 import { UpdateWaiverSettingsDto, WaiverSettingsDto } from './dto/waiver-settings.dto';
 import { StudentWaiverStatusDto } from './dto/student-waiver-status.dto';
+import { MinorWaiverListDto } from './dto/minor-waiver.dto';
 
 // Waiver CRUD + Student self-signing (typed name, or typed name + drawn-signature
 // capture as of Phase 34), plus Guardian-on-behalf-of-a-linked-minor signing as
@@ -134,6 +135,15 @@ export class WaiversController {
   @Get('students/:id/waiver-status')
   getStudentWaiverStatus(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query('schoolId', ParseUUIDPipe) schoolId: string) {
     return this.waiversService.getStudentWaiverStatus(user.sub, id, schoolId);
+  }
+
+  /** Decision 428 (Student portal review M1) — a parent's child's waivers at
+   * the child's Schools, with whether each is signed. Signing reuses
+   * POST /waivers/:id/sign with SignWaiverDto.studentId. */
+  @ApiOkResponse({ type: MinorWaiverListDto })
+  @Get('guardians/me/minors/:studentId/waivers')
+  findMinorWaivers(@CurrentUser() user: JwtPayload, @Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.waiversService.findMinorWaivers(user.sub, studentId);
   }
 
   @ApiOkResponse({ type: WaiverSignatureListResponseDto })
