@@ -133,6 +133,8 @@ describeIfDb('NotificationsModule — HTTP read-side, device tokens, and direct-
   afterAll(async () => {
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.deviceToken.deleteMany({ where: { userId: { in: userIds } } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { id: { in: waiverIds } } } });
     await superuser.waiver.deleteMany({ where: { id: { in: waiverIds } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });

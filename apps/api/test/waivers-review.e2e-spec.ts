@@ -99,6 +99,8 @@ describeIfDb('Waivers review fixes', () => {
     await superuser.membershipPlan.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.class.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.waiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: { in: schoolIds } } } });
     await superuser.waiver.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
@@ -132,7 +134,7 @@ describeIfDb('Waivers review fixes', () => {
     const first = await list('limit=2');
     expect(first.status).toBe(200);
     expect(names(first)).toEqual(['student0 Review', 'student1 Review']);
-    expect(first.body.summary).toEqual({ total: 6, signed: 2, unsigned: 4, expired: 0, pending: 0 });
+    expect(first.body.summary).toEqual({ total: 6, signed: 2, unsigned: 4, expired: 0, pending: 0, needsDateOfBirth: 0 });
     const second = await list(`limit=2&cursor=${first.body.nextCursor}`);
     expect(names(second)).toEqual(['student2 Review', 'student3 Review']);
     expect(second.body.summary).toBeUndefined();
@@ -289,5 +291,32 @@ describeIfDb('Waivers review fixes', () => {
     expect(res.status).toBe(400);
     expect(res.body.error.message).toBe('This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.');
     expect((await http().post(`/v1/classes/${cls.id}/waitlist`).set(auth(students[2])).send({})).status).toBe(201); // signed in W3
+  });
+
+  it('Decision 426 item 4: a child\'s signature with no date of birth on file is marked "needs date of birth", until one is added', async () => {
+    const waiver = await mkWaiver(owner, school.id);
+    const guardian = await mkUser('dob-guardian', null);
+    const child = await mkUser('dob-child', school.id, 'STUDENT', null);
+    const row = await superuser.waiverSignature.findFirst({ where: { waiverId: waiver.id, studentId: child.id } });
+    const signed = { status: 'SIGNED' as const, signedById: guardian.id, signerFullName: 'G', signatureText: 'G', signedDate: new Date() };
+    const sig = row
+      ? await superuser.waiverSignature.update({ where: { id: row.id }, data: signed })
+      : await superuser.waiverSignature.create({ data: { id: randomUUID(), waiverId: waiver.id, studentId: child.id, schoolId: school.id, ...signed } });
+    expect(sig.studentMajorityDate).toBeNull();
+
+    const before = await signatures(waiver.id);
+    expect(before.status).toBe(200);
+    const item = before.body.items.find((i: { id: string }) => i.id === sig.id);
+    expect(item).toMatchObject({ needsDateOfBirth: true });
+    // The retention inputs are never part of a response.
+    expect(item).not.toHaveProperty('studentMajorityDate');
+    expect(item).not.toHaveProperty('mergedIntoStudentId');
+    expect(before.body.summary).toMatchObject({ needsDateOfBirth: 1 });
+    expect(before.body.items.filter((i: { needsDateOfBirth: boolean }) => i.needsDateOfBirth)).toHaveLength(1);
+
+    await superuser.user.update({ where: { id: child.id }, data: { dateOfBirth: new Date('2015-06-01') } });
+    const after = await signatures(waiver.id);
+    expect(after.body.items.find((i: { id: string }) => i.id === sig.id)).toMatchObject({ needsDateOfBirth: false });
+    expect(after.body.summary).toMatchObject({ needsDateOfBirth: 0 });
   });
 });

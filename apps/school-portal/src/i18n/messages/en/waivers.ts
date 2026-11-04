@@ -59,6 +59,12 @@ export const waivers = {
   unarchiveFailed: 'Could not unarchive this Waiver.',
   archiveConfirmTitle: 'Archive "{title}"?',
   archiveConfirmDescription: 'Students will no longer see it or be asked to sign it. Signatures already given are kept. You can unarchive it at any time.',
+  retention: {
+    heading: 'How long signed waivers are kept',
+    note: 'Signed waivers are kept while the person is a member and for 7 years after they leave (until age 25 for a child, if later), then deleted automatically.',
+    needsDateOfBirth: 'Needs date of birth',
+    needsDateOfBirthSummary: "Signed for a child with no date of birth on file: {count}. These are kept until the child's date of birth is added to their profile.",
+  },
   signatures: {
     heading: 'Signatures',
     summary: '{signed} of {total} signed',

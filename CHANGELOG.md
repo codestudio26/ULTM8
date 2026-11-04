@@ -1230,6 +1230,23 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the wording of a signed waiver asks whether it's a small fix or new terms
   everyone signs again. Each waiver has a "Remind everyone who hasn't signed"
   button. A waiver signed by a parent is kept while the student is enrolled.
+- **How long signed waivers are kept** (Decision 423 item 8, rules in
+  Decision 426) — a signed waiver is kept while the person is a member of that
+  School and for 7 years after they leave; for a child, until they turn 25 if
+  that is later (this was 24); then the daily purge deletes it. Someone who
+  was never a member counts from the day they signed; a School closing counts
+  as every member leaving that day; a signature left on a merged duplicate is
+  kept while the kept record is a member; an unsigned entry goes when the
+  person leaves. Guests: 7 years after the class, and not before 25 for a
+  child. One platform-wide rule that a School cannot shorten, shown on the
+  Waiver settings page and in the archive dialog. A waiver a parent signed for
+  a child with no date of birth on file is kept, and marked "Needs date of
+  birth" in the Signatures list. Each deletion is recorded in a permanent log
+  with no personal data. Once a closed School's last signature is gone, its
+  waivers and then the School are deleted. The database now refuses to delete
+  a member account or waiver that still has a signature. All 15 languages.
+  Not legal advice: a privacy lawyer is to confirm it per country. **Needs a
+  database migration** (`20270214000000_waiver_signature_retention`).
 - **School Owners can close their own School** (Decision 364) — from the
   School page, after typing its name and their passcode: the same 90-day close
   a Platform Admin does. Closing a School, by anyone, now also ends every

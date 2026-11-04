@@ -144,6 +144,8 @@ describeIfDb('Check-in rules (Decision 394)', () => {
 
   afterAll(async () => {
     await superuser.waiverSignature.deleteMany({ where: { schoolId: school.id } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: school.id } } });
     await superuser.waiver.deleteMany({ where: { schoolId: school.id } });
     await superuser.trainingLog.deleteMany({ where: { schoolId: school.id } });
     await superuser.booking.deleteMany({ where: { schoolId: school.id } });

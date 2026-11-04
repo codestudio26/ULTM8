@@ -113,6 +113,8 @@ describeIfDb('Memberships review fixes (Decision 334)', () => {
     await superuser.transaction.deleteMany({ where });
     await superuser.membership.deleteMany({ where });
     await superuser.waiverSignature.deleteMany({ where });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: where } });
     await superuser.waiver.deleteMany({ where });
     await superuser.membershipPlan.deleteMany({ where });
     await superuser.class.deleteMany({ where });

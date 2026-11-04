@@ -117,6 +117,8 @@ describeIfDb('Waiver settings and follow-ups (Decision 354)', () => {
     const schoolIds = [school.id, otherSchool.id];
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.waiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: { in: schoolIds } } } });
     await superuser.waiver.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.studentHomeBranch.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });

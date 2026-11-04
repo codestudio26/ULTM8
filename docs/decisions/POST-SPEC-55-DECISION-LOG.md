@@ -7458,3 +7458,41 @@ No migration and no data-model or RLS change.
 ### Recorded by
 
 User (Code), 3 Nov 2026: "all recomended", on the Coaches portal review's questions Q1–Q8.
+
+## Decision 426 — Signed-waiver retention rules: how long a signed waiver is kept, and the eight edge cases
+
+**Date:** 4 Nov 2026 · **Status:** Product-owner decision · **Builds:** Decision 423 item 8 · **Amends:** Decision 269 and Decision 354 item 3 (W16): a child's waiver is now kept to 18 + 7 (age 25), not 18 + 6 · **Builds on:** Decisions 110, 226, 245, 253, 422 item 11
+
+### Decision
+
+**The rule (Decision 423 item 8).** A signed waiver is kept while the person is a member of that School, and for 7 years after they leave. For a child, it is kept until they turn 18 plus 7 years (25), if that is later. Then it is deleted automatically. It is one platform-wide default, written as a single policy that a per-country rule can be added to later; there is no School setting, and a School cannot shorten it. "Member" is a live STUDENT role at that School; leaving is that role's end date (the latest, for someone who rejoined).
+
+The product owner's answers to the eight open points:
+
+1. **A School closing its account counts as every member leaving on the day it closed** (`School.archivedAt`, set by the close-account flow).
+2. **Once a closed School's last signature (member or guest) has been deleted, its waiver templates and then the School record are deleted**, finishing Decision 110's close-account purge. **A School that has members' payment history (any Transaction or Membership) or platform billing history is never deleted** (Decision 261): it stays anonymized, without its templates. The same check now also applies when a closed School without waivers reaches the end of its 90 days, since deleting the School would erase that history with it.
+3. **Someone who was never a member of that School** (never held a STUDENT role there): the 7 years, and a child's 25th birthday, count from the signing date.
+4. **A child's signature with no date of birth on file is kept**, and shown to the School owner as "needs date of birth" (in the waiver's Signatures list), until one is added.
+5. **A child is someone under 18 on the signing date, by date of birth, whatever the method.** With no date of birth, a waiver a Guardian signed for someone else counts as a child's. The 18th birthday is saved on the signature when it is signed, so a later change to the date of birth cannot change the rule.
+6. **A signature left on a merged-away duplicate** (both records had signed the same waiver) counts as a member's while either record is a member there.
+7. **An unsigned or pending entry of someone who has left the School is deleted** (with any stored image). It holds no signature.
+8. **The age of majority is 18 everywhere for now.**
+
+Children are kept to 25 for members and for guests alike. A guest's signature is kept 7 years after the class, and for a guest under 18 at the class not before they turn 25.
+
+*This is a recommendation, not legal advice: a privacy lawyer is to confirm it for each country ULTM8 launches in (as Decision 423 item 8 said).*
+
+### As built
+
+- The rule is one pure, unit-tested function (`apps/api/src/waivers/waiver-retention.ts`). The daily entity-offboarding purge reads 500 signatures at a time in one query each, deletes the stored image first and the row only if that worked, and writes one line per deletion to a new, permanent `WaiverSignaturePurgeLog` (ids, the rule, the dates; no personal data; only the jobs role can add to it, and the app role cannot read it).
+- `WaiverSignature.studentMajorityDate` holds the saved 18th birthday (a database trigger fills it on every signing path; existing signatures were filled from the date of birth on file). A date of birth added after signing fills it once; it never changes after that. A 29 February birthday counts from 1 March.
+- `WaiverSignature.mergedIntoStudentId` is set by a merge (and filled for merges already made, from the merge's Staff activity line).
+- Deleting a member account or a waiver that still has a signature is now refused by the database (`ON DELETE RESTRICT`; it was `CASCADE`).
+- Choices made in building that the answers above didn't spell out: a closed School's unsigned entries are deleted only once its 90 days are over (it can no longer be reopened); a paper signature with no date of birth counts as an adult's (there is no online signer to tell a Guardian from); a leap-day birthday counts from 1 March.
+- Database change: `20270214000000_waiver_signature_retention`.
+
+### Recorded by
+
+User (Code), 4 Nov 2026: "ok" to every recommendation, on the base rule and the eight questions above.
+
+User (Code), 4 Nov 2026, on #463: deleting a closed School would also erase its members' payment history, so asked what should happen; chose "Keep payments": delete only the waiver templates, and keep a School with any payments or memberships anonymized.

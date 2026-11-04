@@ -3625,6 +3625,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Bu feragatname arşivden çıkarılamadı.",
     archiveConfirmTitle: "\"{title}\" arşivlensin mi?",
     archiveConfirmDescription: "Öğrenciler artık onu görmeyecek ve imzalamaları istenmeyecek. Atılmış imzalar saklanır. İstediğiniz zaman arşivden çıkarabilirsiniz.",
+    retention: {
+      heading: "İmzalı feragatnameler ne kadar saklanır",
+      note: "İmzalı feragatnameler, kişi üye olduğu sürece ve ayrıldıktan sonra 7 yıl (bir çocuk için, daha geçse 25 yaşına kadar) saklanır, ardından otomatik olarak silinir.",
+      needsDateOfBirth: "Doğum tarihi gerekli",
+      needsDateOfBirthSummary: "Doğum tarihi kayıtlı olmayan bir çocuk için imzalanan: {count}. Bunlar, çocuğun doğum tarihi profiline eklenene kadar saklanır.",
+    },
     signatures: {
       heading: "İmzalar",
       summary: "{total} kişiden {signed} kişi imzaladı",

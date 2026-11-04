@@ -3625,6 +3625,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "No se pudo desarchivar esta exención.",
     archiveConfirmTitle: "¿Archivar «{title}»?",
     archiveConfirmDescription: "Los alumnos ya no lo verán ni se les pedirá que lo firmen. Las firmas ya realizadas se conservan. Puedes desarchivarlo en cualquier momento.",
+    retention: {
+      heading: "Cuánto tiempo se conservan las exenciones firmadas",
+      note: "Las exenciones firmadas se conservan mientras la persona es miembro y durante 7 años después de que se vaya (hasta los 25 años en el caso de un menor, si es más tarde), y luego se eliminan automáticamente.",
+      needsDateOfBirth: "Falta la fecha de nacimiento",
+      needsDateOfBirthSummary: "Firmadas para un menor sin fecha de nacimiento registrada: {count}. Se conservan hasta que se añada la fecha de nacimiento del menor a su perfil.",
+    },
     signatures: {
       heading: "Firmas",
       summary: "{signed} de {total} firmadas",

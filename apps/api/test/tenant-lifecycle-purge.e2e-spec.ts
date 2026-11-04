@@ -39,6 +39,7 @@ describeIfDb('tenant-lifecycle-purge job', () => {
 
   const schoolIds: string[] = [];
   const franchiseIds: string[] = [];
+  const userIds: string[] = [];
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -54,7 +55,10 @@ describeIfDb('tenant-lifecycle-purge job', () => {
     // gone (the hard-delete case) or to have survived in an anonymized form
     // (the two exception cases); either way `deleteMany` on a leftover id is
     // a safe no-op for ids the processor already removed.
+    await superuser.waiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.transaction.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
+    await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.franchise.deleteMany({ where: { id: { in: franchiseIds } } });
     await superuser.$disconnect();
   });
@@ -94,11 +98,147 @@ describeIfDb('tenant-lifecycle-purge job', () => {
     expect(after?.name).toBe('[Closed School]');
     expect(after?.mobileNumber).toBeNull();
     expect(after?.purgedAt).toBeTruthy();
-    // The Waiver itself survives untouched — the whole point of the exception.
+    // The Waiver itself survives this first pass untouched.
     const waiverAfter = await superuser.waiver.findUnique({ where: { id: waiver.id } });
     expect(waiverAfter).not.toBeNull();
     expect(waiverAfter?.title).toBe('Liability Waiver');
 
+    // Decision 426 item 2: nobody ever signed it, so the next run finishes
+    // the purge: the template, then the School.
+    await processor.process(fakeJob());
+    expect(await superuser.waiver.findUnique({ where: { id: waiver.id } })).toBeNull();
+    expect(await superuser.school.findUnique({ where: { id: school.id } })).toBeNull();
+  });
+
+  it('Decision 426 item 2: a closed School is kept (anonymized) while any signature remains, then its templates and the School are deleted', async () => {
+    const school = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Purge Job — has signatures', archivedAt: PAST, purgeAt: PAST },
+    });
+    schoolIds.push(school.id);
+    const waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Liability Waiver', body: 'Terms...' } });
+    const student = await superuser.user.create({
+      data: { id: randomUUID(), email: `tlp-${randomUUID()}@example.test`, phone: `+1556${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`, firstName: 'T', surname: 'L', passcodeHash: 'x' },
+    });
+    userIds.push(student.id);
+    const signature = await superuser.waiverSignature.create({
+      data: { id: randomUUID(), waiverId: waiver.id, studentId: student.id, signedById: student.id, schoolId: school.id, signerFullName: 'T L', signatureText: 'T L', status: 'SIGNED' },
+    });
+    const guest = await superuser.guestWaiverSignature.create({
+      data: {
+        schoolId: school.id, waiverId: waiver.id, classTitle: 'C', classStartsAt: PAST, guestFullName: 'G', guestDateOfBirth: new Date('1990-01-01'),
+        signerFullName: 'G', signatureText: 'G', signedByGuardian: false, signedWaiverTitle: 't', signedWaiverBody: 'b', signedWaiverSha256: 'h', signedWaiverVersion: 1,
+      },
+    });
+
+    await processor.process(fakeJob());
+    await processor.process(fakeJob());
+    expect((await superuser.school.findUnique({ where: { id: school.id } }))?.name).toBe('[Closed School]');
+    expect(await superuser.waiver.findUnique({ where: { id: waiver.id } })).not.toBeNull();
+
+    // The retention job deletes the member signature; a guest one remains.
+    await superuser.waiverSignature.delete({ where: { id: signature.id } });
+    await processor.process(fakeJob());
+    expect(await superuser.school.findUnique({ where: { id: school.id } })).not.toBeNull();
+    expect(await superuser.guestWaiverSignature.findUnique({ where: { id: guest.id } })).not.toBeNull();
+
+    // And then the guest one: the School goes, its template first.
+    await superuser.guestWaiverSignature.delete({ where: { id: guest.id } });
+    await processor.process(fakeJob());
+    expect(await superuser.waiver.findUnique({ where: { id: waiver.id } })).toBeNull();
+    expect(await superuser.school.findUnique({ where: { id: school.id } })).toBeNull();
+  });
+
+  it('Decision 426 item 2: a closed School with no signatures left but billing history loses its templates and stays anonymized', async () => {
+    const school = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Purge Job — waivers and billing', archivedAt: PAST, purgeAt: PAST },
+    });
+    schoolIds.push(school.id);
+    const waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Liability Waiver', body: 'Terms...' } });
+    const charge = await superuser.platformCharge.create({
+      data: { id: randomUUID(), schoolId: school.id, chargeType: 'SUBSCRIPTION_PLAN_FEE', amount: 5000, status: 'SUCCESSFUL' },
+    });
+
+    await processor.process(fakeJob());
+    await processor.process(fakeJob());
+    await processor.process(fakeJob());
+
+    const after = await superuser.school.findUnique({ where: { id: school.id } });
+    expect(after?.name).toBe('[Closed School]');
+    expect(await superuser.waiver.findUnique({ where: { id: waiver.id } })).toBeNull();
+    expect(await superuser.platformCharge.findUnique({ where: { id: charge.id } })).not.toBeNull();
+
+    await superuser.platformCharge.delete({ where: { id: charge.id } });
+  });
+
+  /** A member's payment on the School (Decision 261: never deleted). */
+  async function seedMemberPayment(schoolId: string) {
+    const student = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `purge-payer-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Purge',
+        surname: 'Payer',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    userIds.push(student.id);
+    const paymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB' },
+    });
+    return superuser.transaction.create({
+      data: { id: randomUUID(), schoolId, studentId: student.id, paymentAccountId: paymentAccount.id, amount: 1000, status: 'SUCCESSFUL', paymentMethod: 'STRIPE' },
+    });
+  }
+
+  it('Decision 426 item 2 / Decision 261: a closed School with no signatures left but members\' payments loses its templates and stays anonymized', async () => {
+    const school = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Purge Job — waivers and member payments', archivedAt: PAST, purgeAt: PAST },
+    });
+    schoolIds.push(school.id);
+    const waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Liability Waiver', body: 'Terms...' } });
+    const payment = await seedMemberPayment(school.id);
+
+    await processor.process(fakeJob());
+    await processor.process(fakeJob());
+    await processor.process(fakeJob());
+
+    const after = await superuser.school.findUnique({ where: { id: school.id } });
+    expect(after?.name).toBe('[Closed School]');
+    expect(await superuser.waiver.findUnique({ where: { id: waiver.id } })).toBeNull();
+    expect(await superuser.transaction.findUnique({ where: { id: payment.id } })).not.toBeNull();
+
+    await superuser.transaction.delete({ where: { id: payment.id } });
+  });
+
+  it('Decision 261: a School past purgeAt with no waivers but members\' payments is anonymized in place, not hard-deleted', async () => {
+    const school = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Purge Job — member payments only', archivedAt: PAST, purgeAt: PAST },
+    });
+    schoolIds.push(school.id);
+    const payment = await seedMemberPayment(school.id);
+
+    await processor.process(fakeJob());
+
+    const after = await superuser.school.findUnique({ where: { id: school.id } });
+    expect(after?.name).toBe('[Closed School]');
+    expect(after?.purgedAt).toBeTruthy();
+    expect(await superuser.transaction.findUnique({ where: { id: payment.id } })).not.toBeNull();
+
+    await superuser.transaction.delete({ where: { id: payment.id } });
+  });
+
+  it('the jobs role may delete a Waiver only of a School past its 90 days (anonymized)', async () => {
+    const open = await superuser.school.create({ data: { id: randomUUID(), name: 'Purge Job — open School' } });
+    schoolIds.push(open.id);
+    const waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: open.id, title: 'W', body: 'B' } });
+    const deleted = await superuser.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe('SET LOCAL ROLE ultm8_jobs');
+      return tx.$executeRawUnsafe('DELETE FROM "Waiver" WHERE "id" = $1', waiver.id);
+    });
+    expect(deleted).toBe(0);
+    expect(await superuser.waiver.findUnique({ where: { id: waiver.id } })).not.toBeNull();
     await superuser.waiver.delete({ where: { id: waiver.id } });
   });
 

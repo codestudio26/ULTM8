@@ -203,6 +203,8 @@ test('archiving a waiver asks first; Cancel leaves it as it was', async ({ page 
   await page.getByRole('button', { name: 'Archive', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Archive "Old Waiver"?' });
   await expect(dialog).toBeVisible();
+  // Decision 426: how long the signatures it keeps are kept.
+  await expect(dialog.getByText('Signed waivers are kept while the person is a member and for 7 years after they leave', { exact: false })).toBeVisible();
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   expect((await db.waiver.findUniqueOrThrow({ where: { id: waiver.id } })).archivedAt).toBeNull();
 
@@ -218,6 +220,12 @@ test('the owner changes a waiver setting; each setting says what most schools ch
   await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByRole('heading', { name: 'Waiver settings' })).toBeVisible();
   await expect(page.getByText('Most schools collect a waiver once.', { exact: false })).toBeVisible();
+
+  // Decision 426: the retention rule is shown, not a setting.
+  await expect(page.getByRole('heading', { name: 'How long signed waivers are kept' })).toBeVisible();
+  await expect(
+    page.getByText('Signed waivers are kept while the person is a member and for 7 years after they leave (until age 25 for a child, if later), then deleted automatically.'),
+  ).toBeVisible();
 
   await page.getByRole('switch', { name: 'Members sign again after a set time' }).click();
   await expect(page.getByLabel('Months')).toHaveValue('12');
@@ -273,4 +281,33 @@ test('"Remind everyone" reminds the students who have not signed; an unsigned en
   await expect(dialog.getByLabel('Name written on the paper')).toHaveValue(s.newStudent.name);
   await expect(dialog.getByLabel('Photo of the signed paper')).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Save signature' })).toBeDisabled();
+});
+
+/** Decision 426 item 4: a waiver a Guardian signed for a child with no date of
+ * birth on file is kept, and the owner sees it marked until one is added. */
+test('a child\'s signature with no date of birth on file is marked "Needs date of birth"', async ({ page }) => {
+  const waiver = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Kids Waiver', body: 'text' } });
+  waiverIds.push(waiver.id);
+  const guardian = await addPerson('Gina', 'Guardian');
+  const child = await addPerson('Kit', 'Child', [{ role: 'STUDENT', schoolId: s.schoolId }]);
+  await db.user.update({ where: { id: child.id }, data: { dateOfBirth: null } });
+  await db.waiverSignature.create({
+    data: {
+      id: randomUUID(), waiverId: waiver.id, studentId: child.id, signedById: guardian.id, schoolId: s.schoolId,
+      signerFullName: 'Gina Guardian', signatureText: 'Gina Guardian', status: 'SIGNED', signedDate: new Date(),
+    },
+  });
+  await db.waiverSignature.create({
+    data: {
+      id: randomUUID(), waiverId: waiver.id, studentId: s.student.id, signedById: s.student.id, schoolId: s.schoolId,
+      signerFullName: 'Sam Lee', signatureText: 'Sam Lee', status: 'SIGNED', signedDate: new Date(),
+    },
+  });
+
+  await page.goto('/waivers');
+  await page.getByRole('button', { name: 'Kids Waiver' }).click();
+  const panel = page.getByRole('heading', { level: 3, name: 'Signatures' }).locator('..');
+  await expect(panel.getByText('Signed for a child with no date of birth on file: 1.', { exact: false })).toBeVisible();
+  await expect(panel.getByText('Needs date of birth', { exact: true })).toHaveCount(1);
+  await expect(panel.getByRole('button', { name: /Kit Child/ }).getByText('Needs date of birth')).toBeVisible();
 });

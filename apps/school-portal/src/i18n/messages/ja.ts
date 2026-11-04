@@ -3582,6 +3582,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "この同意書のアーカイブを解除できませんでした。",
     archiveConfirmTitle: "「{title}」をアーカイブしますか?",
     archiveConfirmDescription: "生徒には表示されなくなり、署名も求められなくなります。済んだ署名は保存されます。いつでもアーカイブを解除できます。",
+    retention: {
+      heading: "署名済み免責同意書の保存期間",
+      note: "署名済みの免責同意書は、その人が会員である間と退会後7年間（子どもの場合は25歳まで、そのほうが遅い場合）保存され、その後自動的に削除されます。",
+      needsDateOfBirth: "生年月日が必要",
+      needsDateOfBirthSummary: "生年月日が未登録の子どものために署名されたもの: {count}。子どもの生年月日がプロフィールに追加されるまで保存されます。",
+    },
     signatures: {
       heading: "署名",
       summary: "{total} 人中 {signed} 人が署名済み",

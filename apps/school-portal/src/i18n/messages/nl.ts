@@ -3625,6 +3625,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Deze vrijwaring kan niet worden gedearchiveerd.",
     archiveConfirmTitle: "\"{title}\" archiveren?",
     archiveConfirmDescription: "Leerlingen zien hem niet meer en worden niet meer gevraagd hem te ondertekenen. Gegeven handtekeningen blijven bewaard. Je kunt hem altijd terugzetten.",
+    retention: {
+      heading: "Hoe lang ondertekende vrijwaringen worden bewaard",
+      note: "Ondertekende vrijwaringen worden bewaard zolang iemand lid is en tot 7 jaar nadat diegene vertrekt (voor een kind tot de leeftijd van 25, als dat later is), en daarna automatisch verwijderd.",
+      needsDateOfBirth: "Geboortedatum ontbreekt",
+      needsDateOfBirthSummary: "Ondertekend voor een kind zonder geboortedatum: {count}. Deze worden bewaard tot de geboortedatum van het kind aan het profiel is toegevoegd.",
+    },
     signatures: {
       heading: "Handtekeningen",
       summary: "{signed} van {total} ondertekend",

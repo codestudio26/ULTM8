@@ -3625,6 +3625,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Não foi possível desarquivar este termo.",
     archiveConfirmTitle: "Arquivar \"{title}\"?",
     archiveConfirmDescription: "Os alunos não vão mais vê-lo nem ser solicitados a assiná-lo. As assinaturas já feitas são mantidas. Você pode desarquivá-lo a qualquer momento.",
+    retention: {
+      heading: "Por quanto tempo os termos assinados são guardados",
+      note: "Os termos assinados são guardados enquanto a pessoa for membro e por 7 anos depois que ela sair (até os 25 anos no caso de uma criança, se for depois), e então excluídos automaticamente.",
+      needsDateOfBirth: "Falta a data de nascimento",
+      needsDateOfBirthSummary: "Assinados para uma criança sem data de nascimento registrada: {count}. Eles são guardados até que a data de nascimento da criança seja adicionada ao perfil dela.",
+    },
     signatures: {
       heading: "Assinaturas",
       summary: "{signed} de {total} assinados",

@@ -3625,6 +3625,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Dieser Haftungsausschluss konnte nicht wiederhergestellt werden.",
     archiveConfirmTitle: "„{title}“ archivieren?",
     archiveConfirmDescription: "Schüler sehen ihn nicht mehr und werden nicht mehr zum Unterschreiben aufgefordert. Bereits geleistete Unterschriften bleiben erhalten. Du kannst ihn jederzeit wiederherstellen.",
+    retention: {
+      heading: "Wie lange unterschriebene Haftungsausschlüsse aufbewahrt werden",
+      note: "Unterschriebene Haftungsausschlüsse werden aufbewahrt, solange die Person Mitglied ist, und 7 Jahre nach ihrem Austritt (bei einem Kind bis zum Alter von 25, falls das später ist), danach werden sie automatisch gelöscht.",
+      needsDateOfBirth: "Geburtsdatum fehlt",
+      needsDateOfBirthSummary: "Für ein Kind ohne hinterlegtes Geburtsdatum unterschrieben: {count}. Diese bleiben erhalten, bis das Geburtsdatum des Kindes in seinem Profil eingetragen ist.",
+    },
     signatures: {
       heading: "Unterschriften",
       summary: "{signed} von {total} unterschrieben",

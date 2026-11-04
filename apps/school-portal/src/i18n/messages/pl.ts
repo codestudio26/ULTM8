@@ -3711,6 +3711,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Nie udało się przywrócić tego oświadczenia.",
     archiveConfirmTitle: "Zarchiwizować „{title}”?",
     archiveConfirmDescription: "Uczniowie przestaną go widzieć i nie będą proszeni o podpis. Złożone podpisy zostaną zachowane. Możesz go przywrócić w każdej chwili.",
+    retention: {
+      heading: "Jak długo przechowywane są podpisane oświadczenia",
+      note: "Podpisane oświadczenia są przechowywane, dopóki osoba jest członkiem, i przez 7 lat po jej odejściu (w przypadku dziecka do ukończenia 25 lat, jeśli to później), a potem usuwane automatycznie.",
+      needsDateOfBirth: "Brak daty urodzenia",
+      needsDateOfBirthSummary: "Podpisane za dziecko bez zapisanej daty urodzenia: {count}. Są przechowywane, dopóki data urodzenia dziecka nie zostanie dodana do jego profilu.",
+    },
     signatures: {
       heading: "Podpisy",
       summary: "Podpisano: {signed} z {total}",

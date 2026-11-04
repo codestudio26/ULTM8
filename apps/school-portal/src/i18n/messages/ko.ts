@@ -3582,6 +3582,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "이 동의서의 보관을 해제할 수 없습니다.",
     archiveConfirmTitle: "\"{title}\"을(를) 보관할까요?",
     archiveConfirmDescription: "수련생들에게 더 이상 표시되지 않고 서명 요청도 가지 않습니다. 이미 받은 서명은 보관됩니다. 언제든지 보관을 해제할 수 있습니다.",
+    retention: {
+      heading: "서명된 면책 동의서 보관 기간",
+      note: "서명된 면책 동의서는 회원인 동안과 탈퇴 후 7년간(아동의 경우 더 늦다면 25세까지) 보관되며, 그 후 자동으로 삭제됩니다.",
+      needsDateOfBirth: "생년월일 필요",
+      needsDateOfBirthSummary: "생년월일이 등록되지 않은 아동을 위해 서명된 동의서: {count}. 아동의 생년월일이 프로필에 추가될 때까지 보관됩니다.",
+    },
     signatures: {
       heading: "서명",
       summary: "{total}명 중 {signed}명 서명",
