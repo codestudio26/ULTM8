@@ -92,6 +92,17 @@ export function MyMinorsScreen({ navigation }: Props) {
             variant="secondary"
             onPress={() => navigation.navigate('ChildBooking', { studentId: minor.studentId, name: minor.firstName })}
           />
+          {/* Decision 428 (M1, M2): sign their waivers, and buy them a plan. */}
+          <Button
+            title={t('guardians.myMinors.waivers')}
+            variant="secondary"
+            onPress={() => navigation.navigate('ChildWaivers', { studentId: minor.studentId, name: minor.firstName })}
+          />
+          <Button
+            title={t('guardians.myMinors.plans')}
+            variant="secondary"
+            onPress={() => navigation.navigate('ChildPlans', { studentId: minor.studentId, name: minor.firstName })}
+          />
           {/* Their ranks, progress, skills and history, read-only (Decision 132). */}
           <Button
             title={t('guardians.myMinors.grading')}

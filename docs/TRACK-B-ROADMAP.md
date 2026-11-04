@@ -14,7 +14,7 @@ kickoff doc).
 
 The 4 Nov 2026 review of this app found 13 bugs (SP1–SP13), all fixed in one PR with no migration; see Decision 427 for the list. Answers to its questions:
 
-- **Next PR (Decision 428):** a parent signs a child's waiver, a parent buys a plan for a child, change passcode, and a link to buy a one-off class ticket. The API already supports all four.
+- **Built (Decision 428):** a parent signs a child's waivers and buys a child's plan ("My children" → Waivers / Buy a plan), Change passcode on Home, and a one-off class's ticket offered when booking says it needs one. Two small API reads were added (no migration).
 - **Not now:** leave a School, Home redesign.
 - **Known limit (SP6):** class times show on the phone's clock, not the class's own time zone; showing the zone needs the discovery role to read the branch's time zone (a GRANT migration).
 

@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Cambiar código",
     joinPick: {
       notNow: "Ahora no",
       join: "Unirme",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Cerrar sesión",
   },
   auth: {
+    changePasscode: {
+      done: "Código cambiado. Se cerró la sesión en tus otros dispositivos.",
+      submit: "Cambiar código",
+      current: "Código actual",
+      intro: "Introduce tu código actual y elige uno nuevo de 6 dígitos. Se cerrará la sesión en tus otros dispositivos.",
+      title: "Cambiar código",
+    },
     errors: {
       generic: "Algo salió mal — inténtalo de nuevo.",
     },
@@ -280,6 +288,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "La entrada de esta clase no está a la venta en la app. Pregunta a la escuela.",
+      buyFirst: "Compra la entrada de esta clase y vuelve a tocar Reservar.",
+    },
     waitlist: {
       claimError: "No se pudo reservar la plaza; inténtalo de nuevo.",
       claim: "Reservar plaza",
@@ -660,6 +672,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "No se pudieron cargar los planes. Inténtalo de nuevo.",
+      empty: "Esta escuela no tiene planes a la venta.",
+      intro: "Compra un plan para {name}. Paga con una tarjeta nueva o con las otras formas de pago de la escuela.",
+      title: "Planes para {name}",
+    },
+    childWaivers: {
+      loadError: "No se pudieron cargar las exenciones. Inténtalo de nuevo.",
+      empty: "{name} no tiene exenciones por firmar.",
+      title: "Exenciones de {name}",
+    },
     childBooking: {
       title: "Reservar para {name}",
       upcomingTitle: "Próximas reservas",
@@ -672,6 +695,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "No se pudieron cargar las clases — inténtalo de nuevo.",
     },
     myMinors: {
+      plans: "Comprar un plan",
+      waivers: "Exenciones",
       empty: "Aún no hay menores vinculados.",
       loadError: "No se pudieron cargar tus menores — inténtalo de nuevo.",
       born: "Nacido/a el {date}",
@@ -1000,6 +1025,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "No hay exenciones que firmar.",
     },
     row: {
+      signingFor: "Firmas por {name}, como su padre o madre.",
       cancel: "Cancelar",
       showLess: "Mostrar menos",
       readFull: "Leer la exención completa",

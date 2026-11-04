@@ -51,6 +51,11 @@ export type AppStackParamList = {
   MinorConsent: { studentId: string; name: string };
   /** Decision 379: a parent books classes (with guests) for this child. */
   ChildBooking: { studentId: string; name: string };
+  /** Decision 428 (M1, M2): a parent signs this child's waivers, and buys them a plan. */
+  ChildWaivers: { studentId: string; name: string };
+  ChildPlans: { studentId: string; name: string };
+  /** Decision 428 (M3): change one's own passcode. */
+  ChangePasscode: undefined;
   KidModePin: undefined;
   KidModeBooking: undefined;
   PendingReview: undefined;

@@ -71,4 +71,11 @@ export const auth = {
     cancel: 'Cancel',
     confirm: 'Confirm',
   },
+  changePasscode: {
+    done: 'Passcode changed. Your other devices are signed out.',
+    submit: 'Change passcode',
+    current: 'Current passcode',
+    intro: 'Enter your current passcode, then choose a new 6-digit one. Your other devices will be signed out.',
+    title: 'Change passcode',
+  },
 };

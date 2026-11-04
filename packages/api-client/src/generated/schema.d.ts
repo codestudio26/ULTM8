@@ -2916,6 +2916,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/classes/{id}/ticket-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_findClassTicketPlans"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/memberships/me": {
         parameters: {
             query?: never;
@@ -4300,6 +4316,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["WaiversController_getStudentWaiverStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}/waivers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaiversController_findMinorWaivers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -10075,6 +10107,9 @@ export interface components {
             students: components["schemas"]["DeskPaymentStudentDto"][];
             plans: components["schemas"]["DeskPaymentPlanDto"][];
         };
+        ClassTicketPlansDto: {
+            planIds: string[];
+        };
         MyMembershipResponseDto: {
             id: string;
             studentId: string;
@@ -11488,6 +11523,28 @@ export interface components {
         StudentWaiverStatusDto: {
             signed: boolean;
             toSign: components["schemas"]["WaiverToSignDto"][];
+        };
+        MinorWaiverDto: {
+            id: string;
+            schoolId: string;
+            title: string;
+            body: string;
+            /** @description Decision 226 — set when this Waiver has been archived. Null when active. */
+            archivedAt?: string | null;
+            /** @description Decision 226 — 90 days after archivedAt. UNLIKE the other 6 entities, a Waiver is NEVER hard-purged once this elapses (legal-record exception, mirroring Decision 110's own School-level purge carve-out) — it stays archived forever. */
+            purgeAt?: string | null;
+            /** @description Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities. */
+            purgedAt?: string | null;
+            /** @description Goes up by one each time the title or text changes. Send it back as SignWaiverDto.waiverVersion. */
+            version: number;
+            createdAt: string;
+            updatedAt: string;
+            schoolName: string;
+            /** @description When the child's current signature was signed. Null when not signed. */
+            signedDate: string | null;
+        };
+        MinorWaiverListDto: {
+            items: components["schemas"]["MinorWaiverDto"][];
         };
         UpdateWaiverDto: {
             title?: string;
@@ -18728,6 +18785,29 @@ export interface operations {
             };
         };
     };
+    MembershipsController_findClassTicketPlans: {
+        parameters: {
+            query?: {
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassTicketPlansDto"];
+                };
+            };
+        };
+    };
     MembershipsController_findMyMemberships: {
         parameters: {
             query?: {
@@ -21128,6 +21208,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentWaiverStatusDto"];
+                };
+            };
+        };
+    };
+    WaiversController_findMinorWaivers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinorWaiverListDto"];
                 };
             };
         };

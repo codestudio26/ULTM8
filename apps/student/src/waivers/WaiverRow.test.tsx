@@ -191,3 +191,29 @@ describe('WaiverRow — reading the whole waiver, and leaving the form', () => {
     expect(getByText('Sign')).toBeTruthy();
   });
 });
+
+/** Decision 428 (Student portal review M1): a parent signs for their child. */
+describe('WaiverRow — a parent signing for their child', () => {
+  it('says who they sign for and sends the child as studentId', async () => {
+    const sign = idleSign();
+    mocked(waiverQueries.useSignWaiver).mockReturnValue(sign);
+    const { getByText, getByPlaceholderText } = await render(
+      <WaiverRow waiver={WAIVER as never} signature={undefined} forStudentId="kid-1" forName="Mia" />,
+    );
+    await fireEvent.press(getByText('Sign'));
+    expect(getByText('Signing for Mia, as their parent.')).toBeTruthy();
+    await fireEvent.changeText(getByPlaceholderText('Your full legal name'), 'Pat Doe');
+    await fireEvent.changeText(getByPlaceholderText('Type your signature'), 'Pat Doe');
+    await fireEvent.press(getByText('Submit signature'));
+    expect(sign.mutate).toHaveBeenCalledWith(expect.objectContaining({ waiverId: 'waiver-1', studentId: 'kid-1', signerFullName: 'Pat Doe' }));
+  });
+
+  it('shows a signed child waiver as signed', async () => {
+    mocked(waiverQueries.useSignWaiver).mockReturnValue(idleSign());
+    const { getByText, queryByText } = await render(
+      <WaiverRow waiver={WAIVER as never} signature={{ signedDate: '2026-10-01' }} forStudentId="kid-1" forName="Mia" />,
+    );
+    expect(getByText(/Signed/)).toBeTruthy();
+    expect(queryByText('Sign')).toBeNull();
+  });
+});

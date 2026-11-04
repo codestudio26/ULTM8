@@ -87,11 +87,11 @@ export function useMyWaiverSignatures(enabled: boolean) {
  * to pass as `signatureImageKey` on the actual `sign()` call (step 3) — this
  * function never calls sign() itself, so a Student who only typed a signature
  * (no drawing) skips this step entirely. */
-async function uploadDrawnSignature(waiverId: string, base64Png: string): Promise<string> {
+async function uploadDrawnSignature(waiverId: string, base64Png: string, studentId?: string): Promise<string> {
   const { uploadUrl, objectKey } = await unwrap(
     apiClient.POST('/v1/waivers/{id}/signature-upload-url', {
       params: { path: { id: waiverId } },
-      body: {},
+      body: studentId ? { studentId } : {},
     }),
   );
   const blob = await (await fetch(base64Png)).blob();
@@ -108,9 +108,8 @@ async function uploadDrawnSignature(waiverId: string, base64Png: string): Promis
  * R2, not a base64 blob in the request body — see uploadDrawnSignature's own
  * comment). `signatureImage` is the signature-pad's raw base64 PNG data URI,
  * or null if the Student only typed a signature; the upload step above only
- * runs when it's present. Guardian-on-behalf-of signing (`studentId` on the
- * real DTO) stays out of scope here — Student self-signing only, per the
- * scope confirmed with the user. */
+ * runs when it's present. `studentId` (Decision 428, Student portal review
+ * M1): a parent signs for their linked child. */
 export function useSignWaiver() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -120,6 +119,7 @@ export function useSignWaiver() {
       signatureText,
       signatureImage,
       waiverVersion,
+      studentId,
     }: {
       waiverId: string;
       signerFullName: string;
@@ -128,15 +128,27 @@ export function useSignWaiver() {
       /** The version the Student read; the API refuses the signature (409) if
        * the School changed the text since. */
       waiverVersion?: number;
+      /** A parent signing for their child. */
+      studentId?: string;
     }) => {
-      const signatureImageKey = signatureImage ? await uploadDrawnSignature(waiverId, signatureImage) : undefined;
+      const signatureImageKey = signatureImage ? await uploadDrawnSignature(waiverId, signatureImage, studentId) : undefined;
       return unwrap(
         apiClient.POST('/v1/waivers/{id}/sign', {
           params: { path: { id: waiverId } },
-          body: { signerFullName, signatureText, signatureImageKey, waiverVersion },
+          body: { signerFullName, signatureText, signatureImageKey, waiverVersion, ...(studentId ? { studentId } : {}) },
         }),
       );
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-waiver-signatures'] }),
+    onSuccess: (_data, { studentId }) =>
+      queryClient.invalidateQueries({ queryKey: studentId ? ['minor-waivers', studentId] : ['my-waiver-signatures'] }),
+  });
+}
+
+/** Decision 428 (Student portal review M1) — a parent's child's waivers at the
+ * child's Schools, each with its signed date (null when not signed). */
+export function useMinorWaivers(studentId: string) {
+  return useQuery({
+    queryKey: ['minor-waivers', studentId],
+    queryFn: () => unwrap(apiClient.GET('/v1/guardians/me/minors/{studentId}/waivers', { params: { path: { studentId } } })),
   });
 }

@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Şifreyi değiştir",
     joinPick: {
       notNow: "Şimdi değil",
       join: "Katıl",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Çıkış yap",
   },
   auth: {
+    changePasscode: {
+      done: "Şifre değiştirildi. Diğer cihazlarınızda oturum kapatıldı.",
+      submit: "Şifreyi değiştir",
+      current: "Mevcut şifre",
+      intro: "Mevcut şifrenizi girin, ardından 6 haneli yeni bir şifre seçin. Diğer cihazlarınızda oturum kapatılacak.",
+      title: "Şifreyi değiştir",
+    },
     errors: {
       generic: "Bir sorun oluştu — lütfen tekrar deneyin.",
     },
@@ -280,6 +288,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "Bu dersin bileti uygulamada satışta değil. Okula sorun.",
+      buyFirst: "Bu dersin biletini alın, ardından tekrar Rezerve et'e dokunun.",
+    },
     waitlist: {
       claimError: "Yer alınamadı — lütfen tekrar dene.",
       claim: "Yeri al",
@@ -660,6 +672,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "Planlar yüklenemedi. Lütfen tekrar deneyin.",
+      empty: "Bu okulun satışta planı yok.",
+      intro: "{name} için bir plan satın alın. Yeni bir kartla veya okulun diğer ödeme seçenekleriyle ödeyin.",
+      title: "{name} için planlar",
+    },
+    childWaivers: {
+      loadError: "Feragatnameler yüklenemedi. Lütfen tekrar deneyin.",
+      empty: "{name} için imzalanacak feragatname yok.",
+      title: "{name} feragatnameleri",
+    },
     childBooking: {
       title: "{name} için rezervasyon",
       upcomingTitle: "Yaklaşan rezervasyonlar",
@@ -672,6 +695,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Dersler yüklenemedi — lütfen tekrar dene.",
     },
     myMinors: {
+      plans: "Plan satın al",
+      waivers: "Feragatnameler",
       empty: "Henüz bağlı reşit olmayan yok.",
       loadError: "Reşit olmayanlarınız yüklenemedi — lütfen tekrar deneyin.",
       born: "Doğum: {date}",
@@ -984,6 +1009,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "İmzalanacak feragatname yok.",
     },
     row: {
+      signingFor: "{name} adına, ebeveyni olarak imzalıyorsunuz.",
       cancel: "İptal",
       showLess: "Daha az göster",
       readFull: "Feragatnamenin tamamını oku",

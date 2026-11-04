@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "เปลี่ยนรหัสผ่าน",
     joinPick: {
       notNow: "ไม่ใช่ตอนนี้",
       join: "เข้าร่วม",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "ออกจากระบบ",
   },
   auth: {
+    changePasscode: {
+      done: "เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นของคุณออกจากระบบแล้ว",
+      submit: "เปลี่ยนรหัสผ่าน",
+      current: "รหัสผ่านปัจจุบัน",
+      intro: "ป้อนรหัสผ่านปัจจุบัน แล้วเลือกรหัสใหม่ 6 หลัก อุปกรณ์อื่นของคุณจะถูกออกจากระบบ",
+      title: "เปลี่ยนรหัสผ่าน",
+    },
     errors: {
       generic: "เกิดข้อผิดพลาด โปรดลองอีกครั้ง",
     },
@@ -279,6 +287,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "ตั๋วของคลาสนี้ไม่ได้วางขายในแอป โปรดสอบถามโรงเรียน",
+      buyFirst: "ซื้อตั๋วของคลาสนี้ แล้วแตะจองอีกครั้ง",
+    },
     waitlist: {
       claimError: "ไม่สามารถจองที่ได้ — โปรดลองอีกครั้ง",
       claim: "จองที่",
@@ -654,6 +666,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "โหลดแพ็กเกจไม่ได้ โปรดลองอีกครั้ง",
+      empty: "โรงเรียนนี้ไม่มีแพ็กเกจที่วางขาย",
+      intro: "ซื้อแพ็กเกจให้ {name} ชำระด้วยบัตรใหม่หรือช่องทางชำระเงินอื่นของโรงเรียน",
+      title: "แพ็กเกจสำหรับ {name}",
+    },
+    childWaivers: {
+      loadError: "โหลดเอกสารสละสิทธิ์ไม่ได้ โปรดลองอีกครั้ง",
+      empty: "{name} ไม่มีเอกสารสละสิทธิ์ที่ต้องลงนาม",
+      title: "เอกสารสละสิทธิ์ของ {name}",
+    },
     childBooking: {
       title: "จองให้ {name}",
       upcomingTitle: "การจองที่กำลังจะมาถึง",
@@ -666,6 +689,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "โหลดคลาสไม่ได้ — โปรดลองอีกครั้ง",
     },
     myMinors: {
+      plans: "ซื้อแพ็กเกจ",
+      waivers: "เอกสารสละสิทธิ์",
       empty: "ยังไม่มีผู้เยาว์ที่เชื่อมโยงไว้",
       loadError: "ไม่สามารถโหลดผู้เยาว์ของคุณได้ โปรดลองอีกครั้ง",
       born: "เกิด {date}",
@@ -976,6 +1001,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "ไม่มีเอกสารสละสิทธิ์ที่ต้องลงนาม",
     },
     row: {
+      signingFor: "คุณกำลังลงนามแทน {name} ในฐานะผู้ปกครอง",
       cancel: "ยกเลิก",
       showLess: "แสดงน้อยลง",
       readFull: "อ่านเอกสารสละสิทธิ์ทั้งหมด",

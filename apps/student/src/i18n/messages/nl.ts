@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "Code wijzigen",
     joinPick: {
       notNow: "Niet nu",
       join: "Lid worden",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "Uitloggen",
   },
   auth: {
+    changePasscode: {
+      done: "Code gewijzigd. Je andere apparaten zijn afgemeld.",
+      submit: "Code wijzigen",
+      current: "Huidige code",
+      intro: "Voer je huidige code in en kies daarna een nieuwe van 6 cijfers. Je andere apparaten worden afgemeld.",
+      title: "Code wijzigen",
+    },
     errors: {
       generic: "Er ging iets mis — probeer het opnieuw.",
     },
@@ -280,6 +288,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "Er is in de app geen ticket voor deze les te koop. Vraag het de school.",
+      buyFirst: "Koop het ticket voor deze les en tik dan opnieuw op Boeken.",
+    },
     waitlist: {
       claimError: "De plek kon niet worden geclaimd — probeer het opnieuw.",
       claim: "Plek claimen",
@@ -660,6 +672,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "Kon de abonnementen niet laden. Probeer het opnieuw.",
+      empty: "Deze school heeft geen abonnementen te koop.",
+      intro: "Koop een abonnement voor {name}. Betaal met een nieuwe kaart of de andere betaalopties van de school.",
+      title: "Abonnementen voor {name}",
+    },
+    childWaivers: {
+      loadError: "Kon de verklaringen niet laden. Probeer het opnieuw.",
+      empty: "{name} heeft geen verklaringen om te ondertekenen.",
+      title: "Verklaringen van {name}",
+    },
     childBooking: {
       title: "Boeken voor {name}",
       upcomingTitle: "Komende boekingen",
@@ -672,6 +695,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "De lessen konden niet worden geladen — probeer het opnieuw.",
     },
     myMinors: {
+      plans: "Abonnement kopen",
+      waivers: "Verklaringen",
       empty: "Nog geen gekoppelde minderjarigen.",
       loadError: "Je minderjarigen konden niet worden geladen — probeer het opnieuw.",
       born: "Geboren op {date}",
@@ -984,6 +1009,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Geen vrijwaringen om te ondertekenen.",
     },
     row: {
+      signingFor: "Je ondertekent voor {name}, als ouder.",
       cancel: "Annuleren",
       showLess: "Minder tonen",
       readFull: "Volledige verklaring lezen",

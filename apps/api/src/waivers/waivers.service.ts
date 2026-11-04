@@ -890,6 +890,44 @@ export class WaiversService {
     });
   }
 
+  /** Decision 428 (Student portal review M1) — a parent's child's waivers at
+   * every School the child is a current Student of, read as the child (like
+   * the child-booking lists, Decision 379), with the child's signed date. */
+  async findMinorWaivers(guardianId: string, studentId: string) {
+    await this.guardiansService.assertGuardianOfStudent(guardianId, studentId);
+    return this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId: studentId, role: 'STUDENT', revokedAt: null, school: { archivedAt: null } },
+        select: { schoolId: true, school: { select: { name: true } } },
+        distinct: ['schoolId'],
+      });
+      const schoolNames = new Map(grants.filter((g) => g.schoolId && g.school).map((g) => [g.schoolId!, g.school!.name]));
+      const schoolIds = [...schoolNames.keys()];
+      const waivers = await tx.waiver.findMany({
+        where: { schoolId: { in: schoolIds }, archivedAt: null },
+        orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        take: 200,
+      });
+      const signatures = await tx.waiverSignature.findMany({
+        where: { studentId, status: 'SIGNED', waiverId: { in: waivers.map((w) => w.id) } },
+        select: { waiverId: true, signedDate: true },
+      });
+      const signedByWaiver = new Map(signatures.map((s) => [s.waiverId, s.signedDate]));
+      const items = waivers.map((w) => ({
+        ...w,
+        archivedAt: null,
+        purgeAt: w.purgeAt?.toISOString() ?? null,
+        purgedAt: w.purgedAt?.toISOString() ?? null,
+        createdAt: w.createdAt.toISOString(),
+        updatedAt: w.updatedAt.toISOString(),
+        schoolName: schoolNames.get(w.schoolId) ?? '',
+        signedDate: signedByWaiver.get(w.id)?.toISOString() ?? null,
+      }));
+      items.sort((a, b) => a.schoolName.localeCompare(b.schoolName));
+      return { items };
+    });
+  }
+
   async findMySignatures(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate((args) => tx.waiverSignature.findMany({ ...args, where: { studentId: callerId } }), cursor, limit),

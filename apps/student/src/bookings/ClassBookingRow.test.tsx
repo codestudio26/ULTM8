@@ -18,6 +18,11 @@ jest.mock('./waitlistMutations', () => ({
   useMyWaitlist: jest.fn(() => ({ data: { items: [] } })),
 }));
 
+jest.mock('./ClassTicketOffer', () => {
+  const { Text } = require('react-native');
+  return { ClassTicketOffer: (p: { classId: string; studentId?: string }) => <Text>{`ticket offer ${p.classId} ${p.studentId ?? 'me'}`}</Text> };
+});
+
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
 const idleMutation = () => ({ mutateAsync: jest.fn<(...args: unknown[]) => Promise<unknown>>(), isPending: false });
 
@@ -63,6 +68,15 @@ describe('ClassBookingRow — booking refusals', () => {
     await fireEvent.press(screen.getByText('Book'));
     await waitFor(() => expect(screen.getByText('Lots of people are booking this class right now. Please try again in a moment.')).toBeTruthy());
     expect(screen.queryByText('Join waitlist')).toBeNull();
+    expect(screen.getByText('Book')).toBeTruthy();
+  });
+
+  it('offers the one-off class\'s ticket when booking says it needs one (Decision 428, M4)', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(400, 'TICKET_REQUIRED', 'This one-off class needs its own ticket.'));
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" />);
+    expect(screen.queryByText('ticket offer class-1 me')).toBeNull();
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('ticket offer class-1 me')).toBeTruthy());
     expect(screen.getByText('Book')).toBeTruthy();
   });
 

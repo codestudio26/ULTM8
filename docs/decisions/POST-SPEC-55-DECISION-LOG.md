@@ -7531,3 +7531,26 @@ The Student portal (the `apps/student` mobile app) review found 13 bugs, SP1–S
 ### Recorded by
 
 User (Code), 4 Nov 2026: "go, all recommended", on the Student portal review's bugs and questions Q1–Q6.
+
+## Decision 428 — Student portal: a parent signs a child's waivers and buys a child's plan, change passcode, and a one-off class's ticket
+
+**Date:** 4 Nov 2026 · **Status:** Product-owner decision · **Builds:** Decision 427 answer 4 (Student portal review M1–M4) · **Builds on:** Decisions 345, 375, 379
+
+### Decision
+
+The four missing pieces the Student portal review found, built in the app:
+
+1. **A parent signs their child's waivers** (M1). Each child in "My children" has "Waivers": the child's current waivers at each of the child's Schools, grouped by School, with Signed or Sign. Signing says "Signing for {child}, as their parent" and records the parent as the signer (the existing Guardian path on `POST /waivers/:id/sign`, `studentId`).
+2. **A parent buys a plan for their child** (M2). Each child has "Buy a plan": the plans on sale at the child's Schools, bought for the child (`POST /membership-plans/:id/purchase` with `studentId`). The parent's own saved card isn't offered, since the API refuses it for a child; they pay with a new card or the School's cash/bank option.
+3. **Change passcode in the app** (M3), from Home: the current passcode, then a new one twice. Every other device is signed out; this one stays signed in with the new token pair (Decision 375's web version).
+4. **A one-off class's ticket** (M4). When booking a one-off class is refused because it needs its own ticket (`TICKET_REQUIRED`, Decision 345), the class row shows that class's ticket ready to buy, then Book again; with none on sale, it says to ask the School. Works for a parent booking for a child too.
+
+### As built
+
+- The review said the API already supported all four. Two small reads were missing and were added, still with no database change:
+  - `GET /guardians/me/minors/:studentId/waivers`: the child's waivers at the child's current Schools with the child's signed date, read as the child (like the child-booking lists, Decision 379); a non-parent gets 403.
+  - `GET /classes/:id/ticket-plans` (optional `studentId` for a parent): the ids of the plans on sale scoped to that class, read as the student, so only a class at one of their Schools is found. The plan details come from the School page's plan list; the discovery role still can't see which class a plan is for.
+
+### Recorded by
+
+User (Code), 4 Nov 2026: "go, all recommended", on the Student portal review's Q4 (build M1–M4 in a second PR).

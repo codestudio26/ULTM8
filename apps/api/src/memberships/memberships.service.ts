@@ -154,6 +154,26 @@ export class MembershipsService {
     );
   }
 
+  /** Decision 428 (Student portal review M4) — the plans on sale scoped to
+   * this Class (its own ticket). Read in the Student's own tenant context, so
+   * only a Class at one of their Schools is found; a parent reads as their
+   * linked child. */
+  async findClassTicketPlans(callerId: string, classId: string, studentId?: string): Promise<{ planIds: string[] }> {
+    const readAs = studentId ?? callerId;
+    if (studentId !== undefined && studentId !== callerId) {
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+    }
+    const plans = await this.prismaApp.withTenantContext(readAs, (tx) =>
+      tx.membershipPlan.findMany({
+        where: { scopedClassId: classId, visible: true, archivedAt: null, type: { notIn: ['VISIT_PASS', 'FRIEND_PASS'] } },
+        orderBy: { id: 'asc' },
+        select: { id: true },
+        take: 20,
+      }),
+    );
+    return { planIds: plans.map((p) => p.id) };
+  }
+
   async findOnePlan(callerId: string, planId: string) {
     const found = await this.prismaApp.withTenantContext(callerId, (tx) => tx.membershipPlan.findUnique({ where: { id: planId } }));
     // Decision 391: the hidden visit-pass plan is only ever used by giveVisitPass,

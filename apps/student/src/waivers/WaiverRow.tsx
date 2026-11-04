@@ -32,9 +32,20 @@ const SIGNATURE_PAD_WEB_STYLE = `.m-signature-pad--footer { display: none; margi
  * superseded) QR check-in slice — this stays Expo Go-compatible: its only
  * dependency, `react-native-webview`, ships as an Expo Go "works out of the
  * box" package, not a custom native module the way `@stripe/stripe-react-
- * native` is. Guardian-on-behalf-of signing (the real DTO's optional
- * `studentId`) stays out of scope here — Student self-signing only. */
-export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: WaiverSignature | undefined }) {
+ * native` is. */
+/** `forStudentId`/`forName` (Decision 428, Student portal review M1): a
+ * parent signs this waiver for their child. */
+export function WaiverRow({
+  waiver,
+  signature,
+  forStudentId,
+  forName,
+}: {
+  waiver: Waiver;
+  signature: Pick<WaiverSignature, 'signedDate'> | undefined;
+  forStudentId?: string;
+  forName?: string;
+}) {
   const t = useT();
   const [signing, setSigning] = useState(false);
   // Decision 427 (SP8): the whole waiver can be read; it is always shown in full while signing.
@@ -47,7 +58,14 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
 
   function handleSubmit() {
     if (signWaiver.isPending) return;
-    signWaiver.mutate({ waiverId: waiver.id, signerFullName, signatureText, signatureImage: drawnSignature, waiverVersion: waiver.version });
+    signWaiver.mutate({
+      waiverId: waiver.id,
+      signerFullName,
+      signatureText,
+      signatureImage: drawnSignature,
+      waiverVersion: waiver.version,
+      ...(forStudentId ? { studentId: forStudentId } : {}),
+    });
   }
 
   function handleClearSignature() {
@@ -91,6 +109,9 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
         </Text>
       ) : signing ? (
         <View style={{ marginTop: 8 }}>
+          {forName ? (
+            <Text style={{ color: '#5F6368', fontSize: 13, marginBottom: 6 }}>{t('waivers.row.signingFor', { name: forName })}</Text>
+          ) : null}
           <Field label={t('waivers.row.fullName')}>
             <TextField value={signerFullName} onChangeText={setSignerFullName} placeholder={t('waivers.row.fullNamePlaceholder')} />
           </Field>

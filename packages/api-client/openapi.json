@@ -8460,6 +8460,49 @@
         ]
       }
     },
+    "/v1/classes/{id}/ticket-plans": {
+      "get": {
+        "operationId": "MembershipsController_findClassTicketPlans",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassTicketPlansDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/memberships/me": {
       "get": {
         "operationId": "MembershipsController_findMyMemberships",
@@ -12988,6 +13031,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StudentWaiverStatusDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waivers"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}/waivers": {
+      "get": {
+        "operationId": "WaiversController_findMinorWaivers",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinorWaiverListDto"
                 }
               }
             }
@@ -31282,6 +31360,20 @@
           "plans"
         ]
       },
+      "ClassTicketPlansDto": {
+        "type": "object",
+        "properties": {
+          "planIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "planIds"
+        ]
+      },
       "MyMembershipResponseDto": {
         "type": "object",
         "properties": {
@@ -35767,6 +35859,81 @@
         "required": [
           "signed",
           "toSign"
+        ]
+      },
+      "MinorWaiverDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "archivedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — set when this Waiver has been archived. Null when active."
+          },
+          "purgeAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — 90 days after archivedAt. UNLIKE the other 6 entities, a Waiver is NEVER hard-purged once this elapses (legal-record exception, mirroring Decision 110's own School-level purge carve-out) — it stays archived forever."
+          },
+          "purgedAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 226 — always null in practice for Waiver; kept for API shape consistency with the other 6 entities."
+          },
+          "version": {
+            "type": "number",
+            "description": "Goes up by one each time the title or text changes. Send it back as SignWaiverDto.waiverVersion."
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "signedDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "When the child's current signature was signed. Null when not signed."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "title",
+          "body",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "schoolName",
+          "signedDate"
+        ]
+      },
+      "MinorWaiverListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MinorWaiverDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "UpdateWaiverDto": {

@@ -64,6 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    changePasscode: "パスコードを変更",
     joinPick: {
       notNow: "今はしない",
       join: "入会する",
@@ -95,6 +96,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     logOut: "ログアウト",
   },
   auth: {
+    changePasscode: {
+      done: "パスコードを変更しました。ほかの端末はサインアウトされました。",
+      submit: "パスコードを変更",
+      current: "現在のパスコード",
+      intro: "現在のパスコードを入力し、新しい6桁のパスコードを選んでください。ほかの端末はサインアウトされます。",
+      title: "パスコードを変更",
+    },
     errors: {
       generic: "問題が発生しました。もう一度お試しください。",
     },
@@ -279,6 +287,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    ticket: {
+      noneOnSale: "このクラスのチケットはアプリで販売されていません。スクールにお問い合わせください。",
+      buyFirst: "このクラスのチケットを購入してから、もう一度「予約」をタップしてください。",
+    },
     waitlist: {
       claimError: "枠を確保できませんでした。もう一度お試しください。",
       claim: "枠を確保",
@@ -654,6 +666,17 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childPlans: {
+      loadError: "プランを読み込めませんでした。もう一度お試しください。",
+      empty: "このスクールには販売中のプランがありません。",
+      intro: "{name}さんのプランを購入します。新しいカード、またはスクールのその他の支払い方法でお支払いください。",
+      title: "{name}さんのプラン",
+    },
+    childWaivers: {
+      loadError: "同意書を読み込めませんでした。もう一度お試しください。",
+      empty: "{name}さんが署名する同意書はありません。",
+      title: "{name}さんの同意書",
+    },
     childBooking: {
       title: "{name}さんの予約",
       upcomingTitle: "今後の予約",
@@ -666,6 +689,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "クラスを読み込めませんでした。もう一度お試しください。",
     },
     myMinors: {
+      plans: "プランを購入",
+      waivers: "同意書",
       empty: "連携しているお子さまはまだいません。",
       loadError: "お子さまの情報を読み込めませんでした。もう一度お試しください。",
       born: "{date}生まれ",
@@ -977,6 +1002,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "署名が必要な免責同意書はありません。",
     },
     row: {
+      signingFor: "保護者として{name}さんの代わりに署名します。",
       cancel: "キャンセル",
       showLess: "表示を減らす",
       readFull: "同意書を全文表示",
