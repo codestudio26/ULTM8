@@ -3582,6 +3582,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "无法取消归档此免责声明。",
     archiveConfirmTitle: "归档“{title}”?",
     archiveConfirmDescription: "学员将不再看到它,也不会再被要求签署。已有的签名会保留。你可以随时取消归档。",
+    retention: {
+      heading: "已签署免责声明的保存期限",
+      note: "已签署的免责声明在该人是会员期间以及离开后 7 年内保存（如为儿童，则保存至其 25 岁，以较晚者为准），之后自动删除。",
+      needsDateOfBirth: "需要出生日期",
+      needsDateOfBirthSummary: "为未登记出生日期的儿童签署：{count}。这些将保存到儿童的出生日期添加到其个人资料为止。",
+    },
     signatures: {
       heading: "签名",
       summary: "{total} 人中 {signed} 人已签署",

@@ -251,6 +251,8 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
     await superuser.staffPermission.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.guestWaiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.waiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: { in: schoolIds } } } });
     await superuser.waiver.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.studentJoinDate.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: { in: schoolIds } } });

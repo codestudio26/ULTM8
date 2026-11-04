@@ -3625,6 +3625,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Impossibile ripristinare questa liberatoria.",
     archiveConfirmTitle: "Archiviare «{title}»?",
     archiveConfirmDescription: "Gli allievi non lo vedranno più e non verrà più chiesto loro di firmarlo. Le firme già date vengono conservate. Puoi ripristinarlo in qualsiasi momento.",
+    retention: {
+      heading: "Per quanto tempo si conservano le liberatorie firmate",
+      note: "Le liberatorie firmate si conservano finché la persona è iscritta e per 7 anni dopo che se ne va (fino ai 25 anni per un minore, se più tardi), poi vengono eliminate automaticamente.",
+      needsDateOfBirth: "Manca la data di nascita",
+      needsDateOfBirthSummary: "Firmate per un minore senza data di nascita registrata: {count}. Si conservano finché la data di nascita del minore non viene aggiunta al suo profilo.",
+    },
     signatures: {
       heading: "Firme",
       summary: "{signed} su {total} firmate",

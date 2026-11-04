@@ -3797,6 +3797,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "تعذّر إلغاء أرشفة هذا الإقرار.",
     archiveConfirmTitle: "أرشفة \"{title}\"؟",
     archiveConfirmDescription: "لن يراه الطلاب ولن يُطلب منهم توقيعه بعد الآن. تبقى التواقيع السابقة محفوظة. يمكنك إخراجه من الأرشيف في أي وقت.",
+    retention: {
+      heading: "مدة الاحتفاظ بإقرارات إخلاء المسؤولية الموقّعة",
+      note: "تُحفظ إقرارات إخلاء المسؤولية الموقّعة ما دام الشخص عضوًا ولمدة 7 سنوات بعد مغادرته (وللطفل حتى سن 25 إن كان ذلك لاحقًا)، ثم تُحذف تلقائيًا.",
+      needsDateOfBirth: "يلزم تاريخ الميلاد",
+      needsDateOfBirthSummary: "موقّعة لطفل بلا تاريخ ميلاد مسجّل: {count}. تُحفظ إلى أن يُضاف تاريخ ميلاد الطفل إلى ملفه.",
+    },
     signatures: {
       heading: "التوقيعات",
       summary: "وقّع {signed} من {total}",

@@ -3625,6 +3625,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     unarchiveFailed: "Impossible de désarchiver cette décharge.",
     archiveConfirmTitle: "Archiver « {title} » ?",
     archiveConfirmDescription: "Les élèves ne le verront plus et ne seront plus invités à le signer. Les signatures déjà données sont conservées. Vous pouvez le désarchiver à tout moment.",
+    retention: {
+      heading: "Durée de conservation des décharges signées",
+      note: "Les décharges signées sont conservées tant que la personne est membre et pendant 7 ans après son départ (jusqu'à 25 ans pour un enfant, si c'est plus tard), puis supprimées automatiquement.",
+      needsDateOfBirth: "Date de naissance manquante",
+      needsDateOfBirthSummary: "Signées pour un enfant sans date de naissance enregistrée : {count}. Elles sont conservées jusqu'à ce que la date de naissance de l'enfant soit ajoutée à son profil.",
+    },
     signatures: {
       heading: "Signatures",
       summary: "{signed} sur {total} signées",

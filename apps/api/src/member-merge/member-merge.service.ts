@@ -471,14 +471,19 @@ export class MemberMergeService {
 
   /**
    * Waiver signatures are legal records: never edited beyond whose record
-   * they are on, never deleted (Decision 253). A member may hold one live
+   * they are on, never deleted by a merge (the retention job deletes them
+   * when their time is up, Decision 426). A member may hold one live
    * (not Expired) row per waiver, so where both have one for the same waiver:
    * - an Unsigned/Pending row carries no signature (it only says the waiver
    *   was given to them); it is removed in favour of the other one, and the
    *   duplicate's goes when neither has signed;
    * - when both have signed, the duplicate's signature stays exactly where it
    *   is, on the duplicate's record at this School (shown under former
-   *   students, and in the signed-documents export).
+   *   students, and in the signed-documents export), marked with the kept
+   *   record's id (mergedIntoStudentId, Decision 426 item 6) so it is kept
+   *   as a member's while the kept record is a member. Signatures already
+   *   left on the duplicate by an earlier merge into it follow on to the
+   *   record kept now.
    * A signature the duplicate signed themselves (signedById = the duplicate)
    * stays self-signed on the kept record; one a Guardian signed keeps its
    * Guardian.
@@ -514,6 +519,15 @@ export class MemberMergeService {
       SET "studentId" = ${keptId},
           "signedById" = CASE WHEN "signedById" = ${duplicateId} THEN ${keptId} ELSE "signedById" END
       WHERE "schoolId" = ${schoolId} AND "studentId" = ${duplicateId} AND "id" NOT IN (${Prisma.join(remove.length > 0 ? remove : [''])}) ${keepOut}`;
+    if (leave.length > 0) {
+      await tx.$executeRaw`
+        UPDATE "WaiverSignature" SET "mergedIntoStudentId" = ${keptId}
+        WHERE "schoolId" = ${schoolId} AND "studentId" = ${duplicateId} AND "id" IN (${Prisma.join(leave)})`;
+    }
+    // A record merged into the duplicate earlier now leads to the kept one.
+    await tx.$executeRaw`
+      UPDATE "WaiverSignature" SET "mergedIntoStudentId" = ${keptId}
+      WHERE "schoolId" = ${schoolId} AND "mergedIntoStudentId" = ${duplicateId}`;
     return { moved, left: leave.length };
   }
 }

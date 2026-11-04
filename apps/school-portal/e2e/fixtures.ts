@@ -217,6 +217,9 @@ export async function cleanup() {
   await db.timetableSlot.deleteMany({ where });
   await db.coachInvite.deleteMany({ where });
   await db.staffPermission.deleteMany({ where });
+  // Decision 426: a User with a waiver signature can't be deleted
+  // (ON DELETE RESTRICT), so the signatures go first.
+  await db.waiverSignature.deleteMany({ where: { OR: [where, { studentId: { in: userIds } }] } });
   await db.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
   await db.roleGrant.deleteMany({ where });
   await db.studentHomeBranch.deleteMany({ where });

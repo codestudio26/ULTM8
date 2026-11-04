@@ -1,7 +1,8 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
-import { Prisma } from '@prisma/client';
+import { Prisma, WaiverPurgeRule } from '@prisma/client';
+import { decideGuestSignatureRetention, decideMemberSignatureRetention, waiverRetentionPolicyFor } from '../waivers/waiver-retention';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { ENTITY_OFFBOARDING_PURGE_QUEUE } from './queue.constants';
@@ -72,47 +73,39 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  * these 7 entities carry no PII-redaction requirement comparable to School/
  * Franchise's own close-account flow, so there is nothing to anonymize into.
  *
- * WAIVER (THE TEMPLATE ROW) IS THE ONE DELIBERATE EXCEPTION — NEVER PURGED,
- * AT ANY purgeAt, REGARDLESS OF WHETHER IT HAS ANY WaiverSignature: mirrors
- * Decision 110's own School-level purge job, which already refuses to
- * hard-delete a School that still owns Waiver rows. This job finds Waiver
- * rows whose purgeAt has elapsed (so the School Portal's own UI can still
- * show an accurate countdown/overdue state if it chooses to), logs each one
- * explicitly, and does NOT delete it — not a silently-caught exception, an
- * intentional, named skip. WaiverSignature.waiverId is also independently
- * `ON DELETE RESTRICT` (verified in this phase's migration review), so even
- * an attempted delete would fail the instant any signature exists — but a
- * Waiver with ZERO signatures would otherwise delete cleanly, which is
- * exactly the case this explicit skip exists to prevent (archiving only
- * blocks on an EXISTING signature; nothing stops a new one being assigned
- * during the 90-day window, and a legal document is not something this job
- * will ever risk deleting out from under a signature race).
+ * WAIVER (THE TEMPLATE ROW) IS THE ONE DELIBERATE EXCEPTION — NEVER PURGED
+ * BY THIS JOB, AT ANY purgeAt, REGARDLESS OF WHETHER IT HAS ANY
+ * WaiverSignature: this job finds Waiver rows whose purgeAt has elapsed (so
+ * the School Portal's own UI can still show an accurate countdown/overdue
+ * state if it chooses to), logs each one explicitly, and does NOT delete it —
+ * not a silently-caught exception, an intentional, named skip. A School's
+ * templates go only with the School itself, once its last signature has been
+ * purged (TenantLifecyclePurgeProcessor, Decision 426 item 2).
+ * WaiverSignature.waiverId is `ON DELETE RESTRICT` (since Decision 426's
+ * migration; it was CASCADE before, despite what this comment used to say),
+ * so a delete fails the instant any signature exists; this skip also covers
+ * a template with no signatures yet, which nothing stops being assigned
+ * during the 90-day window.
  *
- * WAIVERSIGNATURE (THE PER-STUDENT SIGNED RECORD) IS A SEPARATE, NEWER
- * SWEEP — Decision 269 (16 Oct 2026) set the first real retention numbers for
- * this exact row, closing the "pending real legal input" gap the Waiver
- * comment above still otherwise describes. Computed DYNAMICALLY at sweep
- * time (20261116000000_waiver_signature_retention_purge), not from a
- * persisted purgeAt — there was never an archivedAt/purgeAt/purgedAt trio on
- * this table to begin with, and a dynamically-derived eligibility can never
- * go stale against a later policy change the way a persisted one could:
- *   - A Guardian-signed signature (`signedById !== studentId` — the model's
- *     own documented minor-signing path) is treated as a minor's waiver:
- *     eligible once the signing Student turns 18 + 6 more years. A null
- *     `dateOfBirth` means this can never be computed safely — skipped and
- *     logged for manual review, never guessed. Decision 354 (W16): never
- *     while the Student is still enrolled, and not before 7 years after
- *     they left — the later of the two dates. A paper signature (no
- *     signedById) counts as a minor's when the Student was under 18 on the
- *     date signed.
- *   - A self-signed signature is treated as an adult's: eligible 7 years
- *     after the Student's most recent revoked STUDENT RoleGrant at that
- *     School ("departure"). A Student still actively enrolled (an
- *     unrevoked STUDENT grant exists) or with no RoleGrant history at all
- *     is never eligible — there is no departure to measure from.
- * UNSIGNED/PENDING rows (no real signature ever captured) are excluded
- * entirely — Decision 269 is about retaining what was actually signed, not
- * assignment-tracking placeholders.
+ * WAIVERSIGNATURE (THE PER-STUDENT SIGNED RECORD) HAS ITS OWN SWEEP —
+ * Decision 426 (which builds Decision 423 item 8 and amends Decisions 269 and
+ * 354 W16). The rule itself lives in one pure, unit-tested place,
+ * src/waivers/waiver-retention.ts; read that file's header for it in full.
+ * In short: kept while the person is a member of that School and for 7 years
+ * after they leave; for a child (under 18 on the signing date) until age 25
+ * if later; never-members count from the signing date; a closed School
+ * counts as everyone leaving on its close date; a merged-away duplicate's
+ * signature is a member's while either record is; a Guardian-signed waiver
+ * with no date of birth is kept and shown to the owner as needing one; an
+ * unsigned entry of someone no longer a member is removed. Eligibility is
+ * computed at sweep time from the inputs (STUDENT RoleGrants, School close
+ * date, and the 18th birthday saved on the signature), never persisted, so a
+ * later policy change applies to every row at once. Each batch of 500 rows
+ * is read in one query; a drawn or paper image is deleted from R2 first and
+ * the row only if that worked; every deletion writes one row to the
+ * permanent WaiverSignaturePurgeLog (no personal data). Guests
+ * (GuestWaiverSignature) follow the same rule: 7 years after the class, and
+ * for an under-18 guest not before age 25.
  *
  * TRANSACTION IS DELIBERATELY NOT TOUCHED ANYWHERE IN THIS FILE: Decision
  * 261 (14 Oct 2026, predates 268) already confirmed Transaction is never
@@ -154,19 +147,39 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  * triggers every child's CASCADE, even with zero grants on the child
  * tables themselves.
  */
-/** Minors' retention threshold (Decision 269): age of majority, plus this
- * many further years before a Guardian-signed WaiverSignature is eligible. */
-const MINOR_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_MAJORITY = 6;
-const AGE_OF_MAJORITY_YEARS = 18;
-/** Adult retention threshold (Decision 269): years after departure (the
- * Student's most recent revoked STUDENT RoleGrant at that School) before a
- * self-signed WaiverSignature is eligible. */
-const ADULT_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_DEPARTURE = 7;
+/** Rows read per query by the signature sweeps (Decision 426). */
+export const WAIVER_RETENTION_BATCH_SIZE = 500;
 
-function addYears(date: Date, years: number): Date {
-  const result = new Date(date);
-  result.setFullYear(result.getFullYear() + years);
-  return result;
+/** One WaiverSignature with everything the retention rule needs, read in one
+ * query per batch. Membership is read only at the signature's own School. */
+interface SignatureRetentionRow {
+  id: string;
+  schoolId: string;
+  waiverId: string;
+  studentId: string;
+  signedById: string | null;
+  status: 'SIGNED' | 'EXPIRED' | 'UNSIGNED' | 'PENDING';
+  signedDate: Date | null;
+  createdAt: Date;
+  studentMajorityDate: Date | null;
+  signatureImageKey: string | null;
+  signedWaiverSha256: string | null;
+  schoolClosedAt: Date | null;
+  schoolClosureFinal: boolean;
+  hasLiveStudentRole: boolean;
+  everMember: boolean;
+  lastLeftAt: Date | null;
+}
+
+/** A row the rule says to delete, with what its purge-log line records. */
+interface PurgeCandidate {
+  id: string;
+  schoolId: string;
+  waiverId: string;
+  signedWaiverSha256: string | null;
+  rule: WaiverPurgeRule;
+  retainUntil: Date | null;
+  signed: boolean;
 }
 
 @Processor(ENTITY_OFFBOARDING_PURGE_QUEUE)
@@ -202,9 +215,11 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
 
     const signatureOutcome = await this.sweepWaiverSignatures(now);
     deleted += signatureOutcome.deleted;
-    skipped += signatureOutcome.skipped;
+    skipped += signatureOutcome.failed;
 
-    deleted += await this.sweepGuestWaiverSignatures(now);
+    const guestOutcome = await this.sweepGuestWaiverSignatures(now);
+    deleted += guestOutcome.deleted;
+    skipped += guestOutcome.failed;
     deleted += await this.sweepRejectedSignUps(now);
 
     // Backlog 5.11 (Decision 315 item 9): files on a member are erased with
@@ -356,89 +371,160 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     return due.length;
   }
 
-  /** WaiverSignature's own sweep (Decision 269) — see this file's own header
-   * comment for the full retention rules. Only actually-signed rows are
-   * considered (UNSIGNED/PENDING assignment placeholders have no signature
-   * to retain and are left alone). */
-  private async sweepWaiverSignatures(now: Date): Promise<{ deleted: number; skipped: number }> {
-    const signatures = await this.prismaJobs.waiverSignature.findMany({
-      where: { status: { in: ['SIGNED', 'EXPIRED'] }, OR: [{ signedById: { not: null } }, { method: 'PAPER' }] },
-      select: { id: true, studentId: true, signedById: true, schoolId: true, signatureImageKey: true, method: true, signedDate: true },
-    });
+  /**
+   * WaiverSignature's sweep (Decision 426; the rule is in
+   * src/waivers/waiver-retention.ts). First saves the 18th birthday on any
+   * signed row that has none yet but whose Student now has a date of birth
+   * (one added after signing; never changes a saved one). Then reads every
+   * row, 500 at a time in id order, each batch with its School's close date
+   * and the person's STUDENT roles at that same School (and at the record a
+   * merged duplicate was merged into) in a single query, and deletes the
+   * rows whose time is up.
+   */
+  private async sweepWaiverSignatures(now: Date): Promise<{ deleted: number; failed: number; needsDateOfBirth: number }> {
+    await this.prismaJobs.$executeRaw`
+      UPDATE "WaiverSignature" ws
+      SET "studentMajorityDate" = public."waiver_age_of_majority_date"(u."dateOfBirth")
+      FROM "User" u
+      WHERE u."id" = ws."studentId" AND ws."studentMajorityDate" IS NULL
+        AND ws."status" IN ('SIGNED', 'EXPIRED') AND u."dateOfBirth" IS NOT NULL`;
 
     let deleted = 0;
-    let skipped = 0;
-    for (const sig of signatures) {
-      // Decision 354 (W16): no signature is purged while its Student is
-      // still enrolled at that School, whoever signed it.
-      const stillEnrolled = await this.prismaJobs.roleGrant.count({
-        where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: null },
-      });
-      if (stillEnrolled > 0) {
-        skipped += 1;
-        continue;
-      }
-      const mostRecentDeparture = await this.prismaJobs.roleGrant.findFirst({
-        where: { userId: sig.studentId, schoolId: sig.schoolId, role: 'STUDENT', revokedAt: { not: null } },
-        orderBy: { revokedAt: 'desc' },
-        select: { revokedAt: true },
-      });
-      const student = await this.prismaJobs.user.findUnique({ where: { id: sig.studentId }, select: { dateOfBirth: true } });
-      const guardianSigned =
-        sig.method === 'PAPER'
-          ? !!student?.dateOfBirth && !!sig.signedDate && addYears(student.dateOfBirth, AGE_OF_MAJORITY_YEARS) > sig.signedDate
-          : sig.signedById !== sig.studentId;
-      let eligible: boolean;
+    let failed = 0;
+    let needsDateOfBirth = 0;
+    let after: string | null = null;
+    for (;;) {
+      const rows: SignatureRetentionRow[] = await this.prismaJobs.$queryRaw<SignatureRetentionRow[]>`
+        SELECT ws."id", ws."schoolId", ws."waiverId", ws."studentId", ws."signedById", ws."status"::text AS "status",
+               ws."signedDate", ws."createdAt", ws."studentMajorityDate", ws."signatureImageKey", ws."signedWaiverSha256",
+               s."archivedAt" AS "schoolClosedAt", (s."purgedAt" IS NOT NULL) AS "schoolClosureFinal",
+               EXISTS (
+                 SELECT 1 FROM "RoleGrant" rg
+                 WHERE rg."schoolId" = ws."schoolId" AND rg."role" = 'STUDENT' AND rg."revokedAt" IS NULL
+                   AND rg."userId" IN (ws."studentId", ws."mergedIntoStudentId")
+               ) AS "hasLiveStudentRole",
+               EXISTS (
+                 SELECT 1 FROM "RoleGrant" rg
+                 WHERE rg."schoolId" = ws."schoolId" AND rg."role" = 'STUDENT'
+                   AND rg."userId" IN (ws."studentId", ws."mergedIntoStudentId")
+               ) AS "everMember",
+               (
+                 SELECT max(rg."revokedAt") FROM "RoleGrant" rg
+                 WHERE rg."schoolId" = ws."schoolId" AND rg."role" = 'STUDENT'
+                   AND rg."userId" IN (ws."studentId", ws."mergedIntoStudentId")
+               ) AS "lastLeftAt"
+        FROM "WaiverSignature" ws
+        JOIN "School" s ON s."id" = ws."schoolId"
+        WHERE ${after === null ? Prisma.sql`TRUE` : Prisma.sql`ws."id" > ${after}`}
+        ORDER BY ws."id"
+        LIMIT ${WAIVER_RETENTION_BATCH_SIZE}`;
+      if (rows.length === 0) break;
+      after = rows[rows.length - 1].id;
 
-      if (guardianSigned) {
-        if (!student?.dateOfBirth) {
-          this.logger.warn(
-            `entity-offboarding-purge: WaiverSignature ${sig.id} is a Guardian-signed (minor's) waiver with no Student dateOfBirth on file — ` +
-              'cannot compute the age-of-majority+6yr threshold; left in place, will retry once dateOfBirth is known.',
-          );
-          skipped += 1;
+      const due: Array<PurgeCandidate & { imageKey: string | null }> = [];
+      for (const row of rows) {
+        const decision = decideMemberSignatureRetention(row, now, waiverRetentionPolicyFor());
+        if (decision.action === 'keep') {
+          if (decision.reason === 'NEEDS_DATE_OF_BIRTH') needsDateOfBirth += 1;
           continue;
         }
-        // A minor who was never enrolled (signed for, never joined) has no
-        // departure; the age rule alone applies.
-        const pastMajority = addYears(student.dateOfBirth, AGE_OF_MAJORITY_YEARS + MINOR_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_MAJORITY) <= now;
-        const pastDeparture =
-          !mostRecentDeparture?.revokedAt || addYears(mostRecentDeparture.revokedAt, ADULT_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_DEPARTURE) <= now;
-        eligible = pastMajority && pastDeparture;
-      } else {
-        if (!mostRecentDeparture?.revokedAt) {
-          // No STUDENT RoleGrant history at all for this signer at this School — no
-          // departure signal to measure retention from. Left in place rather than
-          // guessed; a data-integrity oddity worth surfacing if it ever recurs, not
-          // the expected case.
-          skipped += 1;
-          continue;
-        }
-        eligible = addYears(mostRecentDeparture.revokedAt, ADULT_WAIVER_SIGNATURE_RETENTION_YEARS_AFTER_DEPARTURE) <= now;
+        due.push({
+          id: row.id,
+          schoolId: row.schoolId,
+          waiverId: row.waiverId,
+          signedWaiverSha256: row.signedWaiverSha256,
+          rule: decision.rule,
+          retainUntil: decision.retainUntil,
+          signed: row.status === 'SIGNED' || row.status === 'EXPIRED',
+          imageKey: row.signatureImageKey,
+        });
       }
 
-      if (!eligible) {
-        skipped += 1;
-        continue;
+      // The image goes first; a row whose image couldn't be deleted stays
+      // for the next run, so no image is ever left without its record.
+      const ready: PurgeCandidate[] = [];
+      for (const candidate of due) {
+        if (await this.deleteSignatureImage(candidate.id, candidate.imageKey)) ready.push(candidate);
+        else failed += 1;
       }
+      deleted += await this.deleteMemberSignatures(ready);
 
-      try {
-        // The drawn image goes first: if that fails the row stays and the
-        // next sweep tries both again, so no image is left without a record.
-        if (sig.signatureImageKey) {
-          if (this.r2Client.isConfigured()) {
-            await this.r2Client.deleteObject(sig.signatureImageKey);
-          } else {
-            this.logger.warn(`entity-offboarding-purge: R2 is not configured, so the image of WaiverSignature ${sig.id} was not deleted.`);
-          }
-        }
-        await this.prismaJobs.waiverSignature.delete({ where: { id: sig.id } });
-        deleted += 1;
-      } catch (err) {
-        this.logger.error(`entity-offboarding-purge: failed to purge WaiverSignature ${sig.id}`, err as Error);
-      }
+      if (rows.length < WAIVER_RETENTION_BATCH_SIZE) break;
     }
-    return { deleted, skipped };
+    if (needsDateOfBirth > 0) {
+      this.logger.log(
+        `entity-offboarding-purge: ${needsDateOfBirth} Guardian-signed WaiverSignature(s) of people who have left have no date of birth on file — ` +
+          'kept until one is added (Decision 426 item 4); their School owners see them as "needs date of birth".',
+      );
+    }
+    return { deleted, failed, needsDateOfBirth };
+  }
+
+  /** Deletes a signature's drawn or paper image. False when that failed (the
+   * row then waits for the next run). Without R2 configured (local
+   * development) only the row goes, with a warning, as eraseMemberFiles. */
+  private async deleteSignatureImage(signatureId: string, imageKey: string | null): Promise<boolean> {
+    if (!imageKey) return true;
+    if (!this.r2Client.isConfigured()) {
+      this.logger.warn(`entity-offboarding-purge: R2 is not configured, so the image of WaiverSignature ${signatureId} was not deleted.`);
+      return true;
+    }
+    try {
+      await this.r2Client.deleteObject(imageKey);
+      return true;
+    } catch (err) {
+      this.logger.error(`entity-offboarding-purge: the image of WaiverSignature ${signatureId} could not be deleted; the signature is kept until the next run.`, err as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Deletes the rows and writes one purge-log line for each, in one
+   * transaction. The delete re-checks, in the same statement, that the row
+   * is still the kind it was read as (signed or not) and that the person is
+   * still not a member there (or the School is closed), so someone who
+   * rejoined or signed a moment ago is left alone.
+   */
+  private async deleteMemberSignatures(ready: PurgeCandidate[]): Promise<number> {
+    if (ready.length === 0) return 0;
+    const signedIds = ready.filter((c) => c.signed).map((c) => c.id);
+    const unsignedIds = ready.filter((c) => !c.signed).map((c) => c.id);
+    try {
+      return await this.prismaJobs.$transaction(async (tx) => {
+        const gone = await tx.$queryRaw<Array<{ id: string }>>`
+          DELETE FROM "WaiverSignature" ws
+          USING "School" s
+          WHERE s."id" = ws."schoolId"
+            AND (
+              (ws."id" = ANY(${signedIds}::text[]) AND ws."status" IN ('SIGNED', 'EXPIRED')
+                AND (s."archivedAt" IS NOT NULL OR NOT EXISTS (
+                  SELECT 1 FROM "RoleGrant" rg
+                  WHERE rg."schoolId" = ws."schoolId" AND rg."role" = 'STUDENT' AND rg."revokedAt" IS NULL
+                    AND rg."userId" IN (ws."studentId", ws."mergedIntoStudentId"))))
+              OR
+              (ws."id" = ANY(${unsignedIds}::text[]) AND ws."status" IN ('UNSIGNED', 'PENDING')
+                AND (s."purgedAt" IS NOT NULL OR NOT EXISTS (
+                  SELECT 1 FROM "RoleGrant" rg
+                  WHERE rg."schoolId" = ws."schoolId" AND rg."role" = 'STUDENT' AND rg."revokedAt" IS NULL
+                    AND rg."userId" IN (ws."studentId", ws."mergedIntoStudentId"))))
+            )
+          RETURNING ws."id"`;
+        const goneIds = new Set(gone.map((g) => g.id));
+        const logged = ready.filter((c) => goneIds.has(c.id));
+        if (logged.length > 0) {
+          await tx.waiverSignaturePurgeLog.createMany({ data: logged.map((c) => purgeLogLine('MEMBER', c)) });
+        }
+        if (logged.length < ready.length) {
+          this.logger.warn(
+            `entity-offboarding-purge: ${ready.length - logged.length} WaiverSignature(s) changed while being purged (signed, or the person rejoined) — kept.`,
+          );
+        }
+        return logged.length;
+      });
+    } catch (err) {
+      this.logger.error(`entity-offboarding-purge: failed to purge a batch of ${ready.length} WaiverSignature(s); they will be tried again on the next run.`, err as Error);
+      return 0;
+    }
   }
 
   /** Decision 362 (and 392): a rejected sign-up is kept 30 days, so staff can
@@ -450,19 +536,68 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     return result.count;
   }
 
-  /** Guest waiver signatures (Waivers Q9), kept like a student who has left
-   * (Decision 354, W16): 7 years after the class, and for a guest under 18
-   * until they turn 24 (18 + 6) if that's later. For a guest who was 18 or
-   * over at the class, 24 comes before class + 7 years, so both dates having
-   * passed is the whole rule. */
-  private async sweepGuestWaiverSignatures(now: Date): Promise<number> {
-    const sevenYearsAgo = new Date(now);
-    sevenYearsAgo.setUTCFullYear(sevenYearsAgo.getUTCFullYear() - 7);
-    const born24YearsAgo = new Date(now);
-    born24YearsAgo.setUTCFullYear(born24YearsAgo.getUTCFullYear() - 24);
-    const result = await this.prismaJobs.guestWaiverSignature.deleteMany({
-      where: { classStartsAt: { lte: sevenYearsAgo }, guestDateOfBirth: { lte: born24YearsAgo } },
-    });
-    return result.count;
+  /** Guest waiver signatures (Waivers Q9; Decision 426): 7 years after the
+   * class, and for a guest under 18 at the class not before they turn 25
+   * (18 + 7). Only rows whose class was at least 7 years ago can be due, so
+   * only those are read, 500 at a time in id order. */
+  private async sweepGuestWaiverSignatures(now: Date): Promise<{ deleted: number; failed: number }> {
+    const policy = waiverRetentionPolicyFor();
+    const earliestDue = new Date(now.getTime());
+    earliestDue.setUTCFullYear(earliestDue.getUTCFullYear() - policy.yearsKeptAfterLeaving);
+    let deleted = 0;
+    let failed = 0;
+    let after: string | null = null;
+    for (;;) {
+      const rows: Array<{ id: string; schoolId: string; waiverId: string; signedWaiverSha256: string; classStartsAt: Date; guestDateOfBirth: Date }> =
+        await this.prismaJobs.guestWaiverSignature.findMany({
+          where: { classStartsAt: { lte: earliestDue }, ...(after === null ? {} : { id: { gt: after } }) },
+          orderBy: { id: 'asc' },
+          take: WAIVER_RETENTION_BATCH_SIZE,
+          select: { id: true, schoolId: true, waiverId: true, signedWaiverSha256: true, classStartsAt: true, guestDateOfBirth: true },
+        });
+      if (rows.length === 0) break;
+      after = rows[rows.length - 1].id;
+
+      const due: PurgeCandidate[] = [];
+      for (const row of rows) {
+        const decision = decideGuestSignatureRetention(row, now, policy);
+        if (decision.action === 'purge') {
+          due.push({ ...row, rule: decision.rule, retainUntil: decision.retainUntil, signed: true });
+        }
+      }
+      if (due.length > 0) {
+        try {
+          deleted += await this.prismaJobs.$transaction(async (tx) => {
+            const gone = await tx.$queryRaw<Array<{ id: string }>>`
+              DELETE FROM "GuestWaiverSignature" WHERE "id" = ANY(${due.map((c) => c.id)}::text[]) RETURNING "id"`;
+            const goneIds = new Set(gone.map((g) => g.id));
+            const logged = due.filter((c) => goneIds.has(c.id));
+            if (logged.length > 0) {
+              await tx.waiverSignaturePurgeLog.createMany({ data: logged.map((c) => purgeLogLine('GUEST', c)) });
+            }
+            return logged.length;
+          });
+        } catch (err) {
+          failed += due.length;
+          this.logger.error(`entity-offboarding-purge: failed to purge a batch of ${due.length} GuestWaiverSignature(s); they will be tried again on the next run.`, err as Error);
+        }
+      }
+
+      if (rows.length < WAIVER_RETENTION_BATCH_SIZE) break;
+    }
+    return { deleted, failed };
   }
+}
+
+/** One WaiverSignaturePurgeLog line: ids, the rule and its dates, no personal data. */
+function purgeLogLine(kind: 'MEMBER' | 'GUEST', c: PurgeCandidate): Prisma.WaiverSignaturePurgeLogCreateManyInput {
+  return {
+    kind,
+    schoolId: c.schoolId,
+    signatureId: c.id,
+    waiverId: c.waiverId,
+    signedWaiverSha256: c.signedWaiverSha256,
+    rule: c.rule,
+    retainUntil: c.retainUntil,
+  };
 }

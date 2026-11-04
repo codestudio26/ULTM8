@@ -100,6 +100,8 @@ describeIfDb('Front desk: seats after check-in, QR lookup, waiver status', () =>
   afterAll(async () => {
     const schoolIds = [school.id, otherSchool.id];
     await superuser.waiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: { in: schoolIds } } } });
     await superuser.waiver.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.trainingLog.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.bookingAttendee.deleteMany({ where: { schoolId: { in: schoolIds } } });

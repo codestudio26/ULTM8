@@ -59,7 +59,7 @@ confirmation modal, Reactivate button) on `SchoolLookupPage`/
 widened to type `archivedAt`/`purgeAt`/`purgedAt` (and `FRANCHISE_PUBLIC_SELECT`
 to actually select them — School's `findOne()` already returned them at
 runtime, Franchise's did not). Both phases are on the same PR #77, merged. See
-§1 for the full account. Only `Waiver`'s own retention period remains open.
+§1 for the full account. `Waiver`'s own retention period, the one piece left open, is now decided and built (Decision 423 item 8, rules in Decision 426, 4 Nov 2026).
 
 **Updated 2026-09-23:** Infrastructure & deployment's "code that can be written now"
 half (§3's own framing) is done — a production `apps/api/Dockerfile`, first-pass
@@ -155,7 +155,7 @@ those sources (not assumed), not just patched at the Snapshot table:**
 | **Track A** — backend + school-portal + platform-admin | 57+ phases shipped, all merged to master — no Track A PRs open. `MobileAppPublishingModule` and `packages/build-pipeline` remain fully unbuilt, genuinely blocked on Apple compliance. `SubscriptionPlansModule` fully shipped; only its `whiteLabelApp` entitlement remains, same blocker. General tenant/content offboarding now covers School/Franchise (Decision 110) **and** Branch/Class/TimetableSlot/Instructor/Rank/Waiver/Lesson (Decision 226, PR #238, merged 13 Oct 2026); Membership/Transaction/PaymentAccount are confirmed never-deletable (Decisions 253/261, same reasoning as Waiver), and Booking/RoleGrant already had real cancel/revoke mechanisms all along — no remaining gap, despite an earlier wrong "9 of 16" count in this doc. Guardian consent-management UI is Track B's, not Track A's, and is now approved and built (Decision 236) — no longer an open item here. Also shipped since the last full synthesis: Instructor/Staff "Add Manually" (Decisions 237/251), Branch field-level settings, Franchise leave/switch (Decision 232), late-cancellation fee collection (Decision 234), a no-camera QR check-in fallback (Decision 235), Student Measurements as real fields (Decision 220/246), and real Timetable click-to-book (Decision 210 resolved the underlying TimetableSlot↔Class question). |
 | **Track B** — Student mobile app | Merged and current with master (PR #81 and many since). **Real automated test coverage now exists** — `apps/student` has a `jest` test script and 19 test files on disk (verified directly 13 Oct 2026); the "zero test coverage" claim this table carried for weeks was stale. Payment UI (hosted-Checkout fresh-card + saved-card, Decisions 238/243), Waiver drawn-signature capture, Guardian consent + step-up re-auth (Decision 236), Kid Mode booking delegation (Decision 123), and QR check-in (display + camera-scan) are all built and merged — see `docs/TRACK-B-ROADMAP.md`'s own "Recommendation" section (current through 12 Oct 2026). Only per-School white-label branding remains genuinely blocked (same Apple-compliance gate as Track A). |
 | **Infrastructure & deployment** | AWS (RDS/ElastiCache/Fargate) + GitHub Actions is the *decided* target (Spec §11.6). First-pass Dockerfile, Terraform for the full confirmed stack, a manual/gated CD pipeline skeleton, and backup/DR + APM + NFR-gap docs now exist (`apps/api/Dockerfile`, `infra/terraform/`, `.github/workflows/deploy.yml`, `docs/ops/`) — **still nothing is provisioned or running**: no AWS account/credentials exist in this environment, `terraform apply` has never been run, and CI remains test-only (deploy is manual-dispatch only, by design). Unchanged since the last full infra audit — nothing in §3 below needed correction. |
-| **Open decisions** | Well past 250 post-spec decisions logged as of 13 Oct 2026 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md` is the authoritative count — deliberately not restated as an exact number here, since this table has already gone stale on that count more than once). Resolved since the last full synthesis of this table: TimetableSlot↔Class (Decision 210), Guardian consent-UI approval (Decision 236), late-cancellation fee collection (Decision 234), GDPR/LGPD's own tracking-gap now has a real entry (Decision 245, technical-design scoping only — still needs a legal/program owner). Apple 4.2.6/4.3 compliance is now resolved and built too (Decision 266, 15 Oct 2026 — the School-selection UX Decision 247 itself left open; see the "Blocks a whole module" table below). Still genuinely open: Waiver retention period, RoleGrant authority-matrix edges (Decision 80/81), Stripe Connect verified for UAE only (Decision 86), Franchise lifecycle edges (Decisions 97/98/99). |
+| **Open decisions** | Well past 250 post-spec decisions logged as of 13 Oct 2026 (`docs/decisions/POST-SPEC-55-DECISION-LOG.md` is the authoritative count — deliberately not restated as an exact number here, since this table has already gone stale on that count more than once). Resolved since the last full synthesis of this table: TimetableSlot↔Class (Decision 210), Guardian consent-UI approval (Decision 236), late-cancellation fee collection (Decision 234), GDPR/LGPD's own tracking-gap now has a real entry (Decision 245, technical-design scoping only — still needs a legal/program owner). Apple 4.2.6/4.3 compliance is now resolved and built too (Decision 266, 15 Oct 2026 — the School-selection UX Decision 247 itself left open; see the "Blocks a whole module" table below). Waiver retention period: decided and built (Decision 423 item 8, Decision 426, 4 Nov 2026; not legal advice, a privacy lawyer is to confirm it per country). Still genuinely open: RoleGrant authority-matrix edges (Decision 80/81), Stripe Connect verified for UAE only (Decision 86), Franchise lifecycle edges (Decisions 97/98/99). |
 
 **Nothing here is "100% done."** Track A is the most mature by a wide margin; Track B
 and infra/deployment are the two biggest remaining bodies of work, and they're
@@ -251,7 +251,9 @@ implementation) are both merged to master.
    `purgedAt` is set) — needed `SchoolResponseDto`/`FranchiseResponseDto` widened
    to type `archivedAt`/`purgeAt`/`purgedAt`, and `FRANCHISE_PUBLIC_SELECT`
    widened to actually select them (School's `findOne()` already returned them at
-   runtime; Franchise's did not). Left: `Waiver`'s own retention period.
+   runtime; Franchise's did not). `Waiver`'s own retention period: decided and
+   built (Decision 426), including deleting a closed School's templates and the
+   School once its last signature is purged.
 3. ~~**Guardian consent-management UI**~~ — done (**Decision 236**): Track B's
    candidate implementation (`apps/student/src/guardians/`) was promoted to
    approved and built, with BASELINE consent withdrawal additionally gated behind
@@ -644,9 +646,12 @@ unit of effort. Not a committed schedule — a structure to work through.
    Curriculum), the daily 90-day purge job, and the `apps/platform-admin`
    close/reactivate UI itself (`TenantLifecycleControls`, on both
    `SchoolLookupPage` and `FranchiseLookupPage`). `Waiver`'s own retention period
-   still needs real legal input before its rows are ever purged — the job leaves
-   them (and the School that owns them) untouched pending that, per Decision
-   110's own flagged exception. **Extended to 7 more entities** (Branch, Class,
+   is now decided and built (Decision 423 item 8, rules in **Decision 426**, 4 Nov
+   2026): a signed waiver is kept while the person is a member and 7 years after
+   they leave (a child until 25 if later), then deleted by the daily
+   entity-offboarding purge, and a closed School's templates and the School
+   itself go once its last signature is purged. Not legal advice: a privacy
+   lawyer is to confirm it per country. **Extended to 7 more entities** (Branch, Class,
    TimetableSlot, Instructor, Rank, Waiver, Lesson) by **Decision 226** (PR #238,
    merged 13 Oct 2026) — a School-Owner-usable archive/delete action, not gated
    behind closing the whole School. The original "9 of the 16" framing this item

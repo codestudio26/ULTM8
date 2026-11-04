@@ -217,7 +217,7 @@ export function WaiversPage() {
       {confirmingArchive ? (
         <ConfirmDeleteModal
           title={t('waivers.archiveConfirmTitle', { title: confirmingArchive.title })}
-          description={t('waivers.archiveConfirmDescription')}
+          description={`${t('waivers.archiveConfirmDescription')} ${t('waivers.retention.note')}`}
           confirmLabel={t('waivers.archive')}
           genericErrorMessage={t('waivers.archiveFailed')}
           onConfirm={() => archiveWaiver.mutateAsync(confirmingArchive.id)}
@@ -326,6 +326,7 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
         <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{signatureName(s, t)}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.signedDate ? formatUpdatedLabel(s.signedDate) : '—'}</span>
+          {s.needsDateOfBirth ? <Badge variant="warning">{t('waivers.retention.needsDateOfBirth')}</Badge> : null}
           <Badge variant={statusBadgeVariant(s.status)}>{SIGNATURE_STATUS_LABEL[s.status] ? t(SIGNATURE_STATUS_LABEL[s.status]!) : s.status}</Badge>
         </span>
       </button>
@@ -348,6 +349,12 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
       {summary && summary.total > 0 ? (
         <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 8px' }}>
           {t('waivers.signatures.summary', { signed: summary.signed, total: summary.total })}
+        </p>
+      ) : null}
+      {summary?.needsDateOfBirth ? (
+        // Decision 426 item 4: kept until the child's date of birth is added.
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 8px' }}>
+          {t('waivers.retention.needsDateOfBirthSummary', { count: summary.needsDateOfBirth })}
         </p>
       ) : null}
       {!waiver.archivedAt && summary && summary.unsigned + summary.pending > 0 ? (

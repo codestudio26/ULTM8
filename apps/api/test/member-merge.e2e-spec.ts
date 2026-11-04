@@ -703,8 +703,10 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
     expect(await row(sig.w2Dan)).toMatchObject({ studentId: users.kate.id, status: 'SIGNED' });
     expect(await row(sig.w3Dan)).toBeNull(); // Dan's unsigned assignment: Kate has signed
     expect(await row(sig.w3Kate)).toMatchObject({ studentId: users.kate.id, status: 'SIGNED' });
-    expect(await row(sig.w4Dan)).toMatchObject({ studentId: users.dan.id, signedById: users.dan.id, status: 'SIGNED' }); // both signed: Dan's stays his
-    expect(await row(sig.w4Kate)).toMatchObject({ studentId: users.kate.id });
+    // Both signed: Dan's stays his, marked as merged into Kate's record so it
+    // is kept as a member's while Kate is a member (Decision 426 item 6).
+    expect(await row(sig.w4Dan)).toMatchObject({ studentId: users.dan.id, signedById: users.dan.id, status: 'SIGNED', mergedIntoStudentId: users.kate.id });
+    expect(await row(sig.w4Kate)).toMatchObject({ studentId: users.kate.id, mergedIntoStudentId: null });
     expect(await row(sig.w5Dan)).toMatchObject({ studentId: users.kate.id, status: 'EXPIRED' });
     expect(await row(sig.w6Dan)).toMatchObject({ studentId: users.kate.id, signedById: users.guardian.id });
     expect(res.body.records.WaiverSignature).toBe(4);

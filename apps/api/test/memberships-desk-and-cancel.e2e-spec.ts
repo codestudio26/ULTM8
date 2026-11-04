@@ -128,6 +128,8 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
     await superuser.transaction.deleteMany({ where });
     await superuser.membership.deleteMany({ where });
     await superuser.waiverSignature.deleteMany({ where });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: where } });
     await superuser.waiver.deleteMany({ where });
     await superuser.membershipPlan.deleteMany({ where });
     await superuser.paymentAccount.deleteMany({ where });

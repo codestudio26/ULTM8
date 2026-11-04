@@ -147,6 +147,8 @@ describeIfDb('Decision 226 — entity-level tenant offboarding (7 entities)', ()
     await superuser.lesson.deleteMany({ where: { id: { in: lessonIds } } });
     await superuser.rank.deleteMany({ where: { id: { in: rankIds } } });
     await superuser.discipline.deleteMany({ where: { id: { in: disciplineIds } } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { id: { in: waiverIds } } } });
     await superuser.waiver.deleteMany({ where: { id: { in: waiverIds } } });
     await superuser.instructor.deleteMany({ where: { id: { in: instructorIds } } });
     await superuser.timetableSlot.deleteMany({ where: { id: { in: timetableSlotIds } } });

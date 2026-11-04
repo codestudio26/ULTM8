@@ -104,6 +104,8 @@ describeIfDb('A parent books a class with guests for their child (Decision 379)'
     for (const id of [school.id, otherSchool.id]) {
       await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
       await superuser.waiverSignature.deleteMany({ where: { schoolId: id } });
+      // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+      await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: id } } });
       await superuser.waiver.deleteMany({ where: { schoolId: id } });
       await superuser.bookingAttendee.deleteMany({ where: { schoolId: id } });
       await superuser.booking.deleteMany({ where: { schoolId: id } });

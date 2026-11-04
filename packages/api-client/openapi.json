@@ -35364,6 +35364,10 @@
             "type": "boolean",
             "description": "Signatures panel only: true when this student has since left the School. Their signature is kept as a legal record."
           },
+          "needsDateOfBirth": {
+            "type": "boolean",
+            "description": "Signatures panel only (Decision 426): true for a signature a Guardian gave for a child with no date of birth on file. It is kept until a date of birth is added to the member's profile."
+          },
           "signedWaiverTitle": {
             "type": "string",
             "nullable": true,
@@ -35442,6 +35446,10 @@
           },
           "pending": {
             "type": "number"
+          },
+          "needsDateOfBirth": {
+            "type": "number",
+            "description": "Decision 426: signatures on this waiver (former students' included) that a Guardian gave for a child with no date of birth on file, kept until one is added."
           }
         },
         "required": [

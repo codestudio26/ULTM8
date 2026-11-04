@@ -135,6 +135,8 @@ describeIfDb('Guest waivers (Waivers Q9)', () => {
     await superuser.guestWaiverSignature.deleteMany({ where: { schoolId: school.id } });
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.waiverSignature.deleteMany({ where: { schoolId: school.id } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: school.id } } });
     await superuser.waiver.deleteMany({ where: { schoolId: school.id } });
     await superuser.bookingAttendee.deleteMany({ where: { schoolId: school.id } });
     await superuser.booking.deleteMany({ where: { schoolId: school.id } });
@@ -237,6 +239,8 @@ describeIfDb('Guest waivers (Waivers Q9)', () => {
       expect((await sign(token, signBody(unsigned))).body).toEqual({ signed: 1 });
     } finally {
       await superuser.guestWaiverSignature.deleteMany({ where: { waiverId: added.id } });
+      // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+      await superuser.waiverSignature.deleteMany({ where: { waiver: { id: added.id } } });
       await superuser.waiver.delete({ where: { id: added.id } });
     }
   });
@@ -325,7 +329,7 @@ describeIfDb('Guest waivers (Waivers Q9)', () => {
     expect(await prismaApp.$transaction((tx) => tx.guestWaiverSignature.count())).toBe(0);
   });
 
-  it('the purge keeps a guest signature 7 years after the class, and a minor until 24', async () => {
+  it('the purge keeps a guest signature 7 years after the class, and a minor until 25 (Decision 426)', async () => {
     const base = {
       schoolId: school.id,
       waiverId: waiverIds[0],
@@ -352,10 +356,20 @@ describeIfDb('Guest waivers (Waivers Q9)', () => {
       data: { ...base, classStartsAt: yearsAgo(8), guestFullName: 'Minor still', guestDateOfBirth: yearsAgo(20), signedByGuardian: true },
     });
     const minorDone = await superuser.guestWaiverSignature.create({
-      data: { ...base, classStartsAt: yearsAgo(10), guestFullName: 'Minor done', guestDateOfBirth: yearsAgo(25), signedByGuardian: true },
+      data: { ...base, classStartsAt: yearsAgo(10), guestFullName: 'Minor done', guestDateOfBirth: yearsAgo(26), signedByGuardian: true },
+    });
+    // 24, a child at the class 8 years ago: 18 + 6 was enough before; now kept until 25.
+    const minorAt24 = await superuser.guestWaiverSignature.create({
+      data: { ...base, classStartsAt: yearsAgo(8), guestFullName: 'Minor at 24', guestDateOfBirth: new Date(yearsAgo(24).getTime() - 30 * DAY), signedByGuardian: true },
     });
     await app.get(EntityOffboardingPurgeProcessor).process({} as never);
-    const left = (await superuser.guestWaiverSignature.findMany({ where: { id: { in: [adultOld.id, adultRecent.id, minorStill.id, minorDone.id] } } })).map((r) => r.id);
-    expect(left.sort()).toEqual([adultRecent.id, minorStill.id].sort());
+    const ids = [adultOld.id, adultRecent.id, minorStill.id, minorDone.id, minorAt24.id];
+    const left = (await superuser.guestWaiverSignature.findMany({ where: { id: { in: ids } } })).map((r) => r.id);
+    expect(left.sort()).toEqual([adultRecent.id, minorStill.id, minorAt24.id].sort());
+    // One purge-log line for each deleted guest signature, with no personal data.
+    const log = await superuser.waiverSignaturePurgeLog.findMany({ where: { signatureId: { in: ids } } });
+    expect(log.map((l) => l.signatureId).sort()).toEqual([adultOld.id, minorDone.id].sort());
+    expect(log.find((l) => l.signatureId === adultOld.id)).toMatchObject({ kind: 'GUEST', rule: 'GUEST_ADULT', schoolId: school.id, signedWaiverSha256: 'h' });
+    expect(log.find((l) => l.signatureId === minorDone.id)).toMatchObject({ kind: 'GUEST', rule: 'GUEST_CHILD' });
   });
 });

@@ -156,6 +156,8 @@ describeIfDb('Dashboard: Active students, setup checklist, birthdays (Decision 3
     await superuser.membershipFreeze.deleteMany({ where: { schoolId: school.id } });
     await superuser.membership.deleteMany({ where: { schoolId: school.id } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: school.id } } });
     await superuser.waiver.deleteMany({ where: { schoolId: school.id } });
     await superuser.studentHomeBranch.deleteMany({ where: { schoolId: school.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });

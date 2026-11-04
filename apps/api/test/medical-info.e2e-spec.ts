@@ -137,6 +137,8 @@ describeIfDb('Medical information (Decision 315 item 10)', () => {
     await superuser.guardianLink.deleteMany({ where: { studentId: users.kid.id } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: extraUserIds } } });
     await superuser.user.deleteMany({ where: { id: { in: [...extraUserIds, ...Object.values(users).map((u) => u.id)] } } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: { in: extraSchoolIds } } } });
     await superuser.waiver.deleteMany({ where: { schoolId: { in: extraSchoolIds } } });
     await superuser.studentMedicalInfo.deleteMany({ where: { schoolId: { in: extraSchoolIds } } });
     await superuser.school.deleteMany({ where: { id: { in: [schoolA.id, schoolB.id, ...extraSchoolIds] } } });

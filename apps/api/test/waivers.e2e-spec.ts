@@ -190,6 +190,8 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
     ).map((u) => u.id);
     await superuser.notification.deleteMany({ where: { userId: { in: createdUserIds } } });
     await superuser.waiverSignature.deleteMany({ where: { id: { in: signatureIds } } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { OR: [{ waiver: { id: { in: waiverIds } } }, { schoolId: school.id }, { student: { email: { contains: 'waivers-http-' } } }] } });
     await superuser.waiver.deleteMany({ where: { id: { in: waiverIds } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { email: { contains: 'waivers-http-' } } });
@@ -599,7 +601,7 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
 
       // The rollup count the backlog's own "Recommended display shape" named
       // ("12 of 40 signed") — 2 of 3 signed for THIS Waiver specifically.
-      expect(res.body.summary).toEqual({ total: 3, signed: 2, unsigned: 1, expired: 0, pending: 0 });
+      expect(res.body.summary).toEqual({ total: 3, signed: 2, unsigned: 1, expired: 0, pending: 0, needsDateOfBirth: 0 });
     });
 
     it('a Student cannot read the Signatures panel — School Owner only', async () => {
@@ -755,7 +757,9 @@ describeIfDb('WaiversModule — HTTP-level CRUD, signing, and RLS', () => {
         });
         expect(row).toBeNull();
       } finally {
-        await superuser.waiver.deleteMany({ where: { schoolId: otherSchool.id } }); // cascades its own WaiverSignature rows
+        // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+        await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: otherSchool.id } } });
+        await superuser.waiver.deleteMany({ where: { schoolId: otherSchool.id } });
         await superuser.roleGrant.deleteMany({ where: { schoolId: otherSchool.id } });
         await superuser.school.delete({ where: { id: otherSchool.id } });
       }

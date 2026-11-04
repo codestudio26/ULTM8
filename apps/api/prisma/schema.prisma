@@ -1327,10 +1327,12 @@ model School {
   /// One School-specific wrinkle the purge job's own header comment covers in
   /// full: Waiver is explicitly flagged by Decision 110 as NOT on the uniform
   /// 90-day clock (signed liability waivers need real legal input on retention
-  /// first), so a School that still owns Waiver rows is never hard-deleted by
-  /// the purge job even past its own purgeAt — it's anonymized in place instead,
-  /// same fallback the job uses when a PlatformCharge/FranchiseFeeCharge RESTRICT
-  /// blocks the delete outright.
+  /// first), so a School that still owns Waiver rows is not hard-deleted by
+  /// the purge job at its purgeAt — it's anonymized in place instead, same
+  /// fallback the job uses when a PlatformCharge/FranchiseFeeCharge RESTRICT
+  /// blocks the delete outright. Decision 426: closing counts as every member
+  /// leaving on archivedAt for signed-waiver retention, and once the last
+  /// signature is purged the templates and then the School are deleted.
   archivedAt DateTime?
   purgeAt    DateTime?
   purgedAt   DateTime?
@@ -3715,12 +3717,12 @@ model Waiver {
   /// everything else," Decision 110 part 1). Archiving/unarchiving a
   /// Waiver itself works exactly like the other 6 entities — only the
   /// purge half is special-cased, and it is an explicit, logged skip, not
-  /// a silent no-op. WaiverSignature.waiverId is also a DB-level
-  /// `ON DELETE RESTRICT` FK (not Cascade/SetNull — verified in this
-  /// phase's own migration review), which would independently block a
-  /// hard delete the instant any signature exists anyway; this trio/skip
-  /// is the explicit, intentional version of that protection, not an
-  /// accident of a caught P2003.
+  /// a silent no-op. WaiverSignature.waiverId is a DB-level
+  /// `ON DELETE RESTRICT` FK since Decision 426 (it was CASCADE before,
+  /// whatever this comment used to say), which blocks a hard delete the
+  /// instant any signature exists. Decision 426 item 2: a closed School's
+  /// templates are deleted, with the School, once its last signature has
+  /// been purged (TenantLifecyclePurgeProcessor).
   archivedAt DateTime?
   purgeAt    DateTime?
   purgedAt   DateTime?
@@ -3808,11 +3810,14 @@ model Waiver {
 model WaiverSignature {
   id String @id @default(uuid())
 
+  // Decision 426: RESTRICT, so deleting a Waiver or a User that still has a
+  // signature is refused. Only the retention job (EntityOffboardingPurge
+  // Processor) deletes a signature, once its time is up.
   waiverId String
-  waiver   Waiver @relation(fields: [waiverId], references: [id])
+  waiver   Waiver @relation(fields: [waiverId], references: [id], onDelete: Restrict)
 
   studentId String
-  student   User   @relation("WaiverSignatureStudent", fields: [studentId], references: [id])
+  student   User   @relation("WaiverSignatureStudent", fields: [studentId], references: [id], onDelete: Restrict)
 
   // Phase 37 (Guardian-on-behalf-of signing, skills/ultm8-domain-rules/SKILL.md
   // §14 — "Guardian... full access to... waiver-signing authority... for each
@@ -3856,6 +3861,18 @@ model WaiverSignature {
   recordedById   String?
   // When this member was last reminded to sign (button or repeat reminders).
   lastRemindedAt DateTime?
+
+  // Decision 426: the Student's 18th birthday, saved when the waiver is
+  // signed (a database trigger fills it from User.dateOfBirth on every
+  // signing path, and on a later write while it is still empty), so a later
+  // change to the date of birth cannot change whether this was a child's
+  // waiver. Null when no date of birth was on file.
+  studentMajorityDate DateTime? @db.Date
+  // Decision 426: set by a merge on a signature left on the duplicate record
+  // (both records had signed the same waiver): the kept record's id. While
+  // either record is a member of the School, this counts as a member's
+  // signature. A plain id, no foreign key.
+  mergedIntoStudentId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4208,6 +4225,44 @@ model GuestWaiverSignature {
   @@index([waiverId])
   @@index([bookingId])
   @@index([classId])
+}
+
+/// Decision 426: what kind of signature the retention job deleted.
+enum WaiverSignaturePurgeKind {
+  MEMBER
+  GUEST
+}
+
+/// Decision 426: the retention rule a deleted signature reached the end of
+/// (apps/api/src/waivers/waiver-retention.ts).
+enum WaiverPurgeRule {
+  ADULT_LEFT
+  CHILD_LEFT
+  ADULT_NEVER_MEMBER
+  CHILD_NEVER_MEMBER
+  LEFT_UNSIGNED
+  GUEST_ADULT
+  GUEST_CHILD
+}
+
+/// Decision 426: a permanent record of each WaiverSignature or
+/// GuestWaiverSignature the retention job deleted. No personal data: ids, the
+/// School's id (no foreign key, so it outlives the School), the SHA-256 of the
+/// School's wording signed, the rule, and the dates. RLS on; only the jobs
+/// role may INSERT; the app role has no access.
+model WaiverSignaturePurgeLog {
+  id                 String                   @id @default(uuid())
+  kind               WaiverSignaturePurgeKind
+  schoolId           String
+  signatureId        String
+  waiverId           String
+  signedWaiverSha256 String?
+  rule               WaiverPurgeRule
+  /// Null for an unsigned entry, which holds no signature to keep.
+  retainUntil        DateTime?
+  purgedAt           DateTime                 @default(now())
+
+  @@index([schoolId, purgedAt])
 }
 
 /// WaitlistEntry (Phase 11, SKILL.md §10) — belongs to a Student and a Class.

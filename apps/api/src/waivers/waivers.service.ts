@@ -241,8 +241,9 @@ export class WaiversService {
   /** Decision 354 (Waivers review W2): archiving is always allowed. It
    * retires the waiver for new members; every signature and unsigned entry
    * stays (WaiverSignature.waiverId is ON DELETE RESTRICT and the template
-   * is never purged), and whether its signatures still count is the School's
-   * own Waiver setting. */
+   * is never purged on its own), and whether its signatures still count is
+   * the School's own Waiver setting. Signatures are then kept on the
+   * retention rule like any other (Decision 426). */
   async archiveWaiver(callerId: string, waiverId: string) {
     const existing = await this.findOneWaiver(callerId, waiverId);
     await this.tenantAuth.assertSchoolOwner(callerId, existing.schoolId);
@@ -357,18 +358,24 @@ export class WaiversService {
     // light read (no signed text, no images) is sorted and filtered here, and
     // only the page's own rows are read in full. The totals come from that
     // same read, on the first page only.
-    const { page, summary, names, activeIds } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+    const { page, summary, names, activeIds, needsDob } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const activeIds = new Set(await this.activeStudentIds(tx, schoolId));
       const rows = await tx.waiverSignature.findMany({
         where: { waiverId, schoolId },
-        select: { id: true, studentId: true, status: true, signerFullName: true },
+        select: { id: true, studentId: true, status: true, signerFullName: true, signedById: true, studentMajorityDate: true },
       });
       const listed = rows.filter((r) => r.status === 'SIGNED' || r.status === 'EXPIRED' || activeIds.has(r.studentId));
       const users = await tx.user.findMany({
         where: { id: { in: [...new Set(listed.map((r) => r.studentId))] } },
-        select: { id: true, firstName: true, surname: true },
+        select: { id: true, firstName: true, surname: true, dateOfBirth: true },
       });
       const names = new Map(users.map((u) => [u.id, `${u.firstName} ${u.surname}`.trim()]));
+      // Decision 426 item 4: a child's signature with no date of birth on
+      // file is kept until one is added; the owner sees it marked. A
+      // student who has left can't be read here (User RLS), so theirs shows
+      // as needing one until the saved date is filled.
+      const withBirthDate = new Set(users.filter((u) => u.dateOfBirth !== null).map((u) => u.id));
+      const needsDob = new Set(listed.filter((r) => needsDateOfBirth(r, withBirthDate)).map((r) => r.id));
 
       const q = query.q ? foldText(query.q) : '';
       const keyed = listed
@@ -386,9 +393,10 @@ export class WaiversService {
       const counts = after ? null : countStatuses(rows.filter((r) => activeIds.has(r.studentId)));
       return {
         page: { items, nextCursor: hasMore ? encodeSignatureCursor(pageKeys[pageKeys.length - 1].key) : null },
-        summary: counts ? summarizeStatusCounts(counts) : undefined,
+        summary: counts ? { ...summarizeStatusCounts(counts), needsDateOfBirth: needsDob.size } : undefined,
         names,
         activeIds,
+        needsDob,
       };
     });
     // The signed copy of the text stays out of the list (one copy per row
@@ -396,7 +404,12 @@ export class WaiversService {
     const items = await Promise.all(
       page.items.map(async (item) => {
         const { signedWaiverBody: _body, ...response } = await this.toSignatureResponse(item);
-        return { ...response, studentName: names.get(item.studentId) ?? null, formerStudent: !activeIds.has(item.studentId) };
+        return {
+          ...response,
+          studentName: names.get(item.studentId) ?? null,
+          formerStudent: !activeIds.has(item.studentId),
+          needsDateOfBirth: needsDob.has(item.id),
+        };
       }),
     );
     return { ...page, items, ...(summary ? { summary } : {}) };
@@ -924,7 +937,8 @@ export class WaiversService {
    * knows who they are).
    */
   private async toSignatureResponse(signature: WaiverSignature & { student?: { firstName: string; surname: string } }) {
-    const { signatureImageKey, student, ...rest } = signature;
+    // Decision 426's retention inputs are not part of any response.
+    const { signatureImageKey, student, studentMajorityDate: _majority, mergedIntoStudentId: _mergedInto, ...rest } = signature;
     let signatureImageUrl: string | null = null;
     if (signatureImageKey) {
       try {
@@ -952,6 +966,24 @@ export interface WaiverSignatureSummary {
   unsigned: number;
   expired: number;
   pending: number;
+  /** Decision 426 item 4: signatures (former students' included) kept until a date of birth is added. */
+  needsDateOfBirth?: number;
+}
+
+/** Decision 426 items 4 and 5: a signature a Guardian gave for someone else,
+ * with no 18th birthday saved on it and no date of birth on file now (or a
+ * student this caller can no longer read), is kept until one is added. */
+function needsDateOfBirth(
+  row: { status: string; studentId: string; signedById: string | null; studentMajorityDate: Date | null },
+  withBirthDate: Set<string>,
+): boolean {
+  return (
+    (row.status === 'SIGNED' || row.status === 'EXPIRED') &&
+    row.studentMajorityDate === null &&
+    row.signedById !== null &&
+    row.signedById !== row.studentId &&
+    !withBirthDate.has(row.studentId)
+  );
 }
 
 function countStatuses(rows: Array<{ status: string }>): Array<{ status: string; _count: { _all: number } }> {

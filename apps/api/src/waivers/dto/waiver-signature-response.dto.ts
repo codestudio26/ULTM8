@@ -65,6 +65,12 @@ export class WaiverSignatureResponseDto {
   @ApiPropertyOptional({ description: 'Signatures panel only: true when this student has since left the School. Their signature is kept as a legal record.' })
   formerStudent?: boolean;
 
+  @ApiPropertyOptional({
+    description:
+      'Signatures panel only (Decision 426): true for a signature a Guardian gave for a child with no date of birth on file. It is kept until a date of birth is added to the member\'s profile.',
+  })
+  needsDateOfBirth?: boolean;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'The Waiver title as it was when signed. Null when not signed, or signed before copies were kept.' })
   signedWaiverTitle!: string | null;
 
@@ -117,6 +123,12 @@ export class WaiverSignatureSummaryDto {
 
   @ApiProperty()
   pending!: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Decision 426: signatures on this waiver (former students\' included) that a Guardian gave for a child with no date of birth on file, kept until one is added.',
+  })
+  needsDateOfBirth?: number;
 }
 
 export class WaiverSignatureListResponseDto {

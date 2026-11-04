@@ -71,12 +71,17 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  *    legal input... before it runs on the same 90-day clock as everything
  *    else"). Waiver.schoolId is a required, ON DELETE CASCADE FK — Postgres
  *    has no way to delete a School while leaving only its Waiver children
- *    behind, so a School that still has Waivers is never hard-deleted here,
- *    at any purgeAt. Its PII-bearing fields are anonymized instead (a real,
+ *    behind, so a School that still has Waivers is not hard-deleted at its
+ *    purgeAt. Its PII-bearing fields are anonymized instead (a real,
  *    GDPR-minimization-aligned partial purge of what's safe to remove even
- *    though the row itself must persist for its Waivers' sake), and it stays
- *    anonymized-but-present until a future decision sets Waiver's own real
- *    retention period.
+ *    though the row itself must persist for its Waivers' sake). Decision 426
+ *    set Waiver's retention period: the retention job
+ *    (EntityOffboardingPurgeProcessor) deletes each signature when its time
+ *    is up (a School closing counts as every member leaving on its close
+ *    date), and once a closed School has no WaiverSignature or
+ *    GuestWaiverSignature left, finishClosedSchoolsWithNoSignaturesLeft()
+ *    below deletes its Waiver templates and then the School (Decision 426
+ *    item 2), unless case 2 also applies.
  * 2. PlatformCharge/FranchiseFeeCharge billing history exists. Both hold
  *    `ON DELETE RESTRICT` FKs to School/Franchise (existing schema, not new
  *    here) — deliberate protection for financial/audit records this job does
@@ -119,6 +124,12 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
     const now = new Date();
     let deleted = 0;
     let anonymized = 0;
+
+    // Decision 426 item 2 first, so a School anonymized below waits for the
+    // next run (and the retention job's sweep in between) before it is
+    // looked at again.
+    const finished = await this.finishClosedSchoolsWithNoSignaturesLeft();
+    deleted += finished;
 
     const dueSchools = await this.prismaJobs.school.findMany({
       where: { purgeAt: { lte: now }, purgedAt: null },
@@ -180,6 +191,53 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
       }
       throw err;
     }
+  }
+
+  /**
+   * Decision 426 item 2: finishes Decision 110's close-account purge for a
+   * School that was kept (anonymized) because of its waivers. Once its last
+   * WaiverSignature and GuestWaiverSignature are gone (the retention job
+   * deletes them when their time is up), its Waiver templates are deleted
+   * and then the School itself. A School that also has billing history
+   * (RESTRICT-protected) stays anonymized, without its templates, and is not
+   * looked at again. The same checks as a first purge run before the
+   * delete: the member files and signed-documents exports go first.
+   */
+  private async finishClosedSchoolsWithNoSignaturesLeft(): Promise<number> {
+    const kept = await this.prismaJobs.school.findMany({
+      where: { archivedAt: { not: null }, purgedAt: { not: null }, waivers: { some: {} } },
+      select: { id: true },
+    });
+    let deleted = 0;
+    for (const { id: schoolId } of kept) {
+      try {
+        const [signatures, guestSignatures] = await Promise.all([
+          this.prismaJobs.waiverSignature.count({ where: { schoolId } }),
+          this.prismaJobs.guestWaiverSignature.count({ where: { schoolId } }),
+        ]);
+        if (signatures > 0 || guestSignatures > 0) continue;
+
+        const files = await eraseMemberFiles(this.prismaJobs, this.r2Client, this.logger, { schoolId });
+        const exports = await eraseSignedDocumentExports(this.prismaJobs, this.r2Client, this.logger, { schoolId });
+        if (files.failed > 0 || exports.failed > 0) {
+          this.logger.warn(`tenant-lifecycle-purge: closed School ${schoolId}'s stored files could not all be deleted; left for the next sweep.`);
+          continue;
+        }
+        // WaiverSignature.waiverId is RESTRICT: this fails, and nothing is
+        // deleted, if a signature appeared since the count above.
+        await this.prismaJobs.waiver.deleteMany({ where: { schoolId } });
+        try {
+          await this.prismaJobs.school.delete({ where: { id: schoolId } });
+          deleted += 1;
+        } catch (err) {
+          if (!isForeignKeyRestrictError(err)) throw err;
+          this.logger.log(`tenant-lifecycle-purge: closed School ${schoolId} has no waivers left but keeps its billing history — stays anonymized.`);
+        }
+      } catch (err) {
+        this.logger.error(`tenant-lifecycle-purge: failed to finish purging closed School ${schoolId}`, err as Error);
+      }
+    }
+    return deleted;
   }
 
   private async anonymizeSchool(schoolId: string): Promise<void> {

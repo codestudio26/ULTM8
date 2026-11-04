@@ -173,6 +173,13 @@ export function WaiverSettingsPage() {
           </Button>
         </div>
       </Card>
+      {/* Decision 426: one platform-wide rule, not a School setting. */}
+      <div style={{ marginTop: 16 }}>
+        <Card>
+          <h3 style={{ fontSize: 15, margin: '0 0 4px', color: 'var(--text-primary)' }}>{t('waivers.retention.heading')}</h3>
+          <p style={{ fontSize: 14, margin: 0, color: 'var(--text-secondary)', maxWidth: '70ch' }}>{t('waivers.retention.note')}</p>
+        </Card>
+      </div>
     </>
   );
 }

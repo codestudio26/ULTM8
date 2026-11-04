@@ -257,6 +257,8 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.waiverSignature.deleteMany({ where: { schoolId: school.id } });
+    // Decision 426: WaiverSignature.waiverId is ON DELETE RESTRICT, so the signatures go first.
+    await superuser.waiverSignature.deleteMany({ where: { waiver: { schoolId: school.id } } });
     await superuser.waiver.deleteMany({ where: { schoolId: school.id } });
     await superuser.studentRank.deleteMany({ where: { schoolId: school.id } });
     await superuser.rankStripeTier.deleteMany({ where: { schoolId: school.id } });
