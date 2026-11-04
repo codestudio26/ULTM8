@@ -102,6 +102,19 @@ export class BookingResponseDto {
   @ApiProperty({ type: [BookingAttendeeResponseDto] })
   attendees!: BookingAttendeeResponseDto[];
 
+  // Decision 427 (Student portal review SP4) — GET /bookings/me only.
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'GET /bookings/me only: the class name.' })
+  classTitle?: string | null;
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true, description: 'GET /bookings/me only: when the class starts.' })
+  classStartsAt?: string | null;
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true, description: 'GET /bookings/me only: when the class ends.' })
+  classEndsAt?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'GET /bookings/me only: the School name.' })
+  schoolName?: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

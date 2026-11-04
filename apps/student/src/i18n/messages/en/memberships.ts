@@ -6,6 +6,7 @@ export const memberships = {
     body: "{school} offered the same pack at the front desk. Buy it here, and the check-in finishes as soon as it's paid.",
   },
   myMemberships: {
+    planUnknown: 'Membership',
     /** Shown when the plan's name isn't known; the API gives only the plan's id. */
     planFallback: 'Plan {planId}',
     visitPass: 'Visit pass',
@@ -46,6 +47,7 @@ export const memberships = {
     },
   },
   planRow: {
+    joinFirst: 'Join this School to buy.',
     cardSurcharge: "+ {amount} card surcharge when paying by card",
     /** Joined to the price with " · ". */
     classesIncluded: { one: '{count} class', other: '{count} classes' },
@@ -62,7 +64,7 @@ export const memberships = {
   },
   /** A membership's status, in capitals as the app has always shown it. */
   statusLabel: {
-    active: 'ACTIVE',
-    expired: 'EXPIRED',
+    active: 'Active',
+    expired: 'Expired',
   },
 };

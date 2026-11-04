@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "ليس الآن",
+      join: "انضمام",
+      body: "انضم لحجز الحصص وشراء الخطط. اضغط «ليس الآن» إذا كنت تتدرب أو تدرّب أو تُحضر طفلك هناك بالفعل.",
+      title: "هل تريد الانضمام إلى {school}؟",
+    },
     title: "ULTM8 للطلاب",
     coachDashboard: "لوحة المدرّب",
     myProfile: "ملفي الشخصي",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "رمز التحقق",
     },
     login: {
+      changeSchool: "تغيير المدرسة",
+      pickedSchool: "المدرسة: {school}",
       title: "تسجيل الدخول",
       intro: "البريد الإلكتروني ورمز الدخول المكوّن من 6 أرقام — هذا كل ما تحتاجه لتسجيل الدخول (بلا كلمة مرور منفصلة).",
       submit: "تسجيل الدخول",
@@ -276,7 +284,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "تعذّر حجز المكان — يُرجى المحاولة مرة أخرى.",
+      claim: "احجز المكان",
+      spotFreeUntil: "أصبح هناك مكان متاح لك. احجزه قبل {date}.",
+      spotFree: "أصبح هناك مكان متاح لك. احجزه الآن.",
+      title: "قائمة الانتظار الخاصة بي",
+    },
     myBookings: {
+      unknownClass: "حصة",
       classLabel: "الحصة {classId}",
       status: "الحالة: {status}",
       cancelError: "تعذّر إلغاء هذا الحجز، يُرجى المحاولة مرة أخرى.",
@@ -737,6 +753,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "خروج",
+      stay: "البقاء",
+      enterPin: "رمز PIN الخاص بولي الأمر للخروج",
+      button: "الخروج من وضع الأطفال",
+    },
     pin: {
       tooShort: {
         zero: "يجب أن يتكوّن رمز PIN من {count} رقم.",
@@ -792,6 +814,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "عرضت {school} الباقة نفسها عند الاستقبال. اشترِها من هنا، وسيكتمل تسجيل الحضور فور الدفع.",
     },
     myMemberships: {
+      planUnknown: "اشتراك",
       planFallback: "الخطة {planId}",
       visitPass: "تصريح زائر",
       statusLine: "الحالة: {status} · {frequency}",
@@ -836,6 +859,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "انضم إلى هذه المدرسة للشراء.",
       cardSurcharge: "+ {amount} رسوم إضافية عند الدفع بالبطاقة",
       classesIncluded: {
         zero: "{count} حصة",
@@ -885,6 +909,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "الاحتفاظ بالبطاقة",
+      removeConfirm: "هل تريد إزالة البطاقة المحفوظة لـ {school}؟",
       notEnrolled: "لست مسجّلًا في أي مدرسة بعد — ستظهر البطاقات المحفوظة هنا بعد تسجيلك.",
       setupFailed: "تعذّر بدء إعداد البطاقة، يُرجى المحاولة مرة أخرى.",
       removeFailed: "تعذّرت إزالة بطاقتك المحفوظة، يُرجى المحاولة مرة أخرى.",
@@ -1021,6 +1047,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "لا توجد إقرارات للتوقيع.",
     },
     row: {
+      cancel: "إلغاء",
+      showLess: "عرض أقل",
+      readFull: "قراءة الإقرار كاملًا",
       signed: "وُقّع في {date} ✓",
       fullName: "الاسم الكامل",
       fullNamePlaceholder: "اسمك القانوني الكامل",

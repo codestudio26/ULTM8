@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "Şimdi değil",
+      join: "Katıl",
+      body: "Ders ayırtmak ve plan satın almak için katıl. Orada zaten antrenman yapıyor, ders veriyor ya da çocuğunu getiriyorsan Şimdi değil'e dokun.",
+      title: "{school} okuluna katılmak ister misin?",
+    },
     title: "ULTM8 Öğrenci",
     coachDashboard: "Antrenör paneli",
     myProfile: "Profilim",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "Doğrulama kodu",
     },
     login: {
+      changeSchool: "Okulu değiştir",
+      pickedSchool: "Okul: {school}",
       title: "Giriş yap",
       intro: "E-posta ve 6 haneli giriş kodunuz — girişiniz bu kadar (ayrı bir şifre yok).",
       submit: "Giriş yap",
@@ -272,7 +280,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "Yer alınamadı — lütfen tekrar dene.",
+      claim: "Yeri al",
+      spotFreeUntil: "Senin için bir yer açıldı. {date} tarihine kadar al.",
+      spotFree: "Senin için bir yer açıldı. Hemen al.",
+      title: "Bekleme listem",
+    },
     myBookings: {
+      unknownClass: "Ders",
       classLabel: "Ders {classId}",
       status: "Durum: {status}",
       cancelError: "Bu rezervasyon iptal edilemedi — lütfen tekrar deneyin.",
@@ -706,6 +722,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "Çık",
+      stay: "Kal",
+      enterPin: "Çıkmak için ebeveyn PIN'i",
+      button: "Çocuk Modundan çık",
+    },
     pin: {
       tooShort: { one: "PIN {count} haneli olmalıdır.", other: "PIN {count} haneli olmalıdır." },
       mismatch: "PIN'ler eşleşmiyor.",
@@ -754,6 +776,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} resepsiyonda aynı paketi teklif etti. Buradan satın alın, ödeme yapılır yapılmaz giriş tamamlanır.",
     },
     myMemberships: {
+      planUnknown: "Üyelik",
       planFallback: "Plan {planId}",
       visitPass: "Ziyaretçi kartı",
       statusLine: "Durum: {status} · {frequency}",
@@ -791,6 +814,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "Satın almak için bu okula katıl.",
       cardSurcharge: "Kartla ödemede + {amount} ek ücret",
       classesIncluded: { one: "{count} ders", other: "{count} ders" },
       durationDays: { one: "{count} gün", other: "{count} gün" },
@@ -826,6 +850,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "Kartı tut",
+      removeConfirm: "{school} için kayıtlı kart kaldırılsın mı?",
       notEnrolled: "Henüz bir okula kayıtlı değilsiniz — kaydolduğunuzda kayıtlı kartlar burada görünür.",
       setupFailed: "Kart kurulumu başlatılamadı — lütfen tekrar deneyin.",
       removeFailed: "Kayıtlı kartınız kaldırılamadı — lütfen tekrar deneyin.",
@@ -958,6 +984,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "İmzalanacak feragatname yok.",
     },
     row: {
+      cancel: "İptal",
+      showLess: "Daha az göster",
+      readFull: "Feragatnamenin tamamını oku",
       signed: "İmzalandı: {date} ✓",
       fullName: "Ad soyad",
       fullNamePlaceholder: "Resmî tam adınız",

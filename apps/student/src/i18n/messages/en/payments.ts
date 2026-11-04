@@ -1,6 +1,8 @@
 /** English text: payments (Decision 323) — saved payment methods (cards). */
 export const payments = {
   methods: {
+    keepCard: 'Keep card',
+    removeConfirm: 'Remove the saved card for {school}?',
     notEnrolled: "You're not enrolled at a School yet — saved cards appear here once you are.",
     setupFailed: 'Could not start the card-setup flow — please try again.',
     removeFailed: 'Could not remove your saved card — please try again.',

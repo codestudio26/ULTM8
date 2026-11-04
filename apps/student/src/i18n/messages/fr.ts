@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "Pas maintenant",
+      join: "Rejoindre",
+      body: "Rejoignez-la pour réserver des cours et acheter des formules. Touchez Pas maintenant si vous y entraînez, y enseignez ou y amenez un enfant.",
+      title: "Rejoindre {school} ?",
+    },
     title: "ULTM8 Élève",
     coachDashboard: "Tableau de bord du coach",
     myProfile: "Mon profil",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "Code de vérification",
     },
     login: {
+      changeSchool: "Changer d'école",
+      pickedSchool: "École : {school}",
       title: "Se connecter",
       intro: "Votre e-mail et votre code d’accès à 6 chiffres — c’est tout ce qu’il faut pour vous connecter (pas de mot de passe séparé).",
       submit: "Se connecter",
@@ -272,7 +280,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "Impossible de prendre la place — veuillez réessayer.",
+      claim: "Prendre la place",
+      spotFreeUntil: "Une place s'est libérée pour vous. Prenez-la avant le {date}.",
+      spotFree: "Une place s'est libérée pour vous. Prenez-la maintenant.",
+      title: "Ma liste d'attente",
+    },
     myBookings: {
+      unknownClass: "Cours",
       classLabel: "Cours {classId}",
       status: "Statut : {status}",
       cancelError: "Impossible d’annuler cette réservation — veuillez réessayer.",
@@ -715,6 +731,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "Quitter",
+      stay: "Rester",
+      enterPin: "Code PIN du parent pour quitter",
+      button: "Quitter le Mode Enfant",
+    },
     pin: {
       tooShort: {
         one: "Le code PIN doit comporter {count} chiffre.",
@@ -767,6 +789,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} a proposé le même carnet à l'accueil. Achetez-le ici, et le pointage se termine dès qu'il est payé.",
     },
     myMemberships: {
+      planUnknown: "Abonnement",
       planFallback: "Formule {planId}",
       visitPass: "Pass visiteur",
       statusLine: "Statut : {status} · {frequency}",
@@ -808,6 +831,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "Rejoignez cette école pour acheter.",
       cardSurcharge: "+ {amount} de frais si vous payez par carte",
       classesIncluded: { one: "{count} cours", many: "{count} cours", other: "{count} cours" },
       durationDays: { one: "{count} jour", many: "{count} jours", other: "{count} jours" },
@@ -843,6 +867,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "Garder la carte",
+      removeConfirm: "Supprimer la carte enregistrée pour {school} ?",
       notEnrolled: "Vous n’êtes encore inscrit dans aucune école — les cartes enregistrées apparaîtront ici une fois inscrit.",
       setupFailed: "Impossible de lancer l’enregistrement de la carte — veuillez réessayer.",
       removeFailed: "Impossible de supprimer votre carte enregistrée — veuillez réessayer.",
@@ -976,6 +1002,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Aucune décharge à signer.",
     },
     row: {
+      cancel: "Annuler",
+      showLess: "Afficher moins",
+      readFull: "Lire la décharge en entier",
       signed: "Signée le {date} ✓",
       fullName: "Nom complet",
       fullNamePlaceholder: "Votre nom légal complet",

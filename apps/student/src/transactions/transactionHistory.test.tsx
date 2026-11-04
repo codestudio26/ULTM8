@@ -89,7 +89,7 @@ describe('TransactionHistoryScreen', () => {
     const { getByText } = await render(<TransactionHistoryScreen />);
     expect(getByText('5-Class Pack')).toBeTruthy();
     expect(getByText('£50.00')).toBeTruthy();
-    expect(getByText('SUCCESSFUL')).toBeTruthy();
+    expect(getByText('Paid')).toBeTruthy();
   });
 
   it('shows a cash payment the School cancelled as Cancelled, with the date (Decision 338 item 1)', async () => {
@@ -105,8 +105,8 @@ describe('TransactionHistoryScreen', () => {
       ]),
     );
     const { getByText, queryByText } = await render(<TransactionHistoryScreen />);
-    expect(getByText('CANCELLED')).toBeTruthy();
-    expect(queryByText('FAILED')).toBeNull();
+    expect(getByText('Cancelled')).toBeTruthy();
+    expect(queryByText('Failed')).toBeNull();
     expect(getByText(/^Cancelled on .+\. Nothing to pay\.$/)).toBeTruthy();
   });
 

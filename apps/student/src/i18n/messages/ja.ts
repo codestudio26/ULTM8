@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "今はしない",
+      join: "入会する",
+      body: "入会するとクラスの予約やプランの購入ができます。すでに通っている、指導している、またはお子さまを連れて行くだけの場合は「今はしない」をタップしてください。",
+      title: "{school} に入会しますか？",
+    },
     title: "ULTM8 生徒",
     coachDashboard: "コーチダッシュボード",
     myProfile: "マイプロフィール",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "確認コード",
     },
     login: {
+      changeSchool: "スクールを変更",
+      pickedSchool: "スクール: {school}",
       title: "ログイン",
       intro: "メールアドレスと6桁のパスコードだけでログインできます（別のパスワードはありません）。",
       submit: "ログイン",
@@ -271,7 +279,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "枠を確保できませんでした。もう一度お試しください。",
+      claim: "枠を確保",
+      spotFreeUntil: "空きが出ました。{date} までに確保してください。",
+      spotFree: "空きが出ました。今すぐ確保してください。",
+      title: "キャンセル待ち",
+    },
     myBookings: {
+      unknownClass: "クラス",
       classLabel: "クラス {classId}",
       status: "ステータス：{status}",
       cancelError: "この予約をキャンセルできませんでした。もう一度お試しください。",
@@ -700,6 +716,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "終了",
+      stay: "とどまる",
+      enterPin: "終了するには保護者の PIN を入力",
+      button: "キッズモードを終了",
+    },
     pin: {
       tooShort: { other: "PINは{count}桁で入力してください。" },
       mismatch: "PINが一致しません。",
@@ -748,6 +770,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school}が受付で同じ回数券を案内しました。ここで購入すると、支払いが済みしだいチェックインが完了します。",
     },
     myMemberships: {
+      planUnknown: "会員プラン",
       planFallback: "プラン {planId}",
       visitPass: "ビジターパス",
       statusLine: "ステータス：{status} · {frequency}",
@@ -785,6 +808,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "購入するにはこのスクールに入会してください。",
       cardSurcharge: "カード払いの場合 + 手数料 {amount}",
       classesIncluded: { other: "{count}クラス" },
       durationDays: { other: "{count}日間" },
@@ -820,6 +844,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "カードを残す",
+      removeConfirm: "{school} の保存済みカードを削除しますか？",
       notEnrolled: "まだどのスクールにも在籍していません。在籍すると、保存したカードがここに表示されます。",
       setupFailed: "カードの登録を開始できませんでした。もう一度お試しください。",
       removeFailed: "保存したカードを削除できませんでした。もう一度お試しください。",
@@ -951,6 +977,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "署名が必要な免責同意書はありません。",
     },
     row: {
+      cancel: "キャンセル",
+      showLess: "表示を減らす",
+      readFull: "同意書を全文表示",
       signed: "{date}に署名済み ✓",
       fullName: "氏名",
       fullNamePlaceholder: "正式な氏名",

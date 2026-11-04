@@ -9,7 +9,7 @@ import { WaitlistService } from './waitlist.service';
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
-import { WaitlistEntryListResponseDto, WaitlistEntryResponseDto } from './dto/waitlist-entry-response.dto';
+import { MyWaitlistListDto, WaitlistEntryListResponseDto, WaitlistEntryResponseDto } from './dto/waitlist-entry-response.dto';
 import { BookingResponseDto } from './dto/booking-response.dto';
 
 // Decision 17: extends the per-user/per-IP throttling already used on auth endpoints
@@ -29,6 +29,13 @@ export class WaitlistController {
   @Post('classes/:id/waitlist')
   joinWaitlist(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: JoinWaitlistDto) {
     return this.waitlistService.joinWaitlist(user.sub, id, dto);
+  }
+
+  /** Decision 427: the caller's own waiting places, and any spot to claim. */
+  @ApiOkResponse({ type: MyWaitlistListDto })
+  @Get('waitlist/me')
+  async findMine(@CurrentUser() user: JwtPayload) {
+    return { items: await this.waitlistService.findMine(user.sub) };
   }
 
   @ApiNoContentResponse()

@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "Не сейчас",
+      join: "Вступить",
+      body: "Вступите, чтобы бронировать занятия и покупать абонементы. Нажмите «Не сейчас», если вы уже тренируетесь, преподаёте или приводите туда ребёнка.",
+      title: "Вступить в {school}?",
+    },
     title: "ULTM8 для учеников",
     coachDashboard: "Панель тренера",
     myProfile: "Мой профиль",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "Код подтверждения",
     },
     login: {
+      changeSchool: "Сменить школу",
+      pickedSchool: "Школа: {school}",
       title: "Вход",
       intro: "Эл. почта и 6-значный код доступа — это всё, что нужно для входа (отдельного пароля нет).",
       submit: "Войти",
@@ -274,7 +282,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "Не удалось занять место — попробуйте ещё раз.",
+      claim: "Занять место",
+      spotFreeUntil: "Для вас освободилось место. Займите его до {date}.",
+      spotFree: "Для вас освободилось место. Займите его сейчас.",
+      title: "Мой лист ожидания",
+    },
     myBookings: {
+      unknownClass: "Занятие",
       classLabel: "Занятие {classId}",
       status: "Статус: {status}",
       cancelError: "Не удалось отменить эту запись — попробуйте ещё раз.",
@@ -723,6 +739,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "Выйти",
+      stay: "Остаться",
+      enterPin: "PIN родителя для выхода",
+      button: "Выйти из детского режима",
+    },
     pin: {
       tooShort: {
         one: "PIN-код должен содержать {count} цифру.",
@@ -776,6 +798,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} предлагает такой же пакет на ресепшене. Купите его здесь — отметка завершится сразу после оплаты.",
     },
     myMemberships: {
+      planUnknown: "Абонемент",
       planFallback: "Абонемент {planId}",
       visitPass: "Гостевой пропуск",
       statusLine: "Статус: {status} · {frequency}",
@@ -818,6 +841,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "Вступите в эту школу, чтобы купить.",
       cardSurcharge: "+ {amount} надбавка при оплате картой",
       classesIncluded: {
         one: "{count} занятие",
@@ -863,6 +887,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "Оставить карту",
+      removeConfirm: "Удалить сохранённую карту для {school}?",
       notEnrolled: "Вы пока не состоите ни в одной Школе — сохранённые карты появятся здесь, когда вы вступите.",
       setupFailed: "Не удалось начать добавление карты — попробуйте ещё раз.",
       removeFailed: "Не удалось удалить сохранённую карту — попробуйте ещё раз.",
@@ -997,6 +1023,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Нет отказов для подписания.",
     },
     row: {
+      cancel: "Отмена",
+      showLess: "Свернуть",
+      readFull: "Прочитать отказ полностью",
       signed: "Подписано {date} ✓",
       fullName: "Полное имя",
       fullNamePlaceholder: "Ваше полное официальное имя",

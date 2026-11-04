@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "나중에",
+      join: "가입",
+      body: "가입하면 수업을 예약하고 플랜을 구매할 수 있어요. 이미 수련 중이거나, 지도하거나, 자녀만 데려가는 경우 '나중에'를 누르세요.",
+      title: "{school}에 가입할까요?",
+    },
     title: "ULTM8 수련생",
     coachDashboard: "코치 대시보드",
     myProfile: "내 프로필",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "인증 코드",
     },
     login: {
+      changeSchool: "학교 변경",
+      pickedSchool: "학교: {school}",
       title: "로그인",
       intro: "이메일과 6자리 패스코드만 있으면 로그인할 수 있습니다(별도 비밀번호 없음).",
       submit: "로그인",
@@ -271,7 +279,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "자리를 확보하지 못했어요. 다시 시도해 주세요.",
+      claim: "자리 확보",
+      spotFreeUntil: "자리가 났어요. {date}까지 확보하세요.",
+      spotFree: "자리가 났어요. 지금 확보하세요.",
+      title: "내 대기 목록",
+    },
     myBookings: {
+      unknownClass: "수업",
       classLabel: "수업 {classId}",
       status: "상태: {status}",
       cancelError: "이 예약을 취소하지 못했습니다. 다시 시도해 주세요.",
@@ -700,6 +716,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "종료",
+      stay: "머무르기",
+      enterPin: "종료하려면 보호자 PIN 입력",
+      button: "키즈 모드 종료",
+    },
     pin: {
       tooShort: { other: "PIN은 {count}자리여야 합니다." },
       mismatch: "PIN이 일치하지 않습니다.",
@@ -748,6 +770,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school}에서 프런트 데스크를 통해 같은 패키지를 제안했습니다. 여기서 구매하면 결제되는 즉시 출석 체크가 완료됩니다.",
     },
     myMemberships: {
+      planUnknown: "멤버십",
       planFallback: "플랜 {planId}",
       visitPass: "방문 패스",
       statusLine: "상태: {status} · {frequency}",
@@ -785,6 +808,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "구매하려면 이 학교에 가입하세요.",
       cardSurcharge: "카드로 결제하면 + 수수료 {amount}",
       classesIncluded: { other: "수업 {count}회" },
       durationDays: { other: "{count}일" },
@@ -820,6 +844,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "카드 유지",
+      removeConfirm: "{school}에 저장된 카드를 삭제할까요?",
       notEnrolled: "아직 도장에 등록하지 않았습니다. 등록하면 저장된 카드가 여기에 표시됩니다.",
       setupFailed: "카드 등록을 시작하지 못했습니다. 다시 시도해 주세요.",
       removeFailed: "저장된 카드를 삭제하지 못했습니다. 다시 시도해 주세요.",
@@ -951,6 +977,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "서명할 면책 동의서가 없습니다.",
     },
     row: {
+      cancel: "취소",
+      showLess: "간략히 보기",
+      readFull: "면책 동의서 전체 보기",
       signed: "{date} 서명 완료 ✓",
       fullName: "성명",
       fullNamePlaceholder: "법적 성명",

@@ -12,6 +12,8 @@ export const auth = {
     verificationCode: 'Verification code',
   },
   login: {
+    changeSchool: 'Change School',
+    pickedSchool: 'School: {school}',
     title: 'Log in',
     intro: "Email and your 6-digit passcode — that's your whole login (no separate password).",
     submit: 'Log in',

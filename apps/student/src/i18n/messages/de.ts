@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "Nicht jetzt",
+      join: "Beitreten",
+      body: "Tritt bei, um Kurse zu buchen und Tarife zu kaufen. Tippe auf Nicht jetzt, wenn du dort schon trainierst, unterrichtest oder ein Kind bringst.",
+      title: "{school} beitreten?",
+    },
     title: "ULTM8 Student",
     coachDashboard: "Trainer-Dashboard",
     myProfile: "Mein Profil",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "Bestätigungscode",
     },
     login: {
+      changeSchool: "Schule ändern",
+      pickedSchool: "Schule: {school}",
       title: "Anmelden",
       intro: "E-Mail und dein 6-stelliger Zugangscode — mehr brauchst du zum Anmelden nicht (kein separates Passwort).",
       submit: "Anmelden",
@@ -272,7 +280,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "Der Platz konnte nicht gesichert werden — bitte erneut versuchen.",
+      claim: "Platz sichern",
+      spotFreeUntil: "Ein Platz ist für dich frei. Sichere ihn dir bis {date}.",
+      spotFree: "Ein Platz ist für dich frei. Sichere ihn dir jetzt.",
+      title: "Meine Warteliste",
+    },
     myBookings: {
+      unknownClass: "Kurs",
       classLabel: "Kurs {classId}",
       status: "Status: {status}",
       cancelError: "Diese Buchung konnte nicht storniert werden — bitte versuche es erneut.",
@@ -706,6 +722,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "Beenden",
+      stay: "Bleiben",
+      enterPin: "PIN der Eltern zum Beenden",
+      button: "Kindermodus beenden",
+    },
     pin: {
       tooShort: { one: "Die PIN muss {count} Ziffer haben.", other: "Die PIN muss {count} Ziffern haben." },
       mismatch: "Die PINs stimmen nicht überein.",
@@ -754,6 +776,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} hat am Empfang dasselbe Paket angeboten. Kauf es hier, und der Check-in wird abgeschlossen, sobald es bezahlt ist.",
     },
     myMemberships: {
+      planUnknown: "Mitgliedschaft",
       planFallback: "Tarif {planId}",
       visitPass: "Besucherpass",
       statusLine: "Status: {status} · {frequency}",
@@ -791,6 +814,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "Tritt dieser Schule bei, um zu kaufen.",
       cardSurcharge: "+ {amount} Kartenzuschlag bei Kartenzahlung",
       classesIncluded: { one: "{count} Kurs", other: "{count} Kurse" },
       durationDays: { one: "{count} Tag", other: "{count} Tage" },
@@ -826,6 +850,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "Karte behalten",
+      removeConfirm: "Gespeicherte Karte für {school} entfernen?",
       notEnrolled: "Du bist noch an keiner Schule eingeschrieben — gespeicherte Karten erscheinen hier, sobald du es bist.",
       setupFailed: "Die Einrichtung der Karte konnte nicht gestartet werden — bitte versuche es erneut.",
       removeFailed: "Deine gespeicherte Karte konnte nicht entfernt werden — bitte versuche es erneut.",
@@ -958,6 +984,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Keine Haftungsausschlüsse zu unterschreiben.",
     },
     row: {
+      cancel: "Abbrechen",
+      showLess: "Weniger anzeigen",
+      readFull: "Ganze Verzichtserklärung lesen",
       signed: "Unterschrieben am {date} ✓",
       fullName: "Vollständiger Name",
       fullNamePlaceholder: "Dein vollständiger amtlicher Name",

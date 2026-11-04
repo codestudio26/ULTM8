@@ -20,11 +20,11 @@ export const transactions = {
   },
   /** A payment's status, shown in capitals on each row. */
   status: {
-    successful: 'SUCCESSFUL',
-    pending: 'PENDING',
-    failed: 'FAILED',
-    refunded: 'REFUNDED',
-    disputed: 'DISPUTED',
-    cancelled: 'CANCELLED',
+    successful: 'Paid',
+    pending: 'Pending',
+    failed: 'Failed',
+    refunded: 'Refunded',
+    disputed: 'Disputed',
+    cancelled: 'Cancelled',
   },
 };

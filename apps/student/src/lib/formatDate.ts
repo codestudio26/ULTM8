@@ -47,3 +47,18 @@ export function formatDateOnly(iso: string): string {
     return iso;
   }
 }
+
+/** A class's day and start–end time, e.g. "Thu, Nov 5, 2026, 6:00 PM – 7:00 PM"
+ * (Decision 427, Student portal review SP6: class rows showed only the date).
+ * On the phone's own clock: the moment is right wherever the phone is. */
+export function formatClassTimes(startIso: string, endIso?: string | null): string {
+  try {
+    const locale = formatLocale();
+    const day = new Intl.DateTimeFormat(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(startIso));
+    const time = new Intl.DateTimeFormat(locale, { timeStyle: 'short' });
+    const start = time.format(new Date(startIso));
+    return endIso ? `${day}, ${start} – ${time.format(new Date(endIso))}` : `${day}, ${start}`;
+  } catch {
+    return startIso;
+  }
+}

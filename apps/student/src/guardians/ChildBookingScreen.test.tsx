@@ -13,10 +13,12 @@ jest.mock('../bookings/bookingQueries', () => ({
   useBookClass: jest.fn(),
   useMyFriendPasses: jest.fn(),
   useBookingGuests: jest.fn(),
+  useMyBookings: jest.fn(() => ({ data: undefined })),
 }));
 jest.mock('../bookings/waitlistMutations', () => ({
   useJoinWaitlist: jest.fn(),
   useWithdrawWaitlist: jest.fn(),
+  useMyWaitlist: jest.fn(() => ({ data: undefined })),
 }));
 jest.mock('../academies/academyQueries', () => ({ useAcademy: jest.fn() }));
 

@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "Nie teraz",
+      join: "Dołącz",
+      body: "Dołącz, aby rezerwować zajęcia i kupować plany. Stuknij Nie teraz, jeśli już tam trenujesz, uczysz lub przyprowadzasz dziecko.",
+      title: "Dołączyć do {school}?",
+    },
     title: "ULTM8 dla uczniów",
     coachDashboard: "Pulpit trenera",
     myProfile: "Mój profil",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "Kod weryfikacyjny",
     },
     login: {
+      changeSchool: "Zmień szkołę",
+      pickedSchool: "Szkoła: {school}",
       title: "Zaloguj się",
       intro: "E-mail i 6-cyfrowy kod dostępu — to wszystko, czego potrzebujesz do logowania (bez osobnego hasła).",
       submit: "Zaloguj się",
@@ -274,7 +282,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "Nie udało się zająć miejsca — spróbuj ponownie.",
+      claim: "Zajmij miejsce",
+      spotFreeUntil: "Zwolniło się dla Ciebie miejsce. Zajmij je do {date}.",
+      spotFree: "Zwolniło się dla Ciebie miejsce. Zajmij je teraz.",
+      title: "Moja lista oczekujących",
+    },
     myBookings: {
+      unknownClass: "Zajęcia",
       classLabel: "Zajęcia {classId}",
       status: "Status: {status}",
       cancelError: "Nie udało się anulować tej rezerwacji — spróbuj ponownie.",
@@ -723,6 +739,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "Wyjdź",
+      stay: "Zostań",
+      enterPin: "PIN rodzica, aby wyjść",
+      button: "Wyjdź z trybu dziecka",
+    },
     pin: {
       tooShort: {
         one: "PIN musi mieć {count} cyfrę.",
@@ -776,6 +798,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} zaproponowała ten sam pakiet w recepcji. Kup go tutaj, a meldowanie zakończy się, gdy tylko zostanie opłacony.",
     },
     myMemberships: {
+      planUnknown: "Karnet",
       planFallback: "Plan {planId}",
       visitPass: "Karnet gościa",
       statusLine: "Status: {status} · {frequency}",
@@ -818,6 +841,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "Dołącz do tej szkoły, aby kupić.",
       cardSurcharge: "+ {amount} dopłaty przy płatności kartą",
       classesIncluded: {
         one: "{count} zajęcia",
@@ -863,6 +887,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "Zachowaj kartę",
+      removeConfirm: "Usunąć zapisaną kartę dla {school}?",
       notEnrolled: "Nie należysz jeszcze do żadnej Szkoły — zapisane karty pojawią się tutaj, gdy dołączysz.",
       setupFailed: "Nie udało się rozpocząć dodawania karty — spróbuj ponownie.",
       removeFailed: "Nie udało się usunąć zapisanej karty — spróbuj ponownie.",
@@ -997,6 +1023,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Brak oświadczeń do podpisania.",
     },
     row: {
+      cancel: "Anuluj",
+      showLess: "Pokaż mniej",
+      readFull: "Przeczytaj całe oświadczenie",
       signed: "Podpisano {date} ✓",
       fullName: "Imię i nazwisko",
       fullNamePlaceholder: "Twoje pełne imię i nazwisko",

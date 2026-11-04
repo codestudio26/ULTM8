@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -9,7 +9,9 @@ import { apiClient } from '../api';
  * only exposes join/withdraw/claim, no list), so the caller must hold onto the
  * returned id itself for the rest of this screen session. */
 export function useJoinWaitlist(studentId?: string) {
+  const queryClient = useQueryClient();
   return useMutation({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-waitlist'] }),
     // Self-join sends an empty body. `studentId` on JoinWaitlistDto is the same
     // Staff/Guardian on-behalf-of field as BookClassDto's (see bookingQueries.ts):
     // sent only when a parent puts their child on the waitlist (Decision 379).
@@ -28,7 +30,9 @@ export function useJoinWaitlist(studentId?: string) {
  * real HTTP status (see its own header comment) — so this goes back through the same
  * shared helper every other call in this app uses. */
 export function useWithdrawWaitlist(studentId?: string) {
+  const queryClient = useQueryClient();
   return useMutation({
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-waitlist'] }),
     // `?studentId=` lets a parent take their child off the waitlist (Decision 379).
     mutationFn: (waitlistEntryId: string) =>
       unwrap(apiClient.DELETE('/v1/waitlist/{id}', { params: { path: { id: waitlistEntryId }, query: studentId ? { studentId } : {} } })),
@@ -44,3 +48,25 @@ export function useWithdrawWaitlist(studentId?: string) {
  * spot opened up or discover which id to claim. Building a "claim" button here would
  * imply a working feature that isn't reachable end-to-end — flagged as a backend gap
  * (see docs/TRACK-B-ROADMAP.md), not silently worked around. */
+/** GET /waitlist/me (Decision 427, Student portal review SP3): the signed-in
+ * student's own live waitlist places, including any spot freed for them. */
+export function useMyWaitlist(enabled = true) {
+  return useQuery({
+    queryKey: ['my-waitlist'],
+    queryFn: () => unwrap(apiClient.GET('/v1/waitlist/me', {})),
+    enabled,
+  });
+}
+
+/** POST /waitlist/{id}/claim: take the spot that was freed (Decision 427). */
+export function useClaimWaitlist() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (entryId: string) => unwrap(apiClient.POST('/v1/waitlist/{id}/claim', { params: { path: { id: entryId } }, body: {} })),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['my-waitlist'] }),
+        queryClient.invalidateQueries({ queryKey: ['my-bookings'] }),
+      ]),
+  });
+}

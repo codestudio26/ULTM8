@@ -23,4 +23,10 @@ export const home = {
   kidMode: 'Kid Mode',
   needsReview: 'Needs your review',
   logOut: 'Log out',
+  joinPick: {
+    notNow: 'Not now',
+    join: 'Join',
+    body: 'Join to book classes and buy plans. Tap Not now if you already train, coach or bring a child there.',
+    title: 'Join {school}?',
+  },
 };

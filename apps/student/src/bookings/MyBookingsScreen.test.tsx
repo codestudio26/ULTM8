@@ -10,6 +10,7 @@ jest.mock('./bookingQueries', () => ({
   useCancelBooking: jest.fn(),
   useBookingGuests: jest.fn(),
 }));
+jest.mock('./MyWaitlist', () => ({ MyWaitlist: () => null }));
 jest.mock('../attendance/attendanceQueries', () => ({
   useEnterCheckInCode: jest.fn(),
 }));
@@ -116,5 +117,30 @@ describe('MyBookingsScreen — Decision 235 check-in-with-code', () => {
     expect(getByText('Waiver signed: Gina Guest')).toBeTruthy();
     expect(queryByText('https://portal.example/guest-waiver/tok2')).toBeNull();
     expect(mocked(bookingQueries.useBookingGuests)).toHaveBeenCalledWith('b1', undefined);
+  });
+});
+
+/** Decision 427 — Student portal review SP4: the class's name, time and School. */
+describe('MyBookingsScreen — class details', () => {
+  beforeEach(() => {
+    mocked(bookingQueries.useCancelBooking).mockReturnValue(idleMutation());
+    mocked(attendanceQueries.useEnterCheckInCode).mockReturnValue(idleMutation());
+  });
+
+  it('names the class and School instead of showing the class id', async () => {
+    mocked(bookingQueries.useMyBookings).mockReturnValue(
+      pagedQuery([
+        {
+          id: 'b1', classId: 'c1', status: 'UPCOMING', attendees: [],
+          classTitle: 'Adult Fundamentals', classStartsAt: '2026-11-05T18:00:00.000Z', classEndsAt: '2026-11-05T19:00:00.000Z', schoolName: 'Alpha Dojo',
+        },
+      ]),
+    );
+    const { getByText, queryByText } = await render(<MyBookingsScreen />);
+    expect(getByText('Adult Fundamentals')).toBeTruthy();
+    expect(getByText('Alpha Dojo')).toBeTruthy();
+    expect(getByText(/2026/)).toBeTruthy();
+    expect(queryByText(/c1/)).toBeNull();
+    expect(getByText('Status: Upcoming')).toBeTruthy();
   });
 });

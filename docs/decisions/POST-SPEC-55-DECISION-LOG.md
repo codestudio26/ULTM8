@@ -7496,3 +7496,38 @@ Children are kept to 25 for members and for guests alike. A guest's signature is
 User (Code), 4 Nov 2026: "ok" to every recommendation, on the base rule and the eight questions above.
 
 User (Code), 4 Nov 2026, on #463: deleting a closed School would also erase its members' payment history, so asked what should happen; chose "Keep payments": delete only the waiver templates, and keep a School with any payments or memberships anonymized.
+
+## Decision 427 — Student portal review fixes (SP1–SP13) and the review's six answers
+
+**Date:** 4 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 123, 236, 238, 366, 379, 425
+
+### Decision
+
+The Student portal (the `apps/student` mobile app) review found 13 bugs, SP1–SP13. All are fixed now, in one PR with no database change. The answers to the review's six questions:
+
+1. **Fix all 13 bugs now** (SP1–SP13, below).
+2. **A parent is anyone with a child linked to them** (`GET /guardians/me/minors` returns at least one), not only someone holding a GUARDIAN role grant, which nothing creates. A GUARDIAN grant still counts.
+3. **The School picked on first launch no longer forces the Join screen.** Home shows a "Join {School}?" card with Join and Not now, only to someone who isn't a member there and holds no role there.
+4. **Build the four missing pieces next, in a second PR** (Decision 428): a parent signs a child's waiver, a parent buys a plan for a child, change passcode in the app, and a link to buy a one-off class ticket. The API already supports all four.
+5. **"Delete my account" in the app is an app essential**, built before App Store submission (Apple requires it). Recorded in `docs/TRACK-B-ROADMAP.md`.
+6. **Leave a School, and a Home redesign: not now.**
+
+### The fixes
+
+- SP1: the first-launch School pick no longer traps parents, coaches and staff on the Join screen (answer 3). Coaches land on their dashboard.
+- SP2: the parent menu shows for anyone with a child (answer 2). "My children" shows for everyone, so a parent can add the first one.
+- SP3: My bookings lists the person's waitlist places (new `GET /waitlist/me`, their own WAITING and NOTIFIED entries for classes not yet started). An offered place shows "Claim spot" and its deadline; every place has Leave.
+- SP4: My bookings shows the class name, its times and the School, not a class id.
+- SP5: My memberships shows the plan name and the School, not a plan id.
+- SP6: class rows show the start and end time, not only the date. *Times are shown on the phone's clock; the class's own time zone would need the discovery role to read the branch's zone (a database GRANT), so it was left out.*
+- SP7: Kid Mode can't be left by Back, the back gesture or Android's back button. "Exit Kid Mode" asks for the parent's PIN.
+- SP8: a waiver's text is no longer cut to 3 lines with no way to read it: "Read full waiver" / "Show less", and the whole text shows while signing.
+- SP9: a class already booked or waitlisted shows that, not a fresh Book button.
+- SP10: "Buy" on a School's plans shows "Join this School to buy." to someone not yet a member, instead of a purchase that fails.
+- SP11: status words read as words (Upcoming, Paid, Active…), not raw codes.
+- SP12: the sign-in screen shows the picked School, with "Change School".
+- SP13: the waiver signing form has Cancel, and removing a saved card asks first.
+
+### Recorded by
+
+User (Code), 4 Nov 2026: "go, all recommended", on the Student portal review's bugs and questions Q1–Q6.

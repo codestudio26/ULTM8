@@ -4,9 +4,11 @@ import { type components } from '@ultm8/api-client';
 import { Button, InlineError, TextField } from '../components/ui';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { formatClassTimes } from '../lib/formatDate';
 import { useEnterCheckInCode } from '../attendance/attendanceQueries';
 import { useCancelBooking, useMyBookings } from './bookingQueries';
 import { BookingGuests } from './BookingGuests';
+import { MyWaitlist } from './MyWaitlist';
 import { useT } from '../i18n/I18nProvider';
 import type { TranslationKey } from '../i18n/types';
 
@@ -87,7 +89,10 @@ function BookingRow({ booking }: { booking: Booking }) {
 
   return (
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
-      <Text style={{ fontSize: 15, fontWeight: '600' }}>{t('bookings.myBookings.classLabel', { classId: booking.classId })}</Text>
+      {/* Decision 427 (SP4): the class's name, time and School, never its id. */}
+      <Text style={{ fontSize: 15, fontWeight: '600' }}>{booking.classTitle ?? t('bookings.myBookings.unknownClass')}</Text>
+      {booking.classStartsAt ? <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{formatClassTimes(booking.classStartsAt, booking.classEndsAt)}</Text> : null}
+      {booking.schoolName ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{booking.schoolName}</Text> : null}
       <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>{t('bookings.myBookings.status', { status: BOOKING_STATUS[booking.status] ? t(BOOKING_STATUS[booking.status]) : booking.status })}</Text>
       {error ? <InlineError message={error} /> : null}
       {booking.status === 'UPCOMING' && booking.attendees.length > 0 ? <BookingGuests bookingId={booking.id} /> : null}
@@ -157,6 +162,7 @@ export function MyBookingsScreen() {
   return (
     <PaginatedListScreen
       query={query}
+      header={<MyWaitlist />}
       renderItem={(item: Booking) => <BookingRow booking={item} />}
       emptyMessage={t('bookings.myBookings.empty')}
       errorFallbackMessage={t('bookings.myBookings.loadError')}

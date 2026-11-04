@@ -59,6 +59,12 @@ export class MyMembershipResponseDto extends MembershipResponseDto {
 
   @ApiPropertyOptional({ type: FreezeSummaryDto, nullable: true, description: 'Decision 404: the freeze in effect or still to come, else a request waiting.' })
   freeze!: FreezeSummaryDto | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 427: the plan name (null when the plan can no longer be read).' })
+  planTitle!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 427: the School name (null when it can no longer be read).' })
+  schoolName!: string | null;
 }
 
 export class MyMembershipListResponseDto {

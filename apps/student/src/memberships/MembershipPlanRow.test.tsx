@@ -195,3 +195,19 @@ describe('MembershipPlanRow — Decision 243 hosted Checkout', () => {
     expect(getByText(/isn't available in the app yet/)).toBeTruthy();
   });
 });
+
+/** Decision 427 — Student portal review SP10: a School not joined yet. */
+describe('MembershipPlanRow — not joined yet', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mocked(membershipQueries.usePurchaseMembership).mockReturnValue(idlePurchase());
+    mocked(membershipQueries.useInvalidateMyMemberships).mockReturnValue(jest.fn());
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: undefined } as never);
+  });
+
+  it('says to join first instead of offering Purchase', async () => {
+    const { getByText, queryByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" canBuy={false} />);
+    expect(getByText('Join this School to buy.')).toBeTruthy();
+    expect(queryByText('Purchase')).toBeNull();
+  });
+});

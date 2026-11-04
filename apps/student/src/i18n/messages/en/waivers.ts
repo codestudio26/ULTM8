@@ -6,6 +6,9 @@ export const waivers = {
     empty: 'No waivers to sign.',
   },
   row: {
+    cancel: 'Cancel',
+    showLess: 'Show less',
+    readFull: 'Read full waiver',
     signed: 'Signed {date} ✓',
     fullName: 'Full name',
     fullNamePlaceholder: 'Your full legal name',

@@ -97,8 +97,12 @@ describe('PaymentMethodsScreen — Decision 234', () => {
       { data: { hasSavedPaymentMethod: true, brand: 'visa', last4: '4242' }, isLoading: false, error: null, refetch },
     ]);
 
-    const { getByText } = await render(<PaymentMethodsScreen />);
+    const { getByText, getAllByText } = await render(<PaymentMethodsScreen />);
     await fireEvent.press(getByText('Remove'));
+    // Decision 427 (SP13): it asks first; nothing is removed until confirmed.
+    expect(getByText('Remove the saved card for Alpha Dojo?')).toBeTruthy();
+    expect(deletePaymentMethod.mutateAsync).not.toHaveBeenCalled();
+    await fireEvent.press(getAllByText('Remove')[0]!);
 
     await waitFor(() => expect(deletePaymentMethod.mutateAsync).toHaveBeenCalled());
   });

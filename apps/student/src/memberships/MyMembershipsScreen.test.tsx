@@ -52,3 +52,25 @@ describe('MembershipRow — cancelling a Subscription', () => {
     expect(queryByText('Cancel subscription')).toBeNull();
   });
 });
+
+/** Decision 427 — Student portal review SP5: the plan's and School's names, never "Plan <id>". */
+describe('MembershipRow — names', () => {
+  beforeEach(() => {
+    mocked(membershipQueries.useCancelSubscription).mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
+  });
+
+  it('shows the plan and School names the API sends', async () => {
+    const row = { ...SUBSCRIPTION, frequency: 'ONE_TIME', planTitle: '10-Class Pack', schoolName: 'Alpha Dojo' };
+    const { getByText, queryByText } = await render(<MembershipRow membership={row as never} />);
+    expect(getByText('10-Class Pack')).toBeTruthy();
+    expect(getByText('Alpha Dojo')).toBeTruthy();
+    expect(queryByText(/plan-1/)).toBeNull();
+  });
+
+  it('falls back to a plain word, not the plan id, when the name is unknown', async () => {
+    const row = { ...SUBSCRIPTION, frequency: 'ONE_TIME', membershipPlanId: 'unknown-plan', planTitle: null, schoolName: null };
+    const { getByText, queryByText } = await render(<MembershipRow membership={row as never} />);
+    expect(getByText('Membership')).toBeTruthy();
+    expect(queryByText(/unknown-plan/)).toBeNull();
+  });
+});

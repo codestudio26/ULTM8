@@ -29,30 +29,23 @@ import { CoachStudentScreen } from '../coach/CoachStudentScreen';
 import { MyGradingScreen } from '../grading/MyGradingScreen';
 import { MyChargesScreen } from '../charges/MyChargesScreen';
 import { GradingHistoryScreen } from '../grading/GradingHistoryScreen';
-import { useCoachSchoolId, useAuth, useEnrolledSchoolIds } from '../auth/AuthContext';
+import { useCoachSchoolId } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
 import type { AppStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 /** Coaches (Instructors and Branch Staff) land on their dashboard; everyone
- * else on the student home (Decision 184 item 4) — UNLESS Decision 266's
- * pre-auth School-pick screen has a pending pick this now-signed-in Student
- * hasn't actually joined yet (a brand-new installer who just registered),
- * in which case JoinSchoolScreen wins over both: finishing the pick they
- * started takes priority over landing on either dashboard. Checked against
- * useEnrolledSchoolIds(), not just "pendingSchoolPick is set" — the pick
- * only needs finishing once; after JoinSchoolScreen's own success path
- * clears it, this falls through to the ordinary coach/student branch on
- * every later launch, including re-logins. */
+ * else on the student home (Decision 184 item 4). Student portal review SP1
+ * (Decision 427): the School picked on first launch (Decision 266) is no
+ * longer forced as the first screen. That left parents, coaches and owners
+ * on a Join screen with no Home under it, so Back, "Done" and "Not now" went
+ * nowhere. Home now offers the pick as a card (HomeScreen), with Home always
+ * underneath JoinSchool. */
 export function AppNavigator() {
   const t = useT();
   const coachSchoolId = useCoachSchoolId();
-  const { pendingSchoolPick } = useAuth();
-  const enrolledSchoolIds = useEnrolledSchoolIds();
-  const needsToJoinPickedSchool = !!pendingSchoolPick && !enrolledSchoolIds.includes(pendingSchoolPick.id);
-
-  const initialRouteName = needsToJoinPickedSchool ? 'JoinSchool' : coachSchoolId ? 'CoachDashboard' : 'Home';
+  const initialRouteName = coachSchoolId ? 'CoachDashboard' : 'Home';
 
   return (
     <Stack.Navigator initialRouteName={initialRouteName}>
@@ -67,7 +60,6 @@ export function AppNavigator() {
       <Stack.Screen
         name="JoinSchool"
         component={JoinSchoolScreen}
-        initialParams={needsToJoinPickedSchool ? { academyId: pendingSchoolPick!.id, name: pendingSchoolPick!.name } : undefined}
         options={({ route }) => ({ title: route.params.beltsFor ? t('navigation.app.addBelt') : t('navigation.app.joinSchool', { name: route.params.name }) })}
       />
       <Stack.Screen name="MyBookings" component={MyBookingsScreen} options={{ title: t('navigation.app.myBookings') }} />
@@ -100,7 +92,11 @@ export function AppNavigator() {
         options={({ route }) => ({ title: t('guardians.childBooking.title', { name: route.params.name }) })}
       />
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: t('navigation.app.kidMode') }} />
-      <Stack.Screen name="KidModeBooking" component={KidModeBookingScreen} options={{ title: t('navigation.app.kidMode') }} />
+      <Stack.Screen
+        name="KidModeBooking"
+        component={KidModeBookingScreen}
+        options={{ title: t('navigation.app.kidMode'), headerBackVisible: false, gestureEnabled: false }}
+      />
       <Stack.Screen name="PendingReview" component={PendingReviewScreen} options={{ title: t('navigation.app.needsReview') }} />
       <Stack.Screen name="QrCheckIn" component={QrCheckInScreen} options={{ title: t('navigation.app.checkIn') }} />
       <Stack.Screen name="SchoolNotes" component={SchoolNotesScreen} options={({ route }) => ({ title: route.params?.name ? t('navigation.app.childNotes', { name: route.params.name }) : t('navigation.app.schoolNotes') })} />

@@ -1699,12 +1699,24 @@ export class MembershipsService {
       // Decision 391: the app can't name the hidden visit-pass plan from the
       // School's plan list, so it is flagged here. A plan the caller can no
       // longer see (a School they left) is simply not flagged.
-      const visitPlans = await tx.membershipPlan.findMany({
-        where: { id: { in: [...new Set(page.items.map((m) => m.membershipPlanId))] }, type: 'VISIT_PASS' },
-        select: { id: true },
-      });
-      const visit = new Set(visitPlans.map((p) => p.id));
-      return { ...page, items: page.items.map((m) => ({ ...m, visitPass: visit.has(m.membershipPlanId) })) };
+      // Decision 427 (Student portal review SP5): the plan's and School's names
+      // ride along too, so the app never shows "Plan <id>".
+      const [plans, schools] = await Promise.all([
+        tx.membershipPlan.findMany({
+          where: { id: { in: [...new Set(page.items.map((m) => m.membershipPlanId))] } },
+          select: { id: true, type: true, title: true },
+        }),
+        tx.school.findMany({ where: { id: { in: [...new Set(page.items.map((m) => m.schoolId))] } }, select: { id: true, name: true } }),
+      ]);
+      const planById = new Map(plans.map((p) => [p.id, p]));
+      const schoolName = new Map(schools.map((sch) => [sch.id, sch.name]));
+      return {
+        ...page,
+        items: page.items.map((m) => {
+          const plan = planById.get(m.membershipPlanId);
+          return { ...m, visitPass: plan?.type === 'VISIT_PASS', planTitle: plan?.title ?? null, schoolName: schoolName.get(m.schoolId) ?? null };
+        }),
+      };
     }).then(async (page) => {
       // Decision 404: each membership's freeze, and whether it is frozen today.
       const freezes = await loadFreezeStates(this.prismaJobs, page.items.map((m) => m.id));

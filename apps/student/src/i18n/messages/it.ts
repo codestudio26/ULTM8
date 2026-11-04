@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "Non ora",
+      join: "Iscriviti",
+      body: "Iscriviti per prenotare lezioni e acquistare piani. Tocca Non ora se ti alleni, insegni o porti un figlio lì.",
+      title: "Iscriverti a {school}?",
+    },
     title: "ULTM8 Allievo",
     coachDashboard: "Dashboard allenatore",
     myProfile: "Il mio profilo",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "Codice di verifica",
     },
     login: {
+      changeSchool: "Cambia scuola",
+      pickedSchool: "Scuola: {school}",
       title: "Accedi",
       intro: "Email e il tuo codice di accesso a 6 cifre — è tutto ciò che serve per accedere (nessuna password separata).",
       submit: "Accedi",
@@ -272,7 +280,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "Impossibile prendere il posto — riprova.",
+      claim: "Prendi il posto",
+      spotFreeUntil: "C'è un posto libero per te. Prendilo entro {date}.",
+      spotFree: "C'è un posto libero per te. Prendilo ora.",
+      title: "La mia lista d'attesa",
+    },
     myBookings: {
+      unknownClass: "Lezione",
       classLabel: "Corso {classId}",
       status: "Stato: {status}",
       cancelError: "Impossibile annullare questa prenotazione — riprova.",
@@ -715,6 +731,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "Esci",
+      stay: "Resta",
+      enterPin: "PIN del genitore per uscire",
+      button: "Esci dalla Modalità Bambino",
+    },
     pin: {
       tooShort: {
         one: "Il PIN deve avere {count} cifra.",
@@ -767,6 +789,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} ti ha offerto lo stesso pacchetto alla reception. Acquistalo qui e il check-in si completa appena viene pagato.",
     },
     myMemberships: {
+      planUnknown: "Abbonamento",
       planFallback: "Piano {planId}",
       visitPass: "Pass visitatore",
       statusLine: "Stato: {status} · {frequency}",
@@ -808,6 +831,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "Iscriviti a questa scuola per acquistare.",
       cardSurcharge: "+ {amount} di sovrapprezzo se paghi con carta",
       classesIncluded: { one: "{count} corso", many: "{count} corsi", other: "{count} corsi" },
       durationDays: { one: "{count} giorno", many: "{count} giorni", other: "{count} giorni" },
@@ -843,6 +867,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "Tieni la carta",
+      removeConfirm: "Rimuovere la carta salvata per {school}?",
       notEnrolled: "Non sei ancora iscritto a nessuna scuola — le carte salvate compariranno qui quando lo sarai.",
       setupFailed: "Impossibile avviare la configurazione della carta — riprova.",
       removeFailed: "Impossibile rimuovere la tua carta salvata — riprova.",
@@ -976,6 +1002,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Nessuna liberatoria da firmare.",
     },
     row: {
+      cancel: "Annulla",
+      showLess: "Mostra meno",
+      readFull: "Leggi la liberatoria completa",
       signed: "Firmata il {date} ✓",
       fullName: "Nome completo",
       fullNamePlaceholder: "Il tuo nome legale completo",

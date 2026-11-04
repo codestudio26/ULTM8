@@ -2388,6 +2388,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/waitlist/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WaitlistController_findMine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/waitlist/{id}": {
         parameters: {
             query?: never;
@@ -9388,6 +9404,20 @@ export interface components {
             noShowFeeOutcome?: string | null;
             noShowFeeAmount?: number | null;
             attendees: components["schemas"]["BookingAttendeeResponseDto"][];
+            /** @description GET /bookings/me only: the class name. */
+            classTitle?: string | null;
+            /**
+             * Format: date-time
+             * @description GET /bookings/me only: when the class starts.
+             */
+            classStartsAt?: string | null;
+            /**
+             * Format: date-time
+             * @description GET /bookings/me only: when the class ends.
+             */
+            classEndsAt?: string | null;
+            /** @description GET /bookings/me only: the School name. */
+            schoolName?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -9547,6 +9577,26 @@ export interface components {
             notifiedAt?: string | null;
             claimByDeadline?: string | null;
             claimedBookingId?: string | null;
+        };
+        MyWaitlistEntryDto: {
+            id: string;
+            classId: string;
+            schoolId: string;
+            position: number;
+            /**
+             * @description NOTIFIED: a spot is free and can be claimed until claimByDeadline.
+             * @enum {string}
+             */
+            status: "WAITING" | "NOTIFIED";
+            /** Format: date-time */
+            claimByDeadline?: string | null;
+            classTitle?: string | null;
+            /** Format: date-time */
+            classStartsAt?: string | null;
+            schoolName?: string | null;
+        };
+        MyWaitlistListDto: {
+            items: components["schemas"]["MyWaitlistEntryDto"][];
         };
         ClaimWaitlistDto: {
             /** @description Claim on behalf of this Student instead of the caller — Staff, or a Guardian for a linked minor. */
@@ -10048,6 +10098,10 @@ export interface components {
             frozen: boolean;
             /** @description Decision 404: the freeze in effect or still to come, else a request waiting. */
             freeze?: components["schemas"]["FreezeSummaryDto"] | null;
+            /** @description Decision 427: the plan name (null when the plan can no longer be read). */
+            planTitle?: string | null;
+            /** @description Decision 427: the School name (null when it can no longer be read). */
+            schoolName?: string | null;
         };
         MyMembershipListResponseDto: {
             items: components["schemas"]["MyMembershipResponseDto"][];
@@ -17802,6 +17856,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WaitlistEntryResponseDto"];
+                };
+            };
+        };
+    };
+    WaitlistController_findMine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyWaitlistListDto"];
                 };
             };
         };

@@ -352,6 +352,48 @@ export class WaitlistService {
    * — a single Class's own waitlist queue is inherently small/bounded, unlike
    * findMyBookings' own all-time cross-Class list.
    */
+  /**
+   * GET /waitlist/me — Decision 427 (Student portal review SP3). The caller's
+   * own live waitlist places (WAITING, or NOTIFIED with a spot to claim), with
+   * the class's name and start and the School's name, soonest class first.
+   * Without it the app had no way to show a freed spot, so every offer
+   * expired unclaimed. Self only, under the caller's own RLS context.
+   */
+  async findMine(callerId: string) {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const entries = await tx.waitlistEntry.findMany({
+        where: { studentId: callerId, status: { in: ['WAITING', 'NOTIFIED'] } },
+        orderBy: { joinedAt: 'asc' },
+        take: 100,
+      });
+      const [classes, schools] = await Promise.all([
+        tx.class.findMany({ where: { id: { in: [...new Set(entries.map((e) => e.classId))] } }, select: { id: true, title: true, startDate: true } }),
+        tx.school.findMany({ where: { id: { in: [...new Set(entries.map((e) => e.schoolId))] } }, select: { id: true, name: true } }),
+      ]);
+      const classById = new Map(classes.map((c) => [c.id, c]));
+      const schoolName = new Map(schools.map((sch) => [sch.id, sch.name]));
+      const now = new Date();
+      return entries
+        .map((e) => {
+          const cls = classById.get(e.classId);
+          return {
+            id: e.id,
+            classId: e.classId,
+            schoolId: e.schoolId,
+            position: e.position,
+            status: e.status,
+            claimByDeadline: e.claimByDeadline,
+            classTitle: cls?.title ?? null,
+            classStartsAt: cls?.startDate ?? null,
+            schoolName: schoolName.get(e.schoolId) ?? null,
+          };
+        })
+        // A class that has already started is no longer worth waiting for.
+        .filter((e) => !e.classStartsAt || e.classStartsAt > now)
+        .sort((a, b) => (a.classStartsAt?.getTime() ?? 0) - (b.classStartsAt?.getTime() ?? 0));
+    });
+  }
+
   async findAllForClass(callerId: string, classId: string) {
     const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
     if (!cls) {
