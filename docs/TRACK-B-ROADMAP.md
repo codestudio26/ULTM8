@@ -989,6 +989,9 @@ Decision 184 asks for the coach dashboard "on both the mobile app and the web po
 ### Left on the web portal for now
 Skipping stripes, back-dating, starting classes, bulk promote, dragging between columns, the column %, voiding history, editing rank dates and history notes, giving a first rank. All are in the School Portal for the same coach.
 
+### App essential, built later (Decision 425 Q4, 4 Nov 2026)
+**To do when app work starts, not optional.** The web coach dashboard's "Coming up" now shows each class's start date and time, on the class's own clock (its branch's time zone, else the School's), and its branch name ("Whole School" when it has none). The app's "Coming up" (`CoachDashboardScreen.tsx`, key `coach.dashboard.upcomingClass`) still shows only the date and title. To match it, the app needs the School's branches (`GET /schools/{id}/branches`, which coaches can already read) for the name and time zone, and a zoned date-time format like the portal's `formatInZone`. Copy the web version: `ClassList` in `apps/school-portal/src/coach/CoachDashboardPage.tsx`. The user asked for this to be kept as an app essential (4 Nov 2026).
+
 ### Verified
 `tsc --noEmit`; jest `src/coach/coachScreens.test.tsx` (10): the dashboard shows only the coach's styles and classes, the board filters and groups, each action appears only with its toggle and sends the right body.
 
