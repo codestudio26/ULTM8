@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { Text } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, Screen } from '../components/ui';
+import { theme, spacing, fontSize, radius } from '../theme/tokens';
 import { LegalFooter } from '../components/LegalFooter';
 import { useAuth, useCoachSchoolId, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
@@ -24,10 +25,20 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
  * this doesn't replace the Student options, it adds to them. */
 export function HomeScreen({ navigation }: Props) {
   const t = useT();
-  const { logout, claims } = useAuth();
+  const { logout, claims, pendingSchoolPick, clearPendingSchoolPick } = useAuth();
   const isGuardian = useIsGuardian();
   const isCoach = !!useCoachSchoolId();
-  const isStudent = useEnrolledSchoolIds().length > 0;
+  const enrolledSchoolIds = useEnrolledSchoolIds();
+  const isStudent = enrolledSchoolIds.length > 0;
+  // Student portal review SP1 (Decision 427): the School picked on first launch
+  // is offered as a card, never forced. Anyone already working there (owner,
+  // coach, staff) or enrolled there is never asked.
+  const pickToOffer =
+    pendingSchoolPick &&
+    !enrolledSchoolIds.includes(pendingSchoolPick.id) &&
+    !(claims?.grants ?? []).some((g) => g.schoolId === pendingSchoolPick.id)
+      ? pendingSchoolPick
+      : null;
   const minors = useMyMinors(isGuardian);
   // Promotion fees to answer: the student's own, and each of a guardian's children's.
   const feePeople = useMemo<FeePerson[]>(
@@ -39,8 +50,22 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   return (
+    <ScrollView>
     <Screen>
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>{t('home.title')}</Text>
+      {pickToOffer ? (
+        <View
+          accessibilityLabel={t('home.joinPick.title', { school: pickToOffer.name })}
+          style={{ marginBottom: spacing[4], backgroundColor: theme.surface1, borderRadius: radius.button, padding: spacing[4] }}
+        >
+          <Text accessibilityRole="header" style={{ fontWeight: '600' }}>
+            {t('home.joinPick.title', { school: pickToOffer.name })}
+          </Text>
+          <Text style={{ color: theme.textSecondary, fontSize: fontSize.footnote, marginTop: spacing[1] }}>{t('home.joinPick.body')}</Text>
+          <Button title={t('home.joinPick.join')} onPress={() => navigation.navigate('JoinSchool', { academyId: pickToOffer.id, name: pickToOffer.name })} />
+          <Button title={t('home.joinPick.notNow')} variant="secondary" onPress={clearPendingSchoolPick} />
+        </View>
+      ) : null}
       {/* Decision 392: a School approved a sign-up made at its front desk. */}
       <SignUpInvites />
       <ChildInvites />
@@ -69,7 +94,8 @@ export function HomeScreen({ navigation }: Props) {
       {isStudent ? <Button title={t('home.paymentMethods')} onPress={() => navigation.navigate('PaymentMethods')} /> : null}
       {isStudent ? <Button title={t('home.lessons')} onPress={() => navigation.navigate('Lessons')} /> : null}
       <Button title={t('home.notifications')} onPress={() => navigation.navigate('Notifications')} />
-      {isGuardian ? <Button title={t('home.myMinors')} onPress={() => navigation.navigate('MyMinors')} /> : null}
+      {/* Decision 427 (SP2): any adult can add a child here; Kid Mode and the review list follow once they have one. */}
+      <Button title={t('home.myMinors')} onPress={() => navigation.navigate('MyMinors')} />
       {isGuardian ? <Button title={t('home.kidMode')} onPress={() => navigation.navigate('KidModePin')} /> : null}
       {isGuardian ? (
         <Button title={t('home.needsReview')} variant="secondary" onPress={() => navigation.navigate('PendingReview')} />
@@ -77,5 +103,6 @@ export function HomeScreen({ navigation }: Props) {
       <Button title={t('home.logOut')} variant="secondary" onPress={() => logout()} />
       <LegalFooter />
     </Screen>
+    </ScrollView>
   );
 }

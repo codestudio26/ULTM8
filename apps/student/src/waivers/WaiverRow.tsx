@@ -37,6 +37,8 @@ const SIGNATURE_PAD_WEB_STYLE = `.m-signature-pad--footer { display: none; margi
 export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: WaiverSignature | undefined }) {
   const t = useT();
   const [signing, setSigning] = useState(false);
+  // Decision 427 (SP8): the whole waiver can be read; it is always shown in full while signing.
+  const [expanded, setExpanded] = useState(false);
   const [signerFullName, setSignerFullName] = useState('');
   const [signatureText, setSignatureText] = useState('');
   const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
@@ -64,9 +66,16 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
   return (
     <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontWeight: '600' }}>{waiver.title}</Text>
-      <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }} numberOfLines={3}>
+      <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }} numberOfLines={expanded || signing ? undefined : 3}>
         {waiver.body}
       </Text>
+      {signing ? null : (
+        <Button
+          title={expanded ? t('waivers.row.showLess') : t('waivers.row.readFull')}
+          variant="secondary"
+          onPress={() => setExpanded((e) => !e)}
+        />
+      )}
 
       {effectiveSignature ? (
         <Text style={{ color: '#188038', fontSize: 13, marginTop: 6 }}>
@@ -111,6 +120,8 @@ export function WaiverRow({ waiver, signature }: { waiver: Waiver; signature: Wa
             loading={signWaiver.isPending}
             disabled={!signerFullName.trim() || !signatureText.trim()}
           />
+          {/* Decision 427 (SP13): a way back out of the signing form. */}
+          <Button title={t('waivers.row.cancel')} variant="secondary" onPress={() => setSigning(false)} />
         </View>
       ) : (
         <Button title={t('waivers.row.sign')} variant="secondary" onPress={() => setSigning(true)} />

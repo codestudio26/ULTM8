@@ -640,13 +640,38 @@ export class BookingsService {
   }
 
   async findMyBookings(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate(
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const page = await cursorPaginate(
         (args) => tx.booking.findMany({ ...args, where: { studentId: callerId }, include: { attendees: true } }),
         cursor,
         limit,
-      ),
-    );
+      );
+      // Student portal review SP4 (Decision 427): the app showed "Class <id>".
+      // Each booking now carries its class's name and times and its School's
+      // name. Read separately, not as an include: a class or School this
+      // student can no longer read just leaves the fields null.
+      const classIds = [...new Set(page.items.map((b) => b.classId))];
+      const schoolIds = [...new Set(page.items.map((b) => b.schoolId))];
+      const [classes, schools] = await Promise.all([
+        tx.class.findMany({ where: { id: { in: classIds } }, select: { id: true, title: true, startDate: true, endDate: true } }),
+        tx.school.findMany({ where: { id: { in: schoolIds } }, select: { id: true, name: true } }),
+      ]);
+      const classById = new Map(classes.map((c) => [c.id, c]));
+      const schoolName = new Map(schools.map((sch) => [sch.id, sch.name]));
+      return {
+        ...page,
+        items: page.items.map((b) => {
+          const cls = classById.get(b.classId);
+          return {
+            ...b,
+            classTitle: cls?.title ?? null,
+            classStartsAt: cls?.startDate ?? null,
+            classEndsAt: cls?.endDate ?? null,
+            schoolName: schoolName.get(b.schoolId) ?? null,
+          };
+        }),
+      };
+    });
   }
 
   /**

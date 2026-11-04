@@ -59,7 +59,20 @@ type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
  * unmounted (e.g. Student navigates away mid-purchase), and duplicated
  * purchase.error into a second `actionError` state that could drift from it. */
 /** `forStudentId`: a Guardian buys this plan for their child (no saved card then). */
-export function MembershipPlanRow({ plan, schoolId, forStudentId }: { plan: MembershipPlan; schoolId: string; forStudentId?: string }) {
+/** `canBuy` false (Decision 427, SP10): a School the person hasn't joined.
+ * Buying there always failed with "Not found", so the plan shows a
+ * "join first" note instead of Purchase. */
+export function MembershipPlanRow({
+  plan,
+  schoolId,
+  forStudentId,
+  canBuy = true,
+}: {
+  plan: MembershipPlan;
+  schoolId: string;
+  forStudentId?: string;
+  canBuy?: boolean;
+}) {
   const t = useT();
   const purchase = usePurchaseMembership();
   const invalidateMyMemberships = useInvalidateMyMemberships();
@@ -130,6 +143,8 @@ export function MembershipPlanRow({ plan, schoolId, forStudentId }: { plan: Memb
           working-looking "Purchase" action that always errors is worse than none. */}
       {isFriendPass ? (
         <Text style={{ color: '#9AA0A6', fontSize: 12, marginTop: 4 }}>{t('memberships.planRow.friendPass')}</Text>
+      ) : !canBuy ? (
+        <Text style={{ color: '#9AA0A6', fontSize: 12, marginTop: 4 }}>{t('memberships.planRow.joinFirst')}</Text>
       ) : outcome === null && steppingUp ? (
         <StepUpPrompt onVerified={handleStepUpVerified} onCancel={cancelStepUp} />
       ) : outcome === null ? (

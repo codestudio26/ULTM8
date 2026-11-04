@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, ErrorBanner, InlineError, Screen } from '../components/ui';
+import { Button, ErrorBanner, Field, InlineError, Screen, TextField } from '../components/ui';
+import { getKidModePin } from './kidModePinStore';
 import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
 import { useT } from '../i18n/I18nProvider';
@@ -24,7 +25,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'KidModeBooking'>;
  * "join waitlist" follow-up, since that's a separate, not-yet-delegated
  * capability).
  */
-export function KidModeBookingScreen({ navigation }: Props) {
+function KidModeBookingContent({ navigation }: Props) {
   const t = useT();
   const delegations = useMyBookingDelegations();
   const minors = useMyMinors();
@@ -176,5 +177,68 @@ export function KidModeBookingScreen({ navigation }: Props) {
         )}
       </Screen>
     </ScrollView>
+  );
+}
+
+/** Kid Mode with a locked door (Decision 427, Student portal review SP7).
+ * The Back arrow, the back gesture and Android's back button used to drop the
+ * child straight into the parent's full app. Now every way out is stopped
+ * and "Exit Kid Mode" asks for the parent's PIN first. */
+export function KidModeBookingScreen(props: Props) {
+  const { navigation } = props;
+  const t = useT();
+  const unlocked = useRef(false);
+  const [asking, setAsking] = useState(false);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', (e) => {
+        if (unlocked.current) return;
+        e.preventDefault();
+        setAsking(true);
+      }),
+    [navigation],
+  );
+
+  async function confirmExit() {
+    setError(null);
+    const saved = await getKidModePin();
+    if (saved !== null && pin !== saved) {
+      setError(t('kidmode.pin.incorrect'));
+      setPin('');
+      return;
+    }
+    unlocked.current = true;
+    navigation.goBack();
+  }
+
+  return (
+    <View style={{ flex: 1 }}>
+      <View style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+        {asking ? (
+          <>
+            <Field label={t('kidmode.exit.enterPin')}>
+              <TextField value={pin} onChangeText={setPin} secureTextEntry keyboardType="number-pad" maxLength={4} autoFocus accessibilityLabel={t('kidmode.exit.enterPin')} />
+            </Field>
+            {error ? <InlineError message={error} /> : null}
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Button title={t('kidmode.exit.stay')} variant="secondary" onPress={() => { setAsking(false); setPin(''); setError(null); }} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button title={t('kidmode.exit.exit')} onPress={confirmExit} disabled={pin.length !== 4} />
+              </View>
+            </View>
+          </>
+        ) : (
+          <Button title={t('kidmode.exit.button')} variant="secondary" onPress={() => setAsking(true)} />
+        )}
+      </View>
+      <View style={{ flex: 1 }}>
+        <KidModeBookingContent {...props} />
+      </View>
+    </View>
   );
 }

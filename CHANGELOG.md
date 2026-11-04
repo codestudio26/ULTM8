@@ -15,6 +15,16 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Student portal fixes** (Track B, `apps/student`; Student portal review
+  SP1–SP13, Decision 427) — the School picked on first launch no longer forces
+  the Join screen (Home shows a "Join this School?" card instead). The parent
+  menu shows for anyone with a child linked. My bookings shows class names,
+  times, the School, and the person's waitlist places with "Claim spot" and
+  Leave (new `GET /waitlist/me`). My memberships shows plan and School names.
+  Kid Mode needs the parent's PIN to exit. Waivers can be read in full, and
+  the signing form has Cancel. Already-booked classes show as booked, plans
+  say "Join this School to buy" to non-members, status words read as words,
+  the sign-in screen shows the picked School, and removing a card asks first.
 - **Coaches portal answers** (Decision 425) — Branch Staff see their
   branch's classes this week on their dashboard, with roll call and QR links
   when they handle bookings. Coaches get a read-only Students page with the

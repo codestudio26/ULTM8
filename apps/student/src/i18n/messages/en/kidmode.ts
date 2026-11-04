@@ -43,4 +43,10 @@ export const kidmode = {
     confirm: 'Confirm',
     cancel: 'Cancel',
   },
+  exit: {
+    exit: 'Exit',
+    stay: 'Stay',
+    enterPin: 'Parent\'s PIN to exit',
+    button: 'Exit Kid Mode',
+  },
 };

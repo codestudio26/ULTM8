@@ -1,8 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
-import { authClient } from '../api';
+import { apiClient, authClient } from '../api';
 import { asyncStoragePersister } from '../lib/queryPersister';
 import { registerForPushNotificationsAsync } from '../notifications/pushRegistration';
 import { decodeJwtPayload } from './decodeJwt';
@@ -399,13 +399,22 @@ export function useEnrolledSchoolIds(): string[] {
   return Array.from(schoolIds).sort();
 }
 
-/** Same "derive from claims.grants" shape as useEnrolledSchoolIds, for the
- * one other role check this app makes — Guardian is a boolean presence
- * check (any active GUARDIAN grant, not scoped to a School) rather than a
- * value to resolve, so this returns boolean instead of string | null. */
+/** Is this person a parent (Guardian)? Student portal review SP2 (Decision 427):
+ * nothing in the product ever gives a GUARDIAN RoleGrant — a School adding a
+ * child, a parent accepting a child invite and a parent adding a child all
+ * only create the GuardianLink — so a grant-only check hid the whole parent
+ * menu from every real parent. A parent is now anyone with at least one linked
+ * child (GET /guardians/me/minors, the same list and cache key useMyMinors
+ * uses), or a GUARDIAN grant where one exists. */
 export function useIsGuardian(): boolean {
   const { claims } = useAuth();
-  return claims?.grants.some((g) => g.role === 'GUARDIAN') ?? false;
+  const hasGrant = claims?.grants.some((g) => g.role === 'GUARDIAN') ?? false;
+  const minors = useQuery({
+    queryKey: ['my-minors'],
+    queryFn: () => unwrap(apiClient.GET('/v1/guardians/me/minors', {})),
+    enabled: !!claims,
+  });
+  return hasGrant || (minors.data?.items.length ?? 0) > 0;
 }
 
 /** Every distinct School where this person coaches (Decisions 184, 186): an

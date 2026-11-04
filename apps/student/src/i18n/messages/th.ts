@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "ไม่ใช่ตอนนี้",
+      join: "เข้าร่วม",
+      body: "เข้าร่วมเพื่อจองคลาสและซื้อแพ็กเกจ แตะ ไม่ใช่ตอนนี้ หากคุณฝึก สอน หรือพาลูกไปที่นั่นอยู่แล้ว",
+      title: "เข้าร่วม {school} ไหม?",
+    },
     title: "ULTM8 นักเรียน",
     coachDashboard: "แดชบอร์ดโค้ช",
     myProfile: "โปรไฟล์ของฉัน",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "รหัสยืนยัน",
     },
     login: {
+      changeSchool: "เปลี่ยนโรงเรียน",
+      pickedSchool: "โรงเรียน: {school}",
       title: "เข้าสู่ระบบ",
       intro: "ใช้อีเมลและรหัสผ่านตัวเลข 6 หลักเท่านั้นในการเข้าสู่ระบบ (ไม่มีรหัสผ่านอื่นแยกต่างหาก)",
       submit: "เข้าสู่ระบบ",
@@ -271,7 +279,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "ไม่สามารถจองที่ได้ — โปรดลองอีกครั้ง",
+      claim: "จองที่",
+      spotFreeUntil: "มีที่ว่างสำหรับคุณ จองภายใน {date}",
+      spotFree: "มีที่ว่างสำหรับคุณ จองเลยตอนนี้",
+      title: "รายการรอของฉัน",
+    },
     myBookings: {
+      unknownClass: "คลาส",
       classLabel: "คลาส {classId}",
       status: "สถานะ: {status}",
       cancelError: "ไม่สามารถยกเลิกการจองนี้ได้ โปรดลองอีกครั้ง",
@@ -699,6 +715,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "ออก",
+      stay: "อยู่ต่อ",
+      enterPin: "PIN ของผู้ปกครองเพื่อออก",
+      button: "ออกจากโหมดเด็ก",
+    },
     pin: {
       tooShort: { other: "PIN ต้องมี {count} หลัก" },
       mismatch: "PIN ไม่ตรงกัน",
@@ -747,6 +769,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} เสนอแพ็กเดิมที่เคาน์เตอร์ ซื้อได้ที่นี่ แล้วการเช็กอินจะเสร็จทันทีที่ชำระเงิน",
     },
     myMemberships: {
+      planUnknown: "สมาชิก",
       planFallback: "แผน {planId}",
       visitPass: "บัตรผู้เยี่ยมชม",
       statusLine: "สถานะ: {status} · {frequency}",
@@ -784,6 +807,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "เข้าร่วมโรงเรียนนี้เพื่อซื้อ",
       cardSurcharge: "+ ค่าธรรมเนียม {amount} เมื่อจ่ายด้วยบัตร",
       classesIncluded: { other: "{count} คลาส" },
       durationDays: { other: "{count} วัน" },
@@ -819,6 +843,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "เก็บบัตรไว้",
+      removeConfirm: "ลบบัตรที่บันทึกไว้ของ {school} หรือไม่?",
       notEnrolled: "คุณยังไม่ได้ลงทะเบียนกับโรงเรียนใด — บัตรที่บันทึกไว้จะแสดงที่นี่เมื่อคุณลงทะเบียนแล้ว",
       setupFailed: "ไม่สามารถเริ่มขั้นตอนตั้งค่าบัตรได้ โปรดลองอีกครั้ง",
       removeFailed: "ไม่สามารถนำบัตรที่บันทึกไว้ออกได้ โปรดลองอีกครั้ง",
@@ -950,6 +976,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "ไม่มีเอกสารสละสิทธิ์ที่ต้องลงนาม",
     },
     row: {
+      cancel: "ยกเลิก",
+      showLess: "แสดงน้อยลง",
+      readFull: "อ่านเอกสารสละสิทธิ์ทั้งหมด",
       signed: "ลงนามเมื่อ {date} ✓",
       fullName: "ชื่อ-นามสกุล",
       fullNamePlaceholder: "ชื่อ-นามสกุลตามกฎหมายของคุณ",

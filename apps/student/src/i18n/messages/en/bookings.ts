@@ -1,6 +1,7 @@
 /** English text: bookings (Decision 323). */
 export const bookings = {
   myBookings: {
+    unknownClass: 'Class',
     /** Row heading; the API gives only the Class's id, not its name. */
     classLabel: 'Class {classId}',
     /** {status} is one of `statusLabel` below. */
@@ -60,9 +61,16 @@ export const bookings = {
   },
   /** A booking's status, in capitals as the app has always shown it. */
   statusLabel: {
-    upcoming: 'UPCOMING',
-    completed: 'COMPLETED',
-    cancelled: 'CANCELLED',
-    noShow: 'NO_SHOW',
+    upcoming: 'Upcoming',
+    completed: 'Completed',
+    cancelled: 'Cancelled',
+    noShow: 'No-show',
+  },
+  waitlist: {
+    claimError: 'Could not claim the spot — please try again.',
+    claim: 'Claim spot',
+    spotFreeUntil: 'A spot is free for you. Claim it by {date}.',
+    spotFree: 'A spot is free for you. Claim it now.',
+    title: 'My waitlist',
   },
 };

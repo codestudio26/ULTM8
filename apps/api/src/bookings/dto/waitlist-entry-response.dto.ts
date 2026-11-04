@@ -47,3 +47,38 @@ export class WaitlistEntryListResponseDto {
   @ApiProperty({ type: [WaitlistEntryResponseDto] })
   items!: WaitlistEntryResponseDto[];
 }
+
+/** GET /waitlist/me (Decision 427): one of the caller's own live waitlist places. */
+export class MyWaitlistEntryDto {
+  @ApiProperty()
+  id!: string;
+
+  @ApiProperty()
+  classId!: string;
+
+  @ApiProperty()
+  schoolId!: string;
+
+  @ApiProperty()
+  position!: number;
+
+  @ApiProperty({ enum: ['WAITING', 'NOTIFIED'], description: 'NOTIFIED: a spot is free and can be claimed until claimByDeadline.' })
+  status!: 'WAITING' | 'NOTIFIED';
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  claimByDeadline!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  classTitle!: string | null;
+
+  @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
+  classStartsAt!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  schoolName!: string | null;
+}
+
+export class MyWaitlistListDto {
+  @ApiProperty({ type: [MyWaitlistEntryDto] })
+  items!: MyWaitlistEntryDto[];
+}

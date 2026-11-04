@@ -74,6 +74,8 @@ function SchoolPaymentMethodRow({
   const createSetupSession = useCreateSetupSession(schoolId);
   const deletePaymentMethod = useDeletePaymentMethod(schoolId);
   const [error, setError] = useState<string | null>(null);
+  // Decision 427 (SP13): removing a saved card asks first.
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   async function handleAddOrUpdate() {
     setError(null);
@@ -87,6 +89,7 @@ function SchoolPaymentMethodRow({
   }
 
   async function handleRemove() {
+    setConfirmingRemove(false);
     setError(null);
     try {
       await deletePaymentMethod.mutateAsync();
@@ -119,10 +122,19 @@ function SchoolPaymentMethodRow({
               onPress={handleAddOrUpdate}
               loading={createSetupSession.isPending}
             />
-            {result.data?.hasSavedPaymentMethod ? (
-              <Button title={t('payments.methods.remove')} variant="destructive" onPress={handleRemove} loading={deletePaymentMethod.isPending} />
+            {result.data?.hasSavedPaymentMethod && !confirmingRemove ? (
+              <Button title={t('payments.methods.remove')} variant="destructive" onPress={() => setConfirmingRemove(true)} loading={deletePaymentMethod.isPending} />
             ) : null}
           </View>
+          {confirmingRemove ? (
+            <View style={{ marginTop: spacing[2] }}>
+              <Text style={{ color: theme.textSecondary, marginBottom: spacing[1] }}>{t('payments.methods.removeConfirm', { school: schoolName })}</Text>
+              <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+                <Button title={t('payments.methods.keepCard')} variant="secondary" onPress={() => setConfirmingRemove(false)} />
+                <Button title={t('payments.methods.remove')} variant="destructive" onPress={handleRemove} loading={deletePaymentMethod.isPending} />
+              </View>
+            </View>
+          ) : null}
         </>
       )}
     </View>

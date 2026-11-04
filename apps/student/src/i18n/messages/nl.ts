@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "Niet nu",
+      join: "Lid worden",
+      body: "Word lid om lessen te boeken en abonnementen te kopen. Tik op Niet nu als je er al traint, lesgeeft of een kind brengt.",
+      title: "Lid worden van {school}?",
+    },
     title: "ULTM8 Student",
     coachDashboard: "Coachdashboard",
     myProfile: "Mijn profiel",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "Verificatiecode",
     },
     login: {
+      changeSchool: "School wijzigen",
+      pickedSchool: "School: {school}",
       title: "Inloggen",
       intro: "E-mail en je 6-cijferige toegangscode — meer heb je niet nodig om in te loggen (geen apart wachtwoord).",
       submit: "Inloggen",
@@ -272,7 +280,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "De plek kon niet worden geclaimd — probeer het opnieuw.",
+      claim: "Plek claimen",
+      spotFreeUntil: "Er is een plek vrij voor jou. Claim hem vóór {date}.",
+      spotFree: "Er is een plek vrij voor jou. Claim hem nu.",
+      title: "Mijn wachtlijst",
+    },
     myBookings: {
+      unknownClass: "Les",
       classLabel: "Les {classId}",
       status: "Status: {status}",
       cancelError: "Deze boeking kon niet worden geannuleerd — probeer het opnieuw.",
@@ -706,6 +722,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "Verlaten",
+      stay: "Blijven",
+      enterPin: "Pincode van de ouder om te verlaten",
+      button: "Kindermodus verlaten",
+    },
     pin: {
       tooShort: { one: "De pincode moet {count} cijfer hebben.", other: "De pincode moet {count} cijfers hebben." },
       mismatch: "De pincodes komen niet overeen.",
@@ -754,6 +776,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} bood dezelfde kaart aan bij de balie. Koop hem hier, dan wordt het inchecken afgerond zodra die betaald is.",
     },
     myMemberships: {
+      planUnknown: "Abonnement",
       planFallback: "Lidmaatschap {planId}",
       visitPass: "Bezoekerspas",
       statusLine: "Status: {status} · {frequency}",
@@ -791,6 +814,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "Word lid van deze school om te kopen.",
       cardSurcharge: "+ {amount} kaarttoeslag bij betalen met een kaart",
       classesIncluded: { one: "{count} les", other: "{count} lessen" },
       durationDays: { one: "{count} dag", other: "{count} dagen" },
@@ -826,6 +850,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "Kaart houden",
+      removeConfirm: "De opgeslagen kaart voor {school} verwijderen?",
       notEnrolled: "Je bent nog niet ingeschreven bij een school — opgeslagen kaarten verschijnen hier zodra je dat bent.",
       setupFailed: "Het instellen van de kaart kon niet worden gestart — probeer het opnieuw.",
       removeFailed: "Je opgeslagen kaart kon niet worden verwijderd — probeer het opnieuw.",
@@ -958,6 +984,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "Geen vrijwaringen om te ondertekenen.",
     },
     row: {
+      cancel: "Annuleren",
+      showLess: "Minder tonen",
+      readFull: "Volledige verklaring lezen",
       signed: "Ondertekend op {date} ✓",
       fullName: "Volledige naam",
       fullNamePlaceholder: "Je volledige wettelijke naam",

@@ -124,7 +124,7 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
           <View style={{ marginTop: 16 }}>
             <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.membershipPlans')}</Text>
             {academy.membershipPlans.map((plan) => (
-              <MembershipPlanRow key={plan.id} plan={plan} schoolId={academyId} />
+              <MembershipPlanRow key={plan.id} plan={plan} schoolId={academyId} canBuy={enrolled} />
             ))}
           </View>
         ) : null}

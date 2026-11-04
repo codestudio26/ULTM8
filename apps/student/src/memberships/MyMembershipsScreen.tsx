@@ -48,10 +48,12 @@ export function MembershipRow({ membership, freezable }: { membership: Membershi
   // Decision 391: a visit pass's plan is hidden from the School's plan list.
   const planName = membership.visitPass
     ? t('memberships.myMemberships.visitPass')
-    : getRememberedPlanName(membership.membershipPlanId) ?? t('memberships.myMemberships.planFallback', { planId: membership.membershipPlanId });
+    : // Decision 427 (SP5): the API now sends the plan's name.
+      membership.planTitle ?? getRememberedPlanName(membership.membershipPlanId) ?? t('memberships.myMemberships.planUnknown');
   return (
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontSize: 15, fontWeight: '600' }}>{planName}</Text>
+      {membership.schoolName ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{membership.schoolName}</Text> : null}
       <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>
         {t('memberships.myMemberships.statusLine', {
           status: MEMBERSHIP_STATUS[membership.status] ? t(MEMBERSHIP_STATUS[membership.status]) : membership.status,

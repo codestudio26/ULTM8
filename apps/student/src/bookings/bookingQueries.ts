@@ -3,9 +3,11 @@ import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { usePaginatedQuery } from '../lib/usePaginatedQuery';
 
-export function useMyBookings() {
-  return usePaginatedQuery(['my-bookings'], (cursor) =>
-    unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { cursor } } })),
+export function useMyBookings(enabled = true) {
+  return usePaginatedQuery(
+    ['my-bookings'],
+    (cursor) => unwrap(apiClient.GET('/v1/bookings/me', { params: { query: { cursor } } })),
+    { enabled },
   );
 }
 

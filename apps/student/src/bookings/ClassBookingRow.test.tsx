@@ -10,10 +10,12 @@ jest.mock('./bookingQueries', () => ({
   useBookClass: jest.fn(),
   useMyFriendPasses: jest.fn(),
   useBookingGuests: jest.fn(),
+  useMyBookings: jest.fn(() => ({ data: { pages: [{ items: [] }] } })),
 }));
 jest.mock('./waitlistMutations', () => ({
   useJoinWaitlist: jest.fn(),
   useWithdrawWaitlist: jest.fn(),
+  useMyWaitlist: jest.fn(() => ({ data: { items: [] } })),
 }));
 
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
@@ -176,5 +178,36 @@ describe('ClassBookingRow — for a child', () => {
     await waitFor(() => expect(screen.getByText('Join waitlist')).toBeTruthy());
     await fireEvent.press(screen.getByText('Join waitlist'));
     await waitFor(() => expect(screen.getByText('Your child is #2 on the waitlist.')).toBeTruthy());
+  });
+});
+
+/** Decision 427 — Student portal review SP6 and SP9. */
+describe('ClassBookingRow — remembers what you already did', () => {
+  beforeEach(() => {
+    mocked(bookingQueries.useBookClass).mockReturnValue(idleMutation());
+    mocked(bookingQueries.useMyFriendPasses).mockReturnValue({ data: { items: [] } });
+    mocked(bookingQueries.useBookingGuests).mockReturnValue({ isLoading: false, error: null, data: { bookingId: 'booking-1', waiverRequired: false, guests: [] } });
+    mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(idleMutation());
+    mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+    mocked(waitlistMutations.useMyWaitlist).mockReturnValue({ data: { items: [] } });
+    mocked(bookingQueries.useMyBookings).mockReturnValue({ data: { pages: [{ items: [] }] } });
+  });
+
+  it('shows the class time, not only the date', async () => {
+    const screen = await render(<ClassBookingRow classItem={classItem} />);
+    expect(screen.getByText(/2026, .+ – /)).toBeTruthy();
+  });
+
+  it('shows Booked, not Book, for a class already booked', async () => {
+    mocked(bookingQueries.useMyBookings).mockReturnValue({ data: { pages: [{ items: [{ id: 'booking-1', classId: 'class-1', status: 'UPCOMING' }] }] } });
+    const screen = await render(<ClassBookingRow classItem={classItem} />);
+    expect(screen.queryByText('Book')).toBeNull();
+  });
+
+  it('shows the waitlist place for a class already waited for', async () => {
+    mocked(waitlistMutations.useMyWaitlist).mockReturnValue({ data: { items: [{ id: 'entry-1', classId: 'class-1', position: 2, status: 'WAITING' }] } });
+    const screen = await render(<ClassBookingRow classItem={classItem} />);
+    expect(screen.getByText("You're #2 on the waitlist.")).toBeTruthy();
+    expect(screen.queryByText('Book')).toBeNull();
   });
 });

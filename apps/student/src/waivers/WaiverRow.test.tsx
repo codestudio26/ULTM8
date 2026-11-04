@@ -166,3 +166,28 @@ describe('WaiverRow — drawn-signature capture', () => {
     expect(getByText('Could not sign this waiver — please try again.')).toBeTruthy();
   });
 });
+
+/** Decision 427 — Student portal review SP8 and SP13. */
+describe('WaiverRow — reading the whole waiver, and leaving the form', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mocked(waiverQueries.useSignWaiver).mockReturnValue(idleSign());
+  });
+
+  it('cuts the text to 3 lines until "Read full waiver" is tapped', async () => {
+    const { getByText } = await render(<WaiverRow waiver={WAIVER as never} signature={undefined} />);
+    expect(getByText(WAIVER.body).props.numberOfLines).toBe(3);
+    await fireEvent.press(getByText('Read full waiver'));
+    expect(getByText(WAIVER.body).props.numberOfLines).toBeUndefined();
+    expect(getByText('Show less')).toBeTruthy();
+  });
+
+  it('shows the full text while signing, and Cancel closes the form', async () => {
+    const { getByText, queryByText } = await render(<WaiverRow waiver={WAIVER as never} signature={undefined} />);
+    await fireEvent.press(getByText('Sign'));
+    expect(getByText(WAIVER.body).props.numberOfLines).toBeUndefined();
+    await fireEvent.press(getByText('Cancel'));
+    expect(queryByText('Submit signature')).toBeNull();
+    expect(getByText('Sign')).toBeTruthy();
+  });
+});

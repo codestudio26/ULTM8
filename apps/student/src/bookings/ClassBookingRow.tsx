@@ -3,10 +3,10 @@ import { Text, View } from 'react-native';
 import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
-import { formatDate, formatTime } from '../lib/formatDate';
-import { useBookClass, useMyFriendPasses } from './bookingQueries';
+import { formatClassTimes, formatTime } from '../lib/formatDate';
+import { useBookClass, useMyBookings, useMyFriendPasses } from './bookingQueries';
 import { BookingGuests } from './BookingGuests';
-import { useJoinWaitlist, useWithdrawWaitlist } from './waitlistMutations';
+import { useJoinWaitlist, useMyWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 import { useT } from '../i18n/I18nProvider';
 
 interface ClassSummary {
@@ -49,7 +49,24 @@ export function ClassBookingRow({
   studentId?: string;
 }) {
   const t = useT();
-  const [state, setState] = useState<RowState>({ kind: 'idle' });
+  const [localState, setState] = useState<RowState>({ kind: 'idle' });
+  // Decision 427 (Student portal review SP9): a class already booked or
+  // waited for shows that, not "Book" again, after leaving and coming back.
+  // Own bookings only (a parent's child rows pass studentId and skip this).
+  const myBookings = useMyBookings(!studentId);
+  const myWaitlist = useMyWaitlist(!studentId);
+  const existingBooking = studentId
+    ? undefined
+    : (myBookings.data?.pages ?? []).flatMap((p) => p.items).find((b) => b.classId === classItem.id && b.status === 'UPCOMING');
+  const existingWait = studentId ? undefined : myWaitlist.data?.items.find((w) => w.classId === classItem.id);
+  const state: RowState =
+    localState.kind !== 'idle'
+      ? localState
+      : existingBooking
+        ? { kind: 'booked', bookingId: existingBooking.id }
+        : existingWait
+          ? { kind: 'waitlisted', entryId: existingWait.id, position: existingWait.position }
+          : localState;
   // Waivers Q9: guests, one of the member's Friend Passes each. A pass for
   // this class only is used before a general one.
   const friendPasses = useMyFriendPasses(schoolId, studentId);
@@ -117,7 +134,7 @@ export function ClassBookingRow({
     <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontWeight: '600' }}>{classItem.title}</Text>
       <Text style={{ color: '#5F6368', fontSize: 12 }}>
-        {t('bookings.classRow.dateRange', { start: formatDate(classItem.startDate), end: formatDate(classItem.endDate) })}
+        {formatClassTimes(classItem.startDate, classItem.endDate)}
       </Text>
       {classItem.breakStartAt && classItem.breakEndAt ? (
         <Text style={{ color: '#5F6368', fontSize: 12 }}>

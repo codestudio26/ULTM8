@@ -10,6 +10,17 @@ directly against `apps/api/src/**`, not the `ultm8-nestjs-module` skill's own
 "representative" endpoint table (already known to be stale in places, per Slice 1's
 kickoff doc).
 
+## Student portal review (Decision 427, 4 Nov 2026) — fixes DONE, follow-ups planned
+
+The 4 Nov 2026 review of this app found 13 bugs (SP1–SP13), all fixed in one PR with no migration; see Decision 427 for the list. Answers to its questions:
+
+- **Next PR (Decision 428):** a parent signs a child's waiver, a parent buys a plan for a child, change passcode, and a link to buy a one-off class ticket. The API already supports all four.
+- **Not now:** leave a School, Home redesign.
+- **Known limit (SP6):** class times show on the phone's clock, not the class's own time zone; showing the zone needs the discovery role to read the branch's time zone (a GRANT migration).
+
+### App essential, built later (Decision 427 Q5, 4 Nov 2026)
+**"Delete my account" in the app — must be built before App Store submission** (Apple guideline 5.1.1(v) requires in-app account deletion for any app with sign-up). Not optional. It needs a delete-account endpoint that follows the existing offboarding rules (signed waivers and payment records are kept, Decisions 253/426), a confirm step with step-up re-authentication (Decision 236), and what happens to linked children decided first.
+
 ## Phase overview
 
 A "Slice" is one concrete, shippable build unit (matches the git commit history — each

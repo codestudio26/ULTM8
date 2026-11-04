@@ -6941,6 +6941,32 @@
         ]
       }
     },
+    "/v1/waitlist/me": {
+      "get": {
+        "operationId": "WaitlistController_findMine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyWaitlistListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "waitlist"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/waitlist/{id}": {
       "delete": {
         "operationId": "WaitlistController_withdraw",
@@ -28960,6 +28986,28 @@
               "$ref": "#/components/schemas/BookingAttendeeResponseDto"
             }
           },
+          "classTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "GET /bookings/me only: the class name."
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "GET /bookings/me only: when the class starts."
+          },
+          "classEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "GET /bookings/me only: when the class ends."
+          },
+          "schoolName": {
+            "type": "string",
+            "nullable": true,
+            "description": "GET /bookings/me only: the School name."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -29546,6 +29594,70 @@
           "position",
           "status",
           "joinedAt"
+        ]
+      },
+      "MyWaitlistEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "classId": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "position": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "NOTIFIED"
+            ],
+            "description": "NOTIFIED: a spot is free and can be claimed until claimByDeadline."
+          },
+          "claimByDeadline": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "classTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "classStartsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "schoolName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "classId",
+          "schoolId",
+          "position",
+          "status"
+        ]
+      },
+      "MyWaitlistListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MyWaitlistEntryDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "ClaimWaitlistDto": {
@@ -31241,6 +31353,16 @@
                 "$ref": "#/components/schemas/FreezeSummaryDto"
               }
             ]
+          },
+          "planTitle": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 427: the plan name (null when the plan can no longer be read)."
+          },
+          "schoolName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 427: the School name (null when it can no longer be read)."
           }
         },
         "required": [

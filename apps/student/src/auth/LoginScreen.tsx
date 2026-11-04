@@ -12,7 +12,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
   const t = useT();
-  const { login } = useAuth();
+  const { login, pendingSchoolPick, clearPendingSchoolPick } = useAuth();
   const [email, setEmail] = useState('');
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +71,15 @@ export function LoginScreen({ navigation }: Props) {
           variant="secondary"
           onPress={() => navigation.navigate('ForgotPasscode')}
         />
+        {/* Decision 427 (SP12): the School picked on first launch can be changed before signing in. */}
+        {pendingSchoolPick ? (
+          <>
+            <Text style={{ fontSize: fontSize.footnote, color: theme.textSecondary, marginTop: spacing[4], textAlign: 'center' }}>
+              {t('auth.login.pickedSchool', { school: pendingSchoolPick.name })}
+            </Text>
+            <Button title={t('auth.login.changeSchool')} variant="secondary" onPress={clearPendingSchoolPick} />
+          </>
+        ) : null}
       </Screen>
     </ScrollView>
   );

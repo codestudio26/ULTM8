@@ -64,6 +64,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
+    joinPick: {
+      notNow: "暂不",
+      join: "加入",
+      body: "加入后即可预约课程和购买套餐。如果你已在那里训练、执教或只是带孩子去，请点“暂不”。",
+      title: "加入{school}？",
+    },
     title: "ULTM8 学员",
     coachDashboard: "教练主页",
     myProfile: "我的资料",
@@ -100,6 +106,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       verificationCode: "验证码",
     },
     login: {
+      changeSchool: "更换学校",
+      pickedSchool: "学校：{school}",
       title: "登录",
       intro: "只需邮箱和 6 位数字密码即可登录（没有其他单独的密码）。",
       submit: "登录",
@@ -271,7 +279,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   bookings: {
+    waitlist: {
+      claimError: "无法抢占名额，请重试。",
+      claim: "抢占名额",
+      spotFreeUntil: "有空位了，请在 {date} 前抢占。",
+      spotFree: "有空位了，立即抢占。",
+      title: "我的候补",
+    },
     myBookings: {
+      unknownClass: "课程",
       classLabel: "课程 {classId}",
       status: "状态：{status}",
       cancelError: "无法取消此预约，请重试。",
@@ -699,6 +715,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   kidmode: {
+    exit: {
+      exit: "退出",
+      stay: "留下",
+      enterPin: "输入家长 PIN 以退出",
+      button: "退出儿童模式",
+    },
     pin: {
       tooShort: { other: "PIN 码必须是 {count} 位数字。" },
       mismatch: "两次输入的 PIN 码不一致。",
@@ -747,6 +769,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       body: "{school} 已在前台为你提供同样的课时包。在这里购买，付款后即可完成签到。",
     },
     myMemberships: {
+      planUnknown: "会员资格",
       planFallback: "方案 {planId}",
       visitPass: "访客通行证",
       statusLine: "状态：{status} · {frequency}",
@@ -784,6 +807,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
+      joinFirst: "加入这所学校后才能购买。",
       cardSurcharge: "刷卡支付另加 {amount} 附加费",
       classesIncluded: { other: "{count} 节课" },
       durationDays: { other: "{count} 天" },
@@ -819,6 +843,8 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   payments: {
     methods: {
+      keepCard: "保留卡片",
+      removeConfirm: "要移除{school}的已保存卡片吗？",
       notEnrolled: "你还没有在任何学校注册 — 注册后，已保存的卡会显示在这里。",
       setupFailed: "无法启动绑卡流程，请重试。",
       removeFailed: "无法移除你已保存的卡，请重试。",
@@ -950,6 +976,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       empty: "没有需要签署的免责声明。",
     },
     row: {
+      cancel: "取消",
+      showLess: "收起",
+      readFull: "阅读完整免责声明",
       signed: "已于 {date} 签署 ✓",
       fullName: "全名",
       fullNamePlaceholder: "你的法定全名",
