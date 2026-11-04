@@ -30,6 +30,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   instead of a blank page, and the header shows the role held at the School
   being viewed. (Track B: the app's coach dashboard now finds the coach's own
   classes in any size of School.)
+- **Popups keep what you typed** — clicking outside a popup (Add branch, and
+  every other form popup), or pressing Escape, used to close it and throw away
+  what had been typed. It now does that only while nothing has been typed or
+  changed. After that, only the popup's own Cancel or Save closes it. Pressing
+  inside (selecting text, say) and letting go outside no longer closes it
+  either.
+- **School footer links: errors under the field** — on the School page's
+  Footer card, a social link that isn't a web address ("my school page") is
+  now pointed out under that link, and nothing is saved until it's fixed.
+  Links typed without https:// still get it added. The same goes for the
+  contact email.
+- **Uploads before file storage is set up** — choosing a logo, banner or other
+  file while Cloudflare R2 isn't configured now says "File storage isn't set up
+  yet. Try again later." (translated) instead of "Internal server error". The
+  API answers 503 instead of 500.
 - **Check-in rules: overdue payments and belt progress** (backlog 3.5) — two
   more rules on Check-in → Check-in rules, for every way in (app, coach's
   scan, front desk, tablet):
