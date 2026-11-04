@@ -56,6 +56,7 @@ describeIfDb('tenant-lifecycle-purge job', () => {
     // (the two exception cases); either way `deleteMany` on a leftover id is
     // a safe no-op for ids the processor already removed.
     await superuser.waiverSignature.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.transaction.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.franchise.deleteMany({ where: { id: { in: franchiseIds } } });
@@ -167,6 +168,65 @@ describeIfDb('tenant-lifecycle-purge job', () => {
     expect(await superuser.platformCharge.findUnique({ where: { id: charge.id } })).not.toBeNull();
 
     await superuser.platformCharge.delete({ where: { id: charge.id } });
+  });
+
+  /** A member's payment on the School (Decision 261: never deleted). */
+  async function seedMemberPayment(schoolId: string) {
+    const student = await superuser.user.create({
+      data: {
+        id: randomUUID(),
+        email: `purge-payer-${randomUUID()}@example.test`,
+        phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'Purge',
+        surname: 'Payer',
+        passcodeHash: 'x',
+        dateOfBirth: new Date('2000-01-01'),
+      },
+    });
+    userIds.push(student.id);
+    const paymentAccount = await superuser.paymentAccount.create({
+      data: { id: randomUUID(), schoolId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB' },
+    });
+    return superuser.transaction.create({
+      data: { id: randomUUID(), schoolId, studentId: student.id, paymentAccountId: paymentAccount.id, amount: 1000, status: 'SUCCESSFUL', paymentMethod: 'STRIPE' },
+    });
+  }
+
+  it('Decision 426 item 2 / Decision 261: a closed School with no signatures left but members\' payments loses its templates and stays anonymized', async () => {
+    const school = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Purge Job — waivers and member payments', archivedAt: PAST, purgeAt: PAST },
+    });
+    schoolIds.push(school.id);
+    const waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Liability Waiver', body: 'Terms...' } });
+    const payment = await seedMemberPayment(school.id);
+
+    await processor.process(fakeJob());
+    await processor.process(fakeJob());
+    await processor.process(fakeJob());
+
+    const after = await superuser.school.findUnique({ where: { id: school.id } });
+    expect(after?.name).toBe('[Closed School]');
+    expect(await superuser.waiver.findUnique({ where: { id: waiver.id } })).toBeNull();
+    expect(await superuser.transaction.findUnique({ where: { id: payment.id } })).not.toBeNull();
+
+    await superuser.transaction.delete({ where: { id: payment.id } });
+  });
+
+  it('Decision 261: a School past purgeAt with no waivers but members\' payments is anonymized in place, not hard-deleted', async () => {
+    const school = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Purge Job — member payments only', archivedAt: PAST, purgeAt: PAST },
+    });
+    schoolIds.push(school.id);
+    const payment = await seedMemberPayment(school.id);
+
+    await processor.process(fakeJob());
+
+    const after = await superuser.school.findUnique({ where: { id: school.id } });
+    expect(after?.name).toBe('[Closed School]');
+    expect(after?.purgedAt).toBeTruthy();
+    expect(await superuser.transaction.findUnique({ where: { id: payment.id } })).not.toBeNull();
+
+    await superuser.transaction.delete({ where: { id: payment.id } });
   });
 
   it('the jobs role may delete a Waiver only of a School past its 90 days (anonymized)', async () => {

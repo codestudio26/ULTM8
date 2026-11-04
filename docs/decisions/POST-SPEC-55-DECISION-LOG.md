@@ -7470,7 +7470,7 @@ User (Code), 3 Nov 2026: "all recomended", on the Coaches portal review's questi
 The product owner's answers to the eight open points:
 
 1. **A School closing its account counts as every member leaving on the day it closed** (`School.archivedAt`, set by the close-account flow).
-2. **Once a closed School's last signature (member or guest) has been deleted, its waiver templates and then the School record are deleted**, finishing Decision 110's close-account purge. A School that also has billing history stays anonymized, without its templates.
+2. **Once a closed School's last signature (member or guest) has been deleted, its waiver templates and then the School record are deleted**, finishing Decision 110's close-account purge. **A School that has members' payment history (any Transaction or Membership) or platform billing history is never deleted** (Decision 261): it stays anonymized, without its templates. The same check now also applies when a closed School without waivers reaches the end of its 90 days, since deleting the School would erase that history with it.
 3. **Someone who was never a member of that School** (never held a STUDENT role there): the 7 years, and a child's 25th birthday, count from the signing date.
 4. **A child's signature with no date of birth on file is kept**, and shown to the School owner as "needs date of birth" (in the waiver's Signatures list), until one is added.
 5. **A child is someone under 18 on the signing date, by date of birth, whatever the method.** With no date of birth, a waiver a Guardian signed for someone else counts as a child's. The 18th birthday is saved on the signature when it is signed, so a later change to the date of birth cannot change the rule.
@@ -7494,3 +7494,5 @@ Children are kept to 25 for members and for guests alike. A guest's signature is
 ### Recorded by
 
 User (Code), 4 Nov 2026: "ok" to every recommendation, on the base rule and the eight questions above.
+
+User (Code), 4 Nov 2026, on #463: deleting a closed School would also erase its members' payment history, so asked what should happen; chose "Keep payments": delete only the waiver templates, and keep a School with any payments or memberships anonymized.

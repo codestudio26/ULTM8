@@ -98,16 +98,13 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  * are written out here; one `school.delete()`/`franchise.delete()` is
  * sufficient and correct for the common case (no Waivers, no billing history).
  *
- * Deliberately does NOT touch Membership/Transaction/PaymentAccount/Booking/
- * WaitlistEntry/RoleGrant — none of these are named in Decision 110's own
- * scope, and several (Membership, Transaction) are financial/attendance
- * records of the same character the existing PlatformCharge/FranchiseFeeCharge
- * RESTRICT protection already treats carefully. They DO still cascade away
- * automatically in the "no exception applies" full-delete path (their own FKs
- * to School are CASCADE, unchanged by this phase) — this note is about what
- * this job does NOT special-case, not about adding new protection for them.
- * Flagged as a real, narrower-than-literal scope reading for a follow-up
- * decision, same as the Waiver/billing exceptions above.
+ * 3. Members' payment history exists (Decision 261, applied here by
+ *    Decision 426): any Transaction or Membership row. Both FKs to School are
+ *    ON DELETE CASCADE, so deleting the School would erase them; such a
+ *    School is anonymized in place instead and never hard-deleted.
+ *
+ * PaymentAccount/Booking/WaitlistEntry/RoleGrant are not special-cased: they
+ * cascade away when a School with none of the above is deleted.
  */
 @Processor(TENANT_LIFECYCLE_PURGE_QUEUE)
 export class TenantLifecyclePurgeProcessor extends WorkerHost {
@@ -177,7 +174,10 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
       throw new Error(`${exports.failed} signed-documents export(s) could not be deleted from storage; School ${schoolId} is left for the next sweep.`);
     }
     const waiverCount = await this.prismaJobs.waiver.count({ where: { schoolId } });
-    if (waiverCount > 0) {
+    // Decision 261, applied here by Decision 426: members' payment history
+    // (Transaction, Membership; both ON DELETE CASCADE from School) is never
+    // deleted, so a School that has any is anonymized instead of deleted.
+    if (waiverCount > 0 || (await this.keepsMemberPaymentHistory(schoolId))) {
       await this.anonymizeSchool(schoolId);
       return 'anonymized';
     }
@@ -226,6 +226,15 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
         // WaiverSignature.waiverId is RESTRICT: this fails, and nothing is
         // deleted, if a signature appeared since the count above.
         await this.prismaJobs.waiver.deleteMany({ where: { schoolId } });
+        // Decision 426 item 2 (as answered 4 Nov 2026) and Decision 261: a
+        // School with members' payment history (Transaction, Membership) is
+        // never deleted, because deleting it would cascade that history away.
+        // It stays anonymized, now without its templates, and is not looked
+        // at again (it has no Waivers left).
+        if (await this.keepsMemberPaymentHistory(schoolId)) {
+          this.logger.log(`tenant-lifecycle-purge: closed School ${schoolId} has no waivers left but keeps its members' payment history — stays anonymized.`);
+          continue;
+        }
         try {
           await this.prismaJobs.school.delete({ where: { id: schoolId } });
           deleted += 1;
@@ -238,6 +247,15 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
       }
     }
     return deleted;
+  }
+
+  /** Whether the School has any members' payment history (Decision 261). */
+  private async keepsMemberPaymentHistory(schoolId: string): Promise<boolean> {
+    const [transactions, memberships] = await Promise.all([
+      this.prismaJobs.transaction.count({ where: { schoolId } }),
+      this.prismaJobs.membership.count({ where: { schoolId } }),
+    ]);
+    return transactions > 0 || memberships > 0;
   }
 
   private async anonymizeSchool(schoolId: string): Promise<void> {
