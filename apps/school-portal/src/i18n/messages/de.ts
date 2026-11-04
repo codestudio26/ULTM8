@@ -489,6 +489,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       tiktokUrl: "TikTok-URL",
       youtubeUrl: "YouTube-URL",
       twitterUrl: "X-(Twitter-)URL",
+      invalidUrl: "Gib eine vollständige Webadresse ein, z. B. https://facebook.com/yourschool.",
+      invalidEmail: "Gib eine gültige E-Mail-Adresse ein, z. B. info@yourschool.com.",
     },
     franchise: {
       title: "Franchise-Zugehörigkeit",

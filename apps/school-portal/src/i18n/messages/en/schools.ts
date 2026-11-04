@@ -206,6 +206,8 @@ export const schools = {
     tiktokUrl: 'TikTok URL',
     youtubeUrl: 'YouTube URL',
     twitterUrl: 'X (Twitter) URL',
+    invalidUrl: 'Enter a full web address, like https://facebook.com/yourschool.',
+    invalidEmail: 'Enter a valid email address, like info@yourschool.com.',
   },
   franchise: {
     title: 'Franchise affiliation',

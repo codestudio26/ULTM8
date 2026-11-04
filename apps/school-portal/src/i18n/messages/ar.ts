@@ -501,6 +501,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       tiktokUrl: "رابط TikTok",
       youtubeUrl: "رابط YouTube",
       twitterUrl: "رابط X (Twitter)",
+      invalidUrl: "أدخل عنوان ويب كاملاً، مثل https://facebook.com/yourschool.",
+      invalidEmail: "أدخل بريدًا إلكترونيًا صالحًا، مثل info@yourschool.com.",
     },
     franchise: {
       title: "الانتساب إلى امتياز",

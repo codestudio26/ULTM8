@@ -927,7 +927,11 @@ export const PhoneField = forwardRef<HTMLInputElement, PhoneFieldProps>(
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Escape') setOpen(false);
+                if (e.key === 'Escape') {
+                  // Closes this list only, not a popup the field sits in.
+                  e.preventDefault();
+                  setOpen(false);
+                }
                 else if (e.key === 'Enter' && filtered.length > 0) {
                   e.preventDefault();
                   selectCountry(filtered[0].code);
@@ -1842,15 +1846,60 @@ export function AuthSuccessCard({
 
 /* ---------------------------------------------------------------------- Modal */
 
+/** Open Modals, innermost last, so Escape only ever closes the top one. */
+const openModals: symbol[] = [];
+
+/**
+ * A popup over the page. A click outside it, or Escape, closes it, but only
+ * until something has been typed or changed inside: after that only its own
+ * Cancel/Save buttons close it, so a stray click never throws away a
+ * half-filled form. A click that starts inside (selecting text, say) and ends
+ * on the overlay doesn't count as a click outside.
+ */
 export function Modal({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+  const [edited, setEdited] = useState(false);
+  const editedRef = useRef(false);
+  editedRef.current = edited;
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const pressStartedOnOverlay = useRef(false);
+
+  useEffect(() => {
+    const id = Symbol('modal');
+    openModals.push(id);
+    function onKeyDown(e: KeyboardEvent) {
+      // A dropdown inside that handled Escape itself calls preventDefault.
+      if (e.key !== 'Escape' || e.defaultPrevented || openModals[openModals.length - 1] !== id) return;
+      if (!editedRef.current) onCloseRef.current();
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      openModals.splice(openModals.indexOf(id), 1);
+    };
+  }, []);
+
+  const markEdited = () => setEdited(true);
+
   return (
-    <div className="ultm8-modal-overlay" role="presentation" onClick={onClose}>
+    <div
+      className="ultm8-modal-overlay"
+      role="presentation"
+      onMouseDown={(e) => {
+        pressStartedOnOverlay.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget && pressStartedOnOverlay.current && !edited) onClose();
+      }}
+    >
       <div
         className={wide ? 'ultm8-modal ultm8-modal--wide' : 'ultm8-modal'}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
+        onInput={markEdited}
+        onChange={markEdited}
       >
         <h2 className="ultm8-page-header__title">{title}</h2>
         {children}

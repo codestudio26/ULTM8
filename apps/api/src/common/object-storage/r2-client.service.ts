@@ -1,7 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { createReadStream, statSync } from 'fs';
+
+/** What a request sees while R2 isn't configured: a plain 503 with a message the
+ * portals already translate, not a 500 "Internal server error" that reads like a
+ * bug. The missing env var names are in the startup warning, not the response. */
+export const STORAGE_NOT_SET_UP = "File storage isn't set up yet. Try again later.";
 
 /**
  * Thin wrapper around Cloudflare R2 (S3-compatible object storage) — the confirmed
@@ -253,7 +258,8 @@ export class R2ClientService {
   async getPublicPhotoUploadUrl(key: string, contentType: string): Promise<string> {
     const client = this.assertConfigured();
     if (!this.publicBucketName) {
-      throw new Error('R2ClientService public bucket is not configured — set R2_PUBLIC_BUCKET_NAME / R2_PUBLIC_BASE_URL');
+      // R2_PUBLIC_BUCKET_NAME / R2_PUBLIC_BASE_URL not set (logged at startup).
+      throw new ServiceUnavailableException(STORAGE_NOT_SET_UP);
     }
     const command = new PutObjectCommand({ Bucket: this.publicBucketName, Key: key, ContentType: contentType });
     return getSignedUrl(client, command, { expiresIn: 300 });
@@ -267,16 +273,16 @@ export class R2ClientService {
    * `getPresignedDownloadUrl` already has, just without the HMAC step at all. */
   getPublicPhotoUrl(key: string): string {
     if (!this.publicBaseUrl) {
-      throw new Error('R2ClientService public bucket is not configured — set R2_PUBLIC_BUCKET_NAME / R2_PUBLIC_BASE_URL');
+      // R2_PUBLIC_BUCKET_NAME / R2_PUBLIC_BASE_URL not set (logged at startup).
+      throw new ServiceUnavailableException(STORAGE_NOT_SET_UP);
     }
     return `${this.publicBaseUrl}/${key}`;
   }
 
   private assertConfigured(): S3Client {
     if (!this.client) {
-      throw new Error(
-        'R2ClientService is not configured — set R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_BUCKET_NAME',
-      );
+      // R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY / R2_BUCKET_NAME not set (logged at startup).
+      throw new ServiceUnavailableException(STORAGE_NOT_SET_UP);
     }
     return this.client;
   }

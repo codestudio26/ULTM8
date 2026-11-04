@@ -486,6 +486,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       tiktokUrl: "URL ของ TikTok",
       youtubeUrl: "URL ของ YouTube",
       twitterUrl: "URL ของ X (Twitter)",
+      invalidUrl: "กรอกที่อยู่เว็บแบบเต็ม เช่น https://facebook.com/yourschool",
+      invalidEmail: "กรอกอีเมลที่ถูกต้อง เช่น info@yourschool.com",
     },
     franchise: {
       title: "การเข้าร่วมแฟรนไชส์",

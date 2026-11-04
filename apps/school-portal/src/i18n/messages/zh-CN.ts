@@ -486,6 +486,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       tiktokUrl: "TikTok 链接",
       youtubeUrl: "YouTube 链接",
       twitterUrl: "X（Twitter）链接",
+      invalidUrl: "请输入完整的网址，例如 https://facebook.com/yourschool。",
+      invalidEmail: "请输入有效的电子邮箱，例如 info@yourschool.com。",
     },
     franchise: {
       title: "加盟关系",
