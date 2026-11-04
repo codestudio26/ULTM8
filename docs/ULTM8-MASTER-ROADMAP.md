@@ -456,9 +456,15 @@ environment:
 | RDS Proxy (connection pooling) | Decision 63 | Terraform written (`rds_proxy.tf`) — not applied; still no app-code path specific to it (`DATABASE_URL*` is consumed the same either way) |
 | Cloudflare Stream + AWS Transcribe (video) | Decision 101 | No — schema fields exist, unused; out of this infra phase's scope |
 | CloudWatch (job-queue observability) | Decision 53 | Partially — log shipping to CloudWatch Logs is now provisioned (`ecs.tf`'s `awslogs` driver + Container Insights) and every job processor's designed error-logging rule already flows there; no metric filter/alarm turns that into a page yet — see `docs/ops/APM-AND-OBSERVABILITY.md` |
-| Google Places street lookup (address forms) | Decision 212; deferred to v1.3 by Decision 267 | No key yet. **Built 31 Oct 2026, switched off until the key is set** (`apps/api/src/address-lookup/`; the School Portal and student app hide the search box while it is off) |
+| Google Places street lookup (address forms) | Decision 212; deferred to v1.3 by Decision 267 | Key set on staging, **blocked on Google billing (403)** (4 Nov 2026). Built 31 Oct 2026 (`apps/api/src/address-lookup/`); production has no key yet |
 
-**To do (product owner): provide a Google Cloud API key with Places API (New) enabled, restricted to the API server, then set `GOOGLE_PLACES_API_KEY` on the API server (Render env var).** Until then address search stays off and every address form shows its plain fields (`docs/v1.3-backend-backlog.md` §4.3).
+**Status 4 Nov 2026: key set on staging, blocked on Google billing (403). Not done.** A key restricted to Places API (New) is set as `GOOGLE_PLACES_API_KEY` on the staging API (Render). The portal shows the "Search address" box, but Google answers every lookup with HTTP 403 because the Google Cloud project's billing account is closed. The product owner is asking Google Cloud Billing support to reinstate it (or will move the key to a Google account with working billing). Meanwhile the forms fall back to the plain address fields, as designed. No code change is needed.
+
+**To do (product owner):**
+1. Get billing active on the staging key's project, then search "10 Downing St" on Branches → Add branch and check the API logs show no more `Google Places autocomplete answered HTTP 403`.
+2. For launch: give production its own key under a business Google Cloud account with active billing, restricted to Places API (New), IP-restricted if the production host has static outbound IPs, with a budget alert.
+
+Details: `docs/v1.3-backend-backlog.md` §4.3.
 
 ### Genuine gaps — still open (docs now exist to track them; numbers/tooling do not)
 - **Database backup/DR strategy** — RDS's own automated-backup/PITR/Multi-AZ
