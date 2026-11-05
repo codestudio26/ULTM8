@@ -135,6 +135,8 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
     await superuser.paymentAccount.deleteMany({ where });
     await superuser.guardianLink.deleteMany({ where: { guardianId: { in: userIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
+    // A desk sale now sends the payment notice (MON-14).
+    await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
