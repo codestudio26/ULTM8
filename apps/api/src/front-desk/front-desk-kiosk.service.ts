@@ -3,6 +3,7 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
+import { firstGrapheme, foldForSearch } from '../common/search/name-search';
 import { photosShownFor } from '../common/prisma/student-photos';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { StudentRosterStatusDto } from '../tenants/schools/dto/student-roster-query.dto';
@@ -26,8 +27,9 @@ const RECENT = 10;
 // "Today" on the tablet's clock is at most a day and a half long, and near now.
 const MAX_WINDOW_MS = 36 * 3_600_000;
 
+/** A surname's first whole letter (Decision 433, TXT-7); blank for someone with only one name. */
 function initial(surname: string): string {
-  return (surname.trim()[0] ?? '').toUpperCase();
+  return firstGrapheme(surname);
 }
 
 /** "Lucas M." for a guest's name as typed on their waiver (Decision 351). */
@@ -35,7 +37,8 @@ function shortGuestName(fullName: string | null): string | null {
   if (!fullName) return null;
   const parts = fullName.trim().split(/\s+/);
   if (parts.length < 2) return parts[0] || null;
-  return `${parts[0]} ${initial(parts[parts.length - 1])}.`;
+  const last = initial(parts[parts.length - 1]);
+  return last ? `${parts[0]} ${last}.` : parts[0];
 }
 
 /**
@@ -314,12 +317,10 @@ export class FrontDeskKioskService {
   }
 }
 
-/** A name compared without case, accents, punctuation or extra spaces. */
+/** A name compared without case, accents, spelling variants, punctuation or
+ * extra spaces: the one search fold (Decision 433, TXT-1). It used to strip
+ * every combining mark, which merged different Hindi and Tamil names. */
 function normalizeName(name: string): string {
-  return name
-    .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]+/gu, ' ')
-    .trim();
+  // Spaces left out too, so "佐藤翔太" is "佐藤 翔太" (both name parts still have to match).
+  return foldForSearch(name).replace(/ /g, '');
 }

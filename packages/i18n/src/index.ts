@@ -9,3 +9,5 @@ export * from './core';
 export { SERVER_MESSAGE_LOADERS, createServerTextTranslator, type ServerTextTranslator } from './server/translate';
 export { SERVER_MESSAGES, SERVER_PATTERNS } from './server/en';
 export { SERVER_KEY_LOADERS, serverKeys, type ServerKeys } from './serverKeys';
+export { foldForSearch, matchesNameSearch } from './search/foldForSearch';
+export { firstGrapheme } from './text/firstGrapheme';

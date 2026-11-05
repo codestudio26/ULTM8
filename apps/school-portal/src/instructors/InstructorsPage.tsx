@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { matchesNameSearch } from '@ultm8/i18n';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -109,7 +110,8 @@ export function InstructorsPage() {
   const instructors = allInstructors.filter(
     (i) =>
       (showArchived || !i.archivedAt) &&
-      (!query || `${i.firstName} ${i.surname} ${i.email}`.toLowerCase().includes(query)) &&
+      // Names through the one search fold (Decision 433, TXT-1); the email as typed.
+      (!query || matchesNameSearch(i.firstName, i.surname, query) || i.email.toLowerCase().includes(query)) &&
       (!branchFilter || (branchFilter === WHOLE_SCHOOL ? !i.branchId : i.branchId === branchFilter)) &&
       (!styleFilter || i.specializationStyleIds.includes(styleFilter)) &&
       (!statusFilter || (statusFilter === AWAITING ? i.awaitingFirstLogin : i.status === statusFilter)),

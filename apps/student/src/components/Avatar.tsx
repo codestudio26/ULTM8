@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, Text, View } from 'react-native';
 import { theme } from '../theme/tokens';
+import { firstGrapheme } from '@ultm8/i18n';
 
 /**
  * RN equivalent of apps/school-portal/src/lib/Avatar.tsx — same behavior (the
@@ -31,7 +32,8 @@ export function Avatar({
       />
     );
   }
-  const initials = `${firstName[0] ?? ''}${surname[0] ?? ''}`.toUpperCase() || '?';
+  // Whole letters, never half a character (Decision 433, TXT-7).
+  const initials = `${firstGrapheme(firstName)}${firstGrapheme(surname)}` || '?';
   return (
     <View
       accessibilityElementsHidden

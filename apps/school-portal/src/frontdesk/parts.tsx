@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { Spinner } from '@ultm8/ui';
+import { firstGrapheme } from '@ultm8/i18n';
 import { Avatar } from '../lib/Avatar';
 import { QrScanModal } from '../attendance/QrScanModal';
 import type { ClassResponse } from '../classes/classQueries';
@@ -54,8 +55,9 @@ export interface DeskClass {
 
 /** "Lucas M." — how the shared tablet names people (Decision 351). */
 export function shortName(p: { firstName: string; surname: string }): string {
-  const initial = p.surname.trim()[0];
-  return initial ? `${p.firstName} ${initial.toUpperCase()}.` : p.firstName;
+  // The surname's first whole letter (Decision 433, TXT-7); just the first name for someone with one name.
+  const initial = firstGrapheme(p.surname);
+  return initial ? `${p.firstName} ${initial}.` : p.firstName;
 }
 
 export function timeOf(iso: string): string {
