@@ -666,6 +666,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "{name}的会员卡",
+      intro: "在前台，{name}可以报出这个签到码来签到。",
+      loadError: "无法加载会员卡，请重试。",
+    },
     childPlans: {
       loadError: "无法加载套餐，请重试。",
       empty: "这所学校没有在售套餐。",
@@ -689,6 +694,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "无法加载课程，请重试。",
     },
     myMinors: {
+      card: "会员卡",
       plans: "购买套餐",
       waivers: "免责声明",
       empty: "还没有关联的未成年人。",

@@ -41,7 +41,7 @@ describeIfDb('Membership cards', () => {
 
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Card School', logoUrl: 'https://example.test/logo.png' } });
     otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Card Other School' } });
-    for (const label of ['ana', 'ben', 'coach', 'outsider']) {
+    for (const label of ['ana', 'ben', 'coach', 'outsider', 'parent', 'exParent']) {
       users[label] = await superuser.user.create({
         data: {
           id: randomUUID(),
@@ -64,6 +64,13 @@ describeIfDb('Membership cards', () => {
       ['outsider', 'STUDENT', otherSchool.id],
     ];
     await superuser.roleGrant.createMany({ data: grants.map(([who, role, schoolId]) => ({ id: randomUUID(), role, userId: users[who].id, schoolId })) });
+    // A parent of Ana (no role at the School of their own), and one whose link ended.
+    await superuser.guardianLink.createMany({
+      data: [
+        { id: randomUUID(), guardianId: users.parent.id, studentId: users.ana.id },
+        { id: randomUUID(), guardianId: users.exParent.id, studentId: users.ana.id, revokedAt: new Date() },
+      ],
+    });
     for (const who of Object.keys(users)) {
       tokens[who] = jwt.sign({
         sub: users[who].id,
@@ -93,6 +100,7 @@ describeIfDb('Membership cards', () => {
     await superuser.membershipPlan.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.studentCheckInCode.deleteMany({ where: { schoolId: { in: schoolIds } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: { in: schoolIds } } });
+    await superuser.guardianLink.deleteMany({ where: { studentId: users.ana.id } });
     await superuser.user.deleteMany({ where: { id: { in: Object.values(users).map((u) => u.id) } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
@@ -132,5 +140,16 @@ describeIfDb('Membership cards', () => {
     expect((await card('outsider', school.id, users.ana.id)).status).toBe(403);
     // Not a Student here.
     expect((await card('coach', school.id, users.outsider.id)).status).toBe(404);
+  });
+
+  it("a parent sees their child's card at each of the child's Schools; a former parent cannot (Decision 398)", async () => {
+    const res = await card('parent', school.id, users.ana.id);
+    expect(res.status).toBe(200);
+    const own = await http().get('/v1/membership-cards/me').set('Authorization', `Bearer ${tokens.ana}`);
+    expect(res.body).toEqual(own.body.items.find((c: { schoolId: string }) => c.schoolId === school.id));
+    expect((await card('parent', otherSchool.id, users.ana.id)).status).toBe(200);
+    expect((await card('exParent', school.id, users.ana.id)).status).toBe(403);
+    // Not their child.
+    expect((await card('parent', school.id, users.ben.id)).status).toBe(403);
   });
 });

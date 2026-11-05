@@ -1,6 +1,7 @@
 /** English text: guardians (Decision 323). */
 export const guardians = {
   myMinors: {
+    card: "Membership card",
     plans: 'Buy a plan',
     waivers: 'Waivers',
     empty: 'No linked minors yet.',
@@ -70,6 +71,11 @@ export const guardians = {
     loadError: 'Could not load the waivers — please try again.',
     empty: '{name} has no waivers to sign.',
     title: '{name}\'s waivers',
+  },
+  childCard: {
+    title: "{name}'s membership card",
+    intro: "At the desk, {name} can give this check-in code to check in.",
+    loadError: "Could not load the membership card — please try again.",
   },
   childPlans: {
     loadError: 'Could not load the plans — please try again.',
