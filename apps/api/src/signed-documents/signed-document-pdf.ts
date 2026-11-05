@@ -468,6 +468,25 @@ interface Style {
   leading?: number;
   /** Space after the paragraph, in points. */
   after?: number;
+  /** Line each paragraph up by its own first strong letter (the wording
+   * signed, as the page's dir="auto") instead of by the document's direction
+   * (Decision 433, TXT-5): a Latin-only value (the time, the SHA-256, a Latin
+   * name) in an Arabic document sits on the right, under its label. */
+  ownDirection?: boolean;
+}
+
+/** Characters none of the fonts has, written another way so they never show
+ * as a box (Decision 433, TXT-5): the new Dirham sign (U+20C3), which only
+ * appears in text a School typed, as "د.إ". */
+const NO_GLYPH_FALLBACKS: ReadonlyArray<[string, string]> = [['\u20C3', '\u062F.\u0625']];
+
+function withFallbacks(text: string): string {
+  let out = text;
+  for (const [ch, to] of NO_GLYPH_FALLBACKS) {
+    if (!out.includes(ch) || FONT_FILES.some((_f, i) => fontAt(i).hasGlyphForCodePoint(ch.codePointAt(0)!))) continue;
+    out = out.split(ch).join(to);
+  }
+  return out;
 }
 
 /** Writes blocks down the page, adding a page when one is full. */
@@ -479,7 +498,8 @@ class PdfWriter {
   private readonly bottom = A4[1] - MARGIN - FOOTER;
   private readonly registered = new Set<number>();
 
-  constructor(title: string) {
+  /** @param rtl the document's direction: the reader's language, as its labels show. */
+  constructor(title: string, private readonly rtl = false) {
     this.pdf = new PDFDocument({ size: A4, margin: 0, bufferPages: true, info: { Title: title }, displayTitle: true });
   }
 
@@ -508,7 +528,7 @@ class PdfWriter {
    * kept, runs of spaces as one, each paragraph in its own direction. */
   text(value: string, style: Style, keepWithNext = 0): void {
     const lineHeight = style.size * (style.leading ?? 1.45);
-    const paragraphs = value.replace(/\r\n?/g, '\n').split('\n');
+    const paragraphs = withFallbacks(value).replace(/\r\n?/g, '\n').split('\n');
     paragraphs.forEach((raw, n) => {
       const para = raw.replace(/[ \t\f\v]+/g, ' ').trim();
       if (!para) {
@@ -523,7 +543,7 @@ class PdfWriter {
         this.ensure(lineHeight + (last ? keepWithNext : 0));
         const runs = visualRuns(para, levels, start, end);
         const lineWidth = runs.reduce((sum, r) => sum + r.width, 0) * style.size;
-        let x = rtl ? this.left + this.width - lineWidth : this.left;
+        let x = (style.ownDirection ? rtl : this.rtl) ? this.left + this.width - lineWidth : this.left;
         const baseline = this.y + style.size * 1.1;
         for (const run of runs) {
           if (!run.space) {
@@ -596,7 +616,8 @@ class PdfWriter {
  * signature or paper photo, and the wording signed.
  */
 export async function signedDocumentPdf(doc: SignedDocument, schoolName: string, labels: SignedDocumentLabels): Promise<Buffer> {
-  const w = new PdfWriter(`${doc.title} - ${doc.memberName}`);
+  // The document reads in the reader's language: its direction is its labels'.
+  const w = new PdfWriter(`${doc.title} - ${doc.memberName}`, paragraphLevels(`${labels.member} ${labels.signedAt} ${labels.textSigned}`).rtl);
   const note: Style = { size: 10, color: GREY, after: 6 };
   if (schoolName) w.text(schoolName, note);
   w.text(doc.title, { size: 18, color: INK, leading: 1.3, after: 4 });
@@ -624,7 +645,7 @@ export async function signedDocumentPdf(doc: SignedDocument, schoolName: string,
 
   w.gap(6);
   w.text(labels.textSigned, { size: 14, color: INK, leading: 1.3, after: 6 }, 20);
-  if (doc.body != null) w.text(doc.body, { size: 11, color: INK, leading: 1.5 });
+  if (doc.body != null) w.text(doc.body, { size: 11, color: INK, leading: 1.5, ownDirection: true });
   else w.text(labels.notRecorded, note);
   return w.finish();
 }

@@ -168,6 +168,29 @@ describe('signed document PDF (Decision 422 item 10)', () => {
     expect(body[0].text).toBe('(');
   });
 
+  it('lines one-line values up with the document, not with their own letters (Decision 433, TXT-5)', async () => {
+    const ar = labelsFrom({ member: 'العضو', signedAt: 'تاريخ التوقيع', textSigned: 'النص الموقّع', version: 'الإصدار' });
+    const pdf = await signedDocumentPdf(doc({ memberName: 'Ana Lima', sha256: 'abc123', body: 'I agree.' }), 'Dojo', ar);
+    const { blocks } = readPdfText(pdf);
+    const sha = blocks.find((b) => b.text === 'abc123')!;
+    const agree = blocks.find((b) => b.text.startsWith('I'))!;
+    // In an Arabic document the Latin SHA-256 sits on the right, under its
+    // label; the wording signed keeps its own (left to right) direction.
+    expect(sha.x).toBeGreaterThan(300);
+    expect(agree.x).toBeLessThan(100);
+
+    // An English document keeps an Arabic name on the left.
+    const en = readPdfText(await signedDocumentPdf(doc({ memberName: 'أحمد' }), 'Dojo', labels)).blocks;
+    expect(en.find((b) => ARABIC.test(b.text))!.x).toBeLessThan(100);
+  });
+
+  it('writes the Dirham sign, which no font has, as د.إ (Decision 433, TXT-5)', async () => {
+    const pdf = await signedDocumentPdf(doc({ body: 'Fee 500 ⃃ a month.' }), 'Dojo', labels);
+    const text = words(readPdfText(pdf).blocks).join(' ');
+    expect(text).not.toContain('⃃');
+    expect(text).toMatch(/د ?\. ?إ|إ ?\. ?د/);
+  });
+
   it('writes Japanese, Chinese, Korean, Thai and Cyrillic in fonts that have them, breaking lines between words', async () => {
     const sentence = '私はこのスクールの規則に同意し、安全に練習します。';
     const body = `${sentence.repeat(12)}\n中文：我同意学校的规定。\n한국어: 학교 규칙에 동의합니다.\nฉันยอมรับกฎของโรงเรียน\nЯ согласен с правилами.`;

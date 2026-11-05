@@ -370,7 +370,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       gradingError: "تعذّر تحميل الترقيات الخاصة بك.",
       noStyles: "لا توجد رياضات لتقييمها بعد. لم يمنحك مالك المدرسة صلاحية الترقية في أي رياضة.",
       openBoard: "فتح لوحة الترقيات لـ {style}",
-      styleLink: "{style} ›",
+      styleLink: "{style} ‹",
       boardError: "تعذّر تحميل هذه اللوحة.",
       boardSummary: {
         zero: "{ready} جاهزون للترقية · {gettingThere} يقتربون · {count} طالب",
