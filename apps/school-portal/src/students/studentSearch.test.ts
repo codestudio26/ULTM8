@@ -22,11 +22,11 @@ describe('Students list search (Decision 371, folded per Decision 433)', () => {
   it('Arabic spelling variants and a name typed surname first without spaces', () => {
     expect(matchesSearch(student('فاطمة', 'المنصوري'), 'فاطمه')).toBe(true);
     expect(matchesSearch(student('翔太', '佐藤'), '佐藤翔太')).toBe(true);
-    expect(matchesSearch(student('翔太', '佐藤'), '佐藤　翔太')).toBe(true);
+    expect(matchesSearch(student('翔太', '佐藤'), '佐藤\u3000翔太')).toBe(true);
   });
 
   it('keeps Hindi names that differ by a virama apart', () => {
-    expect(matchesSearch(student('Rahul', 'शर्मा'), 'शरमा')).toBe(false);
+    expect(matchesSearch(student('Rahul', 'शर\u094Dम\u093E'), 'शरम\u093E')).toBe(false);
   });
 
   it('still matches the email, and a person with only one name', () => {

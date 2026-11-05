@@ -14,24 +14,24 @@
  * becomes one space.
  */
 const ARABIC: ReadonlyArray<[RegExp, string]> = [
-  [/[ً-ٰٟـ]/gu, ''],
-  [/[آأإٱ]/gu, 'ا'],
-  [/ة/gu, 'ه'],
-  [/[ىی]/gu, 'ي'],
-  [/ؤ/gu, 'و'],
-  [/ئ/gu, 'ي'],
-  [/ک/gu, 'ك'],
+  [/[\u064B-\u065F\u0670\u0640]/gu, ''],
+  [/[\u0622\u0623\u0625\u0671]/gu, '\u0627'],
+  [/\u0629/gu, '\u0647'],
+  [/[\u0649\u06CC]/gu, '\u064A'],
+  [/\u0624/gu, '\u0648'],
+  [/\u0626/gu, '\u064A'],
+  [/\u06A9/gu, '\u0643'],
 ];
 
 const LETTERS: Readonly<Record<string, string>> = {
-  'ё': 'е',
-  'ß': 'ss',
-  'ł': 'l',
-  'ø': 'o',
-  'đ': 'd',
-  'æ': 'ae',
-  'œ': 'oe',
-  'ı': 'i',
+  '\u0451': '\u0435',
+  '\u00DF': 'ss',
+  '\u0142': 'l',
+  '\u00F8': 'o',
+  '\u0111': 'd',
+  '\u00E6': 'ae',
+  '\u0153': 'oe',
+  '\u0131': 'i',
 };
 
 export function foldForSearch(value: string): string {
@@ -40,10 +40,10 @@ export function foldForSearch(value: string): string {
     .replace(/\p{Cf}/gu, '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/([\p{Script=Latin}\p{Script=Greek}])[̀-ͯ᪰-᫿᷀-᷿]+/gu, '$1')
+    .replace(/([\p{Script=Latin}\p{Script=Greek}])[\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF]+/gu, '$1')
     .normalize('NFC');
   for (const [re, to] of ARABIC) text = text.replace(re, to);
-  text = text.replace(/[ёßłøđæœı]/gu, (c) => LETTERS[c]);
+  text = text.replace(/[\u0451\u00DF\u0142\u00F8\u0111\u00E6\u0153\u0131]/gu, (c) => LETTERS[c]);
   return text.replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
 }
 

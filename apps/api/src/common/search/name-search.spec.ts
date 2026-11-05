@@ -32,9 +32,9 @@ describe('foldForSearch / matchesPersonName (Decision 433, TXT-1)', () => {
     }
   });
 
-  it('treats the one-character ज़ (U+095B) and ज + nukta as the same letter', () => {
-    expect(matchesPersonName('ज़ोया', 'x', 'ज़ोया')).toBe(true);
-    expect(matchesPersonName('ज़ोया', 'x', 'ज़ोया')).toBe(true);
+  it('treats the one-character za (U+095B) and ja + nukta (U+091C U+093C) as the same letter', () => {
+    expect(matchesPersonName('\u095B\u094B\u092F\u093E', 'x', '\u091C\u093C\u094B\u092F\u093E')).toBe(true);
+    expect(matchesPersonName('\u091C\u093C\u094B\u092F\u093E', 'x', '\u095B\u094B\u092F\u093E')).toBe(true);
   });
 
   it('a blank query matches everyone; a mononym (empty surname) is found by its one name', () => {
@@ -45,15 +45,15 @@ describe('foldForSearch / matchesPersonName (Decision 433, TXT-1)', () => {
 
   it('foldText is the same fold (Branch filters and waiver signatures)', () => {
     expect(foldText('São Paulo')).toBe('sao paulo');
-    expect(foldText('शर्मा')).not.toBe(foldText('शरमा'));
+    expect(foldText('शर\u094Dम\u093E')).not.toBe(foldText('शरम\u093E'));
   });
 });
 
 describe('firstGrapheme (Decision 433, TXT-7)', () => {
   const cases: Array<[string, string]> = [
     // A whole grapheme: the consonant with its nukta and vowel sign, never "ख" alone.
-    ['ख़ान', 'ख़ा'],
-    ['ஸ்ரீநிவாசன்', 'ஸ்'],
+    ['ख\u093C\u093Eन', 'ख\u093C\u093E'],
+    ['ஸ\u0BCDர\u0BC0ந\u0BBFவ\u0BBEசன\u0BCD', 'ஸ\u0BCD'],
     ['\u{1D49C}rjun', '\u{1D49C}'],
     ['  smith', 'S'],
     ['', ''],
