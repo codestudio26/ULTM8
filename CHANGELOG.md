@@ -51,6 +51,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (its branch's time zone, else the School's) and the branch name ("Whole
   School" when it has none), as the web dashboard does. No API or database
   change.
+- **Web coach dashboard: no "Whole School" for a branch it can't show** —
+  the portal's coach dashboard labelled a class "Whole School" whenever it
+  couldn't find the class's branch (for example while the branch list was
+  still loading). It now shows no branch name then, as the app does. "Whole
+  School" is only for a class with no branch.
 - **Coaches portal fixes** (Coaches portal review CP2–CP6, Decision 424) —
   the coach dashboard no longer lists archived weekly slots, and marks a
   cancelled class "Cancelled" with no roll call or QR link. An owner who also
@@ -1008,6 +1013,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   removes it without changing belts that use it. The owner, or Branch Staff
   who manage disciplines, can change the list. **Needs a database migration**
   (`20261226000000_saved_belt_colours`).
+- **Colour wheel: the white centre picks white in every browser** — clicking
+  the centre of the belt editor's colour wheel could pick a faint tint (such
+  as #FEFEFF) instead of white, because Firefox reports whole-pixel pointer
+  positions and the click landed a fraction of a pixel off centre. Anywhere
+  within one pixel of the centre is now white, and is drawn white.
 - **Free trial of ULTM8 for Schools** (backlog 3.14; Decision 318 item 5) — a
   Full Platform Admin starts or extends a School's free trial in Platform Admin
   (Schools → look up), with no card. The owner sees how many days are left at

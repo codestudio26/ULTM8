@@ -48,6 +48,13 @@ test('"+" opens the colour panel; a wrong code keeps Save off; Save colour appli
   await tag.getByLabel('Brightness').fill('100');
   await tag.getByRole('img', { name: 'Colour wheel' }).click();
   await expect(tag.getByLabel('Colour code')).toHaveValue('#FFFFFF');
+  // Firefox reports whole-pixel pointer positions, so a click on the centre
+  // can land up to half a pixel off it; that is still the white centre.
+  await tag.getByLabel('Colour code').fill('#2a9d8f');
+  await tag.getByLabel('Brightness').fill('100');
+  await expect(tag.getByLabel('Colour code')).not.toHaveValue('#FFFFFF');
+  await tag.getByRole('img', { name: 'Colour wheel' }).click({ position: { x: 83.6, y: 84.45 } });
+  await expect(tag.getByLabel('Colour code')).toHaveValue('#FFFFFF');
   await tag.getByLabel('Colour code').fill('#2a9d8f');
   await tag.getByRole('button', { name: 'Save colour' }).click();
   await expect(tag.getByText('Custom colour #2A9D8F')).toBeVisible();
