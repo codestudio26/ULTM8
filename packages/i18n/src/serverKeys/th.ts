@@ -274,6 +274,8 @@ export const server: PartialMessages<ServerKeys> = {
     franchiseFeeFailedBody: "เรียกเก็บค่าแฟรนไชส์ {amount} ของ {school} ไม่สำเร็จ Stripe จะลองอีกครั้ง เพิ่มหรืออัปเดตบัตรได้ที่หน้าโรงเรียน",
     openMatStyleBody: "โอเพนแมต ({style}) ที่ {place} วัน{when} นาน {minutes} นาที จองในแอปเพื่อเข้าร่วม",
     toDecideBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) กำลังรอการตัดสินใจของคุณ เลื่อนระดับ หรือตัดสินใจไม่เลื่อน",
+    autoPromotedTitle: "เลื่อนระดับอัตโนมัติ",
+    autoPromotedBody: "{name} ได้เลื่อนเป็น {rank} โดยอัตโนมัติ ({style})",
     promotionFeeBody: "การเลื่อนระดับของคุณเป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
     childPromotionFeeBody: "การเลื่อนระดับของ {name} เป็น {rank} ({style}) มีค่าธรรมเนียม {amount} เปิดแอปเพื่อยอมรับหรือปฏิเสธ",
     promotionFeeBlockedTitle: "ไม่สามารถใช้การเลื่อนระดับได้",

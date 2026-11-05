@@ -34,6 +34,30 @@ export class DisciplineResponseDto {
   @ApiProperty({ enum: ['BELTS', 'LEVELS'], description: 'Ranks shown as Belts or as Levels (no belt), Decision 290.' })
   rankDisplay!: 'BELTS' | 'LEVELS';
 
+  @ApiProperty({ description: 'Requirement tick box: classes count toward the next rank (Decision 321). Default on.' })
+  requireClasses!: boolean;
+
+  @ApiProperty({ description: 'Requirement tick box: days in rank (Decision 321). Default on.' })
+  requireDaysInRank!: boolean;
+
+  @ApiProperty({ description: 'Requirement tick box: skills (Decision 321). Default on.' })
+  requireSkills!: boolean;
+
+  @ApiProperty({ description: 'Requirement tick box: hours trained (Decision 321). Default off.' })
+  requireHours!: boolean;
+
+  @ApiProperty({ description: 'Requirement tick box: different days attended (Decision 321). Default off.' })
+  requireDaysAttended!: boolean;
+
+  @ApiProperty({ description: 'Requirement tick box: minimum age (Decision 321). Default off.' })
+  requireMinimumAge!: boolean;
+
+  @ApiProperty({ enum: ['MANUAL', 'AUTO_STRIPES', 'AUTO_ALL'], description: 'Automatic promotion (Decision 321): MANUAL (the default), AUTO_STRIPES or AUTO_ALL.' })
+  promotionMode!: 'MANUAL' | 'AUTO_STRIPES' | 'AUTO_ALL';
+
+  @ApiProperty({ description: '"Auto-assign first belt" (Decision 321): the first rung on the first check-in to a class of the style. Default off.' })
+  autoAssignFirstRank!: boolean;
+
   @ApiProperty({ description: 'Students with a rank in this style (Decision 309).' })
   studentCount!: number;
 

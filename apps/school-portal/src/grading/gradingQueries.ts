@@ -91,6 +91,35 @@ export function useSetRankDisplay() {
   });
 }
 
+/** Decision 321: a style's requirement tick boxes, automatic promotion and
+ * "Auto-assign first belt" (the School owner). */
+export type GradingRequirements = components['schemas']['GradingRequirementsDto'];
+
+export function useSetGradingRequirements() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ disciplineId, body }: { disciplineId: string; body: GradingRequirements }) =>
+      unwrap(apiClient.PUT('/v1/disciplines/{id}/grading-requirements', { params: { path: { id: disciplineId } }, body })),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['disciplines'] });
+      await queryClient.invalidateQueries({ queryKey: ['grading-board'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-grading'] });
+    },
+  });
+}
+
+/** Decision 321 item 5: a coach who may promote undoes an automatic promotion. */
+export function useUndoAutomaticPromotion(studentId: string, schoolId: string) {
+  return useGradingMutation(studentId, ({ eventId }: { eventId: string }) =>
+    unwrap(
+      apiClient.POST('/v1/students/{id}/rank-history/{eventId}/undo-automatic', {
+        params: { path: { id: studentId, eventId }, query: { schoolId } },
+        body: {},
+      }),
+    ),
+  );
+}
+
 export function useStripeAward(studentId: string, disciplineId: string) {
   return useGradingMutation(studentId, (body: GradingActionInput) =>
     unwrap(apiClient.POST('/v1/students/{id}/ranks/{disciplineId}/stripe-award', { params: { path: { id: studentId, disciplineId } }, body })),

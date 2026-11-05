@@ -3,8 +3,9 @@ import { Queue } from 'bullmq';
 
 /**
  * Payloads for the `grading-notifications` queue (Decisions 145, 178, 300,
- * 313). Job names: 'ready-check', 'promoted', 'fee-requested', and the daily
- * 'sweep' (no payload; it also sends the "to decide" reminders).
+ * 313, 321). Job names: 'ready-check', 'promoted', 'auto-promoted',
+ * 'fee-requested', and the daily 'sweep' (no payload; it also sends the "to
+ * decide" reminders and runs automatic promotion).
  */
 
 /** Check whether a student is now ready for their next rung: in one style, or
@@ -22,6 +23,18 @@ export interface GradingPromotedJobData {
   disciplineName: string;
   toRungName: string;
   kind: 'PROMOTED' | 'STRIPE' | 'ADJUSTED';
+}
+
+/** The style's automatic promotion moved a student up (Decision 321 item 5):
+ * the job tells the coaches of the style, the same people "ready to grade"
+ * goes to. The student (or Guardian) gets the usual 'promoted' notice. */
+export interface GradingAutoPromotedJobData {
+  promotionEventId: string;
+  studentId: string;
+  schoolId: string;
+  disciplineId: string;
+  disciplineName: string;
+  toRungName: string;
 }
 
 /** A promotion fee request was made (Decision 300): the job tells the payer,

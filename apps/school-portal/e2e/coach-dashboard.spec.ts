@@ -35,6 +35,9 @@ async function coachWith(toggles: Partial<Record<'canPromote' | 'canAdjustProgre
 
 test('a coach lands on their dashboard: grading, classes and notifications', async ({ page }) => {
   const coach = await coachWith({});
+  // Sam's one required skill signed off: every requirement met, 100% (Decision 321 item 7).
+  const samRank = await db.studentRank.findFirstOrThrow({ where: { studentId: s.student.id, disciplineId: s.disciplineId } });
+  await db.studentRankSkillStatus.create({ data: { id: randomUUID(), studentRankId: samRank.id, schoolId: s.schoolId, studentId: s.student.id, skillId: s.skillId, status: 'SIGNED_OFF' } });
   await db.timetableSlot.create({
     data: {
       id: randomUUID(), schoolId: s.schoolId, instructorId: coach.id, weekday: 'TUESDAY', title: 'Kids BJJ',

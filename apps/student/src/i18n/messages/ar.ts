@@ -634,11 +634,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} المهارات المعتمدة: {signedOff} من {required} · {percent}% · مطلوبة أيضًا، ولا تُحتسب ضمن النسبة",
       timeOnlyNote: "النسبة هي الأيام في هذه الدرجة من الأيام المطلوبة.",
       classesNote: "النسبة هي الحصص المحضورة من الحصص المطلوبة.",
+      skillsCounts: "{tick} المهارات المعتمدة: {signedOff} من {required} · {percent}% · تُحتسب ضمن النسبة",
+      hours: "{tick} الساعات: {done} من {required} ساعة · {percent}% · تُحتسب ضمن النسبة",
+      daysAttended: "{tick} أيام الحضور: {attended} من {required} · {percent}% · تُحتسب ضمن النسبة",
+      minimumAge: "{tick} الحد الأدنى للعمر: من {age} · لا يدخل في النسبة",
+      waitingForAge: "بانتظار عمر {age}",
+      averageNote: "النسبة هي متوسط ما تطلبه هذه الرتبة، ويُحتسب كل منها حتى 100%.",
     },
     hours: {
       title: "ساعات التدريب",
       summary: "{atRank} ساعة في هذه الدرجة · {total} ساعة إجمالًا",
       note: "سجلّ لوقتك على البساط. لا تستخدمه الترقيات.",
+      counts: "تُحتسب الساعات منذ هذه الرتبة لرتبتك التالية.",
     },
     correction: {
       a11yLabel: "تصحيح الحزام: {style}",

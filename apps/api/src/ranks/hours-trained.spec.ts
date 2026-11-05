@@ -66,7 +66,7 @@ describe('progress breakdown — read off the engine, never a second formula', (
     { id: 'black', order: 1, stripeTiers: [tier({ id: 'b0', order: 0, timeOnly: true, minimumDaysInRank: 1000 }), tier({ id: 'b1', order: 1, timeOnly: true, minimumDaysInRank: 1000 })] },
   ]);
 
-  it('classes, days and skills each on their own; the classes % is the overall %', () => {
+  it('classes, days and skills each on their own; the overall % is their average (Decision 321 item 7)', () => {
     const el = computeEligibility(requirementFor(ladder, 'w0'), {
       rankDate: '2026-07-01',
       today: '2026-08-20', // 50 days
@@ -75,11 +75,15 @@ describe('progress breakdown — read off the engine, never a second formula', (
     });
     if (!el.hasNext) throw new Error('expected a next rung');
     expect(progressBreakdown(el)).toEqual({
-      classes: { counted: 30, required: 40, percent: el.progressPercent, byType: [] },
+      classes: { counted: 30, required: 40, percent: 75, byType: [] },
       days: { elapsed: 50, required: 100, percent: 50 },
       skills: { signedOff: 1, required: 3, percent: 33 },
+      hours: null,
+      daysAttended: null,
+      minimumAge: null,
     });
-    expect(el.progressPercent).toBe(75);
+    // (75% + 50% + 33.3%) / 3
+    expect(el.progressPercent).toBe(53);
   });
 
   it('"each type" rungs show each type, and the classes % is still the engine\'s capped %', () => {
@@ -112,7 +116,14 @@ describe('progress breakdown — read off the engine, never a second formula', (
       classes: { total: 0, byType: {} },
       signedSkillIds: [],
     });
-    expect(progressBreakdown(el)).toEqual({ classes: null, days: { elapsed: 100, required: 1000, percent: 10 }, skills: null });
+    expect(progressBreakdown(el)).toEqual({
+      classes: null,
+      days: { elapsed: 100, required: 1000, percent: 10 },
+      skills: null,
+      hours: null,
+      daysAttended: null,
+      minimumAge: null,
+    });
   });
 
   it('no next rank: no breakdown', () => {

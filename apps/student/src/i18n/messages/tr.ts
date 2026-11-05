@@ -603,11 +603,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} Onaylanan teknikler: {signedOff} / {required} · %{percent} · bu da gerekli, %'ye dahil değil",
       timeOnlyNote: "Yüzde, bu derecede geçen günlerin gereken günlere oranıdır.",
       classesNote: "Yüzde, katılınan derslerin gereken derslere oranıdır.",
+      skillsCounts: "{tick} Onaylanan teknikler: {signedOff} / {required} · %{percent} · %'ye sayılır",
+      hours: "{tick} Saatler: {done} / {required} sa · %{percent} · %'ye sayılır",
+      daysAttended: "{tick} Katılım günleri: {attended} / {required} · %{percent} · %'ye sayılır",
+      minimumAge: "{tick} Asgari yaş: {age} yaşından itibaren · %'ye girmez",
+      waitingForAge: "{age} yaşını bekliyor",
+      averageNote: "Yüzde, bu derecenin istediklerinin ortalamasıdır; her biri en fazla %100 sayılır.",
     },
     hours: {
       title: "Antrenman saatleri",
       summary: "Bu derecede {atRank} sa · toplam {total} sa",
       note: "Matta geçirdiğiniz zamanın kaydı. Kuşak terfisinde kullanılmaz.",
+      counts: "Bu dereceden bu yana geçen saatler bir sonrakine sayılır.",
     },
     correction: {
       a11yLabel: "Kuşak düzeltmesi: {style}",

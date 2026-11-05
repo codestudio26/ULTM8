@@ -620,11 +620,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} Zaliczone techniki: {signedOff} z {required} · {percent}% · też wymagane, nie wlicza się do %",
       timeOnlyNote: "% to liczba dni w tym stopniu w stosunku do wymaganej liczby dni.",
       classesNote: "% to liczba zajęć w stosunku do wymaganej liczby zajęć.",
+      skillsCounts: "{tick} Zaliczone techniki: {signedOff} z {required} · {percent}% · wlicza się do %",
+      hours: "{tick} Godziny: {done} z {required} godz. · {percent}% · wlicza się do %",
+      daysAttended: "{tick} Dni obecności: {attended} z {required} · {percent}% · wlicza się do %",
+      minimumAge: "{tick} Minimalny wiek: od {age} · nie wlicza się do %",
+      waitingForAge: "Czeka na wiek {age}",
+      averageNote: "% to średnia tego, czego wymaga ten stopień, każda część liczona do 100%.",
     },
     hours: {
       title: "Przetrenowane godziny",
       summary: "{atRank} godz. w tym stopniu · {total} godz. łącznie",
       note: "Zapis Twojego czasu na macie. Egzaminy z niego nie korzystają.",
+      counts: "Godziny od tego stopnia liczą się do następnego.",
     },
     correction: {
       a11yLabel: "Korekta pasa: {style}",

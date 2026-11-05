@@ -34,6 +34,14 @@ export interface Rung {
   /** Null or 0 means no weekly limit (Decision 171). */
   weeklyClassCountCap: number | null;
   requiredSkillIds: string[];
+  /** Hours trained needed for this rung; 0 = none (Decision 321 items 1, 2).
+   * Checked only in a style that ticks Hours. */
+  hoursRequired: number;
+  /** Different days attended needed; 0 = none (Decision 321 item 3). */
+  daysAttendedRequired: number;
+  /** Age (whole years) the student must have reached on the day they are
+   * promoted INTO this rung; null = any age (Decision 321 item 4). */
+  minimumAge: number | null;
   /** Class types this rung unlocks for booking, for it and every rung above
    * (Decision 173). */
   bookingUnlocksClassTypes: string[];
@@ -56,6 +64,9 @@ export interface LadderRank {
     weeklyClassCountCap: number | null;
     requiredSkillIds: string[];
     bookingUnlocksClassTypes?: string[];
+    hoursRequired?: number | null;
+    daysAttendedRequired?: number | null;
+    minimumAge?: number | null;
   }>;
 }
 
@@ -81,6 +92,9 @@ export function flattenLadder(ranks: LadderRank[]): Rung[] {
           classTypeRequirements: tier.classTypeRequirements.map((r) => ({ ...r })),
           weeklyClassCountCap: tier.weeklyClassCountCap,
           requiredSkillIds: [...tier.requiredSkillIds],
+          hoursRequired: tier.hoursRequired ?? 0,
+          daysAttendedRequired: tier.daysAttendedRequired ?? 0,
+          minimumAge: tier.minimumAge ?? null,
           bookingUnlocksClassTypes: [...(tier.bookingUnlocksClassTypes ?? [])],
         })),
     );

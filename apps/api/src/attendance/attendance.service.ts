@@ -6,7 +6,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { QrTokenService } from './qr-token.service';
 import { ScanAttendanceDto } from './dto/scan-attendance.dto';
 import { InstructorScanDto } from './dto/instructor-scan.dto';
-import { creditAttendance, type CreditAttendanceOptions } from '../ranks/grading-attendance';
+import { autoAssignFirstRanks, creditAttendance, type CreditAttendanceOptions } from '../ranks/grading-attendance';
 import { recordCheckInMinutes } from '../ranks/hours-trained';
 import { assertClassBookable, BOOKING_TX_OPTIONS, lockStudentClass, withSeatLockRetry } from '../bookings/booking-gates';
 import { BookingsService } from '../bookings/bookings.service';
@@ -461,6 +461,11 @@ export class AttendanceService {
     // length, per style, as a record only. Separate from the class count
     // above and never read by grading.
     await recordCheckInMinutes(tx, studentId, booking);
+
+    // "Auto-assign first belt" (Decision 321 item 6): the style's first rank
+    // on the first check-in to a class of it. Not for imported past
+    // attendance, which isn't a check-in made now.
+    if (!opts.onlySinceRankDate) await autoAssignFirstRanks(tx, studentId, booking);
 
     return tx.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { attendees: true } });
   }
