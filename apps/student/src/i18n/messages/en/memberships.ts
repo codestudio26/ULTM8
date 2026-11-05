@@ -61,6 +61,8 @@ export const memberships = {
   },
   planRow: {
     joinFirst: 'Join this School to buy.',
+    /** Decision 435: a paid plan's joining fee, charged with a member's first plan at the School only. */
+    joiningFee: '+ {amount} joining fee on your first plan at this School',
     cardSurcharge: "+ {amount} card surcharge when paying by card",
     /** Joined to the price with " · ". */
     classesIncluded: { one: '{count} class', other: '{count} classes' },

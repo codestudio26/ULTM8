@@ -323,6 +323,12 @@ export class CreateSchoolDto {
   @Min(1)
   freezeFeeAmount?: number | null;
 
+  @ApiPropertyOptional({ description: "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged." })
+  @IsOptional()
+  @IsBoolean()
+  joiningFeesEnabled?: boolean;
+
+
   @ApiPropertyOptional({ type: String, nullable: true, example: 'GB', description: "Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it." })
   @IsOptional()
   @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() || null : value))

@@ -14,6 +14,7 @@ import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { ResolveCancellationAction } from './dto/resolve-cancellation.dto';
 import { noticeWallTime } from '../common/notice-time';
 import { minorUnitStep, roundToStep } from '../payments/stripe-amount';
+import { nonRefundableJoiningFee } from '../memberships/joining-fee';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -246,7 +247,9 @@ export class CancellationService {
       await this.restoreCredit(tx, seat.membershipId);
       return { resolution: 'REFUNDED', refundAmount: null, stripeRefund: false };
     }
-    const refundAmount = await this.perClassShare(tx, seat, payment.amount, payment.refundedAmount ?? 0, membership.membershipPlan.classesIncluded, payment.currency);
+    // Decision 435 item 5: a refundable joining fee is shared out with the
+    // pack's price; a non-refundable one is left out of every share.
+    const refundAmount = await this.perClassShare(tx, seat, payment.amount - nonRefundableJoiningFee(payment), payment.refundedAmount ?? 0, membership.membershipPlan.classesIncluded, payment.currency);
     // Disputed (Decision 55: refunds frozen), nothing left to refund, or a caller
     // who may not send money: a staff decision.
     if (payment.status !== 'SUCCESSFUL' || refundAmount <= 0 || !mayRefund) {
@@ -336,7 +339,8 @@ export class CancellationService {
         await tx.$queryRaw`SELECT id FROM "Transaction" WHERE id = ${payment.id} FOR UPDATE`;
         const fresh = await tx.transaction.findUniqueOrThrow({ where: { id: payment.id } });
         const alreadyRefunded = fresh.refundedAmount ?? 0;
-        if (fresh.status !== 'SUCCESSFUL' || alreadyRefunded + row.refundAmount > fresh.amount) {
+        const refundable = fresh.amount - nonRefundableJoiningFee(fresh);
+        if (fresh.status !== 'SUCCESSFUL' || alreadyRefunded + row.refundAmount > refundable) {
           throw new Error(`Transaction ${fresh.id} can no longer cover this refund.`);
         }
 
@@ -352,7 +356,8 @@ export class CancellationService {
         const newRefunded = alreadyRefunded + row.refundAmount;
         await tx.transaction.update({
           where: { id: fresh.id },
-          data: { refundedAmount: newRefunded, status: newRefunded >= fresh.amount ? 'REFUNDED' : fresh.status },
+          data: { refundedAmount: newRefunded, status: newRefunded >= refundable ? 'REFUNDED' : fresh.status },
+
         });
         const data = { refundResolution: 'MONEY_REFUNDED' as const, stripeRefundId: refundId, resolvedAt: new Date() };
         if (seat.attendeeId) {

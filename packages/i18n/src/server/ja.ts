@@ -1,5 +1,7 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "入会金を設定できるのは有料プランだけです。",
+  "The price and the joining fee together are too big.": "料金と入会金の合計が大きすぎます。",
   "What's new is for School owners and staff.": "お知らせはスクールのオーナーとスタッフ向けです。",
   "Give each language once.": "各言語は1回だけ指定してください。",
   "Post not found": "投稿が見つかりません",

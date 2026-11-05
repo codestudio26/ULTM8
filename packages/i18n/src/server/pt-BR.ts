@@ -1,5 +1,7 @@
 /** Portuguese (Brazil) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "Só um plano pago pode ter taxa de matrícula.",
+  "The price and the joining fee together are too big.": "O preço e a taxa de matrícula juntos são altos demais.",
   "What's new is for School owners and staff.": "As novidades são para donos e equipe das escolas.",
   "Give each language once.": "Informe cada idioma uma vez.",
   "Post not found": "Publicação não encontrada",

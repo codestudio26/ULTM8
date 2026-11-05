@@ -19,13 +19,15 @@ export function RefundDeskSaleModal({
   onClose,
 }: {
   schoolId: string;
-  payment: { id: string; amount: number; refundedAmount: number | null; currency: string | null; planTitle: string };
+  payment: { id: string; amount: number; refundedAmount: number | null; currency: string | null; planTitle: string; keptJoiningFee?: number };
   studentName: string;
   onClose: () => void;
 }) {
   const t = useT();
   const refund = useRefundDeskSale(schoolId);
-  const left = payment.amount - (payment.refundedAmount ?? 0);
+  // Decision 435 item 5: a non-refundable joining fee is never refunded.
+  const kept = payment.keptJoiningFee ?? 0;
+  const left = Math.max(0, payment.amount - kept - (payment.refundedAmount ?? 0));
   const [amount, setAmount] = useState<number | null>(left);
   const [amountValid, setAmountValid] = useState(true);
   const [notes, setNotes] = useState('');
@@ -58,6 +60,11 @@ export function RefundDeskSaleModal({
         <p style={{ margin: '0 0 16px' }}>
           {t('transactions.refund.body', { student: studentName, plan: payment.planTitle, amount: formatMoney(left, payment.currency) })}
         </p>
+        {kept > 0 ? (
+          <p style={{ margin: '0 0 16px' }} data-testid="refund-joining-fee-kept">
+            {t('transactions.refund.joiningFeeKept', { fee: formatMoney(kept, payment.currency) })}
+          </p>
+        ) : null}
         <Field label={t('transactions.refund.amountLabel')} htmlFor="desk-refund-amount">
           <MoneyField
             id="desk-refund-amount"

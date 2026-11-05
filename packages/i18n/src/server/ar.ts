@@ -1,5 +1,7 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "يمكن فقط للخطة المدفوعة أن تتضمن رسوم انضمام.",
+  "The price and the joining fee together are too big.": "السعر ورسوم الانضمام معاً أكبر من اللازم.",
   "What's new is for School owners and staff.": "قسم الجديد مخصص لأصحاب المدارس وموظفيها.",
   "Give each language once.": "أدخل كل لغة مرة واحدة.",
   "Post not found": "المنشور غير موجود",

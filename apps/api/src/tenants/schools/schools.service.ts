@@ -1059,6 +1059,8 @@ export class SchoolsService {
           // Decision 404: freezing memberships.
           freezeMaxDaysPer12Months: dto.freezeMaxDaysPer12Months,
           freezeFeeAmount: dto.freezeFeeAmount,
+          // Decision 435 item 6: joining fees on or off for the School.
+          joiningFeesEnabled: dto.joiningFeesEnabled,
           // Decision 411: tax on staff-created charges; Decision 338 items 1 and 6.
           taxCountry: dto.taxCountry,
           taxRateBasisPoints: dto.taxRateBasisPoints,

@@ -122,7 +122,7 @@ including a filled-in example where possible. Empty screens hide most fields.
 | P7 | Pricing type: Trial | ✅ | `TRIAL_MEMBERSHIP` (length set by the School; the 30-day caps were removed by Decision 410) |
 | P8 | Frequency "every N weeks/months" + **max number of payments** | 🟡 | `billingCycleAnchorDay` exists; no custom interval and no payment-count cap |
 | P9 | Start membership on first check-in | ❌ | |
-| P10 | **Sign-up fee** | ❌ | |
+| P10 | **Sign-up fee** | ✅ **5 Nov 2026: built** (Decision 316 item 3, answered by Decision 435 items 1-6; branch `feature/plan-joining-fee`, migration `20270225100000_plan_joining_fee`): a fixed joining fee on a paid plan, on a member's first-ever plan at the School only, with the plan's tax and card surcharge, refundable or not per plan; switched on or off per School | |
 | P11 | **Late fee + grace days** ("when 5 days overdue") | ❌ | |
 | P12 | **Family discounts** (2nd / 3rd / 4th+ member, % or fixed) | ❌ | |
 | P13 | Duration: Ongoing / Limited (N months) / Specific dates (enrolment periods) | 🟡 | `expiryDurationDays` covers "limited"; fixed-date enrolment periods ❌ |

@@ -190,7 +190,21 @@ function invalidateMembershipViews(queryClient: ReturnType<typeof useQueryClient
     queryClient.invalidateQueries({ queryKey: ['studentMemberships', schoolId, studentId] }),
     queryClient.invalidateQueries({ queryKey: ['membershipPlan'] }),
     queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+    // Decision 435: a sale can end a member's first-plan joining fee.
+    queryClient.invalidateQueries({ queryKey: ['joiningFee'] }),
   ]);
+}
+
+/** Decision 435: the joining fee a payment for this plan by this member would
+ * carry now (their first-ever plan at the School, with joining fees on), by
+ * the API's own rule. 0 when none. Shown at the desk before the money is taken. */
+export function useJoiningFeePreview(planId: string | null, studentId: string | null) {
+  return useQuery({
+    queryKey: ['joiningFee', planId, studentId],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/membership-plans/{id}/joining-fee', { params: { path: { id: planId! }, query: { studentId: studentId! } } })),
+    enabled: !!planId && !!studentId,
+  });
 }
 
 export function useSellMembership(schoolId: string, studentId: string) {
