@@ -1,5 +1,6 @@
 import type { MessageVars } from '../types';
 import { SERVER_PATTERNS } from './en';
+import { moneyDigits } from '../money';
 
 /**
  * Translates the English text the API sends — error messages and the titles and
@@ -186,9 +187,11 @@ function applyRules(rules: Array<[RegExp, Rule]>, text: string, ctx: Context): s
   return null;
 }
 
+/** Each currency's own decimals (Decision 430, TXT-6): ¥12,345, US$12.50, and
+ * a stored fraction of a yen still as ¥1,332.72. */
 function formatAmount(value: string, currency: string, locale: string): string {
   try {
-    return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(Number(value));
+    return new Intl.NumberFormat(locale, { style: 'currency', currency, ...moneyDigits(currency) }).format(Number(value));
   } catch {
     return `${value} ${currency}`;
   }

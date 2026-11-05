@@ -1,3 +1,4 @@
+import { plainMoney } from '@ultm8/i18n';
 import type { TransactionResponse } from './transactionQueries';
 
 /**
@@ -22,7 +23,8 @@ export function csvCell(value: string): string {
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
-const money = (minor: number | null | undefined) => (minor == null ? '' : (minor / 100).toFixed(2));
+// Each currency's own decimals (Decision 430, TXT-6): 12345 for yen, 12.50 for dollars.
+const money = (minor: number | null | undefined, currency: string | null | undefined) => (minor == null ? '' : plainMoney(minor, currency));
 
 export function transactionsCsv(rows: TransactionResponse[], labels: CsvLabels): string {
   const lines = [labels.headers.map(csvCell).join(',')];
@@ -33,13 +35,13 @@ export function transactionsCsv(rows: TransactionResponse[], labels: CsvLabels):
         labels.student(row),
         labels.item(row),
         labels.kind(row),
-        money(row.amount),
-        money(row.surchargeAmount),
+        money(row.amount, row.currency),
+        money(row.surchargeAmount, row.currency),
         row.currency ?? '',
         labels.status(row),
         labels.method(row),
-        money(row.refundedAmount),
-        money(row.disputedAmount),
+        money(row.refundedAmount, row.currency),
+        money(row.disputedAmount, row.currency),
         row.id,
         // Decision 338 item 1: a cancelled payment's when, who and why (staff only).
         row.cancelledAt ?? '',
