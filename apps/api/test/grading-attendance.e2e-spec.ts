@@ -387,12 +387,14 @@ describeIfDb('Grading — attendance counted through the engine (Phase 2b)', () 
       });
     });
 
-    it('minimum days are a gate but not part of the %', async () => {
+    // Decision 321 item 7: the % is the average of what the rung asks for, days included.
+    it('minimum days are a gate and part of the %', async () => {
       await reset();
       await setNextRung({});
       await superuser.rankStripeTier.update({ where: { id: tier1.id }, data: { classesRequired: 30, minimumDaysInRank: 60 } });
       await setCounts(30, {}, 10);
-      expect(await eligibility()).toMatchObject({ progressPercent: 100, requiredDays: 60, elapsedDays: 10, daysOk: false, eligible: false });
+      // (30/30 classes + 10/60 days) / 2 = (100% + 16.7%) / 2.
+      expect(await eligibility()).toMatchObject({ classesPercent: 100, progressPercent: 58, requiredDays: 60, elapsedDays: 10, daysOk: false, eligible: false });
     });
 
     it('a required skill not signed off blocks eligibility and is listed', async () => {

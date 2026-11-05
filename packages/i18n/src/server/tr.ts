@@ -785,4 +785,5 @@ export const serverMessages: Record<string, string> = {
   "This history entry has been voided.": "Bu geçmiş kaydı geçersiz kılındı.",
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Bu öğrencinin derecesi otomatik terfiden sonra değişti, bu yüzden geri alınamaz. Bunun yerine derecesini düşürün.",
   "Only the School owner can change a style's requirements and automatic grading.": "Bir stilin gereksinimlerini ve otomatik terfisini yalnızca okul sahibi değiştirebilir.",
+  "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "Bu öğrenci o sütuna taşınamaz: bu derecedeki dersleri ve günleri ilerlemesini o kadar değiştiremez.",
 };

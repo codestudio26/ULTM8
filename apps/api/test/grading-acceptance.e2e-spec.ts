@@ -114,9 +114,32 @@ function refEligible(req: RefReq, stu: RefStu) {
   const c = Number(stu.classesAttended) || 0;
   return c >= req.classes && d >= req.days && req.skills.every((id) => stu.skillStatus[id] === 'signed');
 }
+/** Decision 321 item 7 replaces the prototype's classes-only %: the average of
+ * what the next rung asks for (classes, days, skills), each capped at 100%,
+ * and 100 only when eligible. A time-only rung: its days. */
 function refPct(req: RefReq, stu: RefStu) {
-  if (req.timeOnly) return req.days > 0 ? Math.min(100, Math.round((refDays(stu.sinceDay) / req.days) * 100)) : 100;
-  return req.classes > 0 ? Math.min(100, Math.round(((Number(stu.classesAttended) || 0) / req.classes) * 100)) : 100;
+  const parts: number[] = [];
+  const capped = (done: number, need: number) => Math.min(1, done / need);
+  if (req.timeOnly) {
+    if (req.days > 0) parts.push(capped(refDays(stu.sinceDay), req.days));
+  } else {
+    if (req.classes > 0) parts.push(capped(Number(stu.classesAttended) || 0, req.classes));
+    if (req.days > 0) parts.push(capped(refDays(stu.sinceDay), req.days));
+    if (req.skills.length > 0) parts.push(capped(req.skills.filter((id) => stu.skillStatus[id] === 'signed').length, req.skills.length));
+  }
+  const pct = parts.length ? Math.round((parts.reduce((x, y) => x + y, 0) / parts.length) * 100) : 100;
+  return refEligible(req, stu) ? pct : Math.min(99, pct);
+}
+
+/** Whether a drag can put the student in `target` by rewriting the classes
+ * and, failing that, the days at the rank (Decision 321 item 7: skills are
+ * never rewritten by a drag). */
+function refCanReach(req: RefReq, stu: RefStu, target: string) {
+  const at = (classesAttended: number, days: number | null) =>
+    refBand(refPct(req, { ...stu, classesAttended, sinceDay: days === null ? stu.sinceDay : TODAY_NUM - days }));
+  if (!req.timeOnly) for (let c = 0; c <= req.classes; c++) if (at(c, null) === target) return true;
+  for (const c of req.timeOnly ? [0] : [0, req.classes]) for (let d = 0; d <= req.days; d++) if (at(c, d) === target) return true;
+  return false;
 }
 const refBand = (p: number) => (p >= 66 ? 'READY_TO_GRADE' : p >= 33 ? 'GETTING_THERE' : 'JUST_STARTING');
 const refSkillsMissing = (req: RefReq, stu: RefStu) => !req.timeOnly && req.skills.some((id) => stu.skillStatus[id] !== 'signed');
@@ -972,6 +995,11 @@ async function suiteBoard(seed: number) {
       const changed = s1.stu.classesAttended !== s0.stu.classesAttended || s1.stu.sinceDay !== s0.stu.sinceDay;
       if (beforeBand === target) {
         if (changed) dragBad.push(`${p.surname} same-band drop changed data`);
+        continue;
+      }
+      if (!refCanReach(req, s0.stu, target)) {
+        // Decision 321 item 7: the other requirements already count for more (or too little).
+        if (mv.status !== 400 || changed) dragBad.push(`${p.surname} unreachable ${target} not refused (${mv.status})`);
         continue;
       }
       if (total >= 3 && afterBand !== target) dragBad.push(`${p.surname} (${p.rung.name}) dropped on ${target} landed in ${afterBand} [${msg(mv)}]`);

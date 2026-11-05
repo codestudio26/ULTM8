@@ -785,4 +785,5 @@ export const serverMessages: Record<string, string> = {
   "This history entry has been voided.": "此历史记录已作废。",
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "自动晋级后该学员的级别已变更，因此无法撤销。请改为降级。",
   "Only the School owner can change a style's requirements and automatic grading.": "只有学校所有者可以更改某个风格的要求和自动晋级。",
+  "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "无法将该学员移到那一列：其在此级别的课程和天数无法让进度变化这么多。",
 };

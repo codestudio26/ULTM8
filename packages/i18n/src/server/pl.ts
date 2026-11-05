@@ -785,4 +785,5 @@ export const serverMessages: Record<string, string> = {
   "This history entry has been voided.": "Ten wpis w historii został unieważniony.",
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Stopień tego ucznia zmienił się od automatycznej promocji, więc nie można jej cofnąć. Zamiast tego obniż mu stopień.",
   "Only the School owner can change a style's requirements and automatic grading.": "Tylko właściciel szkoły może zmieniać wymagania i automatyczną promocję stylu.",
+  "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "Nie można przenieść tego ucznia do tej kolumny: jego zajęcia i dni na tym stopniu nie mogą aż tak zmienić postępu.",
 };

@@ -785,4 +785,5 @@ export const serverMessages: Record<string, string> = {
   "This history entry has been voided.": "이 기록 항목은 무효 처리되었습니다.",
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "자동 승급 이후 이 학생의 등급이 바뀌어 취소할 수 없습니다. 대신 강등하세요.",
   "Only the School owner can change a style's requirements and automatic grading.": "스타일의 요건과 자동 승급은 스쿨 소유자만 변경할 수 있습니다.",
+  "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "이 학생을 그 열로 옮길 수 없습니다. 이 등급의 수업과 일수로는 진행률을 그만큼 바꿀 수 없습니다.",
 };

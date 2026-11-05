@@ -785,4 +785,5 @@ export const serverMessages: Record<string, string> = {
   "This history entry has been voided.": "この履歴項目は無効化されています。",
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "自動昇級後にこの生徒のランクが変わったため、取り消せません。代わりに降格してください。",
   "Only the School owner can change a style's requirements and automatic grading.": "スタイルの要件と自動昇級を変更できるのはスクールのオーナーだけです。",
+  "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "この生徒をその列に移動できません。このランクでのクラス数と日数では、進捗をそこまで変えられません。",
 };

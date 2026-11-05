@@ -1,4 +1,4 @@
-import { ageOn, computeEligibility, DEFAULT_TICKS, flattenLadder, LadderRank, progressBreakdown, requirementFor, RequirementTicks } from './index';
+import { ageOn, boardColumn, boardMoveAveraged, computeEligibility, DEFAULT_TICKS, flattenLadder, LadderRank, progressBreakdown, requirementFor, RequirementTicks } from './index';
 
 /** Decision 321: requirement tick boxes, hours, days attended, minimum age
  * and the averaged progress %. */
@@ -131,6 +131,37 @@ describe('Decision 321 — requirement tick boxes', () => {
       daysAttended: { attended: 5, required: 20, percent: 25 },
       minimumAge: { age: 16, met: true },
     });
+  });
+});
+
+describe('Decision 321 — board drag with the averaged %', () => {
+  const req = requirementFor(ladder, 'w0', DEFAULT_TICKS);
+  const base = { rankDate: '2026-04-01', today: '2026-04-01', classes: { total: 0, byType: {} }, signedSkillIds: [] as string[] };
+  const landsIn = (move: ReturnType<typeof boardMoveAveraged>, column: string, input = base) => {
+    if (move.kind !== 'ADJUST') return false;
+    const day = (n: number) => new Date((Date.UTC(2026, 3, 1) / 86_400_000 - n) * 86_400_000).toISOString().slice(0, 10);
+    const el = computeEligibility(req, {
+      ...input,
+      ...(move.classes ? { classes: { total: move.classes.total, byType: move.classes.byType ?? {} } } : {}),
+      ...(move.daysInRank !== null ? { rankDate: day(move.daysInRank) } : {}),
+    });
+    return el.hasNext && boardColumn(el.progressPercent) === column;
+  };
+
+  it('moves the classes first, and the days too when the classes alone are not enough', () => {
+    const getting = boardMoveAveraged(req, base, 'GETTING_THERE');
+    expect(getting.kind === 'ADJUST' && getting.daysInRank).toBeNull();
+    expect(landsIn(getting, 'GETTING_THERE')).toBe(true);
+    // Classes alone reach at most (100 + 0 + 0) / 3 = 33%: the days move too.
+    const ready = boardMoveAveraged(req, base, 'READY_TO_GRADE');
+    expect(ready.kind === 'ADJUST' && ready.daysInRank !== null).toBe(true);
+    expect(landsIn(ready, 'READY_TO_GRADE')).toBe(true);
+  });
+
+  it('refuses a column the classes and days can\'t reach', () => {
+    const allSigned = { ...base, rankDate: '2025-01-01', signedSkillIds: signed(8) };
+    // Skills alone are a third: never below 33% (Getting There).
+    expect(boardMoveAveraged(req, allSigned, 'JUST_STARTING').kind).toBe('CANNOT_REACH');
   });
 });
 

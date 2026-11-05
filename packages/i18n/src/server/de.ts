@@ -785,4 +785,5 @@ export const serverMessages: Record<string, string> = {
   "This history entry has been voided.": "Dieser Verlaufseintrag wurde storniert.",
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Der Rang dieses Mitglieds hat sich seit der automatischen Beförderung geändert, daher kann sie nicht rückgängig gemacht werden. Stufe es stattdessen herab.",
   "Only the School owner can change a style's requirements and automatic grading.": "Nur der Schulinhaber kann die Anforderungen und die automatische Graduierung eines Stils ändern.",
+  "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "Dieses Mitglied kann nicht in diese Spalte verschoben werden: Seine Trainings und Tage in diesem Rang können den Fortschritt nicht so weit ändern.",
 };

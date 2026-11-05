@@ -34,7 +34,7 @@ const TOGGLE_LABELS: Record<PermissionToggle, string> = {
 };
 import { DateTime } from 'luxon';
 import { loadLadder } from './grading-attendance';
-import { ageOn, boardMove, dayNumber, gradingDateProblem, localDay, progressBreakdown, requirementFor, Rung, rungIndex, ticksOf } from './engine';
+import { ageOn, boardMoveAveraged, dayNumber, gradingDateProblem, localDay, progressBreakdown, requirementFor, Rung, rungIndex, ticksOf } from './engine';
 import { classMinutes, DEFAULT_LOGGED_MINUTES, hoursTrained, recordLoggedMinutes } from './hours-trained';
 import { CORRECTION_RUNG_GONE, CORRECTION_STALE } from './rank-correction-rules';
 
@@ -2381,22 +2381,46 @@ export class GradingService {
       if (current.hasNext && current.boardColumn === dto.column) {
         throw new BadRequestException('This student is already in that column.');
       }
-      const move = boardMove(requirementFor(ladder, sr.currentStripeId ?? '', ticks), dto.column, thresholds);
+      // Decision 321 item 7: the % averages the ticked requirements, so the
+      // drag finds the smallest rewrite (classes, then the start date) that
+      // lands in the column; skills, hours and days attended are left as they are.
+      const move = boardMoveAveraged(
+        requirementFor(ladder, sr.currentStripeId ?? '', ticks),
+        {
+          rankDate: localDay(sr.dateOfCurrentRank, timeZone),
+          today: localDay(new Date(), timeZone),
+          classes: { total: sr.classesAttendedTowardCheckpoint, byType: (sr.classesAttendedByType ?? {}) as Record<string, number> },
+          signedSkillIds: sr.skillStatuses.filter((x) => x.status === 'SIGNED_OFF').map((x) => x.skillId),
+          minutesTrained: extras?.minutesTrained,
+          daysAttended: extras?.daysAttended,
+          dateOfBirth: extras?.dateOfBirth ? extras.dateOfBirth.toISOString().slice(0, 10) : null,
+        },
+        dto.column,
+        thresholds,
+      );
       if (move.kind === 'NOT_MOVABLE') {
         throw new BadRequestException('This student can\'t be moved: there is no next rank, or nothing required to split into columns.');
       }
-      const label = { JUST_STARTING: 'Just Starting', GETTING_THERE: 'Getting There', READY_TO_GRADE: 'Ready to Grade' }[dto.column];
-      let what: string;
-      let data: Prisma.StudentRankUpdateManyMutationInput;
-      if (move.kind === 'DAYS') {
-        const newDay = DateTime.now().setZone(timeZone).minus({ days: move.daysInRank }).toISODate() as string;
-        what = `time-in-rank start date changed from ${localDay(sr.dateOfCurrentRank, timeZone)} to ${newDay}`;
-        data = { dateOfCurrentRank: startOfLocalDay(newDay, timeZone) };
-      } else {
-        const typeText = move.byType ? ` (${Object.entries(move.byType).map(([t, n]) => `${t} ${n}`).join(', ')})` : '';
-        what = `classes attended changed from ${sr.classesAttendedTowardCheckpoint} to ${move.total}${typeText}`;
-        data = { classesAttendedTowardCheckpoint: move.total, ...(move.byType ? { classesAttendedByType: move.byType } : {}) };
+      if (move.kind === 'CANNOT_REACH') {
+        throw new BadRequestException("This student can't be moved to that column: their classes and days at this rank can't change their progress that far.");
       }
+      const label = { JUST_STARTING: 'Just Starting', GETTING_THERE: 'Getting There', READY_TO_GRADE: 'Ready to Grade' }[dto.column];
+      const changes: string[] = [];
+      const data: Prisma.StudentRankUpdateManyMutationInput = {};
+      if (move.classes) {
+        const c = move.classes;
+        const typeText = c.byType ? ` (${Object.entries(c.byType).map(([t, n]) => `${t} ${n}`).join(', ')})` : '';
+        if (c.total !== sr.classesAttendedTowardCheckpoint || c.byType) {
+          changes.push(`classes attended changed from ${sr.classesAttendedTowardCheckpoint} to ${c.total}${typeText}`);
+        }
+        Object.assign(data, { classesAttendedTowardCheckpoint: c.total, ...(c.byType ? { classesAttendedByType: c.byType } : {}) });
+      }
+      if (move.daysInRank !== null) {
+        const newDay = DateTime.now().setZone(timeZone).minus({ days: move.daysInRank }).toISODate() as string;
+        changes.push(`time-in-rank start date changed from ${localDay(sr.dateOfCurrentRank, timeZone)} to ${newDay}`);
+        data.dateOfCurrentRank = startOfLocalDay(newDay, timeZone);
+      }
+      const what = changes.join('; ');
       const updated = await tx.studentRank.updateMany({
         where: { id: sr.id, currentStripeId: sr.currentStripeId, dateOfCurrentRank: sr.dateOfCurrentRank, classesAttendedTowardCheckpoint: sr.classesAttendedTowardCheckpoint },
         data,

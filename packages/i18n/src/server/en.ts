@@ -803,4 +803,5 @@ export const SERVER_PATTERNS: string[] = [
  "This history entry has been voided.",
  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.",
  "Only the School owner can change a style's requirements and automatic grading.",
+ "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.",
 ];

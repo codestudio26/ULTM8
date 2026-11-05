@@ -372,7 +372,8 @@ describeIfDb('Hours trained — logged, not graded (Decisions 301, 306)', () => 
       await superuser.studentRank.updateMany({ where: { studentId: user.ana.id, disciplineId: bjj.id }, data: { classesAttendedTowardCheckpoint: 10 } });
       const row = await styleRow(bjj.id);
       expect(row.progressBreakdown.classes).toEqual({ counted: 10, required: 40, percent: 25, byType: [] });
-      expect(row.progressBreakdown.classes.percent).toBe(row.eligibility.progressPercent);
+      // The classes on their own; the overall % averages them with days and skills (Decision 321 item 7).
+      expect(row.progressBreakdown.classes.percent).toBe(row.eligibility.classesPercent);
       expect(row.progressBreakdown.days.elapsed).toBe(row.eligibility.elapsedDays);
       expect(row.progressBreakdown.days.required).toBe(100);
       expect(row.progressBreakdown.skills).toEqual({ signedOff: 0, required: 2, percent: 0 });
@@ -391,7 +392,7 @@ describeIfDb('Hours trained — logged, not graded (Decisions 301, 306)', () => 
       expect(res.status).toBe(200);
       const item = res.body.items.find((i: { disciplineId: string }) => i.disciplineId === bjj.id);
       expect(item.hoursTrained).toEqual({ totalMinutes: 90, sinceCurrentRankMinutes: 90 });
-      expect(item.progressBreakdown.classes.percent).toBe(item.eligibility.progressPercent);
+      expect(item.progressBreakdown.classes.percent).toBe(item.eligibility.classesPercent);
     });
 
     it('hours never change the %, readiness or the board', async () => {
@@ -402,7 +403,8 @@ describeIfDb('Hours trained — logged, not graded (Decisions 301, 306)', () => 
         return res.body;
       };
       const before = { bjj: (await styleRow(bjj.id)).eligibility, judo: (await styleRow(judo.id)).eligibility, board: await board() };
-      expect(before.bjj).toMatchObject({ progressPercent: 75, boardColumn: 'READY_TO_GRADE', classesOk: false });
+      // A style that doesn't tick Hours (the default, Decision 321 item 2).
+      expect(before.bjj).toMatchObject({ classesPercent: 75, requiredHours: 0, minutesTrained: 0, classesOk: false });
 
       // A huge amount of hours in both styles, through the real paths and directly.
       await checkIn(new Date('2026-10-01T18:00:00Z'), 600, [{ disciplineId: judo.id, classType: null }]);

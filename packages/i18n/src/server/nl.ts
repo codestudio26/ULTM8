@@ -785,4 +785,5 @@ export const serverMessages: Record<string, string> = {
   "This history entry has been voided.": "Deze geschiedenisregel is vervallen verklaard.",
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "De rang van deze leerling is sinds de automatische promotie veranderd, dus die kan niet ongedaan worden gemaakt. Zet de leerling in plaats daarvan terug.",
   "Only the School owner can change a style's requirements and automatic grading.": "Alleen de eigenaar van de school kan de eisen en de automatische graduatie van een stijl wijzigen.",
+  "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "Deze leerling kan niet naar die kolom: de lessen en dagen in deze rang kunnen de voortgang niet zo ver veranderen.",
 };

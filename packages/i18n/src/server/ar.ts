@@ -785,4 +785,5 @@ export const serverMessages: Record<string, string> = {
   "This history entry has been voided.": "تم إلغاء سجل التاريخ هذا.",
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "تغيرت رتبة هذا الطالب منذ الترقية التلقائية، لذا لا يمكن التراجع عنها. أنزله رتبة بدلاً من ذلك.",
   "Only the School owner can change a style's requirements and automatic grading.": "مالك المدرسة وحده يمكنه تغيير متطلبات النمط والترقية التلقائية.",
+  "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "لا يمكن نقل هذا الطالب إلى ذلك العمود: لا يمكن لحصصه وأيامه في هذه الرتبة أن تغيّر تقدمه إلى هذا الحد.",
 };

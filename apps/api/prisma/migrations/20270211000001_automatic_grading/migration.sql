@@ -16,13 +16,11 @@
 --    and by whom an automatic promotion was undone. Written under the
 --    student's own context like every other history write; no grant change.
 --
--- 4. ultm8_jobs may read TrainingLog. The grading-notifications job (the
---    daily sweep and the check after each check-in) decides readiness and
---    automatic promotion with hours trained and days attended in a style
---    that ticks them, the same way it already reads StudentRank and the
---    ladder (20261022000000). Read only, and only this table: the job never
---    writes it. The promotion itself is applied by the API's grading path
---    under the student's own context, never by ultm8_jobs.
+-- No grant changes. The grading-notifications job (the daily sweep and the
+-- check after each check-in) reads hours trained and days attended from
+-- TrainingLog with the read it already has (20270204000000,
+-- "training_log_jobs_read"); the promotion itself is applied by the API's
+-- grading path under the student's own context, never by ultm8_jobs.
 
 CREATE TYPE "GradingPromotionMode" AS ENUM ('MANUAL', 'AUTO_STRIPES', 'AUTO_ALL');
 
@@ -51,6 +49,3 @@ ALTER TABLE "PromotionEvent"
 
 ALTER TABLE "PromotionEvent" ADD CONSTRAINT "PromotionEvent_automaticUndoneById_fkey"
   FOREIGN KEY ("automaticUndoneById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
-GRANT SELECT ON "TrainingLog" TO ultm8_jobs;
-CREATE POLICY "training_log_jobs_read" ON "TrainingLog" FOR SELECT TO ultm8_jobs USING (true);
