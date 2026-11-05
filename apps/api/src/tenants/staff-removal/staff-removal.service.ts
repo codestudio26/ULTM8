@@ -17,6 +17,12 @@ function teachingWhere(schoolId: string, userId: string, now: Date) {
   };
 }
 
+/** CANCEL works through the Classes soonest first (id breaks ties), so a run
+ * that stops part-way has already dealt with the most urgent ones, and the same
+ * request always meets them in the same order. Without an order Postgres may
+ * return them in any order. Decision 372 sets no order; this is ours. */
+const CANCEL_ORDER: Prisma.ClassOrderByWithRelationInput[] = [{ startDate: 'asc' }, { id: 'asc' }];
+
 /**
  * "Remove from School" (Decision 361), with the product owner's 28 Oct 2026
  * answer for a coach who still teaches: the removal always goes ahead, and in
@@ -77,7 +83,7 @@ export class StaffRemovalService {
     const where = teachingWhere(schoolId, userId, new Date());
     const [classes, slots, activeRoles] = await this.prismaApp.withTenantContext(callerId, (tx) =>
       Promise.all([
-        tx.class.findMany({ where: where.classes, select: { id: true, branchId: true } }),
+        tx.class.findMany({ where: where.classes, select: { id: true, branchId: true }, orderBy: CANCEL_ORDER }),
         tx.timetableSlot.findMany({ where: where.slots, select: { id: true, branchId: true } }),
         // Paused roles count (Decision 390): removing a paused coach still asks about their classes.
         tx.roleGrant.count({ where: { userId, schoolId, ...LIVE_OR_PAUSED, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] } } }),
@@ -90,7 +96,7 @@ export class StaffRemovalService {
     // is resumed (cancelClass skips one with nothing left to do).
     if (activeRoles === 0 && choice === 'CANCEL') {
       const leftover = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.class.findMany({ where: { ...where.classes, cancelledAt: undefined }, select: { id: true } }),
+        tx.class.findMany({ where: { ...where.classes, cancelledAt: undefined }, select: { id: true }, orderBy: CANCEL_ORDER }),
       );
       const cancelled = await this.cancelEach(callerId, leftover.map((c) => c.id));
       if (cancelled > 0) return { removedRoles: 0, ...done, classesCancelled: cancelled };

@@ -253,8 +253,10 @@ describeIfDb('Remove from School: what happens to the classes the person teaches
 
   it('CANCEL sent again finishes cancellations that stopped part-way after the roles were removed', async () => {
     const ana = await coach('Ana');
-    const c1 = await mkClass(ana.id);
-    const c2 = await mkClass(ana.id);
+    // c1 starts first, so it is cancelled first (soonest first) and the
+    // failure on c2 leaves only c2 for the retry.
+    const c1 = await mkClass(ana.id, { startInHours: 24 });
+    const c2 = await mkClass(ana.id, { startInHours: 48 });
     await mkBooking(c2.id);
     const cancellation = app.get(CancellationService);
     const original = cancellation.cancelClass.bind(cancellation);
@@ -265,6 +267,8 @@ describeIfDb('Remove from School: what happens to the classes the person teaches
     const first = await remove(ana.id, { classes: 'CANCEL' });
     expect(first.status).toBe(500);
     expect(await activeRoles(ana.id)).toBe(0); // access ended at once
+    expect((await superuser.class.findUniqueOrThrow({ where: { id: c1.id } })).cancelledAt).not.toBeNull();
+    expect((await superuser.class.findUniqueOrThrow({ where: { id: c2.id } })).cancelledAt).toBeNull();
     spy.mockRestore();
 
     const retry = await remove(ana.id, { classes: 'CANCEL' });
