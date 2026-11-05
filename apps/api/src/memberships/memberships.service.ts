@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Membership } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -353,6 +353,8 @@ export class MembershipsService {
         productName: title ?? existing.title,
         amount: nextPrice,
         currency: chargeCurrency.toLowerCase(),
+        // Decision 430 (MON-12): the same new price saved twice makes one Stripe Price.
+        planId,
       });
       stripeProductId = created.productId;
       stripePriceId = created.priceId;
@@ -371,9 +373,13 @@ export class MembershipsService {
       stripePriceId = null;
     }
 
-    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.membershipPlan.update({
-        where: { id: planId },
+    // Decision 430 (MON-12): a price change saves only if the price is still
+    // the one this edit started from, so the same change sent five times at
+    // once records (and migrates) once. The others answer 409.
+    const priceMoves = priceOrTypeChanged && nextPrice !== existing.price;
+    const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const saved = await tx.membershipPlan.updateMany({
+        where: { id: planId, ...(priceMoves ? { price: existing.price } : {}) },
         data: {
           type: dto.type,
           title,
@@ -398,8 +404,12 @@ export class MembershipsService {
           stripePriceId,
           incomeCategoryId,
         },
-      }),
-    );
+      });
+      if (saved.count === 0) {
+        throw new ConflictException({ code: 'PLAN_PRICE_JUST_CHANGED', message: "This plan's price was just changed. Reload the plan and try again." });
+      }
+      return tx.membershipPlan.findUniqueOrThrow({ where: { id: planId } });
+    });
 
     if (priceChanged && affectedMembershipCount > 0 && dto.priceChangeStrategy) {
       await this.recordPriceChangeDecision(callerId, {
@@ -1394,15 +1404,16 @@ export class MembershipsService {
     }
     const currency = plan.price > 0 ? await this.resolveChargeCurrency(studentId, schoolId, plan.currency) : null;
 
+    let sale: { membership: Membership; transactionId: string | null; amount: number };
     try {
-      return await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      sale = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'SALE');
         const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan) });
         if (plan.price === 0) {
           // Spec 55 §6.1: a £0 plan has no Transaction, as in purchase().
-          return { membership, transactionId: null };
+          return { membership, transactionId: null, amount: 0 };
         }
         const transaction = await tx.transaction.create({
           data: {
@@ -1420,11 +1431,21 @@ export class MembershipsService {
           },
           select: { id: true },
         });
-        return { membership, transactionId: transaction.id };
+        return { membership, transactionId: transaction.id, amount: plan.price };
       });
     } catch (err) {
       throw this.toCreationConflict(err);
     }
+    // Decision 346 / Decision 430 (MON-14): the member (and their Guardians)
+    // hear that the desk payment was taken, whichever desk path recorded it,
+    // once it is committed. notifyCashPayment never throws.
+    if (sale.transactionId) {
+      await this.paymentsService.notifyCashPayment(
+        { id: sale.transactionId, schoolId, studentId, membershipPlanId: plan.id, amount: sale.amount, currency },
+        'confirmed',
+      );
+    }
+    return { membership: sale.membership, transactionId: sale.transactionId };
   }
 
   /**
@@ -1508,14 +1529,22 @@ export class MembershipsService {
     if (plan.type !== 'FRIEND_PASS') {
       throw new BadRequestException('Only a Friend Pass plan can be given. Use Sell a plan for the others.');
     }
+    // Decision 430 (MON-15): one action may give up to five passes. The repeat
+    // guard runs once for the action, so a second guest no longer needs a
+    // second click a minute later.
+    const quantity = dto.quantity ?? 1;
     try {
-      const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const memberships = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'GIFT');
-        return tx.membership.create({ data: { ...this.newMembershipData(studentId, plan), giftedById: callerId } });
+        const made: Membership[] = [];
+        for (let i = 0; i < quantity; i++) {
+          made.push(await tx.membership.create({ data: { ...this.newMembershipData(studentId, plan), giftedById: callerId } }));
+        }
+        return made;
       });
-      return { membership, transactionId: null };
+      return { membership: memberships[0], memberships, transactionId: null };
     } catch (err) {
       throw this.toCreationConflict(err);
     }
@@ -1723,15 +1752,7 @@ export class MembershipsService {
       { membershipPlanId: dto.membershipPlanId, paymentMethod: dto.paymentMethod },
       { recordedById: callerId },
     );
-    if (transactionId) {
-      const transaction = await this.prismaApp.withTenantContext(dto.studentId, (tx) =>
-        tx.transaction.findUnique({
-          where: { id: transactionId },
-          select: { id: true, schoolId: true, studentId: true, membershipPlanId: true, amount: true, currency: true },
-        }),
-      );
-      if (transaction) await this.paymentsService.notifyCashPayment(transaction, 'confirmed');
-    }
+    // recordDeskSale() tells the member (Decision 430, MON-14).
     return { transactionId, membershipId: membership.id };
   }
 
