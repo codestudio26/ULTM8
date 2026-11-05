@@ -8,6 +8,8 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
+import { assertBaselineConsentGiven } from '../guardians/baseline-consent';
+import { schoolZone } from '../common/school-zone';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
@@ -61,8 +63,9 @@ export class WaitlistService {
     const studentId = dto?.studentId ?? callerId;
     const isOnBehalfOf = dto?.studentId !== undefined && dto.studentId !== callerId;
 
-    let cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
-    let isGuardianAction = false;
+    // Decision 429 item 1 (FAM-1): relationship first, as BookingsService.bookClass.
+    let isGuardianAction = isOnBehalfOf && (await this.guardiansService.isActiveGuardianOf(callerId, studentId));
+    let cls = isGuardianAction ? null : await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
     if (!cls && isOnBehalfOf) {
       cls = await this.prismaApp.withTenantContext(studentId, (tx) => tx.class.findUnique({ where: { id: classId } }));
       isGuardianAction = cls !== null;
@@ -79,7 +82,7 @@ export class WaitlistService {
     }
 
     if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'act', schoolId: resolvedClass.schoolId, branchId: resolvedClass.branchId });
     } else if (isOnBehalfOf) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedClass.schoolId);
       await this.tenantAuth.assertStaffMay(callerId, resolvedClass.schoolId, 'bookings', resolvedClass.branchId);
@@ -87,6 +90,8 @@ export class WaitlistService {
     assertClassBookable(resolvedClass, { byStaff: isOnBehalfOf && !isGuardianAction });
     // Decision 110: a closed School takes no new waitlist places (Classes review C16).
     await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
+    // Decision 429 item 9: no place for a child still waiting for a parent's consent.
+    await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       // First, before any row lock (see lockStudentClass): a Student who has
@@ -187,9 +192,13 @@ export class WaitlistService {
       throw new NotFoundException('Waitlist entry not found');
     }
     const resolvedEntry = existing;
+    // Decision 429 item 1 (FAM-1): a parent who is also staff acts as the parent.
+    if (!isGuardianAction && resolvedEntry.studentId !== callerId && (await this.guardiansService.isActiveGuardianOf(callerId, resolvedEntry.studentId))) {
+      isGuardianAction = true;
+    }
 
     if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedEntry.studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedEntry.studentId, { purpose: 'act', schoolId: resolvedEntry.schoolId, branchId: resolvedEntry.branchId });
     } else if (resolvedEntry.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedEntry.schoolId);
       await this.tenantAuth.assertStaffMay(callerId, resolvedEntry.schoolId, 'bookings', resolvedEntry.branchId);
@@ -234,9 +243,13 @@ export class WaitlistService {
       throw new NotFoundException('Waitlist entry not found');
     }
     const resolvedEntry = existing;
+    // Decision 429 item 1 (FAM-1): a parent who is also staff acts as the parent.
+    if (!isGuardianAction && resolvedEntry.studentId !== callerId && (await this.guardiansService.isActiveGuardianOf(callerId, resolvedEntry.studentId))) {
+      isGuardianAction = true;
+    }
 
     if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedEntry.studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedEntry.studentId, { purpose: 'act', schoolId: resolvedEntry.schoolId, branchId: resolvedEntry.branchId });
     } else if (resolvedEntry.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedEntry.schoolId);
       await this.tenantAuth.assertStaffMay(callerId, resolvedEntry.schoolId, 'bookings', resolvedEntry.branchId);
@@ -257,6 +270,8 @@ export class WaitlistService {
     await this.subscriptionGate.assertNotDegraded(resolvedEntry.studentId, resolvedEntry.schoolId);
     // Decision 110: a closed School takes no new Bookings (Classes review C16).
     await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
+    // Decision 429 item 9: a claim is a booking; it waits for a parent's consent.
+    await assertBaselineConsentGiven(this.prismaJobs, resolvedEntry.studentId, await schoolZone(this.prismaJobs, resolvedEntry.schoolId, resolvedEntry.branchId));
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const studentId = resolvedEntry.studentId;

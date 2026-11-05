@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { assertSelfAttestedAdult } from '../common/self-attested-adult';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
@@ -751,7 +752,8 @@ export class MembershipsService {
     const studentId = dto?.studentId ?? callerId;
     const isGuardianAction = dto?.studentId !== undefined && dto.studentId !== callerId;
     if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      // Decision 429 item 7: a parent keeps paying for 30 days after 18.
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'pay' });
     }
     // Decision 236's own follow-up — the saved-payment-method endpoints
     // (PaymentsController) are self-only, so a Guardian-driven minor, who
@@ -789,6 +791,13 @@ export class MembershipsService {
     // the School can hold its Membership. Staff buying as themselves, and a
     // removed Student, are refused.
     await this.assertActiveStudent(studentId, plan.schoolId);
+    // Decision 429 item 5 (FAM-5; SKILL.md §13, Decision 67): buying for
+    // yourself is a first consequential action, so the self-attested-adult
+    // check runs here as at waiver signing. A parent buying for their child
+    // is the Guardian path above; desk sales don't come through here.
+    if (!isGuardianAction) {
+      await this.prismaApp.withTenantContext(studentId, (tx) => assertSelfAttestedAdult(tx, studentId, plan.schoolId, 'purchase'));
+    }
     // Decision 334 (Memberships review M13): a closed School takes no new
     // payments (Decision 110).
     await this.tenantAuth.assertSchoolNotArchived(studentId, plan.schoolId);

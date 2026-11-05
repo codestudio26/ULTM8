@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { assertBaselineConsentGiven } from '../guardians/baseline-consent';
 import { CheckInMethod, Class, PrismaClient } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -431,6 +432,10 @@ export class AttendanceService {
     checkedInById: string | null,
     opts: CreditAttendanceOptions = {},
   ) {
+    // Decision 429 item 9 (FAM-9): a child still waiting for a parent's
+    // BASELINE consent isn't checked in, whichever way in. Imported past
+    // attendance (onlySinceRankDate) isn't a check-in made now.
+    if (!opts.onlySinceRankDate) await assertBaselineConsentGiven(this.prismaJobs, studentId);
     // The School's check-in rules about the person (Decision 394), for every
     // way in: waiver, home Branch, visitors.
     await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id);

@@ -1,4 +1,6 @@
 import { Logger } from '@nestjs/common';
+import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
+import { schoolZone } from '../common/school-zone';
 import { InjectQueue, OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -98,7 +100,7 @@ export class NotificationFanoutProcessor extends WorkerHost {
 
     const user = await this.prismaJobs.user.findUnique({
       where: { id: userId },
-      select: { email: true, firstName: true },
+      select: { email: true, firstName: true, dateOfBirth: true },
     });
     if (!user) {
       // The target User row is gone (a genuine race — deleted between enqueue and
@@ -110,7 +112,10 @@ export class NotificationFanoutProcessor extends WorkerHost {
       return;
     }
 
-    if (!guardianCopyOf) {
+    // Decision 429 item 7 (FAM-7): a parent's copies stop on the child's 18th
+    // birthday (the School's own date when the notice is from a School).
+    const adult = !guardianCopyOf && isAdultOn(user.dateOfBirth, new Date(), schoolId ? await schoolZone(this.prismaJobs, schoolId) : null);
+    if (!guardianCopyOf && !adult) {
       const guardians = await this.prismaJobs.guardianLink.findMany({
         where: { studentId: userId, revokedAt: null },
         select: { guardianId: true },

@@ -22,6 +22,14 @@ export const STAFF_ACTIONS = [
   // Decision 315 item 13: a duplicate member merged into the kept one
   // (targetUserId). { keptName, duplicateId, duplicateName, moved, waiverSignaturesLeft }
   'MEMBERS_MERGED',
+  // Decision 429 item 8: a parent's link to a child ended (targetUserId = the
+  // parent). { studentId, studentName, guardianName }. GUARDIAN_REMOVED is the
+  // owner's "Remove Guardian"; GUARDIAN_LEFT is the parent's own "Remove me".
+  'GUARDIAN_REMOVED',
+  'GUARDIAN_LEFT',
+  // Decision 429 item 6: the owner invited another adult to be a child's
+  // parent. { studentId, studentName, email }
+  'GUARDIAN_INVITED',
 ] as const;
 export type StaffAction = (typeof STAFF_ACTIONS)[number];
 

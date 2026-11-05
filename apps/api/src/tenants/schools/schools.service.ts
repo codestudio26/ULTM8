@@ -1,4 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { assertIdentityNotShared, changedIdentityFields, IDENTITY_FIELDS } from './identity-lock';
+import { assertNotConsentWithdrawn, baselineConsentState } from '../../guardians/baseline-consent';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
@@ -30,6 +32,7 @@ import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-q
 import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
 import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
+import { schoolZone } from '../../common/school-zone';
 import { LIVE_WAITLIST_STATUSES, leavingStudentBookingsWhere } from '../../bookings/leaving-student-cancellation';
 import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
 import { PrismaPlatformAdminService } from '../../common/prisma/prisma-platform-admin.service';
@@ -319,12 +322,17 @@ export class SchoolsService {
       } catch (err) {
         if (!(err instanceof ForbiddenException)) throw err;
         try {
-          await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+          // Decision 429 item 7: a parent doesn't enrol a child who is 18.
+          await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'act', schoolId, branchId: dto?.branchId });
         } catch (guardianErr) {
           // Staff here who aren't the owner (and aren't this child's
           // Guardian) get the reason that applies to them, not the Guardian
           // one (Decision 341, S11).
-          if (guardianErr instanceof ForbiddenException && (await this.tenantAuth.isStaffAtSchool(callerId, schoolId))) {
+          if (
+            guardianErr instanceof ForbiddenException &&
+            !(await this.guardiansService.isActiveGuardianOf(callerId, studentId)) &&
+            (await this.tenantAuth.isStaffAtSchool(callerId, schoolId))
+          ) {
             throw new ForbiddenException('Only the School owner can enrol students.');
           }
           throw guardianErr;
@@ -332,6 +340,10 @@ export class SchoolsService {
         isGuardianAction = true;
       }
     }
+
+    // Decision 429 item 9 (FAM-9): after a parent withdrew BASELINE consent,
+    // the child is enrolled again only once a parent gives fresh consent.
+    if (isOnBehalfOf) await assertNotConsentWithdrawn(this.prismaJobs, studentId);
 
     // Decision 318 item 7: the School may turn off "add family members", a
     // Guardian adding their child here from the app. The owner's own enrolment
@@ -1177,13 +1189,22 @@ export class SchoolsService {
     // School owner may make that change (Decision 342).
     if (dto.dateOfBirth && !(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
       const current = await this.usersService.getProfileFor(callerId, studentId);
-      if (isAdultOn(current.dateOfBirth) !== isAdultOn(new Date(dto.dateOfBirth))) {
+      const zone = await schoolZone(this.prismaJobs, schoolId);
+      const now = new Date();
+      if (isAdultOn(current.dateOfBirth, now, zone) !== isAdultOn(new Date(dto.dateOfBirth), now, zone)) {
         throw new ForbiddenException('Only the School owner can change a birth date that makes someone an adult or a child.');
       }
     }
     // Decision 315 item 4: the join date, checked before anything is saved.
     const { joinedOn, ...profile } = dto;
     if (joinedOn !== undefined) await assertJoinDateAllowed(this.prismaJobs, schoolId, joinedOn);
+    // Decision 429 item 13 (PRIV-2): name, birth date and gender are locked
+    // for staff once they're shared with another School or the person's (or
+    // their parent's) own login.
+    if (IDENTITY_FIELDS.some((f) => dto[f] !== undefined)) {
+      const current = await this.usersService.getProfileFor(callerId, studentId);
+      if (changedIdentityFields(current, dto).length > 0) await assertIdentityNotShared(this.prismaJobs, this.prismaAuth, schoolId, studentId);
+    }
     const updated = await this.usersService.updateProfileFor(callerId, studentId, profile);
     if (joinedOn !== undefined) await setJoinDate(this.prismaJobs, schoolId, studentId, joinedOn, callerId);
     return this.withJoinDate(schoolId, updated);
@@ -1220,6 +1241,8 @@ export class SchoolsService {
     const names = await resolveUserNames(this.prismaAuth, links.map((l) => l.guardianId));
     return {
       items: links.map((l) => ({ id: l.guardianId, firstName: names.get(l.guardianId)?.firstName ?? '', surname: names.get(l.guardianId)?.surname ?? '' })),
+      // Decision 429 item 9: staff see "consent pending" (no booking or check-in).
+      consent: await baselineConsentState(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, schoolId)),
     };
   }
 

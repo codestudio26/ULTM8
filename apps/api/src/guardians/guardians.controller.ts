@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, HttpCode, Param, ParseUUIDPipe, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -16,6 +16,7 @@ import {
   BookingDelegationListResponseDto,
   KidModeTokenResponseDto,
   PendingReviewBookingListResponseDto,
+  ChildConsentResponseDto,
 } from './dto/guardian-response.dto';
 
 // Phase 12 scope only: linking a minor + two-tier consent grant/withdraw. See
@@ -47,6 +48,22 @@ export class GuardiansController {
   @Post('minors/:studentId/consent')
   grantConsent(@CurrentUser() user: JwtPayload, @Param('studentId') studentId: string, @Body() dto: GrantConsentDto) {
     return this.guardiansService.grantConsent(user.sub, studentId, dto);
+  }
+
+  /** Decision 429 item 9: every parent's consent for this child, the other
+   * parents' read-only. */
+  @ApiOkResponse({ type: ChildConsentResponseDto })
+  @Get('minors/:studentId/consent')
+  findChildConsent(@CurrentUser() user: JwtPayload, @Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.guardiansService.findChildConsent(user.sub, studentId);
+  }
+
+  /** Decision 429 item 8: "Remove me" — this parent's own link to the child
+   * ends (never the last parent of an enrolled child). */
+  @HttpCode(204)
+  @Delete('minors/:studentId')
+  removeMe(@CurrentUser() user: JwtPayload, @Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.guardiansService.removeMe(user.sub, studentId);
   }
 
   @ApiOkResponse({ type: ConsentRecordListResponseDto })
