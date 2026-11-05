@@ -20,6 +20,7 @@ import {
 } from './membershipPlanQueries';
 import { OwnerOnly } from './MembershipPlansPage';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { incomeCategoryOptions, useIncomeCategories, type IncomeCategory } from '../charges/incomeCategoryQueries';
 
 /** `label`/`caption` are translation keys, resolved at render time; `value`
  * is the enum value sent to the API, never translated. */
@@ -74,6 +75,8 @@ export function MembershipPlanFormPage() {
   // surfacing after a 400 from the server — only ever relevant on Edit, so
   // `null` on Create skips the request entirely (useQuery's own `enabled`).
   const { data: activeCountData } = useMembershipPlanActiveCount(isEdit ? id ?? null : null);
+  // Decision 316 item 10: the School's income categories for the picker.
+  const { data: incomeCategoryData } = useIncomeCategories(schoolId);
   const createPlan = useCreateMembershipPlan(schoolId ?? '');
   const updatePlan = useUpdateMembershipPlan(schoolId ?? '', id ?? '');
   const t = useT();
@@ -100,6 +103,7 @@ export function MembershipPlanFormPage() {
       initial={initial}
       classes={classData?.items ?? []}
       disciplines={disciplineData?.items ?? []}
+      incomeCategories={incomeCategoryData?.items ?? []}
       defaultCurrency={school?.defaultCurrency ?? undefined}
       // Decision 414 item 6: no price until the School's currency is set.
       schoolCurrencyMissing={!!school && !school.defaultCurrency}
@@ -148,6 +152,8 @@ interface MembershipPlanFormValues {
   // Decision 259 — SUBSCRIPTION only. Omitted on every other type.
   newMemberBillingStrategy?: 'FRESH_CYCLE' | 'PRORATED_TO_SHARED_CYCLE';
   billingCycleAnchorDay?: number | null;
+  // Decision 316 item 10. Null clears it on edit; omitted on create.
+  incomeCategoryId?: string | null;
 }
 
 /** Fields match CreateMembershipPlanDto/UpdateMembershipPlanDto exactly —
@@ -164,6 +170,7 @@ function MembershipPlanForm({
   initial,
   classes,
   disciplines,
+  incomeCategories,
   defaultCurrency,
   schoolCurrencyMissing = false,
   activeSubscriberCount,
@@ -176,6 +183,8 @@ function MembershipPlanForm({
   initial?: Partial<MembershipPlanResponse>;
   classes: ClassResponse[];
   disciplines: DisciplineResponse[];
+  /** Decision 316 item 10: the School's income categories. */
+  incomeCategories: IncomeCategory[];
   defaultCurrency?: string;
   /** Decision 414 item 6 — the School has no currency yet, so the price
    * fields are off (a free plan can still be saved) and a notice links to the
@@ -226,6 +235,7 @@ function MembershipPlanForm({
     // Decision 259 — SUBSCRIPTION only.
     newMemberBillingStrategy: (initial?.newMemberBillingStrategy as 'FRESH_CYCLE' | 'PRORATED_TO_SHARED_CYCLE') ?? 'FRESH_CYCLE',
     billingCycleAnchorDay: initial?.billingCycleAnchorDay?.toString() ?? '',
+    incomeCategoryId: initial?.incomeCategoryId ?? '',
   });
   // Decision 195: "Includes lessons" follows the price (on when priced, off
   // when free) until the owner sets it.
@@ -392,6 +402,7 @@ function MembershipPlanForm({
         termsWaiverRequired: form.termsWaiverRequired,
         disciplineIds: form.disciplineIds,
         includesLessons: lessonsOn,
+        incomeCategoryId: form.incomeCategoryId || null,
         // Omitted (undefined) whenever not required — sending it when the
         // server doesn't expect one is itself rejected (400), per
         // MembershipsService.updatePlan()'s own "a value with no effect is a
@@ -653,6 +664,15 @@ function MembershipPlanForm({
             checked={form.termsWaiverRequired}
             onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
           />
+          {/* Decision 316 item 10: shown in the Transactions export. */}
+          <Field label={t('charges.incomeCategories.fieldLabel')} htmlFor="plan-incomeCategory" hint={t('charges.incomeCategories.fieldHint')}>
+            <SelectField
+              id="plan-incomeCategory"
+              value={form.incomeCategoryId}
+              onChange={(e) => setForm((f) => ({ ...f, incomeCategoryId: e.target.value }))}
+              options={incomeCategoryOptions(incomeCategories, t('charges.incomeCategories.none'))}
+            />
+          </Field>
         </Card>
         ) : null}
 

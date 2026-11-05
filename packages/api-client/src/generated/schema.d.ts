@@ -3124,6 +3124,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/income-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["IncomeCategoriesController_list"];
+        put?: never;
+        post: operations["IncomeCategoriesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/income-categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["IncomeCategoriesController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["IncomeCategoriesController_rename"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/transactions": {
         parameters: {
             query?: never;
@@ -9867,6 +9899,8 @@ export interface components {
             cancellationCharge?: number;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
+            /** @description One of the School's income categories (Decision 316 item 10), shown in the Transactions export. */
+            incomeCategoryId?: string;
             /** @description The School's styles this plan covers (Decision 195). */
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
@@ -9895,6 +9929,8 @@ export interface components {
             refundFeeDate?: string | null;
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
+            /** @description The plan's income category (Decision 316 item 10), from GET /schools/{id}/income-categories. */
+            incomeCategoryId?: string | null;
             /** @description The styles this plan covers (Decision 195). */
             disciplineIds: string[];
             /** @description Whether a live membership on this plan can watch its styles' lessons (Decision 195). */
@@ -9948,6 +9984,8 @@ export interface components {
              * @enum {string}
              */
             priceChangeStrategy?: "MIGRATE" | "GRANDFATHER";
+            /** @description One of the School's income categories (Decision 316 item 10). Pass null to clear. */
+            incomeCategoryId?: string | null;
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
@@ -10260,6 +10298,18 @@ export interface components {
         MyFreezableMembershipListResponseDto: {
             items: components["schemas"]["MyFreezableMembershipDto"][];
         };
+        IncomeCategoryDto: {
+            id: string;
+            name: string;
+            /** @description How many membership plans, charges and recurring charges carry it. One in use cannot be deleted, only renamed. */
+            useCount: number;
+        };
+        IncomeCategoryListDto: {
+            items: components["schemas"]["IncomeCategoryDto"][];
+        };
+        IncomeCategoryNameDto: {
+            name: string;
+        };
         TransactionResponseDto: {
             id: string;
             schoolId: string;
@@ -10296,6 +10346,8 @@ export interface components {
             cancelledByName?: string | null;
             /** @description Why it was cancelled. Staff only; never sent to the member. */
             cancelReason?: string | null;
+            /** @description Decision 316 item 10: the income category of the plan (a plan purchase or renewal) or of the charge (a payment toward a charge) this payment is for, as it is now. Staff only; null in the member's own list, and for fees that belong to neither. */
+            incomeCategoryName?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -13315,6 +13367,8 @@ export interface components {
             taxInclusive: boolean;
             /** @description "No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax". */
             taxExempt: boolean;
+            /** @description The charge's income category (Decision 316 item 10). Staff only; null for the member. */
+            incomeCategoryName?: string | null;
             /** @description The price excluding tax. */
             netAmount: number;
             taxAmount: number;
@@ -13506,6 +13560,8 @@ export interface components {
              * @default false
              */
             taxExempt: boolean;
+            /** @description One of the School's income categories (Decision 316 item 10), shown in the Transactions export. */
+            incomeCategoryId?: string;
         };
         CancelChargeDto: {
             /** @description For staff only. Required unless the School's owner made it optional. */
@@ -13720,6 +13776,8 @@ export interface components {
             currency: string;
             /** @description "No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax. */
             taxExempt: boolean;
+            /** @description The series' income category (Decision 316 item 10). Staff only; null for the member. */
+            incomeCategoryName?: string | null;
             frequency: components["schemas"]["RecurringChargeFrequency"];
             /** @example 2026-11-15 */
             firstDate: string;
@@ -13780,6 +13838,8 @@ export interface components {
              * @default false
              */
             taxExempt: boolean;
+            /** @description One of the School's income categories (Decision 316 item 10); every charge of the series carries it. */
+            incomeCategoryId?: string;
         };
         MemberRecurringChargeDto: {
             id: string;
@@ -13794,6 +13854,8 @@ export interface components {
             currency: string;
             /** @description "No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax. */
             taxExempt: boolean;
+            /** @description The series' income category (Decision 316 item 10). Staff only; null for the member. */
+            incomeCategoryName?: string | null;
             frequency: components["schemas"]["RecurringChargeFrequency"];
             /** @example 2026-11-15 */
             firstDate: string;
@@ -19084,6 +19146,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    IncomeCategoriesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeCategoryListDto"];
+                };
+            };
+        };
+    };
+    IncomeCategoriesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncomeCategoryNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeCategoryDto"];
+                };
+            };
+        };
+    };
+    IncomeCategoriesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IncomeCategoriesController_rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncomeCategoryNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeCategoryDto"];
                 };
             };
         };

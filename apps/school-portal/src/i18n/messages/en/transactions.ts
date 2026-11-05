@@ -52,6 +52,7 @@ export const transactions = {
   columnCancelledAt: "Cancelled on",
   columnCancelledBy: "Cancelled by",
   columnCancelReason: "Cancel reason",
+  columnIncomeCategory: "Income category",
   atDesk: 'at desk',
   filterAny: 'Any',
   filterFrom: 'From',

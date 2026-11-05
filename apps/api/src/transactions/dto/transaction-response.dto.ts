@@ -122,6 +122,14 @@ export class TransactionResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Why it was cancelled. Staff only; never sent to the member.' })
   cancelReason!: string | null;
 
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description:
+      "Decision 316 item 10: the income category of the plan (a plan purchase or renewal) or of the charge (a payment toward a charge) this payment is for, as it is now. Staff only; null in the member's own list, and for fees that belong to neither.",
+  })
+  incomeCategoryName!: string | null;
+
   @ApiProperty()
   createdAt!: string;
 

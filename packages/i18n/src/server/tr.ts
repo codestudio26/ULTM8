@@ -778,4 +778,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "İçe aktarma bulunamadı",
   "Each row number can only be sent once.": "Her satır numarası yalnızca bir kez gönderilebilir.",
   "Tick the consent box to upload a certification.": "Sertifika yüklemek için onay kutusunu işaretleyin.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Gelir kategorisi bulunamadı",
+  "This School already has an income category with that name.": "Bu okulda bu adda bir gelir kategorisi zaten var.",
+  "This School already has 100 income categories. Delete one before adding another.": "Bu okulda zaten 100 gelir kategorisi var. Yenisini eklemeden önce birini silin.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Bu gelir kategorisi bir plan veya ücret tarafından kullanılıyor, bu yüzden silinemez. Bunun yerine adını değiştirin.",
+  "Choose an income category from this School's list.": "Bu okulun listesinden bir gelir kategorisi seçin.",
 };
