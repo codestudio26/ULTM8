@@ -4761,6 +4761,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "De e-mail kon niet worden verzonden. Maak een nieuwe tijdelijke toegangscode op de pagina van de leerling.",
     },
   },
+  adTracking: {
+    title: "Advertentietracking",
+    subtitle: "Koppel je Meta Pixel of Google Analytics door de ID in te vullen. Alleen deze kant-en-klare koppelingen zijn mogelijk: ULTM8 voegt nooit je eigen code aan zijn pagina’s toe.",
+    notUsedYet: "Bewaard voor de openbare pagina’s van je school. Nog geen enkele pagina gebruikt ze.",
+    metaPixelLabel: "Meta Pixel-ID",
+    metaPixelHint: "Alleen cijfers, zoals in Meta Events Manager, bijv. 123456789012345.",
+    metaPixelInvalid: "Een Meta Pixel-ID bestaat uit 10 tot 20 cijfers en verder niets.",
+    googleAnalyticsLabel: "Google Analytics-meet-ID",
+    googleAnalyticsHint: "Begint met G-, bijv. G-AB12CD34EF.",
+    googleAnalyticsInvalid: "Een Google Analytics-meet-ID begint met G- gevolgd door 4 tot 16 letters of cijfers.",
+  },
   payroll: {
     nav: "Salarisoverzicht",
     title: "Salarisoverzicht",

@@ -1137,6 +1137,13 @@ model School {
   footerYoutubeUrl   String?
   footerTwitterUrl   String?
 
+  /// Decision 318 item 10: ad tracking, ready-made connections only. A Meta
+  /// Pixel ID (digits only) and a Google Analytics GA4 measurement ID
+  /// ("G-…"); null = not set. Formats are enforced by the API and by CHECK
+  /// constraints, so nothing but an ID can be stored. No page loads them yet.
+  metaPixelId       String?
+  googleAnalyticsId String?
+
   /// Promotion fee (Decisions 287, 300, 307): School-wide switches, owner
   /// only (Decision 297). Both off by default. With the fee off, rung prices
   /// are kept but never returned or charged. "Grade before paid" on: a priced

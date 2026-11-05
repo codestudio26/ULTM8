@@ -982,6 +982,9 @@ export class SchoolsService {
       tx.school.update({
         where: { id: schoolId },
         data: {
+          // Decision 318 item 10: ad tracking IDs (formats checked by UpdateSchoolDto).
+          metaPixelId: dto.metaPixelId,
+          googleAnalyticsId: dto.googleAnalyticsId,
           name: dto.name,
           mobileNumber: dto.mobileNumber,
           ...addressWriteData(dto),

@@ -4761,6 +4761,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "Die E-Mail konnte nicht gesendet werden. Erstelle auf der Seite des Schülers einen neuen vorläufigen Zugangscode.",
     },
   },
+  adTracking: {
+    title: "Werbe-Tracking",
+    subtitle: "Verbinde dein Meta Pixel oder Google Analytics, indem du die ID eingibst. Nur diese fertigen Verbindungen werden angeboten: ULTM8 fügt seinen Seiten nie eigenen Code von dir hinzu.",
+    notUsedYet: "Für die öffentlichen Seiten deiner Schule gespeichert. Noch keine Seite verwendet sie.",
+    metaPixelLabel: "Meta-Pixel-ID",
+    metaPixelHint: "Nur Ziffern, wie im Meta Events Manager angezeigt, z. B. 123456789012345.",
+    metaPixelInvalid: "Eine Meta-Pixel-ID besteht aus 10 bis 20 Ziffern und sonst nichts.",
+    googleAnalyticsLabel: "Google-Analytics-Mess-ID",
+    googleAnalyticsHint: "Beginnt mit G-, z. B. G-AB12CD34EF.",
+    googleAnalyticsInvalid: "Eine Google-Analytics-Mess-ID beginnt mit G-, gefolgt von 4 bis 16 Buchstaben oder Ziffern.",
+  },
   payroll: {
     nav: "Lohnabrechnung",
     title: "Lohnabrechnung",

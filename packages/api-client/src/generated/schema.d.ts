@@ -7556,6 +7556,10 @@ export interface components {
             footerTiktokUrl?: string | null;
             footerYoutubeUrl?: string | null;
             footerTwitterUrl?: string | null;
+            /** @description Decision 318 item 10: the Meta Pixel ID (digits only). */
+            metaPixelId?: string | null;
+            /** @description Decision 318 item 10: the Google Analytics GA4 measurement ID ("G-…"). */
+            googleAnalyticsId?: string | null;
             /** @enum {string} */
             classCancellationPolicy: "MANUAL" | "AUTO_REFUND" | "AUTO_CREDIT";
             waitlistClaimWindowMinutes: number;
@@ -7813,6 +7817,10 @@ export interface components {
             footerYoutubeUrl?: string | null;
             /** @description X (formerly Twitter). */
             footerTwitterUrl?: string | null;
+            /** @description Meta Pixel ID: 10 to 20 digits, nothing else. */
+            metaPixelId?: string | null;
+            /** @description Google Analytics GA4 measurement ID: "G-" and 4 to 16 capital letters or digits. */
+            googleAnalyticsId?: string | null;
             /** @description Show this School's Franchise name and logo (the Franchise Owner must also allow it). */
             showFranchiseBranding?: boolean;
             /** @description Confirms a currency change that moves plans without their own currency to the new one. */

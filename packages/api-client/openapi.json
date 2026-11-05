@@ -23123,6 +23123,16 @@
             "type": "string",
             "nullable": true
           },
+          "metaPixelId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 318 item 10: the Meta Pixel ID (digits only)."
+          },
+          "googleAnalyticsId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 318 item 10: the Google Analytics GA4 measurement ID (\"G-…\")."
+          },
           "classCancellationPolicy": {
             "type": "string",
             "enum": [
@@ -23800,6 +23810,18 @@
             "type": "string",
             "nullable": true,
             "description": "X (formerly Twitter)."
+          },
+          "metaPixelId": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^[0-9]{10,20}$",
+            "description": "Meta Pixel ID: 10 to 20 digits, nothing else."
+          },
+          "googleAnalyticsId": {
+            "type": "string",
+            "nullable": true,
+            "pattern": "^G-[A-Z0-9]{4,16}$",
+            "description": "Google Analytics GA4 measurement ID: \"G-\" and 4 to 16 capital letters or digits."
           },
           "showFranchiseBranding": {
             "type": "boolean",

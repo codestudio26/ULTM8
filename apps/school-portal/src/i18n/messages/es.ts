@@ -4761,6 +4761,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "No se pudo enviar el correo. Crea un código de acceso temporal nuevo en la página del alumno.",
     },
   },
+  adTracking: {
+    title: "Seguimiento de anuncios",
+    subtitle: "Conecta tu Meta Pixel o Google Analytics introduciendo su ID. Solo se ofrecen estas conexiones ya preparadas: ULTM8 nunca añade tu propio código a sus páginas.",
+    notUsedYet: "Guardados para las páginas públicas de tu escuela. Ninguna página los usa todavía.",
+    metaPixelLabel: "ID de Meta Pixel",
+    metaPixelHint: "Solo números, como aparece en el Administrador de eventos de Meta, p. ej. 123456789012345.",
+    metaPixelInvalid: "Un ID de Meta Pixel tiene de 10 a 20 dígitos, y nada más.",
+    googleAnalyticsLabel: "ID de medición de Google Analytics",
+    googleAnalyticsHint: "Empieza por G-, p. ej. G-AB12CD34EF.",
+    googleAnalyticsInvalid: "Un ID de medición de Google Analytics empieza por G- seguido de 4 a 16 letras o dígitos.",
+  },
   payroll: {
     nav: "Nómina",
     title: "Nómina",

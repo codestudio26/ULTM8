@@ -25,6 +25,7 @@ import {
   type SchoolResponse,
 } from './schoolQueries';
 import { HeardFromCard } from './HeardFromCard';
+import { AdTrackingCard } from './AdTrackingCard';
 import { StudentTagsSettingsCard } from './StudentTagsSettingsCard';
 import { MedicalInfoSettingsCard } from './MedicalInfoSettingsCard';
 import { MemberAppSettingsCard } from './MemberAppSettingsCard';
@@ -110,6 +111,7 @@ export function SchoolPage() {
         {/* Decision 315 item 14: the School's own member fields and statuses. */}
         <CustomMemberFieldsSettingsCard key={`custom-fields-${schoolId}`} schoolId={schoolId} />
         <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />
+        <AdTrackingCard key={`ad-tracking-${schoolId}`} schoolId={schoolId} school={school} />
         <FranchiseAffiliationCard key={`franchise-${schoolId}`} schoolId={schoolId} franchiseId={school.franchiseId ?? null} closed={closed} />
       </fieldset>
       {closed ? null : <CloseSchoolCard key={`close-${schoolId}`} schoolId={schoolId} school={school} />}
