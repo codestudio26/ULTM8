@@ -272,7 +272,7 @@ test('Export CSV downloads every filtered row', async ({ page }) => {
   expect(file.suggestedFilename()).toMatch(/^transactions-\d{4}-\d{2}-\d{2}\.csv$/);
   const text = (await import('fs')).readFileSync((await file.path())!, 'utf8').replace(/^\uFEFF/, '');
   const lines = text.trim().split('\r\n');
-  expect(lines[0]).toBe('Date,Student,Plan,Type,Amount,Card surcharge,Currency,Status,Method,Refunded,Disputed,Transaction ID,Cancelled on,Cancelled by,Cancel reason,Income category');
+  expect(lines[0]).toBe('Date,Date (School time),Student,Plan,Type,Amount,Card surcharge,Currency,Status,Method,Refunded,Disputed,Transaction ID,Cancelled on,Cancelled by,Cancel reason,Income category');
   expect(lines).toHaveLength(3);
   expect(lines[1]).toContain('Sam Lee,10-Class Pack,Membership,150.00,0.00,GBP,Successful');
   expect(lines[1]).toMatch(/,Kids programme$/);

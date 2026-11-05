@@ -37,9 +37,9 @@ test('the owner sets the School\'s tax: picking the country fills in its rate', 
   const card = page.getByTestId('charge-settings');
   await expect(page.getByRole('heading', { name: 'Charges and tax' })).toBeVisible();
   await card.getByLabel('Country your School is in').selectOption('GB');
-  await expect(card.getByLabel('Tax rate (%)')).toHaveValue('20');
+  await expect(card.getByLabel('Tax rate (%)', { exact: true })).toHaveValue('20');
   // Classes can be taxed at a lower rate: the School can change it.
-  await card.getByLabel('Tax rate (%)').fill('12.5');
+  await card.getByLabel('Tax rate (%)', { exact: true }).fill('12.5');
   await card.getByLabel('Your prices').selectOption({ label: 'Have tax added on top' });
   await card.getByLabel('Tax ID').fill('GB123456789');
   await card.getByRole('button', { name: 'Save' }).click();

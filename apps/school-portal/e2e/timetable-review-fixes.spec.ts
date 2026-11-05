@@ -410,7 +410,10 @@ test('the owner closes the School for a day: its classes are cancelled and the c
   expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id } })).status).toBe('CANCELLED');
 
   await page.getByRole('button', { name: 'Closures' }).click();
-  await page.getByRole('dialog', { name: 'Closures' }).getByRole('button', { name: 'Remove' }).click();
+  await page.getByRole('dialog', { name: 'Closures' }).getByRole('button', { name: 'Remove', exact: true }).click();
+  // Decision 432 item 10: removing a closure warns that its cancelled classes stay cancelled.
+  await expect(page.getByText(/Classes it already cancelled stay cancelled/)).toBeVisible();
+  await page.getByRole('button', { name: 'Remove closure' }).click();
   await expect(page.getByRole('dialog', { name: 'Closures' }).getByText('No closures yet.')).toBeVisible();
 });
 
