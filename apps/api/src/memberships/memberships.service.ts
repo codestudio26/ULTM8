@@ -825,6 +825,7 @@ export class MembershipsService {
     // Decision 316 item 6: a plan with a contract is bought with a fresh
     // signature of its current version, used once. Released again if the
     // purchase then fails, and linked to what it bought when it succeeds.
+    if (plan.contractVersion == null) return this.purchaseChecked(callerId, studentId, plan, dto, stepUpToken);
     const contract = await this.planContracts.reserveForPurchase(studentId, plan, dto?.contractSignatureId);
     if (!contract) return this.purchaseChecked(callerId, studentId, plan, dto, stepUpToken);
     let result: Awaited<ReturnType<MembershipsService['purchaseChecked']>>;
