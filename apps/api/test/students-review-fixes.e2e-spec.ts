@@ -470,7 +470,8 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
 
       const again = await addManually('owner', { ...adult(), email: body.email });
       expect(again.status).toBe(409);
-      expect(again.body.error.message).toBe('An account with this email already exists — use "Invite" instead.');
+      // Decision 429 item 12: the shared-email refusal says what to do.
+      expect(again.body.error.code).toBe('EMAIL_IN_USE');
     });
 
     it('is owner only, adults only, and needs a branch at a School with branches', async () => {

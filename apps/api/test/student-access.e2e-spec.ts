@@ -195,7 +195,7 @@ describeIfDb('App access for a new student (backlog 3.3, Decision 403)', () => {
   });
 
   it('a child whose Guardian has an account: an invite the Guardian accepts in the app', async () => {
-    const body = childBody({ guardian: { firstName: 'Gina', surname: 'Access', email: users.guardian.email } });
+    const body = childBody({ child: { firstName: 'Kai', surname: 'Young', dateOfBirth: '2016-03-04', gender: 'MALE' }, guardian: { firstName: 'Gina', surname: 'Access', email: users.guardian.email } });
     const res = await http().post(`/v1/schools/${school}/students/add-child-manually`).set(as('owner')).send(body);
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ outcome: 'GUARDIAN_INVITED', temporaryPasscode: null, studentId: null });
@@ -204,7 +204,7 @@ describeIfDb('App access for a new student (backlog 3.3, Decision 403)', () => {
     expect((await http().post(`/v1/schools/${school}/students/add-child-manually`).set(as('owner')).send(body)).status).toBe(409);
 
     const list = await http().get(`/v1/schools/${school}/child-invites`).set(as('owner'));
-    expect(list.body.items).toEqual([expect.objectContaining({ id: res.body.inviteId, childFirstName: 'Kit', guardianEmail: users.guardian.email })]);
+    expect(list.body.items).toEqual([expect.objectContaining({ id: res.body.inviteId, childFirstName: 'Kai', guardianEmail: users.guardian.email })]);
     expect((await http().get(`/v1/schools/${school}/child-invites`).set(as('staff'))).status).toBe(403);
 
     const mine = await http().get('/v1/child-invites/me').set(as('guardian'));
