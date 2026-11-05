@@ -11,6 +11,7 @@ import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
 import { useT } from '../i18n/I18nProvider';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { WhoCanBookFields, whoCanBookForm, whoCanBookProblem, whoCanBookValues, type Audience } from './WhoCanBookFields';
 
 export interface ClassFormValues {
   /**
@@ -48,6 +49,12 @@ export interface ClassFormValues {
   /** Always populated — the checkbox defaults to false, never undefined. */
   termsWaiverRequired: boolean;
   membershipInclusion: boolean;
+  /** Decision 431 item 14: who can book. */
+  audience: Audience;
+  minAge: number | null;
+  maxAge: number | null;
+  /** Decision 431 item 13: the owner saw the "this day is closed" warning. */
+  confirmClosedDay?: boolean;
 }
 
 /** Fields match CreateClassDto/UpdateClassDto exactly —
@@ -131,11 +138,16 @@ export function ClassFormModal({
   const zone = zoneFor(form.branchId);
   const usesStyles = disciplines.length > 0;
   const [error, setError] = useState<string | null>(null);
+  const [whoCanBook, setWhoCanBook] = useState(whoCanBookForm(initial as Parameters<typeof whoCanBookForm>[0]));
+  // Decision 431 item 13: the API said the date is closed; the owner may
+  // create the class anyway (a special event during a holiday).
+  const [closedDay, setClosedDay] = useState(false);
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit(e: React.FormEvent | null, confirmClosedDay = false) {
+    e?.preventDefault();
     setError(null);
+    setClosedDay(false);
     const title = form.title.trim();
     if (!title) {
       setError(t('classes.form.titleRequired'));
@@ -175,6 +187,11 @@ export function ClassFormModal({
       setError(t('classes.form.endAfterStart'));
       return;
     }
+    const agesProblem = whoCanBookProblem(whoCanBook, t);
+    if (agesProblem) {
+      setError(agesProblem);
+      return;
+    }
     try {
       await onSubmit({
         branchId: form.branchId || null,
@@ -192,8 +209,14 @@ export function ClassFormModal({
         cancellationCharge,
         termsWaiverRequired: form.termsWaiverRequired,
         membershipInclusion: form.membershipInclusion,
+        ...whoCanBookValues(whoCanBook),
+        ...(confirmClosedDay ? { confirmClosedDay: true } : {}),
       });
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'CLASS_ON_CLOSED_DAY') {
+        setClosedDay(true);
+        return;
+      }
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
     }
   }
@@ -323,6 +346,7 @@ export function ClassFormModal({
         <Field label={t('classes.form.descriptionLabel')} htmlFor="class-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
+        <WhoCanBookFields idPrefix="class" value={whoCanBook} onChange={setWhoCanBook} />
         <Checkbox
           label={t('classes.form.waiverRequired')}
           checked={form.termsWaiverRequired}
@@ -343,6 +367,14 @@ export function ClassFormModal({
             </p>
           </>
         )}
+        {closedDay ? (
+          <div role="alert" style={{ marginTop: 12 }}>
+            <p>{t('classes.form.closedDay')}</p>
+            <Button type="button" loading={submitting} onClick={() => void handleSubmit(null, true)}>
+              {t('classes.form.closedDayConfirm')}
+            </Button>
+          </div>
+        ) : null}
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             {t('common.save')}

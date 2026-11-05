@@ -20,6 +20,23 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.bookingClosed');
     case 'CLASS_BUSY':
       return t('server.codes.classBusy');
+    // Who can book, closures and time zones (Decision 431).
+    case 'WHO_CAN_BOOK_GENDER':
+      return t(/for women only/.test(message) ? 'server.codes.whoCanBookWomenOnly' : 'server.codes.whoCanBookMenOnly');
+    case 'WHO_CAN_BOOK_GENDER_MISSING':
+      return t('server.codes.whoCanBookGenderMissing');
+    case 'WHO_CAN_BOOK_AGE':
+      return t('server.codes.whoCanBookAge');
+    case 'WHO_CAN_BOOK_AGE_MISSING':
+      return t('server.codes.whoCanBookAgeMissing');
+    case 'CLASS_ON_CLOSED_DAY':
+      return t('server.codes.classOnClosedDay');
+    case 'INVALID_TIME_ZONE':
+      return t('server.codes.invalidTimeZone');
+    case 'AGE_RANGE_ORDER':
+      return t('server.codes.ageRangeOrder');
+    case 'CLASS_NOT_CANCELLED':
+      return t('server.codes.classNotCancelled');
     // The locked tablet, someone found by name (Decision 388).
     case 'KIOSK_BOOK_FIRST':
       return t('server.codes.kioskBookFirst');

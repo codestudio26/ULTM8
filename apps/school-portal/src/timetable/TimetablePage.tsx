@@ -44,6 +44,7 @@ import { BookedClassesDialog, type BookedClassesMode } from './BookedClassesDial
 import { changedSlotFields, slotChangeMovesClasses, slotChangeTouchesBookingRules } from './slotChanges';
 import { TimetableBookingDialog } from './TimetableBookingDialog';
 import { ClosuresDialog } from './ClosuresDialog';
+import { slotEndsNextDay } from './slotTimes';
 import {
   addDays,
   colorForSlot,
@@ -480,7 +481,9 @@ function OccurrenceCard({
         <div>
           <strong style={cancelled ? { textDecoration: 'line-through' } : undefined}>{title}</strong>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {cls ? cls.startTime : slot!.startTime} – {cls ? cls.endTime : slot!.endTime} · {branchLabel(branches, cls ? cls.branchId : slot!.branchId, t)}
+            {cls ? cls.startTime : slot!.startTime} – {cls ? cls.endTime : slot!.endTime}
+            {/* Decision 431 item 3: a class past midnight says so. */}
+            {slotEndsNextDay(cls ? cls.startTime : slot!.startTime, cls ? cls.endTime : slot!.endTime) ? ` (${t('timetable.endsNextDayShort')})` : ''} · {branchLabel(branches, cls ? cls.branchId : slot!.branchId, t)}
           </div>
           {cls ? (
             <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
