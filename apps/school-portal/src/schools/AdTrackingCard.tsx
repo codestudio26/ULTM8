@@ -19,8 +19,9 @@ export function normaliseTrackingId(text: string): string | null {
 /**
  * Decision 318 item 10: the School's ad tracking, as ready-made connections
  * only. The owner enters a Meta Pixel ID and/or a Google Analytics ID; no
- * custom code. Saved only: no ULTM8 page loads them yet (see the PR's
- * questions on which pages and on visitors' consent).
+ * custom code. Loaded only on the School's public schedule embed, behind a
+ * cookie-consent banner (Decision 435 items 24–27; the API's
+ * `public-pages/tracking-consent.ts`); never by the portal itself.
  */
 export function AdTrackingCard({ schoolId, school }: { schoolId: string; school: SchoolResponse }) {
   const t = useT();
@@ -56,7 +57,7 @@ export function AdTrackingCard({ schoolId, school }: { schoolId: string; school:
         <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('adTracking.title')}</h2>
         <p style={{ color: 'var(--text-muted)', margin: '0 0 8px' }}>{t('adTracking.subtitle')}</p>
         <p className="ultm8-field__hint" style={{ margin: '0 0 16px' }}>
-          {t('adTracking.notUsedYet')}
+          {t('adTracking.whereUsed')}
         </p>
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}

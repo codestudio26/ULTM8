@@ -4875,7 +4875,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   adTracking: {
     title: "广告跟踪",
     subtitle: "输入 ID 即可连接 Meta Pixel 或 Google Analytics。仅提供这些现成的连接：ULTM8 绝不会在其页面中添加您自己的代码。",
-    notUsedYet: "已为学校的公开页面保存。目前还没有页面使用它们。",
+    whereUsed: "仅在访客接受 Cookie 后，用于学校的公开课程表页面（网站嵌入）。绝不用于门户、登录、免责声明、付款或会员应用。",
     metaPixelLabel: "Meta Pixel ID",
     metaPixelHint: "仅限数字，与 Meta 事件管理工具中显示的一致，例如 123456789012345。",
     metaPixelInvalid: "Meta Pixel ID 由 10 到 20 位数字组成，不含其他字符。",

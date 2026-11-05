@@ -4875,7 +4875,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   adTracking: {
     title: "광고 추적",
     subtitle: "ID를 입력해 Meta Pixel 또는 Google Analytics를 연결하세요. 미리 준비된 연결만 제공되며, ULTM8은 페이지에 직접 작성한 코드를 절대 추가하지 않습니다.",
-    notUsedYet: "학교의 공개 페이지용으로 저장했습니다. 아직 이를 사용하는 페이지는 없습니다.",
+    whereUsed: "방문자가 쿠키에 동의한 후 학교의 공개 시간표 페이지(웹사이트 임베드)에서만 사용됩니다. 포털, 로그인, 면책 동의서, 결제, 회원 앱에서는 절대 사용되지 않습니다.",
     metaPixelLabel: "Meta Pixel ID",
     metaPixelHint: "Meta 이벤트 관리자에 표시된 숫자만 입력하세요. 예: 123456789012345.",
     metaPixelInvalid: "Meta Pixel ID는 10~20자리 숫자로만 이루어집니다.",

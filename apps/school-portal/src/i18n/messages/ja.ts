@@ -4875,7 +4875,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   adTracking: {
     title: "広告トラッキング",
     subtitle: "ID を入力して Meta Pixel または Google Analytics を接続します。用意された接続のみ利用でき、ULTM8 のページに独自のコードが追加されることはありません。",
-    notUsedYet: "スクールの公開ページ用に保存しました。まだどのページでも使われていません。",
+    whereUsed: "訪問者が Cookie に同意した後、スクールの公開スケジュールページ（ウェブサイト埋め込み）でのみ使用されます。ポータル、サインイン、免責同意書、支払い、メンバーアプリでは使用されません。",
     metaPixelLabel: "Meta Pixel ID",
     metaPixelHint: "Meta イベントマネージャに表示される数字のみ（例: 123456789012345）。",
     metaPixelInvalid: "Meta Pixel ID は 10〜20 桁の数字のみです。",
