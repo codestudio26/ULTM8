@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "ฉัน",
       loadFailed: "ไม่สามารถโหลดโรงเรียนนี้ได้ โปรดลองอีกครั้ง",
       alreadyStudentMe: "คุณเป็นนักเรียนที่นี่อยู่แล้ว",
+      familyOff: "โรงเรียนนี้เพิ่มเด็กเอง โปรดขอให้โรงเรียนเพิ่มบุตรของคุณ",
       alreadyStudentOther: "{name} เป็นนักเรียนที่นี่อยู่แล้ว",
       title: "เข้าร่วม {name}",
       whoIsJoining: "ใครจะเข้าร่วม",
@@ -569,6 +570,16 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        other: "สอบเลื่อนระดับในอีก {count} วัน",
+      },
+      gradingToday: "สอบเลื่อนระดับวันนี้",
+      classesToGo: {
+        other: "เหลืออีก {count} คลาส",
+      },
+      daysToGo: {
+        other: "เหลืออีก {count} วัน",
+      },
       loadError: "ไม่สามารถโหลดการเลื่อนระดับได้ โปรดลองอีกครั้ง",
       noRank: "ยังไม่มีระดับ ระดับจะแสดงที่นี่เมื่อโรงเรียนเลื่อนระดับให้คุณ หรือเมื่อคุณแจ้งสายคาดของคุณตอนเข้าร่วม",
       historyTitle: "ประวัติ {style}",
@@ -820,6 +831,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "ไม่สามารถโหลดสมาชิกภาพได้ โปรดลองอีกครั้ง",
       cancelSubscription: "ยกเลิกการสมัคร",
       keepSubscription: "ใช้ต่อ",
+      cancelBySchool: "หากต้องการยกเลิก โปรดติดต่อโรงเรียน",
       cancelConfirm: "คุณยังใช้การสมัครได้จนถึงสิ้นเดือนที่ชำระแล้ว จากนั้นจะสิ้นสุดและไม่มีการเรียกเก็บเงินอีก",
       cancelError: "ยกเลิกการสมัครของคุณไม่ได้ โปรดลองอีกครั้ง",
       cancelledEnds: "ยกเลิกแล้ว สิ้นสุด {date}",
@@ -911,6 +923,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "ยืนยันแล้ว",
       notVerified: "ยังไม่ได้ยืนยัน",
       identifiersNote: "เปลี่ยนอีเมลและโทรศัพท์ที่นี่ไม่ได้ — เป็นข้อมูลที่ใช้เข้าสู่ระบบของคุณ",
+      lockedNote: "โรงเรียนของคุณดูแลข้อมูลของคุณให้เป็นปัจจุบัน โปรดขอให้โรงเรียนเปลี่ยนแปลง คุณยังเปลี่ยนภาษาและสกุลเงินของแอปได้",
       firstName: "ชื่อ",
       surname: "นามสกุล",
       username: "ชื่อผู้ใช้",

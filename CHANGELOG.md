@@ -1369,6 +1369,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   account kept beside it, and the Signatures list says "signed by the child,
   in their parent's app". All 15 languages. **Needs a database migration**
   (`20270213000001_waiver_child_signs`).
+- **Member app switches** (Decision 318 item 7) — a new "Member app" card on
+  the School page. The owner turns on or off what members may do themselves
+  in the ULTM8 app: edit their own profile (their language and currency stay
+  theirs), cancel their own Subscription (or a parent their child's), add
+  their children to the School, and see their payment history. All four are
+  on by default, as before. The API refuses what a School turned off, not only
+  the app. New: a **grading countdown** (off by default) shows the School's
+  next grading day ("Grading in 23 days"), a date the owner sets on the same
+  card, and each student's classes and days still needed for their next rank.
+  All 15 languages. **Needs a database migration**
+  (`20270216000000_member_app_switches`).
 - **School Owners can close their own School** (Decision 364) — from the
   School page, after typing its name and their passcode: the same 90-day close
   a Platform Admin does. Closing a School, by anyone, now also ends every

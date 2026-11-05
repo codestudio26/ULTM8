@@ -1213,6 +1213,20 @@ model School {
   /// credit like any class. Off: booking an open mat still needs a membership
   /// or pass that covers it, but takes no credit (Booking.creditUsed false).
   openMatUsesClassCredit         Boolean                         @default(true)
+  /// Decision 318 item 7: member app switches. The four that gate features the
+  /// app already has are on by default (what the app did before):
+  /// members edit their own profile, cancel their own Subscription, a Guardian
+  /// adds their child to the School, members see their payment history.
+  memberAppEditProfile           Boolean                         @default(true)
+  memberAppCancelMembership      Boolean                         @default(true)
+  memberAppAddFamily             Boolean                         @default(true)
+  memberAppPaymentHistory        Boolean                         @default(true)
+  /// The grading countdown (new): the School's next grading day and each
+  /// student's classes and days still needed. Off by default.
+  memberAppGradingCountdown      Boolean                         @default(false)
+  /// The School's next grading day, a date the School sets (Decision 318
+  /// item 7). Not a grading event (those stay in Version 2, Decision 158).
+  nextGradingDate                DateTime?                       @db.Date
   /// Decision 404: the most days a membership can be frozen in any 12 months
   /// (1-365, default 90), and an optional one-off fee in minor units of the
   /// School's currency, charged when a freeze is approved.

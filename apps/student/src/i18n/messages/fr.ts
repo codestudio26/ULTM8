@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "Moi",
       loadFailed: "Impossible de charger cette école — veuillez réessayer.",
       alreadyStudentMe: "Vous êtes déjà élève ici.",
+      familyOff: "Cette école ajoute elle-même les enfants. Demandez à l'école d'ajouter votre enfant.",
       alreadyStudentOther: "{name} est déjà élève ici.",
       title: "Rejoindre {name}",
       whoIsJoining: "Qui s’inscrit ?",
@@ -582,6 +583,19 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        one: "Passage de grade dans {count} jour",
+        other: "Passage de grade dans {count} jours",
+      },
+      gradingToday: "Passage de grade aujourd'hui",
+      classesToGo: {
+        one: "Encore {count} cours",
+        other: "Encore {count} cours",
+      },
+      daysToGo: {
+        one: "Encore {count} jour",
+        other: "Encore {count} jours",
+      },
       loadError: "Impossible de charger les grades — veuillez réessayer.",
       noRank: "Aucun grade pour le moment. Les grades s’affichent ici dès que l’école vous gradue, ou lorsque vous déclarez votre ceinture en vous inscrivant.",
       historyTitle: "Historique — {style}",
@@ -844,6 +858,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Impossible de charger les adhésions — veuillez réessayer.",
       cancelSubscription: "Résilier l'abonnement",
       keepSubscription: "Le garder",
+      cancelBySchool: "Pour résilier, adressez-vous à l'école.",
       cancelConfirm: "Vous gardez votre abonnement jusqu'à la fin du mois payé. Il se termine ensuite et aucun autre paiement n'est prélevé.",
       cancelError: "Impossible de résilier votre abonnement — veuillez réessayer.",
       cancelledEnds: "Résilié, se termine le {date}",
@@ -935,6 +950,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "Vérifié",
       notVerified: "Pas encore vérifié",
       identifiersNote: "L’e-mail et le téléphone ne peuvent pas être modifiés ici — ce sont vos identifiants de connexion.",
+      lockedNote: "Votre école tient vos informations à jour. Demandez à l'école de les modifier. Vous pouvez toujours changer la langue et la devise de l'application.",
       firstName: "Prénom",
       surname: "Nom",
       username: "Nom d’utilisateur",
