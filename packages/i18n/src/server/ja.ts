@@ -1,5 +1,10 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "このプランは満員です。空きが出たときに通知を受けるには、キャンセル待ちに登録してください。",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "このプランには人数制限がないため、キャンセル待ちはありません。今すぐ購入できます。",
+  "You already have this plan.": "このプランはすでにお持ちです。",
+  "This plan has room now. Buy it instead.": "このプランには今空きがあります。購入してください。",
+  "Only a current Student of this School can join its waiting lists.": "この道場の現在の生徒だけがキャンセル待ちに登録できます。",
   "Only a paid plan can have a joining fee.": "入会金を設定できるのは有料プランだけです。",
   "The price and the joining fee together are too big.": "料金と入会金の合計が大きすぎます。",
   "What's new is for School owners and staff.": "お知らせはスクールのオーナーとスタッフ向けです。",

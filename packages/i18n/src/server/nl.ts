@@ -1,5 +1,10 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "Dit abonnement is vol. Zet je op de wachtlijst om te horen wanneer er een plek vrijkomt.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "Dit abonnement heeft geen ledenlimiet en dus geen wachtlijst. Koop het nu.",
+  "You already have this plan.": "Je hebt dit abonnement al.",
+  "This plan has room now. Buy it instead.": "Dit abonnement heeft nu plek. Koop het in plaats daarvan.",
+  "Only a current Student of this School can join its waiting lists.": "Alleen een huidige leerling van deze school kan op de wachtlijsten.",
   "Only a paid plan can have a joining fee.": "Alleen een betaald abonnement kan inschrijfgeld hebben.",
   "The price and the joining fee together are too big.": "De prijs en het inschrijfgeld samen zijn te hoog.",
   "What's new is for School owners and staff.": "Nieuws is voor schooleigenaren en personeel.",

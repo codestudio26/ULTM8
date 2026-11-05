@@ -78,6 +78,10 @@ export class MembershipPlanResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Goes up by one each time the contract changes; null = no contract.' })
   contractVersion!: number | null;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 435 items 10-15: the most members this plan can have; null = no limit.' })
+  memberLimit!: number | null;
+
+
   @ApiProperty()
   createdAt!: string;
 

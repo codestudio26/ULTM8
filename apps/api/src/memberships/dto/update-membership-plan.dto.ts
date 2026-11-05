@@ -4,7 +4,7 @@ import { CreateMembershipPlanDto } from './create-membership-plan.dto';
 
 // billingCycleAnchorDay is nullable on update (switching back to FRESH_CYCLE
 // clears it) — same list, same reasoning as every other field here.
-const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate', 'billingCycleAnchorDay', 'incomeCategoryId', 'joiningFee'] as const;
+const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate', 'billingCycleAnchorDay', 'incomeCategoryId', 'joiningFee', 'memberLimit'] as const;
 
 /** v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
  * prompt. MembershipsService.updatePlan() requires exactly one of these
@@ -105,4 +105,12 @@ export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembersh
   @Min(1)
   @Max(2147483647)
   joiningFee?: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 435 items 13 and 15: the most members this plan can have. Pass null for no limit. A limit below the current count keeps everyone and closes the plan to new buyers until there is room.' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  memberLimit?: number | null;
 }
+

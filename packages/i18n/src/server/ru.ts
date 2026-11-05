@@ -1,5 +1,10 @@
 /** Russian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "Этот тариф заполнен. Встаньте в лист ожидания, чтобы узнать, когда освободится место.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "У этого тарифа нет лимита участников, поэтому нет листа ожидания. Купите его сейчас.",
+  "You already have this plan.": "У вас уже есть этот тариф.",
+  "This plan has room now. Buy it instead.": "Сейчас в этом тарифе есть место. Купите его.",
+  "Only a current Student of this School can join its waiting lists.": "Встать в листы ожидания может только текущий ученик этой школы.",
   "Only a paid plan can have a joining fee.": "Вступительный взнос может быть только у платного тарифа.",
   "The price and the joining fee together are too big.": "Цена и вступительный взнос вместе слишком велики.",
   "What's new is for School owners and staff.": "Новости предназначены для владельцев и сотрудников школ.",

@@ -44,6 +44,8 @@ const MEMBERSHIP_PLAN_DISCOVERY_SELECT = {
   // the School has joining fees on: withCardSurcharge below).
   joiningFee: true,
   joiningFeeRefundable: true,
+  // Decision 435 item 13: whether the plan has a member limit.
+  memberLimit: true,
 } as const;
 
 const CLASS_DISCOVERY_SELECT = {

@@ -10,6 +10,8 @@ import { usePaymentMethod } from '../payments/paymentMethodQueries';
 import { useInvalidateMyMemberships, usePurchaseMembership } from './membershipQueries';
 import { useT } from '../i18n/I18nProvider';
 import { PlanContractSigner } from './PlanContractSigner';
+import { PlanWaitlistControls } from './PlanWaitlistControls';
+import type { PlanAvailability } from './planWaitlistQueries';
 
 type MembershipPlan = components['schemas']['AcademyMembershipPlanDto'];
 type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
@@ -63,16 +65,20 @@ type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
 /** `canBuy` false (Decision 427, SP10): a School the person hasn't joined.
  * Buying there always failed with "Not found", so the plan shows a
  * "join first" note instead of Purchase. */
+/** `availability` (Decision 435 items 10-15): for a plan with a member limit,
+ * whether it is full for this member and their place on its waiting list. */
 export function MembershipPlanRow({
   plan,
   schoolId,
   forStudentId,
   canBuy = true,
+  availability,
 }: {
   plan: MembershipPlan;
   schoolId: string;
   forStudentId?: string;
   canBuy?: boolean;
+  availability?: PlanAvailability;
 }) {
   const t = useT();
   const purchase = usePurchaseMembership();
@@ -86,6 +92,10 @@ export function MembershipPlanRow({
   const [contractSignatureId, setContractSignatureId] = useState<string | undefined>(undefined);
   const isFriendPass = plan.type === 'FRIEND_PASS';
   const outcome = purchase.isSuccess ? purchase.data.outcome : null;
+  // Decision 435 items 11-12: a full plan (or one they're waiting for) offers
+  // its waiting list; a place held for them shows until when, beside Purchase.
+  const waitlisted = !!availability && (availability.full || availability.waitlist?.status === 'WAITING');
+  const placeHeld = availability?.waitlist?.status === 'OFFERED';
   const canPayWithSavedCard = !forStudentId && !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
 
   async function openCheckoutAndRefetch(checkoutUrl: string) {
@@ -177,14 +187,20 @@ export function MembershipPlanRow({
         <PlanContractSigner planId={plan.id} forStudentId={forStudentId} onSigned={handleContractSigned} onCancel={() => setSigning(null)} />
       ) : outcome === null && steppingUp ? (
         <StepUpPrompt onVerified={handleStepUpVerified} onCancel={cancelStepUp} />
+      ) : outcome === null && waitlisted && availability ? (
+        <PlanWaitlistControls planId={plan.id} availability={availability} forStudentId={forStudentId} />
       ) : outcome === null ? (
+        <View>
+        {placeHeld && availability ? <PlanWaitlistControls planId={plan.id} availability={availability} forStudentId={forStudentId} /> : null}
         <View style={{ flexDirection: 'row', marginTop: 4, gap: 8 }}>
           <Button title={hasContract ? t('memberships.contract.readAndSign') : t('memberships.planRow.purchase')} onPress={handlePurchase} loading={purchase.isPending} />
           {canPayWithSavedCard ? (
             <Button title={t('memberships.planRow.payWithSavedCard')} variant="secondary" onPress={openPayWithSavedCard} loading={purchase.isPending} />
           ) : null}
         </View>
+        </View>
       ) : null}
+
 
       {outcome === 'active' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('memberships.planRow.enrolled')}</Text> : null}
 

@@ -244,6 +244,8 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "멤버십 곧 종료",
     membershipExpiryBody: "{plan} 멤버십이 {date}에 종료됩니다.",
+    planPlaceHeldTitle: "자리가 났습니다",
+    planPlaceHeldBody: "{plan} 자리를 {until}까지 맡아 두었습니다. 그 전에 구매하지 않으면 다음 대기자에게 넘어갑니다.",
     absenceAlertTitle: "회원 결석",
     absenceAlertBody: "{name}님이 {date} 이후 체크인하지 않았습니다.",
     absenceAlertNeverBody: "{name}님이 아직 체크인하지 않았습니다.",

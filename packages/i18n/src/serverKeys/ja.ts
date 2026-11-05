@@ -244,6 +244,8 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "メンバーシップがまもなく終了",
     membershipExpiryBody: "{plan} メンバーシップは {date} に終了します。",
+    planPlaceHeldTitle: "空きが出ました",
+    planPlaceHeldBody: "{plan}の席を{until}まで確保しています。それまでに購入しないと、次に待っている方に移ります。",
     absenceAlertTitle: "メンバーの欠席",
     absenceAlertBody: "{name}さんは {date} 以降チェックインしていません。",
     absenceAlertNeverBody: "{name}さんはまだチェックインしていません。",

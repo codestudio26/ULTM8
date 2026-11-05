@@ -942,6 +942,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Dołącz do tej szkoły, aby kupić.",
+      full: "Brak miejsc",
+      joinWaitlist: "Zapisz się na listę oczekujących",
+      onWaitlist: "Jesteś numerem {position} na liście oczekujących.",
+      leaveWaitlist: "Wypisz się z listy oczekujących",
+      placeHeld: "Miejsce jest zarezerwowane dla ciebie do {date}. Kup je wcześniej.",
+      waitlistError: "Nie udało się zaktualizować listy oczekujących — spróbuj ponownie.",
       joiningFee: "+ {amount} opłaty wpisowej przy pierwszym planie w tej szkole",
       cardSurcharge: "+ {amount} dopłaty przy płatności kartą",
       classesIncluded: {

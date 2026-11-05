@@ -112,6 +112,9 @@ export const LARGE_SCHOOL_CHECK_IN_CODES_QUEUE = 'large-school-check-in-codes';
 // Decision 317 item 7: the daily expiry reminder to a member (a child's
 // Guardian gets the usual copy), 7 days before a membership ends.
 export const MEMBERSHIP_EXPIRY_REMINDER_QUEUE = 'membership-expiry-reminder';
+// Decision 435 item 11: every 15 minutes, offers a full plan's freed places
+// to the first person waiting, held 24 hours.
+export const PLAN_WAITLIST_QUEUE = 'plan-waitlist';
 // Decision 317 item 7: the daily absence alert to staff when a member hasn't
 // checked in for the School's number of weeks.
 export const STUDENT_ABSENCE_ALERT_QUEUE = 'student-absence-alert';

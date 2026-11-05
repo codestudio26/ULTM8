@@ -966,6 +966,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "انضم إلى هذه المدرسة للشراء.",
+      full: "ممتلئة",
+      joinWaitlist: "الانضمام إلى قائمة الانتظار",
+      onWaitlist: "ترتيبك {position} في قائمة الانتظار.",
+      leaveWaitlist: "مغادرة قائمة الانتظار",
+      placeHeld: "مكان محجوز لك حتى {date}. اشترِه قبل ذلك.",
+      waitlistError: "تعذر تحديث قائمة الانتظار — حاول مرة أخرى.",
       joiningFee: "+ {amount} رسوم انضمام على أول خطة لك في هذه المدرسة",
       cardSurcharge: "+ {amount} رسوم إضافية عند الدفع بالبطاقة",
       classesIncluded: {

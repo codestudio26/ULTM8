@@ -246,6 +246,8 @@ export const server = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "Membership ending soon",
     membershipExpiryBody: "Your {plan} membership ends on {date}.",
+    planPlaceHeldTitle: "A place is free",
+    planPlaceHeldBody: "A place on {plan} is held for you until {until}. Buy it before then, or it goes to the next person waiting.",
     absenceAlertTitle: "Member absent",
     absenceAlertBody: "{name} hasn't checked in since {date}.",
     absenceAlertNeverBody: "{name} hasn't checked in yet.",

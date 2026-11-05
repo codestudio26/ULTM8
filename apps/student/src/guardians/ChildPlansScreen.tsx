@@ -7,6 +7,7 @@ import { useT } from '../i18n/I18nProvider';
 import { useAcademy } from '../academies/academyQueries';
 import { useMinorSchools } from '../bookings/bookingQueries';
 import { MembershipPlanRow } from '../memberships/MembershipPlanRow';
+import { usePlanAvailability } from '../memberships/planWaitlistQueries';
 import { ChildSchoolPicker } from './ChildSchoolPicker';
 import type { AppStackParamList } from '../navigation/types';
 
@@ -48,6 +49,8 @@ export function ChildPlansScreen({ route }: Props) {
   }
 
   const plans = academy.data?.membershipPlans ?? [];
+  // Decision 435 item 14: a parent sees their child's place on a full plan's waiting list.
+  const availability = usePlanAvailability(schoolId ?? null, studentId);
 
   return (
     <ScrollView>
@@ -61,7 +64,15 @@ export function ChildPlansScreen({ route }: Props) {
         {academy.data && plans.length === 0 ? (
           <Text style={{ color: '#5F6368', fontSize: 13 }}>{t('guardians.childPlans.empty')}</Text>
         ) : null}
-        {schoolId ? plans.map((plan) => <MembershipPlanRow key={`${schoolId}-${plan.id}`} plan={plan} schoolId={schoolId} forStudentId={studentId} />) : null}
+        {schoolId ? plans.map((plan) => (
+              <MembershipPlanRow
+                key={`${schoolId}-${plan.id}`}
+                plan={plan}
+                schoolId={schoolId}
+                forStudentId={studentId}
+                availability={availability.data?.items.find((a) => a.planId === plan.id)}
+              />
+            )) : null}
       </Screen>
     </ScrollView>
   );

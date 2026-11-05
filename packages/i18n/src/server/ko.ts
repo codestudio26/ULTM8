@@ -1,5 +1,10 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "이 플랜은 마감되었습니다. 자리가 나면 알림을 받으려면 대기자 명단에 등록하세요.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "이 플랜은 인원 제한이 없어 대기자 명단이 없습니다. 지금 구매하세요.",
+  "You already have this plan.": "이미 이 플랜이 있습니다.",
+  "This plan has room now. Buy it instead.": "이 플랜에 지금 자리가 있습니다. 대신 구매하세요.",
+  "Only a current Student of this School can join its waiting lists.": "이 학교의 현재 학생만 대기자 명단에 등록할 수 있습니다.",
   "Only a paid plan can have a joining fee.": "유료 플랜만 가입비를 가질 수 있습니다.",
   "The price and the joining fee together are too big.": "가격과 가입비를 합한 금액이 너무 큽니다.",
   "What's new is for School owners and staff.": "새 소식은 학교 운영자와 직원용입니다.",

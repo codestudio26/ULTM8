@@ -61,6 +61,12 @@ export const memberships = {
   },
   planRow: {
     joinFirst: 'Join this School to buy.',
+    full: "Full",
+    joinWaitlist: "Join the waiting list",
+    onWaitlist: "You're number {position} on the waiting list.",
+    leaveWaitlist: "Leave the waiting list",
+    placeHeld: "A place is held for you until {date}. Buy it before then.",
+    waitlistError: "Could not update the waiting list — please try again.",
     /** Decision 435: a paid plan's joining fee, charged with a member's first plan at the School only. */
     joiningFee: '+ {amount} joining fee on your first plan at this School',
     cardSurcharge: "+ {amount} card surcharge when paying by card",

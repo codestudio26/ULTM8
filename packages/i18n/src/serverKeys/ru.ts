@@ -286,6 +286,8 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "Абонемент скоро закончится",
     membershipExpiryBody: "Ваш абонемент «{plan}» заканчивается {date}.",
+    planPlaceHeldTitle: "Освободилось место",
+    planPlaceHeldBody: "Место в {plan} закреплено за вами до {until}. Купите его до этого времени, иначе оно перейдёт следующему в листе ожидания.",
     absenceAlertTitle: "Участник отсутствует",
     absenceAlertBody: "{name} не отмечался(-ась) с {date}.",
     absenceAlertNeverBody: "{name} ещё не отмечался(-ась).",

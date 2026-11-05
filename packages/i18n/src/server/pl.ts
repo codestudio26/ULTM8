@@ -1,5 +1,10 @@
 /** Polish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "Ten plan jest pełny. Zapisz się na listę oczekujących, by dowiedzieć się, gdy zwolni się miejsce.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "Ten plan nie ma limitu członków, więc nie ma listy oczekujących. Kup go teraz.",
+  "You already have this plan.": "Masz już ten plan.",
+  "This plan has room now. Buy it instead.": "W tym planie jest teraz miejsce. Kup go zamiast tego.",
+  "Only a current Student of this School can join its waiting lists.": "Tylko obecny uczeń tej szkoły może zapisać się na jej listy oczekujących.",
   "Only a paid plan can have a joining fee.": "Tylko płatny plan może mieć opłatę wpisową.",
   "The price and the joining fee together are too big.": "Cena i opłata wpisowa razem są za wysokie.",
   "What's new is for School owners and staff.": "Nowości są dla właścicieli i personelu szkół.",

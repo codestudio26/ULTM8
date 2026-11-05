@@ -272,6 +272,8 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "Plano termina em breve",
     membershipExpiryBody: "Seu plano {plan} termina em {date}.",
+    planPlaceHeldTitle: "Abriu uma vaga",
+    planPlaceHeldBody: "Uma vaga em {plan} está reservada para você até {until}. Compre antes disso, ou ela passa para a próxima pessoa na espera.",
     absenceAlertTitle: "Membro ausente",
     absenceAlertBody: "{name} não faz check-in desde {date}.",
     absenceAlertNeverBody: "{name} ainda não fez check-in.",

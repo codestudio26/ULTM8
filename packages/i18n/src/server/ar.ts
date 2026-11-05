@@ -1,5 +1,10 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "هذه الخطة ممتلئة. انضم إلى قائمة الانتظار لتُبلَّغ عندما يتوفر مكان.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "لا يوجد حد للأعضاء في هذه الخطة، لذلك لا توجد قائمة انتظار. اشترها الآن.",
+  "You already have this plan.": "لديك هذه الخطة بالفعل.",
+  "This plan has room now. Buy it instead.": "يوجد مكان في هذه الخطة الآن. اشترها بدلاً من ذلك.",
+  "Only a current Student of this School can join its waiting lists.": "يمكن فقط لطالب حالي في هذه المدرسة الانضمام إلى قوائم الانتظار.",
   "Only a paid plan can have a joining fee.": "يمكن فقط للخطة المدفوعة أن تتضمن رسوم انضمام.",
   "The price and the joining fee together are too big.": "السعر ورسوم الانضمام معاً أكبر من اللازم.",
   "What's new is for School owners and staff.": "قسم الجديد مخصص لأصحاب المدارس وموظفيها.",

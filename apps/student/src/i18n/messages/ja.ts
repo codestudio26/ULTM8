@@ -900,6 +900,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "購入するにはこのスクールに入会してください。",
+      full: "満員",
+      joinWaitlist: "キャンセル待ちに登録",
+      onWaitlist: "キャンセル待ちの{position}番目です。",
+      leaveWaitlist: "キャンセル待ちをやめる",
+      placeHeld: "{date}まで席を確保しています。それまでに購入してください。",
+      waitlistError: "キャンセル待ちを更新できませんでした。もう一度お試しください。",
       joiningFee: "この道場で最初のプランには入会金 {amount} が加算されます",
       cardSurcharge: "カード払いの場合 + 手数料 {amount}",
       classesIncluded: { other: "{count}クラス" },

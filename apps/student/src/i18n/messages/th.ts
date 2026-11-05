@@ -899,6 +899,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "เข้าร่วมโรงเรียนนี้เพื่อซื้อ",
+      full: "เต็ม",
+      joinWaitlist: "ลงชื่อรอ",
+      onWaitlist: "คุณอยู่ลำดับที่ {position} ในรายชื่อรอ",
+      leaveWaitlist: "ออกจากรายชื่อรอ",
+      placeHeld: "จองที่ไว้ให้คุณถึง {date} ซื้อก่อนเวลานั้น",
+      waitlistError: "อัปเดตรายชื่อรอไม่ได้ โปรดลองอีกครั้ง",
       joiningFee: "+ {amount} ค่าแรกเข้าสำหรับแพ็กเกจแรกของคุณที่โรงเรียนนี้",
       cardSurcharge: "+ ค่าธรรมเนียม {amount} เมื่อจ่ายด้วยบัตร",
       classesIncluded: { other: "{count} คลาส" },

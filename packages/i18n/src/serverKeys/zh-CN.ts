@@ -244,6 +244,8 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "会员资格即将到期",
     membershipExpiryBody: "你的 {plan} 会员资格将于 {date} 结束。",
+    planPlaceHeldTitle: "有名额空出",
+    planPlaceHeldBody: "{plan}的名额为你保留到{until}。请在此之前购买，否则将转给下一位候补者。",
     absenceAlertTitle: "会员缺勤",
     absenceAlertBody: "{name} 自 {date} 起未签到。",
     absenceAlertNeverBody: "{name} 还没有签到过。",

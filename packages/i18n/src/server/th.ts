@@ -1,5 +1,10 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "แพ็กเกจนี้เต็มแล้ว ลงชื่อในรายชื่อรอเพื่อรับแจ้งเมื่อมีที่ว่าง",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "แพ็กเกจนี้ไม่จำกัดจำนวนสมาชิก จึงไม่มีรายชื่อรอ ซื้อได้เลย",
+  "You already have this plan.": "คุณมีแพ็กเกจนี้อยู่แล้ว",
+  "This plan has room now. Buy it instead.": "แพ็กเกจนี้มีที่ว่างตอนนี้ ซื้อได้เลย",
+  "Only a current Student of this School can join its waiting lists.": "เฉพาะนักเรียนปัจจุบันของโรงเรียนนี้เท่านั้นที่ลงชื่อรอได้",
   "Only a paid plan can have a joining fee.": "เฉพาะแพ็กเกจแบบชำระเงินเท่านั้นที่มีค่าแรกเข้าได้",
   "The price and the joining fee together are too big.": "ราคาและค่าแรกเข้ารวมกันสูงเกินไป",
   "What's new is for School owners and staff.": "ข่าวสารใหม่สำหรับเจ้าของโรงเรียนและพนักงานเท่านั้น",

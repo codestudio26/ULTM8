@@ -6,6 +6,11 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "This plan is full. Join its waiting list to be told when a place frees up.",
+ "This plan has no member limit, so it has no waiting list. Buy it now.",
+ "You already have this plan.",
+ "This plan has room now. Buy it instead.",
+ "Only a current Student of this School can join its waiting lists.",
  "Only a paid plan can have a joining fee.",
  "The price and the joining fee together are too big.",
  "What's new is for School owners and staff.",

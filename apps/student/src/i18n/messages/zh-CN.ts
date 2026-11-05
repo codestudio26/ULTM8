@@ -899,6 +899,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "加入这所学校后才能购买。",
+      full: "已满",
+      joinWaitlist: "加入候补名单",
+      onWaitlist: "你在候补名单中排第 {position} 位。",
+      leaveWaitlist: "退出候补名单",
+      placeHeld: "名额为你保留到 {date}，请在此之前购买。",
+      waitlistError: "无法更新候补名单，请重试。",
       joiningFee: "在本学校的第一个方案需加收入会费 {amount}",
       cardSurcharge: "刷卡支付另加 {amount} 附加费",
       classesIncluded: { other: "{count} 节课" },

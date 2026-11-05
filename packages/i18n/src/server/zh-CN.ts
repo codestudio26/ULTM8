@@ -1,5 +1,10 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "此方案已满。加入候补名单，有名额时会通知你。",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "此方案没有人数上限，因此没有候补名单。现在就可以购买。",
+  "You already have this plan.": "你已经有这个方案了。",
+  "This plan has room now. Buy it instead.": "此方案现在有名额，请直接购买。",
+  "Only a current Student of this School can join its waiting lists.": "只有本学校的在读学员才能加入候补名单。",
   "Only a paid plan can have a joining fee.": "只有付费方案才能设置入会费。",
   "The price and the joining fee together are too big.": "价格与入会费合计过高。",
   "What's new is for School owners and staff.": "新功能动态仅供学校负责人和员工查看。",

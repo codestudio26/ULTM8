@@ -826,6 +826,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   refundable one goes back with the payment. Switched off, the amounts stay on
   the plans but nothing is charged. **Needs a database migration**
   (`20270225100000_plan_joining_fee`).
+- **Member limit and waiting list** (Decision 316 item 5, as answered by
+  Decision 435 items 10-15; Gymdesk P18) — a plan's Pricing step has a
+  **Member limit** (blank = none). Live and frozen members and Cash/Bank
+  payments still waiting take a place, each person once. When a plan is full,
+  members (or a parent for their child) can't buy it in the app and join its
+  **waiting list** instead, seeing their place in line; owners and staff can
+  still sell it at the desk. When a place frees up, the first person waiting is
+  told and the place is held for them for 24 hours, then it passes to the next.
+  Lowering the limit keeps current members and closes the plan to new buyers
+  until there is room. The plan's Members page shows the places taken and the
+  waiting list. **Needs a database migration**
+  (`20270225100200_plan_member_limit`).
 - **Contracts on plans** (Decision 316 item 6; Gymdesk DOC2) — a new
   **Contract** card on a plan's edit page (owner only) holds the School's own
   contract text and, for a Subscription, a **minimum term** (months) and an

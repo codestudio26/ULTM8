@@ -165,6 +165,8 @@ interface MembershipPlanFormValues {
   // refunded with the membership payment.
   joiningFee?: number | null;
   joiningFeeRefundable?: boolean;
+  // Decision 435 item 13: blank (null) = no limit.
+  memberLimit?: number | null;
 }
 
 /** Fields match CreateMembershipPlanDto/UpdateMembershipPlanDto exactly —
@@ -253,6 +255,8 @@ function MembershipPlanForm({
     joiningFee: (initial?.joiningFee ?? null) as number | null,
     joiningFeeValid: true,
     joiningFeeRefundable: initial?.joiningFeeRefundable ?? false,
+    // Decision 435 item 13.
+    memberLimit: initial?.memberLimit?.toString() ?? '',
   });
   // Decision 195: "Includes lessons" follows the price (on when priced, off
   // when free) until the owner sets it.
@@ -374,6 +378,12 @@ function MembershipPlanForm({
       setError(t('membershipPlans.form.cancellationInvalid'));
       return;
     }
+    const memberLimit = form.memberLimit.trim() ? Number(form.memberLimit) : null;
+    if (memberLimit !== null && (!Number.isInteger(memberLimit) || memberLimit < 1)) {
+      setStepIndex(1);
+      setError(t('membershipPlans.form.memberLimitInvalid'));
+      return;
+    }
     if (priced && !form.joiningFeeValid) {
       setStepIndex(2);
       setError(t('membershipPlans.form.joiningFeeInvalid'));
@@ -425,6 +435,7 @@ function MembershipPlanForm({
         disciplineIds: form.disciplineIds,
         includesLessons: lessonsOn,
         incomeCategoryId: form.incomeCategoryId || null,
+        memberLimit,
         // Decision 435 item 1: only a paid plan carries a joining fee, so a
         // plan made free drops its fee.
         joiningFee: priced ? form.joiningFee || null : null,
@@ -655,6 +666,20 @@ function MembershipPlanForm({
               />
             </Field>
           ) : null}
+          {/* Decision 435 items 10-15: the most members; blank = no limit. */}
+          {form.type !== 'FRIEND_PASS' ? (
+            <Field label={t('membershipPlans.form.memberLimitLabel')} htmlFor="plan-member-limit" hint={t('membershipPlans.form.memberLimitHint')}>
+              <TextField
+                id="plan-member-limit"
+                type="number"
+                min={1}
+                step={1}
+                value={form.memberLimit}
+                onChange={(e) => setForm((f) => ({ ...f, memberLimit: e.target.value }))}
+              />
+            </Field>
+          ) : null}
+
         </Card>
         ) : null}
 

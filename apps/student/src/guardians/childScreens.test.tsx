@@ -12,6 +12,8 @@ import * as attendanceQueries from '../attendance/attendanceQueries';
 jest.mock('../waivers/waiverQueries', () => ({ useMinorWaivers: jest.fn() }));
 jest.mock('../bookings/bookingQueries', () => ({ useMinorSchools: jest.fn() }));
 jest.mock('../academies/academyQueries', () => ({ useAcademy: jest.fn() }));
+// Decision 435 items 10-15: no limited plans in these fixtures.
+jest.mock('../memberships/planWaitlistQueries', () => ({ usePlanAvailability: () => ({ data: { items: [] } }) }));
 jest.mock('../attendance/attendanceQueries', () => ({ useChildMembershipCards: jest.fn() }));
 jest.mock('../waivers/WaiverRow', () => {
   const { Text } = require('react-native');

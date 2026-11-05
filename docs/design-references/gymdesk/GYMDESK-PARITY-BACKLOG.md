@@ -130,7 +130,7 @@ including a filled-in example where possible. Empty screens hide most fields.
 | P15 | **Cancellation fee** | ✅ | `MembershipPlan.cancellationCharge` (+ `refundFeeDate`) |
 | P16 | Show only to visitors / exclude from trial reporting | ❌ | Depends on M6 |
 | P17 | **Income categories** (GL code, department code, income category) | 🟡 | **5 Nov 2026: built** in Decision 316.10's smaller shape: a School-named category on a plan, a charge and a recurring charge, in the Transactions CSV; no GL/department codes (branch `feature/plan-options-income-categories`, migration `20270212000001_income_categories`) |
-| P18 | Access to training: attendance limit, membership capacity, which programmes | 🟡 | `disciplineIds`, `scopedClassId`, `classesIncluded` exist; per-plan member capacity ❌ |
+| P18 | Access to training: attendance limit, membership capacity, which programmes | 🟡 | `disciplineIds`, `scopedClassId`, `classesIncluded` exist; per-plan member capacity ✅ **5 Nov 2026: built** (Decision 316 item 5, answered by Decision 435 items 10-15; branch `feature/plan-member-limit`, migration `20270225100200_plan_member_limit`): a member limit per plan with a waiting list and a 24-hour held place |
 | P19 | Membership templates on the empty state (3x Week, Unlimited, Training Camp, 10-Class Punch Card) | 🟡 | Frontend-only once the plan types exist |
 
 **Questions:**
