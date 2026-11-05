@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "ไม่พบหนังสือสละสิทธิ์",
   "You are already a Student at this School.": "คุณเป็นนักเรียนของโรงเรียนนี้อยู่แล้ว",
   "You are not an active Guardian for this Student.": "คุณไม่ได้เป็นผู้ปกครองที่ใช้งานอยู่ของนักเรียนคนนี้",
+  "This child is not on your account.": "เด็กคนนี้ไม่ได้อยู่ในบัญชีของคุณ",
+  "This person isn't a parent or guardian of this student.": "บุคคลนี้ไม่ใช่ผู้ปกครองของนักเรียนคนนี้",
   "You do not have grading permission for this style. The School owner grants it.": "คุณไม่มีสิทธิ์เลื่อนระดับในสไตล์นี้ เจ้าของโรงเรียนเป็นผู้ให้สิทธิ์นี้",
   "You have no Instructor profile.": "คุณไม่มีโปรไฟล์ครูฝึก",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "คุณไม่มีวิธีชำระเงินที่บันทึกไว้ที่โรงเรียนนี้ — โปรดเพิ่มบัตรก่อน หรือชำระด้วยบัตรใหม่",

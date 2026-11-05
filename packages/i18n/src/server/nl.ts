@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "Vrijwaring niet gevonden",
   "You are already a Student at this School.": "Je bent al leerling van deze school.",
   "You are not an active Guardian for this Student.": "Je bent geen actieve voogd van deze leerling.",
+  "This child is not on your account.": "Dit kind staat niet op je account.",
+  "This person isn't a parent or guardian of this student.": "Deze persoon is geen ouder of voogd van deze leerling.",
   "You do not have grading permission for this style. The School owner grants it.": "Je hebt geen examenbevoegdheid voor deze stijl. De schooleigenaar kan die toekennen.",
   "You have no Instructor profile.": "Je hebt geen instructeursprofiel.",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "Je hebt geen opgeslagen betaalmethode bij deze school. Voeg eerst een kaart toe of betaal met een nieuwe kaart.",

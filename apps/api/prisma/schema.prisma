@@ -4491,6 +4491,12 @@ model GuardianLink {
   createdAt DateTime  @default(now())
   revokedAt DateTime?
 
+  /// Decision 429 item 9: the link existed before BASELINE consent became a
+  /// condition of booking and check-in, so the child is not "consent pending"
+  /// on its account. Never set on a new link; cleared on every link to the
+  /// child once a parent withdraws BASELINE consent.
+  consentGrandfathered Boolean @default(false)
+
   @@unique([guardianId, studentId])
   @@index([studentId])
 }

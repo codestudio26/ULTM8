@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "면책 동의서를 찾을 수 없습니다",
   "You are already a Student at this School.": "이미 이 도장의 수련생입니다.",
   "You are not an active Guardian for this Student.": "이 수련생의 활성 보호자가 아닙니다.",
+  "This child is not on your account.": "이 자녀는 내 계정에 없습니다.",
+  "This person isn't a parent or guardian of this student.": "이 사람은 이 수련생의 부모나 보호자가 아닙니다.",
   "You do not have grading permission for this style. The School owner grants it.": "이 종목에 대한 승급 권한이 없습니다. 권한은 도장 원장이 부여합니다.",
   "You have no Instructor profile.": "사범 프로필이 없습니다.",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "이 도장에 저장된 결제 수단이 없습니다. 먼저 카드를 추가하거나 새 카드로 결제하세요.",

@@ -5,17 +5,18 @@ import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { assertJoinDateAllowed, setJoinDate } from '../tenants/schools/student-join-dates';
 import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
+import { sameDay, sameName } from '../common/same-person';
+import { schoolZone } from '../common/school-zone';
+import { recordStaffActivity } from '../tenants/staff-activity/staff-activity';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { newTemporaryPasscode, RoleGrantsService } from '../tenants/role-grants/role-grants.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service';
-import { AddChildManuallyDto } from './dto/student-access.dto';
+import { AcceptChildInviteDto, AddChildManuallyDto, AddGuardianDto } from './dto/student-access.dto';
 
 const NO_TEMPORARY_PASSCODE = "Only an account your School made, that hasn't been signed in to yet, can get a new temporary passcode.";
 
-const sameDay = (a: Date | string | null, b: Date | string) => !!a && new Date(a).toISOString().slice(0, 10) === new Date(b).toISOString().slice(0, 10);
-const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /**
  * Decision 403 (backlog 3.3): how the owner gives a new student app access.
@@ -56,10 +57,22 @@ export class StudentAccessService {
     const school = await this.schools.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    if (isAdultOn(new Date(dto.child.dateOfBirth))) {
+    // Decision 429 item 10: under 18 on the School's (or chosen Branch's) own date.
+    const zone = await schoolZone(this.prismaJobs, schoolId, dto.branchId);
+    if (isAdultOn(new Date(dto.child.dateOfBirth), new Date(), zone)) {
       throw new BadRequestException('This is for children (under 18). Add an adult with their own email instead.');
     }
     await this.roleGrants.assertHomeBranchChoice(callerId, schoolId, dto.branchId);
+    // Decision 429 item 6 (FAM-6): a child already at this School with a
+    // parent is not added a second time (a second copy splits their bookings,
+    // waivers and medical note); the owner adds the other parent to the child
+    // already here instead.
+    if (await this.findSameChildHere(schoolId, dto.child)) {
+      throw new ConflictException({
+        code: 'CHILD_ALREADY_HERE',
+        message: 'This child is already a student here, with a parent or guardian. Open their page and use "Add another Guardian" instead.',
+      });
+    }
     if (dto.joinedOn !== undefined) await assertJoinDateAllowed(this.prismaJobs, schoolId, dto.joinedOn);
 
     const email = dto.guardian.email.trim().toLowerCase();
@@ -67,7 +80,7 @@ export class StudentAccessService {
     const existing = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true, dateOfBirth: true } });
 
     if (existing) {
-      if (existing.dateOfBirth && !isAdultOn(existing.dateOfBirth)) {
+      if (existing.dateOfBirth && !isAdultOn(existing.dateOfBirth, new Date(), zone)) {
         throw new BadRequestException('A Guardian must be 18 or over.');
       }
       const open = await this.prismaJobs.childInvite.findMany({ where: { guardianId: existing.id, schoolId, status: 'PENDING' } });
@@ -190,8 +203,11 @@ export class StudentAccessService {
 
   /** Adds the child to the Guardian's account, or uses the same child (same
    * name and date of birth) already on it, and enrols them at the School. */
-  async acceptChildInvite(callerId: string, id: string) {
+  async acceptChildInvite(callerId: string, id: string, dto: AcceptChildInviteDto = {}) {
     const invite = await this.loadMyInvite(callerId, id);
+    const consentVersion = dto.consentPolicyVersion?.trim() || null;
+    // Decision 429 item 6: "Add another Guardian" names the child already here.
+    if (invite.studentId) return this.acceptAddGuardianInvite(callerId, invite, consentVersion);
     await this.claim(invite, { status: 'ACCEPTED', respondedAt: new Date() });
 
     let createdStudentId: string | null = null;
@@ -207,8 +223,12 @@ export class StudentAccessService {
           surname: invite.childSurname,
           dateOfBirth: invite.childDateOfBirth.toISOString().slice(0, 10),
           gender: (invite.childGender as 'FEMALE' | 'MALE' | null) ?? null,
+          // Decision 429 item 9: the consent ticked when accepting.
+          consentPolicyVersion: consentVersion ?? undefined,
         }));
         createdStudentId = studentId;
+      } else if (consentVersion) {
+        await this.guardians.recordBaselineConsent(callerId, studentId, consentVersion);
       }
       const enrolled = await this.prismaJobs.roleGrant.findFirst({
         where: { userId: studentId, schoolId: invite.schoolId, role: 'STUDENT', revokedAt: null },
@@ -235,6 +255,182 @@ export class StudentAccessService {
   async declineChildInvite(callerId: string, id: string) {
     const invite = await this.loadMyInvite(callerId, id);
     await this.claim(invite, { status: 'DECLINED', respondedAt: new Date() });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Two parents of one child (Decision 429 items 6 and 8)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * POST /schools/{schoolId}/students/{studentId}/guardians — "Add another
+   * Guardian" (Decision 429 item 6, FAM-6). The owner names another adult
+   * for a child already here. An existing account gets an invite to accept
+   * in the app; a new email gets an account with a temporary passcode and the
+   * same invite. Accepting links them to this child (ChildInvite.studentId),
+   * never a second copy. The invitee must be 18 or over (an unknown date of
+   * birth is allowed, as for any Guardian the School adds); the child's
+   * current parents are told. Owner only, like Add a child.
+   */
+  async addGuardian(callerId: string, schoolId: string, studentId: string, dto: AddGuardianDto) {
+    const school = await this.schools.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    const child = await this.loadEnrolledChild(schoolId, studentId);
+    const zone = await schoolZone(this.prismaJobs, schoolId);
+    if (isAdultOn(child.dateOfBirth, new Date(), zone)) {
+      throw new BadRequestException({ code: 'NOT_A_MINOR', message: 'This is for children (under 18). An adult makes their own account.' });
+    }
+    const links = await this.prismaJobs.guardianLink.findMany({ where: { studentId, revokedAt: null }, select: { guardianId: true } });
+    if (links.length === 0) {
+      throw new BadRequestException({ code: 'NOT_GUARDIAN_MANAGED', message: "This student has no parent or guardian on ULTM8, so another one can't be added." });
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    const childName = `${child.firstName} ${child.surname}`.trim();
+    const existing = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true, dateOfBirth: true } });
+    let guardianId: string;
+    let tempPasscode: string | null = null;
+    let expiresAt: Date | null = null;
+    if (existing) {
+      if (existing.id === studentId) throw new BadRequestException({ code: 'GUARDIAN_IS_CHILD', message: "This is the child's own account." });
+      if (links.some((l) => l.guardianId === existing.id)) {
+        throw new ConflictException({ code: 'ALREADY_GUARDIAN', message: 'This person is already a parent or guardian of this child.' });
+      }
+      if (existing.dateOfBirth && !isAdultOn(existing.dateOfBirth, new Date(), zone)) {
+        throw new BadRequestException({ code: 'GUARDIAN_UNDER_18', message: 'A Guardian must be 18 or over.' });
+      }
+      const open = await this.prismaJobs.childInvite.findFirst({ where: { guardianId: existing.id, studentId, status: 'PENDING' }, select: { id: true } });
+      if (open) throw new ConflictException('This Guardian already has an invite for this child. Wait for them to answer it in the app.');
+      guardianId = existing.id;
+    } else {
+      ({ userId: guardianId, tempPasscode, expiresAt } = await this.roleGrants.createStudentAccount({
+        email,
+        firstName: dto.firstName,
+        surname: dto.surname,
+        schoolId,
+      }));
+    }
+
+    let invite: ChildInvite;
+    try {
+      invite = await this.prismaJobs.childInvite.create({
+        data: {
+          schoolId,
+          branchId: null,
+          guardianId,
+          studentId,
+          childFirstName: child.firstName,
+          childSurname: child.surname,
+          childDateOfBirth: child.dateOfBirth!,
+          childGender: child.gender ?? null,
+          createdById: callerId,
+        },
+      });
+    } catch (err) {
+      if (!existing) await this.removeNewAccounts(guardianId, null);
+      throw err;
+    }
+    await recordStaffActivity(this.prismaJobs, {
+      schoolId,
+      actorId: callerId,
+      targetUserId: guardianId,
+      action: 'GUARDIAN_INVITED',
+      details: { studentId, studentName: childName, email },
+    });
+    // The child's current parents are told (Decision 429 item 6).
+    await this.guardians.tellGuardians(studentId, 'Another parent or guardian invited', `${school.name} invited ${`${dto.firstName} ${dto.surname}`.trim()} to be a parent or guardian of ${child.firstName} on ULTM8.`, `guardian-invite-${invite.id}`, schoolId);
+
+    const lines = [
+      `${school.name} would like to add you as a parent or guardian of ${childName} on ULTM8.`,
+      '',
+      tempPasscode
+        ? `Sign in to the ULTM8 app with this email address (${email}) and the temporary passcode below, then accept the invite. You'll be asked to choose your own passcode straight away. The temporary passcode stops working after 7 days.`
+        : `Open the ULTM8 app and sign in with this email address (${email}) to accept.`,
+      ...(tempPasscode ? ['', `Temporary passcode: ${tempPasscode}`] : []),
+    ];
+    const emailSent = await this.sendEmail(email, `${school.name}: you've been added as a parent or guardian of ${childName}`, lines.join('\n'));
+    return {
+      outcome: tempPasscode ? ('GUARDIAN_CREATED' as const) : ('GUARDIAN_INVITED' as const),
+      guardianEmail: email,
+      emailSent,
+      studentId,
+      inviteId: invite.id,
+      temporaryPasscode: tempPasscode,
+      temporaryPasscodeExpiresAt: expiresAt ? expiresAt.toISOString() : null,
+    };
+  }
+
+  /**
+   * DELETE /schools/{schoolId}/students/{studentId}/guardians/{guardianId} —
+   * "Remove Guardian" (Decision 429 item 8, FAM-8). Owner only, for a student
+   * enrolled here; never the last parent of an enrolled child. Logged in the
+   * School's activity. Nothing else is touched: neither account is closed.
+   */
+  async removeGuardian(callerId: string, schoolId: string, studentId: string, guardianId: string) {
+    await this.schools.findOne(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    await this.loadEnrolledChild(schoolId, studentId);
+    await this.guardians.removeGuardianLink(callerId, guardianId, studentId, schoolId);
+  }
+
+  /** Accepting "Add another Guardian": links the caller to the child already
+   * here, records the consent they ticked, and enrols the child again only
+   * if they have left meanwhile. */
+  private async acceptAddGuardianInvite(callerId: string, invite: ChildInvite, consentVersion: string | null) {
+    const studentId = invite.studentId!;
+    const child = await this.prismaJobs.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } });
+    if (!child) throw new NotFoundException('Invite not found');
+    const zone = await schoolZone(this.prismaJobs, invite.schoolId);
+    if (isAdultOn(child.dateOfBirth, new Date(), zone)) {
+      throw new BadRequestException({ code: 'NOT_A_MINOR', message: 'This is for children (under 18). An adult makes their own account.' });
+    }
+    await this.claim(invite, { status: 'ACCEPTED', respondedAt: new Date() });
+    try {
+      await this.guardians.linkExistingChild(callerId, studentId);
+      if (consentVersion) await this.guardians.recordBaselineConsent(callerId, studentId, consentVersion);
+      const enrolled = await this.prismaJobs.roleGrant.findFirst({
+        where: { userId: studentId, schoolId: invite.schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      });
+      if (!enrolled) await this.schools.join(callerId, invite.schoolId, { studentId, branchId: invite.branchId ?? undefined });
+      return { schoolId: invite.schoolId, studentId };
+    } catch (err) {
+      await this.prismaJobs.childInvite
+        .update({ where: { id: invite.id }, data: { status: 'PENDING', respondedAt: null } })
+        .catch((e) => this.logger.error(`Child invite ${invite.id}: could not be put back after a failed accept — ${e instanceof Error ? e.message : String(e)}`));
+      throw err;
+    }
+  }
+
+  /** A current Student here (live STUDENT grant), read on the jobs and auth
+   * connections after the caller's owner check. */
+  private async loadEnrolledChild(schoolId: string, studentId: string) {
+    const enrolled = await this.prismaJobs.roleGrant.findFirst({
+      where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },
+      select: { id: true },
+    });
+    if (!enrolled) throw new NotFoundException('Student not found');
+    const child = await this.prismaAuth.user.findUnique({ where: { id: studentId }, select: { firstName: true, surname: true, dateOfBirth: true, gender: true } });
+    if (!child) throw new NotFoundException('Student not found');
+    return child;
+  }
+
+  /** Decision 429 item 6: a current Student here with a parent on ULTM8 and
+   * the same name and date of birth (see same-person.ts). */
+  private async findSameChildHere(schoolId: string, child: { firstName: string; surname: string; dateOfBirth: string }): Promise<string | null> {
+    const day = new Date(`${child.dateOfBirth.slice(0, 10)}T00:00:00.000Z`);
+    const candidates = await this.prismaJobs.user.findMany({
+      where: {
+        dateOfBirth: day,
+        roleGrants: { some: { schoolId, role: 'STUDENT', revokedAt: null } },
+        guardianLinksAsStudent: { some: { revokedAt: null } },
+      },
+      select: { id: true, firstName: true, surname: true, dateOfBirth: true },
+      take: 50,
+    });
+    const same = candidates.find((c) => sameName(c.firstName, child.firstName) && sameName(c.surname, child.surname) && sameDay(c.dateOfBirth, child.dateOfBirth));
+    return same?.id ?? null;
   }
 
   // ---------------------------------------------------------------------------
@@ -309,6 +505,9 @@ export class StudentAccessService {
       childFirstName: r.childFirstName,
       childSurname: r.childSurname,
       childDateOfBirth: r.childDateOfBirth.toISOString().slice(0, 10),
+      // Decision 429 item 6: an invite to be another parent of a child
+      // already at the School, not to add a new child.
+      addsGuardian: r.studentId !== null,
       createdAt: r.createdAt.toISOString(),
     };
   }

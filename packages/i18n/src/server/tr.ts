@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "Feragatname bulunamadı",
   "You are already a Student at this School.": "Zaten bu okulun öğrencisisiniz.",
   "You are not an active Guardian for this Student.": "Bu öğrencinin etkin velisi değilsiniz.",
+  "This child is not on your account.": "Bu çocuk hesabınızda değil.",
+  "This person isn't a parent or guardian of this student.": "Bu kişi bu öğrencinin ebeveyni veya velisi değil.",
   "You do not have grading permission for this style. The School owner grants it.": "Bu stil için sınav yetkiniz yok. Bu yetkiyi okul sahibi verir.",
   "You have no Instructor profile.": "Eğitmen profiliniz yok.",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "Bu okulda kayıtlı bir ödeme yönteminiz yok — önce bir kart ekleyin veya yeni bir kartla ödeyin.",

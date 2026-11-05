@@ -165,7 +165,8 @@ export class PlanContractsService {
   /** Signs the plan's current contract. The member signs for themselves
    * (18 or over); a Guardian signs for their child. */
   async sign(callerId: string, planId: string, dto: SignPlanContractDto) {
-    const target = await this.resolveSigner(callerId, dto.studentId);
+    // Decision 429 item 7: a parent doesn't sign for a child who is 18.
+    const target = await this.resolveSigner(callerId, dto.studentId, 'act');
     const plan = await this.findPlanForMember(target, planId);
     if (plan.contractVersion == null || !plan.contractBody) throw new BadRequestException('This plan has no contract to sign.');
     if (plan.archivedAt || !plan.visible) throw new BadRequestException('This plan is not on sale.');
@@ -385,9 +386,9 @@ export class PlanContractsService {
   }
 
   /** Whose contract it is: the caller, or a child the caller is Guardian of. */
-  private async resolveSigner(callerId: string, studentId?: string): Promise<string> {
+  private async resolveSigner(callerId: string, studentId?: string, purpose: 'act' | 'read' = 'read'): Promise<string> {
     if (studentId && studentId !== callerId) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose });
       return studentId;
     }
     return callerId;

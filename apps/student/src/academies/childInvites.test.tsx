@@ -38,7 +38,25 @@ describe('ChildInvites (Decision 403)', () => {
     const screen = await renderInvites();
     await waitFor(() => expect(screen.getByText('Add Kit Young to Alpha Dojo?')).toBeTruthy());
     fireEvent.press(screen.getByText('Accept'));
-    await waitFor(() => expect(apiClient.POST).toHaveBeenCalledWith('/v1/child-invites/{id}/accept', { params: { path: { id: 'inv1' } } }));
+    await waitFor(() => expect(apiClient.POST).toHaveBeenCalledWith('/v1/child-invites/{id}/accept', { params: { path: { id: 'inv1' } }, body: {} }));
+  });
+
+  it('sends the consent ticked when accepting (Decision 429 item 9)', async () => {
+    (apiClient.GET as jest.Mock).mockImplementation(() => ok({ items: [INVITE] }) as never);
+    (apiClient.POST as jest.Mock).mockImplementation(() => ok({ schoolId: 's1', studentId: 'kid' }) as never);
+    const screen = await renderInvites();
+    await waitFor(() => expect(screen.getByLabelText('I give consent for Kit under the ULTM8 privacy notice.')).toBeTruthy());
+    await fireEvent(screen.getByLabelText('I give consent for Kit under the ULTM8 privacy notice.'), 'valueChange', true);
+    fireEvent.press(screen.getByText('Accept'));
+    await waitFor(() =>
+      expect(apiClient.POST).toHaveBeenCalledWith('/v1/child-invites/{id}/accept', { params: { path: { id: 'inv1' } }, body: { consentPolicyVersion: '1.0-placeholder' } }),
+    );
+  });
+
+  it('words an invite to be another parent of a child already at the School (Decision 429 item 6)', async () => {
+    (apiClient.GET as jest.Mock).mockImplementation(() => ok({ items: [{ ...INVITE, addsGuardian: true }] }) as never);
+    const screen = await renderInvites();
+    await waitFor(() => expect(screen.getByText('Be a parent or guardian of Kit Young at Alpha Dojo?')).toBeTruthy());
   });
 
   it('declines', async () => {

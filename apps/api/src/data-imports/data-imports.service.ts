@@ -423,7 +423,7 @@ export class DataImportsService {
         });
         const settable = belts.filter((b) => !promotable || promotable.has(b.disciplineId));
 
-        if (isAdultOn(new Date(dateOfBirth), ctx.now)) {
+        if (isAdultOn(new Date(dateOfBirth), ctx.now, ctx.zone)) {
           const email = parseEmail(values, 'email', true)!;
           const phone = parsePhone(values);
           if (seen.has(email) || madeInBatch.has(email)) throw rowSkip('DUPLICATE_IN_FILE', 'This email is on an earlier row of the file.', 'email');
@@ -448,7 +448,7 @@ export class DataImportsService {
         seen.add(key);
         const guardian = accountByEmail.get(guardianEmail);
         if (guardian) {
-          if (guardian.dateOfBirth && !isAdultOn(guardian.dateOfBirth, ctx.now)) throw rowError('GUARDIAN_UNDER_18', 'A Guardian must be 18 or over.', 'guardian_email');
+          if (guardian.dateOfBirth && !isAdultOn(guardian.dateOfBirth, ctx.now, ctx.zone)) throw rowError('GUARDIAN_UNDER_18', 'A Guardian must be 18 or over.', 'guardian_email');
           const sameChild = (n: { first: string; last: string; dob: Date | null }) =>
             sameText(n.first, firstName) && sameText(n.last, surname) && !!n.dob && n.dob.toISOString().slice(0, 10) === dateOfBirth;
           if (invites.some((i) => i.guardianId === guardian.id && sameChild({ first: i.childFirstName, last: i.childSurname, dob: i.childDateOfBirth }))) {

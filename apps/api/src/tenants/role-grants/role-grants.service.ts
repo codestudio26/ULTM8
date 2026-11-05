@@ -40,11 +40,20 @@ import { CreateStudentManuallyDto } from './dto/create-student-manually.dto';
 import { CONTACT_FIELDS } from '../../users/dto/update-user.dto';
 import { assertJoinDateAllowed, setJoinDate } from '../schools/student-join-dates';
 import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
+import { schoolZone } from '../../common/school-zone';
 import { STAFF_ROLES, StaffAccessDto, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
 import { StepUpService } from '../../auth/step-up.service';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
 import { recordStaffActivity } from '../staff-activity/staff-activity';
 import { deleteMedicalInfoOfLeavers } from '../../medical-info/medical-info-erasure';
+
+/** Decision 429 item 12 (FAM-12): one email is one person's login (Decision
+ * 295), so a family that shares one is told how to carry on. */
+const EMAIL_IN_USE = {
+  code: 'EMAIL_IN_USE',
+  message:
+    'An account with this email already exists. If it is the same person, use "Invite" instead. Each adult needs their own email; a phone the family shares can go in Secondary phone.',
+};
 
 const BCRYPT_ROUNDS = 12;
 
@@ -462,7 +471,8 @@ export class RoleGrantsService {
     const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    if (!isAdultOn(new Date(dto.dateOfBirth))) {
+    // Decision 429 item 10: the 18th birthday on the School's (or chosen Branch's) own date.
+    if (!isAdultOn(new Date(dto.dateOfBirth), new Date(), await schoolZone(this.prismaJobs, schoolId, dto.branchId))) {
       throw new BadRequestException("Add manually is for adults (18 or over). A child joins through their Guardian's app.");
     }
 
@@ -540,7 +550,7 @@ export class RoleGrantsService {
     const email = data.email.trim().toLowerCase();
     const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
     if (existingUser) {
-      throw new ConflictException('An account with this email already exists — use "Invite" instead.');
+      throw new ConflictException(EMAIL_IN_USE);
     }
 
     const userId = randomUUID();
@@ -568,7 +578,7 @@ export class RoleGrantsService {
       } catch (err) {
         // Two adds of the same email at once: the second loses the unique index.
         if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-          throw new ConflictException('An account with this email already exists — use "Invite" instead.');
+          throw new ConflictException(EMAIL_IN_USE);
         }
         throw err;
       }

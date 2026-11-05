@@ -1115,10 +1115,26 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["GuardiansController_findChildConsent"];
         put?: never;
         post: operations["GuardiansController_grantConsent"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["GuardiansController_removeMe"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6852,6 +6868,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/guardians": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StudentAccessController_addGuardian"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/guardians/{guardianId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StudentAccessController_removeGuardian"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/child-invites/{id}/decline": {
         parameters: {
             query?: never;
@@ -8137,7 +8185,8 @@ export interface components {
         };
         StudentExportGuardianDto: {
             name: string;
-            email: string;
+            /** @description Decision 429 item 11: null for a parent this School never dealt with (known only through the child's other School). */
+            email?: string | null;
         };
         StudentExportRowDto: {
             id: string;
@@ -8274,6 +8323,11 @@ export interface components {
         };
         StudentGuardiansResponseDto: {
             items: components["schemas"]["StudentGuardianDto"][];
+            /**
+             * @description Decision 429 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app.
+             * @enum {string}
+             */
+            consent: "NOT_NEEDED" | "GIVEN" | "GRANDFATHERED" | "WITHDRAWN" | "PENDING";
         };
         LeavingStudentMembershipDto: {
             id: string;
@@ -8789,7 +8843,7 @@ export interface components {
         StaffActivityEntryDto: {
             id: string;
             /** @enum {string} */
-            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED" | "MEMBERS_MERGED";
+            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED" | "MEMBERS_MERGED" | "GUARDIAN_REMOVED" | "GUARDIAN_LEFT" | "GUARDIAN_INVITED";
             /** @description Who made the change; null once their account is deleted. */
             actorId: string | null;
             /** @description First name and surname of who made the change. */
@@ -9106,13 +9160,15 @@ export interface components {
         CreateMinorDto: {
             firstName: string;
             surname: string;
-            /** @description ISO 8601 date, no time component. */
+            /** @description YYYY-MM-DD. The child must be under 18. */
             dateOfBirth: string;
             /**
              * @description FEMALE, MALE, or null when not given.
              * @enum {string|null}
              */
             gender?: "FEMALE" | "MALE" | null;
+            /** @description Decision 429 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it. */
+            consentPolicyVersion?: string;
         };
         MinorResponseDto: {
             linkId: string;
@@ -9121,6 +9177,17 @@ export interface components {
             surname: string;
             dateOfBirth: string;
             gender?: string | null;
+            /** @description Decision 429 item 4: true when this child was already on the account (same name and date of birth), so nothing new was added. */
+            alreadyAdded?: boolean;
+            /**
+             * @description Decision 429 item 9: the child's BASELINE consent. PENDING and WITHDRAWN block booking and check-in until a parent gives it.
+             * @enum {string}
+             */
+            consent?: "NOT_NEEDED" | "GIVEN" | "GRANDFATHERED" | "WITHDRAWN" | "PENDING";
+            /** @description Decision 429 item 7: the child is 18 now (they make their own account; the parent can pay and read history until parentAccessEndsOn). */
+            isAdult?: boolean;
+            /** @description YYYY-MM-DD: the last day a parent can still pay for, and read the history of, a child who is 18. */
+            parentAccessEndsOn?: string | null;
         };
         MinorListResponseDto: {
             items: components["schemas"]["MinorResponseDto"][];
@@ -9140,6 +9207,27 @@ export interface components {
             status: string;
             consentedAt: string;
             withdrawnAt?: string | null;
+        };
+        ChildConsentRecordDto: {
+            id?: string | null;
+            /** @enum {string} */
+            tier: "BASELINE" | "CAMERA";
+            /** @enum {string} */
+            status: "ACTIVE" | "WITHDRAWN";
+            policyVersion: string;
+            consentedAt: string;
+            withdrawnAt?: string | null;
+        };
+        ChildConsentGuardianDto: {
+            guardianId: string;
+            name: string;
+            isMe: boolean;
+            records: components["schemas"]["ChildConsentRecordDto"][];
+        };
+        ChildConsentResponseDto: {
+            /** @enum {string} */
+            state: "NOT_NEEDED" | "GIVEN" | "GRANDFATHERED" | "WITHDRAWN" | "PENDING";
+            guardians: components["schemas"]["ChildConsentGuardianDto"][];
         };
         ConsentRecordListResponseDto: {
             items: components["schemas"]["ConsentRecordResponseDto"][];
@@ -14072,6 +14160,8 @@ export interface components {
             childFirstName: string;
             childSurname: string;
             childDateOfBirth: string;
+            /** @description Decision 429 item 6: an invite to be another parent or guardian of a child already at the School ("Add another Guardian"), not to add a new child. */
+            addsGuardian: boolean;
             /** @description For the School's list: the Guardian's name. */
             guardianName?: string | null;
             /** @description For the School's list: the Guardian's email. */
@@ -14081,9 +14171,18 @@ export interface components {
         ChildInviteListDto: {
             items: components["schemas"]["ChildInviteDto"][];
         };
+        AcceptChildInviteDto: {
+            /** @description The version of the privacy notice the parent agreed to. Without it the child is "consent pending" until a parent gives consent. */
+            consentPolicyVersion?: string;
+        };
         AcceptChildInviteResponseDto: {
             schoolId: string;
             studentId: string;
+        };
+        AddGuardianDto: {
+            firstName: string;
+            surname: string;
+            email: string;
         };
         TemporaryPasscodeStatusDto: {
             /** @description A new temporary passcode can be made: the account (the student's, or for a child their Guardian's) was made by this School and has not been signed in to yet. */
@@ -16916,6 +17015,27 @@ export interface operations {
             };
         };
     };
+    GuardiansController_findChildConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildConsentResponseDto"];
+                };
+            };
+        };
+    };
     GuardiansController_grantConsent: {
         parameters: {
             query?: never;
@@ -16938,6 +17058,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ConsentRecordResponseDto"];
                 };
+            };
+        };
+    };
+    GuardiansController_removeMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -26661,7 +26800,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptChildInviteDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -26670,6 +26813,53 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AcceptChildInviteResponseDto"];
                 };
+            };
+        };
+    };
+    StudentAccessController_addGuardian: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddGuardianDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddChildManuallyResponseDto"];
+                };
+            };
+        };
+    };
+    StudentAccessController_removeGuardian: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                guardianId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

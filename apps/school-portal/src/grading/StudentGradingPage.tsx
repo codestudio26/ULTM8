@@ -11,7 +11,8 @@ import { StudentCustomFieldsCard } from '../students/StudentCustomFieldsCard';
 import { MemberFilesCard } from '../students/MemberFilesCard';
 import { MemberDataExportCard } from '../students/MemberDataExportCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
-import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
+import { useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
+import { StudentGuardiansCard } from '../students/StudentGuardiansCard';
 import { ReEnrolModal } from '../students/ReEnrolModal';
 import { MergeDuplicateModal } from '../students/MergeDuplicateModal';
 import { VisitorCard } from '../students/VisitorCard';
@@ -130,9 +131,6 @@ export function StudentGradingPage() {
   const [merging, setMerging] = useState(false);
   const [merged, setMerged] = useState<string | null>(null);
   const enrolled = students.data?.items.find((s) => s.id === studentId)?.status === 'ACTIVE';
-  // Decision 371 (Q4): who the student's Guardians are. Read for a current
-  // student only (the API's own rule, like the profile read).
-  const guardians = useStudentGuardians(schoolId, studentId, enrolled);
   // Decision 409: Branch Staff the owner let freeze memberships.
   const isBranchStaff = !!claims?.grants.some((g) => g.role === 'BRANCH_STAFF' && g.schoolId === schoolId);
   // Read for coaches too: "Can cancel charges" (Decision 420 item 2) is theirs as well.
@@ -239,14 +237,9 @@ export function StudentGradingPage() {
         />
       ) : null}
 
-      {guardians.data && guardians.data.items.length > 0 ? (
-        <p data-testid="student-guardians" style={{ margin: '0 0 16px' }}>
-          {t('students.guardians', {
-            count: guardians.data.items.length,
-            names: guardians.data.items.map((g) => `${g.firstName} ${g.surname}`.trim()).join(', '),
-          })}
-        </p>
-      ) : null}
+      {/* Decision 371 (Q4): who the student's Guardians are, read for a current
+          student only; Decision 429: consent status, Remove / Add another Guardian. */}
+      <StudentGuardiansCard schoolId={schoolId} studentId={studentId} studentName={studentName} enabled={enrolled} isOwner={my.isOwner} />
 
       <div style={{ marginBottom: 24 }}>
         <Card>

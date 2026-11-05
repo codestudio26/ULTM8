@@ -153,6 +153,9 @@ export class ChildInviteDto {
   @ApiProperty()
   childDateOfBirth!: string;
 
+  @ApiProperty({ description: 'Decision 429 item 6: an invite to be another parent or guardian of a child already at the School ("Add another Guardian"), not to add a new child.' })
+  addsGuardian!: boolean;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'For the School\'s list: the Guardian\'s name.' })
   guardianName!: string | null;
 
@@ -175,3 +178,18 @@ export class AcceptChildInviteResponseDto {
   @ApiProperty()
   studentId!: string;
 }
+
+/** Decision 429 item 9: accepting a child invite can record the parent's
+ * BASELINE consent, ticked in the app. */
+export class AcceptChildInviteDto {
+  @ApiPropertyOptional({ description: 'The version of the privacy notice the parent agreed to. Without it the child is "consent pending" until a parent gives consent.' })
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  consentPolicyVersion?: string;
+}
+
+/** Decision 429 item 6: "Add another Guardian" for a child already here. */
+export class AddGuardianDto extends GuardianDetailsDto {}

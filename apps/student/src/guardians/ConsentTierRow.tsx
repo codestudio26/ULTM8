@@ -18,7 +18,7 @@ type ConsentTier = 'BASELINE' | 'CAMERA';
  * whatever real, approved privacy-notice text/version the product/legal side
  * would actually supply — not invented legal content, just a value to make the
  * confirmed `policyVersion` field wire up. */
-const CURRENT_POLICY_VERSION = '1.0-placeholder';
+export const CURRENT_POLICY_VERSION = '1.0-placeholder';
 
 /** Copy quotes SKILL.md §14's own confirmed description of what each tier
  * covers and what withdrawing each one actually does (GuardiansService.

@@ -29,8 +29,31 @@ export function useMyConsentRecords() {
 export function useAddMinor() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (dto: { firstName: string; surname: string; dateOfBirth: string; gender?: 'FEMALE' | 'MALE' | null }) =>
+    // Decision 429 item 9: consentPolicyVersion records the parent's BASELINE consent with the child.
+    mutationFn: (dto: { firstName: string; surname: string; dateOfBirth: string; gender?: 'FEMALE' | 'MALE' | null; consentPolicyVersion?: string }) =>
       unwrap(apiClient.POST('/v1/guardians/me/minors', { body: dto })),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['my-minors'] });
+      await queryClient.invalidateQueries({ queryKey: ['my-consent-records'] });
+    },
+  });
+}
+
+/** Decision 429 item 9: the child's consent state, with every parent's
+ * records (only this parent's can be acted on). */
+export function useChildConsent(studentId: string) {
+  return useQuery({
+    queryKey: ['child-consent', studentId],
+    queryFn: () => unwrap(apiClient.GET('/v1/guardians/me/minors/{studentId}/consent', { params: { path: { studentId } } })),
+  });
+}
+
+/** Decision 429 item 8: "Remove me" — this parent leaves the child's
+ * account. Refused for the last parent of an enrolled child. */
+export function useRemoveMe() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (studentId: string) => unwrap(apiClient.DELETE('/v1/guardians/me/minors/{studentId}', { params: { path: { studentId } } })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-minors'] }),
   });
 }
@@ -48,7 +71,11 @@ export function useGrantConsent() {
           body: { tier, policyVersion },
         }),
       ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-consent-records'] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['my-consent-records'] });
+      await queryClient.invalidateQueries({ queryKey: ['child-consent'] });
+      await queryClient.invalidateQueries({ queryKey: ['my-minors'] });
+    },
   });
 }
 
@@ -73,6 +100,10 @@ export function useWithdrawConsent() {
           headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
         }),
       ),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['my-consent-records'] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['my-consent-records'] });
+      await queryClient.invalidateQueries({ queryKey: ['child-consent'] });
+      await queryClient.invalidateQueries({ queryKey: ['my-minors'] });
+    },
   });
 }

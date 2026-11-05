@@ -61,6 +61,37 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.signUpWaiting');
     case 'SIGN_UP_ALREADY_STUDENT':
       return t('server.codes.signUpAlreadyStudent');
+    // Families (Decision 429).
+    case 'CONSENT_PENDING':
+      return t('server.codes.consentPending');
+    case 'CONSENT_WITHDRAWN':
+      return t('server.codes.consentWithdrawn');
+    case 'CHILD_IS_ADULT':
+      return t('server.codes.childIsAdult');
+    case 'CHILD_ADULT_ACCESS_ENDED':
+      return t('server.codes.childAdultAccessEnded');
+    case 'GUARDIAN_UNDER_18':
+      return t('server.codes.guardianUnder18');
+    case 'NOT_A_MINOR':
+      return t('server.codes.notAMinor');
+    case 'CHILD_ALREADY_HERE':
+      return t('server.codes.childAlreadyHere');
+    case 'ALREADY_GUARDIAN':
+      return t('server.codes.alreadyGuardian');
+    case 'NOT_GUARDIAN_MANAGED':
+      return t('server.codes.notGuardianManaged');
+    case 'GUARDIAN_IS_CHILD':
+      return t('server.codes.guardianIsChild');
+    case 'LAST_GUARDIAN':
+      return t('server.codes.lastGuardian');
+    case 'IDENTITY_SHARED':
+      return t('server.codes.identityShared');
+    case 'EMAIL_IN_USE':
+      return t('server.codes.emailInUse');
+    case 'UNDER_18_SELF':
+      return t('server.codes.under18Self');
+    case 'BIRTH_DATE_NEEDED':
+      return t('server.codes.birthDateNeeded');
     // Kids and Adult programs (backlog 3.20).
     case 'ADULT_NOT_LINKED':
       return t('server.codes.adultNotLinked');

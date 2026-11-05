@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from '../auth/auth.module';
+import { QueueModule } from '../jobs/queue.module';
 import { GuardiansController } from './guardians.controller';
 import { GuardiansService } from './guardians.service';
 
@@ -50,6 +51,7 @@ import { GuardiansService } from './guardians.service';
       signOptions: { expiresIn: process.env.JWT_ACCESS_TTL ?? '15m' },
     }),
     AuthModule,
+    QueueModule,
   ],
   controllers: [GuardiansController],
   providers: [GuardiansService],

@@ -73,13 +73,14 @@ export class SignUpsService {
   // ---------------------------------------------------------------------------
 
   async submitFromKiosk(session: FrontDeskSessionContext, dto: KioskSignUpDto): Promise<{ id: string }> {
-    if (!isAdultOn(new Date(dto.dateOfBirth))) {
-      throw new BadRequestException(UNDER_18);
-    }
     const school = await this.prismaJobs.school.findUniqueOrThrow({
       where: { id: session.schoolId },
-      select: { visitorPeriodDays: true, heardFromOptions: true },
+      select: { visitorPeriodDays: true, heardFromOptions: true, timezone: true },
     });
+    // Decision 429 item 10: the 18th birthday on the School's own date.
+    if (!isAdultOn(new Date(dto.dateOfBirth), new Date(), school.timezone)) {
+      throw new BadRequestException(UNDER_18);
+    }
     if (dto.kind === 'VISITOR' && !school.visitorPeriodDays) {
       throw new BadRequestException(VISITORS_OFF);
     }

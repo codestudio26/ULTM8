@@ -299,6 +299,9 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Franchise closed': 'franchiseClosedTitle',
   // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
   'Added to a School': 'studentAddedTitle',
+  // Decision 429 — apps/api/src/guardians/guardians.service.ts, student-access.service.ts.
+  'Consent withdrawn': 'consentWithdrawnTitle',
+  'Another parent or guardian invited': 'guardianInvitedTitle',
   // Decision 386 — apps/api/src/open-mats/open-mats.service.ts.
   'Open mat': 'openMatTitle',
   // Decision 407 — apps/api/src/jobs/stripe-webhook-processing.processor.ts.
@@ -394,6 +397,13 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   ],
   // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
   [/^You've been added to (.+)\.$/s, (m, { t }) => n(t, 'studentAddedBody', { school: m[1] })],
+  // Decision 429 — apps/api/src/guardians/guardians.service.ts, student-access.service.ts.
+  [
+    /^(.+) withdrew consent for (.+?)\. \2 can't book or check in until a parent gives consent again in the app\.$/s,
+    (m, { t }) => n(t, 'consentWithdrawnBody', { name: m[1], child: m[2] }),
+  ],
+  [/^(.+) withdrew camera consent for (.+)\. Staff will check them in by hand\.$/s, (m, { t }) => n(t, 'cameraConsentWithdrawnBody', { name: m[1], child: m[2] })],
+  [/^(.+) invited (.+) to be a parent or guardian of (.+) on ULTM8\.$/s, (m, { t }) => n(t, 'guardianInvitedBody', { school: m[1], name: m[2], child: m[3] })],
   // Decision 386 — apps/api/src/open-mats/open-mats.service.ts.
   [
     /^Open mat \((.+)\) at (.+) on (.+), for (\d+) minutes\. Book in the app to join\.$/s,

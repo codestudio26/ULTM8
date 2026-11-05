@@ -1,6 +1,15 @@
 /** English text: guardians (Decision 323). */
 export const guardians = {
   myMinors: {
+    dateInvalid: "Enter a real date as YYYY-MM-DD.",
+    dateFuture: "The date of birth can't be in the future.",
+    dateAdult: "This is for children (under 18). An adult makes their own account.",
+    consentLabel: "I give consent for this child under the ULTM8 privacy notice (needed before they can book or check in).",
+    alreadyAdded: "{name} is already on your account.",
+    adult: "{name} is 18 now and signs for themselves. They can make their own ULTM8 account.",
+    adultUntil: "{name} is 18 now and signs for themselves. They can make their own ULTM8 account. You can still see their bookings and pay for them until {date}.",
+    consentPending: "{name} can't book or check in until you give consent. Open their settings to give it.",
+    consentWithdrawn: "Consent for {name} was withdrawn, so they can't book or check in until a parent gives it again.",
     card: "Membership card",
     plans: 'Buy a plan',
     waivers: 'Waivers',
@@ -36,6 +45,15 @@ export const guardians = {
     classesLoadError: 'Could not load the classes — please try again.',
   },
   minorConsent: {
+    adult: "{name} is 18 now, so consent and Kid Mode are theirs to manage, not a parent's.",
+    othersTitle: "Other parents and guardians",
+    otherNone: "No consent given yet",
+    otherGiven: "Consent given on {date}",
+    otherWithdrawn: "Consent withdrawn on {date}",
+    removeMe: "Remove me",
+    removeConfirm: "Stop being a parent or guardian of {name}? You'll no longer see or act for them. Your account and theirs stay open. The last parent or guardian of an enrolled child can't leave.",
+    keep: "Keep me",
+    removeFailed: "Couldn't remove you — please try again.",
     loadError: "Failed to load this minor's settings — please try again.",
   },
   consentTier: {

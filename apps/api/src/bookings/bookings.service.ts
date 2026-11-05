@@ -10,6 +10,8 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
+import { assertBaselineConsentGiven } from '../guardians/baseline-consent';
+import { schoolZone } from '../common/school-zone';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
@@ -112,8 +114,15 @@ export class BookingsService {
     const studentId = dto.studentId ?? callerId;
     const isOnBehalfOf = dto.studentId !== undefined && dto.studentId !== callerId;
 
-    let cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
-    let isGuardianAction = false;
+    // Decision 429 item 1 (FAM-1): the relationship decides, not visibility.
+    // A parent who also trains, coaches or owns at the School sees the Class
+    // under their own context, which used to send their child's booking down
+    // the staff path (403 for a member; a staff booking that skipped the
+    // waitlist for a coach). Without an override reason (staff-only), an
+    // active Guardian of the student books as the Guardian, reading the Class
+    // as the student.
+    let isGuardianAction = isOnBehalfOf && dto.overrideReason === undefined && (await this.guardiansService.isActiveGuardianOf(callerId, studentId));
+    let cls = isGuardianAction ? null : await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
     if (!cls && isOnBehalfOf) {
       cls = await this.prismaApp.withTenantContext(studentId, (tx) => tx.class.findUnique({ where: { id: classId } }));
       isGuardianAction = cls !== null;
@@ -146,7 +155,7 @@ export class BookingsService {
       if (dto.overrideReason !== undefined) {
         throw new ForbiddenException('A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.');
       }
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'act', schoolId: resolvedClass.schoolId, branchId: resolvedClass.branchId });
     } else if (isStaffAction) {
       // A Student may never self-override or book on someone else's behalf — SKILL.md
       // §9: "An Instructor/Staff member can override", never the Student themselves.
@@ -166,6 +175,9 @@ export class BookingsService {
     // Decision 110: a closed School accepts no new Bookings, same as every other
     // write there (Classes review C16: a Student could still book after closing).
     await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
+    // Decision 429 item 9 (FAM-9): a child whose parent hasn't given BASELINE
+    // consent can't be booked, by anyone.
+    await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
     // SKILL.md §10: each guest needs a Friend Pass; the organizer's own
     // Subscription or Class Pack never covers a guest, and one pass covers one
     // guest (Classes review C13: one Subscription sent three times booked three
@@ -377,6 +389,11 @@ export class BookingsService {
     if (!existing) {
       throw new NotFoundException('Booking not found');
     }
+    // Decision 429 item 1 (FAM-1): a parent who is also staff here cancels
+    // their own child's booking as the parent, not as staff.
+    if (!isGuardianAction && !frozenStudentId && existing.studentId !== callerId && (await this.guardiansService.isActiveGuardianOf(callerId, existing.studentId))) {
+      isGuardianAction = true;
+    }
     // Hoisted to a local const — same "narrowing doesn't cross a closure boundary
     // for a `let`" fix bookClass() already applies to its own `cls`/`resolvedClass`.
     const resolvedBooking = existing;
@@ -384,7 +401,7 @@ export class BookingsService {
     if (frozenStudentId) {
       // Already allowed by MembershipFreezesService (Decision 409).
     } else if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId, { purpose: 'act', schoolId: resolvedBooking.schoolId, branchId: resolvedBooking.branchId });
     } else if (resolvedBooking.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
       // A School cancellation was already allowed by its caller (Decision 387).

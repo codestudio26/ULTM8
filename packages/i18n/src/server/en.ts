@@ -361,6 +361,8 @@ export const SERVER_MESSAGES: string[] = [
  "Waiver not found",
  "You are already a Student at this School.",
  "You are not an active Guardian for this Student.",
+ "This child is not on your account.",
+ "This person isn't a parent or guardian of this student.",
  "You do not have grading permission for this style. The School owner grants it.",
  "You have no Instructor profile.",
  "You have no saved payment method at this School — add a card first, or pay with a new card.",

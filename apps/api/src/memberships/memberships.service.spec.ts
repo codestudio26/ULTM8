@@ -331,8 +331,10 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
   }) {
     const tx = {
       membershipPlan: { findUnique: jest.fn().mockResolvedValue(opts.plan) },
+      // Decision 429 item 5: the School's zone for the buyer's age.
+      school: { findUnique: jest.fn().mockResolvedValue({ timezone: null }) },
       paymentAccount: { findUnique: jest.fn().mockResolvedValue(opts.paymentAccount) },
-      user: { findUniqueOrThrow: jest.fn().mockResolvedValue(opts.student ?? { email: 'minor@example.test', paymentRestrictedAt: null }) },
+      user: { findUniqueOrThrow: jest.fn().mockResolvedValue(opts.student ?? { email: 'minor@example.test', paymentRestrictedAt: null, dateOfBirth: new Date('1990-01-01') }) },
       transaction: { create: jest.fn().mockResolvedValue({ id: 'transaction-1' }) },
       // Decision 334's purchase checks: a current Student, and the pre-charge
       // assertCanCreateMembership().
@@ -380,7 +382,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
       checkoutUrl: string;
     };
 
-    expect(guardiansService.assertGuardianOfStudent).toHaveBeenCalledWith('guardian-1', 'minor-1');
+    expect(guardiansService.assertGuardianOfStudent).toHaveBeenCalledWith('guardian-1', 'minor-1', { purpose: 'pay' });
     expect(result.outcome).toBe('requires_checkout');
     expect(result.checkoutUrl).toBe('https://checkout.stripe.com/c/pay/cs_test_1');
     expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', expect.any(String), 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/), 0);

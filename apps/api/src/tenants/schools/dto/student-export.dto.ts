@@ -33,8 +33,8 @@ export class StudentExportGuardianDto {
   @ApiProperty()
   name!: string;
 
-  @ApiProperty()
-  email!: string;
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 429 item 11: null for a parent this School never dealt with (known only through the child's other School)." })
+  email!: string | null;
 }
 
 export class StudentExportRowDto {
