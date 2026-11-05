@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
@@ -40,6 +41,34 @@ test('the owner changes columns, the promotion fee and open mat hours, then save
   expect([style.boardGettingThere, style.boardReadyToGrade]).toEqual([50, 90]);
   const school = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
   expect(school).toMatchObject({ promotionFeeEnabled: true, promotionFeeGradeBeforePaid: true, openMatCountsTowardHours: true });
+});
+
+test('the owner ticks a style\'s requirements, sets automatic promotion and the first belt (Decision 321)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/grading/settings');
+  await expect(page.getByLabel('BJJ: Classes')).toBeChecked();
+  await expect(page.getByLabel('BJJ: Hours')).not.toBeChecked();
+  await page.getByLabel('BJJ: Hours').check();
+  await page.getByLabel('BJJ: Minimum age').check();
+  await page.getByLabel('BJJ: promotion').selectOption('AUTO_STRIPES');
+  await page.locator(`[data-testid="requirements-${s.disciplineId}"]`).getByRole('switch', { name: 'Auto-assign first belt' }).click();
+  await expect(page.getByRole('heading', { name: 'Promotion' })).toBeVisible(); // About this setting follows
+
+  const bar = page.getByRole('region', { name: 'You have unsaved changes.' });
+  await bar.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByText('Saved.')).toBeVisible();
+  const style = await db.discipline.findUniqueOrThrow({ where: { id: s.disciplineId } });
+  expect(style).toMatchObject({ requireClasses: true, requireHours: true, requireMinimumAge: true, promotionMode: 'AUTO_STRIPES', autoAssignFirstRank: true });
+});
+
+test('a coach sees a style\'s requirements but only the owner can change them', async ({ page }) => {
+  const coach = await addPerson('Rita', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  // A coach who grades in this style, so it is listed for them.
+  await db.gradingPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: coach.id, disciplineId: s.disciplineId } });
+  await signIn(page, coach.token);
+  await page.goto('/grading/settings');
+  await expect(page.getByLabel('BJJ: Hours')).toBeDisabled();
+  await expect(page.getByLabel('BJJ: promotion')).toBeDisabled();
 });
 
 test('Discard puts the saved values back; a wrong % keeps Save off', async ({ page }) => {
