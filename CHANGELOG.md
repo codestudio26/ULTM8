@@ -794,6 +794,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   renewal) or of the charge (a payment toward it), as it is now. Members never
   see categories. No accounting codes and no accounting integration. **Needs
   a database migration** (`20270212000001_income_categories`).
+- **Joining fee on plans** (Decision 316 item 3, as answered by Decision 435
+  items 1-6; Gymdesk P10) — a new **Joining fees** card on the School page
+  (owner only, off by default) switches them on. A paid plan's Policies step
+  has a **Joining fee** and whether it is refunded with the membership. The
+  fee is added once, to a member's first-ever plan at the School (not a
+  rejoin after a gap, not a renewal): to the card payment in the app (its own
+  line on hosted Checkout and on a Subscription's first Stripe invoice), to
+  the member's own Cash/Bank order, and to a sale at the desk. The plan's tax
+  and the card surcharge apply to it too. The app shows "+ joining fee on your
+  first plan"; the desk (**Sell a plan**, **Record a payment**) shows the fee
+  and the total to collect for that member. A non-refundable fee is always
+  left out of refunds (desk refunds, a Class Pack's refunded classes); a
+  refundable one goes back with the payment. Switched off, the amounts stay on
+  the plans but nothing is charged. **Needs a database migration**
+  (`20270225100000_plan_joining_fee`).
 - **Contracts on plans** (Decision 316 item 6; Gymdesk DOC2) — a new
   **Contract** card on a plan's edit page (owner only) holds the School's own
   contract text and, for a Subscription, a **minimum term** (months) and an
