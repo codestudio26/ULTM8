@@ -3,7 +3,7 @@ import { Button, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { useBeltColours, useSaveBeltColours } from './rankQueries';
-import { MAX_SAVED_COLOURS, PRESET_COLOURS, hexToHsv, hsvToHex, hsvToRgb, isColourCode, normalColour, sameColour, type Hsv } from './colour';
+import { MAX_SAVED_COLOURS, PRESET_COLOURS, hexToHsv, hsvToHex, hsvToRgb, isColourCode, normalColour, sameColour, wheelHueSat, type Hsv } from './colour';
 
 const WHEEL = 168;
 
@@ -188,10 +188,8 @@ function ColourPanel({ start, busy, onSave, onCancel }: { start: string; busy: b
       for (let x = 0; x < WHEEL; x++) {
         const dx = x - r + 0.5;
         const dy = y - r + 0.5;
-        const d = Math.sqrt(dx * dx + dy * dy);
-        if (d > r) continue;
-        const h = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
-        const [cr, cg, cb] = hsvToRgb({ h, s: d / r, v: hsv.v });
+        if (Math.sqrt(dx * dx + dy * dy) > r) continue;
+        const [cr, cg, cb] = hsvToRgb({ ...wheelHueSat(dx, dy, r), v: hsv.v });
         const i = (y * WHEEL + x) * 4;
         img.data[i] = cr;
         img.data[i + 1] = cg;
@@ -208,12 +206,12 @@ function ColourPanel({ start, busy, onSave, onCancel }: { start: string; busy: b
   };
 
   const pick = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    // Measured in the wheel's own pixels, the ones it is drawn in.
     const box = e.currentTarget.getBoundingClientRect();
-    const r = box.width / 2;
-    const dx = e.clientX - box.left - r;
-    const dy = e.clientY - box.top - r;
-    const h = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
-    choose({ h, s: Math.min(1, Math.sqrt(dx * dx + dy * dy) / r), v: hsv.v });
+    const scale = WHEEL / box.width;
+    const dx = (e.clientX - box.left - box.width / 2) * scale;
+    const dy = (e.clientY - box.top - box.height / 2) * scale;
+    choose({ ...wheelHueSat(dx, dy, WHEEL / 2), v: hsv.v });
   };
 
   const angle = (hsv.h * Math.PI) / 180;
