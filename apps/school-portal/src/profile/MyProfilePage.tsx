@@ -29,6 +29,7 @@ import { useI18n } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { MyCalendarFeedCard } from './MyCalendarFeedCard';
+import { MyRolesCard } from './MyRolesCard';
 
 /**
  * The signed-in user's own profile (`/profile`, reached from the header's
@@ -208,6 +209,8 @@ export function MyProfilePage() {
       <ChangePasscodeCard />
       {/* Decision 319 item 4: staff see their classes in Google Calendar. */}
       <MyCalendarFeedCard />
+      {/* Decision 432 item 6: give up your own staff role. */}
+      <MyRolesCard />
     </>
   );
 }

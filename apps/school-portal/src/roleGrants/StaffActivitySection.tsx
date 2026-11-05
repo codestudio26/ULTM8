@@ -27,11 +27,13 @@ function describe(t: T, e: StaffActivityEntry): string {
     case 'ROLE_GIVEN':
       return t(d.manual ? 'roleGrants.activity.roleGivenManual' : 'roleGrants.activity.roleGiven', vars);
     case 'ROLE_REMOVED':
-      return t('roleGrants.activity.roleRemoved', vars);
+      // Decision 432 item 6: someone gave up their own role.
+      return t(d.self ? 'roleGrants.activity.steppedDown' : 'roleGrants.activity.roleRemoved', vars);
     case 'REMOVED_FROM_SCHOOL':
       return t('roleGrants.activity.removedFromSchool', vars);
     case 'PAUSED':
-      return t('roleGrants.activity.paused', vars);
+      // Decision 432 item 6: ULTM8 support's emergency pause.
+      return t(d.byUltm8Support ? 'roleGrants.activity.pausedBySupport' : 'roleGrants.activity.paused', vars);
     case 'UNPAUSED':
       return t('roleGrants.activity.unpaused', vars);
     case 'ACCESS_CHANGED': {

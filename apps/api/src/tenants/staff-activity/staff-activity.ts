@@ -6,9 +6,9 @@ import { Prisma } from '@prisma/client';
  */
 export const STAFF_ACTIONS = [
   'ROLE_GIVEN', // { role, branchName, manual? }
-  'ROLE_REMOVED', // { role, branchName }
+  'ROLE_REMOVED', // { role, branchName, self? } (self: they stepped down, Decision 432 item 6)
   'REMOVED_FROM_SCHOOL', // { removedRoles }
-  'PAUSED', // { pausedRoles }
+  'PAUSED', // { pausedRoles, byUltm8Support? } (support's pause has no actor, Decision 432 item 6)
   'UNPAUSED', // { restoredRoles, closedBranches }
   'ACCESS_CHANGED', // { changes: [{ switch, on }] }
   'DETAILS_CHANGED', // { displayName?, workPhone? } (only what changed; null = cleared)
@@ -27,7 +27,8 @@ export type StaffAction = (typeof STAFF_ACTIONS)[number];
 
 export interface StaffActivityEntry {
   schoolId: string;
-  actorId: string;
+  /** Null only for ULTM8 support's pause (Decision 432 item 6). */
+  actorId: string | null;
   targetUserId?: string | null;
   action: StaffAction;
   details?: Prisma.InputJsonValue;

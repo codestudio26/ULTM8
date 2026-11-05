@@ -59,6 +59,30 @@ export function useChangeSchoolMainOwner(schoolId: string) {
   });
 }
 
+/** GET /platform-admin/schools/:id/staff (Decision 432 item 6) — the
+ * School's coaches and Branch Staff, paused ones included. Audit-logged
+ * server-side (VIEW_SCHOOL_STAFF). */
+export function useSchoolStaff(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['platform-admin-school-staff', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/platform-admin/schools/{id}/staff', { params: { path: { id: schoolId! } } })),
+    enabled: !!schoolId,
+    retry: false,
+  });
+}
+
+/** POST /platform-admin/schools/:id/staff/:userId/pause (Decision 432 item 6)
+ * — FULL_ADMIN only server-side: pauses a coach or Branch Staff member. Only
+ * the School's main owner can unpause them. */
+export function usePauseSchoolStaff(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      unwrap(apiClient.POST('/v1/platform-admin/schools/{id}/staff/{userId}/pause', { params: { path: { id: schoolId, userId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['platform-admin-school-staff', schoolId] }),
+  });
+}
+
 /** POST /platform-admin/schools/:id/trial and /trial/extend (backlog 3.14) —
  * a free trial of ULTM8, FULL_ADMIN only server-side. */
 export function useSchoolTrial(schoolId: string) {

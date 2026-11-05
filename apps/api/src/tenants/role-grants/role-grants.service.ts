@@ -77,6 +77,11 @@ const ROLE_LABELS: Record<string, string> = {
  */
 const REVOCABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'STUDENT'] as const;
 
+/** Roles a person may give up themselves (Decision 432 item 6, amending
+ * Decision 423 item 10): a co-owner, coach or Branch Staff role. The main
+ * owner's role is never one of them (Decision 370). */
+const SELF_REMOVABLE_ROLES: readonly string[] = ['SCHOOL_OWNER_MANAGER', 'INSTRUCTOR', 'BRANCH_STAFF'];
+
 /** Decision 390 — a coach or Branch Staff role that is live, or paused (ended
  * for now, given back by Unpause). A paused person is still on the staff: the
  * School keeps what it set for them, and Remove from School still applies. */
@@ -704,6 +709,8 @@ export class RoleGrantsService {
       throw new NotFoundException('RoleGrant not found');
     }
     if (target.schoolId && target.role !== 'STUDENT') {
+      // Decision 432 item 6: anyone may give up their own staff role.
+      if (targetUserId === callerId && SELF_REMOVABLE_ROLES.includes(target.role)) return this.stepDown(callerId, roleGrantId);
       await this.tenantAuth.assertSchoolMainOwnerOrNotFound(callerId, target.schoolId, 'RoleGrant not found');
     }
     const grant = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -802,6 +809,69 @@ export class RoleGrantsService {
     // Decision 361: their current access token stops working on its next use.
     this.rolesChanged.forget(targetUserId);
     return revoked;
+  }
+
+  /**
+   * Decision 432 item 6 (stress test round 5, PRIV-6; amends Decision 423
+   * item 10): a co-owner, coach or Branch Staff member gives up their own
+   * role at a School, through DELETE /users/{their id}/role-grants/{id}. It
+   * is their own access, not the account's, so the main owner isn't needed;
+   * the main owner's own role still can't be given up here (Decision 370).
+   * As when the main owner removes it: a coach who still teaches upcoming
+   * classes there must have them handed over first, and a paused role ends
+   * for good. Logged on the Staff page's activity log as a step-down
+   * (written on the jobs connection, which may add log lines: Branch Staff
+   * and coaches can't). Their coach rights and Branch Staff switches are
+   * reset, as the main owner's own removal does, in the main owner's
+   * context, the one that may change them.
+   */
+  private async stepDown(callerId: string, roleGrantId: string) {
+    const grant = await this.prismaApp.withTenantContext(callerId, (tx) => tx.roleGrant.findUnique({ where: { id: roleGrantId } }));
+    if (!grant || grant.userId !== callerId || !grant.schoolId) {
+      throw new NotFoundException('RoleGrant not found');
+    }
+    const schoolId = grant.schoolId;
+    if (grant.revokedAt && !grant.pausedAt) return grant; // already ended — idempotent
+    if (grant.role === 'INSTRUCTOR' && !grant.revokedAt) {
+      await this.assertNoClassesLeftWithoutInstructor(callerId, grant.id, callerId, schoolId, { self: true });
+    }
+    const row = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      if (grant.role === 'SCHOOL_OWNER_MANAGER' && (await mainOwnerGrant(tx, schoolId))?.id === grant.id) {
+        throw new ForbiddenException({
+          code: 'MAIN_OWNER',
+          message: "The main owner can't be removed here. To change the main owner, contact ULTM8 support.",
+        });
+      }
+      // Only the caller's own row (rolegrant_self_only), and only while it is
+      // as read above: of two clicks, one changes it.
+      const { count } = await tx.roleGrant.updateMany({
+        where: grant.pausedAt ? { id: grant.id, userId: callerId, pausedAt: { not: null } } : { id: grant.id, userId: callerId, revokedAt: null },
+        data: grant.pausedAt ? { pausedAt: null, pausedById: null } : { revokedAt: new Date() },
+      });
+      return count > 0 ? tx.roleGrant.findUniqueOrThrow({ where: { id: grant.id } }) : null;
+    });
+    if (!row) return this.prismaJobs.roleGrant.findUniqueOrThrow({ where: { id: grant.id } });
+
+    const branch = grant.branchId ? await this.prismaJobs.branch.findUnique({ where: { id: grant.branchId }, select: { name: true } }) : null;
+    await recordStaffActivity(this.prismaJobs as unknown as Prisma.TransactionClient, {
+      schoolId,
+      actorId: callerId,
+      targetUserId: callerId,
+      action: 'ROLE_REMOVED',
+      details: { role: grant.role, branchName: branch?.name ?? null, self: true },
+    });
+    const main = await this.prismaJobs.$transaction((tx) => mainOwnerGrant(tx, schoolId));
+    if (main) {
+      try {
+        await this.prismaApp.withTenantContext(main.userId, (tx) => this.clearCoachRightsIfGone(tx, callerId, schoolId));
+        if (grant.role === 'SCHOOL_OWNER_MANAGER') await this.coachInvites.cancelOpenInvitesFrom(main.userId, schoolId, callerId);
+      } catch (err) {
+        this.logger.warn(`Step-down ${roleGrantId}: coach rights or open invites not reset — ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+    // Decision 361: their current access token stops working on its next use.
+    this.rolesChanged.forget(callerId);
+    return row;
   }
 
   /** The activity log's line for a staff role taken away (Decision 408). */
@@ -1373,7 +1443,7 @@ export class RoleGrantsService {
    * removing one branch of several only blocks on that branch's rows. Same
    * "upcoming"/"active" test as archiving an Instructor profile, so "Hand
    * over classes" clears exactly what this counts. */
-  private async assertNoClassesLeftWithoutInstructor(callerId: string, grantId: string, userId: string, schoolId: string): Promise<void> {
+  private async assertNoClassesLeftWithoutInstructor(callerId: string, grantId: string, userId: string, schoolId: string, opts: { self?: boolean } = {}): Promise<void> {
     const now = new Date();
     const [others, classes, slots] = await this.prismaApp.withTenantContext(callerId, (tx) =>
       Promise.all([
@@ -1384,6 +1454,10 @@ export class RoleGrantsService {
     );
     const covered = (branchId: string | null) => others.some((g) => g.branchId === null || branchId === null || g.branchId === branchId);
     if (classes.some((c) => !covered(c.branchId)) || slots.some((t) => !covered(t.branchId))) {
+      if (opts.self) {
+        // Decision 432 item 6: only the owner can hand classes over.
+        throw new ConflictException('You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.');
+      }
       throw new ConflictException(
         'They still teach upcoming classes or weekly timetable slots here. Use "Hand over classes" on their instructor page first, then remove the role.',
       );
