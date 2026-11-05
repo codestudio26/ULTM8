@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatClassTimes, formatTime } from '../lib/formatDate';
+import { classZone } from '../lib/classTime';
 import { useBookClass, useMyBookings, useMyFriendPasses } from './bookingQueries';
 import { BookingGuests } from './BookingGuests';
 import { ClassTicketOffer } from './ClassTicketOffer';
@@ -18,6 +19,8 @@ interface ClassSummary {
   /** Decision 353 (Q6): the slot's break, shown only; no effect on booking. */
   breakStartAt?: string | null;
   breakEndAt?: string | null;
+  /** Decision 427 (SP6): the clock the class runs on (its Branch's zone, else the School's). */
+  timezone?: string | null;
 }
 
 /** Substantive progress only — kept separate from `actionError` (below) so a failed
@@ -50,6 +53,8 @@ export function ClassBookingRow({
   studentId?: string;
 }) {
   const t = useT();
+  // Decision 427 (SP6): the class's own clock (its Branch's zone, else the School's, else UTC).
+  const zone = classZone(classItem.timezone, null);
   const [localState, setState] = useState<RowState>({ kind: 'idle' });
   // Decision 427 (Student portal review SP9): a class already booked or
   // waited for shows that, not "Book" again, after leaving and coming back.
@@ -139,11 +144,11 @@ export function ClassBookingRow({
     <View style={{ paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontWeight: '600' }}>{classItem.title}</Text>
       <Text style={{ color: '#5F6368', fontSize: 12 }}>
-        {formatClassTimes(classItem.startDate, classItem.endDate)}
+        {formatClassTimes(classItem.startDate, classItem.endDate, zone)}
       </Text>
       {classItem.breakStartAt && classItem.breakEndAt ? (
         <Text style={{ color: '#5F6368', fontSize: 12 }}>
-          {t('bookings.classRow.breakLine', { start: formatTime(classItem.breakStartAt), end: formatTime(classItem.breakEndAt) })}
+          {t('bookings.classRow.breakLine', { start: formatTime(classItem.breakStartAt, zone), end: formatTime(classItem.breakEndAt, zone) })}
         </Text>
       ) : null}
 

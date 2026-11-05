@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /** A parent booking for their child in the app: the Schools the child is a
  * student at, and the child's upcoming bookings. */
@@ -28,6 +28,9 @@ export class MinorBookingDto {
 
   @ApiProperty({ format: 'date-time' })
   classStartsAt!: string;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 427 (SP6): the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set." })
+  classTimezone!: string | null;
 
   @ApiProperty()
   schoolId!: string;

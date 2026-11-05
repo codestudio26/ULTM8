@@ -112,6 +112,10 @@ export class BookingResponseDto {
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true, description: 'GET /bookings/me only: when the class ends.' })
   classEndsAt?: string | null;
 
+  // Decision 427 (Student portal review SP6).
+  @ApiPropertyOptional({ type: String, nullable: true, description: "GET /bookings/me only: the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set." })
+  classTimezone?: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'GET /bookings/me only: the School name.' })
   schoolName?: string | null;
 
