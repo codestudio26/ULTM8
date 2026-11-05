@@ -173,6 +173,43 @@ describeIfDb('Grading Board for staff, one query (Phase 7)', () => {
     expect([403, 404]).toContain((await board(s, formerCoach.token)).status);
   });
 
+  it("photos (handover B6): an adult's photo for owner and coach alike; a child's only with a Guardian's camera consent", async () => {
+    const s = await schoolWithStyle('Photos', ['North', 'South']);
+    const [north, south] = s.branches;
+    const adult = await enrol(s, 'Pia', { home: north.id, classes: 3 });
+    const kid = await enrol(s, 'Kit', { home: north.id, classes: 4 });
+    const plain = await enrol(s, 'Noa', { home: north.id, classes: 5 }); // no photo set
+    const other = await enrol(s, 'Oto', { home: south.id, classes: 6 });
+    const parent = await person('PhotoParent', []);
+    await superuser.user.update({ where: { id: adult.id }, data: { profilePhotoUrl: 'https://img.example.test/pia.jpg' } });
+    await superuser.user.update({ where: { id: kid.id }, data: { profilePhotoUrl: 'https://img.example.test/kid.jpg' } });
+    await superuser.user.update({ where: { id: other.id }, data: { profilePhotoUrl: 'https://img.example.test/oto.jpg' } });
+    await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: parent.id, studentId: kid.id } });
+    const coach = await person('PhotoCoach', [{ role: 'INSTRUCTOR', schoolId: s.school.id, branchId: north.id }]);
+    const photo = (res: request.Response, id: string) =>
+      (res.body.items as Array<{ studentId: string; photoUrl: string | null }>).find((i) => i.studentId === id)?.photoUrl;
+    try {
+      for (const token of [s.owner.token, coach.token]) {
+        const res = await board(s, token);
+        expect(res.status).toBe(200);
+        expect(photo(res, adult.id)).toBe('https://img.example.test/pia.jpg');
+        expect(photo(res, kid.id)).toBeNull(); // a child, no camera consent
+        expect(photo(res, plain.id)).toBeNull();
+      }
+      // The coach's board never carries a student outside their branches, photo included.
+      const coachBoard = await board(s, coach.token);
+      expect(JSON.stringify(coachBoard.body)).not.toContain('oto.jpg');
+      expect(photo(await board(s, s.owner.token), other.id)).toBe('https://img.example.test/oto.jpg');
+
+      await superuser.consentRecord.create({ data: { id: randomUUID(), guardianId: parent.id, studentId: kid.id, tier: 'CAMERA', policyVersion: 'v1' } });
+      expect(photo(await board(s, coach.token), kid.id)).toBe('https://img.example.test/kid.jpg');
+      expect(photo(await board(s, s.owner.token), kid.id)).toBe('https://img.example.test/kid.jpg');
+    } finally {
+      await superuser.consentRecord.deleteMany({ where: { studentId: kid.id } });
+      await superuser.guardianLink.deleteMany({ where: { studentId: kid.id } });
+    }
+  });
+
   it('the function itself answers nothing to a caller with no staff grant at the School', async () => {
     const s = await schoolWithStyle('Direct', []);
     await enrol(s, 'Ivy', { classes: 1 });

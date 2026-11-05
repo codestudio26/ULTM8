@@ -71,6 +71,11 @@ export class CreateChargeDto {
   @IsOptional()
   @IsBoolean()
   taxExempt?: boolean;
+
+  @ApiPropertyOptional({ description: "One of the School's income categories (Decision 316 item 10), shown in the Transactions export." })
+  @IsOptional()
+  @IsUUID()
+  incomeCategoryId?: string;
 }
 
 /** POST /schools/{schoolId}/charges/{chargeId}/cancel (Decision 338 item 1). */
@@ -159,6 +164,9 @@ export class ChargeResponseDto {
 
   @ApiProperty({ description: '"No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax".' })
   taxExempt!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "The charge's income category (Decision 316 item 10). Staff only; null for the member." })
+  incomeCategoryName!: string | null;
 
   @ApiProperty({ description: 'The price excluding tax.' })
   netAmount!: number;

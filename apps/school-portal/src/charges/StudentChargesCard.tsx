@@ -6,6 +6,7 @@ import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { MoneyField } from '../lib/MoneyField';
 import { NoTaxCheckbox, PreviewTaxRow } from './NoTaxFields';
+import { incomeCategoryOptions, useIncomeCategories } from './incomeCategoryQueries';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import {
   CHARGE_PAYMENT_METHODS,
@@ -464,6 +465,8 @@ function ChargesBody({
                     <LateFeeLines charge={c} />
                     <PromotionFeeLines charge={c} />
                     {c.discountAmount > 0 ? <div className="ultm8-field__hint">{t('charges.card.discountLine', { amount: formatMoney(c.discountAmount, c.currency) })}</div> : null}
+                    {/* Decision 316 item 10: staff only (null for the member). */}
+                    {c.incomeCategoryName ? <div className="ultm8-field__hint">{t('charges.incomeCategories.line', { name: c.incomeCategoryName })}</div> : null}
                     {c.status === 'CANCELLED' && c.cancelledAt && c.lateFee?.waived ? (
                       <div className="ultm8-field__hint">{t('charges.lateFee.waivedLine', { date: formatDay(c.cancelledAt.slice(0, 10)), name: c.cancelledByName ?? '' })}</div>
                     ) : c.status === 'CANCELLED' && c.cancelledAt && !c.promotionFee ? (
@@ -637,6 +640,9 @@ function CreateChargeModal({
   const [dueDate, setDueDate] = useState(today());
   // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
   const [taxExempt, setTaxExempt] = useState(false);
+  // Decision 316 item 10: optional, from the School's own list.
+  const [incomeCategoryId, setIncomeCategoryId] = useState('');
+  const categories = useIncomeCategories(schoolId);
   const [error, setError] = useState<string | null>(null);
 
   const discountValue = discountType === 'PERCENT' ? parseRate(percent) : discountType === 'FIXED' ? fixed.minorUnits : null;
@@ -659,6 +665,7 @@ function CreateChargeModal({
         discountValue: discountType ? discountValue : null,
         dueDate,
         taxExempt,
+        ...(incomeCategoryId ? { incomeCategoryId } : {}),
       });
       onClose();
     } catch (err) {
@@ -725,6 +732,16 @@ function CreateChargeModal({
           <TextField id="charge-due" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} required />
         </Field>
         <NoTaxCheckbox id="charge-no-tax" checked={taxExempt} onChange={setTaxExempt} />
+        {categories.data && categories.data.items.length > 0 ? (
+          <Field label={t('charges.incomeCategories.fieldLabel')} htmlFor="charge-income-category">
+            <SelectField
+              id="charge-income-category"
+              value={incomeCategoryId}
+              onChange={(e) => setIncomeCategoryId(e.target.value)}
+              options={incomeCategoryOptions(categories.data.items, t('charges.incomeCategories.none'))}
+            />
+          </Field>
+        ) : null}
         {preview && currency ? (
           <dl data-testid="charge-preview" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '4px 16px', margin: '8px 0 16px' }}>
             <dt>{t('charges.create.previewExTax')}</dt>

@@ -20,6 +20,14 @@ export class WaiverSettingsDto {
 
   @ApiProperty({ type: Number, nullable: true, description: 'Remind members who have not signed every this many days. Null (the default): no repeat reminders.' })
   waiverReminderDays!: number | null;
+
+  @ApiProperty({
+    type: Number,
+    nullable: true,
+    description:
+      'Decision 318 item 8: children from this age sign their own waivers (in their own app, or in their parent\'s app). A parent can still sign for them. Null (the default): off, a parent or guardian signs.',
+  })
+  waiverChildSignsFromAge!: number | null;
 }
 
 export class UpdateWaiverSettingsDto {
@@ -56,4 +64,11 @@ export class UpdateWaiverSettingsDto {
   @Min(1)
   @Max(90)
   waiverReminderDays?: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: '1 to 17 years, or null for off.' })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsInt()
+  @Min(1)
+  @Max(17)
+  waiverChildSignsFromAge?: number | null;
 }

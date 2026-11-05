@@ -377,6 +377,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "即将开始",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · 已取消",
+      wholeSchool: "整个学校",
       weekdays: {
         monday: "星期一",
         tuesday: "星期二",
@@ -673,6 +674,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "{name}的会员卡",
+      intro: "在前台，{name}可以报出这个签到码来签到。",
+      loadError: "无法加载会员卡，请重试。",
+    },
     childPlans: {
       loadError: "无法加载套餐，请重试。",
       empty: "这所学校没有在售套餐。",
@@ -696,6 +702,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "无法加载课程，请重试。",
     },
     myMinors: {
+      card: "会员卡",
       plans: "购买套餐",
       waivers: "免责声明",
       empty: "还没有关联的未成年人。",
@@ -1009,6 +1016,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "你正以家长身份代 {name} 签署。",
+      whoSigns: "谁来签署？",
+      parentSigns: "我，以家长身份",
+      childSigns: "{name} 签署",
+      childSigning: "{name} 将在你的手机上自行签署此免责声明。请把手机交给孩子，让其输入姓名并签名。",
       cancel: "取消",
       showLess: "收起",
       readFull: "阅读完整免责声明",

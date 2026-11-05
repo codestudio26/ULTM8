@@ -235,6 +235,27 @@ test('the owner changes a waiver setting; each setting says what most schools ch
   await db.school.update({ where: { id: s.schoolId }, data: { waiverRenewalMonths: null } });
 });
 
+/** Decision 318 item 8: children sign their own waivers from an age the School sets. */
+test('the owner lets children sign their own waivers from an age', async ({ page }) => {
+  await page.goto('/waivers');
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const childSigns = page.getByRole('switch', { name: 'Children sign their own waivers from a set age' });
+  await expect(childSigns).not.toBeChecked();
+  await expect(page.getByText('A parent or guardian signs for every child.', { exact: true })).toBeVisible();
+
+  await childSigns.click();
+  const age = page.getByLabel('From age');
+  await expect(age).toHaveValue('16');
+  await age.fill('18');
+  await expect(page.getByText('Enter a whole number of years from 1 to 17.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save changes' })).toBeDisabled();
+  await age.fill('13');
+  await page.getByRole('button', { name: 'Save changes' }).click();
+  await expect(page.getByText('Waiver settings saved.')).toBeVisible();
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).waiverChildSignsFromAge).toBe(13);
+  await db.school.update({ where: { id: s.schoolId }, data: { waiverChildSignsFromAge: null } });
+});
+
 test('changing the wording of a signed waiver asks whether everyone signs again; "New terms" expires the signatures', async ({ page }) => {
   const waiver = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Terms Waiver', body: 'Old terms' } });
   waiverIds.push(waiver.id);

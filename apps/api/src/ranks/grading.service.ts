@@ -6,6 +6,7 @@ import { randomUUID } from 'crypto';
 import { Discipline, Prisma, PrismaClient, PromotionFeeRequest, PromotionFeeStatus } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { photosShownFor } from '../common/prisma/student-photos';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { RanksService } from './ranks.service';
@@ -1898,7 +1899,19 @@ export class GradingService {
       const births = await this.prismaJobs.user.findMany({ where: { id: { in: items.map((i) => i.studentId) } }, select: { id: true, dateOfBirth: true } });
       for (const b of births) if (hasReachedAge(b.dateOfBirth, discipline.readyForAdultAge, today)) readyForAdult.add(b.id);
     }
-    for (const item of items) Object.assign(item, { readyForAdult: readyForAdult.has(item.studentId) });
+    // B6: each card's photo. Read under the caller's own context, so RLS
+    // (user_self_or_shared_school) gives only photos the caller may already
+    // see, then a child's is hidden without a Guardian's camera consent, as
+    // on the front-desk tablet (Decisions 57, 69).
+    const photoOf = items.length === 0
+      ? new Map<string, string | null>()
+      : await photosShownFor(
+          this.prismaJobs,
+          await this.prismaApp.withTenantContext(callerId, (tx) =>
+            tx.user.findMany({ where: { id: { in: items.map((i) => i.studentId) } }, select: { id: true, profilePhotoUrl: true } }),
+          ),
+        );
+    for (const item of items) Object.assign(item, { readyForAdult: readyForAdult.has(item.studentId), photoUrl: photoOf.get(item.studentId) ?? null });
     items.sort(
       (a, b) =>
         b.eligibility.progressPercent - a.eligibility.progressPercent ||

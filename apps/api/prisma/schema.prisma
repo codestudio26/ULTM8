@@ -1062,6 +1062,9 @@ model School {
   waiverNoticeOnJoin            Boolean @default(true)
   /// Remind members again every N days until they sign; null = off.
   waiverReminderDays            Int?
+  /// Decision 318 item 8: children sign their own waivers from this age
+  /// (1 to 17). Null (the default) = off: a parent or guardian signs.
+  waiverChildSignsFromAge       Int?
 
   /// Decision 396: "New staff must accept first". When on, "Give role" for a
   /// coach or Branch Staff sends an invite link the person accepts instead of
@@ -1376,6 +1379,7 @@ model School {
   rankCorrectionRequests RankCorrectionRequest[]
   studentNotes           StudentNote[]
   schoolTags             SchoolTag[]
+  incomeCategories       IncomeCategory[]
   customMemberFields     CustomMemberField[]
   customMemberStatuses   CustomMemberStatus[]
   studentExportLogs      StudentExportLog[]
@@ -2246,6 +2250,11 @@ model MembershipPlan {
   cancellationCharge  Int?
   termsWaiverRequired Boolean   @default(false)
 
+  /// Decision 316 item 10: the School's income category for this plan, shown
+  /// in the Transactions export. Optional; one from the School's own list.
+  incomeCategoryId String?
+  incomeCategory   IncomeCategory? @relation(fields: [incomeCategoryId], references: [id], onDelete: NoAction)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2257,6 +2266,7 @@ model MembershipPlan {
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
   @@index([scopedClassId])
+  @@index([incomeCategoryId])
 }
 
 enum MembershipPlanPriceChangeDecision {
@@ -3917,6 +3927,11 @@ model WaiverSignature {
   // either record is a member of the School, this counts as a member's
   // signature. A plain id, no foreign key.
   mergedIntoStudentId String?
+  // Decision 318 item 8: a child signed this themselves in their parent's
+  // app (the parent was signed in and handed the phone over). signedById is
+  // the child; this is the parent's User id. A plain id, no foreign key.
+  // Null otherwise.
+  signedViaGuardianId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5490,6 +5505,36 @@ model StudentNote {
 /// Backlog 5.4 (Decision 315 item 7): the School's own list of tags for its
 /// students. Staff-only: no member-facing endpoint ever returns one. Jobs
 /// connection only (RLS on, no app grant).
+/// Decision 316 item 10: an income category the School names (e.g. "Kids
+/// programme", "Merchandise"). A plan, a charge and a recurring charge can
+/// each carry one, and the Transactions export shows it. No accounting codes
+/// and no accounting integration (Decision 338). A category in use can't be
+/// deleted (the foreign keys block it), only renamed. Read and written on
+/// the jobs connection after the API's own checks; the app connection has no
+/// grant, so no member-facing query can reach it.
+model IncomeCategory {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  name String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  membershipPlans  MembershipPlan[]
+  charges          Charge[]
+  recurringCharges RecurringCharge[]
+
+  @@unique([schoolId, name])
+  /// Target of the hand-written (incomeCategoryId, schoolId) keys on
+  /// MembershipPlan, Charge and RecurringCharge (migration
+  /// 20270212000001_income_categories): a row only carries its own School's
+  /// category.
+  @@unique([id, schoolId])
+}
+
 model SchoolTag {
   id String @id @default(uuid())
 
@@ -6007,6 +6052,11 @@ model Charge {
   recurringCharge   RecurringCharge? @relation(fields: [recurringChargeId], references: [id], onDelete: Restrict)
   occurrenceDate    DateTime?        @db.Date
 
+  /// Decision 316 item 10: the School's income category for this charge
+  /// (staff pick it; an occurrence takes its recurring charge's). Optional.
+  incomeCategoryId String?
+  incomeCategory   IncomeCategory? @relation(fields: [incomeCategoryId], references: [id], onDelete: NoAction)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -6014,6 +6064,7 @@ model Charge {
   @@unique([schoolId, invoiceNumber])
   @@index([schoolId, studentId])
   @@index([studentId])
+  @@index([incomeCategoryId])
 }
 
 /// Money put toward one charge: from a desk payment (transactionId) or from
@@ -6180,6 +6231,9 @@ model RecurringCharge {
   /// "No tax on this item (0% or exempt)" (Decision 414 item 5): every
   /// occurrence is made with no tax.
   taxExempt     Boolean             @default(false)
+  /// Decision 316 item 10: the income category every occurrence is made with.
+  incomeCategoryId String?
+  incomeCategory   IncomeCategory? @relation(fields: [incomeCategoryId], references: [id], onDelete: NoAction)
 
   frequency      RecurringChargeFrequency
   firstDate      DateTime                 @db.Date
@@ -6212,6 +6266,7 @@ model RecurringCharge {
   @@index([schoolId, studentId])
   @@index([studentId])
   @@index([nextDate])
+  @@index([incomeCategoryId])
 }
 
 /// Decision 317 item 6: a School's named list of members, for staff (to take

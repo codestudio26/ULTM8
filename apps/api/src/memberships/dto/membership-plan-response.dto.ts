@@ -45,6 +45,9 @@ export class MembershipPlanResponseDto {
   @ApiProperty()
   termsWaiverRequired!: boolean;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: "The plan's income category (Decision 316 item 10), from GET /schools/{id}/income-categories." })
+  incomeCategoryId!: string | null;
+
   @ApiProperty({ type: [String], description: 'The styles this plan covers (Decision 195).' })
   disciplineIds!: string[];
 

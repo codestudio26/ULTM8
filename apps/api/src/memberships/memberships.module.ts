@@ -6,6 +6,7 @@ import { SubscriptionPlansModule } from '../subscription-plans/subscription-plan
 import { AuthModule } from '../auth/auth.module';
 import { QueueModule } from '../jobs/queue.module';
 import { BookingsModule } from '../bookings/bookings.module';
+import { IncomeCategoriesModule } from '../income-categories/income-categories.module';
 import { MembershipsController } from './memberships.controller';
 import { MembershipsService } from './memberships.service';
 import { MembershipFreezesController } from './freeze/membership-freezes.controller';
@@ -53,7 +54,7 @@ import { MembershipFreezesService } from './freeze/membership-freezes.service';
  * BookingsModule imports imports this module.
  */
 @Module({
-  imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule, BookingsModule],
+  imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule, BookingsModule, IncomeCategoriesModule],
   // Decision 404: freezing a membership.
   controllers: [MembershipsController, MembershipFreezesController],
   providers: [MembershipsService, MembershipFreezesService],

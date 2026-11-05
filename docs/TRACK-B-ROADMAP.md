@@ -15,8 +15,9 @@ kickoff doc).
 The 4 Nov 2026 review of this app found 13 bugs (SP1–SP13), all fixed in one PR with no migration; see Decision 427 for the list. Answers to its questions:
 
 - **Built (Decision 428):** a parent signs a child's waivers and buys a child's plan ("My children" → Waivers / Buy a plan), Change passcode on Home, and a one-off class's ticket offered when booking says it needs one. Two small API reads were added (no migration).
+- **Built (5 Nov 2026, Decision 398):** a parent sees their child's membership card ("My children" → Membership card), one per School the child is at; no QR on it.
 - **Not now:** leave a School, Home redesign.
-- **Known limit (SP6):** class times show on the phone's clock, not the class's own time zone; showing the zone needs the discovery role to read the branch's time zone (a GRANT migration).
+- **Built (5 Nov 2026, SP6's known limit closed):** class times now show on the class's own clock (its Branch's time zone, else the School's, else UTC) in the School page's class rows, Kid Mode, My bookings, My waitlist and a child's bookings. Migration `20270214000001_discovery_class_timezone` gives the discovery role three column grants only: `School.timezone`, `Branch.timezone`, `Class.branchId`. The API adds `timezone` to each upcoming class on `GET /academies/:id`, and `classTimezone` to `GET /bookings/me`, `GET /waitlist/me` and `GET /guardians/me/minors/:id/bookings`.
 
 ### App essential, built later (Decision 427 Q5, 4 Nov 2026)
 **"Delete my account" in the app — must be built before App Store submission** (Apple guideline 5.1.1(v) requires in-app account deletion for any app with sign-up). Not optional. It needs a delete-account endpoint that follows the existing offboarding rules (signed waivers and payment records are kept, Decisions 253/426), a confirm step with step-up re-authentication (Decision 236), and what happens to linked children decided first.
@@ -1000,7 +1001,9 @@ Decision 184 asks for the coach dashboard "on both the mobile app and the web po
 ### Left on the web portal for now
 Skipping stripes, back-dating, starting classes, bulk promote, dragging between columns, the column %, voiding history, editing rank dates and history notes, giving a first rank. All are in the School Portal for the same coach.
 
-### App essential, built later (Decision 425 Q4, 4 Nov 2026)
+### App essential, built later (Decision 425 Q4, 4 Nov 2026) — DONE (5 Nov 2026)
+**Built:** the app's "Coming up" now shows each class's start date and time on the class's own clock (its Branch's zone, else the School's, else UTC; `src/lib/classTime.ts`) and its Branch name ("Whole School" when it has none), reading `GET /schools/{id}` and `GET /schools/{id}/branches` (`useSchool`, `useSchoolBranches` in `coachQueries.ts`). A class at a Branch the coach can't see shows no Branch name rather than a guessed one. The original ask follows.
+
 **To do when app work starts, not optional.** The web coach dashboard's "Coming up" now shows each class's start date and time, on the class's own clock (its branch's time zone, else the School's), and its branch name ("Whole School" when it has none). The app's "Coming up" (`CoachDashboardScreen.tsx`, key `coach.dashboard.upcomingClass`) still shows only the date and title. To match it, the app needs the School's branches (`GET /schools/{id}/branches`, which coaches can already read) for the name and time zone, and a zoned date-time format like the portal's `formatInZone`. Copy the web version: `ClassList` in `apps/school-portal/src/coach/CoachDashboardPage.tsx`. The user asked for this to be kept as an app essential (4 Nov 2026).
 
 ### Verified

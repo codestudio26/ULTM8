@@ -6,6 +6,7 @@ import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { MoneyField } from '../lib/MoneyField';
 import { NoTaxCheckbox, PreviewTaxRow } from './NoTaxFields';
+import { incomeCategoryOptions, useIncomeCategories } from './incomeCategoryQueries';
 import {
   parseRate,
   previewCharge,
@@ -96,6 +97,8 @@ export function RecurringChargesList({ schoolId, studentId, data }: { schoolId: 
                 <div className="ultm8-field__hint">
                   {r.taxExempt ? t('charges.create.noTaxLabel') : t('charges.recurring.taxNote', { rate: rateText(r.estimate.taxRateBasisPoints) })}
                 </div>
+                {/* Decision 316 item 10: staff only (null for the member). */}
+                {r.incomeCategoryName ? <div className="ultm8-field__hint">{t('charges.incomeCategories.line', { name: r.incomeCategoryName })}</div> : null}
               </>
             ),
           },
@@ -194,6 +197,9 @@ export function CreateRecurringChargeModal({
   const [count, setCount] = useState('');
   // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
   const [taxExempt, setTaxExempt] = useState(false);
+  // Decision 316 item 10: optional; every charge of the series carries it.
+  const [incomeCategoryId, setIncomeCategoryId] = useState('');
+  const categories = useIncomeCategories(schoolId);
   const [error, setError] = useState<string | null>(null);
 
   const discountValue = discountType === 'PERCENT' ? parseRate(percent) : discountType === 'FIXED' ? fixed.minorUnits : null;
@@ -222,6 +228,7 @@ export function CreateRecurringChargeModal({
         endDate: endKind === 'DATE' ? endDate : null,
         maxOccurrences: endKind === 'COUNT' ? countNumber : null,
         taxExempt,
+        ...(incomeCategoryId ? { incomeCategoryId } : {}),
       });
       onClose();
     } catch (err) {
@@ -315,6 +322,16 @@ export function CreateRecurringChargeModal({
           </Field>
         ) : null}
         <NoTaxCheckbox id="recurring-no-tax" checked={taxExempt} onChange={setTaxExempt} />
+        {categories.data && categories.data.items.length > 0 ? (
+          <Field label={t('charges.incomeCategories.fieldLabel')} htmlFor="recurring-income-category">
+            <SelectField
+              id="recurring-income-category"
+              value={incomeCategoryId}
+              onChange={(e) => setIncomeCategoryId(e.target.value)}
+              options={incomeCategoryOptions(categories.data.items, t('charges.incomeCategories.none'))}
+            />
+          </Field>
+        ) : null}
         {preview && currency ? (
           <dl data-testid="recurring-charge-preview" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '4px 16px', margin: '8px 0 4px' }}>
             <dt>{t('charges.create.previewExTax')}</dt>

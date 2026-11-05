@@ -147,6 +147,8 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
         dueDate: occurrenceDate,
         createdById: null,
         recurring: { recurringChargeId: seriesId, occurrenceDate },
+        // Decision 316 item 10: each occurrence carries the series' category.
+        incomeCategoryId: row.incomeCategoryId,
       });
       await advance(1);
       return {

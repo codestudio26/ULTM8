@@ -1,5 +1,9 @@
 /** French — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Cette école ne permet pas aux enfants de signer eux-mêmes leurs décharges.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Cet enfant n’a pas encore l’âge de signer lui-même les décharges de cette école.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Ajoutez la date de naissance de l’enfant avant qu’il signe lui-même une décharge.",
+  "Only a parent signing for their child can choose that the child signs.": "Seul un parent qui signe pour son enfant peut choisir que l’enfant signe.",
   "Guests can only be added by a parent, not in Kid Mode.": "Seul un parent peut ajouter des invités, pas en Mode Enfant.",
   "Your current passcode is not right.": "Votre code d’accès actuel est incorrect.",
   "Choose a new passcode that is different from your current one.": "Choisissez un nouveau code d’accès différent de l’actuel.",
@@ -786,4 +790,10 @@ export const serverMessages: Record<string, string> = {
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Le grade de cet élève a changé depuis la promotion automatique, elle ne peut donc pas être annulée. Rétrogradez-le plutôt.",
   "Only the School owner can change a style's requirements and automatic grading.": "Seul le propriétaire de l'école peut modifier les exigences et la promotion automatique d'un style.",
   "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "Impossible de déplacer cet élève dans cette colonne : ses cours et ses jours à ce grade ne peuvent pas changer sa progression à ce point.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Catégorie de revenus introuvable",
+  "This School already has an income category with that name.": "Cette école a déjà une catégorie de revenus portant ce nom.",
+  "This School already has 100 income categories. Delete one before adding another.": "Cette école a déjà 100 catégories de revenus. Supprimez-en une avant d'en ajouter une autre.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Cette catégorie de revenus est utilisée par une formule ou une facturation, elle ne peut donc pas être supprimée. Renommez-la plutôt.",
+  "Choose an income category from this School's list.": "Choisissez une catégorie de revenus dans la liste de cette école.",
 };

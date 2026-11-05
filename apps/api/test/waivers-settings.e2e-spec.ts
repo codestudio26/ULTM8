@@ -139,6 +139,8 @@ describeIfDb('Waiver settings and follow-ups (Decision 354)', () => {
       waiverPaperSignaturesAllowed: true,
       waiverNoticeOnJoin: true,
       waiverReminderDays: null,
+      // Decision 318 item 8: off by default.
+      waiverChildSignsFromAge: null,
     });
 
     const changed = await http().patch(`/v1/schools/${school.id}/waiver-settings`).set(auth(owner)).send({ waiverRenewalMonths: 12, waiverReminderDays: 7 });

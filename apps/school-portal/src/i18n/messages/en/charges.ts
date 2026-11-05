@@ -1,5 +1,23 @@
 /** Staff-created charges and the member balance (Decisions 303, 338, 411). */
 export const charges = {
+  /** Decision 316 item 10: the School's income categories. */
+  incomeCategories: {
+    title: 'Income categories',
+    subtitle: 'Name your own categories, such as Kids programme or Merchandise. Give one to a membership plan or a charge and it shows in the Transactions export.',
+    empty: 'No income categories yet.',
+    newLabel: 'New income category',
+    placeholder: 'For example, Merchandise',
+    add: 'Add category',
+    nameLabel: 'Name of {name}',
+    useCount: 'Plans and charges using it: {count}',
+    rename: 'Rename',
+    delete: 'Delete',
+    confirmDelete: 'Delete this category?',
+    fieldLabel: 'Income category',
+    fieldHint: 'Shown in the Transactions export. Add categories on the School page.',
+    none: 'No category',
+    line: 'Income category: {name}',
+  },
   settings: {
     title: 'Charges and tax',
     subtitle: 'Tax on the charges staff create, such as a rash guard. Each charge keeps the tax it was created with.',

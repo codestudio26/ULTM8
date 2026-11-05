@@ -379,6 +379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Em breve",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Cancelada",
+      wholeSchool: "Escola inteira",
       weekdays: {
         monday: "Segunda-feira",
         tuesday: "Terça-feira",
@@ -679,6 +680,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Cartão de membro de {name}",
+      intro: "Na recepção, {name} pode informar este código de check-in para fazer o check-in.",
+      loadError: "Não foi possível carregar o cartão de membro — tente novamente.",
+    },
     childPlans: {
       loadError: "Não foi possível carregar os planos. Tente novamente.",
       empty: "Esta escola não tem planos à venda.",
@@ -702,6 +708,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Não foi possível carregar as aulas — tente novamente.",
     },
     myMinors: {
+      card: "Cartão de membro",
       plans: "Comprar um plano",
       waivers: "Termos",
       empty: "Nenhum menor vinculado ainda.",
@@ -1033,6 +1040,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Você está assinando por {name}, como responsável.",
+      whoSigns: "Quem vai assinar?",
+      parentSigns: "Eu, como responsável",
+      childSigns: "{name} assina",
+      childSigning: "{name} assina este termo no seu celular. Entregue o celular para a criança digitar o nome e assinar.",
       cancel: "Cancelar",
       showLess: "Mostrar menos",
       readFull: "Ler o termo completo",

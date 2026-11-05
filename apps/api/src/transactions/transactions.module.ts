@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { IncomeCategoriesModule } from '../income-categories/income-categories.module';
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
 
@@ -9,7 +10,7 @@ import { TransactionsService } from './transactions.service';
  * PaymentsModule imported for StripeClientService (GET /transactions/{id}/invoice,
  * added later — no circular dependency: PaymentsModule never imports this one). */
 @Module({
-  imports: [TenantsModule, PaymentsModule],
+  imports: [TenantsModule, PaymentsModule, IncomeCategoriesModule],
   controllers: [TransactionsController],
   providers: [TransactionsService],
 })

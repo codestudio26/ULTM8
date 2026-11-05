@@ -380,6 +380,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "À venir",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Annulé",
+      wholeSchool: "Toute l'école",
       weekdays: {
         monday: "Lundi",
         tuesday: "Mardi",
@@ -688,6 +689,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Carte de membre de {name}",
+      intro: "À l'accueil, {name} peut donner ce code d'enregistrement pour s'enregistrer.",
+      loadError: "Impossible de charger la carte de membre — veuillez réessayer.",
+    },
     childPlans: {
       loadError: "Impossible de charger les forfaits. Veuillez réessayer.",
       empty: "Cette école n'a aucun forfait en vente.",
@@ -711,6 +717,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Impossible de charger les cours — veuillez réessayer.",
     },
     myMinors: {
+      card: "Carte de membre",
       plans: "Acheter un forfait",
       waivers: "Décharges",
       empty: "Aucun mineur lié pour le moment.",
@@ -1035,6 +1042,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Vous signez pour {name}, en tant que parent.",
+      whoSigns: "Qui signe ?",
+      parentSigns: "Moi, en tant que parent",
+      childSigns: "{name} signe",
+      childSigning: "{name} signe cette décharge sur votre téléphone. Donnez-le-lui pour qu’il saisisse son nom et signe.",
       cancel: "Annuler",
       showLess: "Afficher moins",
       readFull: "Lire la décharge en entier",

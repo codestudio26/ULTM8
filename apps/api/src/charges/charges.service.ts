@@ -57,6 +57,7 @@ import {
   StartChargeCheckoutDto,
 } from './dto/charge.dto';
 import { schoolCurrencyRequired } from '../common/school-currency';
+import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The same repeat guard as a desk sale (DESK_REPEAT, memberships.service.ts). */
@@ -130,6 +131,7 @@ export class ChargesService {
     private readonly stepUpService: StepUpService,
     private readonly promotionFees: PromotionFeeService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
+    private readonly incomeCategories: IncomeCategoriesService,
   ) {}
 
   /** GET /tax-rates: ULTM8's list of standard rates, for the School page's pre-fill. */
@@ -226,6 +228,8 @@ export class ChargesService {
       if (err instanceof ChargeMathsError) throw new BadRequestException({ code: `CHARGE_${err.code}`, message: err.message });
       throw err;
     }
+    // Decision 316 item 10: one of this School's own income categories.
+    const incomeCategoryId = await this.incomeCategories.resolveForSchool(schoolId, dto.incomeCategoryId);
 
     const { id } = await this.prismaJobs.$transaction(async (tx) => {
       await lockSchoolOpen(tx, schoolId);
@@ -251,6 +255,7 @@ export class ChargesService {
         currency,
         dueDate: dayToDate(dto.dueDate),
         createdById: callerId,
+        incomeCategoryId,
       });
     });
 
@@ -1083,6 +1088,14 @@ export class ChargesService {
     };
     const lateFees = await this.lateFeeDetails(rows, timezone);
     const promotionFees = await this.promotionFeeDetails(rows);
+    // Decision 316 item 10: staff see each charge's income category.
+    const categoryNames = new Map<string, string>();
+    if (forStaff) {
+      for (const schoolId of new Set(rows.map((c) => c.schoolId))) {
+        const names = await this.incomeCategories.namesFor(schoolId, rows.filter((c) => c.schoolId === schoolId).map((c) => c.incomeCategoryId));
+        for (const [id, name] of names) categoryNames.set(id, name);
+      }
+    }
     return rows.map((c) => {
       const paid = chargePaid(c);
       const cancelled = !!c.cancelledAt;
@@ -1104,6 +1117,7 @@ export class ChargesService {
         taxRateBasisPoints: c.taxRateBasisPoints,
         taxInclusive: c.taxInclusive,
         taxExempt: c.taxExempt,
+        incomeCategoryName: forStaff && c.incomeCategoryId ? (categoryNames.get(c.incomeCategoryId) ?? null) : null,
         netAmount: c.netAmount,
         taxAmount: c.taxAmount,
         grossAmount: c.grossAmount,

@@ -5,6 +5,7 @@ import { Button, InlineError, TextField } from '../components/ui';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatClassTimes } from '../lib/formatDate';
+import { classZone } from '../lib/classTime';
 import { useEnterCheckInCode } from '../attendance/attendanceQueries';
 import { useCancelBooking, useMyBookings } from './bookingQueries';
 import { BookingGuests } from './BookingGuests';
@@ -91,7 +92,7 @@ function BookingRow({ booking }: { booking: Booking }) {
     <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       {/* Decision 427 (SP4): the class's name, time and School, never its id. */}
       <Text style={{ fontSize: 15, fontWeight: '600' }}>{booking.classTitle ?? t('bookings.myBookings.unknownClass')}</Text>
-      {booking.classStartsAt ? <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{formatClassTimes(booking.classStartsAt, booking.classEndsAt)}</Text> : null}
+      {booking.classStartsAt ? <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{formatClassTimes(booking.classStartsAt, booking.classEndsAt, classZone(booking.classTimezone, null))}</Text> : null}
       {booking.schoolName ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{booking.schoolName}</Text> : null}
       <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>{t('bookings.myBookings.status', { status: BOOKING_STATUS[booking.status] ? t(BOOKING_STATUS[booking.status]) : booking.status })}</Text>
       {error ? <InlineError message={error} /> : null}

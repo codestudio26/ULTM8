@@ -1,5 +1,9 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Bu okul çocukların feragatnamelerini kendilerinin imzalamasına izin vermiyor.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Bu çocuk, bu okulun feragatnamelerini kendisi imzalayacak yaşta henüz değil.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Çocuk bir feragatnameyi kendisi imzalamadan önce doğum tarihini ekleyin.",
+  "Only a parent signing for their child can choose that the child signs.": "Çocuğun imzalamasını yalnızca çocuğu için imzalayan bir ebeveyn seçebilir.",
   "Guests can only be added by a parent, not in Kid Mode.": "Misafirleri yalnızca ebeveyn ekleyebilir, Çocuk Modunda eklenemez.",
   "Your current passcode is not right.": "Mevcut giriş kodunuz doğru değil.",
   "Choose a new passcode that is different from your current one.": "Mevcut kodunuzdan farklı yeni bir giriş kodu seçin.",
@@ -786,4 +790,10 @@ export const serverMessages: Record<string, string> = {
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Bu öğrencinin derecesi otomatik terfiden sonra değişti, bu yüzden geri alınamaz. Bunun yerine derecesini düşürün.",
   "Only the School owner can change a style's requirements and automatic grading.": "Bir stilin gereksinimlerini ve otomatik terfisini yalnızca okul sahibi değiştirebilir.",
   "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "Bu öğrenci o sütuna taşınamaz: bu derecedeki dersleri ve günleri ilerlemesini o kadar değiştiremez.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Gelir kategorisi bulunamadı",
+  "This School already has an income category with that name.": "Bu okulda bu adda bir gelir kategorisi zaten var.",
+  "This School already has 100 income categories. Delete one before adding another.": "Bu okulda zaten 100 gelir kategorisi var. Yenisini eklemeden önce birini silin.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Bu gelir kategorisi bir plan veya ücret tarafından kullanılıyor, bu yüzden silinemez. Bunun yerine adını değiştirin.",
+  "Choose an income category from this School's list.": "Bu okulun listesinden bir gelir kategorisi seçin.",
 };

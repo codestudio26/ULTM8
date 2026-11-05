@@ -1,5 +1,9 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "本学校不允许儿童自行签署免责声明。",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "该儿童尚未达到自行签署本学校免责声明的年龄。",
+  "Add the child's date of birth before they sign a waiver themselves.": "请先添加该儿童的出生日期，再让其自行签署免责声明。",
+  "Only a parent signing for their child can choose that the child signs.": "只有代孩子签署的家长才能选择由孩子本人签署。",
   "Guests can only be added by a parent, not in Kid Mode.": "只有家长可以添加访客，儿童模式下不可以。",
   "Your current passcode is not right.": "你当前的登录码不正确。",
   "Choose a new passcode that is different from your current one.": "请选择一个与当前不同的新登录码。",
@@ -786,4 +790,10 @@ export const serverMessages: Record<string, string> = {
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "自动晋级后该学员的级别已变更，因此无法撤销。请改为降级。",
   "Only the School owner can change a style's requirements and automatic grading.": "只有学校所有者可以更改某个风格的要求和自动晋级。",
   "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "无法将该学员移到那一列：其在此级别的课程和天数无法让进度变化这么多。",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "未找到收入类别",
+  "This School already has an income category with that name.": "本学校已有同名收入类别。",
+  "This School already has 100 income categories. Delete one before adding another.": "本学校已有 100 个收入类别。请先删除一个再添加。",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "该收入类别正被某个套餐或收费项目使用，因此无法删除。请改为重命名。",
+  "Choose an income category from this School's list.": "请从本学校的列表中选择收入类别。",
 };

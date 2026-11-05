@@ -379,6 +379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Yaklaşanlar",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · İptal edildi",
+      wholeSchool: "Tüm okul",
       weekdays: {
         monday: "Pazartesi",
         tuesday: "Salı",
@@ -679,6 +680,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "{name} adlı kişinin üyelik kartı",
+      intro: "Resepsiyonda {name} giriş yapmak için bu giriş kodunu söyleyebilir.",
+      loadError: "Üyelik kartı yüklenemedi — lütfen tekrar deneyin.",
+    },
     childPlans: {
       loadError: "Planlar yüklenemedi. Lütfen tekrar deneyin.",
       empty: "Bu okulun satışta planı yok.",
@@ -702,6 +708,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Dersler yüklenemedi — lütfen tekrar dene.",
     },
     myMinors: {
+      card: "Üyelik kartı",
       plans: "Plan satın al",
       waivers: "Feragatnameler",
       empty: "Henüz bağlı reşit olmayan yok.",
@@ -1017,6 +1024,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "{name} adına, ebeveyni olarak imzalıyorsunuz.",
+      whoSigns: "Kim imzalıyor?",
+      parentSigns: "Ben, ebeveyni olarak",
+      childSigns: "{name} imzalıyor",
+      childSigning: "{name} bu feragatnameyi telefonunuzda kendisi imzalıyor. Adını yazıp imzalaması için telefonu çocuğa verin.",
       cancel: "İptal",
       showLess: "Daha az göster",
       readFull: "Feragatnamenin tamamını oku",

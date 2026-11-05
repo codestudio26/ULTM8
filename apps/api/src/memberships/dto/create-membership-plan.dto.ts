@@ -103,6 +103,11 @@ export class CreateMembershipPlanDto {
   @IsBoolean()
   termsWaiverRequired?: boolean;
 
+  @ApiPropertyOptional({ description: "One of the School's income categories (Decision 316 item 10), shown in the Transactions export." })
+  @IsOptional()
+  @IsUUID()
+  incomeCategoryId?: string;
+
   @ApiPropertyOptional({ type: [String], description: 'The School\'s styles this plan covers (Decision 195).' })
   @IsOptional()
   @IsArray()

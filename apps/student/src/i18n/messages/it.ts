@@ -380,6 +380,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "In arrivo",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Annullata",
+      wholeSchool: "Tutta la scuola",
       weekdays: {
         monday: "Lunedì",
         tuesday: "Martedì",
@@ -688,6 +689,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Tessera associativa di {name}",
+      intro: "Alla reception, {name} può dare questo codice di check-in per registrarsi.",
+      loadError: "Impossibile caricare la tessera associativa — riprova.",
+    },
     childPlans: {
       loadError: "Impossibile caricare i piani. Riprova.",
       empty: "Questa scuola non ha piani in vendita.",
@@ -711,6 +717,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Impossibile caricare le lezioni — riprova.",
     },
     myMinors: {
+      card: "Tessera associativa",
       plans: "Acquista un piano",
       waivers: "Liberatorie",
       empty: "Ancora nessun minore collegato.",
@@ -1035,6 +1042,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Firmi per {name}, come genitore.",
+      whoSigns: "Chi firma?",
+      parentSigns: "Io, come genitore",
+      childSigns: "Firma {name}",
+      childSigning: "{name} firma questa liberatoria sul tuo telefono. Passaglielo perché scriva il suo nome e firmi.",
       cancel: "Annulla",
       showLess: "Mostra meno",
       readFull: "Leggi la liberatoria completa",

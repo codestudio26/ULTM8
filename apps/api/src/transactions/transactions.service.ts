@@ -9,6 +9,7 @@ import { StripeClientService } from '../payments/stripe-client.service';
 import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
 import { TransactionFilterDto, TransactionListQueryDto } from './dto/transaction-filter-query.dto';
 import { formatInvoiceNumber } from '../charges/charge-maths';
+import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 
 /**
  * Phase 9 scope only: GET /schools/{id}/transactions — School Owner/Manager only
@@ -40,6 +41,7 @@ export class TransactionsService {
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
     private readonly stripeClient: StripeClientService,
+    private readonly incomeCategories: IncomeCategoriesService,
   ) {}
 
   /** Shared by findAllForSchool/findMyTransactions below — flattens the
@@ -128,12 +130,12 @@ export class TransactionsService {
         ? { AND: [where, { OR: [{ billingDate: { lt: decoded.sortValue } }, { billingDate: decoded.sortValue, id: { lt: decoded.id } }] }] }
         : where,
       include: {
-        membershipPlan: { select: { title: true } },
+        membershipPlan: { select: { title: true, incomeCategoryId: true } },
         booking: { select: { class: { select: { title: true } } } },
         // Decision 404: a freeze fee names the frozen membership's plan.
         membership: { select: { membershipPlan: { select: { title: true } } } },
         // Decision 338 item 9: a desk payment names the charge it paid.
-        charge: { select: { description: true, invoiceNumber: true } },
+        charge: { select: { description: true, invoiceNumber: true, incomeCategoryId: true } },
       },
       orderBy: [{ billingDate: 'desc' }, { id: 'desc' }],
       take: take + 1,
@@ -169,10 +171,16 @@ export class TransactionsService {
       const n = id ? names.get(id) : undefined;
       return n ? `${n.firstName} ${n.surname}`.trim() : null;
     };
+    // Decision 316 item 10: the income category of the plan or charge each
+    // payment is for, as it is now (the export shows it). Read on the jobs
+    // connection for this School only, after the owner check above.
+    const categoryOf = (t: (typeof page.items)[number]) => t.membershipPlan?.incomeCategoryId ?? t.charge?.incomeCategoryId ?? null;
+    const categoryNames = await this.incomeCategories.namesFor(schoolId, page.items.map(categoryOf));
     return {
       ...page,
       items: page.items.map((t) => ({
         ...this.withMembershipPlanTitle(t),
+        incomeCategoryName: categoryNames.get(categoryOf(t) ?? '') ?? null,
         studentFirstName: names.get(t.studentId)?.firstName ?? '',
         studentSurname: names.get(t.studentId)?.surname ?? '',
         // Decision 338 item 1: who cancelled it, for staff.
@@ -188,7 +196,7 @@ export class TransactionsService {
     const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, { studentId: callerId }, cursor, limit));
     return {
       ...page,
-      items: page.items.map((t) => ({ ...this.withMembershipPlanTitle(t), cancelledById: null, cancelledByName: null, cancelReason: null })),
+      items: page.items.map((t) => ({ ...this.withMembershipPlanTitle(t), cancelledById: null, cancelledByName: null, cancelReason: null, incomeCategoryName: null })),
     };
   }
 

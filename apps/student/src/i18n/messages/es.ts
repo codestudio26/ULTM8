@@ -379,6 +379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Próximamente",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Cancelada",
+      wholeSchool: "Toda la escuela",
       weekdays: {
         monday: "Lunes",
         tuesday: "Martes",
@@ -679,6 +680,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Tarjeta de socio de {name}",
+      intro: "En recepción, {name} puede dar este código de registro para registrarse.",
+      loadError: "No se pudo cargar la tarjeta de socio. Inténtalo de nuevo.",
+    },
     childPlans: {
       loadError: "No se pudieron cargar los planes. Inténtalo de nuevo.",
       empty: "Esta escuela no tiene planes a la venta.",
@@ -702,6 +708,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "No se pudieron cargar las clases — inténtalo de nuevo.",
     },
     myMinors: {
+      card: "Tarjeta de socio",
       plans: "Comprar un plan",
       waivers: "Exenciones",
       empty: "Aún no hay menores vinculados.",
@@ -1033,6 +1040,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Firmas por {name}, como su padre o madre.",
+      whoSigns: "¿Quién firma?",
+      parentSigns: "Yo, como su padre o madre",
+      childSigns: "Firma {name}",
+      childSigning: "{name} firma esta exención en tu teléfono. Dáselo para que escriba su nombre y firme.",
       cancel: "Cancelar",
       showLess: "Mostrar menos",
       readFull: "Leer la exención completa",

@@ -129,7 +129,7 @@ including a filled-in example where possible. Empty screens hide most fields.
 | P14 | End-of-term action: cancel / convert to another plan | ❌ | |
 | P15 | **Cancellation fee** | ✅ | `MembershipPlan.cancellationCharge` (+ `refundFeeDate`) |
 | P16 | Show only to visitors / exclude from trial reporting | ❌ | Depends on M6 |
-| P17 | **Income categories** (GL code, department code, income category) | ❌ | |
+| P17 | **Income categories** (GL code, department code, income category) | 🟡 | **5 Nov 2026: built** in Decision 316.10's smaller shape: a School-named category on a plan, a charge and a recurring charge, in the Transactions CSV; no GL/department codes (branch `feature/plan-options-income-categories`, migration `20270212000001_income_categories`) |
 | P18 | Access to training: attendance limit, membership capacity, which programmes | 🟡 | `disciplineIds`, `scopedClassId`, `classesIncluded` exist; per-plan member capacity ❌ |
 | P19 | Membership templates on the empty state (3x Week, Unlimited, Training Camp, 10-Class Punch Card) | 🟡 | Frontend-only once the plan types exist |
 
@@ -291,7 +291,7 @@ built (Decision 303, backlog C1). Billing decisions already made are in **Decisi
 
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
-| BL18 | Income categories by source type **Membership / Booking / Retail / Casual**: per item a **GL code**, **department code**, **income category**, the resolved value; tiles Total, Fully assigned, Partially assigned, Using default, Venue code; **Bulk assign**, **Import CSV**, **Export CSV** | 🟡 | Decided in a smaller shape: a School-named income category on each plan and charge, shown in exports, **no GL/department codes, no accounting integration yet** (Decision 316.10) |
+| BL18 | Income categories by source type **Membership / Booking / Retail / Casual**: per item a **GL code**, **department code**, **income category**, the resolved value; tiles Total, Fully assigned, Partially assigned, Using default, Venue code; **Bulk assign**, **Import CSV**, **Export CSV** | 🟡 | Decided in a smaller shape: a School-named income category on each plan and charge, shown in exports, **no GL/department codes, no accounting integration yet** (Decision 316.10). **5 Nov 2026: that shape is built** (School page card, plan form, charge and recurring-charge pickers, Transactions CSV column) |
 
 ### Settings → Billing
 
@@ -562,7 +562,7 @@ in code. Every toggle below would be a new School-level setting (one settings en
 |---|---|---|
 | DS1 | Require Guardian signature for minors | ✅ Built in (Guardian consent model, SKILL.md §14), not optional |
 | DS2 | **Minor age** configurable per School (default 18) | ⚠️ ULTM8 decides adult vs minor from DOB (Decision 67). Whether the age threshold is fixed or per country/School: to verify |
-| DS3 | Require both minor and Guardian signatures | ❌ |
+| DS3 | Require both minor and Guardian signatures | 🟡 **5 Nov 2026: partly built** (Decision 318 item 8). Waivers → Settings: "Children sign their own waivers from a set age" (off by default; 1–17). From that age a child signs themselves (with their own login, or in their parent's app); a parent can still sign for them. Either signature counts on its own: whether both are required, and whether the parent is told, waits for the product owner |
 | DS4 | Email signed copy: no / to manager / to manager and member / to member | ❓ |
 | DS5 | Email membership contracts for signature | 🟡 Waiver signature requests exist (`waiver-signature-requests` job) |
 

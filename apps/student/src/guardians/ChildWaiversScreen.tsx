@@ -65,6 +65,7 @@ export function ChildWaiversScreen({ route }: Props) {
                 signature={w.signedDate ? { signedDate: w.signedDate } : undefined}
                 forStudentId={studentId}
                 forName={name}
+                childMaySign={w.childMaySign}
               />
             ))}
           </View>

@@ -11,6 +11,8 @@ import type { AppStackParamList } from '../navigation/types';
 import {
   useGradingBoard,
   useMyGrading,
+  useSchool,
+  useSchoolBranches,
   useSchoolClasses,
   useSchoolNames,
   useSchoolTimetable,
@@ -21,7 +23,7 @@ import {
 } from './coachQueries';
 import { flattenLadder } from './ladder';
 import { Muted, Section } from './parts';
-import { formatLocale } from '../i18n/format';
+import { classZone, formatInZone } from '../lib/classTime';
 import { useT } from '../i18n/I18nProvider';
 import type { TranslationKey } from '../i18n/types';
 
@@ -37,7 +39,6 @@ const WEEKDAY_KEY: Record<string, TranslationKey> = {
   SATURDAY: 'coach.dashboard.weekdays.saturday',
   SUNDAY: 'coach.dashboard.weekdays.sunday',
 };
-const shortDate = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { weekday: 'short', month: 'short', day: 'numeric' });
 
 /**
  * The coach's dashboard in the mobile app (Decision 184), the same as the
@@ -152,6 +153,9 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
   const t = useT();
   const classes = useSchoolClasses(schoolId, me);
   const slots = useSchoolTimetable(schoolId);
+  const school = useSchool(schoolId);
+  const branches = useSchoolBranches(schoolId);
+  const branchList = branches.data ?? [];
   const weekly = useMemo(
     () =>
       (slots.data?.items ?? [])
@@ -190,10 +194,24 @@ function ClassesSection({ schoolId, me }: { schoolId: string; me: string }) {
           {upcoming.length > 0 ? (
             <View>
               <Text style={{ fontWeight: '600', marginBottom: spacing[1] }}>{t('coach.dashboard.comingUp')}</Text>
-              {upcoming.map((c) => (
-                // Coaches review CP3: a cancelled class stays listed, marked, so the coach knows not to come.
-                <Text key={c.id}>{t(c.cancelledAt ? 'coach.dashboard.upcomingClassCancelled' : 'coach.dashboard.upcomingClass', { date: shortDate(c.startDate), title: c.title })}</Text>
-              ))}
+              {upcoming.map((c) => {
+                // Decision 425 Q4: the start date and time on the class's own
+                // clock (its Branch's zone, else the School's), and the Branch
+                // ("Whole School" for a class with no Branch). A Branch the
+                // coach can't see is left out rather than guessed.
+                const branch = c.branchId ? branchList.find((b) => b.id === c.branchId) : undefined;
+                const where = c.branchId ? branch?.name : t('coach.dashboard.wholeSchool');
+                const date = formatInZone(c.startDate, classZone(branch?.timezone, school.data?.timezone));
+                return (
+                  // Coaches review CP3: a cancelled class stays listed, marked, so the coach knows not to come.
+                  <Text key={c.id}>
+                    {t(c.cancelledAt ? 'coach.dashboard.upcomingClassCancelled' : 'coach.dashboard.upcomingClass', {
+                      date,
+                      title: where ? `${c.title} · ${where}` : c.title,
+                    })}
+                  </Text>
+                );
+              })}
             </View>
           ) : null}
         </>

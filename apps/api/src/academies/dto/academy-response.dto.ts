@@ -80,7 +80,11 @@ export class AcademyClassDto extends PickType(ClassResponseDto, [
   'breakStartAt',
   'breakEndAt',
   'capacity',
-] as const) {}
+] as const) {
+  /** Decision 427 (Student portal review SP6). */
+  @ApiPropertyOptional({ type: String, nullable: true, description: "The IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. Show the class's times on this clock." })
+  timezone!: string | null;
+}
 
 export class AcademyTimetableSlotDto extends PickType(TimetableSlotResponseDto, [
   'id',

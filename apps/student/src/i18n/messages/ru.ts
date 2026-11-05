@@ -383,6 +383,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Скоро",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Отменено",
+      wholeSchool: "Вся школа",
       weekdays: {
         monday: "Понедельник",
         tuesday: "Вторник",
@@ -696,6 +697,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Карта участника: {name}",
+      intro: "На ресепшене {name} может назвать этот код отметки, чтобы отметиться.",
+      loadError: "Не удалось загрузить карту участника — попробуйте ещё раз.",
+    },
     childPlans: {
       loadError: "Не удалось загрузить абонементы. Попробуйте ещё раз.",
       empty: "В этой школе нет абонементов в продаже.",
@@ -719,6 +725,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Не удалось загрузить занятия — попробуйте ещё раз.",
     },
     myMinors: {
+      card: "Карта участника",
       plans: "Купить абонемент",
       waivers: "Документы",
       empty: "Привязанных подопечных пока нет.",
@@ -1056,6 +1063,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Вы подписываете за {name} как родитель.",
+      whoSigns: "Кто подписывает?",
+      parentSigns: "Я, как родитель",
+      childSigns: "Подписывает {name}",
+      childSigning: "{name} сам(а) подписывает этот отказ на вашем телефоне. Передайте телефон ребёнку, чтобы он ввёл имя и подписал.",
       cancel: "Отмена",
       showLess: "Свернуть",
       readFull: "Прочитать отказ полностью",

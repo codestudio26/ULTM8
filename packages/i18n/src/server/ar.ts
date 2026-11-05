@@ -1,5 +1,9 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "لا تسمح هذه المدرسة للأطفال بتوقيع إقراراتهم بأنفسهم.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "لم يبلغ هذا الطفل بعد العمر الذي يسمح له بتوقيع إقرارات هذه المدرسة بنفسه.",
+  "Add the child's date of birth before they sign a waiver themselves.": "أضف تاريخ ميلاد الطفل قبل أن يوقّع إقرارًا بنفسه.",
+  "Only a parent signing for their child can choose that the child signs.": "لا يمكن اختيار أن يوقّع الطفل إلا لوليّ أمر يوقّع عن طفله.",
   "Guests can only be added by a parent, not in Kid Mode.": "لا يمكن إضافة الضيوف إلا من قبل أحد الوالدين، وليس في وضع الأطفال.",
   "Your current passcode is not right.": "رمز الدخول الحالي غير صحيح.",
   "Choose a new passcode that is different from your current one.": "اختر رمز دخول جديدًا مختلفًا عن رمزك الحالي.",
@@ -786,4 +790,10 @@ export const serverMessages: Record<string, string> = {
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "تغيرت رتبة هذا الطالب منذ الترقية التلقائية، لذا لا يمكن التراجع عنها. أنزله رتبة بدلاً من ذلك.",
   "Only the School owner can change a style's requirements and automatic grading.": "مالك المدرسة وحده يمكنه تغيير متطلبات النمط والترقية التلقائية.",
   "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "لا يمكن نقل هذا الطالب إلى ذلك العمود: لا يمكن لحصصه وأيامه في هذه الرتبة أن تغيّر تقدمه إلى هذا الحد.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "لم يتم العثور على فئة الدخل",
+  "This School already has an income category with that name.": "لدى هذه المدرسة فئة دخل بهذا الاسم بالفعل.",
+  "This School already has 100 income categories. Delete one before adding another.": "لدى هذه المدرسة 100 فئة دخل بالفعل. احذف واحدة قبل إضافة أخرى.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "فئة الدخل هذه مستخدمة في خطة أو رسوم، لذا لا يمكن حذفها. أعد تسميتها بدلًا من ذلك.",
+  "Choose an income category from this School's list.": "اختر فئة دخل من قائمة هذه المدرسة.",
 };

@@ -21,9 +21,25 @@ function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-/** A student's initials in a grey circle (DESIGN.md → "Avatars"). Photos come
- * with the grading photo data (B6). */
-export function Avatar({ person, size }: { person: { firstName: string; surname: string }; size: number }) {
+/** A student's photo, or their initials in a grey circle (DESIGN.md →
+ * "Avatars"). The board sends a photo only when the caller may see it
+ * (handover B6); a photo that fails to load falls back to the initials. */
+export function Avatar({ person, size }: { person: { firstName: string; surname: string; photoUrl?: string | null }; size: number }) {
+  const [failed, setFailed] = React.useState(false);
+  const photoUrl = person.photoUrl ?? null;
+  React.useEffect(() => setFailed(false), [photoUrl]);
+  if (photoUrl && !failed) {
+    return (
+      <img
+        src={photoUrl}
+        alt=""
+        aria-hidden="true"
+        className="ultm8-avatar"
+        style={{ width: size, height: size, objectFit: 'cover' }}
+        onError={() => setFailed(true)}
+      />
+    );
+  }
   return (
     <span aria-hidden="true" className="ultm8-avatar" style={{ width: size, height: size, fontSize: Math.round(size * 0.38) }}>
       {initials(person)}

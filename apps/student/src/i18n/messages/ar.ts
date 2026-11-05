@@ -387,6 +387,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "القادم",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · ملغى",
+      wholeSchool: "المدرسة كلها",
       weekdays: {
         monday: "الاثنين",
         tuesday: "الثلاثاء",
@@ -710,6 +711,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "بطاقة عضوية {name}",
+      intro: "في مكتب الاستقبال، يمكن لـ {name} إعطاء رمز تسجيل الحضور هذا لتسجيل الحضور.",
+      loadError: "تعذّر تحميل بطاقة العضوية — يرجى المحاولة مرة أخرى.",
+    },
     childPlans: {
       loadError: "تعذّر تحميل الخطط. حاول مرة أخرى.",
       empty: "لا توجد خطط معروضة للبيع في هذه المدرسة.",
@@ -733,6 +739,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "تعذّر تحميل الصفوف — يُرجى المحاولة مرة أخرى.",
     },
     myMinors: {
+      card: "بطاقة العضوية",
       plans: "شراء خطة",
       waivers: "الإقرارات",
       empty: "لا يوجد قاصرون مرتبطون بعد.",
@@ -1080,6 +1087,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "أنت توقّع عن {name} بصفتك وليّ الأمر.",
+      whoSigns: "من يوقّع؟",
+      parentSigns: "أنا، بصفتي وليّ الأمر",
+      childSigns: "يوقّع {name}",
+      childSigning: "سيوقّع {name} هذا الإقرار بنفسه على هاتفك. سلّمه الهاتف ليكتب اسمه ويوقّع.",
       cancel: "إلغاء",
       showLess: "عرض أقل",
       readFull: "قراءة الإقرار كاملًا",

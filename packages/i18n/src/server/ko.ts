@@ -1,5 +1,9 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "이 학교는 어린이가 직접 면책 동의서에 서명하는 것을 허용하지 않습니다.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "이 어린이는 아직 이 학교의 면책 동의서에 직접 서명할 수 있는 나이가 아닙니다.",
+  "Add the child's date of birth before they sign a waiver themselves.": "어린이가 직접 면책 동의서에 서명하기 전에 생년월일을 추가하세요.",
+  "Only a parent signing for their child can choose that the child signs.": "자녀를 대신해 서명하는 보호자만 자녀가 직접 서명하도록 선택할 수 있습니다.",
   "Guests can only be added by a parent, not in Kid Mode.": "게스트는 보호자만 추가할 수 있으며, 키즈 모드에서는 추가할 수 없습니다.",
   "Your current passcode is not right.": "현재 패스코드가 올바르지 않습니다.",
   "Choose a new passcode that is different from your current one.": "현재 패스코드와 다른 새 패스코드를 선택하세요.",
@@ -786,4 +790,10 @@ export const serverMessages: Record<string, string> = {
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "자동 승급 이후 이 학생의 등급이 바뀌어 취소할 수 없습니다. 대신 강등하세요.",
   "Only the School owner can change a style's requirements and automatic grading.": "스타일의 요건과 자동 승급은 스쿨 소유자만 변경할 수 있습니다.",
   "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "이 학생을 그 열로 옮길 수 없습니다. 이 등급의 수업과 일수로는 진행률을 그만큼 바꿀 수 없습니다.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "수입 카테고리를 찾을 수 없어요",
+  "This School already has an income category with that name.": "이 스쿨에 같은 이름의 수입 카테고리가 이미 있어요.",
+  "This School already has 100 income categories. Delete one before adding another.": "이 스쿨에는 이미 수입 카테고리가 100개 있어요. 새로 추가하기 전에 하나를 삭제하세요.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "이 수입 카테고리는 플랜이나 청구에서 사용 중이라 삭제할 수 없어요. 대신 이름을 바꾸세요.",
+  "Choose an income category from this School's list.": "이 스쿨의 목록에서 수입 카테고리를 선택하세요.",
 };

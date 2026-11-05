@@ -1,5 +1,9 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "โรงเรียนนี้ไม่อนุญาตให้เด็กลงนามเอกสารสละสิทธิ์เอง",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "เด็กคนนี้ยังอายุไม่ถึงที่จะลงนามเอกสารสละสิทธิ์ของโรงเรียนนี้เอง",
+  "Add the child's date of birth before they sign a waiver themselves.": "เพิ่มวันเกิดของเด็กก่อนให้เด็กลงนามเอกสารสละสิทธิ์เอง",
+  "Only a parent signing for their child can choose that the child signs.": "เฉพาะผู้ปกครองที่ลงนามแทนบุตรเท่านั้นที่เลือกให้เด็กลงนามเองได้",
   "Guests can only be added by a parent, not in Kid Mode.": "เฉพาะผู้ปกครองเท่านั้นที่เพิ่มแขกได้ ไม่สามารถทำได้ในโหมดเด็ก",
   "Your current passcode is not right.": "รหัสเข้าใช้ปัจจุบันของคุณไม่ถูกต้อง",
   "Choose a new passcode that is different from your current one.": "เลือกรหัสเข้าใช้ใหม่ที่ไม่ซ้ำกับรหัสปัจจุบัน",
@@ -786,4 +790,10 @@ export const serverMessages: Record<string, string> = {
   "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "ระดับของนักเรียนคนนี้เปลี่ยนไปหลังการเลื่อนระดับอัตโนมัติ จึงยกเลิกไม่ได้ ให้ลดระดับแทน",
   "Only the School owner can change a style's requirements and automatic grading.": "เฉพาะเจ้าของโรงเรียนเท่านั้นที่เปลี่ยนข้อกำหนดและการเลื่อนระดับอัตโนมัติของสไตล์ได้",
   "This student can't be moved to that column: their classes and days at this rank can't change their progress that far.": "ย้ายนักเรียนคนนี้ไปคอลัมน์นั้นไม่ได้ คลาสและจำนวนวันในระดับนี้ไม่สามารถเปลี่ยนความคืบหน้าได้มากขนาดนั้น",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "ไม่พบหมวดรายได้",
+  "This School already has an income category with that name.": "โรงเรียนนี้มีหมวดรายได้ชื่อนี้อยู่แล้ว",
+  "This School already has 100 income categories. Delete one before adding another.": "โรงเรียนนี้มีหมวดรายได้ครบ 100 หมวดแล้ว ลบหนึ่งหมวดก่อนเพิ่มหมวดใหม่",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "หมวดรายได้นี้ถูกใช้โดยแพ็กเกจหรือรายการเรียกเก็บ จึงลบไม่ได้ ให้เปลี่ยนชื่อแทน",
+  "Choose an income category from this School's list.": "เลือกหมวดรายได้จากรายการของโรงเรียนนี้",
 };
