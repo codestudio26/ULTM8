@@ -328,6 +328,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "Oświadczenie „{waiver}” ({school}) zostało zaktualizowane. Przeczytaj je i podpisz ponownie.",
     waiverRenewalBody: "Twój podpis pod oświadczeniem „{waiver}” ({school}) wygasł. Podpisz je ponownie.",
     waiverAdultBody: "Masz już 18 lat, więc {school} prosi cię o samodzielne podpisanie oświadczenia „{waiver}”.",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "Twoje dziecko podpisało oświadczenie",
+    waiverSignedByChildBody: "{child} podpisał(a) oświadczenie „{waiver}” w {school}.",
     classMovedBody: "{class} przeniesiono na {when}. Rezerwacje zostały przeniesione.",
     classMovedWaitlistBody: "{class} przeniesiono na {when}. Twoje miejsce na liście oczekujących zostało przeniesione.",
     classCancelledBody: "{class} w dniu {when} zostały odwołane przez twoją szkołę. Wykorzystany kredyt zajęć został zwrócony.",

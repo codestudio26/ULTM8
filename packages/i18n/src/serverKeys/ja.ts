@@ -286,6 +286,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "{school}が免責同意書「{waiver}」を更新しました。内容を確認して、もう一度署名してください。",
     waiverRenewalBody: "{school}の免責同意書「{waiver}」への署名の有効期限が切れました。もう一度署名してください。",
     waiverAdultBody: "18歳になったため、{school}から免責同意書「{waiver}」へのご本人の署名をお願いしています。",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "お子さまが免責同意書に署名しました",
+    waiverSignedByChildBody: "{child} さんが {school} の免責同意書「{waiver}」に署名しました。",
     classMovedBody: "{class}は{when}に移動しました。予約も一緒に移動しました。",
     classMovedWaitlistBody: "{class}は{when}に移動しました。キャンセル待ちの順番も一緒に移動しました。",
     classCancelledBody: "{when}の{class}はスクールにより中止されました。使用したクラスクレジットは返却されました。",

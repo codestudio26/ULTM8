@@ -35,6 +35,7 @@ const doc = (over: Partial<SignedDocument> = {}): SignedDocument => ({
   signerName: 'Ana Lima',
   signatureText: 'Ana',
   byGuardian: false,
+  byChildInParentApp: false,
   onPaper: false,
   recordedByName: null,
   expired: false,

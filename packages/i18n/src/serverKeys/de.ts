@@ -300,6 +300,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "{school} hat den Haftungsausschluss „{waiver}“ aktualisiert. Bitte lies ihn und unterschreibe ihn erneut.",
     waiverRenewalBody: "Deine Unterschrift unter dem Haftungsausschluss „{waiver}“ bei {school} ist abgelaufen. Bitte unterschreibe ihn erneut.",
     waiverAdultBody: "Du bist jetzt 18, daher bittet dich {school}, den Haftungsausschluss „{waiver}“ selbst zu unterschreiben.",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "Haftungsausschluss von deinem Kind unterschrieben",
+    waiverSignedByChildBody: "{child} hat den Haftungsausschluss „{waiver}“ bei {school} unterschrieben.",
     classMovedBody: "{class} wurde auf {when} verschoben. Die Buchungen wurden mitverschoben.",
     classMovedWaitlistBody: "{class} wurde auf {when} verschoben. Dein Wartelistenplatz wurde mitverschoben.",
     classCancelledBody: "{class} am {when} wurde von deiner Schule abgesagt. Verwendete Kursguthaben wurden zurückgegeben.",

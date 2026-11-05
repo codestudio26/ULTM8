@@ -44766,6 +44766,10 @@
           "guardian": {
             "type": "string"
           },
+          "childInParentApp": {
+            "type": "string",
+            "description": "Decision 435 item 32: marks a waiver the child signed in their parent's app."
+          },
           "onPaper": {
             "type": "string"
           },

@@ -3825,6 +3825,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         signedBy: "İmzalayan",
         file: "Dosya",
         guardian: "Veli",
+        // Decision 435 item 32.
+        childInParentApp: "Çocuk tarafından ebeveyninin uygulamasında imzalandı",
         onPaper: "Kâğıt üzerinde",
         guest: "Misafir",
         signedName: "İmzalanan ad",

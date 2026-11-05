@@ -356,6 +356,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "حدّثت {school} الإقرار \"{waiver}\". يُرجى قراءته وتوقيعه مرة أخرى.",
     waiverRenewalBody: "انتهت صلاحية توقيعك على الإقرار \"{waiver}\" لدى {school}. يُرجى توقيعه مرة أخرى.",
     waiverAdultBody: "بلغت 18 عامًا، لذا تطلب منك {school} توقيع الإقرار \"{waiver}\" بنفسك.",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "وقّع طفلك إقرارًا",
+    waiverSignedByChildBody: "وقّع {child} الإقرار \"{waiver}\" في {school}.",
     classMovedBody: "تم نقل {class} إلى {when}. انتقلت الحجوزات معها.",
     classMovedWaitlistBody: "تم نقل {class} إلى {when}. انتقل مكانك في قائمة الانتظار معها.",
     classCancelledBody: "ألغت مدرستك {class} في {when}. أُعيد إليك أي رصيد حصص استخدمته.",

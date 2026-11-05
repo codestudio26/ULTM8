@@ -9,7 +9,9 @@ import { SchoolsService } from '../tenants/schools/schools.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { cursorPaginate, CursorPage, resolveLimit } from '../common/pagination/cursor-paginate';
 import { foldText } from '../common/search/name-search';
-import { WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../jobs/queue.constants';
+import { NOTIFICATION_FANOUT_QUEUE, WAIVER_SIGNATURE_REQUESTS_QUEUE } from '../jobs/queue.constants';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { notifyParentsChildSigned } from './child-signed-notice';
 import { CreateWaiverDto } from './dto/create-waiver.dto';
 import { UpdateWaiverDto } from './dto/update-waiver.dto';
 import { SignWaiverDto } from './dto/sign-waiver.dto';
@@ -74,6 +76,8 @@ export class WaiversService {
     private readonly r2Client: R2ClientService,
     private readonly waiverAssignment: WaiverAssignmentService,
     @InjectQueue(WAIVER_SIGNATURE_REQUESTS_QUEUE) private readonly waiverSignatureRequestsQueue: Queue,
+    private readonly prismaJobs: PrismaJobsService,
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -857,6 +861,12 @@ export class WaiversService {
         throw new ConflictException('This Student already holds a non-Expired signature for this Waiver.');
       }
       throw err;
+    }
+    // Decision 435 item 30: a child who signed themselves (their own login,
+    // or in a parent's app) — their parents are told. A parent signing for
+    // the child is not told about their own signature.
+    if (!isGuardianAction || byChild) {
+      await notifyParentsChildSigned(this.prismaJobs, this.fanoutQueue, this.logger, created);
     }
     return this.toSignatureResponse(created);
   }

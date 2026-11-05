@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
+import { photosShownFor } from '../../common/prisma/student-photos';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
 import { assertCodeDigitsAllowed } from '../../front-desk/check-in-code';
@@ -884,9 +885,19 @@ export class SchoolsService {
       const visitors = await this.visitorStatusesOf(schoolId, matched.map((g) => g.id));
       const frozen = await loadFrozenStudents(this.prismaJobs, schoolId, matched.map((g) => g.id));
       const joined = await loadJoinDates(this.prismaJobs, schoolId, matched.map((g) => g.id));
+      // Decision 435 item 28: a child's photo only with a parent's camera consent.
+      const photos = await photosShownFor(this.prismaJobs, matched);
       return {
         items: matched.map((g) =>
-          rosterRow({ ...g, status: StudentStatusDto.ACTIVE, joinedOn: joined.get(g.id) ?? null, ...homeBranchOf(homes, g.id), ...visitorOf(visitors, g.id), ...frozenOf(frozen, g.id) }),
+          rosterRow({
+            ...g,
+            profilePhotoUrl: photos.get(g.id) ?? null,
+            status: StudentStatusDto.ACTIVE,
+            joinedOn: joined.get(g.id) ?? null,
+            ...homeBranchOf(homes, g.id),
+            ...visitorOf(visitors, g.id),
+            ...frozenOf(frozen, g.id),
+          }),
         ),
       };
     }
@@ -953,8 +964,19 @@ export class SchoolsService {
     const visitors = await this.visitorStatusesOf(schoolId, rows.map((r) => r.id));
     const frozen = await loadFrozenStudents(this.prismaJobs, schoolId, rows.map((r) => r.id));
     const joined = await loadJoinDates(this.prismaJobs, schoolId, rows.map((r) => r.id));
+    // Decision 435 item 28: a child's photo only with a parent's camera consent.
+    const photos = await photosShownFor(this.prismaJobs, rows);
     return {
-      items: rows.map((r) => rosterRow({ ...r, joinedOn: joined.get(r.id) ?? null, ...homeBranchOf(homes, r.id), ...visitorOf(visitors, r.id), ...frozenOf(frozen, r.id) })),
+      items: rows.map((r) =>
+        rosterRow({
+          ...r,
+          profilePhotoUrl: photos.get(r.id) ?? null,
+          joinedOn: joined.get(r.id) ?? null,
+          ...homeBranchOf(homes, r.id),
+          ...visitorOf(visitors, r.id),
+          ...frozenOf(frozen, r.id),
+        }),
+      ),
     };
   }
 

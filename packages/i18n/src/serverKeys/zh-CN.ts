@@ -286,6 +286,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "{school}更新了免责声明“{waiver}”。请阅读并重新签署。",
     waiverRenewalBody: "你在{school}签署的免责声明“{waiver}”已过期。请重新签署。",
     waiverAdultBody: "你已年满 18 岁，{school}请你亲自签署免责声明“{waiver}”。",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "你的孩子签署了免责声明",
+    waiverSignedByChildBody: "{child} 在 {school} 签署了免责声明“{waiver}”。",
     classMovedBody: "{class}已调整到{when}。预约也随之调整。",
     classMovedWaitlistBody: "{class}已调整到{when}。你的候补位置也随之调整。",
     classCancelledBody: "{when}的{class}已被你的学校取消。你使用的课时额度已退还。",

@@ -314,6 +314,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "{school} atualizou o termo \"{waiver}\". Leia e assine novamente.",
     waiverRenewalBody: "Sua assinatura do termo \"{waiver}\" em {school} expirou. Assine novamente.",
     waiverAdultBody: "Agora você tem 18 anos, então {school} pede que você mesmo assine o termo \"{waiver}\".",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "Termo assinado pelo seu filho ou filha",
+    waiverSignedByChildBody: "{child} assinou o termo \"{waiver}\" em {school}.",
     classMovedBody: "{class} foi remarcada para {when}. As reservas foram junto.",
     classMovedWaitlistBody: "{class} foi remarcada para {when}. Seu lugar na lista de espera foi junto.",
     classCancelledBody: "{class} em {when} foi cancelada pela sua escola. Qualquer crédito de aula usado foi devolvido.",

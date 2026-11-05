@@ -248,6 +248,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Waiver reminder': 'waiverReminderTitle',
   'Waiver updated': 'waiverUpdatedTitle',
   'Waiver renewal': 'waiverRenewalTitle',
+  // Decision 435 item 30 — apps/api/src/waivers/child-signed-notice.ts.
+  'Waiver signed by your child': 'waiverSignedByChildTitle',
   'New stripe!': 'newStripeTitle',
   'Step up!': 'stepUpTitle',
   'Promoted!': 'promotedTitle',
@@ -381,6 +383,8 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     (m, { t }) => n(t, 'waiverRenewalBody', { waiver: m[1], school: m[2] }),
   ],
   [/^You're now 18, so (.+) asks you to sign the waiver "(.+)" yourself\.$/s, (m, { t }) => n(t, 'waiverAdultBody', { school: m[1], waiver: m[2] })],
+  // Decision 435 item 30 — apps/api/src/waivers/child-signed-notice.ts.
+  [/^(.+?) signed the waiver "(.+)" at (.+)\.$/s, (m, { t }) => n(t, 'waiverSignedByChildBody', { child: m[1], waiver: m[2], school: m[3] })],
   // Older rows, written before the School was named (the waiver's title sat
   // where the sender belongs).
   [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],

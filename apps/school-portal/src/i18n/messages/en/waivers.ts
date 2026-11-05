@@ -26,6 +26,8 @@ export const waivers = {
       signedBy: "Signed by",
       file: "File",
       guardian: "Guardian",
+      // Decision 435 item 32.
+      childInParentApp: "Signed by the child in their parent's app",
       onPaper: "On paper",
       guest: "Guest",
       signedName: "Signed name",

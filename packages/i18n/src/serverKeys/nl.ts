@@ -300,6 +300,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "{school} heeft de vrijwaring \"{waiver}\" bijgewerkt. Lees hem en onderteken hem opnieuw.",
     waiverRenewalBody: "Je handtekening onder de vrijwaring \"{waiver}\" bij {school} is verlopen. Onderteken hem opnieuw.",
     waiverAdultBody: "Je bent nu 18, dus {school} vraagt je de vrijwaring \"{waiver}\" zelf te ondertekenen.",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "Vrijwaring ondertekend door je kind",
+    waiverSignedByChildBody: "{child} heeft de vrijwaring \"{waiver}\" bij {school} ondertekend.",
     classMovedBody: "{class} is verplaatst naar {when}. Boekingen zijn meeverplaatst.",
     classMovedWaitlistBody: "{class} is verplaatst naar {when}. Je plek op de wachtlijst is meeverplaatst.",
     classCancelledBody: "{class} op {when} is geannuleerd door je school. Gebruikt lestegoed is teruggegeven.",
