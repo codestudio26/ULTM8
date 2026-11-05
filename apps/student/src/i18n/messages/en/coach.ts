@@ -28,6 +28,7 @@ export const coach = {
     /** An upcoming class: its date, then its title. */
     upcomingClass: '{date} · {title}',
     upcomingClassCancelled: '{date} · {title} · Cancelled',
+    wholeSchool: "Whole School",
     weekdays: {
       monday: 'Monday',
       tuesday: 'Tuesday',

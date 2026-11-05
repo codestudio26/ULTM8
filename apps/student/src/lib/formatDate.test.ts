@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { formatDate, formatDateOnly, formatDateTime } from './formatDate';
+import { formatClassTimes, formatDate, formatDateOnly, formatDateTime } from './formatDate';
 
 describe('formatDate', () => {
   it('formats an ISO timestamp as a medium date', () => {
@@ -24,6 +24,14 @@ describe('formatDateTime', () => {
 
   it('falls back to the raw string on an unparseable value', () => {
     expect(formatDateTime('not-a-date')).toBe('not-a-date');
+  });
+});
+
+/** Decision 427 (SP6): a class's times on its own clock. */
+describe('formatClassTimes', () => {
+  it("shows the day and times on the class's zone, not the phone's", () => {
+    expect(formatClassTimes('2026-11-02T18:00:00.000Z', '2026-11-02T19:00:00.000Z', 'Asia/Tokyo')).toMatch(/^Tue, Nov 3, 2026, 3:00\sAM – 4:00\sAM$/);
+    expect(formatClassTimes('2026-11-02T18:00:00.000Z', null, 'UTC')).toMatch(/^Mon, Nov 2, 2026, 6:00\sPM$/);
   });
 });
 

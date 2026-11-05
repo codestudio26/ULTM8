@@ -16,6 +16,8 @@ jest.mock('../notifications/notificationQueries', () => ({ useNotifications: jes
 jest.mock('./coachQueries', () => ({
   useMyGrading: jest.fn(),
   useGradingBoard: jest.fn(),
+  useSchool: jest.fn(),
+  useSchoolBranches: jest.fn(),
   useSchoolClasses: jest.fn(),
   useSchoolNames: jest.fn(),
   useSchoolTimetable: jest.fn(),
@@ -79,6 +81,8 @@ beforeEach(() => {
   mocked(notificationQueries.useNotifications).mockReturnValue(ok({ pages: [{ items: [{ id: 'n1', title: 'Ana is ready to grade', body: 'BJJ', read: false }] }] }));
   mocked(q.useSchoolClasses).mockReturnValue(ok({ items: [] }));
   mocked(q.useSchoolNames).mockReturnValue([]);
+  mocked(q.useSchool).mockReturnValue(ok({ id: SCHOOL, name: 'Dojo', timezone: 'America/New_York' }));
+  mocked(q.useSchoolBranches).mockReturnValue(ok([]));
   mocked(q.useSchoolTimetable).mockReturnValue(
     ok({
       items: [
@@ -131,9 +135,33 @@ describe('CoachDashboardScreen', () => {
     );
     const { getByText, queryByText } = await render(<CoachDashboardScreen navigation={nav()} route={{} as never} />);
     expect(q.useSchoolClasses).toHaveBeenCalledWith(SCHOOL, ME);
-    expect(getByText(/Kids BJJ$/)).toBeTruthy();
-    expect(getByText(/Open mat · Cancelled$/)).toBeTruthy();
-    expect(queryByText(/Kids BJJ · Cancelled/)).toBeNull();
+    expect(getByText(/Kids BJJ · Whole School$/)).toBeTruthy();
+    expect(getByText(/Open mat · Whole School · Cancelled$/)).toBeTruthy();
+    expect(queryByText(/Kids BJJ · Whole School · Cancelled/)).toBeNull();
+  });
+
+  it("shows each class's start time on its own clock and its branch (Decision 425 Q4)", async () => {
+    grading({}, ['bjj']);
+    mocked(q.useGradingBoard).mockReturnValue(ok({ items: [] }));
+    mocked(q.useSchoolBranches).mockReturnValue(ok([{ id: 'br-tokyo', name: 'Shibuya', timezone: 'Asia/Tokyo' }, { id: 'br-plain', name: 'Annex', timezone: null }]));
+    mocked(q.useSchoolClasses).mockReturnValue(
+      ok({
+        items: [
+          // 17:00 UTC is 02:00 the next day in Tokyo, 12:00 in New York (the School's zone).
+          { id: 'c1', instructorId: ME, branchId: 'br-tokyo', title: 'Kids BJJ', startDate: '2030-01-08T17:00:00Z', endDate: '2030-01-08T18:00:00Z', cancelledAt: null },
+          { id: 'c2', instructorId: ME, branchId: 'br-plain', title: 'Adults', startDate: '2030-01-08T17:00:00Z', endDate: '2030-01-08T18:00:00Z', cancelledAt: null },
+          { id: 'c3', instructorId: ME, branchId: null, title: 'Seminar', startDate: '2030-01-08T17:00:00Z', endDate: '2030-01-08T18:00:00Z', cancelledAt: null },
+          // A Branch the coach can't see: no name is guessed.
+          { id: 'c4', instructorId: ME, branchId: 'br-hidden', title: 'Elsewhere', startDate: '2030-01-08T17:00:00Z', endDate: '2030-01-08T18:00:00Z', cancelledAt: null },
+        ],
+      }),
+    );
+    const { getByText } = await render(<CoachDashboardScreen navigation={nav()} route={{} as never} />);
+    expect(q.useSchoolBranches).toHaveBeenCalledWith(SCHOOL);
+    expect(getByText(/^Jan 9, 2030, 2:00\sAM · Kids BJJ · Shibuya$/)).toBeTruthy();
+    expect(getByText(/^Jan 8, 2030, 12:00\sPM · Adults · Annex$/)).toBeTruthy();
+    expect(getByText(/^Jan 8, 2030, 12:00\sPM · Seminar · Whole School$/)).toBeTruthy();
+    expect(getByText(/^Jan 8, 2030, 12:00\sPM · Elsewhere$/)).toBeTruthy();
   });
 
   it('opens the Grading Board for a style', async () => {

@@ -6,26 +6,28 @@ import { formatLocale } from '../i18n/format';
  * is used directly rather than a date library: no other dependency for this exists in
  * apps/student, and RN's Hermes engine has supported `Intl` fully since well before the
  * versions this app targets. */
-export function formatDate(iso: string): string {
+export function formatDate(iso: string, timeZone?: string): string {
   try {
-    return new Intl.DateTimeFormat(formatLocale(), { dateStyle: 'medium' }).format(new Date(iso));
+    return new Intl.DateTimeFormat(formatLocale(), { dateStyle: 'medium', timeZone }).format(new Date(iso));
   } catch {
     return iso;
   }
 }
 
-/** A timestamp's time of day only (e.g. a class's break). */
-export function formatTime(iso: string): string {
+/** A timestamp's time of day only (e.g. a class's break). `timeZone`, when
+ * given, is the clock to show it on (a class's own, lib/classTime.ts);
+ * otherwise the phone's. */
+export function formatTime(iso: string, timeZone?: string): string {
   try {
-    return new Intl.DateTimeFormat(formatLocale(), { timeStyle: 'short' }).format(new Date(iso));
+    return new Intl.DateTimeFormat(formatLocale(), { timeStyle: 'short', timeZone }).format(new Date(iso));
   } catch {
     return iso;
   }
 }
 
-export function formatDateTime(iso: string): string {
+export function formatDateTime(iso: string, timeZone?: string): string {
   try {
-    return new Intl.DateTimeFormat(formatLocale(), { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(iso));
+    return new Intl.DateTimeFormat(formatLocale(), { dateStyle: 'medium', timeStyle: 'short', timeZone }).format(new Date(iso));
   } catch {
     return iso;
   }
@@ -50,12 +52,14 @@ export function formatDateOnly(iso: string): string {
 
 /** A class's day and start–end time, e.g. "Thu, Nov 5, 2026, 6:00 PM – 7:00 PM"
  * (Decision 427, Student portal review SP6: class rows showed only the date).
- * On the phone's own clock: the moment is right wherever the phone is. */
-export function formatClassTimes(startIso: string, endIso?: string | null): string {
+ * `timeZone` is the class's own clock (its Branch's zone, else the School's,
+ * else UTC: `classZone` in lib/classTime.ts), so the times read as the School
+ * advertises them wherever the phone is. Without it, the phone's clock. */
+export function formatClassTimes(startIso: string, endIso?: string | null, timeZone?: string): string {
   try {
     const locale = formatLocale();
-    const day = new Intl.DateTimeFormat(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(startIso));
-    const time = new Intl.DateTimeFormat(locale, { timeStyle: 'short' });
+    const day = new Intl.DateTimeFormat(locale, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric', timeZone }).format(new Date(startIso));
+    const time = new Intl.DateTimeFormat(locale, { timeStyle: 'short', timeZone });
     const start = time.format(new Date(startIso));
     return endIso ? `${day}, ${start} – ${time.format(new Date(endIso))}` : `${day}, ${start}`;
   } catch {

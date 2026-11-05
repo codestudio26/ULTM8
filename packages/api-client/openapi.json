@@ -29240,6 +29240,11 @@
             "nullable": true,
             "description": "GET /bookings/me only: when the class ends."
           },
+          "classTimezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "GET /bookings/me only: the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set."
+          },
           "schoolName": {
             "type": "string",
             "nullable": true,
@@ -29330,6 +29335,11 @@
           "classStartsAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "classTimezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 427 (SP6): the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set."
           },
           "schoolId": {
             "type": "string"
@@ -29869,6 +29879,11 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "classTimezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 427 (SP6): the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set."
           },
           "schoolName": {
             "type": "string",
@@ -34476,6 +34491,11 @@
           "readyForAdult": {
             "type": "boolean",
             "description": "Backlog 3.20: on a Kids style, the student has reached \"Ready for Adult from age\" (\"Ready for Adult program\" tag). Always false on other styles."
+          },
+          "photoUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "The student's profile photo (handover B6), or null: none set, or a child (a Student with a Guardian) without an active camera consent (Decisions 57, 69). Read under the caller's own access, so only a photo the caller may already see."
           }
         },
         "required": [
@@ -37233,6 +37253,11 @@
             "type": "number",
             "nullable": true,
             "description": "Nullable = unlimited."
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "The IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. Show the class's times on this clock."
           }
         },
         "required": [

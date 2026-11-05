@@ -20,6 +20,7 @@ import { ChildBookingScreen } from '../guardians/ChildBookingScreen';
 import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
 import { ChildWaiversScreen } from '../guardians/ChildWaiversScreen';
 import { ChildPlansScreen } from '../guardians/ChildPlansScreen';
+import { ChildCardScreen } from '../guardians/ChildCardScreen';
 import { ChangePasscodeScreen } from '../auth/ChangePasscodeScreen';
 import { KidModePinScreen } from '../kidmode/KidModePinScreen';
 import { KidModeBookingScreen } from '../kidmode/KidModeBookingScreen';
@@ -103,6 +104,11 @@ export function AppNavigator() {
         name="ChildPlans"
         component={ChildPlansScreen}
         options={({ route }) => ({ title: t('guardians.childPlans.title', { name: route.params.name }) })}
+      />
+      <Stack.Screen
+        name="ChildCard"
+        component={ChildCardScreen}
+        options={({ route }) => ({ title: t('guardians.childCard.title', { name: route.params.name }) })}
       />
       <Stack.Screen name="ChangePasscode" component={ChangePasscodeScreen} options={{ title: t('auth.changePasscode.title') }} />
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: t('navigation.app.kidMode') }} />

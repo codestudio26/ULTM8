@@ -3,6 +3,7 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
+import { photosShownFor } from '../common/prisma/student-photos';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { StudentRosterStatusDto } from '../tenants/schools/dto/student-roster-query.dto';
 import { MembershipsService } from '../memberships/memberships.service';
@@ -308,17 +309,8 @@ export class FrontDeskKioskService {
 
   /** Photos the tablet may show: a child's (a Student with a Guardian) only
    * while a Guardian's camera consent is active (Decisions 57, 69). */
-  private async photosFor(students: Array<{ id: string; profilePhotoUrl?: string | null }>): Promise<Map<string, string | null>> {
-    const withPhoto = students.filter((s) => s.profilePhotoUrl);
-    if (withPhoto.length === 0) return new Map();
-    const ids = withPhoto.map((s) => s.id);
-    const [links, consents] = await Promise.all([
-      this.prismaJobs.guardianLink.findMany({ where: { studentId: { in: ids }, revokedAt: null }, select: { studentId: true } }),
-      this.prismaJobs.consentRecord.findMany({ where: { studentId: { in: ids }, tier: 'CAMERA', status: 'ACTIVE' }, select: { studentId: true } }),
-    ]);
-    const children = new Set(links.map((l) => l.studentId));
-    const consented = new Set(consents.map((c) => c.studentId));
-    return new Map(withPhoto.map((s) => [s.id, !children.has(s.id) || consented.has(s.id) ? (s.profilePhotoUrl ?? null) : null]));
+  private photosFor(students: Array<{ id: string; profilePhotoUrl?: string | null }>): Promise<Map<string, string | null>> {
+    return photosShownFor(this.prismaJobs, students);
   }
 }
 

@@ -9496,6 +9496,8 @@ export interface components {
              * @description GET /bookings/me only: when the class ends.
              */
             classEndsAt?: string | null;
+            /** @description GET /bookings/me only: the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. */
+            classTimezone?: string | null;
             /** @description GET /bookings/me only: the School name. */
             schoolName?: string | null;
             createdAt: string;
@@ -9521,6 +9523,8 @@ export interface components {
             classTitle: string;
             /** Format: date-time */
             classStartsAt: string;
+            /** @description Decision 427 (SP6): the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. */
+            classTimezone?: string | null;
             schoolId: string;
             /** @description Guests on the booking, one Friend Pass each. */
             guestCount: number;
@@ -9673,6 +9677,8 @@ export interface components {
             classTitle?: string | null;
             /** Format: date-time */
             classStartsAt?: string | null;
+            /** @description Decision 427 (SP6): the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. */
+            classTimezone?: string | null;
             schoolName?: string | null;
         };
         MyWaitlistListDto: {
@@ -11096,6 +11102,8 @@ export interface components {
             feeRequest?: components["schemas"]["BoardFeeRequestDto"] | null;
             /** @description Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age" ("Ready for Adult program" tag). Always false on other styles. */
             readyForAdult: boolean;
+            /** @description The student's profile photo (handover B6), or null: none set, or a child (a Student with a Guardian) without an active camera consent (Decisions 57, 69). Read under the caller's own access, so only a photo the caller may already see. */
+            photoUrl?: string | null;
         };
         GradingBoardResponseDto: {
             /** @description Students with a next rank in this style, highest progress first. */
@@ -11957,6 +11965,8 @@ export interface components {
             breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
+            /** @description The IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. Show the class's times on this clock. */
+            timezone?: string | null;
         };
         AcademyDetailDto: {
             id: string;

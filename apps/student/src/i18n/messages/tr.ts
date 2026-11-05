@@ -379,6 +379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Yaklaşanlar",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · İptal edildi",
+      wholeSchool: "Tüm okul",
       weekdays: {
         monday: "Pazartesi",
         tuesday: "Salı",
@@ -672,6 +673,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "{name} adlı kişinin üyelik kartı",
+      intro: "Resepsiyonda {name} giriş yapmak için bu giriş kodunu söyleyebilir.",
+      loadError: "Üyelik kartı yüklenemedi — lütfen tekrar deneyin.",
+    },
     childPlans: {
       loadError: "Planlar yüklenemedi. Lütfen tekrar deneyin.",
       empty: "Bu okulun satışta planı yok.",
@@ -695,6 +701,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Dersler yüklenemedi — lütfen tekrar dene.",
     },
     myMinors: {
+      card: "Üyelik kartı",
       plans: "Plan satın al",
       waivers: "Feragatnameler",
       empty: "Henüz bağlı reşit olmayan yok.",
