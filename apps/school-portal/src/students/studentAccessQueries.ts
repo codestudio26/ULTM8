@@ -20,6 +20,27 @@ export function useAddChildManually(schoolId: string | null) {
   });
 }
 
+/** Decision 429 item 6: the owner invites another adult to be a parent or
+ * guardian of a child already here. */
+export function useAddGuardian(schoolId: string, studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: components['schemas']['AddGuardianDto']) =>
+      unwrap(apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/guardians', { params: { path: { schoolId, studentId } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['childInvites', schoolId] }),
+  });
+}
+
+/** Decision 429 item 8: the owner removes a parent or guardian (never the last). */
+export function useRemoveGuardian(schoolId: string, studentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (guardianId: string) =>
+      unwrap(apiClient.DELETE('/v1/schools/{schoolId}/students/{studentId}/guardians/{guardianId}', { params: { path: { schoolId, studentId, guardianId } } })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['studentGuardians', schoolId, studentId] }),
+  });
+}
+
 /** Children waiting for their Guardian to accept in the app. Owner only. */
 export function useChildInvites(schoolId: string | null) {
   return useQuery({
