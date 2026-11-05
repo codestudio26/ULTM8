@@ -36,7 +36,8 @@ test('the board shows the style\'s columns; changing them moves students', async
 
   await expect(page.getByText('Columns at 50% / 90%')).toBeVisible();
   await expect(column(page, 'Just Starting').getByRole('link', { name: cat.name })).toBeVisible();
-  await expect(column(page, 'Ready to Grade').getByRole('link', { name: s.student.name })).toBeVisible();
+  // 50% (classes 3/3, skills 0/1, Decision 321 item 7) is Getting There from 50%.
+  await expect(column(page, 'Getting There').getByRole('link', { name: s.student.name })).toBeVisible();
   expect(await db.discipline.findUniqueOrThrow({ where: { id: s.disciplineId } })).toMatchObject({ boardGettingThere: 50, boardReadyToGrade: 90 });
 });
 

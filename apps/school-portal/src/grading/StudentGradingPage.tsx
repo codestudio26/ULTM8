@@ -45,6 +45,7 @@ import {
   useStudentEligibility,
   useStudentCorrections,
   useStudentFeeRequests,
+  useUndoAutomaticPromotion,
   type RankCorrection,
 } from './gradingQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
@@ -486,6 +487,7 @@ function DisciplineGradingCard({
   const t = useT();
   const [dialog, setDialog] = useState<Dialog>(null);
   const changeNote = useChangeHistoryNote(studentId, schoolId);
+  const undoAutomatic = useUndoAutomaticPromotion(studentId, schoolId);
   const [noteError, setNoteError] = useState<string | null>(null);
   // Who may grade this student in this style may edit or hide notes (Decision 192).
   const mayEditNotes = canInStyle('canPromote') || canInStyle('canDowngrade');
@@ -634,6 +636,21 @@ function DisciplineGradingCard({
                 : undefined
             }
             onNoteLog={isOwner ? (e, summary) => setDialog({ logEventId: e.id, summary }) : undefined}
+            // Decision 321 item 5: a coach who may promote undoes an automatic
+            // promotion while the student is still on the rank it gave.
+            currentStripeId={studentRank?.currentStripeId ?? null}
+            onUndoAutomatic={
+              can('canPromote') && !archived
+                ? async (e) => {
+                    setNoteError(null);
+                    try {
+                      await undoAutomatic.mutateAsync({ eventId: e.id });
+                    } catch (err) {
+                      setNoteError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+                    }
+                  }
+                : undefined
+            }
             noteError={noteError}
           />
         ) : null}
@@ -747,10 +764,11 @@ type Breakdown = NonNullable<StudentEligibility['progressBreakdown']>;
 type Hours = StudentEligibility['hoursTrained'];
 
 /** Progress toward the next rank (Decisions 136, 149, 171), then the
- * Breakdown (Decision 301 item 4): one line per requirement grading uses,
- * each with its own tick, count, % and bar, and whether it is in the %
- * (classes; days on a time-only rank). Hours trained are a record only,
- * never part of grading (Decision 306). */
+ * Breakdown (Decision 301 item 4): one line per requirement the style ticks
+ * (Decision 321), each with its own tick, count, % and bar. The % is their
+ * average; a requirement the rank doesn't ask for is left out of it, and
+ * minimum age is never in it ("Waiting for age N"). Hours count only in a
+ * style that ticks Hours; otherwise they are a record (Decision 306). */
 function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: Eligibility; breakdown: Breakdown | null; hours: Hours; nextName: string | null }) {
   const t = useT();
   if (!eligibility.hasNext) {
@@ -770,6 +788,11 @@ function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: El
         {t('grading.student.progress.toward', { name: nextName ?? '', percent })}
       </h3>
       <ProgressBar percent={percent} label={t('grading.student.progress.towardAria', { name: nextName ?? '' })} />
+      {eligibility.waitingForAge ? (
+        <p role="status" style={{ margin: '4px 0 8px' }}>
+          <Badge variant="warning">{t('grading.student.progress.waitingForAge', { age: eligibility.waitingForAge })}</Badge>
+        </p>
+      ) : null}
       {breakdown ? (
         <section aria-label={t('grading.student.progress.breakdown')}>
           <h4 style={{ fontSize: 14, margin: '0 0 6px' }}>{t('grading.student.progress.breakdown')}</h4>
@@ -780,7 +803,8 @@ function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: El
                 label={t('grading.student.progress.classesLabel')}
                 value={t('grading.student.progress.xOfY', { done: breakdown.classes.counted, required: breakdown.classes.required })}
                 percent={breakdown.classes.percent}
-                inPercent
+                inPercent={breakdown.classes.required > 0}
+                noRequirement={breakdown.classes.required === 0}
               >
                 {breakdown.classes.byType.length > 0 ? (
                   <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
@@ -794,33 +818,63 @@ function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: El
                 ) : null}
               </BreakdownRow>
             ) : null}
-            <BreakdownRow
-              ok={breakdown.days.elapsed >= breakdown.days.required}
-              label={t('grading.student.progress.daysLabel')}
-              value={
-                breakdown.days.required > 0
-                  ? t('grading.student.progress.xOfY', { done: breakdown.days.elapsed, required: breakdown.days.required })
-                  : t('grading.student.progress.daysNoMinimum', { elapsed: breakdown.days.elapsed })
-              }
-              percent={breakdown.days.percent}
-              inPercent={!breakdown.classes}
-              noRequirement={breakdown.days.required === 0}
-            />
+            {breakdown.days ? (
+              <BreakdownRow
+                ok={breakdown.days.elapsed >= breakdown.days.required}
+                label={t('grading.student.progress.daysLabel')}
+                value={
+                  breakdown.days.required > 0
+                    ? t('grading.student.progress.xOfY', { done: breakdown.days.elapsed, required: breakdown.days.required })
+                    : t('grading.student.progress.daysNoMinimum', { elapsed: breakdown.days.elapsed })
+                }
+                percent={breakdown.days.percent}
+                inPercent={breakdown.days.required > 0}
+                noRequirement={breakdown.days.required === 0}
+              />
+            ) : null}
             {breakdown.skills && breakdown.skills.required > 0 ? (
               <BreakdownRow
                 ok={breakdown.skills.signedOff >= breakdown.skills.required}
                 label={t('grading.student.progress.skillsLabel')}
                 value={t('grading.student.progress.xOfY', { done: breakdown.skills.signedOff, required: breakdown.skills.required })}
                 percent={breakdown.skills.percent}
-                inPercent={false}
+                inPercent
               />
+            ) : null}
+            {breakdown.hours && breakdown.hours.requiredHours > 0 ? (
+              <BreakdownRow
+                ok={breakdown.hours.trainedMinutes >= breakdown.hours.requiredHours * 60}
+                label={t('grading.student.progress.hoursLabel')}
+                value={t('grading.student.progress.hoursValue', { done: formatHours(breakdown.hours.trainedMinutes), required: breakdown.hours.requiredHours })}
+                percent={breakdown.hours.percent}
+                inPercent
+              />
+            ) : null}
+            {breakdown.daysAttended && breakdown.daysAttended.required > 0 ? (
+              <BreakdownRow
+                ok={breakdown.daysAttended.attended >= breakdown.daysAttended.required}
+                label={t('grading.student.progress.daysAttendedLabel')}
+                value={t('grading.student.progress.xOfY', { done: breakdown.daysAttended.attended, required: breakdown.daysAttended.required })}
+                percent={breakdown.daysAttended.percent}
+                inPercent
+              />
+            ) : null}
+            {breakdown.minimumAge ? (
+              <li aria-label={`${t('grading.student.progress.minimumAgeLabel')}: ${t('grading.student.progress.minimumAgeValue', { age: breakdown.minimumAge.age })}`}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                  <span aria-hidden="true">{breakdown.minimumAge.met ? '✓' : '○'}</span>
+                  <strong style={{ fontWeight: 600 }}>{t('grading.student.progress.minimumAgeLabel')}</strong>
+                  <span>{t('grading.student.progress.minimumAgeValue', { age: breakdown.minimumAge.age })}</span>
+                </div>
+                <span className="ultm8-field__hint">{t('grading.student.progress.notInPercent')}</span>
+              </li>
             ) : null}
           </ul>
         </section>
       ) : null}
-      <HoursTrained hours={hours} />
+      <HoursTrained hours={hours} graded={!!breakdown?.hours} />
       <p className="ultm8-field__hint" style={{ margin: '8px 0 0' }}>
-        {eligibility.timeOnly ? t('grading.student.progress.howDays') : t('grading.student.progress.howClasses')}
+        {eligibility.timeOnly ? t('grading.student.progress.howDays') : t('grading.student.progress.howAverage')}
       </p>
     </div>
   );
@@ -867,14 +921,16 @@ function BreakdownRow({
 }
 
 /** Hours trained (Decisions 301, 306): logged, not graded. */
-function HoursTrained({ hours }: { hours: Hours }) {
+/** `graded`: the style ticks Hours, so they count toward the next rank (Decision 321 item 2). */
+function HoursTrained({ hours, graded = false }: { hours: Hours; graded?: boolean }) {
   const t = useT();
   return (
     <section aria-label={t('grading.student.hours.title')} style={{ borderTop: '1px solid var(--color-neutral-200)', marginTop: 12, paddingTop: 10 }}>
       <h4 style={{ fontSize: 14, margin: '0 0 2px' }}>{t('grading.student.hours.title')}</h4>
       <p style={{ margin: 0 }}>{t('grading.student.hours.atThisRank', { hours: formatHours(hours.sinceCurrentRankMinutes) })}</p>
       <p className="ultm8-field__hint" style={{ margin: 0 }}>
-        {t('grading.student.hours.total', { hours: formatHours(hours.totalMinutes) })} · {t('grading.student.hours.recordOnly')}
+        {t('grading.student.hours.total', { hours: formatHours(hours.totalMinutes) })} ·{' '}
+        {graded ? t('grading.student.hours.countsTowardRank') : t('grading.student.hours.recordOnly')}
       </p>
     </section>
   );
@@ -1122,6 +1178,8 @@ function History({
   onEditNote,
   onToggleHidden,
   onNoteLog,
+  currentStripeId,
+  onUndoAutomatic,
   noteError,
 }: {
   entries: PromotionEvent[];
@@ -1137,9 +1195,14 @@ function History({
   onToggleHidden?: (entry: PromotionEvent) => void;
   /** The owner's view of every change to a note. */
   onNoteLog?: (entry: PromotionEvent, summary: string) => void;
+  /** The student's rank now: an automatic promotion is undone only from the rank it gave. */
+  currentStripeId?: string | null;
+  /** Absent when the caller may not promote in this style (Decision 321 item 5). */
+  onUndoAutomatic?: (entry: PromotionEvent) => Promise<void>;
   noteError?: string | null;
 }) {
   const t = useT();
+  const [confirmUndo, setConfirmUndo] = useState<string | null>(null);
   return (
     <div style={{ marginTop: 16 }}>
       <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('grading.student.history.title')}</h3>
@@ -1163,9 +1226,38 @@ function History({
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                   <span>
                     <strong>{label}</strong>{' '}
-                    {t('grading.student.history.line', { change, date: formatDay(e.effectiveDate), name: performerName(e.performedById) })}
+                    {t('grading.student.history.line', {
+                      change,
+                      date: formatDay(e.effectiveDate),
+                      // Given by the style's automatic grading, not by a person (Decision 321).
+                      name: e.automatic ? t('grading.student.history.automatic') : performerName(e.performedById),
+                    })}
                     {e.voidedAt ? <Badge variant="danger">{t('grading.student.history.voided')}</Badge> : null}
+                    {e.automaticUndoneAt ? <Badge variant="info">{t('grading.student.history.undone')}</Badge> : null}
                   </span>
+                  {onUndoAutomatic && e.automatic && e.fromStripeTierId && !e.automaticUndoneAt && !e.voidedAt && e.toStripeTierId === currentStripeId ? (
+                    confirmUndo === e.id ? (
+                      <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <span>{t('grading.student.history.undoConfirm', { rank: rungName(e.fromStripeTierId) })}</span>
+                        <Button
+                          variant="secondary"
+                          onClick={async () => {
+                            await onUndoAutomatic(e);
+                            setConfirmUndo(null);
+                          }}
+                        >
+                          {t('grading.student.history.undoYes')}
+                        </Button>
+                        <Button variant="secondary" onClick={() => setConfirmUndo(null)}>
+                          {t('common.cancel')}
+                        </Button>
+                      </span>
+                    ) : (
+                      <Button variant="secondary" onClick={() => setConfirmUndo(e.id)} aria-label={t('grading.student.history.undoAria', { summary })}>
+                        {t('grading.student.history.undo')}
+                      </Button>
+                    )
+                  ) : null}
                   {e.voidedAt || !onVoid ? null : (
                     <Button variant="secondary" onClick={() => onVoid(e, summary)} aria-label={t('grading.student.history.voidAria', { summary })}>
                       {t('grading.student.history.void')}

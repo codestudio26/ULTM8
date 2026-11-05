@@ -23,6 +23,9 @@ export interface PendingGrade {
   startingClassesByType?: Record<string, number>;
   /** Set when the grade came from a bulk promote: its history type and note. */
   bulk?: { eventType: 'BULK_PROMOTION' | 'BULK_STRIPE_AWARD'; systemNote: string };
+  /** An automatic promotion waiting for its fee (Decision 321 item 5): applied
+   * as automatic, with no performer, once the fee is paid or waived. */
+  automatic?: boolean;
 }
 
 /** Statuses in which the payer has not settled the fee (no answer yet, or accepted and not paid). */

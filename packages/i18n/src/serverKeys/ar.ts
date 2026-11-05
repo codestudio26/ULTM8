@@ -344,6 +344,8 @@ export const server: PartialMessages<ServerKeys> = {
     franchiseFeeFailedBody: "تعذر تحصيل رسوم الامتياز البالغة {amount} عن {school}. سيحاول Stripe مرة أخرى. أضف البطاقة أو حدّثها في صفحة المدرسة.",
     openMatStyleBody: "تدريب حر ({style}) في {place} يوم {when}، لمدة {minutes} دقيقة. احجز في التطبيق للانضمام.",
     toDecideBody: "ترقية {name} إلى {rank} ({style}) بانتظار قرارك. قم بالترقية أو قرر عدم الترقية.",
+    autoPromotedTitle: "ترقية تلقائية",
+    autoPromotedBody: "تمت ترقية {name} تلقائياً إلى {rank} ({style}).",
     promotionFeeBody: "ترقيتك إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
     childPromotionFeeBody: "ترقية {name} إلى {rank} ({style}) لها رسوم قدرها {amount}. افتح التطبيق للقبول أو الرفض.",
     promotionFeeBlockedTitle: "لا يمكن تطبيق الترقية",

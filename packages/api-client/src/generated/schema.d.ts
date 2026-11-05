@@ -3572,6 +3572,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/students/{id}/rank-history/{eventId}/undo-automatic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["GradingController_undoAutomaticPromotion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/students/{id}/rank-history/{eventId}/note": {
         parameters: {
             query?: never;
@@ -3805,6 +3821,22 @@ export interface paths {
         };
         get?: never;
         put: operations["GradingController_setRankDisplay"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/disciplines/{id}/grading-requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["GradingController_setGradingRequirements"];
         post?: never;
         delete?: never;
         options?: never;
@@ -10457,6 +10489,25 @@ export interface components {
              * @enum {string}
              */
             rankDisplay: "BELTS" | "LEVELS";
+            /** @description Requirement tick box: classes count toward the next rank (Decision 321). Default on. */
+            requireClasses: boolean;
+            /** @description Requirement tick box: days in rank (Decision 321). Default on. */
+            requireDaysInRank: boolean;
+            /** @description Requirement tick box: skills (Decision 321). Default on. */
+            requireSkills: boolean;
+            /** @description Requirement tick box: hours trained (Decision 321). Default off. */
+            requireHours: boolean;
+            /** @description Requirement tick box: different days attended (Decision 321). Default off. */
+            requireDaysAttended: boolean;
+            /** @description Requirement tick box: minimum age (Decision 321). Default off. */
+            requireMinimumAge: boolean;
+            /**
+             * @description Automatic promotion (Decision 321): MANUAL (the default), AUTO_STRIPES or AUTO_ALL.
+             * @enum {string}
+             */
+            promotionMode: "MANUAL" | "AUTO_STRIPES" | "AUTO_ALL";
+            /** @description "Auto-assign first belt" (Decision 321): the first rung on the first check-in to a class of the style. Default off. */
+            autoAssignFirstRank: boolean;
             /** @description Students with a rank in this style (Decision 309). */
             studentCount: number;
             createdAt: string;
@@ -10565,6 +10616,12 @@ export interface components {
             bookingUnlocksClassTypes?: string[];
             /** @description Promotion fee for being graded into this rung, in the School's currency, minor units (e.g. 2500 = 25.00). null = free. Owner only, and only while the School's promotion fee is on: sent while it is off, the request is refused (400). When omitted: free on a new rung; kept on an existing rung. */
             promotionFeeMinor?: number | null;
+            /** @description Hours trained needed for this rung since the last promotion (Decision 321). Checked only in a style that ticks Hours. null = not asked. When omitted: none on a new rung; kept on an existing rung. */
+            hoursRequired?: number | null;
+            /** @description Different days attended needed for this rung since the last promotion (Decision 321). Checked only in a style that ticks Days attended. null = not asked. When omitted: none on a new rung; kept on an existing rung. */
+            daysAttendedRequired?: number | null;
+            /** @description The age (whole years) a student must have reached on the day they are promoted into this rung (Decision 321). Checked only in a style that ticks Minimum age. null = any age. When omitted: any age on a new rung; kept on an existing rung. */
+            minimumAge?: number | null;
             /** @description Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted. */
             requiredSkillIds?: string[];
         };
@@ -10613,6 +10670,12 @@ export interface components {
             requiredSkillIds: string[];
             /** @description Promotion fee for this grade, minor units of the School's currency; null = free (Decision 300). Present only while the School's promotion fee is on (Decision 307). */
             promotionFeeMinor?: number | null;
+            /** @description Hours trained needed since the last promotion; checked only in a style that ticks Hours (Decision 321). */
+            hoursRequired?: number | null;
+            /** @description Different days attended needed since the last promotion; checked only in a style that ticks Days attended (Decision 321). */
+            daysAttendedRequired?: number | null;
+            /** @description Age the student must have reached on the day they are promoted into this rung; checked only in a style that ticks Minimum age (Decision 321). */
+            minimumAge?: number | null;
         };
         RankResponseDto: {
             id: string;
@@ -10759,13 +10822,31 @@ export interface components {
             classesOk?: boolean;
             daysOk?: boolean;
             skillsOk?: boolean;
-            /** @description Classes, days and skills all met. */
+            /** @description Hours trained the next rank needs; 0 when the style does not tick Hours. */
+            requiredHours?: number;
+            /** @description Minutes trained since the current rank date that count toward hours (0 when not asked for). */
+            minutesTrained?: number;
+            hoursOk?: boolean;
+            /** @description Different days attended the next rank needs; 0 when the style does not tick Days attended. */
+            requiredDaysAttended?: number;
+            /** @description Different days with a check-in to a class of the style since the current rank date. */
+            daysAttended?: number;
+            daysAttendedOk?: boolean;
+            /** @description The next rank's minimum age, when the style ticks Minimum age; null = any age. */
+            minimumAge?: number | null;
+            /** @description False while the student is younger than minimumAge (or has no date of birth). */
+            ageOk?: boolean;
+            /** @description Every ticked requirement is met but the student is too young: "Waiting for age N". Null otherwise. */
+            waitingForAge?: number | null;
+            /** @description Every ticked requirement met, minimum age included. */
             eligible?: boolean;
             requiredSkillIds?: string[];
             /** @description Shown but optional: the next rung's skills when the current rung is time-only. */
             optionalSkillIds?: string[];
             missingSkillIds?: string[];
-            /** @description 0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136). */
+            /** @description 0–100: the classes on their own. */
+            classesPercent?: number;
+            /** @description 0–100: the average of the ticked requirements the next rank asks for (classes, days in rank, skills, hours, days attended), each capped at 100%. Minimum age is not part of it. Days for a time-only rank. 100 only when every one is met. */
             progressPercent?: number;
             /**
              * @description Grading Board column at the default 33% / 66% (Decision 136).
@@ -10777,7 +10858,7 @@ export interface components {
             /** @description Classes counted toward the next rank (eligibility.countedClasses). */
             counted: number;
             required: number;
-            /** @description 0–100. The same number as eligibility.progressPercent: the overall % is classes only. */
+            /** @description 0–100: the classes on their own (eligibility.classesPercent). */
             percent: number;
             /** @description "Each ticked type required" rungs only; otherwise empty. */
             byType: components["schemas"]["TypeProgressResponseDto"][];
@@ -10798,12 +10879,40 @@ export interface components {
             /** @description 0–100. 100 when none are required. */
             percent: number;
         };
+        HoursProgressResponseDto: {
+            /** @description Minutes trained since the current rank date that count toward hours. */
+            trainedMinutes: number;
+            /** @description Hours the next rank needs. */
+            requiredHours: number;
+            /** @description 0–100, capped. 100 when none are required. */
+            percent: number;
+        };
+        DaysAttendedProgressResponseDto: {
+            /** @description Different days attended since the current rank date. */
+            attended: number;
+            required: number;
+            /** @description 0–100, capped. 100 when none are required. */
+            percent: number;
+        };
+        MinimumAgeProgressResponseDto: {
+            /** @description The next rank's minimum age. */
+            age: number;
+            /** @description The student has reached it. */
+            met: boolean;
+        };
         ProgressBreakdownResponseDto: {
-            /** @description null on a time-only rank (days only). */
+            /** @description null on a time-only rank, or when the style does not tick Classes. */
             classes?: components["schemas"]["ClassesProgressResponseDto"] | null;
-            days: components["schemas"]["DaysProgressResponseDto"];
-            /** @description null on a time-only rank (days only). */
+            /** @description Always on a time-only rank; otherwise null when the style does not tick Days in rank. */
+            days?: components["schemas"]["DaysProgressResponseDto"] | null;
+            /** @description null on a time-only rank, or when the style does not tick Skills. */
             skills?: components["schemas"]["SkillsProgressResponseDto"] | null;
+            /** @description Only in a style that ticks Hours. */
+            hours?: components["schemas"]["HoursProgressResponseDto"] | null;
+            /** @description Only in a style that ticks Days attended. */
+            daysAttended?: components["schemas"]["DaysAttendedProgressResponseDto"] | null;
+            /** @description Only when the next rank has a minimum age the style checks. */
+            minimumAge?: components["schemas"]["MinimumAgeProgressResponseDto"] | null;
         };
         HoursTrainedResponseDto: {
             /** @description Every minute logged in this style at this School (check-ins and "Log a class"). */
@@ -10942,6 +11051,11 @@ export interface components {
             noteHiddenAt: string | null;
             /** @description Set on the entries of a belt that was not kept when two duplicate records were merged (Decision 422 item 8): the member record the entry was on. Show it as coming from the merged record. */
             mergedFromUserId: string | null;
+            /** @description Given automatically (the style's automatic promotion, or the first belt on the first check-in), with no performer (Decision 321). */
+            automatic: boolean;
+            /** @description An automatic promotion a coach undid: when. The undo is its own entry (a move back down). */
+            automaticUndoneAt: string | null;
+            automaticUndoneById: string | null;
             /** @description When the entry was written (audit timestamp). */
             createdAt: string;
         };
@@ -10952,6 +11066,10 @@ export interface components {
         VoidPromotionEventDto: {
             /** @description Why this entry is being voided. Required. */
             reason: string;
+        };
+        UndoAutomaticPromotionDto: {
+            /** @description An optional note for the history entry. */
+            note?: string;
         };
         ChangeHistoryNoteDto: {
             note?: string | null;
@@ -11142,6 +11260,8 @@ export interface components {
             hasActiveMembership: boolean;
             /** @description The style requires skills and some for the next rank are not signed off: grading is blocked (Decision 128, item 10). */
             hardBlocked: boolean;
+            /** @description The style's automatic promotion gives this student's next rank once every ticked requirement is met (Decision 321). */
+            automaticNext: boolean;
             eligibility: components["schemas"]["EligibilityResponseDto"];
             /** @description Owner only: the School has branches and this student has no home branch yet, so no branch coach sees them. The board shows them under "No branch" until the owner assigns one (Decision 148.2). Always false for other staff. */
             noHomeBranch: boolean;
@@ -11172,6 +11292,27 @@ export interface components {
         RankDisplayDto: {
             /** @enum {string} */
             rankDisplay: "BELTS" | "LEVELS";
+        };
+        GradingRequirementsDto: {
+            /** @description Classes count toward the next rank. */
+            requireClasses: boolean;
+            /** @description Days in rank. */
+            requireDaysInRank: boolean;
+            /** @description Skills. */
+            requireSkills: boolean;
+            /** @description Hours trained (open mat only while its switch is on). */
+            requireHours: boolean;
+            /** @description Different days attended since the last promotion. */
+            requireDaysAttended: boolean;
+            /** @description Minimum age, per rank. */
+            requireMinimumAge: boolean;
+            /**
+             * @description MANUAL: the coach decides. AUTO_STRIPES: stripes are given automatically, belts stay manual. AUTO_ALL: every rank is given automatically.
+             * @enum {string}
+             */
+            promotionMode: "MANUAL" | "AUTO_STRIPES" | "AUTO_ALL";
+            /** @description "Auto-assign first belt": a student with no rank in the style gets its first rank on their first check-in to a class of it. */
+            autoAssignFirstRank: boolean;
         };
         BoardThresholdsDto: {
             /** @example 33 */
@@ -20207,6 +20348,34 @@ export interface operations {
             };
         };
     };
+    GradingController_undoAutomaticPromotion: {
+        parameters: {
+            query: {
+                schoolId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                eventId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UndoAutomaticPromotionDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromotionEventResponseDto"];
+                };
+            };
+        };
+    };
     GradingController_changeHistoryNote: {
         parameters: {
             query: {
@@ -20570,6 +20739,32 @@ export interface operations {
         };
         responses: {
             /** @description The style, with its ranks now shown as Belts or Levels. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisciplineResponseDto"];
+                };
+            };
+        };
+    };
+    GradingController_setGradingRequirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GradingRequirementsDto"];
+            };
+        };
+        responses: {
+            /** @description The style, with its new requirements and automatic grading. */
             200: {
                 headers: {
                     [name: string]: unknown;

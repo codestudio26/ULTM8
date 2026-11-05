@@ -167,5 +167,11 @@ export const ranks = {
     readyStripes: 'Every group of stripes has a number and a colour',
     readyWhatItTakes: 'Every grade says what it takes',
     checkWhatItTakes: 'Check what it takes: {list} (0 classes and 0 days)',
+    hoursRequired: "Hours required",
+    hoursRequiredHint: "Hours trained since the last promotion.",
+    daysAttended: "Days attended",
+    daysAttendedHint: "Different days with a class of this style since the last promotion.",
+    minimumAge: "Minimum age",
+    minimumAgeHint: "On the promotion day. Empty: any age.",
   },
 };

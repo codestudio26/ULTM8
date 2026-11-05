@@ -530,6 +530,7 @@ model User {
   studentRanks                      StudentRank[]
   promotionEventsPerformed          PromotionEvent[]            @relation("PromotionEventPerformedBy")
   promotionEventsVoided             PromotionEvent[]            @relation("PromotionEventVoidedBy")
+  promotionEventsAutomaticUndone    PromotionEvent[]            @relation("PromotionEventAutomaticUndoneBy")
   promotionEventNotesEdited         PromotionEvent[]            @relation("PromotionEventNoteEditedBy")
   promotionFeeRequests              PromotionFeeRequest[]       @relation("PromotionFeeRequestStudent")
   promotionFeeRequestsGraded        PromotionFeeRequest[]       @relation("PromotionFeeRequestGradedBy")
@@ -2811,6 +2812,16 @@ enum PromotionEventType {
   RANK_CORRECTION
 }
 
+/// Automatic promotion per style (Decision 321 item 5).
+enum GradingPromotionMode {
+  /// The coach decides (the default).
+  MANUAL
+  /// Stripes are given automatically; belts stay manual.
+  AUTO_STRIPES
+  /// Every rank is given automatically.
+  AUTO_ALL
+}
+
 /// Whether a StudentRank's rank has been confirmed by the School (Decisions
 /// 137, 147). Ranks given by staff are VERIFIED; a self-declared rank is
 /// UNVERIFIED until someone with grading permission verifies or corrects it,
@@ -2876,6 +2887,24 @@ model Discipline {
   /// 3.19), never a mix. Display only: a level is a badge in the rank's
   /// primaryColour, and its steps are rungs with no stripes.
   rankDisplay           RankDisplay  @default(BELTS)
+  /// Requirement tick boxes (Decision 321 item 1), set by the owner: which
+  /// requirements count toward the next rank in this style. An unticked one
+  /// is never checked, even if a rank still holds a number for it. Classes,
+  /// days in rank and skills are ticked by default (what every style did
+  /// before); hours, days attended and minimum age are not.
+  requireClasses        Boolean      @default(true)
+  requireDaysInRank     Boolean      @default(true)
+  requireSkills         Boolean      @default(true)
+  requireHours          Boolean      @default(false)
+  requireDaysAttended   Boolean      @default(false)
+  requireMinimumAge     Boolean      @default(false)
+  /// Automatic promotion (Decision 321 item 5): MANUAL (the coach decides,
+  /// the default), AUTO_STRIPES or AUTO_ALL.
+  promotionMode         GradingPromotionMode @default(MANUAL)
+  /// "Auto-assign first belt" (Decision 321 item 6): a student with no rank
+  /// in this style gets its first rung, verified, on their first check-in to
+  /// a class of the style. Off by default.
+  autoAssignFirstRank   Boolean      @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3018,6 +3047,13 @@ model RankStripeTier {
   /// Set by the owner only while the School's promotion fee is on, and never
   /// returned while it is off.
   promotionFeeMinor        Int?
+  /// Decision 321 items 1–4: checked only in a style that ticks them. Hours
+  /// trained (whole hours, since the last promotion), different days attended
+  /// since the last promotion, and the age (whole years) the student must have
+  /// reached on the day they are promoted into this rung. Null = not asked.
+  hoursRequired            Int?
+  daysAttendedRequired     Int?
+  minimumAge               Int?
 
   requiredSkills RankStripeTierRequiredSkill[]
 
@@ -3558,6 +3594,14 @@ model PromotionEvent {
   // duplicate's belt was the higher). Null for every other entry. A plain
   // id, no foreign key: the mark stays even if that account is deleted.
   mergedFromUserId      String?
+  /// Decision 321 item 5: given automatically (the style's automatic
+  /// promotion, or the first belt on the first check-in), with no performer.
+  automatic             Boolean   @default(false)
+  /// An automatic promotion a coach undid (Decision 321 item 5): when, and by
+  /// whom. The undo itself is its own history entry (a move back down).
+  automaticUndoneAt     DateTime?
+  automaticUndoneById   String?
+  automaticUndoneBy     User?     @relation("PromotionEventAutomaticUndoneBy", fields: [automaticUndoneById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
 

@@ -35,7 +35,14 @@ interface RungDraft {
   skills: string[];
   /** Promotion fee in major units ("40" = 40.00); empty = free. */
   price: string;
+  /** Decision 321: hours, days attended and minimum age; empty = not asked. */
+  hours: string;
+  daysAttended: string;
+  minimumAge: string;
 }
+
+/** The requirements a style ticks (Decision 321 item 1): the editor shows only these. */
+type Ticks = Pick<DisciplineResponse, 'requireClasses' | 'requireDaysInRank' | 'requireSkills' | 'requireHours' | 'requireDaysAttended' | 'requireMinimumAge'>;
 
 export interface BeltValues {
   name: string;
@@ -64,6 +71,9 @@ function blankRung(): RungDraft {
     unlocks: [],
     skills: [],
     price: '',
+    hours: '',
+    daysAttended: '',
+    minimumAge: '',
   };
 }
 
@@ -87,6 +97,9 @@ function nextGrade(prev: RungDraft | undefined): RungDraft {
     types: [...prev.types],
     perType: { ...prev.perType },
     weeklyCap: prev.weeklyCap,
+    hours: prev.hours,
+    daysAttended: prev.daysAttended,
+    minimumAge: prev.minimumAge,
   };
 }
 
@@ -109,6 +122,9 @@ function draftFrom(t: RankResponse['stripeTiers'][number], keepId: boolean): Run
     unlocks: t.bookingUnlocksClassTypes ?? [],
     skills: t.requiredSkillIds ?? [],
     price: t.promotionFeeMinor ? String(t.promotionFeeMinor / 100) : '',
+    hours: t.hoursRequired?.toString() ?? '',
+    daysAttended: t.daysAttendedRequired?.toString() ?? '',
+    minimumAge: t.minimumAge?.toString() ?? '',
   };
 }
 
@@ -120,7 +136,9 @@ const generatedStepName = (level: string, order: number) => `${level} ${order + 
 const total = (segments: Segment[]) => segments.reduce((sum, s) => sum + (Number(s.count) || 0), 0);
 const num = (v: string) => (v.trim() === '' ? undefined : Number(v));
 
-function toInput(r: RungDraft, order: number, withPrice: boolean): RankStripeTierInput {
+function toInput(r: RungDraft, order: number, withPrice: boolean, ticks?: Ticks): RankStripeTierInput {
+  // An unticked requirement keeps whatever the rank holds (Decision 321 item 1): not sent.
+  const asked = (v: string) => (v.trim() === '' ? null : Number(v));
   const count = total(r.segments);
   const segments = r.segments.filter((s) => Number(s.count) > 0).map((s) => ({ count: Number(s.count), colour: s.colour }));
   return {
@@ -141,6 +159,9 @@ function toInput(r: RungDraft, order: number, withPrice: boolean): RankStripeTie
     requiredSkillIds: r.skills,
     // Only while the School's fee is on: the API refuses a price otherwise (Decision 307).
     ...(withPrice ? { promotionFeeMinor: r.price.trim() === '' ? null : Math.round(Number(r.price) * 100) } : {}),
+    ...(ticks?.requireHours && !r.timeOnly ? { hoursRequired: asked(r.hours) } : {}),
+    ...(ticks?.requireDaysAttended && !r.timeOnly ? { daysAttendedRequired: asked(r.daysAttended) } : {}),
+    ...(ticks?.requireMinimumAge ? { minimumAge: asked(r.minimumAge) } : {}),
   };
 }
 
@@ -148,7 +169,7 @@ function toInput(r: RungDraft, order: number, withPrice: boolean): RankStripeTie
 function saysWhatItTakes(r: RungDraft): boolean {
   if (r.timeOnly) return (num(r.years) ?? 0) > 0;
   const classes = r.mode === 'EACH_TYPE' ? r.types.some((t) => Number(r.perType[t] || 0) > 0) : (num(r.classesRequired) ?? 0) > 0;
-  return classes || (num(r.minimumDays) ?? 0) > 0;
+  return classes || (num(r.minimumDays) ?? 0) > 0 || (num(r.hours) ?? 0) > 0 || (num(r.daysAttended) ?? 0) > 0;
 }
 
 /** A small checkbox list of names (class types, skills). */
@@ -314,7 +335,7 @@ export function BeltEditorModal({
           primaryColour: primaryColour.trim(),
           secondaryColour: levels ? null : secondaryColour.trim() || null,
           tagColour: levels ? null : tagColour.trim() || null,
-          stripeTiers: rungs.map((r, i) => toInput(levels ? { ...r, segments: [] } : r, i, !!fee)),
+          stripeTiers: rungs.map((r, i) => toInput(levels ? { ...r, segments: [] } : r, i, !!fee, discipline)),
         },
         position,
       );
@@ -500,7 +521,7 @@ export function BeltEditorModal({
             </Chapter>
 
             <Chapter number="02" title={t('ranks.editor.chapterWhatItTakes')}>
-              <RequirementFields r={current} index={index} types={types} skills={skills} onChange={(patch) => update(current.key, patch)} />
+              <RequirementFields r={current} index={index} types={types} skills={skills} ticks={discipline} onChange={(patch) => update(current.key, patch)} />
             </Chapter>
 
             {fee ? (
@@ -648,16 +669,24 @@ function RequirementFields({
   index,
   types,
   skills,
+  ticks,
   onChange,
 }: {
   r: RungDraft;
   index: number;
   types: string[];
   skills: SkillResponse[];
+  /** Decision 321 item 1: only the style's ticked requirements are shown. */
+  ticks: Ticks;
   onChange: (patch: Partial<RungDraft>) => void;
 }) {
   const t = useT();
   const id = (f: string) => `rung-${index}-${f}`;
+  const minimumAge = ticks.requireMinimumAge ? (
+    <Field label={t('ranks.editor.minimumAge')} htmlFor={id('age')} hint={t('ranks.editor.minimumAgeHint')}>
+      <TextField type="number" min={0} max={120} value={r.minimumAge} onChange={(e) => onChange({ minimumAge: e.target.value })} />
+    </Field>
+  ) : null;
   return (
     <div>
       <Checkbox label={t('ranks.editor.timeOnlyLabel')} checked={r.timeOnly} onChange={(e) => onChange({ timeOnly: e.target.checked })} />
@@ -667,28 +696,33 @@ function RequirementFields({
           <Field label={t('ranks.editor.minYears')} htmlFor={id('years')}>
             <TextField type="number" min={0} max={30} step={0.5} value={r.years} onChange={(e) => onChange({ years: e.target.value })} />
           </Field>
+          {minimumAge}
         </>
       ) : (
         <>
-          <Field label={t('ranks.editor.whichClasses')} htmlFor={id('mode')}>
-            <SelectField
-              value={r.mode}
-              onChange={(e) => onChange({ mode: e.target.value as RungDraft['mode'] })}
-              options={[
-                { value: 'ANY_TYPE', label: t('ranks.editor.modeAnyType') },
-                { value: 'EACH_TYPE', label: t('ranks.editor.modeEachType') },
-              ]}
-            />
-          </Field>
-          <Picker
-            legend={t('ranks.editor.typesLegend')}
-            options={types.map((type) => ({ value: type, label: type }))}
-            value={r.types}
-            onChange={(v) => onChange({ types: v })}
-            empty={t('ranks.editor.noTypesEveryClassCounts')}
-          />
+          {ticks.requireClasses ? (
+            <>
+              <Field label={t('ranks.editor.whichClasses')} htmlFor={id('mode')}>
+                <SelectField
+                  value={r.mode}
+                  onChange={(e) => onChange({ mode: e.target.value as RungDraft['mode'] })}
+                  options={[
+                    { value: 'ANY_TYPE', label: t('ranks.editor.modeAnyType') },
+                    { value: 'EACH_TYPE', label: t('ranks.editor.modeEachType') },
+                  ]}
+                />
+              </Field>
+              <Picker
+                legend={t('ranks.editor.typesLegend')}
+                options={types.map((type) => ({ value: type, label: type }))}
+                value={r.types}
+                onChange={(v) => onChange({ types: v })}
+                empty={t('ranks.editor.noTypesEveryClassCounts')}
+              />
+            </>
+          ) : null}
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {r.mode === 'EACH_TYPE' ? (
+            {!ticks.requireClasses ? null : r.mode === 'EACH_TYPE' ? (
               r.types.map((type) => (
                 <Field key={type} label={t('ranks.editor.typeClasses', { type })} htmlFor={id(`type-${type}`)}>
                   <TextField type="number" min={0} value={r.perType[type] ?? ''} onChange={(e) => onChange({ perType: { ...r.perType, [type]: e.target.value } })} />
@@ -699,22 +733,39 @@ function RequirementFields({
                 <TextField type="number" min={0} value={r.classesRequired} onChange={(e) => onChange({ classesRequired: e.target.value })} />
               </Field>
             )}
-            <Field label={t('ranks.editor.minDays')} htmlFor={id('days')}>
-              <TextField type="number" min={0} value={r.minimumDays} onChange={(e) => onChange({ minimumDays: e.target.value })} />
-            </Field>
-            <Field label={t('ranks.editor.weeklyCap')} htmlFor={id('cap')} hint={t('ranks.editor.weeklyCapHint')}>
-              <TextField type="number" min={0} value={r.weeklyCap} onChange={(e) => onChange({ weeklyCap: e.target.value })} />
-            </Field>
+            {ticks.requireDaysInRank ? (
+              <Field label={t('ranks.editor.minDays')} htmlFor={id('days')}>
+                <TextField type="number" min={0} value={r.minimumDays} onChange={(e) => onChange({ minimumDays: e.target.value })} />
+              </Field>
+            ) : null}
+            {ticks.requireClasses ? (
+              <Field label={t('ranks.editor.weeklyCap')} htmlFor={id('cap')} hint={t('ranks.editor.weeklyCapHint')}>
+                <TextField type="number" min={0} value={r.weeklyCap} onChange={(e) => onChange({ weeklyCap: e.target.value })} />
+              </Field>
+            ) : null}
+            {ticks.requireHours ? (
+              <Field label={t('ranks.editor.hoursRequired')} htmlFor={id('hours')} hint={t('ranks.editor.hoursRequiredHint')}>
+                <TextField type="number" min={0} value={r.hours} onChange={(e) => onChange({ hours: e.target.value })} />
+              </Field>
+            ) : null}
+            {ticks.requireDaysAttended ? (
+              <Field label={t('ranks.editor.daysAttended')} htmlFor={id('attended')} hint={t('ranks.editor.daysAttendedHint')}>
+                <TextField type="number" min={0} value={r.daysAttended} onChange={(e) => onChange({ daysAttended: e.target.value })} />
+              </Field>
+            ) : null}
+            {minimumAge}
           </div>
         </>
       )}
-      <Picker
-        legend={r.timeOnly ? t('ranks.editor.skillsOptional') : t('ranks.editor.requiredSkills')}
-        options={skills.map((s) => ({ value: s.id, label: s.name }))}
-        value={r.skills}
-        onChange={(v) => onChange({ skills: v })}
-        empty={t('ranks.editor.noSkills')}
-      />
+      {ticks.requireSkills ? (
+        <Picker
+          legend={r.timeOnly ? t('ranks.editor.skillsOptional') : t('ranks.editor.requiredSkills')}
+          options={skills.map((s) => ({ value: s.id, label: s.name }))}
+          value={r.skills}
+          onChange={(v) => onChange({ skills: v })}
+          empty={t('ranks.editor.noSkills')}
+        />
+      ) : null}
       <Picker
         legend={t('ranks.editor.unlocks')}
         options={types.map((type) => ({ value: type, label: type }))}

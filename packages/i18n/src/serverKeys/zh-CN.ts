@@ -274,6 +274,8 @@ export const server: PartialMessages<ServerKeys> = {
     franchiseFeeFailedBody: "未能收取 {school} 的加盟费 {amount}。Stripe 会再次尝试。请在学校页面添加或更新银行卡。",
     openMatStyleBody: "{place} 将于 {when} 开始 {minutes} 分钟的自由练习（{style}）。请在应用中预约参加。",
     toDecideBody: "{name}晋级到{rank}（{style}）正在等待你的决定。请晋级或决定不晋级。",
+    autoPromotedTitle: "自动晋级",
+    autoPromotedBody: "{name} 已自动晋级为 {rank}（{style}）。",
     promotionFeeBody: "你晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
     childPromotionFeeBody: "{name}晋级到{rank}（{style}）需支付{amount}。打开应用以接受或拒绝。",
     promotionFeeBlockedTitle: "晋级无法执行",

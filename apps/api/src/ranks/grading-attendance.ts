@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 import { DateTime } from 'luxon';
 import {
@@ -50,6 +51,9 @@ export async function loadLadder(tx: TenantTx, disciplineId: string): Promise<Ru
         weeklyClassCountCap: t.weeklyClassCountCap,
         requiredSkillIds: t.requiredSkills.map((s) => s.skillId),
         bookingUnlocksClassTypes: t.bookingUnlocksClassTypes,
+        hoursRequired: t.hoursRequired,
+        daysAttendedRequired: t.daysAttendedRequired,
+        minimumAge: t.minimumAge,
       })),
     })),
   );
@@ -170,5 +174,61 @@ async function sameWeekAttendance(
     result.push({ day: d, at: b.class.startDate.toISOString(), classType: entry.classType });
   }
   return result;
+}
+
+/** The history note of a first rank given on the first check-in. */
+export const FIRST_RANK_NOTE = 'First rank given on the first check-in.';
+
+/**
+ * "Auto-assign first belt" (Decision 321 item 6): in each style the class
+ * lists whose owner switch is on, a student with no rank there gets the
+ * style's first rung, verified (Decision 147), on this check-in. Called
+ * inside the check-in transaction, under the student's own context, after
+ * the class has been credited, so this class itself counts toward nothing in
+ * that style (counting starts from the new rank, as for any new rank).
+ * Recorded in the history as automatic, with no performer. No notice is
+ * sent: a first rank isn't a promotion. Not for an archived style, or a
+ * School with ranks switched off. Two check-ins at once give one rank (the
+ * insert skips a duplicate, and only the one that inserted writes history).
+ */
+export async function autoAssignFirstRanks(tx: TenantTx, studentId: string, booking: { id: string; classId: string }): Promise<void> {
+  const cls = await tx.class.findUniqueOrThrow({ where: { id: booking.classId }, select: { schoolId: true, styles: true } });
+  const styleIds = [...new Set((cls.styles as unknown as ClassStyle[]).map((s) => s.disciplineId))];
+  if (!styleIds.length) return;
+  const styles = await tx.discipline.findMany({
+    where: { id: { in: styleIds }, schoolId: cls.schoolId, autoAssignFirstRank: true, archivedAt: null },
+    select: { id: true },
+  });
+  if (!styles.length) return;
+  const school = await tx.school.findUnique({ where: { id: cls.schoolId }, select: { ranksToggle: true } });
+  if (!school?.ranksToggle) return;
+  for (const style of styles) {
+    if (await tx.studentRank.findUnique({ where: { studentId_disciplineId: { studentId, disciplineId: style.id } }, select: { id: true } })) continue;
+    const first = (await loadLadder(tx, style.id))[0];
+    if (!first) continue;
+    const now = new Date();
+    const id = randomUUID();
+    const created = await tx.studentRank.createMany({
+      data: [{ id, studentId, disciplineId: style.id, schoolId: cls.schoolId, currentRankId: first.rankId, currentStripeId: first.id, dateOfCurrentRank: now, countingSince: now }],
+      skipDuplicates: true,
+    });
+    if (created.count === 0) continue;
+    await tx.promotionEvent.create({
+      data: {
+        id: randomUUID(),
+        studentRankId: id,
+        schoolId: cls.schoolId,
+        studentId,
+        type: 'PROMOTION',
+        performedById: null,
+        automatic: true,
+        toRankId: first.rankId,
+        toStripeTierId: first.id,
+        effectiveDate: now,
+        systemNote: FIRST_RANK_NOTE,
+        startingClasses: 0,
+      },
+    });
+  }
 }
 

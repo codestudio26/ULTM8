@@ -316,6 +316,8 @@ export const server: PartialMessages<ServerKeys> = {
     franchiseFeeFailedBody: "Не удалось списать франшизный взнос {amount} за {school}. Stripe попробует ещё раз. Добавьте или обновите карту на странице школы.",
     openMatStyleBody: "Открытый ковёр ({style}) в {place}: {when}, {minutes} мин. Запишитесь в приложении, чтобы прийти.",
     toDecideBody: "Повышение {name} до {rank} ({style}) ждёт вашего решения. Повысьте или откажитесь.",
+    autoPromotedTitle: "Автоматическое повышение",
+    autoPromotedBody: "{name} автоматически получает {rank} ({style}).",
     promotionFeeBody: "За ваше повышение до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
     childPromotionFeeBody: "За повышение {name} до {rank} ({style}) взимается {amount}. Откройте приложение, чтобы принять или отклонить.",
     promotionFeeBlockedTitle: "Повышение нельзя применить",

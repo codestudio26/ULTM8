@@ -597,11 +597,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} 已认证技术：{signedOff} / {required} · {percent}% · 同样必需，不计入百分比",
       timeOnlyNote: "百分比 = 在此级别的天数 ÷ 所需天数。",
       classesNote: "百分比 = 已上课程数 ÷ 所需课程数。",
+      skillsCounts: "{tick} 已通过的技术：{signedOff} / {required} · {percent}% · 计入百分比",
+      hours: "{tick} 小时：{done} / {required} 小时 · {percent}% · 计入百分比",
+      daysAttended: "{tick} 出勤天数：{attended} / {required} · {percent}% · 计入百分比",
+      minimumAge: "{tick} 最低年龄：{age} 岁起 · 不计入百分比",
+      waitingForAge: "等待年满 {age} 岁",
+      averageNote: "百分比是此级别所要求项目的平均值，每项最多计 100%。",
     },
     hours: {
       title: "训练时长",
       summary: "此级别 {atRank} 小时 · 总计 {total} 小时",
       note: "记录你在垫子上的时间。晋级不使用此数据。",
+      counts: "自此级别以来的小时计入你的下一级别。",
     },
     correction: {
       a11yLabel: "腰带更正：{style}",

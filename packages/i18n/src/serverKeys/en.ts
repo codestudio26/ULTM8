@@ -278,6 +278,8 @@ export const server = {
     franchiseFeeFailedBody: "The franchise fee of {amount} for {school} couldn't be charged. Stripe will try again. Add or update the card on the School page.",
     openMatStyleBody: 'Open mat ({style}) at {place} on {when}, for {minutes} minutes. Book in the app to join.',
     toDecideBody: "{name}'s promotion to {rank} ({style}) is waiting for your decision. Promote them, or decide not to.",
+    autoPromotedTitle: "Promoted automatically",
+    autoPromotedBody: "{name} was promoted automatically to {rank} ({style}).",
     promotionFeeBody: 'Your promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.',
     childPromotionFeeBody: "{name}'s promotion to {rank} ({style}) has a fee of {amount}. Open the app to accept or decline it.",
     promotionFeeBlockedTitle: "Promotion can't apply",
