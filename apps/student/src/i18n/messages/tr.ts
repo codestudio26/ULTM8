@@ -1024,6 +1024,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + {surcharge} kart ek ücreti",
+      includedTax: "Vergi dahil: {lines}",
+      includedTaxLine: "{name} %{rate} {amount}",
       loading: "Yükleniyor…",
       viewReceipt: "Makbuzu gör",
       noReceipt: "Bu ödeme için makbuz yok.",
@@ -1125,6 +1127,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "Son ödeme {date}",
     exTax: "Vergi hariç fiyat",
     tax: "Vergi (%{rate})",
+    taxNamed: "{name} (%{rate})",
+    taxLineId: "{name} sicil no. {taxId}",
+    taxUnnamed: "Vergi",
     incTax: "Vergi dahil fiyat",
     noTax: "Bu kalemde vergi yok",
     discount: "İndirim",

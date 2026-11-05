@@ -1014,6 +1014,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + 카드 수수료 {surcharge}",
+      includedTax: "세금 포함: {lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "불러오는 중…",
       viewReceipt: "영수증 보기",
       noReceipt: "이 결제에 대한 영수증이 없습니다.",
@@ -1115,6 +1117,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "납부 기한 {date}",
     exTax: "세전 가격",
     tax: "세금({rate}%)",
+    taxNamed: "{name}({rate}%)",
+    taxLineId: "{name} 등록 번호: {taxId}",
+    taxUnnamed: "세금",
     incTax: "세금 포함 가격",
     noTax: "이 항목은 세금 없음",
     discount: "할인",

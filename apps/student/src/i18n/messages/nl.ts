@@ -1024,6 +1024,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + {surcharge} kaarttoeslag",
+      includedTax: "Inclusief belasting: {lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "Laden…",
       viewReceipt: "Bon bekijken",
       noReceipt: "Er is geen bon beschikbaar voor deze betaling.",
@@ -1125,6 +1127,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "Te betalen op {date}",
     exTax: "Prijs excl. btw",
     tax: "Btw ({rate}%)",
+    taxNamed: "{name} ({rate}%)",
+    taxLineId: "{name}-registratienr. {taxId}",
+    taxUnnamed: "Belasting",
     incTax: "Prijs incl. btw",
     noTax: "Geen btw op dit artikel",
     discount: "Korting",

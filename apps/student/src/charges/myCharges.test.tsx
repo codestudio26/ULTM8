@@ -153,6 +153,21 @@ describe('MyChargesScreen (Decisions 303, 338)', () => {
     expect(getAllByText('£120.00').length).toBeGreaterThanOrEqual(2);
   });
 
+  it('shows each named tax line with its registration number (Decision 430, MON-6)', async () => {
+    const taxLines = [
+      { name: 'GST', rateBasisPoints: 500, taxId: '123456789RT0001', amount: 500 },
+      { name: 'PST', rateBasisPoints: 700, taxId: null, amount: 700 },
+    ];
+    mocked(q.useMemberCharges).mockReturnValue(
+      ok({ schools: [{ ...SCHOOL, charges: [charge({ taxRateBasisPoints: 1200, taxAmount: 1200, netAmount: 10000, grossAmount: 11200, taxLines })] }] }),
+    );
+    const { getByText, queryByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('GST (5%)')).toBeTruthy();
+    expect(getByText('PST (7%)')).toBeTruthy();
+    expect(getByText('GST registration no. 123456789RT0001')).toBeTruthy();
+    expect(queryByText('Tax (12%)')).toBeNull();
+  });
+
   it('a guardian opens it for their child', async () => {
     const { getByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: { studentId: 'kid', name: 'Kai' } } as never} />);
     expect(mocked(q.useMemberCharges)).toHaveBeenCalledWith('kid');

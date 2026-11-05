@@ -1042,6 +1042,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + {surcharge} di sovrapprezzo carta",
+      includedTax: "Imposte incluse: {lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "Caricamento…",
       viewReceipt: "Vedi ricevuta",
       noReceipt: "Nessuna ricevuta disponibile per questo pagamento.",
@@ -1143,6 +1145,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "Scadenza {date}",
     exTax: "Prezzo senza imposta",
     tax: "Imposta ({rate}%)",
+    taxNamed: "{name} ({rate}%)",
+    taxLineId: "N. di registrazione {name}: {taxId}",
+    taxUnnamed: "Imposta",
     incTax: "Prezzo con imposta",
     noTax: "Nessuna imposta su questo articolo",
     discount: "Sconto",

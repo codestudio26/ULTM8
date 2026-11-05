@@ -1013,6 +1013,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + {surcharge} 刷卡附加费",
+      includedTax: "含税：{lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "加载中…",
       viewReceipt: "查看收据",
       noReceipt: "此笔付款没有可用的收据。",
@@ -1114,6 +1116,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "到期日 {date}",
     exTax: "不含税价格",
     tax: "税（{rate}%）",
+    taxNamed: "{name}（{rate}%）",
+    taxLineId: "{name}登记号：{taxId}",
+    taxUnnamed: "税",
     incTax: "含税价格",
     noTax: "此项目不征税",
     discount: "折扣",

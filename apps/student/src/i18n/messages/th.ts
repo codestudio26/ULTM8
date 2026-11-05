@@ -1013,6 +1013,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + ค่าธรรมเนียมบัตร {surcharge}",
+      includedTax: "รวมภาษี: {lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "กำลังโหลด…",
       viewReceipt: "ดูใบเสร็จ",
       noReceipt: "ไม่มีใบเสร็จสำหรับการชำระเงินนี้",
@@ -1114,6 +1116,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "ครบกำหนด {date}",
     exTax: "ราคาไม่รวมภาษี",
     tax: "ภาษี ({rate}%)",
+    taxNamed: "{name} ({rate}%)",
+    taxLineId: "เลขทะเบียน {name}: {taxId}",
+    taxUnnamed: "ภาษี",
     incTax: "ราคารวมภาษี",
     noTax: "ไม่มีภาษีสำหรับรายการนี้",
     discount: "ส่วนลด",
