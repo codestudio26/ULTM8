@@ -5941,6 +5941,37 @@ model CardSurchargeCountry {
   createdAt   DateTime @default(now())
 }
 
+/// Decision 318 item 3: a "What's new" post, written by ULTM8 HQ in Platform
+/// Admin and shown to School owners and staff in the School Portal, in their
+/// language (English if a translation is missing). Platform-wide content with
+/// no tenant column: the tenant connection only reads it, Platform Admin's own
+/// connection writes it.
+model ProductUpdate {
+  id           String                     @id @default(uuid())
+  /// The English text, always present.
+  title        String
+  body         String
+  /// The AdminUser who wrote it (a plain id; admins live in their own realm).
+  createdById  String
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+  translations ProductUpdateTranslation[]
+
+  @@index([createdAt, id])
+}
+
+/// The same post in another of the portal's languages.
+model ProductUpdateTranslation {
+  id              String        @id @default(uuid())
+  productUpdateId String
+  productUpdate   ProductUpdate @relation(fields: [productUpdateId], references: [id], onDelete: Cascade)
+  locale          String
+  title           String
+  body            String
+
+  @@unique([productUpdateId, locale])
+}
+
 /// Decision 413: a School's late fee is a fixed amount or a % of what is owed.
 enum LateFeeType {
   FIXED

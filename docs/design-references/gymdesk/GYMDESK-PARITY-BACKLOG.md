@@ -70,7 +70,7 @@ including a filled-in example where possible. Empty screens hide most fields.
 | D2 | Notifications widget | 🟡 | Notifications exist; frontend-only |
 | D3 | Upcoming Birthdays widget | ❌ | `dateOfBirth` exists on the profile |
 | D4 | Setup / onboarding checklist (progress + task tiles + "Next setup step" toast) | ❌ | |
-| D5 | "What's new?" product-updates feed | ❌ | |
+| D5 | "What's new?" product-updates feed | ✅ | Built 5 Nov 2026 (Decision 318 item 3): HQ writes in Platform Admin, owners and staff read in the portal, translated or English. No unread count yet |
 | D6 | Trial "days left" + Upgrade banner | 🟡 | Platform subscription exists (`SubscriptionPlan`); trial countdown display not confirmed |
 | D7 | In-app chat/support bubble | ❌ | Would need a third-party vendor |
 

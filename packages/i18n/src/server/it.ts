@@ -1,5 +1,9 @@
 /** Italian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Le novità sono per i titolari e lo staff delle scuole.",
+  "Give each language once.": "Indica ogni lingua una sola volta.",
+  "Post not found": "Post non trovato",
+  "Only a Full Platform Admin may write What's new posts.": "Solo un amministratore completo della piattaforma può scrivere le novità.",
   "This School doesn't let children sign their own waivers.": "Questa scuola non permette ai bambini di firmare da soli le liberatorie.",
   "This child isn't old enough yet to sign this School's waivers themselves.": "Questo bambino non ha ancora l’età per firmare da solo le liberatorie di questa scuola.",
   "Add the child's date of birth before they sign a waiver themselves.": "Aggiungi la data di nascita del bambino prima che firmi da solo una liberatoria.",

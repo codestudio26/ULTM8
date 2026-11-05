@@ -1216,6 +1216,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   coach dashboard; and a setup checklist for new Schools (Branch, style and
   belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
   hidden. **Needs a database migration.**
+- **"What's new"** (Decision 318 item 3) — news about ULTM8 written by ULTM8
+  HQ on a new "What's new" page in Platform Admin (Full Admins write, edit and
+  delete; every change is audit-logged), with an optional translation for each
+  School Portal language. School owners and staff open it from a "What's new"
+  button in the portal header and read the posts newest first, in their
+  language, or in English when a post has no translation. The same posts for
+  every School; students never see them. All 15 languages. **Needs a database
+  migration** (`20270216000001_whats_new_feed`).
 
 - **Check-in and front desk review fixes** (Decision 377) — a checked-in
   student keeps their seat, so a full class can't be booked past its limit; the

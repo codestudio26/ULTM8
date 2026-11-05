@@ -5001,4 +5001,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "لا يوجد موظفون بعد",
     emptyRatesDescription: "يظهر هنا الموظفون الذين تضيفهم في صفحة الموظفين.",
   },
+  whatsNew: {
+    title: "الجديد",
+    subtitle: "أخبار ULTM8 من فريق ULTM8.",
+    empty: "لا جديد بعد.",
+    loadFailed: "تعذّر تحميل الأخبار. حاول مرة أخرى.",
+    loadMore: "عرض الأقدم",
+    postedOn: "نُشر في {date}",
+    inEnglish: "غير متوفر بلغتك بعد، لذا يظهر بالإنجليزية.",
+  },
 };

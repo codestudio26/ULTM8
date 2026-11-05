@@ -25,6 +25,7 @@ import { FrontDeskModule } from './front-desk/front-desk.module';
 import { StudentNotesModule } from './student-notes/student-notes.module';
 import { StudentTagsModule } from './student-tags/student-tags.module';
 import { IncomeCategoriesModule } from './income-categories/income-categories.module';
+import { WhatsNewModule } from './whats-new/whats-new.module';
 import { CustomMemberFieldsModule } from './custom-member-fields/custom-member-fields.module';
 import { MemberFilesModule } from './member-files/member-files.module';
 import { MemberMergeModule } from './member-merge/member-merge.module';
@@ -107,6 +108,7 @@ import { validateEnv } from './common/config/validate-env';
     StudentNotesModule,
     StudentTagsModule,
     IncomeCategoriesModule,
+    WhatsNewModule,
     CustomMemberFieldsModule,
     MemberFilesModule,
     MemberMergeModule,

@@ -1,5 +1,9 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "새 소식은 학교 운영자와 직원용입니다.",
+  "Give each language once.": "각 언어는 한 번만 입력하세요.",
+  "Post not found": "게시물을 찾을 수 없습니다",
+  "Only a Full Platform Admin may write What's new posts.": "새 소식은 전체 권한 플랫폼 관리자만 작성할 수 있습니다.",
   "This School doesn't let children sign their own waivers.": "이 학교는 어린이가 직접 면책 동의서에 서명하는 것을 허용하지 않습니다.",
   "This child isn't old enough yet to sign this School's waivers themselves.": "이 어린이는 아직 이 학교의 면책 동의서에 직접 서명할 수 있는 나이가 아닙니다.",
   "Add the child's date of birth before they sign a waiver themselves.": "어린이가 직접 면책 동의서에 서명하기 전에 생년월일을 추가하세요.",

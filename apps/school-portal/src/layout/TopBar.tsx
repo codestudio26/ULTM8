@@ -26,6 +26,9 @@ function roleLabel(allGrants: RoleGrantClaim[] | undefined, schoolId: string | n
   return grants[0].role;
 }
 
+/** Who reads "What's new" (Decision 318 item 3): owners and staff, not students. */
+const STAFF_ROLES: string[] = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR', 'FRANCHISE_OWNER'];
+
 /** Each language listed in its own script ("Deutsch", "العربية"), so a
  * reader can find theirs whatever the page is showing now. */
 function nativeName(code: string, fallback: string): string {
@@ -60,6 +63,7 @@ export function TopBar() {
   const { t, locale, rememberLocale } = useI18n();
 
   const hasUnread = (counts?.unread ?? 0) > 0;
+  const isStaff = (claims?.grants ?? []).some((g) => STAFF_ROLES.includes(g.role));
 
   return (
     <>
@@ -87,6 +91,27 @@ export function TopBar() {
           (stress test round 4). */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
         <GlobalSearch />
+
+        {/* Decision 318 item 3: news from ULTM8 HQ, for owners and staff. */}
+        {isStaff ? (
+          <Link
+            to="/whats-new"
+            data-testid="whats-new-link"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              minHeight: 32,
+              padding: '4px 12px',
+              borderRadius: 999,
+              border: '1px solid var(--border)',
+              color: 'var(--text-secondary)',
+              fontSize: 14,
+              textDecoration: 'none',
+            }}
+          >
+            {t('whatsNew.title')}
+          </Link>
+        ) : null}
 
         <Link
           to="/notifications"

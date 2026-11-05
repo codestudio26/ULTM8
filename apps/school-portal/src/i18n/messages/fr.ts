@@ -4789,4 +4789,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Aucun membre du personnel",
     emptyRatesDescription: "Le personnel que vous ajoutez sur la page Personnel apparaît ici.",
   },
+  whatsNew: {
+    title: "Nouveautés",
+    subtitle: "Les nouvelles d'ULTM8, par l'équipe ULTM8.",
+    empty: "Rien de nouveau pour le moment.",
+    loadFailed: "Impossible de charger les nouveautés. Réessayez.",
+    loadMore: "Voir les plus anciennes",
+    postedOn: "Publié le {date}",
+    inEnglish: "Pas encore dans votre langue, donc affiché en anglais.",
+  },
 };

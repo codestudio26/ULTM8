@@ -1,5 +1,9 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Yenilikler okul sahipleri ve personel içindir.",
+  "Give each language once.": "Her dili bir kez girin.",
+  "Post not found": "Gönderi bulunamadı",
+  "Only a Full Platform Admin may write What's new posts.": "Yenilik gönderilerini yalnızca tam yetkili platform yöneticisi yazabilir.",
   "This School doesn't let children sign their own waivers.": "Bu okul çocukların feragatnamelerini kendilerinin imzalamasına izin vermiyor.",
   "This child isn't old enough yet to sign this School's waivers themselves.": "Bu çocuk, bu okulun feragatnamelerini kendisi imzalayacak yaşta henüz değil.",
   "Add the child's date of birth before they sign a waiver themselves.": "Çocuk bir feragatnameyi kendisi imzalamadan önce doğum tarihini ekleyin.",

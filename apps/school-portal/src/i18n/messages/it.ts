@@ -4789,4 +4789,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Ancora nessuno nello staff",
     emptyRatesDescription: "Lo staff che aggiungi nella pagina Staff compare qui.",
   },
+  whatsNew: {
+    title: "Novità",
+    subtitle: "Le novità di ULTM8 dal team ULTM8.",
+    empty: "Ancora nessuna novità.",
+    loadFailed: "Impossibile caricare le novità. Riprova.",
+    loadMore: "Mostra le precedenti",
+    postedOn: "Pubblicato il {date}",
+    inEnglish: "Non ancora nella tua lingua, quindi mostrato in inglese.",
+  },
 };

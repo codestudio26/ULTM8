@@ -1,5 +1,9 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Nieuws is voor schooleigenaren en personeel.",
+  "Give each language once.": "Geef elke taal één keer op.",
+  "Post not found": "Bericht niet gevonden",
+  "Only a Full Platform Admin may write What's new posts.": "Alleen een volledige platformbeheerder mag nieuwsberichten schrijven.",
   "This School doesn't let children sign their own waivers.": "Deze school laat kinderen hun vrijwaringen niet zelf ondertekenen.",
   "This child isn't old enough yet to sign this School's waivers themselves.": "Dit kind is nog niet oud genoeg om de vrijwaringen van deze school zelf te ondertekenen.",
   "Add the child's date of birth before they sign a waiver themselves.": "Voeg de geboortedatum van het kind toe voordat het zelf een vrijwaring ondertekent.",

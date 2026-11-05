@@ -4789,4 +4789,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Nog geen personeel",
     emptyRatesDescription: "Personeel dat je op de pagina Personeel toevoegt, verschijnt hier.",
   },
+  whatsNew: {
+    title: "Nieuw",
+    subtitle: "Nieuws over ULTM8 van het ULTM8-team.",
+    empty: "Nog niets nieuws.",
+    loadFailed: "Het nieuws kon niet worden geladen. Probeer het opnieuw.",
+    loadMore: "Oudere tonen",
+    postedOn: "Geplaatst op {date}",
+    inEnglish: "Nog niet in jouw taal, dus in het Engels.",
+  },
 };

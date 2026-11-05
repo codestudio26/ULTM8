@@ -1,5 +1,9 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "ข่าวสารใหม่สำหรับเจ้าของโรงเรียนและพนักงานเท่านั้น",
+  "Give each language once.": "ระบุแต่ละภาษาเพียงครั้งเดียว",
+  "Post not found": "ไม่พบโพสต์",
+  "Only a Full Platform Admin may write What's new posts.": "เฉพาะผู้ดูแลแพลตฟอร์มแบบเต็มเท่านั้นที่เขียนโพสต์ข่าวสารใหม่ได้",
   "This School doesn't let children sign their own waivers.": "โรงเรียนนี้ไม่อนุญาตให้เด็กลงนามเอกสารสละสิทธิ์เอง",
   "This child isn't old enough yet to sign this School's waivers themselves.": "เด็กคนนี้ยังอายุไม่ถึงที่จะลงนามเอกสารสละสิทธิ์ของโรงเรียนนี้เอง",
   "Add the child's date of birth before they sign a waiver themselves.": "เพิ่มวันเกิดของเด็กก่อนให้เด็กลงนามเอกสารสละสิทธิ์เอง",

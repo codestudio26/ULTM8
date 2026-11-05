@@ -1,5 +1,9 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "新功能动态仅供学校负责人和员工查看。",
+  "Give each language once.": "每种语言只能填写一次。",
+  "Post not found": "未找到该帖子",
+  "Only a Full Platform Admin may write What's new posts.": "只有完全权限的平台管理员可以撰写新功能动态。",
   "This School doesn't let children sign their own waivers.": "本学校不允许儿童自行签署免责声明。",
   "This child isn't old enough yet to sign this School's waivers themselves.": "该儿童尚未达到自行签署本学校免责声明的年龄。",
   "Add the child's date of birth before they sign a waiver themselves.": "请先添加该儿童的出生日期，再让其自行签署免责声明。",

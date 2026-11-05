@@ -4901,4 +4901,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Brak personelu",
     emptyRatesDescription: "Tutaj pojawi się personel dodany na stronie Personel.",
   },
+  whatsNew: {
+    title: "Nowości",
+    subtitle: "Wiadomości o ULTM8 od zespołu ULTM8.",
+    empty: "Na razie brak nowości.",
+    loadFailed: "Nie udało się wczytać nowości. Spróbuj ponownie.",
+    loadMore: "Pokaż starsze",
+    postedOn: "Opublikowano {date}",
+    inEnglish: "Jeszcze nie w Twoim języku, więc po angielsku.",
+  },
 };

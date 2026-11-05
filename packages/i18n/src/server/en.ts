@@ -6,6 +6,10 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "What's new is for School owners and staff.",
+ "Give each language once.",
+ "Post not found",
+ "Only a Full Platform Admin may write What's new posts.",
  "This School doesn't let children sign their own waivers.",
  "This child isn't old enough yet to sign this School's waivers themselves.",
  "Add the child's date of birth before they sign a waiver themselves.",

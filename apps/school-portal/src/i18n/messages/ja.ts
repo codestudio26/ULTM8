@@ -4743,4 +4743,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "まだスタッフがいません",
     emptyRatesDescription: "スタッフページで追加したスタッフがここに表示されます。",
   },
+  whatsNew: {
+    title: "お知らせ",
+    subtitle: "ULTM8チームからのULTM8に関するお知らせです。",
+    empty: "まだお知らせはありません。",
+    loadFailed: "お知らせを読み込めませんでした。もう一度お試しください。",
+    loadMore: "過去のお知らせを表示",
+    postedOn: "{date}に投稿",
+    inEnglish: "まだお使いの言語に翻訳されていないため、英語で表示しています。",
+  },
 };

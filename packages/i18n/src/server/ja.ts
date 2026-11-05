@@ -1,5 +1,9 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "お知らせはスクールのオーナーとスタッフ向けです。",
+  "Give each language once.": "各言語は1回だけ指定してください。",
+  "Post not found": "投稿が見つかりません",
+  "Only a Full Platform Admin may write What's new posts.": "お知らせを書けるのはフル権限のプラットフォーム管理者だけです。",
   "This School doesn't let children sign their own waivers.": "このスクールでは、子どもが自分で免責同意書に署名することはできません。",
   "This child isn't old enough yet to sign this School's waivers themselves.": "この子どもはまだ、このスクールの免責同意書に自分で署名できる年齢ではありません。",
   "Add the child's date of birth before they sign a waiver themselves.": "子どもが自分で免責同意書に署名する前に、生年月日を追加してください。",

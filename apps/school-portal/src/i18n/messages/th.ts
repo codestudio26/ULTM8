@@ -4743,4 +4743,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "ยังไม่มีพนักงาน",
     emptyRatesDescription: "พนักงานที่คุณเพิ่มในหน้าพนักงานจะแสดงที่นี่",
   },
+  whatsNew: {
+    title: "มีอะไรใหม่",
+    subtitle: "ข่าวสาร ULTM8 จากทีม ULTM8",
+    empty: "ยังไม่มีข่าวใหม่",
+    loadFailed: "โหลดข่าวสารไม่ได้ โปรดลองอีกครั้ง",
+    loadMore: "แสดงที่เก่ากว่า",
+    postedOn: "โพสต์เมื่อ {date}",
+    inEnglish: "ยังไม่มีในภาษาของคุณ จึงแสดงเป็นภาษาอังกฤษ",
+  },
 };

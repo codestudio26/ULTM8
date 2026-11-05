@@ -6212,6 +6212,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/whats-new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WhatsNewController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/whats-new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminWhatsNewController_list"];
+        put?: never;
+        post: operations["PlatformAdminWhatsNewController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/whats-new/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["PlatformAdminWhatsNewController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["PlatformAdminWhatsNewController_update"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/custom-member-fields": {
         parameters: {
             query?: never;
@@ -13056,6 +13104,50 @@ export interface components {
             tagId?: string;
             /** @description A new tag, added to the School's list. Send this or tagId. */
             name?: string;
+        };
+        WhatsNewItemDto: {
+            id: string;
+            title: string;
+            body: string;
+            /** @description The language shown: the one asked for, or en-GB when the post has no translation in it. */
+            locale: string;
+            /**
+             * Format: date-time
+             * @description When HQ posted it.
+             */
+            createdAt: string;
+        };
+        WhatsNewListDto: {
+            items: components["schemas"]["WhatsNewItemDto"][];
+            /** @description Cursor for older posts, or null. */
+            nextCursor?: string | null;
+        };
+        ProductUpdateTranslationDto: {
+            /** @enum {string} */
+            locale: "pt-BR" | "es" | "ar" | "fr" | "de" | "it" | "nl" | "pl" | "ru" | "tr" | "ja" | "ko" | "zh-CN" | "th";
+            title: string;
+            body: string;
+        };
+        ProductUpdateAdminDto: {
+            id: string;
+            title: string;
+            body: string;
+            translations: components["schemas"]["ProductUpdateTranslationDto"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ProductUpdateAdminListDto: {
+            items: components["schemas"]["ProductUpdateAdminDto"][];
+        };
+        WriteProductUpdateDto: {
+            /** @description English title. */
+            title: string;
+            /** @description English text (plain text; line breaks kept). */
+            body: string;
+            /** @description Translations, at most one per language. On an edit, the list replaces the old one. */
+            translations?: components["schemas"]["ProductUpdateTranslationDto"][];
         };
         /** @enum {string} */
         CustomMemberFieldType: "TEXT" | "NUMBER" | "DATE" | "DROPDOWN" | "YES_NO";
@@ -24766,6 +24858,117 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    WhatsNewController_list: {
+        parameters: {
+            query?: {
+                /** @description The reader's language. English when missing or when a post has no translation in it. */
+                locale?: "en-GB" | "pt-BR" | "es" | "ar" | "fr" | "de" | "it" | "nl" | "pl" | "ru" | "tr" | "ja" | "ko" | "zh-CN" | "th";
+                /** @description nextCursor from the previous page. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsNewListDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminWhatsNewController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUpdateAdminListDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminWhatsNewController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteProductUpdateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUpdateAdminDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminWhatsNewController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformAdminWhatsNewController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteProductUpdateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUpdateAdminDto"];
+                };
             };
         };
     };

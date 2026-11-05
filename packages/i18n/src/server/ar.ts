@@ -1,5 +1,9 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "قسم الجديد مخصص لأصحاب المدارس وموظفيها.",
+  "Give each language once.": "أدخل كل لغة مرة واحدة.",
+  "Post not found": "المنشور غير موجود",
+  "Only a Full Platform Admin may write What's new posts.": "يمكن لمسؤول المنصة الكامل فقط كتابة منشورات الجديد.",
   "This School doesn't let children sign their own waivers.": "لا تسمح هذه المدرسة للأطفال بتوقيع إقراراتهم بأنفسهم.",
   "This child isn't old enough yet to sign this School's waivers themselves.": "لم يبلغ هذا الطفل بعد العمر الذي يسمح له بتوقيع إقرارات هذه المدرسة بنفسه.",
   "Add the child's date of birth before they sign a waiver themselves.": "أضف تاريخ ميلاد الطفل قبل أن يوقّع إقرارًا بنفسه.",
