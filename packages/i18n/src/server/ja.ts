@@ -508,6 +508,8 @@ export const serverMessages: Record<string, string> = {
   "Enter a real date of birth: not in the future and not more than 120 years ago.": "実在する生年月日を入力してください（未来の日付や120年以上前は不可）。",
   "First name can't be blank.": "名を空欄にはできません。",
   "Surname can't be blank.": "姓を空欄にはできません。",
+  "Leave the surname empty for someone who has only one name.": "名前が1つだけの人は、姓を空欄にしてください。",
+  "Text can't contain a hidden NUL character. Remove it and try again.": "テキストに見えない NUL 文字を含めることはできません。削除してもう一度お試しください。",
   "Username can't be blank. Leave it empty to remove it.": "ユーザー名を空白だけにはできません。削除する場合は空欄にしてください。",
   "Choose a language from the list.": "一覧から言語を選んでください。",
   "Choose a currency from the list.": "一覧から通貨を選んでください。",

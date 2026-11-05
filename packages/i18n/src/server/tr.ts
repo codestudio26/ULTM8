@@ -508,6 +508,8 @@ export const serverMessages: Record<string, string> = {
   "Enter a real date of birth: not in the future and not more than 120 years ago.": "Gerçek bir doğum tarihi girin: gelecekte olamaz ve 120 yıldan eski olamaz.",
   "First name can't be blank.": "Ad boş bırakılamaz.",
   "Surname can't be blank.": "Soyad boş bırakılamaz.",
+  "Leave the surname empty for someone who has only one name.": "Tek bir adı olan biri için soyadı boş bırakın.",
+  "Text can't contain a hidden NUL character. Remove it and try again.": "Metin gizli bir NUL karakteri içeremez. Kaldırıp tekrar deneyin.",
   "Username can't be blank. Leave it empty to remove it.": "Kullanıcı adı yalnızca boşluklardan oluşamaz. Kaldırmak için boş bırakın.",
   "Choose a language from the list.": "Listeden bir dil seçin.",
   "Choose a currency from the list.": "Listeden bir para birimi seçin.",

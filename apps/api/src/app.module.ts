@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_PIPE } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { jwtSubTracker } from './common/throttle/identity-trackers';
@@ -55,6 +55,7 @@ import { StaffRemovalModule } from './tenants/staff-removal/staff-removal.module
 import { HealthModule } from './health/health.module';
 import { AddressLookupModule } from './address-lookup/address-lookup.module';
 import { validateEnv } from './common/config/validate-env';
+import { NoNulCharactersPipe } from './common/pipes/no-nul-characters.pipe';
 
 @Module({
   imports: [
@@ -128,7 +129,11 @@ import { validateEnv } from './common/config/validate-env';
     DataImportsModule,
     AddressLookupModule,
   ],
-  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    // Decision 433 (TXT-4): a NUL character anywhere in a request is a 400, before any work starts.
+    { provide: APP_PIPE, useClass: NoNulCharactersPipe },
+  ],
 })
 export class AppModule implements NestModule {
   // Phase 47 — establishes the per-request AsyncLocalStorage store the
