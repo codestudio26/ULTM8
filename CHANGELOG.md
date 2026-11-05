@@ -31,6 +31,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the signing form has Cancel. Already-booked classes show as booked, plans
   say "Join this School to buy" to non-members, status words read as words,
   the sign-in screen shows the picked School, and removing a card asks first.
+- **Student app: class times on the School's clock** (Track B, `apps/student`;
+  Decision 427 SP6) — class times in the app (a School's classes, Kid Mode,
+  My bookings, My waitlist, a child's bookings) now show on the class's own
+  clock (its branch's time zone, else the School's), not the phone's, so a
+  member travelling or in another zone sees the times the School advertises.
+  **Needs a database migration** (`20270214000001_discovery_class_timezone`):
+  three column-level read grants to the discovery role (School and Branch
+  time zone, and which Branch a class is at), nothing else.
 - **Coaches portal answers** (Decision 425) — Branch Staff see their
   branch's classes this week on their dashboard, with roll call and QR links
   when they handle bookings. Coaches get a read-only Students page with the

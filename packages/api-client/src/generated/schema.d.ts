@@ -9448,6 +9448,8 @@ export interface components {
              * @description GET /bookings/me only: when the class ends.
              */
             classEndsAt?: string | null;
+            /** @description GET /bookings/me only: the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. */
+            classTimezone?: string | null;
             /** @description GET /bookings/me only: the School name. */
             schoolName?: string | null;
             createdAt: string;
@@ -9473,6 +9475,8 @@ export interface components {
             classTitle: string;
             /** Format: date-time */
             classStartsAt: string;
+            /** @description Decision 427 (SP6): the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. */
+            classTimezone?: string | null;
             schoolId: string;
             /** @description Guests on the booking, one Friend Pass each. */
             guestCount: number;
@@ -9625,6 +9629,8 @@ export interface components {
             classTitle?: string | null;
             /** Format: date-time */
             classStartsAt?: string | null;
+            /** @description Decision 427 (SP6): the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. */
+            classTimezone?: string | null;
             schoolName?: string | null;
         };
         MyWaitlistListDto: {
@@ -11911,6 +11917,8 @@ export interface components {
             breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
+            /** @description The IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. Show the class's times on this clock. */
+            timezone?: string | null;
         };
         AcademyDetailDto: {
             id: string;

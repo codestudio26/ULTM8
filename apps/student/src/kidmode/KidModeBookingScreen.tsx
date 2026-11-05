@@ -5,6 +5,7 @@ import { Button, ErrorBanner, Field, InlineError, Screen, TextField } from '../c
 import { getKidModePin } from './kidModePinStore';
 import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatDate } from '../lib/formatDate';
+import { classZone } from '../lib/classTime';
 import { useT } from '../i18n/I18nProvider';
 import { useAcademies, useAcademy } from '../academies/academyQueries';
 import { useMyMinors } from '../guardians/guardianQueries';
@@ -164,7 +165,7 @@ function KidModeBookingContent({ navigation }: Props) {
               <View key={c.id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
                 <Text style={{ fontWeight: '600' }}>{c.title}</Text>
                 <Text style={{ color: '#5F6368', fontSize: 12 }}>
-                  {t('kidmode.booking.dateRange', { start: formatDate(c.startDate), end: formatDate(c.endDate) })}
+                  {t('kidmode.booking.dateRange', { start: formatDate(c.startDate, classZone(c.timezone, null)), end: formatDate(c.endDate, classZone(c.timezone, null)) })}
                 </Text>
                 {bookedClassIds.includes(c.id) ? (
                   <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('kidmode.booking.booked')}</Text>

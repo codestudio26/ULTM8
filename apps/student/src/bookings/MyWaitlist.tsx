@@ -4,6 +4,7 @@ import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatClassTimes, formatDateTime } from '../lib/formatDate';
+import { classZone } from '../lib/classTime';
 import { useT } from '../i18n/I18nProvider';
 import { useClaimWaitlist, useMyWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 
@@ -49,7 +50,7 @@ function WaitlistRow({ entry }: { entry: Entry }) {
   return (
     <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontSize: 15, fontWeight: '600' }}>{entry.classTitle ?? t('bookings.myBookings.unknownClass')}</Text>
-      {entry.classStartsAt ? <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{formatClassTimes(entry.classStartsAt)}</Text> : null}
+      {entry.classStartsAt ? <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{formatClassTimes(entry.classStartsAt, null, classZone(entry.classTimezone, null))}</Text> : null}
       {entry.schoolName ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{entry.schoolName}</Text> : null}
       {offered ? (
         <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>

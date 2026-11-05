@@ -74,6 +74,9 @@ export class MyWaitlistEntryDto {
   @ApiPropertyOptional({ type: String, format: 'date-time', nullable: true })
   classStartsAt!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 427 (SP6): the IANA time zone the class runs on (its Branch's, else its School's); null when neither is set." })
+  classTimezone!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true })
   schoolName!: string | null;
 }

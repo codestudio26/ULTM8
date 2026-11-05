@@ -104,6 +104,16 @@ describe('ClassBookingRow — break', () => {
     expect(screen.getByText(/^Break /)).toBeTruthy();
   });
 
+  it("shows the times and break on the class's own clock (Decision 427, SP6)", async () => {
+    const screen = await render(
+      <ClassBookingRow
+        classItem={{ ...classItem, timezone: 'Asia/Tokyo', breakStartAt: '2026-11-02T18:20:00.000Z', breakEndAt: '2026-11-02T18:30:00.000Z' }}
+      />,
+    );
+    expect(screen.getByText(/^Tue, Nov 3, 2026, 3:00\sAM – 4:00\sAM$/)).toBeTruthy();
+    expect(screen.getByText(/^Break 3:20\sAM/)).toBeTruthy();
+  });
+
   it('shows no break line without one', async () => {
     const screen = await render(<ClassBookingRow classItem={classItem} />);
     expect(screen.queryByText(/^Break /)).toBeNull();

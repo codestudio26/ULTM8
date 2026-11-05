@@ -3,6 +3,7 @@ import { PrismaDiscoveryService } from '../common/prisma/prisma-discovery.servic
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { shapeTimetableSlotResponse } from '../timetable/timetable.service';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
+import { classTimeZone } from '../classes/class-time-zone';
 
 // These four `select` shapes MUST match the column-level Postgres GRANTs the Phase 14
 // migration (20260917000000_academies_discovery_module) gives the `ultm8_discovery`
@@ -51,7 +52,27 @@ const CLASS_DISCOVERY_SELECT = {
   breakStartAt: true,
   breakEndAt: true,
   capacity: true,
+  // Decision 427 (SP6): which Branch, only to work out the class's clock
+  // (`timezone` below); not returned. Granted by 20270214000001.
+  branchId: true,
 } as const;
+
+/**
+ * Decision 427 (Student portal review SP6): each upcoming class carries
+ * `timezone`, the clock it runs on (its Branch's zone, else the School's,
+ * else null), so the app shows its times as the School does, not on the
+ * phone's clock. The zones come from three column grants to the discovery
+ * role (School.timezone, Branch.timezone, Class.branchId); branchId itself is
+ * left out of the response.
+ */
+function withClassTimeZones<C extends { branchId: string | null }>(
+  classes: C[],
+  schoolTimezone: string | null,
+  branches: Array<{ id: string; timezone: string | null }>,
+): Array<Omit<C, 'branchId'> & { timezone: string | null }> {
+  const branchZone = new Map(branches.map((b) => [b.id, b.timezone]));
+  return classes.map(({ branchId, ...cls }) => ({ ...cls, timezone: classTimeZone(branchId ? branchZone.get(branchId) : null, schoolTimezone) }));
+}
 
 const TIMETABLE_SLOT_DISCOVERY_SELECT = {
   id: true,
@@ -177,7 +198,9 @@ export class AcademiesService {
           take: MEMBERSHIP_PLANS_LIMIT,
           select: MEMBERSHIP_PLAN_DISCOVERY_SELECT,
         },
-        branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } },
+        branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true, timezone: true } },
+        // Decision 427 (SP6): the School's clock, for its classes' times.
+        timezone: true,
         classes: {
           // Decision 291 — a class the School cancelled isn't bookable.
           where: { startDate: { gte: new Date() }, cancelledAt: null },
@@ -194,8 +217,9 @@ export class AcademiesService {
       // code-specific message would help someone fishing for valid codes.
       throw new NotFoundException('Academy not found');
     }
-    const { classes: upcomingClasses, ...summary } = school;
-    return { ...(await this.withCardSurcharge(summary)), upcomingClasses };
+    const { classes, timezone, branches, ...summary } = school;
+    const upcomingClasses = withClassTimeZones(classes, timezone, branches);
+    return { ...(await this.withCardSurcharge({ ...summary, branches: branches.map(({ id, name }) => ({ id, name })) })), upcomingClasses };
   }
 
   /** Decision 406: each plan's card surcharge, so the member sees it before
@@ -242,7 +266,9 @@ export class AcademiesService {
         },
         // Branch names only (Decision 209), so a student can choose a home
         // branch when joining. Ordered by name: createdAt isn't granted.
-        branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true } },
+        branches: { orderBy: [{ name: 'asc' }, { id: 'asc' }], select: { id: true, name: true, timezone: true } },
+        // Decision 427 (SP6): the School's clock, for its classes' times.
+        timezone: true,
         classes: {
           // Decision 291 — a class the School cancelled isn't bookable.
           where: { startDate: { gte: new Date() }, cancelledAt: null },
@@ -260,8 +286,9 @@ export class AcademiesService {
     if (!school) {
       throw new NotFoundException('Academy not found');
     }
-    const { classes: upcomingClasses, ...summary } = school;
-    return { ...(await this.withCardSurcharge(summary)), upcomingClasses };
+    const { classes, timezone, branches, ...summary } = school;
+    const upcomingClasses = withClassTimeZones(classes, timezone, branches);
+    return { ...(await this.withCardSurcharge({ ...summary, branches: branches.map(({ id, name }) => ({ id, name })) })), upcomingClasses };
   }
 
   /**

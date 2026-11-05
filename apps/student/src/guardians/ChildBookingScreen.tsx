@@ -5,6 +5,7 @@ import { type components } from '@ultm8/api-client';
 import { Button, ErrorBanner, InlineError, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateTime } from '../lib/formatDate';
+import { classZone } from '../lib/classTime';
 import { useT } from '../i18n/I18nProvider';
 import { useAcademy } from '../academies/academyQueries';
 import { BookingGuests } from '../bookings/BookingGuests';
@@ -127,7 +128,7 @@ function ChildBookingRow({ booking, studentId }: { booking: MinorBooking; studen
   return (
     <View style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
       <Text style={{ fontWeight: '600' }}>{booking.classTitle}</Text>
-      <Text style={{ color: '#5F6368', fontSize: 12 }}>{formatDateTime(booking.classStartsAt)}</Text>
+      <Text style={{ color: '#5F6368', fontSize: 12 }}>{formatDateTime(booking.classStartsAt, classZone(booking.classTimezone, null))}</Text>
       {booking.guestCount > 0 ? (
         <>
           <Text style={{ color: '#5F6368', fontSize: 12 }}>{t('bookings.guests.count', { count: booking.guestCount })}</Text>
