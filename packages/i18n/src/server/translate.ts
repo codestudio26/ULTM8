@@ -252,6 +252,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Class moved': 'classMovedTitle',
   'Class cancelled': 'classCancelledTitle',
   'Promotion to decide': 'toDecideTitle',
+  // Decision 321 item 5 — apps/api/src/jobs/grading-notifications.processor.ts.
+  'Promoted automatically': 'autoPromotedTitle',
   'Promotion fee': 'promotionFeeTitle',
   // Decision 414 item 1 — apps/api/src/ranks/promotion-fee.service.ts.
   "Promotion can't apply": 'promotionFeeBlockedTitle',
@@ -364,6 +366,10 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     (m, { t }) => n(t, 'openMatStyleBody', { style: m[1], place: m[2], when: m[3], minutes: m[4] }),
   ],
   [/^Open mat at (.+) on (.+), for (\d+) minutes\. Book in the app to join\.$/s, (m, { t }) => n(t, 'openMatBody', { place: m[1], when: m[2], minutes: m[3] })],
+  [
+    body(String.raw`^(.+) was promoted automatically to (.+) \(${STYLE}\)\.$`),
+    (m, { t }) => n(t, 'autoPromotedBody', { name: m[1], rank: m[2], style: m[3] }),
+  ],
   [
     body(String.raw`^(.+)'s promotion to (.+) \(${STYLE}\) is waiting for your decision\. Promote them, or decide not to\.$`),
     (m, { t }) => n(t, 'toDecideBody', { name: m[1], rank: m[2], style: m[3] }),

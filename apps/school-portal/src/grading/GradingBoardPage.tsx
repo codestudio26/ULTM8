@@ -600,6 +600,9 @@ function Tags({ item }: { item: GradingBoardItem }) {
     <>
       <FeeTag item={item} />
       {e.eligible && item.feeStatus !== 'waiting' ? <Badge variant="success">{t('grading.board.card.ready')}</Badge> : null}
+      {/* Decision 321: too young for the next rank, and given automatically. */}
+      {e.waitingForAge ? <Badge variant="warning">{t('grading.student.progress.waitingForAge', { age: e.waitingForAge })}</Badge> : null}
+      {item.automaticNext ? <Badge variant="info">{t('grading.board.card.automatic')}</Badge> : null}
       {item.hardBlocked ? <Badge variant="danger">{t('grading.board.card.skillsRequired')}</Badge> : skillsMissing ? <Badge variant="accent">{t('grading.board.card.skillsNotSignedOff')}</Badge> : null}
       {daysShort > 0 ? <Badge variant="accent">{t('grading.board.card.daysShort', { count: daysShort })}</Badge> : null}
       {item.active ? null : <Badge>{t('grading.board.card.inactive')}</Badge>}

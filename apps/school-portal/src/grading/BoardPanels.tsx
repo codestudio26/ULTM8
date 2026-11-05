@@ -11,6 +11,7 @@ import { formatLocale } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 import { feeRankName } from './feeRank';
 import { eventRankDisplay, historyTypeLabel } from './historyLabels';
+import { formatHours } from './hours';
 
 export const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
 
@@ -214,6 +215,22 @@ export function StudentPanel({
                   {t('grading.board.panel.skills', { signedOff: requiredSkills.length - missing.size, required: requiredSkills.length })}
                 </Tick>
               ) : null}
+              {/* Decision 321: hours, days attended and minimum age, when the style ticks them. */}
+              {(e.requiredHours ?? 0) > 0 ? (
+                <Tick ok={e.hoursOk !== false}>
+                  {t('grading.student.progress.hoursLabel')}: {t('grading.student.progress.hoursValue', { done: formatHours(e.minutesTrained ?? 0), required: e.requiredHours ?? 0 })}
+                </Tick>
+              ) : null}
+              {(e.requiredDaysAttended ?? 0) > 0 ? (
+                <Tick ok={e.daysAttendedOk !== false}>
+                  {t('grading.student.progress.daysAttendedLabel')}: {t('grading.student.progress.xOfY', { done: e.daysAttended ?? 0, required: e.requiredDaysAttended ?? 0 })}
+                </Tick>
+              ) : null}
+              {e.minimumAge ? (
+                <Tick ok={e.ageOk !== false}>
+                  {t('grading.student.progress.minimumAgeLabel')}: {t('grading.student.progress.minimumAgeValue', { age: e.minimumAge })}
+                </Tick>
+              ) : null}
             </ul>
             {fee && !request && nextPrice ? (
               <p className="ultm8-field__hint" style={{ margin: '8px 0 0' }}>
@@ -265,7 +282,8 @@ export function StudentPanel({
                       {to ? <BeltChip rung={to} /> : null}
                     </div>
                     <div className="ultm8-field__hint">
-                      {from && from.id !== to?.id ? `${from.name} → ${to?.name ?? '—'}` : to?.name ?? '—'} · {performerName(h.performedById)}
+                      {from && from.id !== to?.id ? `${from.name} → ${to?.name ?? '—'}` : to?.name ?? '—'} ·{' '}
+                      {h.automatic ? t('grading.student.history.automatic') : performerName(h.performedById)}
                     </div>
                     {h.systemNote ? <div className="ultm8-field__hint">{h.systemNote}</div> : null}
                   </li>

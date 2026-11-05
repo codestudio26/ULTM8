@@ -617,11 +617,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} Abgenommene Techniken: {signedOff} von {required} · {percent} % · ebenfalls nötig, nicht in den %",
       timeOnlyNote: "Die % sind die Tage in diesem Grad im Verhältnis zu den erforderlichen Tagen.",
       classesNote: "Die % sind die Stunden im Verhältnis zu den erforderlichen Stunden.",
+      skillsCounts: "{tick} Abgezeichnete Techniken: {signedOff} von {required} · {percent} % · zählt zu den %",
+      hours: "{tick} Stunden: {done} von {required} Std. · {percent} % · zählt zu den %",
+      daysAttended: "{tick} Anwesenheitstage: {attended} von {required} · {percent} % · zählt zu den %",
+      minimumAge: "{tick} Mindestalter: ab {age} · nicht in den %",
+      waitingForAge: "Wartet auf das Alter {age}",
+      averageNote: "Der % ist der Durchschnitt dessen, was dieser Rang verlangt, jeweils bis 100 % gezählt.",
     },
     hours: {
       title: "Trainingszeit",
       summary: "{atRank} Std. in diesem Grad · {total} Std. insgesamt",
       note: "Eine Aufzeichnung deiner Zeit auf der Matte. Die Graduierung verwendet sie nicht.",
+      counts: "Stunden seit diesem Rang zählen für deinen nächsten.",
     },
     correction: {
       a11yLabel: "Gürtelkorrektur: {style}",

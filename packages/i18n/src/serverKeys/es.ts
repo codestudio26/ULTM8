@@ -302,6 +302,8 @@ export const server: PartialMessages<ServerKeys> = {
     franchiseFeeFailedBody: "No se pudo cobrar la cuota de franquicia de {amount} de {school}. Stripe volverá a intentarlo. Añade o actualiza la tarjeta en la página de la escuela.",
     openMatStyleBody: "Tatami libre ({style}) en {place} el {when}, durante {minutes} minutos. Reserva en la app para unirte.",
     toDecideBody: "La promoción de {name} a {rank} ({style}) espera tu decisión. Promuévelo o decide no hacerlo.",
+    autoPromotedTitle: "Promoción automática",
+    autoPromotedBody: "{name} ha sido promovido automáticamente a {rank} ({style}).",
     promotionFeeBody: "Tu promoción a {rank} ({style}) tiene una tarifa de {amount}. Abre la app para aceptarla o rechazarla.",
     childPromotionFeeBody: "La promoción de {name} a {rank} ({style}) tiene una tarifa de {amount}. Abre la app para aceptarla o rechazarla.",
     promotionFeeBlockedTitle: "La promoción no se puede aplicar",

@@ -87,6 +87,16 @@ export class DowngradeActionDto extends GradingActionDto {
   reason!: string;
 }
 
+/** Undo an automatic promotion (Decision 321 item 5): the student moves back
+ * to the rank they were on, recorded as its own history entry. */
+export class UndoAutomaticPromotionDto {
+  @ApiPropertyOptional({ description: 'An optional note for the history entry.' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  note?: string;
+}
+
 /** Void a history entry: hidden from the normal history, never deleted, and the
  * student's current rank is unchanged (Decision 129). */
 export class VoidPromotionEventDto {

@@ -172,6 +172,43 @@ export class RankStripeTierInputDto {
   @Max(MAX_PROMOTION_FEE_MINOR)
   promotionFeeMinor?: number | null;
 
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    minimum: 0,
+    description: 'Hours trained needed for this rung since the last promotion (Decision 321). Checked only in a style that ticks Hours. null = not asked. When omitted: none on a new rung; kept on an existing rung.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsInt()
+  @Min(0)
+  @Max(100000)
+  hoursRequired?: number | null;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    minimum: 0,
+    description: 'Different days attended needed for this rung since the last promotion (Decision 321). Checked only in a style that ticks Days attended. null = not asked. When omitted: none on a new rung; kept on an existing rung.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsInt()
+  @Min(0)
+  @Max(100000)
+  daysAttendedRequired?: number | null;
+
+  @ApiPropertyOptional({
+    type: Number,
+    nullable: true,
+    minimum: 0,
+    maximum: 120,
+    description: 'The age (whole years) a student must have reached on the day they are promoted into this rung (Decision 321). Checked only in a style that ticks Minimum age. null = any age. When omitted: any age on a new rung; kept on an existing rung.',
+  })
+  @ValidateIf((_o: unknown, v: unknown) => v !== undefined && v !== null)
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  minimumAge?: number | null;
+
   @ApiPropertyOptional({ type: [String], description: 'Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.' })
   @NotNullIfPresent()
   @IsArray()

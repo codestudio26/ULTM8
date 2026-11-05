@@ -307,6 +307,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
   gains `memberships` and `total`, and each month `memberships` and `total`.
   15 languages.
+- **Payroll report** (Decision 320 item 4) — a new **Payroll** page for the
+  School's owners. On its Rates tab the owner gives each member of staff an
+  hourly rate and/or a per-class rate in the School's currency (needs the
+  currency set first); both blank leaves the person out. The Report tab adds
+  up, per person, hours × the hourly rate plus classes taught × the per-class
+  rate over the last 14 or 30 days, this or last month, the last 12 months or
+  custom dates (up to 366 days), with a total line and a CSV download. Hours
+  are the classes taught only, start to end; cancelled classes and classes
+  still to come don't count; the coach on each single class is the one paid,
+  so changing one class's coach pays the substitute. Rates are kept when
+  someone leaves, so the classes they taught still add up. ULTM8 pays nobody.
+  New `StaffPayRate` table (migration `20270215000001_staff_pay_rates`,
+  owner-only RLS); `GET /schools/:id/payroll/rates`, `PUT …/rates/:userId`,
+  `GET …/payroll/report`. 15 languages.
 - **Data tools: merge duplicate members, export all signed documents**
   (Decision 315 item 13; imports are a separate change). **Merge a duplicate**
   on a student's page: the owner picks the other record of the same person at
@@ -422,6 +436,33 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the owner again.
   The fee can't be waived in this state. The member sees the fee as Paid.
   **Needs a database migration** (`20270120000000_promotion_fee_blocked`).
+- **Automatic grading** (Decision 321; handover B12) — Grading → Settings has
+  a new owner-only card per style, **"What counts toward the next rank"**:
+  tick boxes for Classes, Days in rank, Skills (ticked by default, as before),
+  Hours, Days attended and Minimum age (new, off by default); a **Promotion**
+  choice of Manual (the default), Automatically award stripes, or
+  Automatically award all ranks; and **"Auto-assign first belt"**. The belt
+  editor shows only the ticked requirements, with new Hours required, Days
+  attended and Minimum age fields. The progress % is now the **average** of
+  the ticked requirements the next rank asks for, each capped at 100% (30/40
+  classes, 90/180 days and 4/8 skills give 58%), and reads 100% only when all
+  are met; the board columns and "Ready to grade" use it. Minimum age isn't in
+  the %: a student who is otherwise ready shows **"Waiting for age N"** and
+  can't be promoted, by hand or automatically, until then. In an automatic
+  style a student who meets everything for the next step is promoted after a
+  check-in or by the daily run, shown as **Automatic** in the history; the
+  student (or Guardian) gets the usual notice and the style's coaches are told.
+  A priced step waits for its fee (even with "Allow grading before the fee is
+  paid" on) and goes through once it is paid or waived; a cancelled or
+  declined fee never promotes. A coach who may promote can **Undo** an
+  automatic promotion from the history, which moves the student back and is
+  recorded; that step is then left to the coach. With "Auto-assign first
+  belt" on, a student with no rank gets the style's first rank, verified, on
+  their first check-in to a class of it. A Grading Board drag now moves the
+  classes, and the days at the rank if needed, so the card lands in the column
+  under the averaged %. The student app's My grading shows the same
+  breakdown. Every new text is in all 15 languages.
+  **Needs a database migration** (`20270211000001_automatic_grading`).
 - **Staff with "Can cancel charges" can waive or cancel promotion fees**
   (Decision 420 item 2) — until now only the School owner could. Branch Staff
   and coaches the owner has given "Can cancel charges" (off by default; it

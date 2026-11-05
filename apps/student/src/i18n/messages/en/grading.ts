@@ -48,12 +48,19 @@ export const grading = {
     skills: '{tick} Skills signed off: {signedOff} of {required} · {percent}% · needed too, not in the %',
     timeOnlyNote: 'The % is days at this rank out of days required.',
     classesNote: 'The % is classes out of classes required.',
+    skillsCounts: "{tick} Skills signed off: {signedOff} of {required} · {percent}% · counts toward the %",
+    hours: "{tick} Hours: {done} of {required} h · {percent}% · counts toward the %",
+    daysAttended: "{tick} Days attended: {attended} of {required} · {percent}% · counts toward the %",
+    minimumAge: "{tick} Minimum age: from {age} · not in the %",
+    waitingForAge: "Waiting for age {age}",
+    averageNote: "The % is the average of what this rank asks for, each counted up to 100%.",
   },
   hours: {
     title: 'Hours trained',
     /** {atRank} and {total} are hours, e.g. "1.5". */
     summary: '{atRank} h at this rank · {total} h in all',
     note: "A record of your time on the mat. Grading doesn't use it.",
+    counts: "Hours since this rank count toward your next one.",
   },
   /** Backlog 3.13: asking the School to correct a wrong belt. */
   correction: {

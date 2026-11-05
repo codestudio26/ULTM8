@@ -188,7 +188,8 @@ function Countdown({ item }: { item: GradingStyle }) {
 const tick = (ok: boolean) => (ok ? '✓' : '·');
 
 /** The same breakdown as the portal's Ranks tab: one line per requirement
- * grading uses, and whether it is in the % (classes; days on a time-only rank). */
+ * the style ticks (Decision 321). The % is the average of what the rank asks
+ * for; minimum age is checked but never in it ("Waiting for age N"). */
 function Breakdown({ item }: { item: GradingStyle }) {
   const t = useT();
   const e = item.eligibility;
@@ -196,6 +197,7 @@ function Breakdown({ item }: { item: GradingStyle }) {
   if (!b) return null;
   return (
     <View style={{ marginTop: spacing[2] }}>
+      {e.waitingForAge ? <Text style={{ fontWeight: '600' }}>{t('grading.breakdown.waitingForAge', { age: e.waitingForAge })}</Text> : null}
       {b.classes ? (
         <>
           <Muted>
@@ -214,21 +216,19 @@ function Breakdown({ item }: { item: GradingStyle }) {
           ))}
         </>
       ) : null}
-      <Muted>
-        {t(
-          b.classes
-            ? b.days.required > 0
-              ? 'grading.breakdown.daysNeededToo'
-              : 'grading.breakdown.daysNoMinimum'
-            : b.days.required > 0
-              ? 'grading.breakdown.daysCounts'
-              : 'grading.breakdown.daysNoMinimumCounts',
-          { tick: tick(b.days.elapsed >= b.days.required), elapsed: b.days.elapsed, required: b.days.required, percent: b.days.percent },
-        )}
-      </Muted>
+      {b.days ? (
+        <Muted>
+          {t(b.days.required > 0 ? 'grading.breakdown.daysCounts' : 'grading.breakdown.daysNoMinimum', {
+            tick: tick(b.days.elapsed >= b.days.required),
+            elapsed: b.days.elapsed,
+            required: b.days.required,
+            percent: b.days.percent,
+          })}
+        </Muted>
+      ) : null}
       {b.skills && b.skills.required > 0 ? (
         <Muted>
-          {t('grading.breakdown.skills', {
+          {t('grading.breakdown.skillsCounts', {
             tick: tick(b.skills.signedOff >= b.skills.required),
             signedOff: b.skills.signedOff,
             required: b.skills.required,
@@ -236,7 +236,28 @@ function Breakdown({ item }: { item: GradingStyle }) {
           })}
         </Muted>
       ) : null}
-      <Muted>{e.timeOnly ? t('grading.breakdown.timeOnlyNote') : t('grading.breakdown.classesNote')}</Muted>
+      {b.hours && b.hours.requiredHours > 0 ? (
+        <Muted>
+          {t('grading.breakdown.hours', {
+            tick: tick(b.hours.trainedMinutes >= b.hours.requiredHours * 60),
+            done: hours(b.hours.trainedMinutes),
+            required: b.hours.requiredHours,
+            percent: b.hours.percent,
+          })}
+        </Muted>
+      ) : null}
+      {b.daysAttended && b.daysAttended.required > 0 ? (
+        <Muted>
+          {t('grading.breakdown.daysAttended', {
+            tick: tick(b.daysAttended.attended >= b.daysAttended.required),
+            attended: b.daysAttended.attended,
+            required: b.daysAttended.required,
+            percent: b.daysAttended.percent,
+          })}
+        </Muted>
+      ) : null}
+      {b.minimumAge ? <Muted>{t('grading.breakdown.minimumAge', { tick: tick(b.minimumAge.met), age: b.minimumAge.age })}</Muted> : null}
+      <Muted>{e.timeOnly ? t('grading.breakdown.timeOnlyNote') : t('grading.breakdown.averageNote')}</Muted>
     </View>
   );
 }
@@ -253,7 +274,8 @@ function HoursTrained({ item }: { item: GradingStyle }) {
     <View accessibilityLabel={t('grading.hours.title')} style={{ marginTop: spacing[3], borderTopWidth: 1, borderTopColor: theme.border, paddingTop: spacing[2] }}>
       <Text style={{ fontWeight: '600' }}>{t('grading.hours.title')}</Text>
       <Text>{t('grading.hours.summary', { atRank: hours(item.hoursTrained.sinceCurrentRankMinutes), total: hours(item.hoursTrained.totalMinutes) })}</Text>
-      <Muted>{t('grading.hours.note')}</Muted>
+      {/* Decision 321 item 2: hours count toward the next rank in a style that ticks Hours. */}
+      <Muted>{item.progressBreakdown?.hours ? t('grading.hours.counts') : t('grading.hours.note')}</Muted>
     </View>
   );
 }

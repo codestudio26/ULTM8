@@ -232,6 +232,15 @@ export class RanksService {
           boardGettingThere: source.boardGettingThere,
           boardReadyToGrade: source.boardReadyToGrade,
           rankDisplay: source.rankDisplay,
+          // Its requirement tick boxes and automatic grading (Decision 321).
+          requireClasses: source.requireClasses,
+          requireDaysInRank: source.requireDaysInRank,
+          requireSkills: source.requireSkills,
+          requireHours: source.requireHours,
+          requireDaysAttended: source.requireDaysAttended,
+          requireMinimumAge: source.requireMinimumAge,
+          promotionMode: source.promotionMode,
+          autoAssignFirstRank: source.autoAssignFirstRank,
         },
       });
       const skillMap = new Map<string, string>();
@@ -1419,6 +1428,10 @@ export class RanksService {
       // Promotion fee (Decision 300): null clears it (free); omitted keeps it
       // on an existing rung and leaves a new one free.
       ...(tier.promotionFeeMinor !== undefined ? { promotionFeeMinor: tier.promotionFeeMinor } : {}),
+      // Decision 321 items 1–4: null clears; omitted keeps (empty on a new rung).
+      ...(tier.hoursRequired !== undefined ? { hoursRequired: tier.hoursRequired } : {}),
+      ...(tier.daysAttendedRequired !== undefined ? { daysAttendedRequired: tier.daysAttendedRequired } : {}),
+      ...(tier.minimumAge !== undefined ? { minimumAge: tier.minimumAge } : {}),
     };
   }
 

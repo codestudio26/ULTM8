@@ -36,6 +36,7 @@ import { ChargesModule } from './charges/charges.module';
 import { CardSurchargeModule } from './card-surcharge/card-surcharge.module';
 import { LateFeesModule } from './late-fees/late-fees.module';
 import { RostersModule } from './rosters/rosters.module';
+import { PayrollModule } from './payroll/payroll.module';
 import { DataImportsModule } from './data-imports/data-imports.module';
 import { AcademiesModule } from './academies/academies.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -118,6 +119,7 @@ import { validateEnv } from './common/config/validate-env';
     ChargesModule,
     LateFeesModule,
     RostersModule,
+    PayrollModule,
     DataImportsModule,
     AddressLookupModule,
   ],

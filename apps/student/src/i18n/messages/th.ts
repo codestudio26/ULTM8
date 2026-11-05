@@ -608,11 +608,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} ทักษะที่รับรองแล้ว: {signedOff} จาก {required} · {percent}% · จำเป็นเช่นกัน แต่ไม่นับใน %",
       timeOnlyNote: "% คือจำนวนวันในระดับนี้เทียบกับจำนวนวันที่กำหนด",
       classesNote: "% คือจำนวนคลาสเทียบกับจำนวนคลาสที่กำหนด",
+      skillsCounts: "{tick} ทักษะที่ผ่าน: {signedOff} จาก {required} · {percent}% · นับรวมใน %",
+      hours: "{tick} ชั่วโมง: {done} จาก {required} ชม. · {percent}% · นับรวมใน %",
+      daysAttended: "{tick} วันที่มาเรียน: {attended} จาก {required} · {percent}% · นับรวมใน %",
+      minimumAge: "{tick} อายุขั้นต่ำ: ตั้งแต่ {age} · ไม่รวมใน %",
+      waitingForAge: "รอจนอายุ {age} ปี",
+      averageNote: "% คือค่าเฉลี่ยของสิ่งที่ระดับนี้กำหนด โดยแต่ละส่วนนับได้สูงสุด 100%",
     },
     hours: {
       title: "ชั่วโมงการฝึก",
       summary: "{atRank} ชม. ในระดับนี้ · รวม {total} ชม.",
       note: "บันทึกเวลาที่คุณฝึกบนเบาะ ไม่ได้ใช้ในการเลื่อนระดับ",
+      counts: "ชั่วโมงตั้งแต่ระดับนี้นับไปยังระดับถัดไปของคุณ",
     },
     correction: {
       a11yLabel: "แก้ไขสาย: {style}",

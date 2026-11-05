@@ -125,7 +125,34 @@ export class EligibilityResponseDto {
   @ApiPropertyOptional()
   skillsOk?: boolean;
 
-  @ApiPropertyOptional({ description: 'Classes, days and skills all met.' })
+  @ApiPropertyOptional({ description: 'Hours trained the next rank needs; 0 when the style does not tick Hours.' })
+  requiredHours?: number;
+
+  @ApiPropertyOptional({ description: 'Minutes trained since the current rank date that count toward hours (0 when not asked for).' })
+  minutesTrained?: number;
+
+  @ApiPropertyOptional()
+  hoursOk?: boolean;
+
+  @ApiPropertyOptional({ description: 'Different days attended the next rank needs; 0 when the style does not tick Days attended.' })
+  requiredDaysAttended?: number;
+
+  @ApiPropertyOptional({ description: 'Different days with a check-in to a class of the style since the current rank date.' })
+  daysAttended?: number;
+
+  @ApiPropertyOptional()
+  daysAttendedOk?: boolean;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'The next rank\'s minimum age, when the style ticks Minimum age; null = any age.' })
+  minimumAge?: number | null;
+
+  @ApiPropertyOptional({ description: 'False while the student is younger than minimumAge (or has no date of birth).' })
+  ageOk?: boolean;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Every ticked requirement is met but the student is too young: "Waiting for age N". Null otherwise.' })
+  waitingForAge?: number | null;
+
+  @ApiPropertyOptional({ description: 'Every ticked requirement met, minimum age included.' })
   eligible?: boolean;
 
   @ApiPropertyOptional({ type: [String] })
@@ -137,16 +164,20 @@ export class EligibilityResponseDto {
   @ApiPropertyOptional({ type: [String] })
   missingSkillIds?: string[];
 
-  @ApiPropertyOptional({ description: '0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136).' })
+  @ApiPropertyOptional({ description: '0–100: the classes on their own.' })
+  classesPercent?: number;
+
+  @ApiPropertyOptional({ description: '0–100: the average of the ticked requirements the next rank asks for (classes, days in rank, skills, hours, days attended), each capped at 100%. Minimum age is not part of it. Days for a time-only rank. 100 only when every one is met.' })
   progressPercent?: number;
 
   @ApiPropertyOptional({ enum: ['JUST_STARTING', 'GETTING_THERE', 'READY_TO_GRADE'], description: 'Grading Board column at the default 33% / 66% (Decision 136).' })
   boardColumn?: 'JUST_STARTING' | 'GETTING_THERE' | 'READY_TO_GRADE';
 }
 
-/** Hours trained in this style at this School (Decisions 301, 306): a record
- * only, shown as information. Never part of the grading %, readiness or the
- * board. In whole minutes; the apps show hours (90 minutes = 1.5 hours). */
+/** Hours trained in this style at this School (Decisions 301, 306): shown as
+ * information. Part of the grading % and readiness only in a style that
+ * ticks Hours (Decision 321 item 2; see eligibility.minutesTrained). In whole
+ * minutes; the apps show hours (90 minutes = 1.5 hours). */
 export class HoursTrainedResponseDto {
   @ApiProperty({ description: 'Every minute logged in this style at this School (check-ins and "Log a class").' })
   totalMinutes!: number;
@@ -162,7 +193,7 @@ export class ClassesProgressResponseDto {
   @ApiProperty()
   required!: number;
 
-  @ApiProperty({ description: '0–100. The same number as eligibility.progressPercent: the overall % is classes only.' })
+  @ApiProperty({ description: '0–100: the classes on their own (eligibility.classesPercent).' })
   percent!: number;
 
   @ApiProperty({ type: [TypeProgressResponseDto], description: '"Each ticked type required" rungs only; otherwise empty.' })
@@ -191,18 +222,57 @@ export class SkillsProgressResponseDto {
   percent!: number;
 }
 
-/** Each requirement grading already uses, on its own, for the student page's
- * breakdown (Decisions 301 item 4, 306 item 4). Taken from `eligibility`, so
- * it always agrees with it. */
+export class HoursProgressResponseDto {
+  @ApiProperty({ description: 'Minutes trained since the current rank date that count toward hours.' })
+  trainedMinutes!: number;
+
+  @ApiProperty({ description: 'Hours the next rank needs.' })
+  requiredHours!: number;
+
+  @ApiProperty({ description: '0–100, capped. 100 when none are required.' })
+  percent!: number;
+}
+
+export class DaysAttendedProgressResponseDto {
+  @ApiProperty({ description: 'Different days attended since the current rank date.' })
+  attended!: number;
+
+  @ApiProperty()
+  required!: number;
+
+  @ApiProperty({ description: '0–100, capped. 100 when none are required.' })
+  percent!: number;
+}
+
+export class MinimumAgeProgressResponseDto {
+  @ApiProperty({ description: 'The next rank\'s minimum age.' })
+  age!: number;
+
+  @ApiProperty({ description: 'The student has reached it.' })
+  met!: boolean;
+}
+
+/** Each requirement the style ticks, on its own, for the student page's
+ * breakdown (Decisions 301 item 4, 306 item 4, 321). Taken from
+ * `eligibility`, so it always agrees with it. */
 export class ProgressBreakdownResponseDto {
-  @ApiPropertyOptional({ type: ClassesProgressResponseDto, nullable: true, description: 'null on a time-only rank (days only).' })
+  @ApiPropertyOptional({ type: ClassesProgressResponseDto, nullable: true, description: 'null on a time-only rank, or when the style does not tick Classes.' })
   classes!: ClassesProgressResponseDto | null;
 
-  @ApiProperty({ type: DaysProgressResponseDto })
-  days!: DaysProgressResponseDto;
+  @ApiPropertyOptional({ type: DaysProgressResponseDto, nullable: true, description: 'Always on a time-only rank; otherwise null when the style does not tick Days in rank.' })
+  days!: DaysProgressResponseDto | null;
 
-  @ApiPropertyOptional({ type: SkillsProgressResponseDto, nullable: true, description: 'null on a time-only rank (days only).' })
+  @ApiPropertyOptional({ type: SkillsProgressResponseDto, nullable: true, description: 'null on a time-only rank, or when the style does not tick Skills.' })
   skills!: SkillsProgressResponseDto | null;
+
+  @ApiPropertyOptional({ type: HoursProgressResponseDto, nullable: true, description: 'Only in a style that ticks Hours.' })
+  hours!: HoursProgressResponseDto | null;
+
+  @ApiPropertyOptional({ type: DaysAttendedProgressResponseDto, nullable: true, description: 'Only in a style that ticks Days attended.' })
+  daysAttended!: DaysAttendedProgressResponseDto | null;
+
+  @ApiPropertyOptional({ type: MinimumAgeProgressResponseDto, nullable: true, description: 'Only when the next rank has a minimum age the style checks.' })
+  minimumAge!: MinimumAgeProgressResponseDto | null;
 }
 
 export class StudentEligibilityResponseDto extends StudentRankResponseDto {

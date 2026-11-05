@@ -26,6 +26,9 @@ test.afterAll(async () => {
 test('Branch Staff with grading permission land on the dashboard and use the board', async ({ page }) => {
   const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId }]);
   await db.gradingPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: staff.id, disciplineId: s.disciplineId } });
+  // Sam's one required skill signed off: every requirement met, 100% (Decision 321 item 7).
+  const samRank = await db.studentRank.findFirstOrThrow({ where: { studentId: s.student.id, disciplineId: s.disciplineId } });
+  await db.studentRankSkillStatus.create({ data: { id: randomUUID(), studentRankId: samRank.id, schoolId: s.schoolId, studentId: s.student.id, skillId: s.skillId, status: 'SIGNED_OFF' } });
   await signIn(page, staff.token);
   await page.goto('/');
   await expect(page).toHaveURL(/\/coach$/);

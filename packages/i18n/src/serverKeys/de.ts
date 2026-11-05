@@ -288,6 +288,8 @@ export const server: PartialMessages<ServerKeys> = {
     franchiseFeeFailedBody: "Die Franchisegebühr von {amount} für {school} konnte nicht abgebucht werden. Stripe versucht es erneut. Füge auf der Schul-Seite eine Karte hinzu oder aktualisiere sie.",
     openMatStyleBody: "Open Mat ({style}) in {place} am {when}, {minutes} Minuten. Buch in der App, um mitzumachen.",
     toDecideBody: "Die Beförderung von {name} zu {rank} ({style}) wartet auf deine Entscheidung. Befördere oder entscheide dich dagegen.",
+    autoPromotedTitle: "Automatisch befördert",
+    autoPromotedBody: "{name} wurde automatisch zu {rank} befördert ({style}).",
     promotionFeeBody: "Deine Beförderung zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
     childPromotionFeeBody: "Die Beförderung von {name} zu {rank} ({style}) kostet {amount}. Öffne die App, um anzunehmen oder abzulehnen.",
     promotionFeeBlockedTitle: "Beförderung kann nicht angewendet werden",

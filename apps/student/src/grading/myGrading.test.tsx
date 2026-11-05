@@ -109,13 +109,38 @@ describe('progress breakdown and hours trained', () => {
     };
     mocked(q.useGradingOverview).mockReturnValue(ok({ items: [item] }));
     const { getByText, getByLabelText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    // Decision 321 item 7: every requirement the rank asks for is in the %, the average.
     expect(getByText('· Classes: 30 of 40 · 75% · counts toward the %')).toBeTruthy();
-    expect(getByText(/Days at this rank: 20 of 30 · 67% · needed too, not in the %/)).toBeTruthy();
-    expect(getByText('· Skills signed off: 1 of 2 · 50% · needed too, not in the %')).toBeTruthy();
-    expect(getByText('The % is classes out of classes required.')).toBeTruthy();
+    expect(getByText(/Days at this rank: 20 of 30 · 67% · counts toward the %/)).toBeTruthy();
+    expect(getByText('· Skills signed off: 1 of 2 · 50% · counts toward the %')).toBeTruthy();
+    expect(getByText('The % is the average of what this rank asks for, each counted up to 100%.')).toBeTruthy();
     expect(getByLabelText('Hours trained')).toBeTruthy();
     expect(getByText('1.5 h at this rank · 61.7 h in all')).toBeTruthy();
     expect(getByText("A record of your time on the mat. Grading doesn't use it.")).toBeTruthy();
+  });
+
+  it('shows hours, days attended and minimum age when the style ticks them, and "Waiting for age" (Decision 321)', async () => {
+    const item = {
+      ...BJJ,
+      eligibility: { ...BJJ.eligibility, progressPercent: 100, eligible: false, waitingForAge: 16 },
+      progressBreakdown: {
+        classes: null,
+        days: null,
+        skills: null,
+        hours: { trainedMinutes: 600, requiredHours: 10, percent: 100 },
+        daysAttended: { attended: 12, required: 12, percent: 100 },
+        minimumAge: { age: 16, met: false },
+      },
+      hoursTrained: { totalMinutes: 3700, sinceCurrentRankMinutes: 600 },
+    };
+    mocked(q.useGradingOverview).mockReturnValue(ok({ items: [item] }));
+    const { getByText, queryByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('Waiting for age 16')).toBeTruthy();
+    expect(getByText('✓ Hours: 10 of 10 h · 100% · counts toward the %')).toBeTruthy();
+    expect(getByText('✓ Days attended: 12 of 12 · 100% · counts toward the %')).toBeTruthy();
+    expect(getByText('· Minimum age: from 16 · not in the %')).toBeTruthy();
+    expect(queryByText(/Days at this rank/)).toBeNull();
+    expect(getByText('Hours since this rank count toward your next one.')).toBeTruthy();
   });
 });
 
