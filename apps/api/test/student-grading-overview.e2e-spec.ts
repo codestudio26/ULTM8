@@ -107,6 +107,8 @@ describeIfDb('Student app grading view (Decisions 132, 142, 155, 161)', () => {
     await person('other', [{ role: 'STUDENT', schoolId: school['Alpha Dojo'] }]);
     await person('guardian', []);
     await person('stranger', []);
+    // Decision 430 item 7: a parent acts for a child under 18, so the student is one.
+    await superuser.user.update({ where: { id: id.student }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: id.guardian, studentId: id.student } });
 
     const day = (n: number) => new Date(Date.now() - n * 86_400_000);

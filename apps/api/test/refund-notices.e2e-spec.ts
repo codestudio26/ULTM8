@@ -172,6 +172,7 @@ describeIfDb('The "Refund" notice for every refund (Decision 415 item 4)', () =>
   afterAll(async () => {
     const where = { schoolId: { in: schoolIds } };
     await su.notification.deleteMany({ where: { userId: { in: userIds } } });
+    await su.consentRecord.deleteMany({ where: { studentId: { in: userIds } } });
     await su.guardianLink.deleteMany({ where: { studentId: { in: userIds } } });
     await su.bookingAttendee.deleteMany({ where });
     await su.booking.deleteMany({ where });
@@ -193,7 +194,10 @@ describeIfDb('The "Refund" notice for every refund (Decision 415 item 4)', () =>
     it('refunded to the card by Auto-refund: told once, and a Guardian gets the usual copy', async () => {
       const student = await mkStudent(a, 'packCard');
       const guardian = await mkUser('packGuardian');
+      // Decision 430 items 7 and 9: a parent acts for a child under 18, who books once a parent gave BASELINE consent.
+      await su.user.update({ where: { id: student.id }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
       await su.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: student.id } });
+      await su.consentRecord.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: student.id, tier: 'BASELINE', policyVersion: '2026-09-v1' } });
       await mkPack(a, student.id, 'STRIPE');
       const cancelled = await bookAndCancel(a, student.token);
       expect(cancelled).toMatchObject({ refundResolution: 'MONEY_REFUNDED', refundAmount: 600 });

@@ -280,12 +280,13 @@ describeIfDb('Timetable review fixes (Decision 332)', () => {
       const [first] = await live(slot);
       expect((await book(first.id, students[8])).status).toBe(201);
       expect((await patch(slot, { status: 'OFF', bookedClasses: 'CANCEL' })).status).toBe(200);
-      const localDay = new Date(first.occurrenceDate!.getTime()).toLocaleDateString('en-GB', { weekday: 'long', timeZone: 'UTC' });
+      // Decision 434 item 2: the notice stores the School's local day in machine
+      // form; each reader's language formats it when it is read.
+      const localDay = first.occurrenceDate!.toISOString().slice(0, 10);
       const told = await eventually(async () => !!(await superuser.notification.findFirst({ where: { userId: students[8].id, type: 'CLASS_CANCELLED' } })));
       expect(told).toBe(true);
       const notice = await superuser.notification.findFirstOrThrow({ where: { userId: students[8].id, type: 'CLASS_CANCELLED' } });
-      expect(notice.body).toContain(`${localDay} `);
-      expect(notice.body).toContain('at 20:00');
+      expect(notice.body).toContain(`${localDay} 20:00`);
     } finally {
       await superuser.school.update({ where: { id: school.id }, data: { timezone: 'UTC' } });
     }

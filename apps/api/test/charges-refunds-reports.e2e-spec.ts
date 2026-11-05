@@ -537,6 +537,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     it('a Guardian gets the usual copy for a child', async () => {
       const child = await mkStudent('rnChild');
       const guardian = await mkUser('rnGuardian');
+      // Decision 430 item 7: a parent acts for a child under 18 (30 days after, then no more).
+      await su.user.update({ where: { id: child.id }, data: { dateOfBirth: new Date(Date.now() - 10 * 365 * 86_400_000) } });
       await su.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: child.id } });
       const c = await createCharge(child.id, 5000);
       const paymentId = await deskPay(child.id, 5000, c.id);

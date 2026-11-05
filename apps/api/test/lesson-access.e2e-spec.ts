@@ -99,6 +99,8 @@ describeIfDb('Lesson access (Decisions 154, 190, 195)', () => {
     for (const s of ['paid', 'free', 'expired', 'trial', 'none']) await person(s, [{ role: 'STUDENT' }]);
     await person('guardian', []);
     await person('stranger', []);
+    // Decision 430 item 7: a parent acts for a child under 18, so the child is one.
+    await superuser.user.update({ where: { id: id.paid }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: id.guardian, studentId: id.paid } });
 
     // Lessons, made by the coach through the API.

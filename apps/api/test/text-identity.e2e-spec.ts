@@ -197,6 +197,7 @@ describeIfDb('Text, search and identity (Decision 434)', () => {
 
     it('staff can turn an existing placeholder surname into one name, but not blank it by accident', async () => {
       const id = students.joao;
+      await superuser.user.update({ where: { id }, data: { surname: '.' } });
       const accidental = await http().patch(`/v1/schools/${school.id}/students/${id}/profile`).set(as('owner')).send({ surname: ' ' });
       expect(accidental.status).toBe(400);
       const ticked = await http().patch(`/v1/schools/${school.id}/students/${id}/profile`).set(as('owner')).send({ surname: '', hasOnlyOneName: true });

@@ -465,6 +465,8 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
     it('the student and their Guardian read the charges, without staff-only details', async () => {
       const student = await mkStudent('member');
       const guardian = await mkUser('guardian');
+      // Decision 430 item 7: a parent acts for a child under 18 (30 days after, then no more).
+      await superuser.user.update({ where: { id: student.id }, data: { dateOfBirth: new Date(Date.now() - 10 * 365 * 86_400_000) } });
       await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: student.id } });
       const charge = await createCharge(student.id, { description: 'Rash guard', amount: 12000 });
       await pay(student.id, { chargeId: charge.body.id, amount: 2000 });

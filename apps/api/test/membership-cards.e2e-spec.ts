@@ -64,6 +64,8 @@ describeIfDb('Membership cards', () => {
       ['outsider', 'STUDENT', otherSchool.id],
     ];
     await superuser.roleGrant.createMany({ data: grants.map(([who, role, schoolId]) => ({ id: randomUUID(), role, userId: users[who].id, schoolId })) });
+    // Decision 430 item 7: a parent acts for a child under 18, so Ana is one.
+    await superuser.user.update({ where: { id: users.ana.id }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
     // A parent of Ana (no role at the School of their own), and one whose link ended.
     await superuser.guardianLink.createMany({
       data: [

@@ -8,6 +8,8 @@ type Reader = Pick<PrismaClient, 'user' | 'roleGrant' | 'guardianLink'>;
 export const IDENTITY_FIELDS = ['firstName', 'surname', 'dateOfBirth', 'gender'] as const;
 type IdentityField = (typeof IDENTITY_FIELDS)[number];
 
+const PLACEHOLDER_SURNAMES = new Set(['.', '-', '_']);
+
 type Identity = { firstName: string; surname: string; dateOfBirth: Date | string | null; gender: string | null };
 
 /** The identity fields `change` actually changes from `current`. */
@@ -20,6 +22,9 @@ export function changedIdentityFields(current: Identity, change: Partial<Record<
       const day = (v: unknown) => (v ? new Date(v as string).toISOString().slice(0, 10) : null);
       return day(next) !== day(now);
     }
+    // Decision 434 item 7: turning a placeholder surname ("." "-" "_") into
+    // "has only one name" fixes how it was typed; it doesn't change who they are.
+    if (field === 'surname' && String(next ?? '').trim() === '' && PLACEHOLDER_SURNAMES.has(String(now ?? '').trim())) return false;
     if (field === 'firstName' || field === 'surname') return String(next ?? '').trim() !== String(now ?? '').trim();
     return (next ?? null) !== (now ?? null);
   });
