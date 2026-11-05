@@ -30,10 +30,11 @@ const card = (page: Page, name: string) => page.getByRole('listitem', { name });
 
 test('students are in columns by progress, and search narrows them', async ({ page }) => {
   await page.goto('/grading');
-  await expect(column(page, 'Ready to Grade').getByRole('link', { name: s.student.name })).toBeVisible();
+  // Decision 321 item 7: classes 3/3 and skills 0/1 average to 50%.
+  await expect(column(page, 'Getting There').getByRole('link', { name: s.student.name })).toBeVisible();
   await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toBeVisible();
   await expect(column(page, 'Just Starting').getByRole('link', { name: ben.name })).toBeVisible();
-  await expect(card(page, s.student.name).getByText('100%')).toBeVisible();
+  await expect(card(page, s.student.name).getByText('50%')).toBeVisible();
   await expect(card(page, s.student.name).getByText('Skills not signed off')).toBeVisible();
 
   await page.getByLabel('Search students').fill('cat');

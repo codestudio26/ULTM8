@@ -18,6 +18,9 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { GradingService } from '../src/ranks/grading.service';
+import { getQueueToken } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { GRADING_NOTIFICATIONS_QUEUE } from '../src/jobs/queue.constants';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -36,6 +39,7 @@ const MIN = 60_000;
 describeIfDb('Automatic grading (Decision 321)', () => {
   let app: INestApplication;
   let grading: GradingService;
+  let gradingQueue: Queue;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
   const http = () => request(app.getHttpServer());
@@ -142,6 +146,10 @@ describeIfDb('Automatic grading (Decision 321)', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
     grading = app.get(GradingService);
+    // The automatic check the grading job runs after each check-in and grade
+    // would race the calls below; they call autoPromote() themselves.
+    gradingQueue = app.get<Queue>(getQueueToken(GRADING_NOTIFICATIONS_QUEUE));
+    await gradingQueue.pause();
 
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Automatic Grading School', timezone: 'UTC', ranksToggle: true, defaultCurrency: 'GBP' } });
     otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Automatic Grading Other School', timezone: 'UTC', ranksToggle: true } });
@@ -230,6 +238,8 @@ describeIfDb('Automatic grading (Decision 321)', () => {
     await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: ids } });
+    await gradingQueue.obliterate({ force: true }).catch(() => undefined);
+    await gradingQueue.resume();
     await superuser.$disconnect();
     await app.close();
   });

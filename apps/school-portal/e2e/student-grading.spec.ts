@@ -31,7 +31,8 @@ test('shows the current rank, progress toward the next rank and the skills for i
   await page.goto(`/students/${s.student.id}`);
   const card = bjj(page);
   await expect(card.getByText('White 1', { exact: true })).toBeVisible();
-  await expect(card.getByRole('heading', { name: 'Toward White 2 — 100%' })).toBeVisible();
+  // Decision 321 item 7: the average of classes 3/3 and skills 0/1.
+  await expect(card.getByRole('heading', { name: 'Toward White 2 — 50%' })).toBeVisible();
   await expect(card.getByRole('listitem', { name: 'Classes: 3 of 3' })).toBeVisible();
   await expect(card.getByRole('listitem', { name: 'Skills signed off: 0 of 1' })).toBeVisible();
   await expect(card.getByRole('link', { name: 'Armbar from guard' })).toBeVisible();

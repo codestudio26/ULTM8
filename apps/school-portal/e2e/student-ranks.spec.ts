@@ -44,13 +44,14 @@ test('the Breakdown shows each requirement, what is in the %, and hours trained 
   await expect(classes.getByText('Counts toward the %')).toBeVisible();
   await expect(classes.getByText('100%')).toBeVisible();
   const skills = breakdown.getByRole('listitem', { name: 'Skills signed off: 0 of 1' });
-  await expect(skills.getByText('Needed too, not in the %')).toBeVisible();
+  // Decision 321 item 7: every requirement the rank asks for is in the %.
+  await expect(skills.getByText('Counts toward the %')).toBeVisible();
   await expect(breakdown.getByRole('listitem', { name: /^Days at this rank:/ })).toBeVisible();
 
   const hours = bjj(page).getByRole('region', { name: 'Hours trained' });
   await expect(hours.getByText('1.5 h at this rank')).toBeVisible();
   await expect(hours.getByText(/2 h in this style in all · A record only\. Grading doesn't use hours\./)).toBeVisible();
-  await expect(bjj(page).getByText('The % is classes out of classes required.')).toBeVisible();
+  await expect(bjj(page).getByText('The % is the average of what this rank asks for, each counted up to 100%.')).toBeVisible();
 });
 
 test('Log a class: picking a class logs one class and its length', async ({ page }) => {

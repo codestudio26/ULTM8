@@ -52,7 +52,7 @@ test('the owner ticks a style\'s requirements, sets automatic promotion and the 
   await page.getByLabel('BJJ: Minimum age').check();
   await page.getByLabel('BJJ: promotion').selectOption('AUTO_STRIPES');
   await page.locator(`[data-testid="requirements-${s.disciplineId}"]`).getByRole('switch', { name: 'Auto-assign first belt' }).click();
-  await expect(page.getByRole('heading', { name: 'Promotion' })).toBeVisible(); // About this setting follows
+  await expect(page.getByRole('heading', { name: 'Promotion', exact: true })).toBeVisible(); // About this setting follows
 
   const bar = page.getByRole('region', { name: 'You have unsaved changes.' });
   await bar.getByRole('button', { name: 'Save changes' }).click();
