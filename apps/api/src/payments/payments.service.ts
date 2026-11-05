@@ -783,7 +783,7 @@ export class PaymentsService {
     const surchargeProduct = subscription.metadata?.[SUBSCRIPTION_SURCHARGE_METADATA.product];
     if (surchargeItem && surchargeProduct && bps > 0) {
       const newPrice = await stripe.prices.retrieve(newPriceId);
-      const amount = cardSurchargeAmount(fromStripeAmount(newPrice.unit_amount ?? 0, newPrice.currency), bps);
+      const amount = cardSurchargeAmount(fromStripeAmount(newPrice.unit_amount ?? 0, newPrice.currency), bps, newPrice.currency);
       items.push(
         amount > 0
           ? {

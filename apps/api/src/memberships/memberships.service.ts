@@ -33,7 +33,8 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
-import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
+import { assertSchoolCurrencySet, resolveChargeCurrency, setsNewPrice } from '../common/school-currency';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
 import { PlanContractsService } from './contracts/plan-contracts.service';
 
@@ -113,7 +114,13 @@ export class MembershipsService {
     const price = dto.type === 'FRIEND_PASS' ? 0 : dto.price;
     // Decision 414 item 6: no price is saved before the School's currency is
     // set, even on a plan given its own currency. A free plan needs none.
-    if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) await this.assertSchoolCurrencySet(callerId, schoolId);
+    if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) {
+      const schoolCurrency = await this.assertSchoolCurrencySet(callerId, schoolId);
+      // Decision 430 (MON-3): no decimals a currency doesn't have (¥999.50).
+      const planCurrency = this.normalizeCurrency(dto.currency) ?? schoolCurrency;
+      assertWholeMinorUnits(price, planCurrency);
+      assertWholeMinorUnits(dto.cancellationCharge, planCurrency);
+    }
     // Decision 316 item 10: one of this School's own income categories.
     const incomeCategoryId = await this.incomeCategories.resolveForSchool(schoolId, dto.incomeCategoryId);
 
@@ -254,6 +261,15 @@ export class MembershipsService {
     // rule, or saving its price unchanged, is still allowed.
     if (setsNewPrice(nextPrice, existing.price) || setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
       await this.assertSchoolCurrencySet(callerId, existing.schoolId);
+    }
+    // Decision 430 (MON-3): the amounts this save sets (or moves to another
+    // currency) must be whole units of the plan's currency (no ¥999.50).
+    const newPrice = setsNewPrice(nextPrice, existing.price) || currencyChanged;
+    const newCancellationCharge = dto.cancellationCharge !== undefined || currencyChanged;
+    if (newPrice || newCancellationCharge) {
+      const planCurrency = await this.prismaApp.withTenantContext(callerId, (tx) => resolveChargeCurrency(tx, existing.schoolId, nextCurrency));
+      if (newPrice) assertWholeMinorUnits(nextPrice, planCurrency);
+      if (newCancellationCharge) assertWholeMinorUnits(dto.cancellationCharge !== undefined ? dto.cancellationCharge : existing.cancellationCharge, planCurrency);
     }
     // Decision 334 (Memberships review M2/M4): a type change clears the fields
     // the new type doesn't use (Class Pack -> Subscription used to keep its 10
@@ -639,8 +655,8 @@ export class MembershipsService {
     return code;
   }
 
-  private async assertSchoolCurrencySet(callerId: string, schoolId: string): Promise<void> {
-    await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
+  private async assertSchoolCurrencySet(callerId: string, schoolId: string): Promise<string> {
+    return this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
   }
 
   /**
@@ -651,14 +667,12 @@ export class MembershipsService {
    * it for Stripe.
    */
   private async resolveChargeCurrency(contextUserId: string, schoolId: string, planCurrency: string | null): Promise<string> {
-    if (planCurrency) return planCurrency.toUpperCase();
-    const school = await this.prismaApp.withTenantContext(contextUserId, (tx) =>
-      tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } }),
-    );
-    if (!school?.defaultCurrency) {
+    // The shared rule (common/school-currency.ts, Decision 430 MON-5).
+    const currency = await this.prismaApp.withTenantContext(contextUserId, (tx) => resolveChargeCurrency(tx, schoolId, planCurrency));
+    if (!currency) {
       throw new BadRequestException("This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.");
     }
-    return school.defaultCurrency.toUpperCase();
+    return currency;
   }
 
   /**
@@ -919,7 +933,7 @@ export class MembershipsService {
       // subscribe()). Never cash or a bank transfer. The member saw the same
       // amount on the plan before paying (AcademiesService).
       const surchargeBps = await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, plan.schoolId));
-      const surcharge = planCardSurcharge(plan, surchargeBps);
+      const surcharge = planCardSurcharge(plan, surchargeBps, currency);
       if (plan.type === 'SUBSCRIPTION') {
         // Payment is still collected fresh, client-side, via Stripe Elements
         // against the returned clientSecret (PaymentsService.subscribe()'s own

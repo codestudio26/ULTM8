@@ -4,6 +4,7 @@ import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE, BOOKING_NO_SHOW_PROCESSING_QUEUE } from './queue.constants';
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
+import { chargeCurrency } from '../common/school-currency';
 
 /** How often the sweep runs — SKILL.md §10 says only "set by a background job once a
  * Class's end time... passes", no number. Every 15 minutes is a Developer-level
@@ -178,16 +179,15 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
     booking: { id: string; studentId: string; schoolId: string; sourceMembershipId: string | null },
     amount: number,
   ): Promise<void> {
-    const membership = booking.sourceMembershipId
-      ? await this.prismaJobs.membership.findUnique({
-          where: { id: booking.sourceMembershipId },
-          select: { membershipPlan: { select: { currency: true } } },
-        })
-      : null;
-    const currency = membership?.membershipPlan.currency ?? 'usd';
+    // The fee is a School (or Branch) amount, so it is in the School's
+    // currency (Decisions 414/416; Decision 430 MON-5), never US dollars by
+    // default. No currency set: nothing is charged, and the log says why.
+    const school = await this.prismaJobs.school.findUnique({ where: { id: booking.schoolId }, select: { defaultCurrency: true } });
+    const currency = chargeCurrency(null, school?.defaultCurrency);
     let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
     let paymentIntentId: string | null = null;
     try {
+      if (!currency) throw new Error('the School has no currency set');
       const charge = await this.paymentsService.chargeOffSession(booking.studentId, booking.schoolId, amount, currency, 'No-show fee');
       outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
       paymentIntentId = charge.paymentIntentId || null;

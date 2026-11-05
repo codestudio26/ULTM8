@@ -201,7 +201,7 @@ export class ChargeAutoPayProcessor extends WorkerHost {
           return null;
         }
         const amount = owed - credit;
-        const surcharge = cardSurchargeAmount(amount, bps);
+        const surcharge = cardSurchargeAmount(amount, bps, charge.currency);
         const transactionId = randomUUID();
         await tx.transaction.create({
           data: {

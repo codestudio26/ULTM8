@@ -13,7 +13,7 @@ import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { insertCharge, lockInvoiceNumbers } from '../charges/charge-insert';
 import { cancelChargeInTx, chargeCancelledNotice } from '../charges/charge-cancel';
 import { chargePaid, chargeRemaining, lockBalance } from '../charges/charge-ledger';
-import { computeCharge, formatInvoiceNumber } from '../charges/charge-maths';
+import { computeCharge, formatInvoiceNumber, taxLinesForCharge } from '../charges/charge-maths';
 import { chargeAbilities } from '../charges/charge-abilities';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
@@ -22,6 +22,7 @@ import { loadLadder } from './grading-attendance';
 import { rungIndex } from './engine/ladder';
 import { isOpenToDecide, isPromotionBlocked, isWaitingForFee, PendingGrade } from './promotion-fee';
 import { PromotionFeeRequestQueryDto, UpdatePromotionFeeSettingsDto } from './dto/promotion-fee.dto';
+import { loadEffectiveTax } from '../charges/tax-lines';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -436,7 +437,9 @@ export class PromotionFeeService {
     });
     const currency = (request.currency ?? school?.defaultCurrency)?.toUpperCase();
     if (!school || !currency) return;
-    const totals = computeCharge({ unitAmount: request.amountMinor, discount: null, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive });
+    // Decision 430 (MON-6): the member's tax lines (their home Branch's when it overrides).
+    const tax = taxLinesForCharge(await loadEffectiveTax(this.prismaJobs, request.schoolId, request.studentId), false);
+    const totals = computeCharge({ unitAmount: request.amountMinor, discount: null, ...tax, currency });
 
     let created: { id: string; invoiceNumber: number } | null;
     try {
@@ -813,7 +816,7 @@ export class PromotionFeeService {
     const chargeOf = new Map(charges.map((c) => [c.promotionFeeRequestId!, c]));
     const pendingSchools = [...new Set(rows.filter((r) => r.status === 'PENDING').map((r) => r.schoolId))];
     const schools = pendingSchools.length
-      ? await this.prismaJobs.school.findMany({ where: { id: { in: pendingSchools } }, select: { id: true, defaultCurrency: true, taxRateBasisPoints: true, taxInclusive: true } })
+      ? await this.prismaJobs.school.findMany({ where: { id: { in: pendingSchools } }, select: { id: true, defaultCurrency: true, taxRateBasisPoints: true, tax2RateBasisPoints: true, taxInclusive: true } })
       : [];
     const schoolOf = new Map(schools.map((s) => [s.id, s]));
     return rows.map((r) => {
@@ -823,7 +826,8 @@ export class PromotionFeeService {
       let taxPreview: { netAmount: number; taxAmount: number; grossAmount: number; taxRateBasisPoints: number; taxInclusive: boolean; currency: string } | null = null;
       if (school && currency) {
         try {
-          const t = computeCharge({ unitAmount: r.amountMinor, discount: null, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive });
+          // Decision 430 (MON-6): both of the School's tax lines.
+          const t = computeCharge({ unitAmount: r.amountMinor, discount: null, taxRateBasisPoints: school.taxRateBasisPoints + school.tax2RateBasisPoints, taxInclusive: school.taxInclusive, currency });
           taxPreview = { netAmount: t.netAmount, taxAmount: t.taxAmount, grossAmount: t.grossAmount, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive, currency };
         } catch {
           taxPreview = null;

@@ -348,6 +348,37 @@ export class CreateSchoolDto {
   @MaxLength(50)
   taxId?: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 40, example: 'GST', description: 'Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(40)
+  taxName?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 40, example: 'PST', description: 'Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0).' })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(40)
+  tax2Name?: string | null;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 10000, description: 'Decision 430 (MON-6): the second tax line\'s rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(10000)
+  tax2RateBasisPoints?: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 50, description: "Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it." })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(50)
+  tax2Id?: string | null;
+
   @ApiPropertyOptional({ description: 'Decision 338 item 1: staff must type a reason when cancelling a charge (default on).' })
   @IsOptional()
   @IsBoolean()

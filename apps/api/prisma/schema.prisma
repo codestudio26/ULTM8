@@ -608,6 +608,7 @@ model User {
   balanceEntriesRecorded            BalanceEntry[]              @relation("BalanceEntryRecordedBy")
   chargeRefunds                     ChargeRefund[]              @relation("ChargeRefundStudent")
   chargeRefundsMade                 ChargeRefund[]              @relation("ChargeRefundBy")
+  deskSaleRefundsMade               DeskSaleRefund[]            @relation("DeskSaleRefundBy")
   rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
@@ -1245,6 +1246,14 @@ model School {
   taxInclusive                   Boolean                         @default(true)
   /// Decision 338 item 6: the School's tax ID, shown on its invoices and receipts.
   taxId                          String?
+  /// Decision 430 (MON-6): named tax lines. Line 1 is taxRateBasisPoints and
+  /// taxId above, with an optional name (e.g. "GST"); line 2 is its own name,
+  /// rate and registration number (e.g. "PST", 7%). A line-2 rate of 0 means
+  /// no second line. A Branch may override both (Branch.taxOverride).
+  taxName                        String?
+  tax2Name                       String?
+  tax2RateBasisPoints            Int                             @default(0)
+  tax2Id                         String?
   /// Decision 338 item 1: a reason must be typed when cancelling a charge (default on).
   chargeCancelReasonRequired     Boolean                         @default(true)
   /// Decision 338 item 3: notes must be typed when refunding a payment
@@ -1435,6 +1444,7 @@ model School {
   chargeAllocations       ChargeAllocation[]
   balanceEntries          BalanceEntry[]
   chargeRefunds           ChargeRefund[]
+  deskSaleRefunds         DeskSaleRefund[]
   recurringCharges        RecurringCharge[]
   rosters                 Roster[]
   absenceAlerts           StudentAbsenceAlert[]
@@ -1499,6 +1509,17 @@ model Branch {
   schoolCancelledClassResolution SchoolCancelledClassResolution @default(CREDIT_ALL)
   defaultRefundCutoffHours       Int?
   noShowFee                      Int?
+  /// Decision 430 (MON-6): this Branch's own tax lines instead of the
+  /// School's (a Montréal Branch with GST + QST in a Vancouver School). Off by
+  /// default; when on, these replace the School's lines for the members whose
+  /// home Branch this is. Whether prices include tax stays School-wide.
+  taxOverride                    Boolean                        @default(false)
+  taxName                        String?
+  taxRateBasisPoints             Int                            @default(0)
+  taxId                          String?
+  tax2Name                       String?
+  tax2RateBasisPoints            Int                            @default(0)
+  tax2Id                         String?
 
   /// Decision 226 (POST-SPEC-55-DECISION-LOG.md) — entity-level tenant
   /// offboarding. Same full archivedAt/purgeAt/purgedAt trio and 90-day
@@ -2594,6 +2615,15 @@ model Transaction {
   /// `amount` (and refundedAmount, revenue) stays the plan's own price, so
   /// reports aren't changed by the surcharge.
   surchargeAmount Int @default(0)
+
+  /// Decision 430 (MON-6 step 1): MEMBERSHIP and RENEWAL only, the tax settings
+  /// that applied when the row was written ({ inclusive, branchId, lines }),
+  /// filled by a database trigger on insert (migration 20270221000000). The
+  /// receipt shows the tax a price included from it.
+  taxSnapshot Json?
+
+  /// Decision 430 (MON-8): refunds of a membership sold at the desk.
+  deskSaleRefunds DeskSaleRefund[]
 
   /// CHARGE_PAYMENT only: the charge the desk recorded it against; null when
   /// it was paid toward the balance as a whole (Decision 338 item 9).
@@ -6100,6 +6130,10 @@ model Charge {
   /// netAmount = grossAmount = the price after any discount. Never on a late
   /// fee or a promotion fee (they always take the School's tax settings).
   taxExempt          Boolean @default(false)
+  /// Decision 430 (MON-6): each tax line as worked out, [{ name, rateBasisPoints,
+  /// taxId, amount }]; taxRateBasisPoints is their combined rate and taxAmount
+  /// their sum. Null for a charge made before named lines (one rate).
+  taxLines           Json?
 
   /// Price excluding tax, the tax, and the price including tax (what is owed).
   netAmount   Int
@@ -6302,6 +6336,37 @@ model ChargeRefund {
   createdAt DateTime @default(now())
 
   @@index([schoolId, studentId])
+  @@index([transactionId])
+}
+
+/// Decision 430 (stress test round 5, MON-8): one refund of a membership sold
+/// at the desk (cash, Pix, bank transfer, card terminal). Owner only, part or
+/// full, notes required; the money is given back by hand, so only the records
+/// change (Transaction.refundedAmount goes up; Refunded once all is back).
+/// endedMembership: the owner chose to end the membership with it. The member
+/// is the Transaction's (no studentId here, so a member merge moves it).
+/// Append-only, written on the jobs connection (migration 20270221000001).
+model DeskSaleRefund {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  amount          Int
+  currency        String
+  /// Staff only, never sent to the member.
+  notes           String
+  endedMembership Boolean @default(false)
+
+  refundedById String?
+  refundedBy   User?   @relation("DeskSaleRefundBy", fields: [refundedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
   @@index([transactionId])
 }
 

@@ -179,6 +179,18 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 338 item 6: the School's tax ID for its invoices." })
   taxId!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 430 (MON-6): the first tax line\'s name.' })
+  taxName!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 430 (MON-6): the second tax line\'s name.' })
+  tax2Name!: string | null;
+
+  @ApiProperty({ description: 'Decision 430 (MON-6): the second tax line\'s rate (0 = none).' })
+  tax2RateBasisPoints!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "Decision 430 (MON-6): the second tax line's registration number." })
+  tax2Id!: string | null;
+
   @ApiProperty({ description: 'Decision 338 item 1: a reason is required when cancelling a charge (default on).' })
   chargeCancelReasonRequired!: boolean;
 

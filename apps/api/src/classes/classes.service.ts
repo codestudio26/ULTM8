@@ -17,6 +17,7 @@ import { escapeLike } from '../common/search/name-search';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -72,7 +73,8 @@ export class ClassesService {
     });
 
     // Decision 414 item 6: no price before the School's currency is set.
-    if (setsNewPrice(dto.cancellationCharge)) await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
+    // Decision 430 (MON-3): and in whole units of that currency.
+    if (setsNewPrice(dto.cancellationCharge)) assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId)));
 
     const classId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -265,7 +267,8 @@ export class ClassesService {
 
     // Decision 414 item 6: no price before the School's currency is set.
     if (setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
-      await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId));
+      // Decision 430 (MON-3): and in whole units of that currency.
+      assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId)));
     }
 
     const branchChanges = dto.branchId !== undefined && dto.branchId !== existing.branchId;

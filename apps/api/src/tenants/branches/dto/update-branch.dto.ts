@@ -1,5 +1,6 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUrl, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUrl, Max, MaxLength, Min, ValidateIf } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCancelledClassResolutionDto } from '../../schools/dto/create-school.dto';
 import { CreateBranchDto } from './create-branch.dto';
 
@@ -137,4 +138,57 @@ export class UpdateBranchDto extends PartialType(OmitType(CreateBranchDto, NULLA
   @IsInt()
   @Min(1)
   noShowFee?: number | null;
+
+  // Decision 430 (MON-6): this Branch's own tax lines, used for the members
+  // whose home Branch this is, instead of the School's. Off by default.
+  @ApiPropertyOptional({ description: "Decision 430 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec)." })
+  @IsOptional()
+  @IsBoolean()
+  taxOverride?: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 40, description: "The first tax line's name, e.g. GST." })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(40)
+  taxName?: string | null;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 10000, description: "The first tax line's rate, in hundredths of a percent." })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(10000)
+  taxRateBasisPoints?: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 50, description: "The first tax line's registration number." })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(50)
+  taxId?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 40, description: "The second tax line's name, e.g. QST (required when its rate is above 0)." })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(40)
+  tax2Name?: string | null;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 10000, description: "The second tax line's rate (0 = no second line). Both lines together at most 100%." })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(10000)
+  tax2RateBasisPoints?: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true, maxLength: 50, description: "The second tax line's registration number." })
+  @IsOptional()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() || null : value))
+  @ValidateIf((_o, v) => v !== null)
+  @IsString()
+  @MaxLength(50)
+  tax2Id?: string | null;
 }

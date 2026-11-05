@@ -1,9 +1,10 @@
 import { Prisma, PrismaClient, RecurringCharge } from '@prisma/client';
 import { trialEndedUnpaid } from '../subscription-plans/subscription-gate.service';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
-import { computeCharge, formatInvoiceNumber, taxForCharge } from './charge-maths';
+import { computeCharge, formatInvoiceNumber, taxLinesForCharge } from './charge-maths';
 import { insertCharge, lockInvoiceNumbers } from './charge-insert';
 import { MAX_OCCURRENCES_PER_RUN, dayOf, dayValue, planOccurrences, schoolToday, skipThrough, type SeriesState } from './recurring-schedule';
+import { loadEffectiveTax } from './tax-lines';
 
 type Tx = Prisma.TransactionClient;
 
@@ -125,12 +126,14 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
       }
       // The School's tax at this moment (Decision 411), kept on the charge;
       // none for a series set up with "No tax on this item" (Decision 414 item 5).
-      const school = await tx.school.findUniqueOrThrow({ where: { id: row.schoolId }, select: { taxCountry: true, taxRateBasisPoints: true, taxInclusive: true } });
-      const tax = taxForCharge(school, row.taxExempt);
+      // Decision 430 (MON-6): the member's home Branch's lines when it overrides.
+      const school = await loadEffectiveTax(tx, row.schoolId, row.studentId);
+      const tax = taxLinesForCharge(school, row.taxExempt);
       const totals = computeCharge({
         unitAmount: row.unitAmount,
         discount: row.discountType ? { type: row.discountType, value: row.discountValue! } : null,
         ...tax,
+        currency: row.currency,
       });
       const charge = await insertCharge(tx, {
         schoolId: row.schoolId,

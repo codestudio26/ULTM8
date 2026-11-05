@@ -12,6 +12,7 @@ import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '..
 import { TransactionFilterDto, TransactionListQueryDto } from './dto/transaction-filter-query.dto';
 import { formatInvoiceNumber } from '../charges/charge-maths';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
+import { includedTax, type IncludedTax } from '../charges/tax-lines';
 
 /**
  * Phase 9 scope only: GET /schools/{id}/transactions — School Owner/Manager only
@@ -35,6 +36,15 @@ import { IncomeCategoriesService } from '../income-categories/income-categories.
  * explicitly-deferred half of this module) — see its own method comment
  * below for why this needed no PDF-generation infra after all.
  */
+/** A Transaction row as the API shows it (taxSnapshot is internal: Decision 430). */
+type WithPlanTitle<T> = Omit<T, 'membershipPlan' | 'booking' | 'membership' | 'charge' | 'taxSnapshot'> & {
+  includedTax: IncludedTax | null;
+  membershipPlanTitle: string | null;
+  bookingClassTitle: string | null;
+  chargeDescription: string | null;
+  chargeInvoiceLabel: string | null;
+};
+
 @Injectable()
 export class TransactionsService {
   constructor(
@@ -61,26 +71,24 @@ export class TransactionsService {
     },
   >(
     t: T,
-  ): Omit<T, 'membershipPlan' | 'booking' | 'membership' | 'charge'> & {
-    membershipPlanTitle: string | null;
-    bookingClassTitle: string | null;
-    chargeDescription: string | null;
-    chargeInvoiceLabel: string | null;
-  } {
-    const { membershipPlan, booking, membership, charge, ...rest } = t;
+  ): WithPlanTitle<T> {
+    const { membershipPlan, booking, membership, charge, ...withSnapshot } = t;
+    const { taxSnapshot, ...rest } = withSnapshot as typeof withSnapshot & { taxSnapshot?: unknown };
     // Currency codes in capitals (Decision 339, T3) — belt and braces on top of
     // the write paths and the clean-up migration.
     const currency = (rest as { currency?: string | null }).currency;
     return {
       ...rest,
       ...(currency ? { currency: currency.toUpperCase() } : {}),
+      // Decision 430 (MON-6 step 1): the tax a membership price included.
+      includedTax: includedTax((rest as { amount?: number }).amount ?? 0, currency ?? null, taxSnapshot),
       membershipPlanTitle: membershipPlan?.title ?? membership?.membershipPlan.title ?? null,
       // A late-cancellation fee (Decision 346) names the class it was for.
       bookingClassTitle: booking?.class.title ?? null,
       // A desk payment toward a staff-created charge (Decision 338 item 9).
       chargeDescription: charge?.description ?? null,
       chargeInvoiceLabel: charge ? formatInvoiceNumber(charge.invoiceNumber) : null,
-    };
+    } as unknown as WithPlanTitle<T>;
   }
 
   /** The Transactions page's filters (Decision 346, G3) as a Prisma filter. */

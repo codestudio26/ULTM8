@@ -12,6 +12,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { ResolveCancellationAction } from './dto/resolve-cancellation.dto';
+import { minorUnitStep, roundToStep } from '../payments/stripe-amount';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -254,7 +255,7 @@ export class CancellationService {
       await this.restoreCredit(tx, seat.membershipId);
       return { resolution: 'REFUNDED', refundAmount: null, stripeRefund: false };
     }
-    const refundAmount = await this.perClassShare(tx, seat, payment.amount, payment.refundedAmount ?? 0, membership.membershipPlan.classesIncluded);
+    const refundAmount = await this.perClassShare(tx, seat, payment.amount, payment.refundedAmount ?? 0, membership.membershipPlan.classesIncluded, payment.currency);
     // Disputed (Decision 55: refunds frozen), nothing left to refund, or a caller
     // who may not send money: a staff decision.
     if (payment.status !== 'SUCCESSFUL' || refundAmount <= 0 || !mayRefund) {
@@ -285,7 +286,10 @@ export class CancellationService {
   /**
    * One class's share of a Class Pack's price: the cumulative entitlement after
    * this refund minus the cumulative entitlement before it, each rounded once to
-   * the minor unit (domain rules §7). Capped at what's left unrefunded.
+   * the currency's real minor unit (domain rules §7; Decision 430 MON-1: whole
+   * yen for JPY, so a ¥1,000 3-pack refunds ¥333 + ¥333 + ¥334, never ¥333.33
+   * that Stripe then rounds again). Capped at what's left unrefunded, itself
+   * rounded down to the step (a fraction kept from before MON-3 can't be sent).
    *
    * "Before it" counts every other seat on this Membership already refunded,
    * owed, or waiting with an amount (a Stripe refund in flight, or one waiting
@@ -293,7 +297,7 @@ export class CancellationService {
    * still get consecutive shares. A waiting seat that ends up credited or kept
    * has its amount cleared and drops out.
    */
-  private async perClassShare(tx: TenantTx, seat: SeatRef, paid: number, alreadyRefunded: number, classesIncluded: number | null): Promise<number> {
+  private async perClassShare(tx: TenantTx, seat: SeatRef, paid: number, alreadyRefunded: number, classesIncluded: number | null, currency: string | null): Promise<number> {
     if (!classesIncluded || classesIncluded <= 0) return 0;
     const counted = { OR: [{ refundResolution: { in: MONEY_RESOLUTIONS } }, { refundResolution: 'PENDING' as const, refundAmount: { not: null } }] };
     const [bookings, attendees] = await Promise.all([
@@ -302,8 +306,7 @@ export class CancellationService {
     ]);
     const prior = bookings + attendees;
     if (prior >= classesIncluded) return 0;
-    const share = Math.round(((prior + 1) * paid) / classesIncluded) - Math.round((prior * paid) / classesIncluded);
-    return Math.min(share, paid - alreadyRefunded);
+    return classShare(paid, alreadyRefunded, classesIncluded, prior, minorUnitStep(currency));
   }
 
   /**
@@ -720,4 +723,18 @@ export class CancellationService {
  * goes back once, to the card or by hand, never both. */
 function seatRefundKey(seat: SeatRef): string {
   return seat.attendeeId ? `refund-booking-guest-${seat.attendeeId}` : `refund-booking-${seat.bookingId}`;
+}
+
+/**
+ * The pure sum behind perClassShare(): seat number `prior + 1` of a
+ * `classesIncluded`-class pack paid `paid` (hundredths), with `alreadyRefunded`
+ * gone. Each cumulative entitlement is rounded once to `step` (100 for a
+ * zero-decimal currency, else 1), so the shares add up to exactly what was
+ * paid and each one is a whole number of the currency's smallest unit.
+ */
+export function classShare(paid: number, alreadyRefunded: number, classesIncluded: number, prior: number, step: number): number {
+  if (classesIncluded <= 0 || prior >= classesIncluded) return 0;
+  const share = roundToStep(((prior + 1) * paid) / classesIncluded, step) - roundToStep((prior * paid) / classesIncluded, step);
+  const left = Math.floor(Math.max(0, paid - alreadyRefunded) / step) * step;
+  return Math.max(0, Math.min(share, left));
 }

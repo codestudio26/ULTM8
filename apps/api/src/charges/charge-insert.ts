@@ -87,6 +87,8 @@ export async function insertCharge(tx: Tx, c: NewCharge): Promise<{ id: string; 
       taxExempt: c.taxExempt ?? false,
       netAmount: c.totals.netAmount,
       taxAmount: c.totals.taxAmount,
+      // Decision 430 (MON-6): each named line, as worked out.
+      taxLines: c.totals.taxLines ? (c.totals.taxLines as unknown as Prisma.InputJsonValue) : Prisma.DbNull,
       grossAmount: c.totals.grossAmount,
       currency: c.currency,
       dueDate: c.dueDate,
