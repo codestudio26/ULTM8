@@ -590,6 +590,8 @@ export const serverMessages: Record<string, string> = {
   "Pick a coach only when giving their classes to another coach.": "Scegli un allenatore solo se i suoi corsi passano a un altro allenatore.",
   "Choose a different coach to take over.": "Scegli un altro allenatore a cui affidarli.",
   "The end time must be after the start time.": "L’ora di fine deve essere successiva all’ora di inizio.",
+  "The end time can't be the same as the start time.": "L’ora di fine non può essere uguale all’ora di inizio.",
+  "A weekly class can be at most 12 hours long. An end time before the start time means the next day.": "Una lezione settimanale può durare al massimo 12 ore. Un’ora di fine precedente all’ora di inizio indica il giorno dopo.",
   "Give the break both a start and an end time, or neither.": "Indica sia l’inizio sia la fine della pausa, oppure nessuno dei due.",
   "The break must end after it starts.": "La pausa deve finire dopo l’inizio.",
   "The break must fall inside the class times.": "La pausa deve rientrare nell’orario del corso.",

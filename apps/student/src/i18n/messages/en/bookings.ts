@@ -23,6 +23,13 @@ export const bookings = {
     dateRange: '{start} – {end}',
     /** Decision 353 (Q6): the class's break, shown only. */
     breakLine: 'Break {start} – {end}',
+    /** Decision 431 items 3 and 14: a class past midnight, and who can book. */
+    endsNextDay: 'ends next day',
+    womenOnly: 'Women only',
+    menOnly: 'Men only',
+    agesRange: 'Ages {min}–{max}',
+    agesFrom: 'Ages {min}+',
+    agesTo: 'Ages up to {max}',
     bookError: 'Could not book this class — please try again.',
     joinWaitlistError: 'Could not join the waitlist — please try again.',
     leaveWaitlistError: 'Could not leave the waitlist — please try again.',

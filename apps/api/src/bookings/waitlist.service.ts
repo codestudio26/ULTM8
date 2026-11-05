@@ -12,6 +12,7 @@ import { SubscriptionGateService } from '../subscription-plans/subscription-gate
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
+import { assertWhoCanBook } from '../classes/who-can-book';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { bookingUsesCredit } from './open-mat-credit';
 import { classTimeZones } from '../classes/class-time-zone';
@@ -114,6 +115,8 @@ export class WaitlistService {
       if (resolvedClass.capacity === null) {
         throw new ConflictException('This Class has no seat limit. Book it instead.');
       }
+      // Decision 431 item 14: a member the class isn't for can't queue for it.
+      await assertWhoCanBook(tx, studentId, resolvedClass);
       // Waivers review W15: the claim step needs a signed Waiver, so a
       // student without one would hold an offered seat they can never take.
       if (resolvedClass.termsWaiverRequired) {
@@ -279,6 +282,8 @@ export class WaitlistService {
       }
 
       await this.assertRankEligible(tx, studentId, cls);
+      // Decision 431 item 14: "Who can book" may have changed since they queued.
+      await assertWhoCanBook(tx, studentId, cls);
 
       let locked: LockedClass;
       if (cls.capacity !== null) {

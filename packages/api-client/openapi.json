@@ -4311,6 +4311,41 @@
         ]
       }
     },
+    "/v1/classes/{id}/recreate": {
+      "post": {
+        "operationId": "ClassesController_recreate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/unarchive": {
       "post": {
         "operationId": "ClassesController_unarchive",
@@ -6009,6 +6044,49 @@
       }
     },
     "/v1/closures/{id}": {
+      "patch": {
+        "operationId": "TimetableController_updateClosure",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClosureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureUpdatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
       "delete": {
         "operationId": "TimetableController_deleteClosure",
         "parameters": [
@@ -28542,6 +28620,33 @@
           "membershipInclusion": {
             "type": "boolean",
             "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Youngest age (whole years, on the class date) that can book. null: no lower limit."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Oldest age (whole years, on the class date) that can book. null: no upper limit."
+          },
+          "confirmClosedDay": {
+            "type": "boolean",
+            "description": "Confirms creating this class on a day a closure covers (Decision 431). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure."
           }
         },
         "required": [
@@ -28650,6 +28755,25 @@
           "membershipInclusion": {
             "type": "boolean"
           },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Decision 431: who can book."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Youngest age that can book (whole years on the class date)."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Oldest age that can book."
+          },
           "cancelledAt": {
             "type": "string",
             "nullable": true,
@@ -28696,6 +28820,7 @@
           "endDate",
           "termsWaiverRequired",
           "membershipInclusion",
+          "audience",
           "createdAt",
           "updatedAt"
         ]
@@ -28754,6 +28879,33 @@
           "membershipInclusion": {
             "type": "boolean",
             "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Youngest age (whole years, on the class date) that can book. null: no lower limit."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Oldest age (whole years, on the class date) that can book. null: no upper limit."
+          },
+          "confirmClosedDay": {
+            "type": "boolean",
+            "description": "Confirms creating this class on a day a closure covers (Decision 431). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure."
           },
           "branchId": {
             "type": "string",
@@ -29542,6 +29694,29 @@
             "type": "boolean",
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
           },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Youngest age (whole years, on the class date) that can book. null: no lower limit."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Oldest age (whole years, on the class date) that can book. null: no upper limit."
+          },
           "bookingCutoffMinutesBeforeStart": {
             "type": "number",
             "description": "Booking cutoff, in minutes before each occurrence starts."
@@ -29652,6 +29827,25 @@
           "membershipInclusion": {
             "type": "boolean"
           },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Decision 431: who can book."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Youngest age that can book (whole years on the class date)."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Oldest age that can book."
+          },
           "bookingCutoffMinutesBeforeStart": {
             "type": "number",
             "nullable": true
@@ -29702,6 +29896,7 @@
           "styles",
           "termsWaiverRequired",
           "membershipInclusion",
+          "audience",
           "createdAt",
           "updatedAt"
         ]
@@ -29998,6 +30193,108 @@
           "cancelledClasses"
         ]
       },
+      "UpdateClosureDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "description": "First closed date, YYYY-MM-DD (local)."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Last closed date, YYYY-MM-DD (local)."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Shown on the calendar. Changing it tells nobody."
+          }
+        }
+      },
+      "RecreatableClassDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "date": {
+            "type": "string",
+            "description": "The class's local date, YYYY-MM-DD."
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "branchId",
+          "date",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "ClosureUpdatedResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null: the whole School."
+          },
+          "startDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "cancelledClasses": {
+            "type": "number",
+            "description": "How many classes on newly closed days were cancelled."
+          },
+          "recreatable": {
+            "description": "Classes this closure cancelled on days it no longer covers. They stay cancelled (students were told); POST /classes/{id}/recreate makes a one-off copy.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecreatableClassDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "startDate",
+          "endDate",
+          "reason",
+          "createdAt",
+          "cancelledClasses",
+          "recreatable"
+        ]
+      },
       "UpcomingImpactResponseDto": {
         "type": "object",
         "properties": {
@@ -30082,6 +30379,29 @@
           "membershipInclusion": {
             "type": "boolean",
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Youngest age (whole years, on the class date) that can book. null: no lower limit."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Oldest age (whole years, on the class date) that can book. null: no upper limit."
           },
           "bookedClasses": {
             "type": "string",
@@ -39166,6 +39486,25 @@
             "nullable": true,
             "description": "Nullable = unlimited."
           },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Decision 431: who can book."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Youngest age that can book (whole years on the class date)."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Oldest age that can book."
+          },
           "timezone": {
             "type": "string",
             "nullable": true,
@@ -39178,7 +39517,8 @@
           "title",
           "activities",
           "startDate",
-          "endDate"
+          "endDate",
+          "audience"
         ]
       },
       "AcademyDetailDto": {

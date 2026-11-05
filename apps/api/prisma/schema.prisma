@@ -1553,6 +1553,13 @@ model Branch {
 /// branch relationship; nullable mirrors RoleGrant.branchId's already-established
 /// "School-wide by default, narrowable to one Branch" shape. Inferred, not confirmed —
 /// flagged for Architect review.
+/// Decision 431 item 14 (AE-6): who a Class or weekly slot is for.
+enum ClassAudience {
+  EVERYONE
+  WOMEN
+  MEN
+}
+
 model Class {
   id String @id @default(uuid())
 
@@ -1612,6 +1619,14 @@ model Class {
 
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false) // default is opt-out (confirmed §6)
+
+  /// Decision 431 item 14 (AE-6): who can book. EVERYONE (default), WOMEN or
+  /// MEN (User.gender), and an optional age range in whole years on the
+  /// Class's date. Checked at booking, waitlist, Kid Mode and the desk; staff
+  /// can book anyway with an override reason.
+  audience ClassAudience @default(EVERYONE)
+  minAge   Int?
+  maxAge   Int?
 
   // Decision 291 — set when the School cancels this class outright. A cancelled
   // class can't be booked or waitlisted again; its bookings were resolved by
@@ -1760,6 +1775,14 @@ model TimetableSlot {
 
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false)
+
+  /// Decision 431 item 14 (AE-6): who can book. EVERYONE (default), WOMEN or
+  /// MEN (User.gender), and an optional age range in whole years on the
+  /// Class's date. Checked at booking, waitlist, Kid Mode and the desk; staff
+  /// can book anyway with an override reason.
+  audience ClassAudience @default(EVERYONE)
+  minAge   Int?
+  maxAge   Int?
 
   // Durations, not absolute dates — resolved per-occurrence by the job. See the model
   // header comment above.

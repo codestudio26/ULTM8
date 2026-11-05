@@ -590,6 +590,8 @@ export const serverMessages: Record<string, string> = {
   "Pick a coach only when giving their classes to another coach.": "اختر مدرّبًا فقط عند نقل حصصه إلى مدرّب آخر.",
   "Choose a different coach to take over.": "اختر مدرّبًا مختلفًا ليتولى الحصص.",
   "The end time must be after the start time.": "يجب أن يكون وقت الانتهاء بعد وقت البدء.",
+  "The end time can't be the same as the start time.": "لا يمكن أن يكون وقت الانتهاء هو نفسه وقت البدء.",
+  "A weekly class can be at most 12 hours long. An end time before the start time means the next day.": "يمكن أن تستمر الحصة الأسبوعية 12 ساعة على الأكثر. وقت انتهاء قبل وقت البدء يعني اليوم التالي.",
   "Give the break both a start and an end time, or neither.": "أدخل بداية الاستراحة ونهايتها معًا، أو اتركهما فارغتين.",
   "The break must end after it starts.": "يجب أن تنتهي الاستراحة بعد أن تبدأ.",
   "The break must fall inside the class times.": "يجب أن تقع الاستراحة ضمن وقت الحصة.",

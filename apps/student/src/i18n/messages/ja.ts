@@ -319,6 +319,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     classRow: {
       dateRange: "{start} – {end}",
       breakLine: "休憩 {start} – {end}",
+      endsNextDay: "翌日に終了",
+      womenOnly: "女性のみ",
+      menOnly: "男性のみ",
+      agesRange: "{min}〜{max}歳",
+      agesFrom: "{min}歳以上",
+      agesTo: "{max}歳まで",
       bookError: "このクラスを予約できませんでした。もう一度お試しください。",
       joinWaitlistError: "キャンセル待ちに登録できませんでした。もう一度お試しください。",
       leaveWaitlistError: "キャンセル待ちを取り消せませんでした。もう一度お試しください。",

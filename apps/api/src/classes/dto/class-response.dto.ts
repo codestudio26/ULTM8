@@ -69,6 +69,15 @@ export class ClassResponseDto {
   @ApiProperty()
   membershipInclusion!: boolean;
 
+  @ApiProperty({ enum: ['EVERYONE', 'WOMEN', 'MEN'], description: 'Decision 431: who can book.' })
+  audience!: 'EVERYONE' | 'WOMEN' | 'MEN';
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Youngest age that can book (whole years on the class date).' })
+  minAge!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Oldest age that can book.' })
+  maxAge!: number | null;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 291 — set when the School cancelled this class. A cancelled class can\'t be booked or waitlisted.' })
   cancelledAt!: string | null;
 

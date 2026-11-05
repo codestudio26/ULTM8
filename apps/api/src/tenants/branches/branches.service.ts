@@ -11,6 +11,7 @@ import { addressWriteData } from '../../common/address/postal-address.dto';
 import { BranchDependentCounts, branchHasHistory, countBranchDependents, describeBranchDependents, hasBranchDependents } from './branch-dependents';
 import { CloseBranchDto, WHOLE_SCHOOL } from './dto/close-branch.dto';
 import { assertSchoolCurrencySet, setsNewPrice } from '../../common/school-currency';
+import { TimeZoneChangeHooks } from '../../common/time-zone-change/time-zone-change.module';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -23,6 +24,7 @@ export class BranchesService {
     private readonly prismaApp: PrismaAppService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
+    private readonly timeZoneChange: TimeZoneChangeHooks,
   ) {}
 
   /** School Owner/Manager only (Spec §8.2: "Manage their own School/Branches"). */
@@ -113,7 +115,7 @@ export class BranchesService {
       await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId));
     }
 
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.branch.update({
         where: { id: branchId },
         data: {
@@ -139,6 +141,12 @@ export class BranchesService {
         },
       }),
     );
+    // Decision 431 item 2: a new time zone re-times the Branch's upcoming
+    // timetable classes (booked students get the usual "Class moved").
+    if (dto.timezone !== undefined && (dto.timezone || null) !== (existing.timezone || null)) {
+      await this.timeZoneChange.changed({ callerId, schoolId: existing.schoolId, branchId });
+    }
+    return updated;
   }
 
   // ---------------------------------------------------------------------------

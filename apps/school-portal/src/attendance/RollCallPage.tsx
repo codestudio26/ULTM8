@@ -8,6 +8,8 @@ import { useInstructorScan } from './attendanceQueries';
 import { QrScanModal } from './QrScanModal';
 import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { useClassZone } from '../classes/useClassZone';
+import { formatInZone } from '../lib/datetime';
 import { useRosterStudents, useRosters } from '../students/rosterQueries';
 
 /** Instructor roll-call (Decision 71's named concept; mechanics shipped Phase
@@ -42,6 +44,8 @@ export function RollCallPage() {
   const rosters = useRosters(cls?.schoolId ?? null);
   const rosterMembers = useRosterStudents(cls?.schoolId ?? null, rosterFilter || null);
   const onRoster = useMemo(() => (rosterFilter ? new Set(rosterMembers.data?.studentIds ?? []) : null), [rosterFilter, rosterMembers.data]);
+  // Times on the class's own clock (Decision 431 item 5).
+  const zone = useClassZone(cls);
 
   if (!classId) return null;
   if (classLoading || bookingsLoading) return <Spinner />;
@@ -70,7 +74,7 @@ export function RollCallPage() {
     <>
       <PageHeader
         title={cls ? t('attendance.rollCall.titleWithClass', { title: cls.title }) : t('attendance.rollCall.title')}
-        subtitle={cls ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` : undefined}
+        subtitle={cls ? `${formatInZone(cls.startDate, zone, formatLocale())} – ${formatInZone(cls.endDate, zone, formatLocale())}` : undefined}
       />
       {rosterItems.length > 0 ? (
         <Card>

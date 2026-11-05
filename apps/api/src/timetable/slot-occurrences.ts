@@ -27,11 +27,57 @@ export function combineDateAndTime(localDate: DateTime, time: Date): Date {
   return localDate.set({ hour: time.getUTCHours(), minute: time.getUTCMinutes(), second: 0, millisecond: 0 }).toUTC().toJSDate();
 }
 
+/** Minutes after midnight of a `@db.Time(0)` value. */
+export function minuteOfDay(time: Date): number {
+  return time.getUTCHours() * 60 + time.getUTCMinutes();
+}
+
+/** The longest a weekly class may run (Decision 431 item 3): 12 hours. */
+export const MAX_SLOT_MINUTES = 720;
+
+/** Wall-clock minutes from one HH:mm (as minutes after midnight) to the next
+ * one, going past midnight when the second is earlier (Decision 431 item 3):
+ * 23:00 to 00:30 is 90. The same two times give 0. */
+export function minutesBetween(fromMinute: number, toMinute: number): number {
+  return (toMinute - fromMinute + 1440) % 1440;
+}
+
+/** Whether a weekly class ends on the day after it starts (23:00–00:30). */
+export function endsNextDay(startTime: Date, endTime: Date): boolean {
+  return minuteOfDay(endTime) <= minuteOfDay(startTime);
+}
+
+/**
+ * A time inside one occurrence, as an instant (Decision 431 items 3 and 4).
+ * It is on the class's start date, or on the next day when `nextDay` says so
+ * (an overnight class). The printed wall-clock time is kept; only when that
+ * lands at or before `after` (a DST night: the clock skipped the start, or
+ * repeated the end) is it `after` plus the wall-clock minutes between the two,
+ * so a class or break is never 0 minutes long or backwards.
+ */
+function instantInClass(localDate: DateTime, time: Date, nextDay: boolean, after?: { instant: Date; time: Date }): Date {
+  const instant = combineDateAndTime(nextDay ? localDate.plus({ days: 1 }) : localDate, time);
+  if (after && instant.getTime() <= after.instant.getTime()) {
+    return new Date(after.instant.getTime() + minutesBetween(minuteOfDay(after.time), minuteOfDay(time)) * 60_000);
+  }
+  return instant;
+}
+
 /** A slot's occurrence fields for one local date: times, cut-offs and the copied
- * Class fields. Shared by the daily generator and slot edits (Decision 322). */
+ * Class fields. Shared by the daily generator and slot edits (Decision 322).
+ * The occurrence belongs to its start date, also when the class ends after
+ * midnight (Decision 431 item 3): closures and the calendar use that date. */
 export function occurrenceFields(slot: TimetableSlot, localDate: DateTime) {
+  const start = minuteOfDay(slot.startTime);
   const startDate = combineDateAndTime(localDate, slot.startTime);
-  const endDate = combineDateAndTime(localDate, slot.endTime);
+  const endDate = instantInClass(localDate, slot.endTime, endsNextDay(slot.startTime, slot.endTime), { instant: startDate, time: slot.startTime });
+  // Decision 353 (Q6): shown on the class details only, no effect on bookings.
+  // A break time earlier than the start is after midnight.
+  const breakStartAt = slot.breakStart && slot.breakEnd ? instantInClass(localDate, slot.breakStart, minuteOfDay(slot.breakStart) < start) : null;
+  const breakEndAt =
+    slot.breakStart && slot.breakEnd && breakStartAt
+      ? instantInClass(localDate, slot.breakEnd, minuteOfDay(slot.breakEnd) < start, { instant: breakStartAt, time: slot.breakStart })
+      : null;
   return {
     occurrenceDate: DateTime.utc(localDate.year, localDate.month, localDate.day).toJSDate(),
     branchId: slot.branchId,
@@ -43,9 +89,8 @@ export function occurrenceFields(slot: TimetableSlot, localDate: DateTime) {
     description: slot.description,
     startDate,
     endDate,
-    // Decision 353 (Q6): shown on the class details only, no effect on bookings.
-    breakStartAt: slot.breakStart && slot.breakEnd ? combineDateAndTime(localDate, slot.breakStart) : null,
-    breakEndAt: slot.breakStart && slot.breakEnd ? combineDateAndTime(localDate, slot.breakEnd) : null,
+    breakStartAt,
+    breakEndAt,
     capacity: slot.capacity,
     bookingEndAt: slot.bookingCutoffMinutesBeforeStart != null ? new Date(startDate.getTime() - slot.bookingCutoffMinutesBeforeStart * 60_000) : null,
     qrAttendanceEndAt: slot.qrAttendanceWindowMinutes != null ? new Date(startDate.getTime() + slot.qrAttendanceWindowMinutes * 60_000) : null,
@@ -53,6 +98,10 @@ export function occurrenceFields(slot: TimetableSlot, localDate: DateTime) {
     cancellationCharge: slot.cancellationCharge,
     termsWaiverRequired: slot.termsWaiverRequired,
     membershipInclusion: slot.membershipInclusion,
+    // Decision 431 item 14: who can book.
+    audience: slot.audience,
+    minAge: slot.minAge,
+    maxAge: slot.maxAge,
   };
 }
 

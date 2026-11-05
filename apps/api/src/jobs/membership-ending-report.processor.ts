@@ -8,6 +8,7 @@ import { dayIn, dayNumber, dayString, dayToDate, freezeZone } from '../membershi
 import { NOT_REMINDED_TYPES, membershipEnd } from './membership-expiry-reminder.processor';
 import { MEMBERSHIP_ENDING_REPORT_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
+import { weekStartOf } from '../bookings/booking-week';
 
 /** Daily, at 7:30am UTC; each School gets its report on the first run of its
  * week (see the processor). */
@@ -60,12 +61,9 @@ export class MembershipEndingReportScheduler implements OnModuleInit {
 
 export type MembershipEndingReportOutcome = { reports: number; notices: number };
 
-/** The first day of the School's week containing `today` (YYYY-MM-DD). */
-export function weekStartOf(today: string, weekStartsOn: 'MONDAY' | 'SUNDAY'): string {
-  const weekday = DateTime.fromISO(today, { zone: 'UTC' }).weekday; // 1 = Monday … 7 = Sunday
-  const back = weekStartsOn === 'MONDAY' ? weekday - 1 : weekday % 7;
-  return dayString(dayNumber(today) - back);
-}
+/** The first day of the School's week containing `today` (YYYY-MM-DD). Shared
+ * with the Dashboard's week (Decision 431 item 7). */
+export { weekStartOf };
 
 /**
  * Decision 317 item 7: "a weekly report to staff of memberships ending soon".

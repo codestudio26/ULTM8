@@ -12,6 +12,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsTimeZone,
   IsUrl,
   Matches,
   Max,
@@ -150,6 +151,7 @@ export class CreateSchoolDto {
   @ApiPropertyOptional({ description: 'IANA timezone name, e.g. Europe/London. Same field as Branch.timezone (Decisions 76, 172).' })
   @IsOptional()
   @IsString()
+  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 431).' })
   @MaxLength(100)
   timezone?: string;
 

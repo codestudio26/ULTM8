@@ -590,6 +590,8 @@ export const serverMessages: Record<string, string> = {
   "Pick a coach only when giving their classes to another coach.": "เลือกโค้ชเฉพาะเมื่อส่งต่อคลาสให้โค้ชคนอื่นเท่านั้น",
   "Choose a different coach to take over.": "เลือกโค้ชคนอื่นให้รับต่อ",
   "The end time must be after the start time.": "เวลาสิ้นสุดต้องอยู่หลังเวลาเริ่ม",
+  "The end time can't be the same as the start time.": "เวลาสิ้นสุดต้องไม่ตรงกับเวลาเริ่ม",
+  "A weekly class can be at most 12 hours long. An end time before the start time means the next day.": "คลาสประจำสัปดาห์ยาวได้ไม่เกิน 12 ชั่วโมง เวลาสิ้นสุดก่อนเวลาเริ่มหมายถึงวันถัดไป",
   "Give the break both a start and an end time, or neither.": "ระบุทั้งเวลาเริ่มและเวลาสิ้นสุดของช่วงพัก หรือไม่ระบุทั้งคู่",
   "The break must end after it starts.": "ช่วงพักต้องสิ้นสุดหลังจากเริ่ม",
   "The break must fall inside the class times.": "ช่วงพักต้องอยู่ในเวลาของคลาส",

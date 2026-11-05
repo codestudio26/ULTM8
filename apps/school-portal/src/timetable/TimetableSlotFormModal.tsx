@@ -9,6 +9,8 @@ import { weekdayName } from './timetableOccurrences';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disciplines/StylePicker';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { WhoCanBookFields, whoCanBookForm, whoCanBookProblem, whoCanBookValues, type Audience } from '../classes/WhoCanBookFields';
+import { slotTimesProblem, slotEndsNextDay } from './slotTimes';
 
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
@@ -43,6 +45,10 @@ export interface TimetableSlotFormValues {
   qrAttendanceWindowMinutes?: number | null;
   refundCutoffHoursBeforeStart?: number | null;
   cancellationCharge?: number | null;
+  /** Decision 431 item 14: who can book, copied onto every generated Class. */
+  audience: Audience;
+  minAge: number | null;
+  maxAge: number | null;
 }
 
 /** Fields match CreateTimetableSlotDto/UpdateTimetableSlotDto exactly —
@@ -108,6 +114,7 @@ export function TimetableSlotFormModal({
     initial?.styles?.length ? initial.styles.map((s) => ({ disciplineId: s.disciplineId, classType: s.classType ?? null })) : [{ disciplineId: '', classType: null }],
   );
   const usesStyles = disciplines.length > 0;
+  const [whoCanBook, setWhoCanBook] = useState(whoCanBookForm(initial as Parameters<typeof whoCanBookForm>[0]));
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -131,24 +138,17 @@ export function TimetableSlotFormModal({
       setError(t('timetable.form.activitiesRequired'));
       return;
     }
-    if (form.endTime <= form.startTime) {
-      setError(t('timetable.form.endAfterStart'));
+    // The same time and break checks the API makes (Decision 332 T8, as
+    // amended by Decision 431 item 3: an end before the start is the next day).
+    const timesProblem = slotTimesProblem(form.startTime, form.endTime, form.breakStart || null, form.breakEnd || null);
+    if (timesProblem) {
+      setError(t(timesProblem));
       return;
     }
-    // The same break checks the API makes (Decision 332, T8).
-    if (!form.breakStart !== !form.breakEnd) {
-      setError(t('timetable.form.breakBothEnds'));
+    const agesProblem = whoCanBookProblem(whoCanBook, t);
+    if (agesProblem) {
+      setError(agesProblem);
       return;
-    }
-    if (form.breakStart && form.breakEnd) {
-      if (form.breakEnd <= form.breakStart) {
-        setError(t('timetable.form.breakEndAfterStart'));
-        return;
-      }
-      if (form.breakStart < form.startTime || form.breakEnd > form.endTime) {
-        setError(t('timetable.form.breakInsideClass'));
-        return;
-      }
     }
     try {
       await onSubmit({
@@ -175,6 +175,7 @@ export function TimetableSlotFormModal({
           ? Number(form.refundCutoffHoursBeforeStart)
           : null,
         cancellationCharge: form.cancellationCharge ? Number(form.cancellationCharge) : null,
+        ...whoCanBookValues(whoCanBook),
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
@@ -214,7 +215,11 @@ export function TimetableSlotFormModal({
             onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
           />
         </Field>
-        <Field label={t('timetable.form.endTimeLabel')} htmlFor="slot-endTime" hint={t('timetable.form.timeHint')}>
+        <Field
+          label={t('timetable.form.endTimeLabel')}
+          htmlFor="slot-endTime"
+          hint={slotEndsNextDay(form.startTime, form.endTime) ? t('timetable.form.endsNextDay') : t('timetable.form.timeHint')}
+        >
           <TextField
             required
             type="time"
@@ -308,6 +313,7 @@ export function TimetableSlotFormModal({
         <Field label={t('timetable.form.descriptionLabel')} htmlFor="slot-description">
           <TextArea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
         </Field>
+        <WhoCanBookFields idPrefix="slot" value={whoCanBook} onChange={setWhoCanBook} />
         <Checkbox
           label={t('timetable.form.waiverRequired')}
           checked={form.termsWaiverRequired}

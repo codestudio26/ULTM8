@@ -40,6 +40,7 @@ import { sendFranchiseNotice } from '../franchises/franchise-notifications';
 import { sendStudentAddedNotice } from './student-added-notice';
 import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
 import { requireSchoolCurrency, setsNewPrice } from '../../common/school-currency';
+import { TimeZoneChangeHooks } from '../../common/time-zone-change/time-zone-change.module';
 import { MedicalInfoService } from '../../medical-info/medical-info.service';
 import { assertJoinDateAllowed, loadJoinDates, setJoinDate } from './student-join-dates';
 
@@ -65,6 +66,7 @@ export class SchoolsService {
     private readonly stepUp: StepUpService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
     private readonly medicalInfo: MedicalInfoService,
+    private readonly timeZoneChange: TimeZoneChangeHooks,
   ) {}
 
   /**
@@ -977,6 +979,10 @@ export class SchoolsService {
     await this.assertCurrencyForNewFees(callerId, schoolId, dto);
     await assertCodeDigitsAllowed(this.prismaJobs, schoolId, dto.checkInCodeDigits);
     const nextGradingDate = parseNextGradingDate(dto.nextGradingDate);
+    // Decision 431 item 2: the zone before the change, to re-time classes after.
+    const zoneBefore = dto.timezone !== undefined
+      ? (await this.prismaApp.withTenantContext(callerId, (tx) => tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } })))?.timezone ?? null
+      : undefined;
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({
@@ -1057,6 +1063,11 @@ export class SchoolsService {
         },
       }),
     );
+    // Decision 431 item 2: a new School zone re-times the upcoming classes of
+    // School-wide slots and of Branches with no zone of their own.
+    if (zoneBefore !== undefined && (dto.timezone || null) !== (zoneBefore || null)) {
+      await this.timeZoneChange.changed({ callerId, schoolId, branchId: null });
+    }
     return withoutBillingIds(updated);
   }
 

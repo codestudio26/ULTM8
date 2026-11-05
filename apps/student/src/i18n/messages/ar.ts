@@ -324,6 +324,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     classRow: {
       dateRange: "{start} – {end}",
       breakLine: "استراحة {start} – {end}",
+      endsNextDay: "تنتهي في اليوم التالي",
+      womenOnly: "للنساء فقط",
+      menOnly: "للرجال فقط",
+      agesRange: "الأعمار {min}–{max}",
+      agesFrom: "الأعمار {min}+",
+      agesTo: "الأعمار حتى {max}",
       bookError: "تعذّر حجز هذه الحصة، يُرجى المحاولة مرة أخرى.",
       joinWaitlistError: "تعذّر الانضمام إلى قائمة الانتظار، يُرجى المحاولة مرة أخرى.",
       leaveWaitlistError: "تعذّر مغادرة قائمة الانتظار، يُرجى المحاولة مرة أخرى.",

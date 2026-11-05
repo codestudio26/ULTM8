@@ -590,6 +590,8 @@ export const serverMessages: Record<string, string> = {
   "Pick a coach only when giving their classes to another coach.": "코치는 수업을 다른 코치에게 넘길 때만 선택하세요.",
   "Choose a different coach to take over.": "넘겨받을 다른 코치를 선택하세요.",
   "The end time must be after the start time.": "종료 시간은 시작 시간보다 늦어야 합니다.",
+  "The end time can't be the same as the start time.": "종료 시간은 시작 시간과 같을 수 없습니다.",
+  "A weekly class can be at most 12 hours long. An end time before the start time means the next day.": "주간 수업은 최대 12시간까지입니다. 시작 시간보다 이른 종료 시간은 다음 날을 뜻합니다.",
   "Give the break both a start and an end time, or neither.": "휴식은 시작 시간과 종료 시간을 모두 입력하거나 둘 다 비워 두세요.",
   "The break must end after it starts.": "휴식은 시작한 뒤에 끝나야 합니다.",
   "The break must fall inside the class times.": "휴식은 수업 시간 안에 있어야 합니다.",

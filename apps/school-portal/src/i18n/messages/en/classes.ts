@@ -83,6 +83,21 @@ export const classes = {
     membershipInclusion: 'Included in general membership access (no separate ticket required)',
     membershipInclusionHint:
       'Off: students need a ticket made for this class (a class pack limited to it). On: any subscription, weekly pass or class pack can book it.',
+    closedDay: 'That date is closed. Add the class anyway?',
+    closedDayConfirm: 'Add it anyway',
+  },
+  // Decision 431 item 14: who can book a class or weekly slot.
+  whoCanBook: {
+    title: 'Who can book',
+    hint: 'Optional. Staff can still book anyone with an override reason.',
+    everyone: 'Everyone',
+    women: 'Women only',
+    men: 'Men only',
+    minAge: 'Youngest age',
+    maxAge: 'Oldest age',
+    agesRange: 'Ages {min}–{max}',
+    agesFrom: 'Ages {min}+',
+    agesTo: 'Ages up to {max}',
   },
   detail: {
     cancelClass: 'Cancel class',

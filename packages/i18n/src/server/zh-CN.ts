@@ -590,6 +590,8 @@ export const serverMessages: Record<string, string> = {
   "Pick a coach only when giving their classes to another coach.": "只有把课程交给另一位教练时才需选择教练。",
   "Choose a different coach to take over.": "请选择另一位教练接手。",
   "The end time must be after the start time.": "结束时间必须晚于开始时间。",
+  "The end time can't be the same as the start time.": "结束时间不能与开始时间相同。",
+  "A weekly class can be at most 12 hours long. An end time before the start time means the next day.": "每周课程最长 12 小时。早于开始时间的结束时间表示次日。",
   "Give the break both a start and an end time, or neither.": "请同时填写休息的开始和结束时间，或都不填。",
   "The break must end after it starts.": "休息的结束时间必须晚于开始时间。",
   "The break must fall inside the class times.": "休息时间必须在课程时间之内。",

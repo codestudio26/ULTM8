@@ -60,7 +60,9 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
       // convention every other argument here already follows.
       null as never,
       null as never, // StripeClientService (Decision 348 cancel)
-      null as never, // PrismaJobsService (Decision 404 freezes)
+      // PrismaJobsService (Decision 404 freezes); Decision 431 item 8 reads the
+      // School's zone with it for an N-day pass's expiry.
+      { school: { findUnique: jest.fn().mockResolvedValue({ timezone: 'America/New_York' }) } } as never,
       null as never, // IncomeCategoriesService (Decision 316 item 10)
       null as never, // PlanContractsService (Decision 316 item 6)
     );

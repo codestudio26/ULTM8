@@ -319,6 +319,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     classRow: {
       dateRange: "{start} – {end}",
       breakLine: "休息 {start} – {end}",
+      endsNextDay: "次日结束",
+      womenOnly: "仅限女性",
+      menOnly: "仅限男性",
+      agesRange: "{min}–{max} 岁",
+      agesFrom: "{min} 岁及以上",
+      agesTo: "{max} 岁及以下",
       bookError: "无法预约此课程，请重试。",
       joinWaitlistError: "无法加入候补名单，请重试。",
       leaveWaitlistError: "无法退出候补名单，请重试。",

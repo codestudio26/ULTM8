@@ -6,6 +6,8 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  Max,
+  IsIn,
   IsOptional,
   IsString,
   IsUrl,
@@ -161,6 +163,26 @@ export class CreateTimetableSlotDto {
   @IsOptional()
   @IsBoolean()
   membershipInclusion?: boolean;
+
+  // Decision 431 item 14 (AE-6): who can book. Omitted: everyone, no ages.
+  @ApiPropertyOptional({ enum: ['EVERYONE', 'WOMEN', 'MEN'], description: 'Who can book: everyone (default), women only or men only, by the member\'s recorded gender. Staff can book anyone with an overrideReason.' })
+  @IsOptional()
+  @IsIn(['EVERYONE', 'WOMEN', 'MEN'])
+  audience?: 'EVERYONE' | 'WOMEN' | 'MEN';
+
+  @ApiPropertyOptional({ type: Number, nullable: true, minimum: 0, maximum: 120, description: 'Youngest age (whole years, on the class date) that can book. null: no lower limit.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  minAge?: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, minimum: 0, maximum: 120, description: 'Oldest age (whole years, on the class date) that can book. null: no upper limit.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  maxAge?: number | null;
 
   // --- Durations, not absolute dates — resolved per-occurrence by the job. ---
 

@@ -320,6 +320,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     classRow: {
       dateRange: "{start} – {end}",
       breakLine: "Pausa {start} – {end}",
+      endsNextDay: "finisce il giorno dopo",
+      womenOnly: "Solo donne",
+      menOnly: "Solo uomini",
+      agesRange: "Età {min}–{max}",
+      agesFrom: "Da {min} anni",
+      agesTo: "Fino a {max} anni",
       bookError: "Impossibile prenotare questo corso — riprova.",
       joinWaitlistError: "Impossibile entrare in lista d’attesa — riprova.",
       leaveWaitlistError: "Impossibile uscire dalla lista d’attesa — riprova.",

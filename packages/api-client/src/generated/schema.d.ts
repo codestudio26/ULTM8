@@ -1444,6 +1444,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/classes/{id}/recreate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClassesController_recreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/classes/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -2081,7 +2097,7 @@ export interface paths {
         delete: operations["TimetableController_deleteClosure"];
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["TimetableController_updateClosure"];
         trace?: never;
     };
     "/v1/timetable/{id}": {
@@ -9257,6 +9273,17 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts this Class into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason.
+             * @enum {string}
+             */
+            audience?: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age (whole years, on the class date) that can book. null: no lower limit. */
+            minAge?: number | null;
+            /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
+            maxAge?: number | null;
+            /** @description Confirms creating this class on a day a closure covers (Decision 431). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure. */
+            confirmClosedDay?: boolean;
         };
         ClassStyleResponseDto: {
             disciplineId: string;
@@ -9287,6 +9314,15 @@ export interface components {
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /**
+             * @description Decision 431: who can book.
+             * @enum {string}
+             */
+            audience: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age that can book (whole years on the class date). */
+            minAge?: number | null;
+            /** @description Oldest age that can book. */
+            maxAge?: number | null;
             /** @description Decision 291 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted. */
             cancelledAt?: string | null;
             cancellationReason?: string | null;
@@ -9320,6 +9356,17 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts this Class into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason.
+             * @enum {string}
+             */
+            audience?: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age (whole years, on the class date) that can book. null: no lower limit. */
+            minAge?: number | null;
+            /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
+            maxAge?: number | null;
+            /** @description Confirms creating this class on a day a closure covers (Decision 431). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure. */
+            confirmClosedDay?: boolean;
             /** @description Branch to scope this Class to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
@@ -9568,6 +9615,15 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason.
+             * @enum {string}
+             */
+            audience?: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age (whole years, on the class date) that can book. null: no lower limit. */
+            minAge?: number | null;
+            /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
+            maxAge?: number | null;
             /** @description Booking cutoff, in minutes before each occurrence starts. */
             bookingCutoffMinutesBeforeStart?: number;
             /** @description QR check-in window, in minutes, from each occurrence's start. */
@@ -9601,6 +9657,15 @@ export interface components {
             bannerUrl?: string | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /**
+             * @description Decision 431: who can book.
+             * @enum {string}
+             */
+            audience: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age that can book (whole years on the class date). */
+            minAge?: number | null;
+            /** @description Oldest age that can book. */
+            maxAge?: number | null;
             bookingCutoffMinutesBeforeStart?: number | null;
             qrAttendanceWindowMinutes?: number | null;
             refundCutoffHoursBeforeStart?: number | null;
@@ -9698,6 +9763,39 @@ export interface components {
             /** @description How many classes the closure cancelled. */
             cancelledClasses: number;
         };
+        UpdateClosureDto: {
+            /** @description First closed date, YYYY-MM-DD (local). */
+            startDate?: string;
+            /** @description Last closed date, YYYY-MM-DD (local). */
+            endDate?: string;
+            /** @description Shown on the calendar. Changing it tells nobody. */
+            reason?: string;
+        };
+        RecreatableClassDto: {
+            id: string;
+            title: string;
+            branchId: string | null;
+            /** @description The class's local date, YYYY-MM-DD. */
+            date: string;
+            startDate: string;
+            endDate: string;
+        };
+        ClosureUpdatedResponseDto: {
+            id: string;
+            schoolId: string;
+            /** @description Null: the whole School. */
+            branchId: string | null;
+            /** @description YYYY-MM-DD */
+            startDate: string;
+            /** @description YYYY-MM-DD */
+            endDate: string;
+            reason: string;
+            createdAt: string;
+            /** @description How many classes on newly closed days were cancelled. */
+            cancelledClasses: number;
+            /** @description Classes this closure cancelled on days it no longer covers. They stay cancelled (students were told); POST /classes/{id}/recreate makes a one-off copy. */
+            recreatable: components["schemas"]["RecreatableClassDto"][];
+        };
         UpcomingImpactResponseDto: {
             /** @description Upcoming, unarchived Classes generated from this slot. */
             upcomingClasses: number;
@@ -9735,6 +9833,15 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason.
+             * @enum {string}
+             */
+            audience?: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age (whole years, on the class date) that can book. null: no lower limit. */
+            minAge?: number | null;
+            /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
+            maxAge?: number | null;
             /**
              * @description Decisions 322, 332. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch), switches the slot off, or changes their booking rules (waiver, membership inclusion, cut-offs, cancellation charge). MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they keep their day, time, place and rules. CANCEL is only for a move or switching off. Required when such Classes exist; without it the update is refused with 409. Also confirms a capacity cut below the seats booked: Classes fuller than the new capacity keep their size. Title, description, picture, coach and styles always reach every upcoming Class. Unbooked upcoming Classes always follow the change.
              * @enum {string}
@@ -12573,6 +12680,15 @@ export interface components {
             breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
+            /**
+             * @description Decision 431: who can book.
+             * @enum {string}
+             */
+            audience: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age that can book (whole years on the class date). */
+            minAge?: number | null;
+            /** @description Oldest age that can book. */
+            maxAge?: number | null;
             /** @description The IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. Show the class's times on this clock. */
             timezone?: string | null;
         };
@@ -17220,6 +17336,27 @@ export interface operations {
             };
         };
     };
+    ClassesController_recreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassResponseDto"];
+                };
+            };
+        };
+    };
     ClassesController_unarchive: {
         parameters: {
             query?: never;
@@ -18221,6 +18358,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TimetableController_updateClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateClosureDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureUpdatedResponseDto"];
+                };
             };
         };
     };

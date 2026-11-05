@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsUrl, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, IsTimeZone, IsUrl, MaxLength, Min } from 'class-validator';
 import { ClassCancellationPolicyDto, ClassCancellationPolicyWindowDto, SchoolCancelledClassResolutionDto } from '../../schools/dto/create-school.dto';
 import { CreateBranchDto } from './create-branch.dto';
 
@@ -57,6 +57,7 @@ export class UpdateBranchDto extends PartialType(OmitType(CreateBranchDto, NULLA
   @ApiPropertyOptional({ description: 'IANA timezone name.', type: String, nullable: true })
   @IsOptional()
   @IsString()
+  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 431).' })
   @MaxLength(100)
   timezone?: string | null;
 
