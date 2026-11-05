@@ -5,7 +5,7 @@ export const payroll = {
   subtitle: "What each member of staff earned from the classes they taught, at the rates you set. ULTM8 doesn't pay anyone: you pay your staff outside ULTM8.",
   tabReport: 'Report',
   tabRates: 'Rates',
-  noAccess: 'Only the School owner can see payroll.',
+  noAccess: "Only the School's owners, and staff they allow, can see payroll.",
   loadFailed: "Couldn't load payroll. Please try again.",
   periodLabel: 'Dates',
   preset: {

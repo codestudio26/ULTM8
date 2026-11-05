@@ -1638,6 +1638,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "查看、上传、下载和删除其分校学员的文件。会员永远看不到这些文件。",
       seeMedicalInfo: "查看医疗信息",
       seeMedicalInfoHint: "查看其分馆学员在报名时提供的医疗信息。教练永远看不到。",
+      // Decision 435 item 22.
+      payroll: "工资",
+      payrollHint: "查看工资报表并设置全校所有员工（包括所有者）的工资标准。",
       ownerOnly: "资金（付款、退款、套餐和价格）、学校设置以及所有者始终由学校所有者掌管。",
       saved: "已保存 {name} 的权限。",
       readOnlyIntro: "你所在分校的员工。只有学校所有者可以更改角色或权限。",
@@ -4889,7 +4892,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "按您设定的费率，每位员工从所教课程中应得的金额。ULTM8 不向任何人付款：员工工资在 ULTM8 之外支付。",
     tabReport: "报表",
     tabRates: "费率",
-    noAccess: "只有学校所有者可以查看工资。",
+    noAccess: "只有学校所有者及其允许的员工可以查看工资。",
     loadFailed: "无法加载工资，请重试。",
     periodLabel: "日期",
     preset: {

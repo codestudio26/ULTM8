@@ -1653,6 +1653,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Vedere, caricare, scaricare ed eliminare i file degli allievi delle loro sedi. I membri non vedono mai questi file.",
       seeMedicalInfo: "Vedere le informazioni mediche",
       seeMedicalInfoHint: "Leggere le informazioni mediche che gli allievi delle loro sedi hanno dato all'iscrizione. Gli istruttori non le vedono mai.",
+      // Decision 435 item 22.
+      payroll: "Paghe",
+      payrollHint: "Vedere il report delle paghe e impostare le tariffe di tutto lo staff, per tutta la scuola, titolari compresi.",
       ownerOnly: "Denaro (pagamenti, rimborsi, piani e prezzi), impostazioni della Scuola e proprietari restano sempre ai proprietari della Scuola.",
       saved: "Accesso salvato per {name}.",
       readOnlyIntro: "Lo staff delle tue sedi. Solo i proprietari della Scuola possono cambiare ruoli o accessi.",
@@ -4935,7 +4938,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Quanto ha guadagnato ogni membro dello staff con le lezioni che ha tenuto, alle tariffe che imposti. ULTM8 non paga nessuno: paghi il tuo staff al di fuori di ULTM8.",
     tabReport: "Report",
     tabRates: "Tariffe",
-    noAccess: "Solo il titolare della scuola può vedere le paghe.",
+    noAccess: "Solo i titolari della scuola, e lo staff a cui lo permettono, possono vedere le paghe.",
     loadFailed: "Impossibile caricare le paghe. Riprova.",
     periodLabel: "Date",
     preset: {

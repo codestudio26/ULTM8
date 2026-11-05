@@ -1653,6 +1653,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Dateien der Schüler ihrer Standorte sehen, hochladen, herunterladen und löschen. Mitglieder sehen diese Dateien nie.",
       seeMedicalInfo: "Medizinische Angaben sehen",
       seeMedicalInfoHint: "Die medizinischen Angaben lesen, die die Schüler ihrer Standorte bei der Anmeldung gemacht haben. Trainer sehen sie nie.",
+      // Decision 435 item 22.
+      payroll: "Lohnabrechnung",
+      payrollHint: "Die Lohnabrechnung sehen und die Lohnsätze aller Mitarbeiter festlegen, für die ganze Schule, Inhaber eingeschlossen.",
       ownerOnly: "Geld (Zahlungen, Erstattungen, Tarife und Preise), Schuleinstellungen und Inhaber bleiben immer bei den Inhabern der Schule.",
       saved: "Zugriff für {name} gespeichert.",
       readOnlyIntro: "Das Team deiner Filialen. Nur die Inhaber der Schule können Rollen oder Zugriffe ändern.",
@@ -4935,7 +4938,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Was jedes Teammitglied mit den unterrichteten Kursen zu den von dir festgelegten Sätzen verdient hat. ULTM8 zahlt niemandem etwas aus: Du bezahlst dein Personal außerhalb von ULTM8.",
     tabReport: "Bericht",
     tabRates: "Sätze",
-    noAccess: "Nur der Schulinhaber kann die Lohnabrechnung sehen.",
+    noAccess: "Nur die Inhaber der Schule und Mitarbeiter, denen sie es erlauben, können die Lohnabrechnung sehen.",
     loadFailed: "Die Lohnabrechnung konnte nicht geladen werden. Bitte versuche es erneut.",
     periodLabel: "Zeitraum",
     preset: {

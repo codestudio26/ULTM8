@@ -108,6 +108,9 @@ export class StaffAccessDto {
   @ApiProperty({ description: "See the medical information of their branches' students (off by default; Decision 315 item 10)." })
   @IsBoolean()
   seeMedicalInfo!: boolean;
+  @ApiProperty({ description: 'See the payroll report and set the pay rates, for the whole School (off by default, in no preset; Decision 435 item 22).' })
+  @IsBoolean()
+  payroll!: boolean;
   @ApiProperty({ description: "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)." })
   @IsBoolean()
   memberFiles!: boolean;

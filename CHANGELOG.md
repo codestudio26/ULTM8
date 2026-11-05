@@ -387,6 +387,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   New `StaffPayRate` table (migration `20270215000001_staff_pay_rates`,
   owner-only RLS); `GET /schools/:id/payroll/rates`, `PUT …/rates/:userId`,
   `GET …/payroll/report`. 15 languages.
+- **"Payroll" access switch for Branch Staff** (Decision 435 item 22) — the
+  owner can now let a Branch Staff member see the Payroll page: a new
+  **Payroll** switch in their Access window (Staff group), off by default and
+  in neither preset. With it they see the report and set the rates for the
+  whole School, every Branch and every staff member, as the owner does, and
+  Payroll appears in their menu. Coaches never have it; a paused role loses
+  it. Enforced by the API and by the database (`StaffPayRate` RLS now also
+  admits `is_payroll_staff`). **Needs a database migration**
+  (`20270219000002_payroll_access_switch`).
 - **Data tools: merge duplicate members, export all signed documents**
   (Decision 315 item 13; imports are a separate change). **Merge a duplicate**
   on a student's page: the owner picks the other record of the same person at

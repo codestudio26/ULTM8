@@ -52,7 +52,7 @@ const DEFAULT_RULES: {
   openMatUsesCredit: true,
   codeDigits: 4,
 };
-const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
+const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false };
 
 describeIfDb('Check-in rules (Decision 394)', () => {
   let app: INestApplication;

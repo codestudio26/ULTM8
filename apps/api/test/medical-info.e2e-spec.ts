@@ -45,6 +45,7 @@ const ACCESS = {
   memberFiles: false,
   importData: false,
   seeMedicalInfo: false,
+  payroll: false,
 };
 
 const ASTHMA = 'Asthma: inhaler in the kit bag.';

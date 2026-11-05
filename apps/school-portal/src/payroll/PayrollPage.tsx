@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
@@ -37,11 +38,16 @@ function dateLabel(iso: string): string {
  * Payroll (Decision 320 item 4): a report of what each member of staff
  * earned from the classes they taught, at the hourly and per-class rates the
  * owner sets, over a date range, with a CSV download. ULTM8 pays nobody.
- * The School's owners only.
+ * The School's owners, and Branch Staff with the "Payroll" switch (Decision
+ * 435 item 22), who see and set it for the whole School as the owner does.
+ * The API checks the same.
  */
 export function PayrollPage() {
   const t = useT();
-  const schoolId = useOwnedSchoolId();
+  const ownedSchoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  const staffAccess = useMyStaffAccess(ownedSchoolId ? null : coachSchoolId).data;
+  const schoolId = ownedSchoolId ?? (staffAccess?.branchStaff && staffAccess.access.payroll ? coachSchoolId : null);
   const [tab, setTab] = useState<Tab>('report');
 
   return (

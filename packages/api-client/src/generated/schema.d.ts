@@ -8845,6 +8845,8 @@ export interface components {
             attendanceStats: boolean;
             /** @description See the medical information of their branches' students (off by default; Decision 315 item 10). */
             seeMedicalInfo: boolean;
+            /** @description See the payroll report and set the pay rates, for the whole School (off by default, in no preset; Decision 435 item 22). */
+            payroll: boolean;
             /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
             memberFiles: boolean;
             /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */

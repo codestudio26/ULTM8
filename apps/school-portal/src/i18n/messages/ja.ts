@@ -1638,6 +1638,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "担当拠点の生徒のファイルを閲覧、アップロード、ダウンロード、削除できます。会員にはこれらのファイルは表示されません。",
       seeMedicalInfo: "医療情報を見る",
       seeMedicalInfoHint: "担当支部の生徒が登録時に入力した医療情報を閲覧します。コーチには表示されません。",
+      // Decision 435 item 22.
+      payroll: "給与",
+      payrollHint: "スクール全体（オーナーを含む）の給与レポートを見て、全スタッフの給与単価を設定します。",
       ownerOnly: "お金（支払い、返金、プランと料金）、スクールの設定、オーナーは常にスクールのオーナーが管理します。",
       saved: "{name}のアクセスを保存しました。",
       readOnlyIntro: "あなたの支店のスタッフです。役割やアクセスを変更できるのはスクールのオーナーだけです。",
@@ -4889,7 +4892,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "設定した単価で、各スタッフが担当したクラスから得た金額です。ULTM8 は支払いを行いません。スタッフへの支払いは ULTM8 の外で行ってください。",
     tabReport: "レポート",
     tabRates: "単価",
-    noAccess: "給与を見られるのはスクールのオーナーだけです。",
+    noAccess: "給与を見られるのは、スクールのオーナーと、オーナーが許可したスタッフだけです。",
     loadFailed: "給与を読み込めませんでした。もう一度お試しください。",
     periodLabel: "期間",
     preset: {

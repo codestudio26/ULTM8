@@ -807,6 +807,7 @@ export const serverMessages: Record<string, string> = {
   "This date is not valid.": "Deze datum is niet geldig.",
   "Attendance can only be logged from {v1} to {v2}.": "Aanwezigheid kan alleen worden ingevoerd van {v1} tot {v2}.",
   "The School owner hasn't let you import data.": "De schooleigenaar heeft je niet toegestaan gegevens te importeren.",
+  "The School owner hasn't let you see payroll.": "De schooleigenaar heeft je niet toegestaan de salarisadministratie te zien.",
   "A row number is past the end of this import.": "Een rijnummer ligt voorbij het einde van deze import.",
   "Import not found": "Import niet gevonden",
   "Each row number can only be sent once.": "Elk rijnummer kan maar één keer worden verstuurd.",

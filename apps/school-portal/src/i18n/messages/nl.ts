@@ -1653,6 +1653,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Bestanden van de leerlingen van hun vestigingen bekijken, uploaden, downloaden en verwijderen. Leden zien deze bestanden nooit.",
       seeMedicalInfo: "Medische informatie zien",
       seeMedicalInfoHint: "De medische informatie lezen die leerlingen van hun vestigingen bij de aanmelding gaven. Trainers zien die nooit.",
+      // Decision 435 item 22.
+      payroll: "Salarisoverzicht",
+      payrollHint: "Het salarisoverzicht zien en de tarieven van alle medewerkers instellen, voor de hele school, eigenaren inbegrepen.",
       ownerOnly: "Geld (betalingen, terugbetalingen, abonnementen en prijzen), Schoolinstellingen en eigenaren blijven altijd bij de eigenaren van de School.",
       saved: "Toegang opgeslagen voor {name}.",
       readOnlyIntro: "Het team van jouw filialen. Alleen de eigenaren van de School kunnen rollen of toegang wijzigen.",
@@ -4935,7 +4938,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Wat elk teamlid heeft verdiend met de lessen die het gaf, tegen de tarieven die je instelt. ULTM8 betaalt niemand uit: je betaalt je personeel buiten ULTM8.",
     tabReport: "Overzicht",
     tabRates: "Tarieven",
-    noAccess: "Alleen de eigenaar van de school kan het salarisoverzicht zien.",
+    noAccess: "Alleen de eigenaren van de school, en medewerkers die zij toestemming geven, kunnen het salarisoverzicht zien.",
     loadFailed: "Het salarisoverzicht kon niet worden geladen. Probeer het opnieuw.",
     periodLabel: "Datums",
     preset: {

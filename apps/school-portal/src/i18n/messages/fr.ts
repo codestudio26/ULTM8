@@ -1653,6 +1653,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Voir, envoyer, télécharger et supprimer les fichiers des élèves de leurs sites. Les membres ne voient jamais ces fichiers.",
       seeMedicalInfo: "Voir les informations médicales",
       seeMedicalInfoHint: "Lire les informations médicales que les élèves de leurs sites ont données à l'inscription. Les coachs ne les voient jamais.",
+      // Decision 435 item 22.
+      payroll: "Paie",
+      payrollHint: "Voir le rapport de paie et fixer les taux de rémunération de tout le personnel, pour toute l’école, propriétaires compris.",
       ownerOnly: "L’argent (paiements, remboursements, formules et prix), les paramètres de l’École et les propriétaires restent toujours aux propriétaires de l’École.",
       saved: "Accès enregistré pour {name}.",
       readOnlyIntro: "Le personnel de vos sites. Seuls les propriétaires de l’École peuvent changer les rôles ou les accès.",
@@ -4935,7 +4938,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Ce que chaque membre du personnel a gagné avec les cours qu’il a donnés, aux taux que vous fixez. ULTM8 ne paie personne : vous payez votre personnel en dehors d’ULTM8.",
     tabReport: "Rapport",
     tabRates: "Taux",
-    noAccess: "Seul le propriétaire de l’école peut voir la paie.",
+    noAccess: "Seuls les propriétaires de l’école, et le personnel qu’ils autorisent, peuvent voir la paie.",
     loadFailed: "Impossible de charger la paie. Veuillez réessayer.",
     periodLabel: "Dates",
     preset: {

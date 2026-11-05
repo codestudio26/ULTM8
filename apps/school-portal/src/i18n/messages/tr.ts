@@ -1653,6 +1653,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Şubelerindeki öğrencilerin dosyalarını görme, yükleme, indirme ve silme. Üyeler bu dosyaları asla görmez.",
       seeMedicalInfo: "Sağlık bilgilerini görme",
       seeMedicalInfoHint: "Şubelerindeki öğrencilerin kayıtta verdiği sağlık bilgilerini okuma. Antrenörler bunları asla görmez.",
+      // Decision 435 item 22.
+      payroll: "Bordro",
+      payrollHint: "Tüm okul için, sahipler dahil, bordro raporunu görmek ve tüm personelin ücret oranlarını belirlemek.",
       ownerOnly: "Para (ödemeler, iadeler, planlar ve fiyatlar), Okul ayarları ve sahipler her zaman Okul sahiplerinde kalır.",
       saved: "{name} için erişim kaydedildi.",
       readOnlyIntro: "Şubelerinizin personeli. Rolleri veya erişimi yalnızca Okul sahipleri değiştirebilir.",
@@ -4935,7 +4938,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Her personelin verdiği derslerden, belirlediğiniz ücretlerle ne kadar kazandığı. ULTM8 kimseye ödeme yapmaz: personelinize ödemeyi ULTM8 dışında yaparsınız.",
     tabReport: "Rapor",
     tabRates: "Ücretler",
-    noAccess: "Bordroyu yalnızca okul sahibi görebilir.",
+    noAccess: "Bordroyu yalnızca okul sahipleri ve izin verdikleri personel görebilir.",
     loadFailed: "Bordro yüklenemedi. Lütfen tekrar deneyin.",
     periodLabel: "Tarihler",
     preset: {

@@ -227,7 +227,7 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
     expect(after.body.rows.find((r: { userId: string }) => r.userId === users.leaver.id)).toBeUndefined();
   });
 
-  it('is for the School owner only', async () => {
+  it('is for the School owner, not coaches, students, other Schools or Branch Staff without the switch', async () => {
     for (const who of ['coach', 'desk', 'student', 'ownerB']) {
       expect([who, (await as(who).get(rates())).status]).toEqual([who, 403]);
       expect([who, (await as(who).get(report(march))).status]).toEqual([who, 403]);
@@ -250,5 +250,81 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
       asUser(users.ownerB.id, (tx) => tx.staffPayRate.create({ data: { id: randomUUID(), schoolId: schoolA, userId: users.coach.id, hourlyRate: 1 } })),
     ).rejects.toThrow();
     expect(await superuser.staffPayRate.count({ where: { schoolId: schoolA } })).toBe(3);
+  });
+
+  describe('the "Payroll" switch for Branch Staff (Decision 435 item 22)', () => {
+    const asUser = <T>(userId: string, fn: (tx: Parameters<Parameters<PrismaClient['$transaction']>[0]>[0]) => Promise<T>) =>
+      appDb.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT set_config('app.current_user_id', ${userId}, true)`;
+        return fn(tx);
+      });
+    const DEFAULTS = {
+      classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false,
+      exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false,
+    };
+    const setAccess = (access: Record<string, boolean>) => as('owner').put(`/v1/schools/${schoolA}/staff/${users.desk.id}/access`).send(access);
+
+    it('is off by default: the Branch Staff member sees "off" on their access and is refused', async () => {
+      const me = await as('desk').get(`/v1/schools/${schoolA}/staff/me/access`);
+      expect(me.status).toBe(200);
+      expect(me.body.access.payroll).toBe(false);
+      const refused = await as('desk').get(report(march));
+      expect(refused.status).toBe(403);
+      expect(refused.body.error.code).toBe('STAFF_ACCESS_OFF');
+      // The owner has it by role.
+      expect((await as('owner').get(`/v1/schools/${schoolA}/staff/me/access`)).body.access.payroll).toBe(true);
+    });
+
+    it('switched on, they see the whole School: every staff member, every Branch, and set rates', async () => {
+      const put = await setAccess({ ...DEFAULTS, payroll: true });
+      expect(put.status).toBe(200);
+      expect(put.body.access.payroll).toBe(true);
+      expect((await superuser.staffPermission.findFirstOrThrow({ where: { schoolId: schoolA, userId: users.desk.id } })).canSeePayroll).toBe(true);
+
+      // Their own grant is for the Tokyo Branch only, yet the report counts
+      // the classes with no Branch and shows the School's names.
+      const res = await as('desk').get(report(march));
+      expect(res.status).toBe(200);
+      const row = (who: string) => res.body.rows.find((r: { userId: string }) => r.userId === users[who].id);
+      expect(row('coach')).toMatchObject({ name: 'Coach Ana', onStaff: true, classesTaught: 2, minutesTaught: 150, pay: 6000 });
+      expect(row('sub')).toMatchObject({ classesTaught: 2, minutesTaught: 75 });
+
+      const list = await as('desk').get(rates());
+      expect(list.status).toBe(200);
+      expect(list.body.items.map((i: { name: string }) => i.name)).toEqual(expect.arrayContaining(['Coach Ana', 'sub Payroll', 'owner Payroll']));
+      const set = await as('desk').put(`${rates()}/${users.blank.id}`).send({ hourlyRate: 900, perClassRate: null });
+      expect(set.status).toBe(200);
+      expect(set.body.items.find((i: { userId: string }) => i.userId === users.blank.id)).toMatchObject({ hourlyRate: 900 });
+
+      // The database lets them reach this School's rates, and no other School's.
+      expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count({ where: { schoolId: schoolA } }))).toBe(4);
+      await expect(
+        asUser(users.desk.id, (tx) => tx.staffPayRate.create({ data: { id: randomUUID(), schoolId: schoolB, userId: users.ownerB.id, hourlyRate: 1 } })),
+      ).rejects.toThrow();
+      // Another School stays closed to them.
+      expect((await as('desk').get(rates(schoolB))).status).toBe(403);
+    });
+
+    it('a coach never has it, even with the column set; a paused Branch Staff member loses it', async () => {
+      await superuser.staffPermission.create({ data: { id: randomUUID(), schoolId: schoolA, userId: users.sub.id, canSeePayroll: true } });
+      const subToken = jwt.sign({ sub: users.sub.id, email: users.sub.email, grants: [{ role: 'INSTRUCTOR', franchiseId: null, schoolId: schoolA, branchId: null }] });
+      expect((await http().get(report(march)).set('Authorization', `Bearer ${subToken}`)).status).toBe(403);
+      expect(await asUser(users.sub.id, (tx) => tx.staffPayRate.count())).toBe(0);
+
+      // Paused (Decision 390): the role's revokedAt is set.
+      await superuser.roleGrant.updateMany({ where: { schoolId: schoolA, userId: users.desk.id }, data: { revokedAt: new Date(), pausedAt: new Date() } });
+      try {
+        expect((await as('desk').get(report(march))).status).toBe(403);
+        expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count())).toBe(0);
+      } finally {
+        await superuser.roleGrant.updateMany({ where: { schoolId: schoolA, userId: users.desk.id }, data: { revokedAt: null, pausedAt: null } });
+      }
+    });
+
+    it('switched off again, they are refused at once', async () => {
+      expect((await setAccess(DEFAULTS)).status).toBe(200);
+      expect((await as('desk').get(rates())).status).toBe(403);
+      expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count())).toBe(0);
+    });
   });
 });

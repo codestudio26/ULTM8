@@ -807,6 +807,7 @@ export const serverMessages: Record<string, string> = {
   "This date is not valid.": "Ta data jest nieprawidłowa.",
   "Attendance can only be logged from {v1} to {v2}.": "Obecność można wpisać tylko od {v1} do {v2}.",
   "The School owner hasn't let you import data.": "Właściciel szkoły nie pozwolił ci importować danych.",
+  "The School owner hasn't let you see payroll.": "Właściciel szkoły nie pozwolił ci oglądać wynagrodzeń.",
   "A row number is past the end of this import.": "Numer wiersza wykracza poza koniec tego importu.",
   "Import not found": "Nie znaleziono importu",
   "Each row number can only be sent once.": "Każdy numer wiersza można wysłać tylko raz.",

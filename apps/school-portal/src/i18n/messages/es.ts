@@ -1653,6 +1653,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Ver, subir, descargar y eliminar archivos de los alumnos de sus sedes. Los miembros nunca ven estos archivos.",
       seeMedicalInfo: "Ver información médica",
       seeMedicalInfoHint: "Leer la información médica que los alumnos de sus sedes dieron al registrarse. Los instructores nunca la ven.",
+      // Decision 435 item 22.
+      payroll: "Nómina",
+      payrollHint: "Ver el informe de nómina y fijar las tarifas de pago de todo el personal, para toda la escuela, propietarios incluidos.",
       ownerOnly: "El dinero (pagos, reembolsos, planes y precios), la configuración de la Escuela y los propietarios quedan siempre en manos de los propietarios de la Escuela.",
       saved: "Acceso guardado para {name}.",
       readOnlyIntro: "El personal de tus sedes. Solo los propietarios de la Escuela pueden cambiar roles o accesos.",
@@ -4935,7 +4938,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Lo que ha ganado cada miembro del personal con las clases que impartió, según las tarifas que fijes. ULTM8 no paga a nadie: pagas a tu personal fuera de ULTM8.",
     tabReport: "Informe",
     tabRates: "Tarifas",
-    noAccess: "Solo el propietario de la escuela puede ver la nómina.",
+    noAccess: "Solo los propietarios de la escuela, y el personal al que se lo permitan, pueden ver la nómina.",
     loadFailed: "No se pudo cargar la nómina. Inténtalo de nuevo.",
     periodLabel: "Fechas",
     preset: {

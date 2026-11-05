@@ -1683,6 +1683,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Oglądanie, przesyłanie, pobieranie i usuwanie plików uczniów ich oddziałów. Członkowie nigdy nie widzą tych plików.",
       seeMedicalInfo: "Widzieć informacje medyczne",
       seeMedicalInfoHint: "Czytać informacje medyczne, które uczniowie ich oddziałów podali przy zapisie. Trenerzy nigdy ich nie widzą.",
+      // Decision 435 item 22.
+      payroll: "Wynagrodzenia",
+      payrollHint: "Oglądać raport wynagrodzeń i ustawiać stawki całego personelu, dla całej szkoły, łącznie z właścicielami.",
       ownerOnly: "Pieniądze (płatności, zwroty, plany i ceny), ustawienia Szkoły i właściciele zawsze zostają przy właścicielach Szkoły.",
       saved: "Zapisano dostęp: {name}.",
       readOnlyIntro: "Personel Twoich oddziałów. Tylko właściciele Szkoły mogą zmieniać role lub dostęp.",
@@ -5047,7 +5050,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Ile każdy członek zespołu zarobił na prowadzonych zajęciach według ustalonych przez Ciebie stawek. ULTM8 nikomu nie płaci: wynagrodzenia wypłacasz poza ULTM8.",
     tabReport: "Raport",
     tabRates: "Stawki",
-    noAccess: "Wynagrodzenia widzi tylko właściciel szkoły.",
+    noAccess: "Wynagrodzenia widzą tylko właściciele szkoły i pracownicy, którym na to pozwolą.",
     loadFailed: "Nie udało się wczytać wynagrodzeń. Spróbuj ponownie.",
     periodLabel: "Daty",
     preset: {

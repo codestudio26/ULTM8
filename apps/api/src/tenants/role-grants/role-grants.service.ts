@@ -1491,6 +1491,7 @@ function toPermissionColumns(access: StaffAccessSet) {
     canSeeMedicalInfo: access.seeMedicalInfo,
     canManageMemberFiles: access.memberFiles,
     canImportData: access.importData,
+    canSeePayroll: access.payroll,
   };
 }
 
