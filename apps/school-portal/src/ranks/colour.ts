@@ -48,6 +48,25 @@ export function hsvToRgb({ h, s, v }: Hsv): [number, number, number] {
   return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
 }
 
+/**
+ * Hue and saturation at a point on the colour wheel (the centre is white, the
+ * edge full colour). `dx`/`dy` are the point's offset from the centre and `r`
+ * the wheel's radius, all in the same pixels.
+ *
+ * Anywhere within one pixel of the centre is the centre itself: white. A
+ * pointer can't be placed finer than a whole CSS pixel in every browser
+ * (Firefox reports whole-pixel pointer positions, so a click on the middle of
+ * a wheel that doesn't sit on a whole pixel lands up to half a pixel off), and
+ * no drawn pixel sits exactly on the centre. Without this, clicking the white
+ * centre picked a faint tint such as #FEFEFF. The drawing uses the same rule,
+ * so the centre pixels are drawn white too.
+ */
+export function wheelHueSat(dx: number, dy: number, r: number): { h: number; s: number } {
+  const d = Math.sqrt(dx * dx + dy * dy);
+  if (d < 1) return { h: 0, s: 0 };
+  return { h: ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360, s: Math.min(1, d / r) };
+}
+
 export function hsvToHex(hsv: Hsv): string {
   return `#${hsvToRgb(hsv)
     .map((c) => c.toString(16).padStart(2, '0'))
