@@ -1,13 +1,14 @@
-import React from 'react';
-import { ActivityIndicator, ScrollView, Text } from 'react-native';
+import React, { useState } from 'react';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { ErrorBanner, Screen } from '../components/ui';
+import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
 import { ConsentTierRow } from './ConsentTierRow';
 import { BookingDelegationRow } from './BookingDelegationRow';
 import { MedicalInfoSharing } from '../profile/MedicalInfoSharing';
-import { useMyConsentRecords } from './guardianQueries';
+import { useChildConsent, useMyConsentRecords, useMyMinors, useRemoveMe } from './guardianQueries';
+import { formatDateOnly } from '../lib/formatDate';
 import { useMyBookingDelegations } from './bookingDelegationQueries';
 import type { AppStackParamList } from '../navigation/types';
 
@@ -17,11 +18,17 @@ type Props = NativeStackScreenProps<AppStackParamList, 'MinorConsent'>;
  * render, in a fixed order (`ConsentTier` has exactly two confirmed values,
  * BASELINE/CAMERA — SKILL.md §14), regardless of whether either has ever been
  * granted. */
-export function MinorConsentScreen({ route }: Props) {
+export function MinorConsentScreen({ route, navigation }: Props) {
   const t = useT();
   const { studentId, name } = route.params;
   const consent = useMyConsentRecords();
   const delegations = useMyBookingDelegations();
+  // Decision 429 item 9: each parent sees the others' consent, read-only.
+  const childConsent = useChildConsent(studentId);
+  // Decision 429 item 7: nothing to give or withdraw for a child who is 18.
+  const isAdult = !!useMyMinors().data?.items.find((m) => m.studentId === studentId)?.isAdult;
+  const removeMe = useRemoveMe();
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
 
   // Gated on BOTH queries settling, not just consent's own — same discipline
   // Slice 6a's own review fixed for Waivers/signatures (a screen gating on only
@@ -57,11 +64,55 @@ export function MinorConsentScreen({ route }: Props) {
     <Screen>
       <ScrollView>
         <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16 }}>{name}</Text>
-        <ConsentTierRow studentId={studentId} tier="BASELINE" record={activeByTier.get('BASELINE')} />
-        <ConsentTierRow studentId={studentId} tier="CAMERA" record={activeByTier.get('CAMERA')} />
-        <BookingDelegationRow studentId={studentId} delegation={activeDelegation} />
+        {isAdult ? (
+          <Text style={{ color: '#5F6368', marginBottom: 12 }}>{t('guardians.minorConsent.adult', { name })}</Text>
+        ) : (
+          <>
+            <ConsentTierRow studentId={studentId} tier="BASELINE" record={activeByTier.get('BASELINE')} />
+            <ConsentTierRow studentId={studentId} tier="CAMERA" record={activeByTier.get('CAMERA')} />
+            <BookingDelegationRow studentId={studentId} delegation={activeDelegation} />
+          </>
+        )}
+        {(childConsent.data?.guardians ?? []).filter((g) => !g.isMe).length > 0 ? (
+          <View style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}>
+            <Text style={{ fontWeight: '600' }}>{t('guardians.minorConsent.othersTitle')}</Text>
+            {(childConsent.data?.guardians ?? [])
+              .filter((g) => !g.isMe)
+              .map((g) => {
+                const baseline = g.records.find((r) => r.tier === 'BASELINE');
+                const status = !baseline
+                  ? t('guardians.minorConsent.otherNone')
+                  : baseline.status === 'ACTIVE'
+                    ? t('guardians.minorConsent.otherGiven', { date: formatDateOnly(baseline.consentedAt) })
+                    : t('guardians.minorConsent.otherWithdrawn', { date: formatDateOnly(baseline.withdrawnAt ?? baseline.consentedAt) });
+                return (
+                  <Text key={g.guardianId} style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>
+                    {g.name}: {status}
+                  </Text>
+                );
+              })}
+          </View>
+        ) : null}
         {/* Decision 419 item 1: the Guardian sees and withdraws their child's medical information sharing. */}
         <MedicalInfoSharing studentId={studentId} />
+        {/* Decision 429 item 8: "Remove me" — never the last parent of an enrolled child. */}
+        <View style={{ paddingVertical: 14 }}>
+          {removeMe.isError ? <ErrorBanner message={getApiErrorMessage(removeMe.error, t('guardians.minorConsent.removeFailed'))} /> : null}
+          {confirmingRemove ? (
+            <>
+              <Text style={{ marginBottom: 8 }}>{t('guardians.minorConsent.removeConfirm', { name })}</Text>
+              <Button
+                title={t('guardians.minorConsent.removeMe')}
+                variant="destructive"
+                loading={removeMe.isPending}
+                onPress={() => removeMe.mutate(studentId, { onSuccess: () => navigation.goBack() })}
+              />
+              <Button title={t('guardians.minorConsent.keep')} variant="secondary" disabled={removeMe.isPending} onPress={() => setConfirmingRemove(false)} />
+            </>
+          ) : (
+            <Button title={t('guardians.minorConsent.removeMe')} variant="secondary" onPress={() => setConfirmingRemove(true)} />
+          )}
+        </View>
       </ScrollView>
     </Screen>
   );

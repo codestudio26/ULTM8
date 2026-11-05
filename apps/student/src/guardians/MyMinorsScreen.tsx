@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Switch, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, ErrorBanner, Field, InlineError, Screen, TextField } from '../components/ui';
+import { Button, ErrorBanner, Field, InlineError, Screen, SuccessBanner, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateOnly } from '../lib/formatDate';
 import { useT } from '../i18n/I18nProvider';
 import { useAddMinor, useMyMinors } from './guardianQueries';
+import { CURRENT_POLICY_VERSION } from './ConsentTierRow';
+import type { TranslationKey } from '../i18n/types';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'MyMinors'>;
@@ -16,7 +18,24 @@ type Props = NativeStackScreenProps<AppStackParamList, 'MyMinors'>;
  * Staff-populated grading data, not a creation-time input). `dateOfBirth` is
  * collected as YYYY-MM-DD text — a real date picker is left for the actual
  * design pass this screen is standing in for, not built here. */
-const EMPTY_FORM = { firstName: '', surname: '', dateOfBirth: '' };
+const EMPTY_FORM = { firstName: '', surname: '', dateOfBirth: '', consent: false };
+
+/** Decision 429 item 3: a real date, not in the future, under 18 — checked
+ * here as well as by the API, so the parent sees why at once. */
+export function birthDateProblem(value: string, today = new Date()): TranslationKey | null {
+  const text = value.trim();
+  if (!text) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  const d = m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : null;
+  if (!m || !d || d.getUTCFullYear() !== +m[1] || d.getUTCMonth() !== +m[2] - 1 || d.getUTCDate() !== +m[3] || +m[1] < 1900) {
+    return 'guardians.myMinors.dateInvalid';
+  }
+  const day = (x: Date) => x.getFullYear() * 10000 + (x.getMonth() + 1) * 100 + x.getDate();
+  const born = +m[1] * 10000 + +m[2] * 100 + +m[3];
+  if (born > day(today)) return 'guardians.myMinors.dateFuture';
+  if (born + 180000 <= day(today)) return 'guardians.myMinors.dateAdult';
+  return null;
+}
 
 export function MyMinorsScreen({ navigation }: Props) {
   const t = useT();
@@ -24,6 +43,7 @@ export function MyMinorsScreen({ navigation }: Props) {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const addMinor = useAddMinor();
+  const [added, setAdded] = useState<string | null>(null);
 
   if (isLoading) {
     return (
@@ -57,10 +77,19 @@ export function MyMinorsScreen({ navigation }: Props) {
   // the actual submission.
   function handleAddMinor() {
     if (addMinor.isPending) return;
+    if (birthDateProblem(form.dateOfBirth)) return;
     addMinor.mutate(
-      { firstName: form.firstName.trim(), surname: form.surname.trim(), dateOfBirth: form.dateOfBirth.trim() },
       {
-        onSuccess: () => {
+        firstName: form.firstName.trim(),
+        surname: form.surname.trim(),
+        dateOfBirth: form.dateOfBirth.trim(),
+        // Decision 429 item 9: the consent ticked here is recorded with the child.
+        ...(form.consent ? { consentPolicyVersion: CURRENT_POLICY_VERSION } : {}),
+      },
+      {
+        onSuccess: (res) => {
+          // Decision 429 item 4: the same child sent twice is added once.
+          setAdded(res.alreadyAdded ? t('guardians.myMinors.alreadyAdded', { name: res.firstName }) : null);
           setAdding(false);
           setForm(EMPTY_FORM);
         },
@@ -70,6 +99,7 @@ export function MyMinorsScreen({ navigation }: Props) {
 
   return (
     <Screen>
+      {added ? <SuccessBanner message={added} /> : null}
       {minors.length === 0 ? <Text style={{ color: '#5F6368', marginBottom: 12 }}>{t('guardians.myMinors.empty')}</Text> : null}
 
       {minors.map((minor) => (
@@ -86,18 +116,36 @@ export function MyMinorsScreen({ navigation }: Props) {
           <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>
             {t('guardians.myMinors.born', { date: formatDateOnly(minor.dateOfBirth) })}
           </Text>
+          {/* Decision 429 item 7: at 18 they sign for themselves; the parent keeps reading and paying for 30 days. */}
+          {minor.isAdult ? (
+            <Text style={{ color: '#8A4B00', marginTop: 6, fontSize: 13 }}>
+              {minor.parentAccessEndsOn
+                ? t('guardians.myMinors.adultUntil', { name: minor.firstName, date: formatDateOnly(minor.parentAccessEndsOn) })
+                : t('guardians.myMinors.adult', { name: minor.firstName })}
+            </Text>
+          ) : null}
+          {/* Decision 429 item 9: no booking or check-in until a parent gives consent. */}
+          {!minor.isAdult && (minor.consent === 'PENDING' || minor.consent === 'WITHDRAWN') ? (
+            <Text style={{ color: '#8A4B00', marginTop: 6, fontSize: 13 }}>
+              {t(minor.consent === 'PENDING' ? 'guardians.myMinors.consentPending' : 'guardians.myMinors.consentWithdrawn', { name: minor.firstName })}
+            </Text>
+          ) : null}
           {/* Book them into a class, with guests on their Friend Passes (Decision 379). */}
-          <Button
-            title={t('guardians.myMinors.bookAClass')}
-            variant="secondary"
-            onPress={() => navigation.navigate('ChildBooking', { studentId: minor.studentId, name: minor.firstName })}
-          />
+          {!minor.isAdult ? (
+            <Button
+              title={t('guardians.myMinors.bookAClass')}
+              variant="secondary"
+              onPress={() => navigation.navigate('ChildBooking', { studentId: minor.studentId, name: minor.firstName })}
+            />
+          ) : null}
           {/* Decision 428 (M1, M2): sign their waivers, and buy them a plan. */}
-          <Button
-            title={t('guardians.myMinors.waivers')}
-            variant="secondary"
-            onPress={() => navigation.navigate('ChildWaivers', { studentId: minor.studentId, name: minor.firstName })}
-          />
+          {!minor.isAdult ? (
+            <Button
+              title={t('guardians.myMinors.waivers')}
+              variant="secondary"
+              onPress={() => navigation.navigate('ChildWaivers', { studentId: minor.studentId, name: minor.firstName })}
+            />
+          ) : null}
           <Button
             title={t('guardians.myMinors.plans')}
             variant="secondary"
@@ -155,6 +203,15 @@ export function MyMinorsScreen({ navigation }: Props) {
               placeholder={t('guardians.myMinors.dateOfBirthPlaceholder')}
             />
           </Field>
+          {birthDateProblem(form.dateOfBirth) ? <InlineError message={t(birthDateProblem(form.dateOfBirth)!)} /> : null}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 }}>
+            <Switch
+              value={form.consent}
+              onValueChange={(consent) => setForm((f) => ({ ...f, consent }))}
+              accessibilityLabel={t('guardians.myMinors.consentLabel')}
+            />
+            <Text style={{ flex: 1, fontSize: 13 }}>{t('guardians.myMinors.consentLabel')}</Text>
+          </View>
           {addMinor.isError ? (
             <InlineError message={getApiErrorMessage(addMinor.error, t('guardians.myMinors.addError'))} />
           ) : null}
@@ -162,7 +219,7 @@ export function MyMinorsScreen({ navigation }: Props) {
             title={t('guardians.myMinors.addMinor')}
             onPress={handleAddMinor}
             loading={addMinor.isPending}
-            disabled={!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth.trim()}
+            disabled={!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth.trim() || !!birthDateProblem(form.dateOfBirth)}
           />
         </View>
       ) : (
