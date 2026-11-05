@@ -97,19 +97,17 @@ export function TopBar() {
           <Link
             to="/whats-new"
             data-testid="whats-new-link"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              minHeight: 32,
-              padding: '4px 12px',
-              borderRadius: 999,
-              border: '1px solid var(--border)',
-              color: 'var(--text-secondary)',
-              fontSize: 14,
-              textDecoration: 'none',
-            }}
+            aria-label={t('whatsNew.title')}
+            title={t('whatsNew.title')}
+            style={{ display: 'inline-flex', color: 'var(--text-secondary)' }}
           >
-            {t('whatsNew.title')}
+            {/* An icon, like the bell beside it, so the header keeps to one
+                line on a tablet (a text pill wrapped it, and the open account
+                menu then covered the page heading). */}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M3.5 8v4h2.5l6 3.5v-11L6 8H3.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+              <path d="M14.5 7.5a3.5 3.5 0 0 1 0 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
           </Link>
         ) : null}
 
