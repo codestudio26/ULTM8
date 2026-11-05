@@ -3205,6 +3205,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "无法保存合同。",
       invalidTerm: "请输入 1 到 120 之间的整数月数。",
       invalidFee: "请以金额输入费用，例如 50.00。",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "最短期限结束后终止订阅",
+      endsAfterTermHint: "在最短期限结束当天停止，而不是续订。冻结会把这一天顺延冻结的天数。",
+      endsAfterTermLine: "最短期限结束后终止（不续订）",
       studentCardTitle: "已签署的合同",
       loadFailed: "无法加载已签署的合同。",
       signedOn: "{name} 于 {date} 签署",
@@ -3314,6 +3318,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberLimitLabel: "人数上限",
       memberLimitHint: "此方案的最多人数。计入在用和冻结的会员以及待确认的现金付款。满员后会员加入候补名单；前台仍可出售。不限人数请留空。",
       memberLimitInvalid: "请将人数上限填写为不小于 1 的整数，或留空。",
+      startsOnFirstCheckIn: "从会员首次签到开始",
+      startsOnFirstCheckInHint: "天数从会员首次用它签到时开始计算，而不是购买时。需要填写有效天数。",
+      fixedDatesLegend: "固定日期",
+      fixedDatesHint: "用于在固定日期进行的方案（如 6 周训练营），代替天数。开始前可以购买，开始后也可按原价购买，直到最后一天。",
+      fixedStartLabel: "第一天",
+      fixedEndLabel: "最后一天",
+      fixedDatesInvalid: "请填写第一天和最后一天，最后一天不能早于第一天。",
+      switchToLabel: "结束后转为",
+      switchToHint: "购买时同意的会员会在原方案结束后转为此方案，并从其保存的卡中扣款。会提前通知。没有保存的卡则直接结束。",
+      switchToNone: "无（直接结束）",
       joiningFeeLabel: "入会费",
       joiningFeeHint: "例如 25.00。在会员于本学校的第一个方案中加收一次，税费和刷卡附加费与方案相同。重新加入或续费时不收取。没有入会费请留空。",
       joiningFeeRefundable: "退款时一并退还入会费",
@@ -3400,6 +3414,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       planLabel: "方案",
       paidByLabel: "付款方式",
       sellConfirm: "记录销售",
+      awaitingFirstCheckIn: "首次签到时开始",
+      switchesTo: "之后转为{plan}",
       giftConfirm: "赠送通行证",
       deskFailed: "无法保存，请重试。",
       freeze: {
@@ -4770,6 +4786,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "在晋级页面免除或取消",
       waivedLine: "{name} 于 {date} 在晋级页面免除了该费用",
       cancelledLine: "{name} 于 {date} 在晋级页面取消了该费用",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "提前退出费",
     },
     lateFee: {
       badge: "滞纳金",

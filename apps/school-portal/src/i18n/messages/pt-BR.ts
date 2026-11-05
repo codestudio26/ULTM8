@@ -3244,6 +3244,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Não foi possível salvar o contrato.",
       invalidTerm: "Digite um número inteiro de meses de 1 a 120.",
       invalidFee: "Digite a multa como valor, por exemplo 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Encerrar a assinatura após o prazo mínimo",
+      endsAfterTermHint: "Ela termina no dia em que o prazo mínimo acaba, em vez de renovar. Um congelamento adia esse dia pelos dias congelados.",
+      endsAfterTermLine: "Termina após o prazo mínimo (sem renovação)",
       studentCardTitle: "Contratos assinados",
       loadFailed: "Não foi possível carregar os contratos assinados.",
       signedOn: "Assinado em {date} por {name}",
@@ -3354,6 +3358,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberLimitLabel: "Limite de alunos",
       memberLimitHint: "O máximo de alunos deste plano. Contam alunos ativos e congelados e pagamentos em dinheiro ainda pendentes. Quando lotar, os alunos entram numa lista de espera; no balcão você ainda pode vendê-lo. Deixe vazio para sem limite.",
       memberLimitInvalid: "Informe o limite de alunos como número inteiro a partir de 1, ou deixe vazio.",
+      startsOnFirstCheckIn: "Começa no primeiro check-in do aluno",
+      startsOnFirstCheckInHint: "Os dias começam no primeiro check-in do aluno com ele, não na compra. Precisa do número de dias que dura.",
+      fixedDatesLegend: "Datas fixas",
+      fixedDatesHint: "Para um plano em dias definidos, como um acampamento de 6 semanas, no lugar do número de dias. Pode ser comprado antes de começar e depois pelo preço cheio, até o último dia.",
+      fixedStartLabel: "Primeiro dia",
+      fixedEndLabel: "Último dia",
+      fixedDatesInvalid: "Informe o primeiro e o último dia; o último igual ou depois do primeiro.",
+      switchToLabel: "Ao terminar, mudar para",
+      switchToHint: "Quem concordar na compra passa para este plano quando o seu terminar, cobrado no cartão salvo. É avisado antes. Sem cartão salvo, ele simplesmente termina.",
+      switchToNone: "Nada (simplesmente termina)",
       joiningFeeLabel: "Taxa de matrícula",
       joiningFeeHint: "Por exemplo 25.00. Adicionada uma vez ao primeiro plano de um aluno nesta escola, com o mesmo imposto e a mesma taxa de cartão do plano. Nunca cobrada ao voltar nem na renovação. Deixe em branco se não houver.",
       joiningFeeRefundable: "Reembolsar a taxa de matrícula junto com o plano",
@@ -3443,6 +3457,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       planLabel: "Plano",
       paidByLabel: "Pago com",
       sellConfirm: "Registrar venda",
+      awaitingFirstCheckIn: "Começa no primeiro check-in",
+      switchesTo: "Depois muda para {plan}",
       giftConfirm: "Dar passe",
       deskFailed: "Não foi possível salvar. Tente novamente.",
       freeze: {
@@ -4816,6 +4832,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Dispense ou cancele na graduação",
       waivedLine: "Taxa dispensada na graduação em {date} por {name}",
       cancelledLine: "Taxa cancelada na graduação em {date} por {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Multa por saída antecipada",
     },
     lateFee: {
       badge: "Multa por atraso",

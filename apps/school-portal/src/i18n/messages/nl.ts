@@ -3244,6 +3244,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Het contract kon niet worden opgeslagen.",
       invalidTerm: "Vul een heel aantal maanden in van 1 tot 120.",
       invalidFee: "Vul de kosten in als bedrag, bijvoorbeeld 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Abonnement na de minimale looptijd beëindigen",
+      endsAfterTermHint: "Het stopt op de dag dat de minimale looptijd eindigt in plaats van te verlengen. Bevriezen schuift die dag op met het aantal bevroren dagen.",
+      endsAfterTermLine: "Eindigt na de minimale looptijd (geen verlenging)",
       studentCardTitle: "Getekende contracten",
       loadFailed: "De getekende contracten konden niet worden geladen.",
       signedOn: "Getekend op {date} door {name}",
@@ -3354,6 +3358,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberLimitLabel: "Ledenlimiet",
       memberLimitHint: "Het maximale aantal leden van dit abonnement. Actieve en bevroren leden en nog openstaande contante betalingen tellen mee. Is het vol, dan komen leden op een wachtlijst; aan de balie kun je het nog verkopen. Laat leeg voor geen limiet.",
       memberLimitInvalid: "Vul de ledenlimiet in als heel getal vanaf 1, of laat hem leeg.",
+      startsOnFirstCheckIn: "Begint bij de eerste check-in van het lid",
+      startsOnFirstCheckInHint: "De dagen beginnen bij de eerste check-in ermee, niet bij aankoop. Het aantal dagen is nodig.",
+      fixedDatesLegend: "Vaste data",
+      fixedDatesHint: "Voor een abonnement op vaste dagen, zoals een kamp van 6 weken, in plaats van het aantal dagen. Te koop vóór de start en daarna tegen de volle prijs, tot de laatste dag.",
+      fixedStartLabel: "Eerste dag",
+      fixedEndLabel: "Laatste dag",
+      fixedDatesInvalid: "Vul de eerste en de laatste dag in, de laatste op of na de eerste.",
+      switchToLabel: "Aan het eind overstappen op",
+      switchToHint: "Leden die bij aankoop akkoord gaan, stappen aan het eind over op dit abonnement, afgeschreven van hun opgeslagen kaart. Ze horen het vooraf. Zonder opgeslagen kaart eindigt het gewoon.",
+      switchToNone: "Niets (het eindigt gewoon)",
       joiningFeeLabel: "Inschrijfgeld",
       joiningFeeHint: "Bijvoorbeeld 25.00. Eén keer toegevoegd aan het eerste abonnement van een lid bij deze school, met dezelfde btw en kaarttoeslag als het abonnement. Nooit bij terugkeer of verlenging. Laat leeg voor geen inschrijfgeld.",
       joiningFeeRefundable: "Inschrijfgeld terugbetalen met het lidmaatschap",
@@ -3443,6 +3457,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       planLabel: "Plan",
       paidByLabel: "Betaald met",
       sellConfirm: "Verkoop registreren",
+      awaitingFirstCheckIn: "Begint bij de eerste check-in",
+      switchesTo: "Stapt daarna over op {plan}",
       giftConfirm: "Pas geven",
       deskFailed: "Dit kon niet worden opgeslagen. Probeer het opnieuw.",
       freeze: {
@@ -4816,6 +4832,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Kwijtschelden of annuleren bij graduatie",
       waivedLine: "Vergoeding op {date} door {name} kwijtgescholden bij graduatie",
       cancelledLine: "Vergoeding op {date} door {name} geannuleerd bij graduatie",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Kosten voor vroegtijdig opzeggen",
     },
     lateFee: {
       badge: "Te-laatvergoeding",

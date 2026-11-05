@@ -82,6 +82,24 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
     expect(getByText('+ £1.25 card surcharge when paying by card')).toBeTruthy();
   });
 
+  it('shows when a plan starts or runs, and buys with the switch only once the member agrees (Decision 435)', async () => {
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
+    const plan = { ...CLASS_PACK, cardSurchargeAmount: 0, startsOnFirstCheckIn: true, switchToPlanId: 'plan-9' };
+    const { getByText, getByRole, unmount } = await render(
+      <MembershipPlanRow plan={plan as never} schoolId="school-1" switchTo={{ title: 'Ten classes', price: 6000, currency: 'gbp' }} />,
+    );
+    expect(getByText('Starts on your first check-in')).toBeTruthy();
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenLastCalledWith(expect.objectContaining({ planId: 'plan-1', agreeToPlanSwitch: false }), expect.anything());
+    await fireEvent(getByRole('switch'), 'valueChange', true);
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenLastCalledWith(expect.objectContaining({ agreeToPlanSwitch: true }), expect.anything());
+    await unmount();
+    const camp = { ...CLASS_PACK, cardSurchargeAmount: 0, fixedStartDate: '2027-07-01T00:00:00.000Z', fixedEndDate: '2027-08-11T00:00:00.000Z' };
+    const { getByText: text } = await render(<MembershipPlanRow plan={camp as never} schoolId="school-1" />);
+    expect(text(/^Runs /)).toBeTruthy();
+  });
+
   it('shows the joining fee on a first plan, and nothing when the plan has none (Decision 435)', async () => {
     mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
     const { getByText, unmount } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0, joiningFee: 2500 } as never} schoolId="school-1" />);

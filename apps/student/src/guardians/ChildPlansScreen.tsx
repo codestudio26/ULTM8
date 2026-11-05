@@ -71,6 +71,7 @@ export function ChildPlansScreen({ route }: Props) {
                 schoolId={schoolId}
                 forStudentId={studentId}
                 availability={availability.data?.items.find((a) => a.planId === plan.id)}
+                switchTo={plans.find((p) => p.id === plan.switchToPlanId)}
               />
             )) : null}
       </Screen>

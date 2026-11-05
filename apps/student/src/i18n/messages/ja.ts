@@ -852,6 +852,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "署名して続ける",
       signError: "契約に署名できませんでした。",
       loadError: "契約を読み込めませんでした。",
+      // Decision 435 item 16.
+      endsAfterTerm: "このメンバーシップは最低契約期間の終了時に終わります。更新されません。",
+      endsOn: "最低契約期間の終了後、{date} に終了します。更新されません。",
       cancelFee: "契約の最低契約期間は {date} までです。それより前にメンバーシップが終わると、途中解約料 {amount} が残高に計上されます。",
     },
     recharge: {
@@ -868,6 +871,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "1回のみ",
       classesRemaining: { other: "残り{count}クラス" },
       expires: "{date}に期限切れ",
+      awaitingFirstCheckIn: "初回チェックインで開始",
       empty: "会員プランはまだありません。",
       loadError: "会員プランを読み込めませんでした。もう一度お試しください。",
       cancelSubscription: "サブスクリプションを解約",
@@ -906,6 +910,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       leaveWaitlist: "キャンセル待ちをやめる",
       placeHeld: "{date}まで席を確保しています。それまでに購入してください。",
       waitlistError: "キャンセル待ちを更新できませんでした。もう一度お試しください。",
+      startsOnFirstCheckIn: "初回チェックインで開始",
+      fixedDates: "{from}〜{to}",
+      agreeToSwitch: "終了時に{plan}（{price}）へ切り替え、保存済みのカードに請求する。事前に通知があります。保存済みのカードがない場合はそのまま終了します。",
       joiningFee: "この道場で最初のプランには入会金 {amount} が加算されます",
       cardSurcharge: "カード払いの場合 + 手数料 {amount}",
       classesIncluded: { other: "{count}クラス" },
@@ -1220,6 +1227,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "昇級費",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "途中解約料",
     },
     lateFee: {
       label: "延滞料",

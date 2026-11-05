@@ -115,6 +115,9 @@ export const MEMBERSHIP_EXPIRY_REMINDER_QUEUE = 'membership-expiry-reminder';
 // Decision 435 item 11: every 15 minutes, offers a full plan's freed places
 // to the first person waiting, held 24 hours.
 export const PLAN_WAITLIST_QUEUE = 'plan-waitlist';
+// Decision 435 item 9: hourly, tells members about an agreed plan switch and
+// switches (or ends) the memberships that reached their end.
+export const PLAN_SWITCH_QUEUE = 'plan-switch';
 // Decision 317 item 7: the daily absence alert to staff when a member hasn't
 // checked in for the School's number of weeks.
 export const STUDENT_ABSENCE_ALERT_QUEUE = 'student-absence-alert';

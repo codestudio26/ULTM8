@@ -18,6 +18,8 @@ import { Queue } from 'bullmq';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
 import { queueReadyCheck } from '../jobs/grading-notifications.types';
 import { assertPersonMayCheckIn, checkInClosesAt, loadCheckInRules } from './check-in-rules';
+import { startOnFirstCheckIn } from '../memberships/first-check-in';
+
 
 /**
  * Phase 13 built self-service-only QR check-in against a bare `bookingId` — the
@@ -474,6 +476,10 @@ export class AttendanceService {
     // length, per style, as a record only. Separate from the class count
     // above and never read by grading.
     await recordCheckInMinutes(tx, studentId, booking);
+
+    // Decision 435 item 7: a membership that starts on the first check-in
+    // starts with this one.
+    await startOnFirstCheckIn(tx, booking.id);
 
     // "Auto-assign first belt" (Decision 321 item 6): the style's first rank
     // on the first check-in to a class of it. Not for imported past

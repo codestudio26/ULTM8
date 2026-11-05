@@ -67,4 +67,13 @@ export class PurchaseMembershipDto {
   @IsOptional()
   @IsUUID()
   contractSignatureId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      "Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. Omit or false: it simply ends.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  agreeToPlanSwitch?: boolean;
 }
+

@@ -133,6 +133,7 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
                 schoolId={academyId}
                 canBuy={enrolled}
                 availability={availability.data?.items.find((a) => a.planId === plan.id)}
+                switchTo={academy.membershipPlans.find((p) => p.id === plan.switchToPlanId)}
               />
             ))}
           </View>

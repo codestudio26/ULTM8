@@ -851,6 +851,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "ลงนามและดำเนินการต่อ",
       signError: "ลงนามในสัญญาไม่ได้",
       loadError: "โหลดสัญญาไม่ได้",
+      // Decision 435 item 16.
+      endsAfterTerm: "สมาชิกภาพนี้จะหยุดเมื่อระยะเวลาขั้นต่ำสิ้นสุด และไม่ต่ออายุ",
+      endsOn: "สิ้นสุดหลังระยะเวลาขั้นต่ำในวันที่ {date} และไม่ต่ออายุ",
       cancelFee: "ระยะเวลาขั้นต่ำของสัญญาคุณถึง {date} หากสมาชิกภาพสิ้นสุดก่อนนั้น ค่าธรรมเนียมยกเลิกก่อนกำหนด {amount} จะถูกเพิ่มในยอดของคุณ",
     },
     recharge: {
@@ -867,6 +870,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "ครั้งเดียว",
       classesRemaining: { other: "เหลือ {count} คลาส" },
       expires: "หมดอายุ {date}",
+      awaitingFirstCheckIn: "เริ่มเมื่อคุณเช็กอินครั้งแรก",
       empty: "ยังไม่มีสมาชิกภาพ",
       loadError: "ไม่สามารถโหลดสมาชิกภาพได้ โปรดลองอีกครั้ง",
       cancelSubscription: "ยกเลิกการสมัคร",
@@ -905,6 +909,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       leaveWaitlist: "ออกจากรายชื่อรอ",
       placeHeld: "จองที่ไว้ให้คุณถึง {date} ซื้อก่อนเวลานั้น",
       waitlistError: "อัปเดตรายชื่อรอไม่ได้ โปรดลองอีกครั้ง",
+      startsOnFirstCheckIn: "เริ่มเมื่อคุณเช็กอินครั้งแรก",
+      fixedDates: "{from} – {to}",
+      agreeToSwitch: "เมื่อหมด ให้เปลี่ยนเป็น {plan} ({price}) โดยเรียกเก็บจากบัตรที่บันทึกไว้ ฉันจะได้รับแจ้งก่อน หากไม่มีบัตรที่บันทึกไว้ ก็จะสิ้นสุดไปเลย",
       joiningFee: "+ {amount} ค่าแรกเข้าสำหรับแพ็กเกจแรกของคุณที่โรงเรียนนี้",
       cardSurcharge: "+ ค่าธรรมเนียม {amount} เมื่อจ่ายด้วยบัตร",
       classesIncluded: { other: "{count} คลาส" },
@@ -1219,6 +1226,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "ค่าเลื่อนระดับ",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "ค่าธรรมเนียมยกเลิกก่อนกำหนด",
     },
     lateFee: {
       label: "ค่าปรับล่าช้า",

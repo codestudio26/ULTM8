@@ -31,7 +31,8 @@ import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { VISIT_PASS_TITLE } from './visitors';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
-import { passExpiryDate, schoolZoneFor } from './pass-expiry';
+import { schoolZoneFor } from './pass-expiry';
+
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
@@ -40,6 +41,7 @@ import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
 import { PlanContractsService } from './contracts/plan-contracts.service';
 import { assertPlanHasRoom } from './waitlist/plan-capacity';
+import { assertPlanTermValid, fixedPlanOver, membershipTerm, planDay, PLAN_OVER, TERM_PLAN_TYPES } from './plan-term';
 import { assertJoiningFeeAllowed, joiningFeeDue, NO_JOINING_FEE, type JoiningFeeDue } from './joining-fee';
 
 /** A second identical desk sale or Friend Pass within this long is refused
@@ -101,12 +103,20 @@ export class MembershipsService {
     const currency = this.normalizeCurrency(dto.currency);
     // Decision 334 (Memberships review M2-M4): fields a type doesn't use are
     // refused, and the ones it needs are required.
+    // Decision 435 items 7-8: fixed dates take the place of a number of days.
+    const term = {
+      startsOnFirstCheckIn: dto.startsOnFirstCheckIn ?? false,
+      fixedStartDate: dto.fixedStartDate ? planDay(dto.fixedStartDate) : null,
+      fixedEndDate: dto.fixedEndDate ? planDay(dto.fixedEndDate) : null,
+    };
+    const fixedDates = term.fixedStartDate !== null || term.fixedEndDate !== null;
     const shape = this.resolvePlanShape(
       dto.type,
       { expiryDurationDays: dto.expiryDurationDays ?? null, classesIncluded: dto.classesIncluded ?? null, scopedClassId: dto.scopedClassId ?? null },
       dto,
-      { expiry: true, credits: true },
+      { expiry: !fixedDates, credits: true },
     );
+    assertPlanTermValid(dto.type, term, shape.expiryDurationDays);
     this.assertValidPlanShape(dto.type, dto.price, shape.classesIncluded ?? undefined, shape.scopedClassId ?? undefined);
     this.assertValidNewMemberBillingStrategy(dto.type, dto.newMemberBillingStrategy ?? 'FRESH_CYCLE', dto.billingCycleAnchorDay);
 
@@ -132,6 +142,8 @@ export class MembershipsService {
     const incomeCategoryId = await this.incomeCategories.resolveForSchool(schoolId, dto.incomeCategoryId);
 
     const id = randomUUID();
+    // Decision 435 item 9: the plan it can switch to at its end.
+    const switchToPlanId = await this.resolveSwitchTarget(callerId, schoolId, id, dto.type, term, shape.expiryDurationDays, dto.switchToPlanId ?? null);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.membershipPlan.create({
         data: {
@@ -154,6 +166,10 @@ export class MembershipsService {
           newMemberBillingStrategy: dto.newMemberBillingStrategy ?? 'FRESH_CYCLE',
           billingCycleAnchorDay: dto.billingCycleAnchorDay,
           incomeCategoryId,
+          startsOnFirstCheckIn: term.startsOnFirstCheckIn,
+          fixedStartDate: term.fixedStartDate,
+          fixedEndDate: term.fixedEndDate,
+          switchToPlanId,
           joiningFee: dto.joiningFee ?? null,
           joiningFeeRefundable: dto.joiningFeeRefundable ?? false,
           // Decision 435 item 13: blank = no limit.
@@ -161,6 +177,44 @@ export class MembershipsService {
         },
       }),
     );
+  }
+
+  /**
+   * Decision 435 item 9: the plan a plan can switch to when it ends, checked
+   * as the owner saves it. The plan switching must have an end (a number of
+   * days or fixed dates; a Subscription renews, a Friend Pass is given). The
+   * next plan is one of this School's, a Class Pack, Weekly Pass or Trial
+   * (it is charged once, to the saved card: a Subscription can't be started
+   * that way yet), paid, not archived and without a contract (one can't be
+   * signed for the member). Null clears it.
+   */
+  private async resolveSwitchTarget(
+    callerId: string,
+    schoolId: string,
+    planId: string,
+    type: string,
+    term: { startsOnFirstCheckIn: boolean; fixedStartDate: Date | null; fixedEndDate: Date | null },
+    days: number | null,
+    switchToPlanId: string | null,
+  ): Promise<string | null> {
+    if (!switchToPlanId) return null;
+    if (!(TERM_PLAN_TYPES as readonly string[]).includes(type) || (!days && !term.fixedEndDate)) {
+      throw new BadRequestException({ code: 'SWITCH_NEEDS_END', message: 'Only a Class Pack, Weekly Pass or Trial with an end date can switch to another plan when it ends.' });
+    }
+    if (switchToPlanId === planId) {
+      throw new BadRequestException({ code: 'SWITCH_TARGET_INVALID', message: 'A plan can\'t switch to itself.' });
+    }
+    const target = await this.prismaApp.withTenantContext(callerId, (tx) => tx.membershipPlan.findUnique({ where: { id: switchToPlanId } }));
+    if (!target || target.schoolId !== schoolId || target.type === 'VISIT_PASS') {
+      throw new NotFoundException('MembershipPlan not found');
+    }
+    if (target.archivedAt || target.contractVersion != null || target.price <= 0 || !(TERM_PLAN_TYPES as readonly string[]).includes(target.type)) {
+      throw new BadRequestException({
+        code: 'SWITCH_TARGET_INVALID',
+        message: 'The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.',
+      });
+    }
+    return target.id;
   }
 
   // FOUND ON REVIEW (Track B Slice 4a): this read had no role gate at all, unlike
@@ -236,6 +290,14 @@ export class MembershipsService {
 
     const nextType = dto.type ?? existing.type;
     const typeChanged = dto.type !== undefined && dto.type !== existing.type;
+    // Decision 435 items 7-9: the plan's start, end and switch as this edit
+    // leaves them. Undefined keeps; null clears.
+    const nextTerm = {
+      startsOnFirstCheckIn: dto.startsOnFirstCheckIn ?? existing.startsOnFirstCheckIn,
+      fixedStartDate: dto.fixedStartDate === undefined ? existing.fixedStartDate : dto.fixedStartDate === null ? null : planDay(dto.fixedStartDate),
+      fixedEndDate: dto.fixedEndDate === undefined ? existing.fixedEndDate : dto.fixedEndDate === null ? null : planDay(dto.fixedEndDate),
+    };
+    const nextFixedDates = nextTerm.fixedStartDate !== null || nextTerm.fixedEndDate !== null;
     // Decision 334 (Memberships review M14): the type decides what a live
     // member's Membership means (credits, expiry, renewal), so it is locked
     // while anyone holds one. Duplicating the plan is the way to sell a
@@ -304,10 +366,29 @@ export class MembershipsService {
       },
       dto,
       {
-        expiry: dto.type !== undefined || dto.expiryDurationDays !== undefined,
+        expiry: !nextFixedDates && (dto.type !== undefined || dto.expiryDurationDays !== undefined || dto.fixedStartDate !== undefined || dto.fixedEndDate !== undefined),
         credits: dto.type !== undefined || dto.classesIncluded !== undefined || dto.scopedClassId !== undefined,
       },
     );
+    const termTouched =
+      dto.type !== undefined ||
+      dto.expiryDurationDays !== undefined ||
+      dto.startsOnFirstCheckIn !== undefined ||
+      dto.fixedStartDate !== undefined ||
+      dto.fixedEndDate !== undefined ||
+      dto.switchToPlanId !== undefined;
+    if (termTouched) assertPlanTermValid(nextType, nextTerm, shape.expiryDurationDays);
+    const nextSwitchToPlanId = termTouched
+      ? await this.resolveSwitchTarget(
+          callerId,
+          existing.schoolId,
+          planId,
+          nextType,
+          nextTerm,
+          shape.expiryDurationDays,
+          dto.switchToPlanId !== undefined ? dto.switchToPlanId : existing.switchToPlanId,
+        )
+      : undefined;
     this.assertValidPlanShape(nextType, nextPrice, shape.classesIncluded ?? undefined, shape.scopedClassId ?? undefined);
     // Decision 259 — validated against the resolved NEXT combination, same
     // discipline as nextType/nextPrice above: a PATCH that only changes type
@@ -421,6 +502,10 @@ export class MembershipsService {
           stripeProductId,
           stripePriceId,
           incomeCategoryId,
+          startsOnFirstCheckIn: dto.startsOnFirstCheckIn,
+          fixedStartDate: dto.fixedStartDate === undefined ? undefined : nextTerm.fixedStartDate,
+          fixedEndDate: dto.fixedEndDate === undefined ? undefined : nextTerm.fixedEndDate,
+          switchToPlanId: nextSwitchToPlanId,
           joiningFee: dto.joiningFee,
           joiningFeeRefundable: dto.joiningFeeRefundable,
           // Decision 435 items 13 and 15: null removes the limit; a lower one
@@ -837,6 +922,15 @@ export class MembershipsService {
     // desk can sell over the limit). A place held for them is theirs.
     await this.prismaApp.withTenantContext(studentId, (tx) => assertPlanHasRoom(tx, plan, studentId));
 
+    // Decision 435 item 8: a fixed-date plan is sold until its last day.
+    if (plan.fixedEndDate && fixedPlanOver(plan, await schoolZoneFor(this.prismaJobs, plan.schoolId))) {
+      throw new BadRequestException(PLAN_OVER);
+    }
+    // Decision 435 item 9: the member agrees, when buying, to switch to the
+    // plan's next plan when it ends.
+    if (dto?.agreeToPlanSwitch && !plan.switchToPlanId) {
+      throw new BadRequestException({ code: 'PLAN_HAS_NO_SWITCH', message: "This plan doesn't switch to another one when it ends." });
+    }
     // Decision 334 (Memberships review M17/M18): only a current Student of
     // the School can hold its Membership. Staff buying as themselves, and a
     // removed Student, are refused.
@@ -952,8 +1046,11 @@ export class MembershipsService {
     // Stripe — a £0 SUBSCRIPTION isn't a real case (Subscription always requires
     // Stripe per the check above, and Stripe subscriptions aren't modeled as £0
     // here), so this branch is effectively FRIEND_PASS/other-zero-priced plans only.
+    // Decision 435 item 9: the switch the member agreed to, kept with the
+    // payment and copied onto the Membership it creates.
+    const planSwitchToPlanId = dto?.agreeToPlanSwitch ? plan.switchToPlanId : null;
     if (plan.price === 0) {
-      return this.createMembershipAndReturn(studentId, plan, null);
+      return this.createMembershipAndReturn(studentId, plan, null, planSwitchToPlanId);
     }
 
     const student = await this.prismaApp.withTenantContext(studentId, (tx) =>
@@ -1062,7 +1159,7 @@ export class MembershipsService {
       // SUBSCRIPTION already took its own branch above and never reaches
       // here; CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only.
       if (dto?.payWithSavedCard) {
-        return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, surcharge, stepUpToken, joiningFee);
+        return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, surcharge, stepUpToken, joiningFee, planSwitchToPlanId);
       }
 
       // Decision 243 (Track B Slice 4b) — hosted Stripe Checkout, the fresh-
@@ -1070,7 +1167,7 @@ export class MembershipsService {
       // took its own branch above and never reaches here; CLASS_PACK/
       // WEEKLY_PASS/TRIAL_MEMBERSHIP only, same scope as payWithSavedCard.
       if (dto?.useHostedCheckout) {
-        return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency, surcharge, joiningFee);
+        return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency, surcharge, joiningFee, planSwitchToPlanId);
       }
 
       const { paymentIntentId, clientSecret } = await this.paymentsService.charge(
@@ -1097,6 +1194,7 @@ export class MembershipsService {
             status: 'PENDING',
             paymentMethod: 'STRIPE',
             stripePaymentIntentId: paymentIntentId,
+            planSwitchToPlanId,
           },
         }),
       );
@@ -1132,6 +1230,7 @@ export class MembershipsService {
           currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: paymentAccount.provider,
+          planSwitchToPlanId,
         },
       });
       return { transactionId: id, created: true };
@@ -1163,6 +1262,7 @@ export class MembershipsService {
     surcharge: number,
     stepUpToken: string | undefined,
     joiningFee: JoiningFeeDue = NO_JOINING_FEE,
+    planSwitchToPlanId: string | null = null,
   ) {
     this.stepUpService.assertVerified(callerId, stepUpToken);
     // Decision 435 item 3: the joining fee is part of this one payment.
@@ -1224,12 +1324,13 @@ export class MembershipsService {
           status: 'SUCCESSFUL',
           paymentMethod: 'STRIPE',
           stripePaymentIntentId: chargeResult.paymentIntentId,
+          planSwitchToPlanId,
         },
       }),
     );
 
     try {
-      const result = await this.createMembershipAndReturn(studentId, plan, null);
+      const result = await this.createMembershipAndReturn(studentId, plan, null, planSwitchToPlanId);
       await this.prismaApp.withTenantContext(studentId, (tx) =>
         tx.transaction.update({ where: { id: transactionId }, data: { membershipId: result.membership.id } }),
       );
@@ -1299,6 +1400,7 @@ export class MembershipsService {
     currency: string,
     surcharge: number,
     joiningFee: JoiningFeeDue = NO_JOINING_FEE,
+    planSwitchToPlanId: string | null = null,
   ) {
     const key = stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title, surcharge, joiningFee.amount]);
     const newId = checkoutTransactionId(key);
@@ -1330,6 +1432,7 @@ export class MembershipsService {
           currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: 'STRIPE',
+          planSwitchToPlanId,
         },
 
       }),
@@ -1373,13 +1476,30 @@ export class MembershipsService {
    * assertCanCreateMembership(), run in the same transaction as the insert
    * under an advisory lock — see that function's own comment for why.
    */
-  async createMembershipAndReturn(studentId: string, plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null }, stripeSubscriptionId: string | null) {
+  async createMembershipAndReturn(
+    studentId: string,
+    plan: {
+      id: string;
+      schoolId: string;
+      type: string;
+      classesIncluded: number | null;
+      expiryDurationDays: number | null;
+      scopedClassId: string | null;
+      startsOnFirstCheckIn?: boolean;
+      fixedStartDate?: Date | null;
+      fixedEndDate?: Date | null;
+    },
+    stripeSubscriptionId: string | null,
+    planSwitchToPlanId: string | null = null,
+  ) {
     // Decision 432 item 8: an N-day pass ends on calendar days in the School's
-    // zone (read only for a plan that expires).
-    const schoolZone = plan.expiryDurationDays ? await schoolZoneFor(this.prismaJobs, plan.schoolId) : null;
+    // zone (read only for a plan that expires). Decision 435 items 7-8: or
+    // starts on the first check-in, or runs on fixed dates (membershipTerm).
+    const schoolZone = plan.expiryDurationDays || plan.fixedEndDate ? await schoolZoneFor(this.prismaJobs, plan.schoolId) : null;
     try {
       const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await assertCanCreateMembership(tx, studentId, plan.schoolId, plan);
+        const term = membershipTerm(plan, schoolZone);
         return tx.membership.create({
           data: {
             id: randomUUID(),
@@ -1388,9 +1508,13 @@ export class MembershipsService {
             schoolId: plan.schoolId,
             frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
             classesRemaining: plan.classesIncluded ?? undefined,
-            expiryDate: passExpiryDate(plan.expiryDurationDays, schoolZone),
+            startDate: term.startDate,
+            expiryDate: term.expiryDate,
+            awaitingFirstCheckIn: term.awaitingFirstCheckIn,
             scopedClassId: plan.scopedClassId,
             stripeSubscriptionId: stripeSubscriptionId ?? undefined,
+            // Decision 435 item 9: the switch the member agreed to when buying.
+            ...(planSwitchToPlanId ? { switchToPlanId: planSwitchToPlanId, switchAgreedAt: new Date() } : {}),
           },
         });
       });
@@ -1460,6 +1584,10 @@ export class MembershipsService {
     // it, in the app.
     if (plan.contractVersion != null) {
       throw new BadRequestException("This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.");
+    }
+    // Decision 435 item 8: a fixed-date plan is sold until its last day.
+    if (plan.fixedEndDate && fixedPlanOver(plan, await schoolZoneFor(this.prismaJobs, schoolId))) {
+      throw new BadRequestException(PLAN_OVER);
     }
     if (plan.termsWaiverRequired) {
       const signed = await this.prismaApp.withTenantContext(studentId, (tx) => hasCountingWaiverSignature(tx, studentId, schoolId));
@@ -1686,9 +1814,21 @@ export class MembershipsService {
 
   private newMembershipData(
     studentId: string,
-    plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null },
+    plan: {
+      id: string;
+      schoolId: string;
+      type: string;
+      classesIncluded: number | null;
+      expiryDurationDays: number | null;
+      scopedClassId: string | null;
+      startsOnFirstCheckIn?: boolean;
+      fixedStartDate?: Date | null;
+      fixedEndDate?: Date | null;
+    },
     schoolZone: string | null,
   ) {
+    // Decision 435 items 7-8: the plan's own start and end (membershipTerm).
+    const term = membershipTerm(plan, schoolZone);
     return {
       id: randomUUID(),
       studentId,
@@ -1696,7 +1836,9 @@ export class MembershipsService {
       schoolId: plan.schoolId,
       frequency: 'ONE_TIME' as const,
       classesRemaining: plan.classesIncluded ?? undefined,
-      expiryDate: passExpiryDate(plan.expiryDurationDays, schoolZone),
+      startDate: term.startDate,
+      expiryDate: term.expiryDate,
+      awaitingFirstCheckIn: term.awaitingFirstCheckIn,
       scopedClassId: plan.scopedClassId,
     };
   }

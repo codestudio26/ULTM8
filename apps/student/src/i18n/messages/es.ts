@@ -877,6 +877,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Firmar y continuar",
       signError: "No se pudo firmar el contrato.",
       loadError: "No se pudo cargar el contrato.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Esta membresía termina cuando acaba el plazo mínimo. No se renueva.",
+      endsOn: "Termina tras su plazo mínimo, el {date}. No se renueva.",
       cancelFee: "El plazo mínimo de tu contrato dura hasta el {date}. Si tu membresía termina antes, se añade a tu saldo la tarifa por baja anticipada de {amount}.",
     },
     recharge: {
@@ -893,6 +896,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Pago único",
       classesRemaining: { one: "Queda {count} clase", other: "Quedan {count} clases" },
       expires: "Caduca el {date}",
+      awaitingFirstCheckIn: "Empieza en tu primer check-in",
       empty: "Aún no hay membresías.",
       loadError: "No se pudieron cargar las membresías — inténtalo de nuevo.",
       cancelSubscription: "Cancelar suscripción",
@@ -931,6 +935,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       leaveWaitlist: "Salir de la lista de espera",
       placeHeld: "Tienes una plaza guardada hasta el {date}. Cómprala antes.",
       waitlistError: "No se pudo actualizar la lista de espera; inténtalo de nuevo.",
+      startsOnFirstCheckIn: "Empieza en tu primer check-in",
+      fixedDates: "Del {from} al {to}",
+      agreeToSwitch: "Al terminar, cámbiame a {plan} ({price}), con cargo a mi tarjeta guardada. Me avisarán antes; sin tarjeta guardada, simplemente termina.",
       joiningFee: "+ {amount} de cuota de inscripción en tu primer plan en esta escuela",
       cardSurcharge: "+ {amount} de recargo si pagas con tarjeta",
       classesIncluded: { one: "{count} clase", other: "{count} clases" },
@@ -1230,6 +1237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Tarifa de promoción",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Tarifa por baja anticipada",
     },
     lateFee: {
       label: "Recargo por retraso",

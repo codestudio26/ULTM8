@@ -3205,6 +3205,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "계약을 저장할 수 없습니다.",
       invalidTerm: "1~120 사이의 정수로 개월 수를 입력하세요.",
       invalidFee: "수수료를 금액으로 입력하세요(예: 50.00).",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "최소 약정 기간 후 구독 종료",
+      endsAfterTermHint: "갱신하지 않고 최소 약정 기간이 끝나는 날에 멈춥니다. 일시 정지하면 정지한 일수만큼 그날이 늦춰집니다.",
+      endsAfterTermLine: "최소 약정 기간 후 종료(갱신 없음)",
       studentCardTitle: "서명된 계약",
       loadFailed: "서명된 계약을 불러올 수 없습니다.",
       signedOn: "{date}에 {name} 서명",
@@ -3314,6 +3318,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberLimitLabel: "인원 제한",
       memberLimitHint: "이 플랜의 최대 인원입니다. 활성·일시정지 회원과 확인 대기 중인 현금 결제가 포함됩니다. 마감되면 회원은 대기자 명단에 등록하며, 데스크에서는 계속 판매할 수 있습니다. 제한이 없으면 비워 두세요.",
       memberLimitInvalid: "인원 제한은 1 이상의 정수로 입력하거나 비워 두세요.",
+      startsOnFirstCheckIn: "회원의 첫 체크인에 시작",
+      startsOnFirstCheckInHint: "구매 시점이 아니라 회원이 처음 체크인할 때부터 기간이 시작됩니다. 유효 일수가 필요합니다.",
+      fixedDatesLegend: "고정 날짜",
+      fixedDatesHint: "6주 캠프처럼 정해진 기간의 플랜에 일수 대신 사용합니다. 시작 전에 살 수 있고, 시작 후에도 마지막 날까지 정가로 살 수 있습니다.",
+      fixedStartLabel: "첫날",
+      fixedEndLabel: "마지막 날",
+      fixedDatesInvalid: "첫날과 마지막 날을 입력하세요. 마지막 날은 첫날과 같거나 그 이후여야 합니다.",
+      switchToLabel: "끝나면 전환할 플랜",
+      switchToHint: "구매할 때 동의한 회원은 플랜이 끝나면 이 플랜으로 전환되고 저장된 카드로 결제됩니다. 미리 안내됩니다. 저장된 카드가 없으면 그대로 끝납니다.",
+      switchToNone: "없음(그대로 끝남)",
       joiningFeeLabel: "가입비",
       joiningFeeHint: "예: 25.00. 이 학교에서 회원의 첫 플랜에 한 번만 추가되며, 플랜과 같은 세금과 카드 수수료가 적용됩니다. 재가입이나 갱신에는 청구되지 않습니다. 없으면 비워 두세요.",
       joiningFeeRefundable: "가입비를 회원권과 함께 환불",
@@ -3400,6 +3414,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       planLabel: "플랜",
       paidByLabel: "결제 수단",
       sellConfirm: "판매 기록",
+      awaitingFirstCheckIn: "첫 체크인에 시작",
+      switchesTo: "이후 {plan}(으)로 전환",
       giftConfirm: "패스 선물",
       deskFailed: "저장할 수 없습니다. 다시 시도해 주세요.",
       freeze: {
@@ -4770,6 +4786,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "승급 화면에서 면제하거나 취소하세요",
       waivedLine: "{date}에 {name}님이 승급 화면에서 면제",
       cancelledLine: "{date}에 {name}님이 승급 화면에서 취소",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "중도 해지 수수료",
     },
     lateFee: {
       badge: "연체료",

@@ -1,10 +1,10 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min, MaxLength } from 'class-validator';
-import { CreateMembershipPlanDto } from './create-membership-plan.dto';
+import { IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Matches, Max, Min, MaxLength } from 'class-validator';
+import { CreateMembershipPlanDto, PLAN_DAY_PATTERN } from './create-membership-plan.dto';
 
 // billingCycleAnchorDay is nullable on update (switching back to FRESH_CYCLE
 // clears it) — same list, same reasoning as every other field here.
-const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate', 'billingCycleAnchorDay', 'incomeCategoryId', 'joiningFee', 'memberLimit'] as const;
+const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate', 'billingCycleAnchorDay', 'incomeCategoryId', 'fixedStartDate', 'fixedEndDate', 'switchToPlanId', 'joiningFee', 'memberLimit'] as const;
 
 /** v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
  * prompt. MembershipsService.updatePlan() requires exactly one of these
@@ -98,6 +98,21 @@ export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembersh
   @IsOptional()
   @IsUUID()
   incomeCategoryId?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 8: the first day of a plan on fixed dates (YYYY-MM-DD). Pass null (with fixedEndDate null) to remove the dates.' })
+  @IsOptional()
+  @Matches(PLAN_DAY_PATTERN, { message: 'fixedStartDate must be a day, YYYY-MM-DD.' })
+  fixedStartDate?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD). Pass null to remove.' })
+  @IsOptional()
+  @Matches(PLAN_DAY_PATTERN, { message: 'fixedEndDate must be a day, YYYY-MM-DD.' })
+  fixedEndDate?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to.' })
+  @IsOptional()
+  @IsUUID()
+  switchToPlanId?: string | null;
 
   @ApiPropertyOptional({ type: Number, nullable: true, description: "Decision 435 items 1-6: the joining fee in the plan's currency (minor units). Pass null to remove it." })
   @IsOptional()

@@ -74,6 +74,8 @@ export function PlanContractSigner({
             {t('memberships.contract.termsLine', { months: c.minimumTermMonths, amount: formatMoney(c.earlyExitFee ?? 0, c.currency) })}
           </Text>
           {c.earlyExitFee ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{t('memberships.contract.taxNote')}</Text> : null}
+          {/* Decision 435 item 16. */}
+          {c.endsAfterMinimumTerm ? <Text style={{ fontSize: 13 }}>{t('memberships.contract.endsAfterTerm')}</Text> : null}
         </View>
       ) : null}
       <Field label={t('waivers.row.fullName')}>

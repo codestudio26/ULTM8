@@ -63,10 +63,15 @@ export class AcademyMembershipPlanDto extends PickType(MembershipPlanResponseDto
   'classesIncluded',
   'visible',
   'contractVersion',
+  'startsOnFirstCheckIn',
+  'fixedStartDate',
+  'fixedEndDate',
+  'switchToPlanId',
   'joiningFee',
   'joiningFeeRefundable',
   'memberLimit',
 ] as const) {
+
   /** Decision 406: shown before the member pays. */
   @ApiProperty({ description: "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment." })
   cardSurchargeAmount!: number;

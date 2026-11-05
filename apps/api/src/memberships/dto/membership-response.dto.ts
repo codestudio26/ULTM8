@@ -42,8 +42,15 @@ export class MembershipResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   cancelledById!: string | null;
 
+  @ApiProperty({ description: 'Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then.' })
+  awaitingFirstCheckIn!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends.' })
+  switchToPlanId!: string | null;
+
   @ApiProperty()
   createdAt!: string;
+
 
   @ApiProperty()
   updatedAt!: string;
@@ -51,8 +58,11 @@ export class MembershipResponseDto {
 
 /** Decision 316 item 6: the signed contract's terms, shown before cancelling. */
 export class MembershipContractTermsDto {
-  @ApiProperty({ description: 'When the signed minimum term ends.' })
+  @ApiProperty({ description: 'When the signed minimum term ends, with any freezes added (Decision 435 item 17).' })
   minimumTermEndsAt!: string;
+
+  @ApiProperty({ description: 'Decision 435 item 16: the membership stops when the minimum term ends instead of renewing.' })
+  endsAfterMinimumTerm!: boolean;
 
   @ApiProperty({ description: "The early-exit fee put on the balance if the membership ends before then; minor units, before the School's tax. 0 = none." })
   earlyExitFee!: number;

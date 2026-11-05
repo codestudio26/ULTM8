@@ -40,6 +40,11 @@ const MEMBERSHIP_PLAN_DISCOVERY_SELECT = {
   visible: true,
   // Decision 316 item 6: whether buying asks the member to sign a contract.
   contractVersion: true,
+  // Decision 435 items 7-9: when it starts and ends, and its next plan.
+  startsOnFirstCheckIn: true,
+  fixedStartDate: true,
+  fixedEndDate: true,
+  switchToPlanId: true,
   // Decision 435: the joining fee on a member's first plan (shown only while
   // the School has joining fees on: withCardSurcharge below).
   joiningFee: true,

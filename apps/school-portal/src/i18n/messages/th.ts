@@ -3205,6 +3205,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "บันทึกสัญญาไม่ได้",
       invalidTerm: "ใส่จำนวนเดือนเป็นจำนวนเต็มตั้งแต่ 1 ถึง 120",
       invalidFee: "ใส่ค่าธรรมเนียมเป็นจำนวนเงิน เช่น 50.00",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "สิ้นสุดการสมัครสมาชิกหลังระยะเวลาขั้นต่ำ",
+      endsAfterTermHint: "จะหยุดในวันที่ระยะเวลาขั้นต่ำสิ้นสุดแทนการต่ออายุ การพักสมาชิกจะเลื่อนวันนั้นออกไปตามจำนวนวันที่พัก",
+      endsAfterTermLine: "สิ้นสุดหลังระยะเวลาขั้นต่ำ (ไม่ต่ออายุ)",
       studentCardTitle: "สัญญาที่ลงนามแล้ว",
       loadFailed: "โหลดสัญญาที่ลงนามแล้วไม่ได้",
       signedOn: "ลงนามเมื่อ {date} โดย {name}",
@@ -3314,6 +3318,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberLimitLabel: "จำนวนสมาชิกสูงสุด",
       memberLimitHint: "จำนวนสมาชิกสูงสุดของแพ็กเกจนี้ นับสมาชิกที่ใช้งานอยู่และที่หยุดชั่วคราว รวมถึงการชำระเงินสดที่ยังรอยืนยัน เมื่อเต็มแล้ว สมาชิกจะลงชื่อรอ แต่คุณยังขายที่เคาน์เตอร์ได้ เว้นว่างไว้หากไม่จำกัด",
       memberLimitInvalid: "กรอกจำนวนสมาชิกสูงสุดเป็นจำนวนเต็มตั้งแต่ 1 หรือเว้นว่างไว้",
+      startsOnFirstCheckIn: "เริ่มเมื่อสมาชิกเช็กอินครั้งแรก",
+      startsOnFirstCheckInHint: "วันเริ่มนับเมื่อสมาชิกเช็กอินครั้งแรก ไม่ใช่ตอนซื้อ ต้องระบุจำนวนวันที่ใช้ได้",
+      fixedDatesLegend: "วันที่กำหนด",
+      fixedDatesHint: "สำหรับแพ็กเกจที่มีวันกำหนด เช่น ค่าย 6 สัปดาห์ ใช้แทนจำนวนวัน ซื้อได้ก่อนเริ่ม และหลังเริ่มในราคาเต็มจนถึงวันสุดท้าย",
+      fixedStartLabel: "วันแรก",
+      fixedEndLabel: "วันสุดท้าย",
+      fixedDatesInvalid: "ระบุวันแรกและวันสุดท้าย โดยวันสุดท้ายต้องตรงกับหรือหลังวันแรก",
+      switchToLabel: "เมื่อหมด เปลี่ยนเป็น",
+      switchToHint: "สมาชิกที่ยินยอมตอนซื้อจะเปลี่ยนมาแพ็กเกจนี้เมื่อแพ็กเกจเดิมหมด โดยเรียกเก็บจากบัตรที่บันทึกไว้ และจะได้รับแจ้งก่อน หากไม่มีบัตรที่บันทึกไว้ ก็จะสิ้นสุดไปเลย",
+      switchToNone: "ไม่มี (สิ้นสุดไปเลย)",
       joiningFeeLabel: "ค่าแรกเข้า",
       joiningFeeHint: "เช่น 25.00 เพิ่มครั้งเดียวในแพ็กเกจแรกของสมาชิกที่โรงเรียนนี้ พร้อมภาษีและค่าธรรมเนียมบัตรเดียวกับแพ็กเกจ ไม่เรียกเก็บเมื่อกลับมาสมัครใหม่หรือต่ออายุ เว้นว่างไว้หากไม่มี",
       joiningFeeRefundable: "คืนค่าแรกเข้าพร้อมกับสมาชิกภาพ",
@@ -3400,6 +3414,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       planLabel: "แผน",
       paidByLabel: "ชำระโดย",
       sellConfirm: "บันทึกการขาย",
+      awaitingFirstCheckIn: "เริ่มเมื่อเช็กอินครั้งแรก",
+      switchesTo: "จากนั้นเปลี่ยนเป็น {plan}",
       giftConfirm: "มอบบัตร",
       deskFailed: "บันทึกไม่ได้ โปรดลองอีกครั้ง",
       freeze: {
@@ -4770,6 +4786,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "ยกเว้นหรือยกเลิกได้ในการเลื่อนระดับ",
       waivedLine: "ยกเว้นค่าธรรมเนียมในการเลื่อนระดับเมื่อ {date} โดย {name}",
       cancelledLine: "ยกเลิกค่าธรรมเนียมในการเลื่อนระดับเมื่อ {date} โดย {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "ค่าธรรมเนียมยกเลิกก่อนกำหนด",
     },
     lateFee: {
       badge: "ค่าปรับล่าช้า",

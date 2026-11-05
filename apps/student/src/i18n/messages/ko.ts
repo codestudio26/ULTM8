@@ -852,6 +852,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "서명하고 계속",
       signError: "계약에 서명할 수 없습니다.",
       loadError: "계약을 불러올 수 없습니다.",
+      // Decision 435 item 16.
+      endsAfterTerm: "이 멤버십은 최소 약정 기간이 끝나면 종료됩니다. 갱신되지 않습니다.",
+      endsOn: "최소 약정 기간 후 {date}에 종료됩니다. 갱신되지 않습니다.",
       cancelFee: "계약의 최소 약정 기간은 {date}까지입니다. 그 전에 멤버십이 끝나면 중도 해지 수수료 {amount}가 잔액에 추가됩니다.",
     },
     recharge: {
@@ -868,6 +871,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "1회",
       classesRemaining: { other: "수업 {count}회 남음" },
       expires: "{date} 만료",
+      awaitingFirstCheckIn: "첫 체크인에 시작됩니다",
       empty: "아직 회원권이 없습니다.",
       loadError: "회원권을 불러오지 못했습니다. 다시 시도해 주세요.",
       cancelSubscription: "구독 해지",
@@ -906,6 +910,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       leaveWaitlist: "대기자 명단에서 나가기",
       placeHeld: "{date}까지 자리를 맡아 두었습니다. 그 전에 구매하세요.",
       waitlistError: "대기자 명단을 업데이트하지 못했습니다. 다시 시도하세요.",
+      startsOnFirstCheckIn: "첫 체크인에 시작됩니다",
+      fixedDates: "{from} ~ {to}",
+      agreeToSwitch: "끝나면 {plan}({price})(으)로 전환하고 저장된 카드로 결제합니다. 미리 안내받으며, 저장된 카드가 없으면 그대로 끝납니다.",
       joiningFee: "이 학교의 첫 플랜에는 가입비 {amount}가 추가됩니다",
       cardSurcharge: "카드로 결제하면 + 수수료 {amount}",
       classesIncluded: { other: "수업 {count}회" },
@@ -1220,6 +1227,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "승급비",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "중도 해지 수수료",
     },
     lateFee: {
       label: "연체료",

@@ -3400,6 +3400,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "تعذّر حفظ العقد.",
       invalidTerm: "أدخل عددًا صحيحًا من الأشهر من 1 إلى 120.",
       invalidFee: "أدخل الرسوم كمبلغ، مثل 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "إنهاء الاشتراك بعد المدة الدنيا",
+      endsAfterTermHint: "يتوقف في يوم انتهاء المدة الدنيا بدلًا من التجديد. التجميد يؤخر ذلك اليوم بعدد أيام التجميد.",
+      endsAfterTermLine: "ينتهي بعد المدة الدنيا (دون تجديد)",
       studentCardTitle: "العقود الموقّعة",
       loadFailed: "تعذّر تحميل العقود الموقّعة.",
       signedOn: "وقّعه {name} في {date}",
@@ -3514,6 +3518,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberLimitLabel: "حد الأعضاء",
       memberLimitHint: "أقصى عدد من الأعضاء لهذه الخطة. يُحتسب الأعضاء الحاليون والمجمّدون والدفعات النقدية المنتظرة. عند امتلائها، ينضم الأعضاء إلى قائمة انتظار، ويمكنك بيعها في الاستقبال. اتركه فارغاً لعدم وجود حد.",
       memberLimitInvalid: "أدخل حد الأعضاء كعدد صحيح من 1، أو اتركه فارغاً.",
+      startsOnFirstCheckIn: "تبدأ عند أول تسجيل حضور للعضو",
+      startsOnFirstCheckInHint: "تبدأ أيامها عندما يسجل العضو حضوره بها لأول مرة، لا عند شرائها. تحتاج إلى عدد الأيام التي تستمر فيها.",
+      fixedDatesLegend: "تواريخ ثابتة",
+      fixedDatesHint: "لخطة تعمل في أيام محددة، مثل معسكر لمدة 6 أسابيع، بدلاً من عدد الأيام. يمكن شراؤها قبل أن تبدأ، وبعد بدئها بالسعر الكامل، حتى يومها الأخير.",
+      fixedStartLabel: "اليوم الأول",
+      fixedEndLabel: "اليوم الأخير",
+      fixedDatesInvalid: "أدخل اليوم الأول واليوم الأخير، على أن يكون الأخير في الأول أو بعده.",
+      switchToLabel: "عند انتهائها، الانتقال إلى",
+      switchToHint: "ينتقل الأعضاء الذين يوافقون عند الشراء إلى هذه الخطة عند انتهاء خطتهم، ويُخصم المبلغ من بطاقتهم المحفوظة. يُبلَّغون مسبقاً. بدون بطاقة محفوظة، تنتهي ببساطة.",
+      switchToNone: "لا شيء (تنتهي ببساطة)",
       joiningFeeLabel: "رسوم الانضمام",
       joiningFeeHint: "مثلاً 25.00. تُضاف مرة واحدة إلى أول خطة للعضو في هذه المدرسة، مع الضريبة ورسوم البطاقة نفسها المطبقة على الخطة. لا تُحتسب أبداً عند العودة أو التجديد. اتركها فارغة إذا لم تكن هناك رسوم.",
       joiningFeeRefundable: "رد رسوم الانضمام مع العضوية",
@@ -3615,6 +3629,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       planLabel: "الخطة",
       paidByLabel: "طريقة الدفع",
       sellConfirm: "تسجيل البيع",
+      awaitingFirstCheckIn: "تبدأ عند أول تسجيل حضور",
+      switchesTo: "ثم تنتقل إلى {plan}",
       giftConfirm: "إهداء التصريح",
       deskFailed: "تعذّر الحفظ. يُرجى المحاولة مرة أخرى.",
       freeze: {
@@ -5028,6 +5044,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "أعفِ منها أو ألغها من الترقيات",
       waivedLine: "أُعفي من الرسوم في الترقيات بتاريخ {date} بواسطة {name}",
       cancelledLine: "أُلغيت الرسوم في الترقيات بتاريخ {date} بواسطة {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "رسوم الخروج المبكر",
     },
     lateFee: {
       badge: "رسوم تأخير",

@@ -3244,6 +3244,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Impossibile salvare il contratto.",
       invalidTerm: "Inserisci un numero intero di mesi da 1 a 120.",
       invalidFee: "Inserisci la penale come importo, per esempio 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Terminare l'abbonamento dopo la durata minima",
+      endsAfterTermHint: "Si ferma il giorno in cui finisce la durata minima invece di rinnovarsi. Una sospensione sposta quel giorno in avanti dei giorni sospesi.",
+      endsAfterTermLine: "Termina dopo la durata minima (senza rinnovo)",
       studentCardTitle: "Contratti firmati",
       loadFailed: "Impossibile caricare i contratti firmati.",
       signedOn: "Firmato il {date} da {name}",
@@ -3354,6 +3358,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberLimitLabel: "Limite di membri",
       memberLimitHint: "Il numero massimo di membri di questo piano. Contano i membri attivi e congelati e i pagamenti in contanti in attesa. Quando è pieno, i membri entrano in lista d'attesa; al banco puoi comunque venderlo. Lascia vuoto per nessun limite.",
       memberLimitInvalid: "Inserisci il limite di membri come numero intero da 1, oppure lascialo vuoto.",
+      startsOnFirstCheckIn: "Inizia al primo check-in del membro",
+      startsOnFirstCheckInHint: "I suoi giorni iniziano al primo check-in del membro, non all'acquisto. Serve il numero di giorni che dura.",
+      fixedDatesLegend: "Date fisse",
+      fixedDatesHint: "Per un piano in giorni fissi, come un camp di 6 settimane, al posto del numero di giorni. Si può acquistare prima dell'inizio e dopo a prezzo pieno, fino all'ultimo giorno.",
+      fixedStartLabel: "Primo giorno",
+      fixedEndLabel: "Ultimo giorno",
+      fixedDatesInvalid: "Indica il primo e l'ultimo giorno, l'ultimo uguale o successivo al primo.",
+      switchToLabel: "Alla scadenza, passa a",
+      switchToHint: "I membri che accettano all'acquisto passano a questo piano quando il loro finisce, con addebito sulla carta salvata. Vengono avvisati prima. Senza carta salvata, termina e basta.",
+      switchToNone: "Niente (termina e basta)",
       joiningFeeLabel: "Quota di iscrizione",
       joiningFeeHint: "Ad esempio 25.00. Aggiunta una sola volta al primo piano di un membro in questa scuola, con la stessa imposta e lo stesso sovrapprezzo carta del piano. Mai addebitata a chi ritorna o al rinnovo. Lascia vuoto per nessuna quota.",
       joiningFeeRefundable: "Rimborsa la quota di iscrizione con l'abbonamento",
@@ -3443,6 +3457,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       planLabel: "Piano",
       paidByLabel: "Pagato con",
       sellConfirm: "Registra vendita",
+      awaitingFirstCheckIn: "Inizia al primo check-in",
+      switchesTo: "Poi passa a {plan}",
       giftConfirm: "Regala pass",
       deskFailed: "Impossibile salvare. Riprova.",
       freeze: {
@@ -4816,6 +4832,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Condonala o annullala nella graduazione",
       waivedLine: "Quota condonata nella graduazione il {date} da {name}",
       cancelledLine: "Quota annullata nella graduazione il {date} da {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Penale di recesso anticipato",
     },
     lateFee: {
       badge: "Penale di ritardo",

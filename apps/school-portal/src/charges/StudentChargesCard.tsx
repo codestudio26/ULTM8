@@ -461,6 +461,12 @@ function ChargesBody({
                           <Badge variant="info">{t('charges.promotionFee.badge')}</Badge>{' '}
                         </>
                       ) : null}
+                      {/* Decision 435 item 19: a signed contract's early-exit fee. */}
+                      {c.earlyExitFee ? (
+                        <>
+                          <Badge variant="warning">{t('charges.earlyExitFee.badge')}</Badge>{' '}
+                        </>
+                      ) : null}
                       {c.lateFee ? null : c.description}
                     </div>
                     <LateFeeLines charge={c} />

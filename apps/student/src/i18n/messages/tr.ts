@@ -861,6 +861,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "İmzala ve devam et",
       signError: "Sözleşme imzalanamadı.",
       loadError: "Sözleşme yüklenemedi.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Bu üyelik asgari süre bitince sona erer. Yenilenmez.",
+      endsOn: "Asgari sürenin ardından {date} tarihinde biter. Yenilenmez.",
       cancelFee: "Sözleşmenizin asgari süresi {date} tarihine kadar sürer. Üyeliğiniz bundan önce biterse {amount} erken çıkış ücreti bakiyenize eklenir.",
     },
     recharge: {
@@ -877,6 +880,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Tek seferlik",
       classesRemaining: { one: "{count} ders kaldı", other: "{count} ders kaldı" },
       expires: "Bitiş: {date}",
+      awaitingFirstCheckIn: "İlk girişinizde başlar",
       empty: "Henüz üyelik yok.",
       loadError: "Üyelikler yüklenemedi — lütfen tekrar deneyin.",
       cancelSubscription: "Aboneliği iptal et",
@@ -915,6 +919,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       leaveWaitlist: "Bekleme listesinden çık",
       placeHeld: "{date} tarihine kadar sizin için bir yer ayrıldı. O zamana kadar satın alın.",
       waitlistError: "Bekleme listesi güncellenemedi — lütfen tekrar deneyin.",
+      startsOnFirstCheckIn: "İlk girişinizde başlar",
+      fixedDates: "{from} – {to}",
+      agreeToSwitch: "Bitince beni {plan} ({price}) planına geçir, ödeme kayıtlı kartımdan alınsın. Önceden bilgilendirileceğim; kayıtlı kart yoksa sadece sona erer.",
       joiningFee: "Bu okuldaki ilk planınıza + {amount} katılım ücreti eklenir",
       cardSurcharge: "Kartla ödemede + {amount} ek ücret",
       classesIncluded: { one: "{count} ders", other: "{count} ders" },
@@ -1230,6 +1237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Terfi ücreti",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Erken çıkış ücreti",
     },
     lateFee: {
       label: "Gecikme ücreti",
