@@ -71,6 +71,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   now pointed out under that link, and nothing is saved until it's fixed.
   Links typed without https:// still get it added. The same goes for the
   contact email.
+- **School ad tracking IDs** (Decision 318 item 10) — a new **Ad tracking**
+  card on the School page, for the owner, takes the School's Meta Pixel ID
+  and/or Google Analytics (GA4) measurement ID: ready-made connections only,
+  no custom code. Only the exact formats can be saved (10–20 digits; "G-"
+  and 4–16 capital letters or digits), checked in the portal, the API and the
+  database (CHECK constraints), so no script or markup can be stored. Saved
+  only for now: no page loads them yet, until the pages and visitors' cookie
+  consent are decided. Migration `20270215000002_school_ad_tracking`; School
+  gains `metaPixelId` and `googleAnalyticsId`. 15 languages.
 - **Uploads before file storage is set up** — choosing a logo, banner or other
   file while Cloudflare R2 isn't configured now says "File storage isn't set up
   yet. Try again later." (translated) instead of "Internal server error". The

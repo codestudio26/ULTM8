@@ -30,6 +30,7 @@ import { address } from './en/address';
 import { frontDesk } from './en/frontDesk';
 import { charges } from './en/charges';
 import { imports } from './en/imports';
+import { adTracking } from './en/adTracking';
 import { payroll } from './en/payroll';
 import { whatsNew } from './en/whatsNew';
 
@@ -75,6 +76,7 @@ export const messages = {
   frontDesk,
   charges,
   imports,
+  adTracking,
   payroll,
   whatsNew,
 };

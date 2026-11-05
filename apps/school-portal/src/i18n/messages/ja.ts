@@ -4700,6 +4700,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "メールを送れませんでした。生徒のページで新しい仮パスコードを作ってください。",
     },
   },
+  adTracking: {
+    title: "広告トラッキング",
+    subtitle: "ID を入力して Meta Pixel または Google Analytics を接続します。用意された接続のみ利用でき、ULTM8 のページに独自のコードが追加されることはありません。",
+    notUsedYet: "スクールの公開ページ用に保存しました。まだどのページでも使われていません。",
+    metaPixelLabel: "Meta Pixel ID",
+    metaPixelHint: "Meta イベントマネージャに表示される数字のみ（例: 123456789012345）。",
+    metaPixelInvalid: "Meta Pixel ID は 10〜20 桁の数字のみです。",
+    googleAnalyticsLabel: "Google Analytics 測定 ID",
+    googleAnalyticsHint: "G- で始まります（例: G-AB12CD34EF）。",
+    googleAnalyticsInvalid: "Google Analytics 測定 ID は G- の後に 4〜16 文字の英数字が続きます。",
+  },
   payroll: {
     nav: "給与",
     title: "給与",
