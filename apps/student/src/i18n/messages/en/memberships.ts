@@ -32,6 +32,7 @@ export const memberships = {
     oneTime: 'One time',
     classesRemaining: { one: '{count} class remaining', other: '{count} classes remaining' },
     expires: 'Expires {date}',
+    awaitingFirstCheckIn: "Starts on your first check-in",
     empty: 'No memberships yet.',
     loadError: 'Failed to load memberships — please try again.',
     cancelSubscription: 'Cancel subscription',
@@ -64,6 +65,9 @@ export const memberships = {
   },
   planRow: {
     joinFirst: 'Join this School to buy.',
+    startsOnFirstCheckIn: "Starts on your first check-in",
+    fixedDates: "Runs {from} – {to}",
+    agreeToSwitch: "When it ends, switch me to {plan} ({price}), charged to my saved card. I'll be told before; without a saved card it simply ends.",
     /** Decision 435: a paid plan's joining fee, charged with a member's first plan at the School only. */
     joiningFee: '+ {amount} joining fee on your first plan at this School',
     cardSurcharge: "+ {amount} card surcharge when paying by card",

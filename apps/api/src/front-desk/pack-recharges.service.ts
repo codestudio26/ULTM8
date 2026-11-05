@@ -120,7 +120,7 @@ export class PackRechargesService {
       include: {
         school: { select: { name: true, defaultCurrency: true } },
         student: { select: { firstName: true } },
-        membershipPlan: { select: { id: true, schoolId: true, type: true, title: true, price: true, currency: true, expiryDurationDays: true, classesIncluded: true, visible: true, contractVersion: true, archivedAt: true } },
+        membershipPlan: { select: { id: true, schoolId: true, type: true, title: true, price: true, currency: true, expiryDurationDays: true, classesIncluded: true, visible: true, contractVersion: true, startsOnFirstCheckIn: true, fixedStartDate: true, fixedEndDate: true, switchToPlanId: true, archivedAt: true } },
       },
     });
     const items: MyPackRechargeDto[] = [];
@@ -136,7 +136,7 @@ export class PackRechargesService {
         studentId: r.studentId,
         childFirstName: r.studentId === callerId ? null : r.student.firstName,
         // Decision 435 item 2: a recharge is never a first plan, so no joining fee.
-        plan: { ...plan, cardSurchargeAmount, joiningFee: null, joiningFeeRefundable: false },
+        plan: { ...plan, cardSurchargeAmount, fixedStartDate: plan.fixedStartDate?.toISOString() ?? null, fixedEndDate: plan.fixedEndDate?.toISOString() ?? null, joiningFee: null, joiningFeeRefundable: false },
         expiresAt: r.expiresAt,
       });
     }

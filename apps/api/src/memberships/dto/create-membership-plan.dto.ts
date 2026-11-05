@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Max, Min, MaxLength } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsBoolean, IsDateString, IsEnum, IsInt, IsOptional, IsString, IsUUID, Matches, Max, Min, MaxLength } from 'class-validator';
+
+/** A calendar day, YYYY-MM-DD. */
+export const PLAN_DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /** The largest amount a 32-bit integer column holds. */
 const MAX_MINOR_UNITS = 2147483647;
@@ -103,6 +106,26 @@ export class CreateMembershipPlanDto {
   @IsBoolean()
   termsWaiverRequired?: boolean;
 
+  @ApiPropertyOptional({ description: "Decision 435 item 7: Class Pack, Weekly Pass or Trial only. The membership's days start on the member's first check-in with it, not when it is bought (needs expiryDurationDays). Defaults to false." })
+  @IsOptional()
+  @IsBoolean()
+  startsOnFirstCheckIn?: boolean;
+
+  @ApiPropertyOptional({ description: 'Decision 435 item 8: Class Pack, Weekly Pass or Trial only. The first day of a plan that runs on fixed dates (YYYY-MM-DD, in the School\'s time zone), with fixedEndDate, in place of expiryDurationDays. It can be bought before it starts, and after at full price, until its last day.' })
+  @IsOptional()
+  @Matches(PLAN_DAY_PATTERN, { message: 'fixedStartDate must be a day, YYYY-MM-DD.' })
+  fixedStartDate?: string;
+
+  @ApiPropertyOptional({ description: 'Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD), on or after fixedStartDate.' })
+  @IsOptional()
+  @Matches(PLAN_DAY_PATTERN, { message: 'fixedEndDate must be a day, YYYY-MM-DD.' })
+  fixedEndDate?: string;
+
+  @ApiPropertyOptional({ description: "Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one it simply ends." })
+  @IsOptional()
+  @IsUUID()
+  switchToPlanId?: string;
+
   @ApiPropertyOptional({ description: "Decision 435 items 1-6: a one-off joining fee, in the plan's currency (minor units), added to a member's first-ever plan at this School (never a rejoin or a renewal), with the plan's tax and card surcharge. Paid plans only. Charged only while the School has joining fees on (School.joiningFeesEnabled). Omit for none." })
   @IsOptional()
   @IsInt()
@@ -116,6 +139,7 @@ export class CreateMembershipPlanDto {
   joiningFeeRefundable?: boolean;
 
   @ApiPropertyOptional({ description: "One of the School's income categories (Decision 316 item 10), shown in the Transactions export." })
+
   @IsOptional()
   @IsUUID()
   incomeCategoryId?: string;

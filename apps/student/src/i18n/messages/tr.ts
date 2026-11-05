@@ -880,6 +880,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Tek seferlik",
       classesRemaining: { one: "{count} ders kaldı", other: "{count} ders kaldı" },
       expires: "Bitiş: {date}",
+      awaitingFirstCheckIn: "İlk girişinizde başlar",
       empty: "Henüz üyelik yok.",
       loadError: "Üyelikler yüklenemedi — lütfen tekrar deneyin.",
       cancelSubscription: "Aboneliği iptal et",
@@ -912,6 +913,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Satın almak için bu okula katıl.",
+      startsOnFirstCheckIn: "İlk girişinizde başlar",
+      fixedDates: "{from} – {to}",
+      agreeToSwitch: "Bitince beni {plan} ({price}) planına geçir, ödeme kayıtlı kartımdan alınsın. Önceden bilgilendirileceğim; kayıtlı kart yoksa sadece sona erer.",
       joiningFee: "Bu okuldaki ilk planınıza + {amount} katılım ücreti eklenir",
       cardSurcharge: "Kartla ödemede + {amount} ek ücret",
       classesIncluded: { one: "{count} ders", other: "{count} ders" },

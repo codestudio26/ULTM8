@@ -258,6 +258,12 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "Lidmaatschap loopt bijna af",
     membershipExpiryBody: "Je lidmaatschap {plan} loopt af op {date}.",
+    planSwitchNoticeTitle: "Je abonnement verandert binnenkort",
+    planSwitchNoticeBody: "Je {plan} eindigt op {date}. Daarna begint {next} en wordt {amount} van je opgeslagen kaart afgeschreven. Zonder opgeslagen kaart eindigt het gewoon.",
+    planSwitchedTitle: "Je abonnement is veranderd",
+    planSwitchedBody: "Je {plan} is afgelopen en {next} is begonnen. {amount} is van je opgeslagen kaart afgeschreven.",
+    planSwitchEndedTitle: "Lidmaatschap afgelopen",
+    planSwitchEndedBody: "Je {plan} is afgelopen. {next} kon niet beginnen, dus er is niets afgeschreven.",
     absenceAlertTitle: "Lid afwezig",
     absenceAlertBody: "{name} heeft sinds {date} niet ingecheckt.",
     absenceAlertNeverBody: "{name} heeft nog niet ingecheckt.",

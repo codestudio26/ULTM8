@@ -897,6 +897,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "{count} corsi rimanenti",
       },
       expires: "Scade il {date}",
+      awaitingFirstCheckIn: "Inizia al tuo primo check-in",
       empty: "Ancora nessuna iscrizione.",
       loadError: "Impossibile caricare le iscrizioni — riprova.",
       cancelSubscription: "Disdici abbonamento",
@@ -929,6 +930,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Iscriviti a questa scuola per acquistare.",
+      startsOnFirstCheckIn: "Inizia al tuo primo check-in",
+      fixedDates: "Dal {from} al {to}",
+      agreeToSwitch: "Alla scadenza, passami a {plan} ({price}), con addebito sulla carta salvata. Sarò avvisato prima; senza carta salvata termina e basta.",
       joiningFee: "+ {amount} di quota di iscrizione sul tuo primo piano in questa scuola",
       cardSurcharge: "+ {amount} di sovrapprezzo se paghi con carta",
       classesIncluded: { one: "{count} corso", many: "{count} corsi", other: "{count} corsi" },

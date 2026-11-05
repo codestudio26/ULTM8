@@ -246,6 +246,12 @@ export const server = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "Membership ending soon",
     membershipExpiryBody: "Your {plan} membership ends on {date}.",
+    planSwitchNoticeTitle: "Your plan is about to change",
+    planSwitchNoticeBody: "Your {plan} ends on {date}. Then {next} starts and {amount} is charged to your saved card. Without a saved card, it simply ends.",
+    planSwitchedTitle: "Your plan has changed",
+    planSwitchedBody: "Your {plan} has ended and {next} has started. {amount} was charged to your saved card.",
+    planSwitchEndedTitle: "Membership ended",
+    planSwitchEndedBody: "Your {plan} has ended. {next} couldn't be started, so nothing was charged.",
     absenceAlertTitle: "Member absent",
     absenceAlertBody: "{name} hasn't checked in since {date}.",
     absenceAlertNeverBody: "{name} hasn't checked in yet.",

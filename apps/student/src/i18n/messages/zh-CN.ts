@@ -870,6 +870,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "一次性",
       classesRemaining: { other: "剩余 {count} 节课" },
       expires: "{date} 到期",
+      awaitingFirstCheckIn: "从你首次签到开始",
       empty: "还没有会员。",
       loadError: "无法加载会员，请重试。",
       cancelSubscription: "取消订阅",
@@ -902,6 +903,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "加入这所学校后才能购买。",
+      startsOnFirstCheckIn: "从你首次签到开始",
+      fixedDates: "{from} 至 {to}",
+      agreeToSwitch: "结束时将我转为{plan}（{price}），从我保存的卡中扣款。我会提前收到通知；没有保存的卡则直接结束。",
       joiningFee: "在本学校的第一个方案需加收入会费 {amount}",
       cardSurcharge: "刷卡支付另加 {amount} 附加费",
       classesIncluded: { other: "{count} 节课" },

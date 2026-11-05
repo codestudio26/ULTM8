@@ -72,6 +72,10 @@ export function MembershipRow({ membership, freezable }: { membership: Membershi
       {membership.classesRemaining != null ? (
         <Text style={{ color: '#5F6368', fontSize: 12 }}>{t('memberships.myMemberships.classesRemaining', { count: membership.classesRemaining })}</Text>
       ) : null}
+      {/* Decision 435 item 7: its days start on the first check-in. */}
+      {membership.awaitingFirstCheckIn ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{t('memberships.myMemberships.awaitingFirstCheckIn')}</Text>
+      ) : null}
       {membership.expiryDate ? <Text style={{ color: '#9AA0A6', fontSize: 11, marginTop: 2 }}>{t('memberships.myMemberships.expires', { date: formatDate(membership.expiryDate) })}</Text> : null}
       {endsAtTerm && membership.status === 'ACTIVE' ? (
         // Decision 435 item 16: signed to end after the minimum term (not a cancellation).

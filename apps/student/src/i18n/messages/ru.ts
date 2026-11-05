@@ -913,6 +913,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "Осталось {count} занятия",
       },
       expires: "Действует до {date}",
+      awaitingFirstCheckIn: "Начнётся с вашей первой отметки",
       empty: "Абонементов пока нет.",
       loadError: "Не удалось загрузить абонементы — попробуйте ещё раз.",
       cancelSubscription: "Отменить подписку",
@@ -945,6 +946,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Вступите в эту школу, чтобы купить.",
+      startsOnFirstCheckIn: "Начнётся с вашей первой отметки",
+      fixedDates: "С {from} по {to}",
+      agreeToSwitch: "По окончании перевести меня на {plan} ({price}) с оплатой сохранённой картой. Меня предупредят заранее; без сохранённой карты он просто закончится.",
       joiningFee: "+ {amount} вступительный взнос при первом тарифе в этой школе",
       cardSurcharge: "+ {amount} надбавка при оплате картой",
       classesIncluded: {

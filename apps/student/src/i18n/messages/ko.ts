@@ -871,6 +871,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "1회",
       classesRemaining: { other: "수업 {count}회 남음" },
       expires: "{date} 만료",
+      awaitingFirstCheckIn: "첫 체크인에 시작됩니다",
       empty: "아직 회원권이 없습니다.",
       loadError: "회원권을 불러오지 못했습니다. 다시 시도해 주세요.",
       cancelSubscription: "구독 해지",
@@ -903,6 +904,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "구매하려면 이 학교에 가입하세요.",
+      startsOnFirstCheckIn: "첫 체크인에 시작됩니다",
+      fixedDates: "{from} ~ {to}",
+      agreeToSwitch: "끝나면 {plan}({price})(으)로 전환하고 저장된 카드로 결제합니다. 미리 안내받으며, 저장된 카드가 없으면 그대로 끝납니다.",
       joiningFee: "이 학교의 첫 플랜에는 가입비 {amount}가 추가됩니다",
       cardSurcharge: "카드로 결제하면 + 수수료 {amount}",
       classesIncluded: { other: "수업 {count}회" },

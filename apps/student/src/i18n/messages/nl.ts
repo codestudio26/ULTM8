@@ -880,6 +880,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Eenmalig",
       classesRemaining: { one: "Nog {count} les over", other: "Nog {count} lessen over" },
       expires: "Verloopt op {date}",
+      awaitingFirstCheckIn: "Begint bij je eerste check-in",
       empty: "Nog geen lidmaatschappen.",
       loadError: "Lidmaatschappen konden niet worden geladen — probeer het opnieuw.",
       cancelSubscription: "Abonnement opzeggen",
@@ -912,6 +913,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Word lid van deze school om te kopen.",
+      startsOnFirstCheckIn: "Begint bij je eerste check-in",
+      fixedDates: "Van {from} tot {to}",
+      agreeToSwitch: "Aan het eind overstappen op {plan} ({price}), afgeschreven van mijn opgeslagen kaart. Ik hoor het vooraf; zonder opgeslagen kaart eindigt het gewoon.",
       joiningFee: "+ {amount} inschrijfgeld bij je eerste abonnement bij deze school",
       cardSurcharge: "+ {amount} kaarttoeslag bij betalen met een kaart",
       classesIncluded: { one: "{count} les", other: "{count} lessen" },

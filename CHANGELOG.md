@@ -843,6 +843,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the desk. The owner sees a student's **Signed contracts** on their page,
   with the text signed. **Needs a database migration**
   (`20270217000001_plan_contracts`).
+- **Plan start and end dates** (Decision 316 item 4, as answered by Decision
+  435 items 7-9; Gymdesk P9/P13/P14) — on the plan form, a Class Pack, Weekly
+  Pass or Trial can **start on the member's first check-in** (its days start
+  with the first check-in it pays for; no end date until then), or run on
+  **fixed dates** (a 6-week camp: a first and last day in place of the number
+  of days; sold before it starts and after at full price, never after its
+  last day; it pays for no class before its first day). A plan with an end
+  can **switch to another plan when it ends** (a paid Class Pack, Weekly Pass
+  or Trial without a contract): in the app the member (a parent for a child)
+  agrees when buying; they're told up to 7 days before; at the end the next
+  plan is charged to their saved card with the card surcharge and starts; with
+  no saved card or a declined card it simply ends and nothing is owed. The
+  Student's page and the app show a membership waiting for its first check-in
+  and the plan it switches to. **Needs a database migration**
+  (`20270225100100_plan_dates`).
 - **Contracts on plans: ending after the minimum term, freezes and the
   early-exit label** (Decision 435 items 16, 17, 19) — the Contract card has a
   new **End the Subscription after the minimum term** option: the member is

@@ -15,9 +15,14 @@ import {
   useCreateMembershipPlan,
   useMembershipPlan,
   useMembershipPlanActiveCount,
+  useMembershipPlans,
   useUpdateMembershipPlan,
   type MembershipPlanResponse,
 } from './membershipPlanQueries';
+
+/** Decision 435 items 7-9: the plan types that can start on the first
+ * check-in, run on fixed dates, and switch at their end (and be switched to). */
+const TERM_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'TRIAL_MEMBERSHIP'];
 import { OwnerOnly } from './MembershipPlansPage';
 import { PlanContractCard } from './PlanContractCard';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
@@ -78,6 +83,8 @@ export function MembershipPlanFormPage() {
   const { data: activeCountData } = useMembershipPlanActiveCount(isEdit ? id ?? null : null);
   // Decision 316 item 10: the School's income categories for the picker.
   const { data: incomeCategoryData } = useIncomeCategories(schoolId);
+  // Decision 435 item 9: the plans this one can switch to when it ends.
+  const { data: planData } = useMembershipPlans(schoolId);
   const createPlan = useCreateMembershipPlan(schoolId ?? '');
   const updatePlan = useUpdateMembershipPlan(schoolId ?? '', id ?? '');
   const t = useT();
@@ -106,6 +113,9 @@ export function MembershipPlanFormPage() {
       classes={classData?.items ?? []}
       disciplines={disciplineData?.items ?? []}
       incomeCategories={incomeCategoryData?.items ?? []}
+      switchTargets={(planData?.items ?? []).filter(
+        (p) => p.id !== id && !p.archivedAt && p.price > 0 && p.contractVersion == null && TERM_TYPES.includes(p.type),
+      )}
       defaultCurrency={school?.defaultCurrency ?? undefined}
       // Decision 414 item 6: no price until the School's currency is set.
       schoolCurrencyMissing={!!school && !school.defaultCurrency}
@@ -161,6 +171,11 @@ interface MembershipPlanFormValues {
   billingCycleAnchorDay?: number | null;
   // Decision 316 item 10. Null clears it on edit; omitted on create.
   incomeCategoryId?: string | null;
+  // Decision 435 items 7-9. Days are YYYY-MM-DD; null clears.
+  startsOnFirstCheckIn?: boolean;
+  fixedStartDate?: string | null;
+  fixedEndDate?: string | null;
+  switchToPlanId?: string | null;
   // Decision 435 items 1-5: the joining fee (null = none) and whether it is
   // refunded with the membership payment.
   joiningFee?: number | null;
@@ -182,6 +197,7 @@ function MembershipPlanForm({
   classes,
   disciplines,
   incomeCategories,
+  switchTargets = [],
   defaultCurrency,
   schoolCurrencyMissing = false,
   joiningFeesEnabled = true,
@@ -197,6 +213,8 @@ function MembershipPlanForm({
   disciplines: DisciplineResponse[];
   /** Decision 316 item 10: the School's income categories. */
   incomeCategories: IncomeCategory[];
+  /** Decision 435 item 9: the plans this one can switch to when it ends. */
+  switchTargets?: MembershipPlanResponse[];
   defaultCurrency?: string;
   /** Decision 414 item 6 — the School has no currency yet, so the price
    * fields are off (a free plan can still be saved) and a notice links to the
@@ -250,6 +268,11 @@ function MembershipPlanForm({
     newMemberBillingStrategy: (initial?.newMemberBillingStrategy as 'FRESH_CYCLE' | 'PRORATED_TO_SHARED_CYCLE') ?? 'FRESH_CYCLE',
     billingCycleAnchorDay: initial?.billingCycleAnchorDay?.toString() ?? '',
     incomeCategoryId: initial?.incomeCategoryId ?? '',
+    // Decision 435 items 7-9.
+    startsOnFirstCheckIn: initial?.startsOnFirstCheckIn ?? false,
+    fixedStartDate: initial?.fixedStartDate?.slice(0, 10) ?? '',
+    fixedEndDate: initial?.fixedEndDate?.slice(0, 10) ?? '',
+    switchToPlanId: initial?.switchToPlanId ?? '',
     joiningFee: (initial?.joiningFee ?? null) as number | null,
     joiningFeeValid: true,
     joiningFeeRefundable: initial?.joiningFeeRefundable ?? false,
@@ -282,7 +305,10 @@ function MembershipPlanForm({
   // Spec 55 §6.1's reading (Weekly Pass IS governed by this field) as
   // authoritative; the DTO's old "Not used by WEEKLY_PASS" description was
   // simply wrong and has been corrected to match.
-  const showExpiryDuration = form.type !== 'SUBSCRIPTION';
+  // Decision 435 items 7-9: packs, passes and trials only.
+  const showTerm = TERM_TYPES.includes(form.type);
+  const fixedDates = showTerm && (!!form.fixedStartDate || !!form.fixedEndDate);
+  const showExpiryDuration = form.type !== 'SUBSCRIPTION' && !fixedDates;
   const priceLocked = form.type === 'FRIEND_PASS';
   const typeLocked = mode === 'edit' && activeMemberCount > 0;
   const captionKey = PLAN_TYPES.find((p) => p.value === form.type)?.caption;
@@ -354,12 +380,18 @@ function MembershipPlanForm({
     // School's own choice, any whole number of days from 1 (Decision 410).
     // The API refuses the same.
     const expiryDays = form.expiryDurationDays ? Number(form.expiryDurationDays) : null;
-    if (form.type === 'TRIAL_MEMBERSHIP' && (expiryDays === null || !Number.isInteger(expiryDays) || expiryDays < 1)) {
+    // Decision 435 item 8: fixed dates take the place of the number of days.
+    if (fixedDates && (!form.fixedStartDate || !form.fixedEndDate || form.fixedEndDate < form.fixedStartDate)) {
+      setStepIndex(1);
+      setError(t('membershipPlans.form.fixedDatesInvalid'));
+      return;
+    }
+    if (!fixedDates && form.type === 'TRIAL_MEMBERSHIP' && (expiryDays === null || !Number.isInteger(expiryDays) || expiryDays < 1)) {
       setStepIndex(1);
       setError(t('membershipPlans.form.trialExpiryRequired'));
       return;
     }
-    if (form.type === 'WEEKLY_PASS' && (expiryDays === null || expiryDays < 1)) {
+    if (!fixedDates && form.type === 'WEEKLY_PASS' && (expiryDays === null || expiryDays < 1)) {
       setStepIndex(1);
       setError(t('membershipPlans.form.weeklyExpiryRequired'));
       return;
@@ -425,6 +457,11 @@ function MembershipPlanForm({
         disciplineIds: form.disciplineIds,
         includesLessons: lessonsOn,
         incomeCategoryId: form.incomeCategoryId || null,
+        // Decision 435 items 7-9: only for packs, passes and trials.
+        startsOnFirstCheckIn: showTerm && !fixedDates ? form.startsOnFirstCheckIn : false,
+        fixedStartDate: fixedDates ? form.fixedStartDate : null,
+        fixedEndDate: fixedDates ? form.fixedEndDate : null,
+        switchToPlanId: showTerm ? form.switchToPlanId || null : null,
         // Decision 435 item 1: only a paid plan carries a joining fee, so a
         // plan made free drops its fee.
         joiningFee: priced ? form.joiningFee || null : null,
@@ -655,6 +692,33 @@ function MembershipPlanForm({
               />
             </Field>
           ) : null}
+          {/* Decision 435 item 7: the days start on the first check-in. */}
+          {showTerm && !fixedDates ? (
+            <>
+              <Checkbox
+                id="plan-first-check-in"
+                label={t('membershipPlans.form.startsOnFirstCheckIn')}
+                checked={form.startsOnFirstCheckIn}
+                onChange={(e) => setForm((f) => ({ ...f, startsOnFirstCheckIn: e.target.checked }))}
+              />
+              <p className="ultm8-field__hint" style={{ margin: '4px 0 12px' }}>
+                {t('membershipPlans.form.startsOnFirstCheckInHint')}
+              </p>
+            </>
+          ) : null}
+          {/* Decision 435 item 8: a plan on fixed dates, like a 6-week camp. */}
+          {showTerm && !form.startsOnFirstCheckIn ? (
+            <fieldset style={{ border: 'none', padding: 0, margin: 0 }} data-testid="plan-fixed-dates">
+              <legend className="ultm8-field__label">{t('membershipPlans.form.fixedDatesLegend')}</legend>
+              <p className="ultm8-field__hint" style={{ marginTop: 0 }}>{t('membershipPlans.form.fixedDatesHint')}</p>
+              <Field label={t('membershipPlans.form.fixedStartLabel')} htmlFor="plan-fixed-start">
+                <TextField id="plan-fixed-start" type="date" value={form.fixedStartDate} onChange={(e) => setForm((f) => ({ ...f, fixedStartDate: e.target.value }))} />
+              </Field>
+              <Field label={t('membershipPlans.form.fixedEndLabel')} htmlFor="plan-fixed-end">
+                <TextField id="plan-fixed-end" type="date" value={form.fixedEndDate} onChange={(e) => setForm((f) => ({ ...f, fixedEndDate: e.target.value }))} />
+              </Field>
+            </fieldset>
+          ) : null}
         </Card>
         ) : null}
 
@@ -717,7 +781,24 @@ function MembershipPlanForm({
             checked={form.termsWaiverRequired}
             onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
           />
+          {/* Decision 435 item 9: switch to another plan when it ends. */}
+          {showTerm ? (
+            <Field label={t('membershipPlans.form.switchToLabel')} htmlFor="plan-switch-to" hint={t('membershipPlans.form.switchToHint')}>
+              <SelectField
+                id="plan-switch-to"
+                value={form.switchToPlanId}
+                onChange={(e) => setForm((f) => ({ ...f, switchToPlanId: e.target.value }))}
+                options={[
+                  { value: '', label: t('membershipPlans.form.switchToNone') },
+                  ...switchTargets.map((p) => ({ value: p.id, label: p.title })),
+                  // A next plan that no longer qualifies stays shown, so saving doesn't silently drop it.
+                  ...(form.switchToPlanId && !switchTargets.some((p) => p.id === form.switchToPlanId) ? [{ value: form.switchToPlanId, label: form.switchToPlanId }] : []),
+                ]}
+              />
+            </Field>
+          ) : null}
           {/* Decision 316 item 10: shown in the Transactions export. */}
+
           <Field label={t('charges.incomeCategories.fieldLabel')} htmlFor="plan-incomeCategory" hint={t('charges.incomeCategories.fieldHint')}>
             <SelectField
               id="plan-incomeCategory"
