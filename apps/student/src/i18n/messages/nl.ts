@@ -861,6 +861,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Ondertekenen en doorgaan",
       signError: "Het contract kon niet worden ondertekend.",
       loadError: "Het contract kon niet worden geladen.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Dit lidmaatschap stopt als de minimale looptijd eindigt. Het wordt niet verlengd.",
+      endsOn: "Eindigt na de minimale looptijd, op {date}. Het wordt niet verlengd.",
       cancelFee: "De minimale looptijd van je contract loopt tot {date}. Eindigt je lidmaatschap eerder, dan komen de opzegkosten van {amount} op je saldo.",
     },
     recharge: {
@@ -1228,6 +1231,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Promotievergoeding",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Kosten voor vroegtijdig opzeggen",
     },
     lateFee: {
       label: "Te-laatvergoeding",

@@ -847,6 +847,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "친구 패스는 구매가 아니라 선물이므로 계약이 없습니다.",
   "A minimum term and an early-exit fee are for Subscription plans only.": "최소 약정 기간과 중도 해지 수수료는 구독 플랜에만 있습니다.",
   "Set a minimum term before an early-exit fee.": "중도 해지 수수료보다 최소 약정 기간을 먼저 정하세요.",
+  "Set a minimum term before choosing that the plan ends after it.": "최소 약정 기간 후 플랜을 종료하도록 선택하기 전에 최소 약정 기간을 먼저 정하세요.",
   "This plan has no contract.": "이 플랜에는 계약이 없습니다.",
   "This plan has no contract to sign.": "이 플랜에는 서명할 계약이 없습니다.",
   "Type your full name and your signature.": "전체 이름과 서명을 입력하세요.",

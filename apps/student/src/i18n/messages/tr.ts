@@ -861,6 +861,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "İmzala ve devam et",
       signError: "Sözleşme imzalanamadı.",
       loadError: "Sözleşme yüklenemedi.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Bu üyelik asgari süre bitince sona erer. Yenilenmez.",
+      endsOn: "Asgari sürenin ardından {date} tarihinde biter. Yenilenmez.",
       cancelFee: "Sözleşmenizin asgari süresi {date} tarihine kadar sürer. Üyeliğiniz bundan önce biterse {amount} erken çıkış ücreti bakiyenize eklenir.",
     },
     recharge: {
@@ -1228,6 +1231,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Terfi ücreti",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Erken çıkış ücreti",
     },
     lateFee: {
       label: "Gecikme ücreti",

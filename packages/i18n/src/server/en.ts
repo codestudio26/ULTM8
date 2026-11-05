@@ -865,6 +865,7 @@ export const SERVER_PATTERNS: string[] = [
  "A Friend Pass is given, not bought, so it has no contract.",
  "A minimum term and an early-exit fee are for Subscription plans only.",
  "Set a minimum term before an early-exit fee.",
+ "Set a minimum term before choosing that the plan ends after it.",
  "This plan has no contract.",
  "This plan has no contract to sign.",
  "Type your full name and your signature.",

@@ -10,6 +10,9 @@ export const memberships = {
     signAndContinue: "Sign and continue",
     signError: "The contract could not be signed.",
     loadError: "The contract could not be loaded.",
+    // Decision 435 item 16.
+    endsAfterTerm: "This membership stops when the minimum term ends. It doesn't renew.",
+    endsOn: "Ends after its minimum term, on {date}. It doesn't renew.",
     cancelFee: "Your contract's minimum term runs until {date}. If your membership ends before then, the early-exit fee of {amount} is added to your balance.",
   },
   recharge: {

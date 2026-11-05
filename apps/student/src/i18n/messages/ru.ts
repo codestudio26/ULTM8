@@ -889,6 +889,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Подписать и продолжить",
       signError: "Не удалось подписать договор.",
       loadError: "Не удалось загрузить договор.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Это членство прекращается по окончании минимального срока. Оно не продлевается.",
+      endsOn: "Заканчивается после минимального срока, {date}. Не продлевается.",
       cancelFee: "Минимальный срок вашего договора — до {date}. Если членство закончится раньше, плата за досрочный выход {amount} добавится к вашему балансу.",
     },
     recharge: {
@@ -1273,6 +1276,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Сбор за повышение",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Плата за досрочный выход",
     },
     lateFee: {
       label: "Пеня за просрочку",

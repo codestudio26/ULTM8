@@ -3205,6 +3205,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "계약을 저장할 수 없습니다.",
       invalidTerm: "1~120 사이의 정수로 개월 수를 입력하세요.",
       invalidFee: "수수료를 금액으로 입력하세요(예: 50.00).",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "최소 약정 기간 후 구독 종료",
+      endsAfterTermHint: "갱신하지 않고 최소 약정 기간이 끝나는 날에 멈춥니다. 일시 정지하면 정지한 일수만큼 그날이 늦춰집니다.",
+      endsAfterTermLine: "최소 약정 기간 후 종료(갱신 없음)",
       studentCardTitle: "서명된 계약",
       loadFailed: "서명된 계약을 불러올 수 없습니다.",
       signedOn: "{date}에 {name} 서명",
@@ -4774,6 +4778,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "승급 화면에서 면제하거나 취소하세요",
       waivedLine: "{date}에 {name}님이 승급 화면에서 면제",
       cancelledLine: "{date}에 {name}님이 승급 화면에서 취소",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "중도 해지 수수료",
     },
     lateFee: {
       badge: "연체료",

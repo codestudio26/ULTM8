@@ -3205,6 +3205,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "บันทึกสัญญาไม่ได้",
       invalidTerm: "ใส่จำนวนเดือนเป็นจำนวนเต็มตั้งแต่ 1 ถึง 120",
       invalidFee: "ใส่ค่าธรรมเนียมเป็นจำนวนเงิน เช่น 50.00",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "สิ้นสุดการสมัครสมาชิกหลังระยะเวลาขั้นต่ำ",
+      endsAfterTermHint: "จะหยุดในวันที่ระยะเวลาขั้นต่ำสิ้นสุดแทนการต่ออายุ การพักสมาชิกจะเลื่อนวันนั้นออกไปตามจำนวนวันที่พัก",
+      endsAfterTermLine: "สิ้นสุดหลังระยะเวลาขั้นต่ำ (ไม่ต่ออายุ)",
       studentCardTitle: "สัญญาที่ลงนามแล้ว",
       loadFailed: "โหลดสัญญาที่ลงนามแล้วไม่ได้",
       signedOn: "ลงนามเมื่อ {date} โดย {name}",
@@ -4774,6 +4778,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "ยกเว้นหรือยกเลิกได้ในการเลื่อนระดับ",
       waivedLine: "ยกเว้นค่าธรรมเนียมในการเลื่อนระดับเมื่อ {date} โดย {name}",
       cancelledLine: "ยกเลิกค่าธรรมเนียมในการเลื่อนระดับเมื่อ {date} โดย {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "ค่าธรรมเนียมยกเลิกก่อนกำหนด",
     },
     lateFee: {
       badge: "ค่าปรับล่าช้า",

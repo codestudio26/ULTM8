@@ -847,6 +847,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "Arkadaş Pası hediye edilir, satın alınmaz; bu yüzden sözleşmesi yoktur.",
   "A minimum term and an early-exit fee are for Subscription plans only.": "Asgari süre ve erken çıkış ücreti yalnızca abonelik planları içindir.",
   "Set a minimum term before an early-exit fee.": "Erken çıkış ücretinden önce bir asgari süre belirleyin.",
+  "Set a minimum term before choosing that the plan ends after it.": "Planın asgari süreden sonra bitmesini seçmeden önce bir asgari süre belirleyin.",
   "This plan has no contract.": "Bu planın sözleşmesi yok.",
   "This plan has no contract to sign.": "Bu planın imzalanacak sözleşmesi yok.",
   "Type your full name and your signature.": "Tam adınızı ve imzanızı yazın.",

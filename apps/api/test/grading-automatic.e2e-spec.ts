@@ -267,7 +267,11 @@ describeIfDb('Automatic grading (Decision 321)', () => {
   describe('ticked requirements and the averaged %', () => {
     it('hours and days attended count only when ticked; two classes on one day are one day', async () => {
       await placeAna('w0', { classes: 10 });
+      // Noon (UTC, the School's zone) three days ago, so the second class two
+      // hours later is on the same day whatever the time the test runs (run
+      // after 22:00 UTC, "now − 3 days" plus 2 hours fell on the next day).
       const day1 = new Date(Date.now() - 3 * DAY);
+      day1.setUTCHours(12, 0, 0, 0);
       await checkIn(user.ana.id, day1, [{ disciplineId: bjj.id, classType: 'Fundamentals' }]);
       await checkIn(user.ana.id, new Date(day1.getTime() + 2 * 3600_000), [{ disciplineId: bjj.id, classType: 'Fundamentals' }]);
 

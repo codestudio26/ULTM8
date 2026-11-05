@@ -847,6 +847,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "تذكرة الصديق تُهدى ولا تُشترى، لذا ليس لها عقد.",
   "A minimum term and an early-exit fee are for Subscription plans only.": "المدة الدنيا ورسوم الخروج المبكر خاصة بخطط الاشتراك فقط.",
   "Set a minimum term before an early-exit fee.": "حدّد مدة دنيا قبل رسوم الخروج المبكر.",
+  "Set a minimum term before choosing that the plan ends after it.": "حدّد مدة دنيا قبل اختيار أن تنتهي الخطة بعدها.",
   "This plan has no contract.": "هذه الخطة ليس لها عقد.",
   "This plan has no contract to sign.": "هذه الخطة ليس لها عقد للتوقيع.",
   "Type your full name and your signature.": "اكتب اسمك الكامل وتوقيعك.",

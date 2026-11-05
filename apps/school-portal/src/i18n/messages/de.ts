@@ -3244,6 +3244,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Der Vertrag konnte nicht gespeichert werden.",
       invalidTerm: "Gib eine ganze Zahl von Monaten zwischen 1 und 120 ein.",
       invalidFee: "Gib die Gebühr als Betrag ein, zum Beispiel 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Abo nach der Mindestlaufzeit beenden",
+      endsAfterTermHint: "Es endet an dem Tag, an dem die Mindestlaufzeit endet, statt sich zu verlängern. Ein Einfrieren verschiebt diesen Tag um die eingefrorenen Tage nach hinten.",
+      endsAfterTermLine: "Endet nach der Mindestlaufzeit (keine Verlängerung)",
       studentCardTitle: "Unterschriebene Verträge",
       loadFailed: "Die unterschriebenen Verträge konnten nicht geladen werden.",
       signedOn: "Unterschrieben am {date} von {name}",
@@ -4820,6 +4824,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "In der Graduierung erlassen oder stornieren",
       waivedLine: "Gebühr am {date} von {name} in der Graduierung erlassen",
       cancelledLine: "Gebühr am {date} von {name} in der Graduierung storniert",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Gebühr für vorzeitige Kündigung",
     },
     lateFee: {
       badge: "Säumnisgebühr",

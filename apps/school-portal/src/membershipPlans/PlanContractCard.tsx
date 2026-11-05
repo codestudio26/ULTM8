@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner, Field, TextArea, TextField } from '@ultm8/ui';
+import { Button, Card, Checkbox, ErrorBanner, Field, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { MoneyField } from '../lib/MoneyField';
 import { useT } from '../i18n/I18nProvider';
@@ -19,6 +19,7 @@ export function PlanContractCard({ plan, currency }: { plan: MembershipPlanRespo
   const [body, setBody] = useState(plan.contractBody ?? '');
   const [term, setTerm] = useState(plan.contractMinimumTermMonths != null ? String(plan.contractMinimumTermMonths) : '');
   const [fee, setFee] = useState<number | null>(plan.contractEarlyExitFee ?? null);
+  const [endsAfterTerm, setEndsAfterTerm] = useState(plan.contractEndsAfterMinimumTerm ?? false);
   const [feeValid, setFeeValid] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -38,6 +39,8 @@ export function PlanContractCard({ plan, currency }: { plan: MembershipPlanRespo
         body: hasText ? body : null,
         minimumTermMonths: hasText && isSubscription ? months : null,
         earlyExitFee: hasText && isSubscription && months !== null ? fee : null,
+        // Decision 435 item 16.
+        endsAfterMinimumTerm: hasText && isSubscription && months !== null ? endsAfterTerm : false,
       });
       setSaved(true);
     } catch (err) {
@@ -76,6 +79,15 @@ export function PlanContractCard({ plan, currency }: { plan: MembershipPlanRespo
                 }}
               />
             </Field>
+            {/* Decision 435 item 16: stops at the end of the minimum term instead of renewing. */}
+            <Checkbox
+              id="plan-contract-ends-after-term"
+              label={t('membershipPlans.contract.endsAfterTermLabel')}
+              checked={endsAfterTerm && !!term.trim()}
+              disabled={!term.trim()}
+              onChange={(e) => setEndsAfterTerm(e.target.checked)}
+            />
+            <p className="ultm8-field__hint" style={{ marginTop: 0 }}>{t('membershipPlans.contract.endsAfterTermHint')}</p>
           </>
         ) : (
           <p className="ultm8-field__hint">{t('membershipPlans.contract.subscriptionOnly')}</p>

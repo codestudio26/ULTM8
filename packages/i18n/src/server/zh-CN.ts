@@ -847,6 +847,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "好友通行证是赠送的，不是购买的，所以没有合同。",
   "A minimum term and an early-exit fee are for Subscription plans only.": "最短期限和提前退出费仅适用于订阅计划。",
   "Set a minimum term before an early-exit fee.": "请先设置最短期限，再设置提前退出费。",
+  "Set a minimum term before choosing that the plan ends after it.": "请先设置最短期限，再选择方案在最短期限后终止。",
   "This plan has no contract.": "此计划没有合同。",
   "This plan has no contract to sign.": "此计划没有需要签署的合同。",
   "Type your full name and your signature.": "请输入你的全名和签名。",

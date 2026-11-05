@@ -3322,6 +3322,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Не удалось сохранить договор.",
       invalidTerm: "Введите целое число месяцев от 1 до 120.",
       invalidFee: "Введите плату суммой, например 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Завершить подписку после минимального срока",
+      endsAfterTermHint: "Она прекращается в день окончания минимального срока, а не продлевается. Заморозка сдвигает этот день на число замороженных дней.",
+      endsAfterTermLine: "Заканчивается после минимального срока (без продления)",
       studentCardTitle: "Подписанные договоры",
       loadFailed: "Не удалось загрузить подписанные договоры.",
       signedOn: "Подписан {date}, {name}",
@@ -4932,6 +4936,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Освободите от него или отмените его в аттестации",
       waivedLine: "Сбор отменён без оплаты в аттестации {date}, {name}",
       cancelledLine: "Сбор отменён в аттестации {date}, {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Плата за досрочный выход",
     },
     lateFee: {
       badge: "Пеня за просрочку",

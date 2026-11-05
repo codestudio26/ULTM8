@@ -874,6 +874,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Firma e continua",
       signError: "Impossibile firmare il contratto.",
       loadError: "Impossibile caricare il contratto.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Questo abbonamento si ferma alla fine della durata minima. Non si rinnova.",
+      endsOn: "Termina dopo la durata minima, il {date}. Non si rinnova.",
       cancelFee: "La durata minima del tuo contratto dura fino al {date}. Se l'abbonamento finisce prima, la penale di recesso anticipato di {amount} viene addebitata sul tuo saldo.",
     },
     recharge: {
@@ -1246,6 +1249,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Quota di promozione",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Penale di recesso anticipato",
     },
     lateFee: {
       label: "Penale di ritardo",

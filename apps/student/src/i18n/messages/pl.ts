@@ -889,6 +889,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Podpisz i kontynuuj",
       signError: "Nie udało się podpisać umowy.",
       loadError: "Nie udało się wczytać umowy.",
+      // Decision 435 item 16.
+      endsAfterTerm: "To członkostwo kończy się wraz z minimalnym okresem. Nie odnawia się.",
+      endsOn: "Kończy się po minimalnym okresie, {date}. Nie odnawia się.",
       cancelFee: "Minimalny okres twojej umowy trwa do {date}. Jeśli członkostwo skończy się wcześniej, do salda zostanie dopisana opłata za wcześniejsze rozwiązanie {amount}.",
     },
     recharge: {
@@ -1273,6 +1276,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Opłata za promocję",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Opłata za wcześniejsze rozwiązanie",
     },
     lateFee: {
       label: "Opłata za zwłokę",

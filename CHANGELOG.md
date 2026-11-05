@@ -858,6 +858,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Student's page and the app show a membership waiting for its first check-in
   and the plan it switches to. **Needs a database migration**
   (`20270225100100_plan_dates`).
+- **Contracts on plans: ending after the minimum term, freezes and the
+  early-exit label** (Decision 435 items 16, 17, 19) — the Contract card has a
+  new **End the Subscription after the minimum term** option: the member is
+  told when signing, the app shows "Ends after its minimum term, on …", and ten
+  days before that day the Subscription is set to stop on it instead of
+  renewing (the usual 7-day reminder follows). A freeze now pushes the end of
+  the minimum term back by the days frozen, for the early-exit fee and for the
+  stop. A contract's early-exit fee shows as **Early-exit fee** on the
+  student's invoices in the portal and in the app, like the late-fee badge.
+  **Needs a database migration**
+  (`20270219000001_contract_ends_after_minimum_term`).
 - **Medical information at sign-up** (Decision 315 item 10; Gymdesk SF6) — a
   new **Medical information at sign-up** card on the School page (owner only)
   lets a School ask for medical information. It is **off by default**, so

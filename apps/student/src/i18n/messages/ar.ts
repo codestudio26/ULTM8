@@ -911,6 +911,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "وقّع وتابع",
       signError: "تعذّر توقيع العقد.",
       loadError: "تعذّر تحميل العقد.",
+      // Decision 435 item 16.
+      endsAfterTerm: "تتوقف هذه العضوية عند انتهاء المدة الدنيا، ولا تتجدد.",
+      endsOn: "تنتهي بعد مدتها الدنيا في {date}، ولا تتجدد.",
       cancelFee: "تستمر المدة الدنيا لعقدك حتى {date}. إذا انتهت عضويتك قبل ذلك، تُضاف رسوم الخروج المبكر البالغة {amount} إلى رصيدك.",
     },
     recharge: {
@@ -1303,6 +1306,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "رسوم الترقية",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "رسوم الخروج المبكر",
     },
     lateFee: {
       label: "رسوم تأخير",

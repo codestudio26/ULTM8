@@ -3205,6 +3205,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "契約を保存できませんでした。",
       invalidTerm: "1〜120の整数で月数を入力してください。",
       invalidFee: "解約料を金額で入力してください（例: 50.00）。",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "最低契約期間の終了後にサブスクリプションを終える",
+      endsAfterTermHint: "更新せず、最低契約期間が終わる日に停止します。休会するとその日数だけ後ろにずれます。",
+      endsAfterTermLine: "最低契約期間の終了後に終了（更新なし）",
       studentCardTitle: "署名済みの契約",
       loadFailed: "署名済みの契約を読み込めませんでした。",
       signedOn: "{date} に {name} が署名",
@@ -4774,6 +4778,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "昇級画面で免除または取り消し",
       waivedLine: "{date}に{name}が昇級画面で免除",
       cancelledLine: "{date}に{name}が昇級画面で取り消し",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "途中解約料",
     },
     lateFee: {
       badge: "延滞料",

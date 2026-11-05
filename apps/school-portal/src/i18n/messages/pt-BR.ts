@@ -3244,6 +3244,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Não foi possível salvar o contrato.",
       invalidTerm: "Digite um número inteiro de meses de 1 a 120.",
       invalidFee: "Digite a multa como valor, por exemplo 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Encerrar a assinatura após o prazo mínimo",
+      endsAfterTermHint: "Ela termina no dia em que o prazo mínimo acaba, em vez de renovar. Um congelamento adia esse dia pelos dias congelados.",
+      endsAfterTermLine: "Termina após o prazo mínimo (sem renovação)",
       studentCardTitle: "Contratos assinados",
       loadFailed: "Não foi possível carregar os contratos assinados.",
       signedOn: "Assinado em {date} por {name}",
@@ -4820,6 +4824,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Dispense ou cancele na graduação",
       waivedLine: "Taxa dispensada na graduação em {date} por {name}",
       cancelledLine: "Taxa cancelada na graduação em {date} por {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Multa por saída antecipada",
     },
     lateFee: {
       badge: "Multa por atraso",
