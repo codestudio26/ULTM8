@@ -840,7 +840,8 @@ export class GuardiansService {
       tx.guardianLink.upsert({
         where: { guardianId_studentId: { guardianId, studentId } },
         create: { id: randomUUID(), guardianId, studentId },
-        update: { revokedAt: null },
+        // A link brought back is a new one: it never carries the pre-rule consent mark.
+        update: { revokedAt: null, consentGrandfathered: false },
       }),
     );
   }
