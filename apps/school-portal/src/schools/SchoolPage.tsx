@@ -31,6 +31,8 @@ import { MedicalInfoSettingsCard } from './MedicalInfoSettingsCard';
 import { MemberAppSettingsCard } from './MemberAppSettingsCard';
 import { CustomMemberFieldsSettingsCard } from './CustomMemberFieldsSettingsCard';
 import { FreezeSettingsCard } from './FreezeSettingsCard';
+import { JoiningFeeSettingsCard } from './JoiningFeeSettingsCard';
+
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
 import { LateFeesCard } from '../charges/LateFeesCard';
@@ -93,6 +95,8 @@ export function SchoolPage() {
         <CancellationSettingsCard key={`cancel-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 404: freezing memberships. */}
         <FreezeSettingsCard key={`freeze-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 435: joining fees on plans, off by default. */}
+        <JoiningFeeSettingsCard key={`joining-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 411: tax on staff-created charges, set by the School. */}
         <ChargeSettingsCard key={`charges-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 406: only where the School's country allows it. */}

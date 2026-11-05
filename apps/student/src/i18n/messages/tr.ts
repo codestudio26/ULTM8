@@ -912,6 +912,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Satın almak için bu okula katıl.",
+      joiningFee: "Bu okuldaki ilk planınıza + {amount} katılım ücreti eklenir",
       cardSurcharge: "Kartla ödemede + {amount} ek ücret",
       classesIncluded: { one: "{count} ders", other: "{count} ders" },
       durationDays: { one: "{count} gün", other: "{count} gün" },

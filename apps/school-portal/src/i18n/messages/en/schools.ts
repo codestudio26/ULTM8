@@ -110,6 +110,12 @@ export const schools = {
     checkInLink: "Open check-in rules",
     stripeTrialNote: "In Stripe, a frozen card subscription shows as a trial. If your Stripe account sends trial-ending reminder emails, members may get one. You can turn these emails off in your Stripe settings.",
   },
+  joiningFees: {
+    title: "Joining fees",
+    subtitle: "A one-off fee you set on each paid plan, added to a member's first plan at this School.",
+    enabled: "Charge joining fees",
+    offNote: "When off, the fees stay saved on your plans but nobody is charged them.",
+  },
   studentTags: {
     title: "Student tags",
     subtitle: "Your own labels for students, such as Competition team. Only staff see them, never the student. Staff can also add a new tag while tagging a student.",

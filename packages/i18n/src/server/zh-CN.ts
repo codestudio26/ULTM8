@@ -1,5 +1,7 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "只有付费方案才能设置入会费。",
+  "The price and the joining fee together are too big.": "价格与入会费合计过高。",
   "What's new is for School owners and staff.": "新功能动态仅供学校负责人和员工查看。",
   "Give each language once.": "每种语言只能填写一次。",
   "Post not found": "未找到该帖子",

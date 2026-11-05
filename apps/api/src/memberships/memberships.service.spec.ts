@@ -274,7 +274,7 @@ describe('MembershipsService.purchaseViaHostedCheckout (Decision 243)', () => {
 
     const result = (await callPurchaseViaHostedCheckout(service)) as { outcome: string; checkoutUrl: string; transactionId: string };
 
-    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', result.transactionId, 3000, 'usd', 'Pack', expect.stringMatching(/^membership-purchase-checkout-student-1-plan-1-[0-9a-f]{12}-\d+$/), 0);
+    expect(createPurchaseCheckoutSession).toHaveBeenCalledWith('student-1', 'school-1', result.transactionId, 3000, 'usd', 'Pack', expect.stringMatching(/^membership-purchase-checkout-student-1-plan-1-[0-9a-f]{12}-\d+$/), 0, 'membership-purchase', 0);
     const key = createPurchaseCheckoutSession.mock.calls[0][6] as string;
     expect(result.transactionId).toBe(checkoutTransactionId(key));
     expect(result.outcome).toBe('requires_checkout');
@@ -385,7 +385,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
     expect(guardiansService.assertGuardianOfStudent).toHaveBeenCalledWith('guardian-1', 'minor-1', { purpose: 'pay' });
     expect(result.outcome).toBe('requires_checkout');
     expect(result.checkoutUrl).toBe('https://checkout.stripe.com/c/pay/cs_test_1');
-    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', expect.any(String), 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/), 0);
+    expect(paymentsService.createPurchaseCheckoutSession).toHaveBeenCalledWith('minor-1', 'school-1', expect.any(String), 3000, 'USD', 'Pack', expect.stringMatching(/^membership-purchase-checkout-minor-1-plan-1-[0-9a-f]{12}-\d+$/), 0, 'membership-purchase', 0);
     expect(tx.transaction.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ studentId: 'minor-1', paymentAccountId: 'account-1' }) }),
     );

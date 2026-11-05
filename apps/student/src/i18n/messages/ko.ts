@@ -903,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "구매하려면 이 학교에 가입하세요.",
+      joiningFee: "이 학교의 첫 플랜에는 가입비 {amount}가 추가됩니다",
       cardSurcharge: "카드로 결제하면 + 수수료 {amount}",
       classesIncluded: { other: "수업 {count}회" },
       durationDays: { other: "{count}일" },

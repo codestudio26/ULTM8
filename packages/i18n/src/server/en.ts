@@ -6,6 +6,8 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "Only a paid plan can have a joining fee.",
+ "The price and the joining fee together are too big.",
  "What's new is for School owners and staff.",
  "Give each language once.",
  "Post not found",

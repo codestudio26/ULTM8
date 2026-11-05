@@ -122,7 +122,7 @@ including a filled-in example where possible. Empty screens hide most fields.
 | P7 | Pricing type: Trial | ✅ | `TRIAL_MEMBERSHIP` (length set by the School; the 30-day caps were removed by Decision 410) |
 | P8 | Frequency "every N weeks/months" + **max number of payments** | 🟡 | `billingCycleAnchorDay` exists; no custom interval and no payment-count cap |
 | P9 | Start membership on first check-in | ❌ | |
-| P10 | **Sign-up fee** | ❌ | |
+| P10 | **Sign-up fee** | ✅ **5 Nov 2026: built** (Decision 316 item 3, answered by Decision 435 items 1-6; branch `feature/plan-joining-fee`, migration `20270225100000_plan_joining_fee`): a fixed joining fee on a paid plan, on a member's first-ever plan at the School only, with the plan's tax and card surcharge, refundable or not per plan; switched on or off per School | |
 | P11 | **Late fee + grace days** ("when 5 days overdue") | ❌ | |
 | P12 | **Family discounts** (2nd / 3rd / 4th+ member, % or fixed) | ❌ | |
 | P13 | Duration: Ongoing / Limited (N months) / Specific dates (enrolment periods) | 🟡 | `expiryDurationDays` covers "limited"; fixed-date enrolment periods ❌ |
@@ -589,7 +589,7 @@ password · **Selected membership + credit card payment** · Additional forms / 
 | SF6 | **Medical conditions** | ✅ **31 Oct 2026: built** (Decision 315 item 10). Off by default per School; asked on the tablet sign-up and when joining in the app; kept only with the member's consent (the Guardian's for a child); seen by owners and staff with "See medical information". One free-text field for now |
 | SF7 | Pay for a membership inside the form | 🟡 ULTM8 pays via **Stripe hosted Checkout** (Decisions 238/243). Copy the layout, but keep card entry on Stripe's hosted page, not in our own form fields |
 | SF8 | Post sign-up: **redirect link**, rich-text **thank-you message** | ❌ Small |
-| SF9 | **JavaScript conversion snippet** run on the thank-you page | ⚠️ Running School-supplied JavaScript on ULTM8's own pages is a **security risk** (script injection that could reach other users' sessions). Recommend: don't copy. Offer named tracking integrations (e.g. Meta Pixel / Google Analytics IDs) instead. **5 Nov 2026: the IDs are built** (Decision 318 item 10): the owner saves a Meta Pixel ID and a GA4 measurement ID on the School page, strict formats only. Not loaded on any page yet: which pages, and visitors' cookie consent, are open |
+| SF9 | **JavaScript conversion snippet** run on the thank-you page | ⚠️ Running School-supplied JavaScript on ULTM8's own pages is a **security risk** (script injection that could reach other users' sessions). Recommend: don't copy. Offer named tracking integrations (e.g. Meta Pixel / Google Analytics IDs) instead. **5 Nov 2026: the IDs are built** (Decision 318 item 10): the owner saves a Meta Pixel ID and a GA4 measurement ID on the School page, strict formats only. **5 Nov 2026: loading built for the schedule embed** (Decision 435 items 24–27): a cookie-consent banner in the page's language comes first; nothing from Meta or Google loads (and the page's security policy allows no Meta/Google host) until the visitor clicks Accept; then a page view. The shared code (`apps/api/src/public-pages/tracking-consent.ts`) also has the one "sign-up" event, for the website sign-up form's thank-you page once that page exists. Never on the portal, sign-in, waivers, payments or the member app |
 
 ### Custom fields, statuses, tags
 | # | Gymdesk setting | ULTM8 |

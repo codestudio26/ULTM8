@@ -109,6 +109,8 @@ export function MembershipPlanFormPage() {
       defaultCurrency={school?.defaultCurrency ?? undefined}
       // Decision 414 item 6: no price until the School's currency is set.
       schoolCurrencyMissing={!!school && !school.defaultCurrency}
+      // Decision 435 item 6: a fee set while joining fees are off isn't charged.
+      joiningFeesEnabled={school?.joiningFeesEnabled ?? true}
       // Memberships review M9 (Decision 334): the migrate-or-keep prompt is
       // about running subscriptions, the same count the API checks; active
       // members (cash Weekly Passes etc.) only lock the type (M14).
@@ -159,6 +161,10 @@ interface MembershipPlanFormValues {
   billingCycleAnchorDay?: number | null;
   // Decision 316 item 10. Null clears it on edit; omitted on create.
   incomeCategoryId?: string | null;
+  // Decision 435 items 1-5: the joining fee (null = none) and whether it is
+  // refunded with the membership payment.
+  joiningFee?: number | null;
+  joiningFeeRefundable?: boolean;
 }
 
 /** Fields match CreateMembershipPlanDto/UpdateMembershipPlanDto exactly —
@@ -178,6 +184,7 @@ function MembershipPlanForm({
   incomeCategories,
   defaultCurrency,
   schoolCurrencyMissing = false,
+  joiningFeesEnabled = true,
   activeSubscriberCount,
   activeMemberCount,
   submitting,
@@ -195,6 +202,8 @@ function MembershipPlanForm({
    * fields are off (a free plan can still be saved) and a notice links to the
    * School page setting. */
   schoolCurrencyMissing?: boolean;
+  /** Decision 435 item 6: the School's joining fees switch. */
+  joiningFeesEnabled?: boolean;
   /** v1.2 backend backlog — how many ACTIVE, Stripe-backed subscribers this
    * plan currently has. Always 0 on Create (nothing to migrate/grandfather
    * for a plan that doesn't exist yet). */
@@ -241,6 +250,9 @@ function MembershipPlanForm({
     newMemberBillingStrategy: (initial?.newMemberBillingStrategy as 'FRESH_CYCLE' | 'PRORATED_TO_SHARED_CYCLE') ?? 'FRESH_CYCLE',
     billingCycleAnchorDay: initial?.billingCycleAnchorDay?.toString() ?? '',
     incomeCategoryId: initial?.incomeCategoryId ?? '',
+    joiningFee: (initial?.joiningFee ?? null) as number | null,
+    joiningFeeValid: true,
+    joiningFeeRefundable: initial?.joiningFeeRefundable ?? false,
   });
   // Decision 195: "Includes lessons" follows the price (on when priced, off
   // when free) until the owner sets it.
@@ -362,6 +374,11 @@ function MembershipPlanForm({
       setError(t('membershipPlans.form.cancellationInvalid'));
       return;
     }
+    if (priced && !form.joiningFeeValid) {
+      setStepIndex(2);
+      setError(t('membershipPlans.form.joiningFeeInvalid'));
+      return;
+    }
     // v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
     // prompt. Blocks the save client-side (same "jump back to the step that
     // needs attention" pattern as Title/Price above) rather than letting it
@@ -408,6 +425,10 @@ function MembershipPlanForm({
         disciplineIds: form.disciplineIds,
         includesLessons: lessonsOn,
         incomeCategoryId: form.incomeCategoryId || null,
+        // Decision 435 item 1: only a paid plan carries a joining fee, so a
+        // plan made free drops its fee.
+        joiningFee: priced ? form.joiningFee || null : null,
+        joiningFeeRefundable: priced && form.joiningFee ? form.joiningFeeRefundable : false,
         // Omitted (undefined) whenever not required — sending it when the
         // server doesn't expect one is itself rejected (400), per
         // MembershipsService.updatePlan()'s own "a value with no effect is a
@@ -664,8 +685,35 @@ function MembershipPlanForm({
               onChange={(cancellationCharge, cancellationValid) => setForm((f) => ({ ...f, cancellationCharge, cancellationValid }))}
             />
           </Field>
+          {/* Decision 435 items 1-6: a paid plan's joining fee. */}
+          {priced ? (
+            <>
+              <Field label={t('membershipPlans.form.joiningFeeLabel')} htmlFor="plan-joiningFee" hint={t('membershipPlans.form.joiningFeeHint')}>
+                <MoneyField
+                  id="plan-joiningFee"
+                  disabled={schoolCurrencyMissing}
+                  value={form.joiningFee}
+                  currency={form.currency || normalizedDefaultCurrency || null}
+                  onChange={(joiningFee, joiningFeeValid) => setForm((f) => ({ ...f, joiningFee, joiningFeeValid }))}
+                />
+              </Field>
+              {form.joiningFee ? (
+                <Checkbox
+                  label={t('membershipPlans.form.joiningFeeRefundable')}
+                  checked={form.joiningFeeRefundable}
+                  onChange={(e) => setForm((f) => ({ ...f, joiningFeeRefundable: e.target.checked }))}
+                />
+              ) : null}
+              {form.joiningFee && !joiningFeesEnabled ? (
+                <p className="ultm8-field__hint" data-testid="joining-fees-off">
+                  {t('membershipPlans.form.joiningFeesOff')}
+                </p>
+              ) : null}
+            </>
+          ) : null}
           <Checkbox
             label={t('membershipPlans.form.waiverRequired')}
+
             checked={form.termsWaiverRequired}
             onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
           />

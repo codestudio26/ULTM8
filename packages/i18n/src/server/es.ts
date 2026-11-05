@@ -1,5 +1,7 @@
 /** Spanish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "Solo un plan de pago puede tener cuota de inscripción.",
+  "The price and the joining fee together are too big.": "El precio y la cuota de inscripción juntos son demasiado altos.",
   "What's new is for School owners and staff.": "Las novedades son para los propietarios y el personal de las escuelas.",
   "Give each language once.": "Indica cada idioma una sola vez.",
   "Post not found": "Publicación no encontrada",

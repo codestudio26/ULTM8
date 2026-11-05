@@ -48,6 +48,12 @@ export class MembershipPlanResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: "The plan's income category (Decision 316 item 10), from GET /schools/{id}/income-categories." })
   incomeCategoryId!: string | null;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: "Decision 435 items 1-6: the one-off joining fee on a member's first-ever plan at the School, in the plan's currency (minor units); null = none. Charged only while the School has joining fees on." })
+  joiningFee!: number | null;
+
+  @ApiProperty({ description: 'Decision 435 item 5: whether the joining fee is refunded together with the membership payment.' })
+  joiningFeeRefundable!: boolean;
+
   @ApiProperty({ type: [String], description: 'The styles this plan covers (Decision 195).' })
   disciplineIds!: string[];
 

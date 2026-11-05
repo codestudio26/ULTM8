@@ -1,5 +1,7 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "Yalnızca ücretli bir planın katılım ücreti olabilir.",
+  "The price and the joining fee together are too big.": "Fiyat ve katılım ücreti birlikte çok yüksek.",
   "What's new is for School owners and staff.": "Yenilikler okul sahipleri ve personel içindir.",
   "Give each language once.": "Her dili bir kez girin.",
   "Post not found": "Gönderi bulunamadı",

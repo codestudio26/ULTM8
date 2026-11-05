@@ -26,6 +26,7 @@ import { useT } from '../i18n/I18nProvider';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
 import { useDeskMethods } from '../lib/deskMethods';
+import { JoiningFeeNotice, useDeskTotal } from '../membershipPlans/JoiningFeeNotice';
 
 /** How a desk payment was taken (Decision 348's desk methods). */
 type DeskMethod = 'CASH' | 'BANK_TRANSFER' | 'PIX' | 'CARD_TERMINAL';
@@ -140,7 +141,9 @@ function cancelledLine(t: ReturnType<typeof useT>, row: TransactionResponse): st
 /** Decision 431 (MON-8): a membership paid at the desk (not by card in the
  * app), taken, with something left to give back. */
 function isRefundableDeskSale(row: TransactionResponse): boolean {
-  return row.kind === 'MEMBERSHIP' && row.paymentMethod !== 'STRIPE' && row.status === 'SUCCESSFUL' && (row.refundedAmount ?? 0) < row.amount;
+  // Decision 435 item 5: a non-refundable joining fee never counts as left.
+  const kept = row.joiningFeeRefundable ? 0 : (row.joiningFeeAmount ?? 0);
+  return row.kind === 'MEMBERSHIP' && row.paymentMethod !== 'STRIPE' && row.status === 'SUCCESSFUL' && (row.refundedAmount ?? 0) < row.amount - kept;
 }
 
 function studentName(row: TransactionResponse): string {
@@ -192,6 +195,8 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
   const students = options?.students ?? [];
   const plans = options?.plans ?? [];
   const plan = plans.find((p) => p.id === planId);
+  // Decision 435: a first plan's joining fee is collected with it.
+  const deskTotal = useDeskTotal(plan?.id ?? null, studentId || null, plan?.price ?? 0);
   // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
   const methods = useDeskMethods(schoolId, ['CASH', 'BANK_TRANSFER', 'PIX', 'CARD_TERMINAL'] as const);
 
@@ -230,6 +235,7 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
             ]}
           />
         </Field>
+        {plan ? <JoiningFeeNotice planId={plan.id} studentId={studentId || null} price={plan.price} currency={plan.currency ?? null} /> : null}
         <Field label={t('transactions.columnMethod')} htmlFor="record-method">
           <SelectField
             id="record-method"
@@ -244,7 +250,7 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
           {t('transactions.back')}
         </Button>
         <Button disabled={!studentId || !plan} loading={record.isPending} onClick={handleSave}>
-          {plan ? t('transactions.recordSave', { amount: formatMoney(plan.price, plan.currency ?? null) }) : t('transactions.recordSaveNoAmount')}
+          {plan ? t('transactions.recordSave', { amount: formatMoney(deskTotal, plan.currency ?? null) }) : t('transactions.recordSaveNoAmount')}
         </Button>
       </div>
     </Modal>
@@ -581,6 +587,8 @@ export function TransactionsPage() {
             refundedAmount: settling.row.refundedAmount ?? null,
             currency: settling.row.currency ?? null,
             planTitle: settling.row.membershipPlanTitle ?? '',
+            // Decision 435 item 5: a non-refundable joining fee stays out.
+            keptJoiningFee: settling.row.joiningFeeRefundable ? 0 : (settling.row.joiningFeeAmount ?? 0),
           }}
           studentName={studentName(settling.row)}
           onClose={() => setSettling(null)}

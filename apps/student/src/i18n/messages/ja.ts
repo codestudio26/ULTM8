@@ -903,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "購入するにはこのスクールに入会してください。",
+      joiningFee: "この道場で最初のプランには入会金 {amount} が加算されます",
       cardSurcharge: "カード払いの場合 + 手数料 {amount}",
       classesIncluded: { other: "{count}クラス" },
       durationDays: { other: "{count}日間" },

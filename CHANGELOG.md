@@ -133,10 +133,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   and/or Google Analytics (GA4) measurement ID: ready-made connections only,
   no custom code. Only the exact formats can be saved (10–20 digits; "G-"
   and 4–16 capital letters or digits), checked in the portal, the API and the
-  database (CHECK constraints), so no script or markup can be stored. Saved
-  only for now: no page loads them yet, until the pages and visitors' cookie
-  consent are decided. Migration `20270215000002_school_ad_tracking`; School
+  database (CHECK constraints), so no script or markup can be stored. Where
+  they load, and the visitor's cookie consent: see the next entry. Migration `20270215000002_school_ad_tracking`; School
   gains `metaPixelId` and `googleAnalyticsId`. 15 languages.
+- **Ad tracking on the schedule embed, behind cookie consent** (Decision 318
+  item 10; Decision 435 items 24–27) — when a School has saved a Meta Pixel or
+  Google Analytics ID, its public schedule embed now shows a cookie-consent
+  banner first, in the page's language (15 languages), naming the services.
+  Nothing from Meta or Google loads until the visitor clicks **Accept**: the
+  page's security policy names no Meta/Google host before then, so the
+  browser itself blocks them. After Accept the page reloads with only the
+  exact hosts those IDs need allowed, and records a page view; Decline hides
+  the banner. The choice is kept for that visit only (the browser tab), so
+  the banner asks again on the next visit; no cookie of ULTM8's own. No
+  personal data is sent; Google signals, ad personalisation and Meta's
+  automatic events are off. The one "sign-up" event is ready for the website
+  sign-up form's thank-you page once it exists (never fired by the embed).
+  Google Ads (AW-) and Tag Manager IDs are still not offered. Never on the
+  portal, sign-in, waivers, payments or the member app. The School page's Ad
+  tracking card now says where the IDs are used (15 languages). **Needs a
+  database migration** (`20270220130001_schedule_embed_ad_tracking`: one
+  read-only function for the embed link).
 - **Uploads before file storage is set up** — choosing a logo, banner or other
   file while Cloudflare R2 isn't configured now says "File storage isn't set up
   yet. Try again later." (translated) instead of "Internal server error". The
@@ -794,6 +811,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   renewal) or of the charge (a payment toward it), as it is now. Members never
   see categories. No accounting codes and no accounting integration. **Needs
   a database migration** (`20270212000001_income_categories`).
+- **Joining fee on plans** (Decision 316 item 3, as answered by Decision 435
+  items 1-6; Gymdesk P10) — a new **Joining fees** card on the School page
+  (owner only, off by default) switches them on. A paid plan's Policies step
+  has a **Joining fee** and whether it is refunded with the membership. The
+  fee is added once, to a member's first-ever plan at the School (not a
+  rejoin after a gap, not a renewal): to the card payment in the app (its own
+  line on hosted Checkout and on a Subscription's first Stripe invoice), to
+  the member's own Cash/Bank order, and to a sale at the desk. The plan's tax
+  and the card surcharge apply to it too. The app shows "+ joining fee on your
+  first plan"; the desk (**Sell a plan**, **Record a payment**) shows the fee
+  and the total to collect for that member. A non-refundable fee is always
+  left out of refunds (desk refunds, a Class Pack's refunded classes); a
+  refundable one goes back with the payment. Switched off, the amounts stay on
+  the plans but nothing is charged. **Needs a database migration**
+  (`20270225100000_plan_joining_fee`).
 - **Contracts on plans** (Decision 316 item 6; Gymdesk DOC2) — a new
   **Contract** card on a plan's edit page (owner only) holds the School's own
   contract text and, for a Subscription, a **minimum term** (months) and an
