@@ -5,6 +5,7 @@ import { Queue } from 'bullmq';
 import { NOTIFICATION_FANOUT_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { randomUUID } from 'crypto';
+import { DateTime } from 'luxon';
 import { resolveClassStyles, styleIdsOf } from './class-styles';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
