@@ -59,7 +59,7 @@ export function useChangeSchoolMainOwner(schoolId: string) {
   });
 }
 
-/** GET /platform-admin/schools/:id/staff (Decision 432 item 6) — the
+/** GET /platform-admin/schools/:id/staff (Decision 433 item 6) — the
  * School's coaches and Branch Staff, paused ones included. Audit-logged
  * server-side (VIEW_SCHOOL_STAFF). */
 export function useSchoolStaff(schoolId: string | null) {
@@ -71,7 +71,7 @@ export function useSchoolStaff(schoolId: string | null) {
   });
 }
 
-/** POST /platform-admin/schools/:id/staff/:userId/pause (Decision 432 item 6)
+/** POST /platform-admin/schools/:id/staff/:userId/pause (Decision 433 item 6)
  * — FULL_ADMIN only server-side: pauses a coach or Branch Staff member. Only
  * the School's main owner can unpause them. */
 export function usePauseSchoolStaff(schoolId: string) {

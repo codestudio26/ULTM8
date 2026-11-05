@@ -9,7 +9,7 @@ import { HttpExceptionFilter, isNulCharacterError } from '../src/common/filters/
 import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
 
 /**
- * Decision 433 (round-5 text, search and identity): name search ignores case,
+ * Decision 434 (round-5 text, search and identity): name search ignores case,
  * accents and spelling variants (TXT-1); the tablet's initial is a whole
  * letter (TXT-7); a NUL character is a 400 (TXT-4); "Has only one name"
  * (TXT-8); one waiting sign-up per email, held by the database (TXT-9); and a
@@ -26,7 +26,7 @@ if (!hasDb) {
   console.warn('[text-identity.e2e-spec] Skipped — DATABASE_URL / DATABASE_URL_APP / JWT_ACCESS_SECRET not set.');
 }
 
-describeIfDb('Text, search and identity (Decision 433)', () => {
+describeIfDb('Text, search and identity (Decision 434)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

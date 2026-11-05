@@ -76,7 +76,7 @@ export class StudentExportService {
       const u = user.get(r.id);
       const mine = memberships.filter((m) => m.studentId === r.id);
       const live = mine.filter((m) => isMembershipLive(m, now));
-      // Decision 432 item 11 (PRIV-11, interim until the GDPR programme sets a
+      // Decision 433 item 11 (PRIV-11, interim until the GDPR programme sets a
       // retention period): a former member's phone and birth date are read
       // live from their account, so the School would keep getting them for
       // ever; the ALL export leaves both blank for them.
@@ -102,7 +102,7 @@ export class StudentExportService {
         lastVisitAt: lastVisit.get(r.id)?.toISOString() ?? null,
         guardians: guardianLinks
           .filter((g) => g.studentId === r.id)
-          // Decision 429 item 11 (FAM-11/PRIV-3, interim): a parent this School
+          // Decision 430 item 11 (FAM-11/PRIV-3, interim): a parent this School
           // never dealt with (known only through the child's other School) is
           // listed by name, without their email.
           .map((g) => ({ name: `${g.guardian.firstName} ${g.guardian.surname}`.trim(), email: knownHere.has(`${g.guardianId}:${g.studentId}`) ? g.guardian.email : null })),
@@ -116,7 +116,7 @@ export class StudentExportService {
   }
 
   /**
-   * Decision 429 item 11: the (parent, child) pairs where the parent has
+   * Decision 430 item 11: the (parent, child) pairs where the parent has
    * acted at this School: holds or held any role here, enrolled the child
    * here, signed a waiver here, or was named by this School (a child invite
    * from it). Keys are "guardianId:studentId".

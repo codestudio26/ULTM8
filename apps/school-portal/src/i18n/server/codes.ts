@@ -20,7 +20,7 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.bookingClosed');
     case 'CLASS_BUSY':
       return t('server.codes.classBusy');
-    // Who can book, closures and time zones (Decision 431).
+    // Who can book, closures and time zones (Decision 432).
     case 'WHO_CAN_BOOK_GENDER':
       return t(/for women only/.test(message) ? 'server.codes.whoCanBookWomenOnly' : 'server.codes.whoCanBookMenOnly');
     case 'WHO_CAN_BOOK_GENDER_MISSING':
@@ -61,7 +61,7 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.signUpWaiting');
     case 'SIGN_UP_ALREADY_STUDENT':
       return t('server.codes.signUpAlreadyStudent');
-    // Families (Decision 429).
+    // Families (Decision 430).
     case 'CONSENT_PENDING':
       return t('server.codes.consentPending');
     case 'CONSENT_WITHDRAWN':

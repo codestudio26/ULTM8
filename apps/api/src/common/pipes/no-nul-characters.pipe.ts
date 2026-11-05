@@ -1,6 +1,6 @@
 import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 
-/** The message for a NUL character in a request (Decision 433, TXT-4). */
+/** The message for a NUL character in a request (Decision 434, TXT-4). */
 export const NUL_CHARACTER_MESSAGE = "Text can't contain a hidden NUL character. Remove it and try again.";
 
 /** Whether `value` holds U+0000 in any string, at any depth. Buffers (a raw
@@ -15,7 +15,7 @@ export function containsNul(value: unknown, depth = 0): boolean {
 
 /**
  * Refuses a request whose body, query or route parameters hold a NUL
- * character (U+0000), with 400 INVALID_CHARACTER (Decision 433, TXT-4).
+ * character (U+0000), with 400 INVALID_CHARACTER (Decision 434, TXT-4).
  * Postgres can't store NUL in text, so it used to fail with a 500 only at
  * the write, after a broadcast had already queued its notices. Registered as
  * APP_PIPE, so it runs for every route; custom parameters (the signed-in

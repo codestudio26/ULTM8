@@ -23,7 +23,7 @@ export const bookings = {
     dateRange: '{start} – {end}',
     /** Decision 353 (Q6): the class's break, shown only. */
     breakLine: 'Break {start} – {end}',
-    /** Decision 431 items 3 and 14: a class past midnight, and who can book. */
+    /** Decision 432 items 3 and 14: a class past midnight, and who can book. */
     endsNextDay: 'ends next day',
     womenOnly: 'Women only',
     menOnly: 'Men only',

@@ -59,7 +59,7 @@ describeIfDb('SettingsModule — GET /settings/languages, /settings/currencies, 
     await app.close();
   });
 
-  it('GET /settings/languages returns the 15 languages of Decision 273 and English (US) (Decision 433), unauthenticated', async () => {
+  it('GET /settings/languages returns the 15 languages of Decision 273 and English (US) (Decision 434), unauthenticated', async () => {
     // Deliberately no Authorization header at all — proves this genuinely doesn't
     // require a token, not just that a token happens to also work.
     const res = await request(app.getHttpServer()).get('/v1/settings/languages');

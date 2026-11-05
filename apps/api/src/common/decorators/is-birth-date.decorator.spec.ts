@@ -1,6 +1,6 @@
 import { ageOn, eighteenthBirthday, isAdultOn, isBirthDate, localDateIn } from './is-birth-date.decorator';
 
-/** Decision 429 item 10 (FAM-10): the 18th birthday on the School's own date. */
+/** Decision 430 item 10 (FAM-10): the 18th birthday on the School's own date. */
 describe('isAdultOn with a time zone', () => {
   const born = new Date('2008-11-05T00:00:00.000Z');
   // 21:30 UTC on 4 Nov = 08:30 on 5 Nov in Sydney, 11:30 on 4 Nov in Honolulu.

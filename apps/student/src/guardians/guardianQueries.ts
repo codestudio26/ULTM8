@@ -29,7 +29,7 @@ export function useMyConsentRecords() {
 export function useAddMinor() {
   const queryClient = useQueryClient();
   return useMutation({
-    // Decision 429 item 9: consentPolicyVersion records the parent's BASELINE consent with the child.
+    // Decision 430 item 9: consentPolicyVersion records the parent's BASELINE consent with the child.
     mutationFn: (dto: { firstName: string; surname: string; dateOfBirth: string; gender?: 'FEMALE' | 'MALE' | null; consentPolicyVersion?: string }) =>
       unwrap(apiClient.POST('/v1/guardians/me/minors', { body: dto })),
     onSuccess: async () => {
@@ -39,7 +39,7 @@ export function useAddMinor() {
   });
 }
 
-/** Decision 429 item 9: the child's consent state, with every parent's
+/** Decision 430 item 9: the child's consent state, with every parent's
  * records (only this parent's can be acted on). */
 export function useChildConsent(studentId: string) {
   return useQuery({
@@ -48,7 +48,7 @@ export function useChildConsent(studentId: string) {
   });
 }
 
-/** Decision 429 item 8: "Remove me" — this parent leaves the child's
+/** Decision 430 item 8: "Remove me" — this parent leaves the child's
  * account. Refused for the last parent of an enrolled child. */
 export function useRemoveMe() {
   const queryClient = useQueryClient();

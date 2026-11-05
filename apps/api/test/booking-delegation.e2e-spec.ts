@@ -96,14 +96,14 @@ describeIfDb('Decision 123 — Guardian Kid Mode booking delegation: HTTP-level 
         },
       });
 
-    // Decision 429 item 2: a Guardian is 18 or over.
+    // Decision 430 item 2: a Guardian is 18 or over.
     guardianA = await mkUser('guardian-a', new Date('1985-01-01'));
     guardianB = await mkUser('guardian-b', new Date('1985-01-01'));
     minor = await mkUser('minor');
 
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: minor.id, schoolId: school.id } });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardianA.id, studentId: minor.id } });
-    // Decision 429 item 9: booking needs the parent's BASELINE consent.
+    // Decision 430 item 9: booking needs the parent's BASELINE consent.
     await superuser.consentRecord.create({ data: { id: randomUUID(), guardianId: guardianA.id, studentId: minor.id, tier: 'BASELINE', policyVersion: '2026-09-v1' } });
 
     tokenGuardianA = signAccessToken(guardianA, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);

@@ -1,7 +1,7 @@
 import { SERVER_KEY_LOADERS, createServerTextTranslator, serverKeys } from '@ultm8/i18n';
 
 /**
- * Decision 430 (MON-9): the notice a MIGRATE price increase sends
+ * Decision 431 (MON-9): the notice a MIGRATE price increase sends
  * (PaymentsService.notifyPriceIncrease) is written in English and translated in
  * the apps by matching its shape (@ultm8/i18n server/translate.ts). These are
  * the exact shapes it writes, checked in every language.
@@ -21,7 +21,7 @@ function translatorFor(server: unknown, locale: string) {
   return createServerTextTranslator(t, locale, undefined);
 }
 
-describe('the price increase notice is translated (Decision 430, MON-9)', () => {
+describe('the price increase notice is translated (Decision 431, MON-9)', () => {
   it('reads the same in English', () => {
     const english = translatorFor(serverKeys, 'en-GB');
     expect(english.notification({ ...WITH_DAY, type: 'MEMBERSHIP_PRICE_CHANGE' }).title).toBe('Membership price going up');

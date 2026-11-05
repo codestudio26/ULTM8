@@ -4,7 +4,7 @@ import type { TranslationKey } from '../i18n/I18nProvider';
 const minute = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 
 /** Wall-clock minutes from one HH:mm to the next, past midnight when the
- * second is earlier (Decision 431 item 3): 23:00 to 00:30 is 90. */
+ * second is earlier (Decision 432 item 3): 23:00 to 00:30 is 90. */
 export function minutesBetween(from: string, to: string): number {
   return (minute(to) - minute(from) + 1440) % 1440;
 }

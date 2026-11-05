@@ -92,7 +92,7 @@ export function useConfirmTransaction(schoolId: string | null) {
   });
 }
 
-/** Decision 430 (MON-8): "Refund" (POST /transactions/{id}/refund) for a
+/** Decision 431 (MON-8): "Refund" (POST /transactions/{id}/refund) for a
  * membership paid at the desk: money given back by hand, part or all, with a
  * note, the owner choosing whether the membership ends. Refreshes the ledger
  * and the student's cards. */

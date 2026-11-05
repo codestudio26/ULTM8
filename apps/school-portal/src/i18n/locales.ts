@@ -36,7 +36,7 @@ export const directionFor = sharedDirectionFor;
 
 /** Picks the locale for a stored preference: an exact match first, then the
  * same language with any region (`pt` → `pt-BR`), else English. "English (US)"
- * (Decision 433) is a formatting variant: English text, US dates. */
+ * (Decision 434) is a formatting variant: English text, US dates. */
 export function resolveLocale(preferred: string | null | undefined): string {
   return sharedResolveLocale(preferred, [DEFAULT_LOCALE, ...Object.keys(FORMAT_VARIANTS), ...Object.keys(LOCALE_LOADERS)]);
 }

@@ -437,7 +437,7 @@ export class PromotionFeeService {
     });
     const currency = (request.currency ?? school?.defaultCurrency)?.toUpperCase();
     if (!school || !currency) return;
-    // Decision 430 (MON-6): the member's tax lines (their home Branch's when it overrides).
+    // Decision 431 (MON-6): the member's tax lines (their home Branch's when it overrides).
     const tax = taxLinesForCharge(await loadEffectiveTax(this.prismaJobs, request.schoolId, request.studentId), false);
     const totals = computeCharge({ unitAmount: request.amountMinor, discount: null, ...tax, currency });
 
@@ -826,7 +826,7 @@ export class PromotionFeeService {
       let taxPreview: { netAmount: number; taxAmount: number; grossAmount: number; taxRateBasisPoints: number; taxInclusive: boolean; currency: string } | null = null;
       if (school && currency) {
         try {
-          // Decision 430 (MON-6): both of the School's tax lines.
+          // Decision 431 (MON-6): both of the School's tax lines.
           const t = computeCharge({ unitAmount: r.amountMinor, discount: null, taxRateBasisPoints: school.taxRateBasisPoints + school.tax2RateBasisPoints, taxInclusive: school.taxInclusive, currency });
           taxPreview = { netAmount: t.netAmount, taxAmount: t.taxAmount, grossAmount: t.grossAmount, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive, currency };
         } catch {

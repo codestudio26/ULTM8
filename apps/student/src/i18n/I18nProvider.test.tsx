@@ -76,7 +76,7 @@ describe('I18nProvider (Decision 323)', () => {
     expect(getByTestId('locale').props.children).toBe('en-GB');
   });
 
-  it('"English (US)" reads the English text with US dates (Decision 433)', async () => {
+  it('"English (US)" reads the English text with US dates (Decision 434)', async () => {
     mocked(locales.deviceLocale).mockReturnValue('en-US');
     let notice: { title: string; body: string } | null = null;
     function NoticeProbe() {

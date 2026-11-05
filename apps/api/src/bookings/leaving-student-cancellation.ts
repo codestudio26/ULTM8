@@ -57,7 +57,7 @@ export async function cancelPlacesOfLeavingStudent(
   const freed = new Set<string>();
   let bookingsCancelled = 0;
   for (const booking of bookings) {
-    // The same cut-off a staff cancel uses (Decision 431 item 9): the class's
+    // The same cut-off a staff cancel uses (Decision 432 item 9): the class's
     // own, else its Branch's default when the Branch overrides the School's
     // settings, else the School's default (CancellationService.effectiveCutoff).
     const branch = booking.class.branch;

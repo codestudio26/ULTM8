@@ -3,7 +3,7 @@ import { defaultWeekRange, weekStartOf } from './booking-week';
 import { effectiveRefundCutoff } from './leaving-student-cancellation';
 import { passExpiryDate } from '../memberships/pass-expiry';
 
-describe("defaultWeekRange follows the School's week start (Decision 431 item 7)", () => {
+describe("defaultWeekRange follows the School's week start (Decision 432 item 7)", () => {
   // Wednesday 4 Nov 2026, 15:00 in São Paulo.
   const wed = new Date('2026-11-04T18:00:00Z');
 
@@ -28,7 +28,7 @@ describe("defaultWeekRange follows the School's week start (Decision 431 item 7)
   });
 });
 
-describe('passExpiryDate counts calendar days in the School zone (Decision 431 item 8)', () => {
+describe('passExpiryDate counts calendar days in the School zone (Decision 432 item 8)', () => {
   it('a 7-day pass bought before a DST change ends at the same wall-clock time', () => {
     // Bought Wednesday 10 Mar 2027 10:00 in New York; clocks go forward on 14 Mar.
     const bought = DateTime.fromISO('2027-03-10T10:00', { zone: 'America/New_York' }).toJSDate();
@@ -44,7 +44,7 @@ describe('passExpiryDate counts calendar days in the School zone (Decision 431 i
   });
 });
 
-describe('effectiveRefundCutoff (Decision 431 item 9)', () => {
+describe('effectiveRefundCutoff (Decision 432 item 9)', () => {
   const start = new Date('2027-01-10T18:00:00Z');
   it("uses the class's own cut-off first", () => {
     const own = new Date('2027-01-10T10:00:00Z');

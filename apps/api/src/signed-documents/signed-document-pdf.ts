@@ -470,13 +470,13 @@ interface Style {
   after?: number;
   /** Line each paragraph up by its own first strong letter (the wording
    * signed, as the page's dir="auto") instead of by the document's direction
-   * (Decision 433, TXT-5): a Latin-only value (the time, the SHA-256, a Latin
+   * (Decision 434, TXT-5): a Latin-only value (the time, the SHA-256, a Latin
    * name) in an Arabic document sits on the right, under its label. */
   ownDirection?: boolean;
 }
 
 /** Characters none of the fonts has, written another way so they never show
- * as a box (Decision 433, TXT-5): the new Dirham sign (U+20C3), which only
+ * as a box (Decision 434, TXT-5): the new Dirham sign (U+20C3), which only
  * appears in text a School typed, as "د.إ". */
 const NO_GLYPH_FALLBACKS: ReadonlyArray<[string, string]> = [['\u20C3', '\u062F.\u0625']];
 

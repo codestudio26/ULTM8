@@ -81,7 +81,7 @@ export class AcademyClassDto extends PickType(ClassResponseDto, [
   'breakStartAt',
   'breakEndAt',
   'capacity',
-  // Decision 431 item 14: who can book.
+  // Decision 432 item 14: who can book.
   'audience',
   'minAge',
   'maxAge',

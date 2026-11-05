@@ -68,7 +68,7 @@ export class ClassesController {
     return this.classesService.archive(user.sub, id);
   }
 
-  /** Decision 431 item 11: a one-off copy of a class a closure cancelled. */
+  /** Decision 432 item 11: a one-off copy of a class a closure cancelled. */
   @ApiOkResponse({ type: ClassResponseDto })
   @Post('classes/:id/recreate')
   recreate(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {

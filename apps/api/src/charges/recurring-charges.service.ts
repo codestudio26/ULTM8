@@ -32,7 +32,7 @@ const DESK_REPEAT_WINDOW_MS = 60_000;
 const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency.toUpperCase()}`;
 const EVERY: Record<RecurringFrequency, string> = { WEEKLY: 'week', MONTHLY: 'month', YEARLY: 'year' };
 
-/** The tax that applies to the series' member (Decision 430: the School's lines, or their home Branch's). */
+/** The tax that applies to the series' member (Decision 431: the School's lines, or their home Branch's). */
 type SchoolTax = { taxInclusive: boolean; lines: TaxLineSetting[] };
 
 const STATUS_ORDER: Record<RecurringChargeStatus, number> = { ACTIVE: 0, STOPPED: 1, ENDED: 2 };
@@ -126,7 +126,7 @@ export class RecurringChargesService {
     if (!!dto.discountType !== (dto.discountValue !== null && dto.discountValue !== undefined)) {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });
     }
-    // Decision 430 (MON-3): whole units of the currency, as a single charge.
+    // Decision 431 (MON-3): whole units of the currency, as a single charge.
     assertWholeMinorUnits(dto.amount, currency);
     if (dto.discountType === 'FIXED') assertWholeMinorUnits(dto.discountValue, currency);
     assertWithinChargeCap(dto.amount);

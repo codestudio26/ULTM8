@@ -41,7 +41,7 @@ describe('isBirthDate', () => {
     expect(isBirthDate('2024-02-29', today)).toBe(true);
   });
   it('refuses future, too old and impossible dates', () => {
-    // Decision 429 item 10: today anywhere on Earth (UTC+14) is accepted; the day after is not.
+    // Decision 430 item 10: today anywhere on Earth (UTC+14) is accepted; the day after is not.
     expect(isBirthDate('2026-10-28', today)).toBe(false);
     expect(isBirthDate('2099-01-01', today)).toBe(false);
     expect(isBirthDate('1906-10-25', today)).toBe(false);
@@ -175,7 +175,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
 
     it('North staff can read and edit a North student, not a South one or one with no home branch', async () => {
       expect((await profile('northCoach', 'nora')).status).toBe(200);
-      // Decision 429 item 13: nora's name is shared with another School, so a non-identity field.
+      // Decision 430 item 13: nora's name is shared with another School, so a non-identity field.
       const edited = await patch('northStaff', 'nora', { nationality: 'Edited' });
       expect(edited.status).toBe(200);
       expect(edited.body.nationality).toBe('Edited');
@@ -219,7 +219,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
     });
 
     it('trims names, and accepts listed language and currency codes', async () => {
-      // Decision 429 item 13: staff change a name only while the person hasn't signed in themselves.
+      // Decision 430 item 13: staff change a name only while the person hasn't signed in themselves.
       await superuser.user.update({ where: { id: id.sam }, data: { mustChangePasscode: true } });
       const res = await patch('owner', 'sam', { firstName: '  Samuel ', language: 'pt-BR', currency: 'BRL', dateOfBirth: '2012-05-04' });
       expect(res.status).toBe(200);
@@ -238,7 +238,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
   });
 
   describe('S5 part 2: only the owner changes a birth date across 18 (Decision 342)', () => {
-    // Decision 429 item 13: nora is shared with another School, so her birth date is locked;
+    // Decision 430 item 13: nora is shared with another School, so her birth date is locked;
     // kid has no login of their own and is this School's alone.
     it('staff can correct a date that keeps the same side of 18, not one that crosses it', async () => {
       expect((await patch('northStaff', 'kid', { dateOfBirth: '1999-03-04' })).status).toBe(200);
@@ -476,7 +476,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
 
       const again = await addManually('owner', { ...adult(), email: body.email });
       expect(again.status).toBe(409);
-      // Decision 429 item 12: the shared-email refusal says what to do.
+      // Decision 430 item 12: the shared-email refusal says what to do.
       expect(again.body.error.code).toBe('EMAIL_IN_USE');
     });
 

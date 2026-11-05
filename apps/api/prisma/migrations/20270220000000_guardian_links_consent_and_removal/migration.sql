@@ -1,4 +1,4 @@
--- Decision 429 item 9 (FAM-9): a Guardian-linked child is "consent pending"
+-- Decision 430 item 9 (FAM-9): a Guardian-linked child is "consent pending"
 -- (no booking, no check-in) until a parent records BASELINE consent. Links
 -- that already exist when this ships are marked as made before the rule, so
 -- no child already training is locked out on deploy; their parents are asked
@@ -21,7 +21,7 @@ BEGIN
 END
 $$;
 
--- Decision 429 item 8 (FAM-8): the owner's "Remove Guardian" ends another
+-- Decision 430 item 8 (FAM-8): the owner's "Remove Guardian" ends another
 -- person's link, and a BASELINE withdrawal clears the mark above on every
 -- parent's link to the child. Both run on the jobs connection after the
 -- service's own checks (GuardianLink's app policy is the Guardian's own rows

@@ -321,7 +321,7 @@ function DeskModal({
 }) {
   const t = useT();
   const sell = useSellMembership(schoolId, studentId);
-  // Decision 430 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
   const deskMethods = useDeskMethods(schoolId, DESK_PAYMENT_METHODS);
   const gift = useGiftFriendPass(schoolId, studentId);
   const [pickedPlanId, setPlanId] = useState(plans[0]?.id ?? '');
@@ -329,7 +329,7 @@ function DeskModal({
   // to the first one, as the select shows it, so the button never stays disabled.
   const planId = plans.some((p) => p.id === pickedPlanId) ? pickedPlanId : (plans[0]?.id ?? '');
   const [paymentMethod, setPaymentMethod] = useState<DeskPaymentMethod>('CASH');
-  // Decision 430 (MON-15): one pass per guest, up to five in one go.
+  // Decision 431 (MON-15): one pass per guest, up to five in one go.
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const busy = sell.isPending || gift.isPending;

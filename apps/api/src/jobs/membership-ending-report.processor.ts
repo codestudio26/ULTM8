@@ -62,7 +62,7 @@ export class MembershipEndingReportScheduler implements OnModuleInit {
 export type MembershipEndingReportOutcome = { reports: number; notices: number };
 
 /** The first day of the School's week containing `today` (YYYY-MM-DD). Shared
- * with the Dashboard's week (Decision 431 item 7). */
+ * with the Dashboard's week (Decision 432 item 7). */
 export { weekStartOf };
 
 /**

@@ -1,7 +1,7 @@
 import { useSchool } from '../schools/schoolQueries';
 
 /**
- * Decision 430 (stress test round 5 MON-13): Pix is a Brazilian scheme, so the
+ * Decision 431 (stress test round 5 MON-13): Pix is a Brazilian scheme, so the
  * desk's payment-method lists offer it only to a School in Brazil (its address
  * country BR) or one that prices in reais (BRL). The API still accepts it from
  * any School (Decision 348 is unchanged); this only tidies what the portal

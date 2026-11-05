@@ -56,7 +56,7 @@ const logger = new Logger('QueueModule');
 /**
  * The ioredis options for REDIS_URL. The whole URL goes to ioredis, which reads
  * the host, port, username, password, database number (redis://host:6379/5)
- * and TLS (rediss://) from it. Decision 430 (stress test round 5 MON-16): this
+ * and TLS (rediss://) from it. Decision 431 (stress test round 5 MON-16): this
  * used to keep only the host, port and password, so two environments sharing
  * one Redis on different database numbers took each other's jobs, and a
  * rediss:// URL connected without TLS.

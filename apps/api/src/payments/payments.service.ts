@@ -729,7 +729,7 @@ export class PaymentsService {
     params: { existingProductId?: string | null; productName: string; amount: number; currency: string; planId?: string },
   ): Promise<{ productId: string; priceId: string }> {
     const stripe = this.stripeClient.scopedClient(connectedAccountId);
-    // Decision 430 (MON-12): keyed by plan, new amount and currency, so the
+    // Decision 431 (MON-12): keyed by plan, new amount and currency, so the
     // same price change sent twice makes one Product and one Price.
     const cur = params.currency.toLowerCase();
     const productId =
@@ -809,7 +809,7 @@ export class PaymentsService {
       proration_behavior: 'none',
       ...(metadata ? { metadata } : {}),
     });
-    // Decision 430 (MON-9): with no proration the new price is first charged
+    // Decision 431 (MON-9): with no proration the new price is first charged
     // when the period paid for now ends.
     const periodEnd =
       updated?.items?.data?.find((i) => i.id === item.id)?.current_period_end ?? (item as { current_period_end?: number }).current_period_end ?? null;
@@ -817,7 +817,7 @@ export class PaymentsService {
   }
 
   /**
-   * Decision 430 (MON-9): a MIGRATE price increase tells each member moved
+   * Decision 431 (MON-9): a MIGRATE price increase tells each member moved
    * to the new price what it is and the first day it is charged (in the
    * School's time zone), so the School gives the notice the law asks of it
    * (Québec, UAE). A Guardian gets the usual copy of a child's notice
@@ -1342,7 +1342,7 @@ export class PaymentsService {
           schoolId: transaction.schoolId,
           frequency: 'ONE_TIME', // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1)
           classesRemaining: plan.classesIncluded ?? undefined,
-          // Decision 431 item 8: calendar days in the School's zone.
+          // Decision 432 item 8: calendar days in the School's zone.
           expiryDate: passExpiryDate(plan.expiryDurationDays, await schoolZoneFor(tx, transaction.schoolId)),
           scopedClassId: plan.scopedClassId,
         },
@@ -1410,7 +1410,7 @@ export class PaymentsService {
       }
       throw new NotFoundException('Transaction not found');
     }
-    // Decision 430 (MON-8): a payment that was taken can't be cancelled (it
+    // Decision 431 (MON-8): a payment that was taken can't be cancelled (it
     // used to answer 200 with nothing done); a desk sale is refunded instead.
     if (transaction.status === 'SUCCESSFUL') {
       throw new ConflictException({ code: 'PAYMENT_ALREADY_TAKEN', message: "This payment was taken, so it can't be cancelled. Refund it instead." });

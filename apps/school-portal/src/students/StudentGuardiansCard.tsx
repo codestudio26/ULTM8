@@ -10,7 +10,7 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
 
 /**
  * A child's parents and guardians on their page (Decision 371), with their
- * consent status for staff (Decision 429 item 9) and, for the owner,
+ * consent status for staff (Decision 430 item 9) and, for the owner,
  * "Remove Guardian" (item 8, never the last one) and "Add another Guardian"
  * (item 6). Shown for a current student with at least one parent.
  */

@@ -7,8 +7,8 @@ import { formatLocale } from '../i18n/format';
  * language writes the amount the way that language does (`Intl.NumberFormat`:
  * its own separators and currency symbol, e.g. "US$89.99" / "89,99 $US").
  * Amounts are always stored in hundredths; each currency shows its own
- * decimals (Decision 430, TXT-6): ¥12,345, not ¥12,345.00, while a fraction
- * of a yen kept from before Decision 430 still shows as ¥1,332.72.
+ * decimals (Decision 431, TXT-6): ¥12,345, not ¥12,345.00, while a fraction
+ * of a yen kept from before Decision 431 still shows as ¥1,332.72.
  */
 export function formatMoney(minorUnits: number, currency: string | null | undefined): string {
   const locale = formatLocale();

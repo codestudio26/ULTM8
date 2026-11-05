@@ -1,6 +1,6 @@
--- One-off, read-only audit (Decision 430, stress test round 5 MON-5 and MON-3).
+-- One-off, read-only audit (Decision 431, stress test round 5 MON-5 and MON-3).
 --
--- Before Decision 430, a late-cancellation fee was charged in US dollars when
+-- Before Decision 431, a late-cancellation fee was charged in US dollars when
 -- the plan the Booking used had no currency of its own, and a no-show fee in
 -- the plan's currency, else US dollars, instead of the School's currency. This
 -- lists the money rows that may have been charged in the wrong currency, plus

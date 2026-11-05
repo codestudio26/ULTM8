@@ -95,7 +95,7 @@ export class SchoolsController {
     return this.studentExport.export(user.sub, id, query.filter);
   }
 
-  /** Decision 432 item 10: what this School holds about one member, for the
+  /** Decision 433 item 10: what this School holds about one member, for the
    * owner only. Logged. */
   @ApiOkResponse({ type: MemberDataExportResponseDto })
   @Get(':id/students/:studentId/data-export')

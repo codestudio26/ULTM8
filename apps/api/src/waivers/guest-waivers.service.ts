@@ -101,7 +101,7 @@ export class GuestWaiversService {
     if (Number.isNaN(dob.getTime()) || isoDate(dob) !== dto.guestDateOfBirth || dob > now || dob.getUTCFullYear() < 1900) {
       throw new BadRequestException('Enter a real date of birth.');
     }
-    // Decision 429 item 10: the 18th birthday on the School's (or Branch's) own date.
+    // Decision 430 item 10: the 18th birthday on the School's (or Branch's) own date.
     const byGuardian = !isAdultOn(dob, now, await schoolZone(this.prismaJobs, link.schoolId, link.branchId));
     if (byGuardian && dto.signerFullName.trim().toLowerCase() === dto.guestFullName.trim().toLowerCase()) {
       throw new BadRequestException("A guest under 18 needs a parent or guardian to sign for them. Enter the parent or guardian's name.");

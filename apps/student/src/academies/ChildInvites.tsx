@@ -23,7 +23,7 @@ function useAnswerChildInvite() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, accept, consent }: { id: string; accept: boolean; consent?: boolean }) => {
-      // Decision 429 item 9: the consent ticked here is recorded with the child.
+      // Decision 430 item 9: the consent ticked here is recorded with the child.
       if (accept) {
         await unwrap(apiClient.POST('/v1/child-invites/{id}/accept', { params: { path: { id } }, body: consent ? { consentPolicyVersion: CURRENT_POLICY_VERSION } : {} }));
       }
@@ -61,7 +61,7 @@ function ChildInviteCard({ invite }: { invite: ChildInvite }) {
   const answer = useAnswerChildInvite();
   const [consent, setConsent] = useState(false);
   const child = `${invite.childFirstName} ${invite.childSurname}`.trim();
-  // Decision 429 item 6: an invite to be another parent of a child already at the School.
+  // Decision 430 item 6: an invite to be another parent of a child already at the School.
   const title = invite.addsGuardian ? 'academies.childInvites.guardianTitle' : 'academies.childInvites.title';
   const body = invite.addsGuardian ? 'academies.childInvites.guardianBody' : 'academies.childInvites.body';
   return (

@@ -187,7 +187,7 @@ function applyRules(rules: Array<[RegExp, Rule]>, text: string, ctx: Context): s
   return null;
 }
 
-/** Each currency's own decimals (Decision 430, TXT-6): ¥12,345, US$12.50, and
+/** Each currency's own decimals (Decision 431, TXT-6): ¥12,345, US$12.50, and
  * a stored fraction of a yen still as ¥1,332.72. */
 function formatAmount(value: string, currency: string, locale: string): string {
   try {
@@ -206,14 +206,14 @@ function formatDay(day: string, locale: string): string {
   }
 }
 
-/** A class's wall time as notices store it (Decision 433, TXT-3):
+/** A class's wall time as notices store it (Decision 434, TXT-3):
  * "YYYY-MM-DD HH:mm", maybe followed by " UTC" when the class's zone couldn't
  * be read. */
 const WALL_TIME = /^(\d{4}-\d{2}-\d{2}) (\d{2}):(\d{2})( UTC)?$/;
 
 /**
  * A class's date and time in the reader's language, from the machine form the
- * API writes (Decision 433, TXT-3), like `formatDay` does for a day: "Thu, 12
+ * API writes (Decision 434, TXT-3), like `formatDay` does for a day: "Thu, 12
  * Nov 2026, 20:00" in English (UK), "Thu, Nov 12, 2026, 8:00 PM" in English
  * (US), "الخميس، ١٢ نوفمبر ٢٠٢٦ ..." in Arabic. The time is the class's own
  * wall time, so it is formatted as is, never shifted to the reader's zone.
@@ -259,7 +259,7 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Cash payment waiting': 'cashWaitingTitle',
   'Payment confirmed': 'paymentConfirmedTitle',
   'Payment cancelled': 'paymentCancelledTitle',
-  // Decision 430 (MON-9) — MembershipPlanPriceMigrationProcessor.
+  // Decision 431 (MON-9) — MembershipPlanPriceMigrationProcessor.
   'Membership price going up': 'priceIncreaseTitle',
   // Decision 404 — apps/api/src/memberships/freeze/membership-freezes.service.ts.
   'Freeze approved': 'freezeApprovedTitle',
@@ -304,7 +304,7 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Franchise closed': 'franchiseClosedTitle',
   // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
   'Added to a School': 'studentAddedTitle',
-  // Decision 429 — apps/api/src/guardians/guardians.service.ts, student-access.service.ts.
+  // Decision 430 — apps/api/src/guardians/guardians.service.ts, student-access.service.ts.
   'Consent withdrawn': 'consentWithdrawnTitle',
   'Another parent or guardian invited': 'guardianInvitedTitle',
   // Decision 386 — apps/api/src/open-mats/open-mats.service.ts.
@@ -402,7 +402,7 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   ],
   // Decision 371 — apps/api/src/tenants/schools/student-added-notice.ts.
   [/^You've been added to (.+)\.$/s, (m, { t }) => n(t, 'studentAddedBody', { school: m[1] })],
-  // Decision 429 — apps/api/src/guardians/guardians.service.ts, student-access.service.ts.
+  // Decision 430 — apps/api/src/guardians/guardians.service.ts, student-access.service.ts.
   [
     /^(.+) withdrew consent for (.+?)\. \2 can't book or check in until a parent gives consent again in the app\.$/s,
     (m, { t }) => n(t, 'consentWithdrawnBody', { name: m[1], child: m[2] }),
@@ -485,7 +485,7 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^The School cancelled (.+?)'s cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
     (m, { t, locale }) => n(t, 'childPaymentCancelledBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
   ],
-  // Decision 430 (MON-9) — PaymentsService.notifyPriceIncrease. The day is YYYY-MM-DD.
+  // Decision 431 (MON-9) — PaymentsService.notifyPriceIncrease. The day is YYYY-MM-DD.
   [
     /^The price of your (.+) membership is going up to ([\d.]+) ([A-Z]{3})\. The new price applies from (\d{4}-\d{2}-\d{2})\.$/s,
     (m, { t, locale }) => n(t, 'priceIncreaseBody', { plan: m[1], amount: formatAmount(m[2], m[3], locale), day: formatDay(m[4], locale) }),
@@ -655,7 +655,7 @@ function known({ messages, patterns, prefixes }: CompiledMap, message: string): 
 /**
  * English readers (English (UK), and the "English (US)" formatting variant):
  * the API's own text as it is, except a class's date and time in a notice,
- * which the API now writes in machine form (Decision 433, TXT-3) and is
+ * which the API now writes in machine form (Decision 434, TXT-3) and is
  * formatted here for `locale`. A School's broadcast is its own words and is
  * never touched.
  */

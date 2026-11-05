@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { Prisma } from '@prisma/client';
 
 /**
- * Decision 431 item 14 (stress test round 5, AE-6): an optional "Who can book"
+ * Decision 432 item 14 (stress test round 5, AE-6): an optional "Who can book"
  * on a Class and on a weekly slot. EVERYONE (default), WOMEN or MEN, by the
  * member's recorded gender (User.gender, FEMALE or MALE), and an optional age
  * range in whole years on the Class's own date in its time zone.

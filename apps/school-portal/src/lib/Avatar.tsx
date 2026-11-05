@@ -29,7 +29,7 @@ export function Avatar({
       />
     );
   }
-  // Whole letters, never half a character (Decision 433, TXT-7).
+  // Whole letters, never half a character (Decision 434, TXT-7).
   const initials = `${firstGrapheme(firstName)}${firstGrapheme(surname)}` || '?';
   return (
     <span

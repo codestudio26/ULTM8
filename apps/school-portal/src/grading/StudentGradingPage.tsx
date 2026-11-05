@@ -238,7 +238,7 @@ export function StudentGradingPage() {
       ) : null}
 
       {/* Decision 371 (Q4): who the student's Guardians are, read for a current
-          student only; Decision 429: consent status, Remove / Add another Guardian. */}
+          student only; Decision 430: consent status, Remove / Add another Guardian. */}
       <StudentGuardiansCard schoolId={schoolId} studentId={studentId} studentName={studentName} enabled={enrolled} isOwner={my.isOwner} />
 
       <div style={{ marginBottom: 24 }}>
@@ -277,7 +277,7 @@ export function StudentGradingPage() {
       {maySeeMedical ? <StudentMedicalInfoCard schoolId={schoolId} studentId={studentId} /> : null}
       {/* Decision 315 item 9 (backlog 5.11): Documents, files on the member. */}
       {mayFiles ? <MemberFilesCard schoolId={schoolId} studentId={studentId} canUpload={!inactive} /> : null}
-      {/* Decision 432 item 10: everything the School holds about them. Owner only. */}
+      {/* Decision 433 item 10: everything the School holds about them. Owner only. */}
       {my.isOwner ? <MemberDataExportCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 315 item 14: the School's own member fields and status. */}

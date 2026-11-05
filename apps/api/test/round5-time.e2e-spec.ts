@@ -1,5 +1,5 @@
 /**
- * Decision 431 (stress test round 5, TIME area):
+ * Decision 432 (stress test round 5, TIME area):
  *
  * - item 1: time zones must be IANA names; a slot can't be made on a bad zone;
  *   the nightly generator skips a bad slot and keeps going;
@@ -52,7 +52,7 @@ const WEEKDAYS = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDA
 const DAY = 24 * 3_600_000;
 const TAG = 'r5-time-';
 
-describeIfDb('Round 5 time and timetable fixes (Decision 431)', () => {
+describeIfDb('Round 5 time and timetable fixes (Decision 432)', () => {
   let app: INestApplication;
   let generator: ClassOccurrenceGenerationProcessor;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });

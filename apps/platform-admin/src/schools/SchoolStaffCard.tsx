@@ -8,7 +8,7 @@ type Member = { userId: string; firstName: string; surname: string; email: strin
 const ROLE_LABELS: Record<string, string> = { INSTRUCTOR: 'Coach', BRANCH_STAFF: 'Branch Staff' };
 
 /**
- * Decision 432 item 6 — ULTM8 support's emergency "pause staff". Only a
+ * Decision 433 item 6 — ULTM8 support's emergency "pause staff". Only a
  * School's main owner pauses or removes its coaches and Branch Staff; when
  * the main owner is away or has lost their account, support can pause one
  * here. Their coach and Branch Staff roles end now and come back, as they

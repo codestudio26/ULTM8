@@ -124,7 +124,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // AUTO_CREDIT: these cancellation tests predate Decision 291 and cover the
     // credit-back path, which was every School's behaviour before the policy
     // was read. The other policies are covered in class-cancellation-policy.e2e-spec.ts.
-    // A currency, as a cancellation charge needs one (Decision 430 MON-5: a
+    // A currency, as a cancellation charge needs one (Decision 431 MON-5: a
     // fee is never charged in US dollars by default).
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Bookings HTTP School', waitlistClaimWindowMinutes: 120, classCancellationPolicy: 'AUTO_CREDIT', defaultCurrency: 'usd' } });
 
@@ -163,7 +163,7 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
       ],
     });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
-    // Decision 429 items 7 and 9: a minor is under 18, and the parent has given BASELINE consent.
+    // Decision 430 items 7 and 9: a minor is under 18, and the parent has given BASELINE consent.
     await superuser.user.update({ where: { id: minor.id }, data: { dateOfBirth: new Date('2015-01-01') } });
     await superuser.consentRecord.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id, tier: 'BASELINE', policyVersion: '2026-09-v1' } });
 

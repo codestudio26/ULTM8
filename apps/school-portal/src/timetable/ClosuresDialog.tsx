@@ -13,7 +13,7 @@ import { useClosures, useCreateClosure, useDeleteClosure, useRecreateClass, useU
  * booked are told; removing one doesn't bring cancelled classes back. Freezing
  * memberships for the closure waits on Decision 316's freeze.
  *
- * Decision 431 item 11: the owner can change a closure's dates and reason (an
+ * Decision 432 item 11: the owner can change a closure's dates and reason (an
  * Eid closure after the moon sighting). Newly covered days are cancelled as on
  * adding one; classes it cancelled on released days are offered for a one-tap
  * Recreate. Removing one first warns that cancelled classes stay cancelled.

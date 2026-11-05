@@ -1,4 +1,4 @@
--- Decision 433 (TXT-9): one waiting sign-up per email at a School, as
+-- Decision 434 (TXT-9): one waiting sign-up per email at a School, as
 -- Decision 392 item 1 says, held by the database. SignUpsService checked
 -- and then inserted with no lock, so a tablet's Send sent several times at
 -- once left several PENDING rows for one email.

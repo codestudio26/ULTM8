@@ -168,7 +168,7 @@ describe('signed document PDF (Decision 422 item 10)', () => {
     expect(body[0].text).toBe('(');
   });
 
-  it('lines one-line values up with the document, not with their own letters (Decision 433, TXT-5)', async () => {
+  it('lines one-line values up with the document, not with their own letters (Decision 434, TXT-5)', async () => {
     const ar = labelsFrom({ member: 'العضو', signedAt: 'تاريخ التوقيع', textSigned: 'النص الموق\u0651ع', version: 'الإصدار' });
     const pdf = await signedDocumentPdf(doc({ memberName: 'Ana Lima', sha256: 'abc123', body: 'I agree.' }), 'Dojo', ar);
     const { blocks } = readPdfText(pdf);
@@ -184,7 +184,7 @@ describe('signed document PDF (Decision 422 item 10)', () => {
     expect(en.find((b) => ARABIC.test(b.text))!.x).toBeLessThan(100);
   });
 
-  it('writes the Dirham sign, which no font has, as د.إ (Decision 433, TXT-5)', async () => {
+  it('writes the Dirham sign, which no font has, as د.إ (Decision 434, TXT-5)', async () => {
     const pdf = await signedDocumentPdf(doc({ body: 'Fee 500 \u20C3 a month.' }), 'Dojo', labels);
     const text = words(readPdfText(pdf).blocks).join(' ');
     expect(text).not.toContain('\u20C3');

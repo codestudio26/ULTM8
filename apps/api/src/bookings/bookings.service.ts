@@ -115,7 +115,7 @@ export class BookingsService {
     const studentId = dto.studentId ?? callerId;
     const isOnBehalfOf = dto.studentId !== undefined && dto.studentId !== callerId;
 
-    // Decision 429 item 1 (FAM-1): the relationship decides, not visibility.
+    // Decision 430 item 1 (FAM-1): the relationship decides, not visibility.
     // A parent who also trains, coaches or owns at the School sees the Class
     // under their own context, which used to send their child's booking down
     // the staff path (403 for a member; a staff booking that skipped the
@@ -176,7 +176,7 @@ export class BookingsService {
     // Decision 110: a closed School accepts no new Bookings, same as every other
     // write there (Classes review C16: a Student could still book after closing).
     await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
-    // Decision 429 item 9 (FAM-9): a child whose parent hasn't given BASELINE
+    // Decision 430 item 9 (FAM-9): a child whose parent hasn't given BASELINE
     // consent can't be booked, by anyone.
     await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
     // SKILL.md §10: each guest needs a Friend Pass; the organizer's own
@@ -224,7 +224,7 @@ export class BookingsService {
 
     if (!dto.overrideReason) {
       await this.assertRankEligible(tx, studentId, resolvedClass);
-      // Decision 431 item 14: "Who can book" (women or men only, ages). Staff
+      // Decision 432 item 14: "Who can book" (women or men only, ages). Staff
       // skip it with the same override reason as the rank gate.
       await assertWhoCanBook(tx, studentId, resolvedClass);
     }
@@ -390,7 +390,7 @@ export class BookingsService {
     if (!existing) {
       throw new NotFoundException('Booking not found');
     }
-    // Decision 429 item 1 (FAM-1): a parent who is also staff here cancels
+    // Decision 430 item 1 (FAM-1): a parent who is also staff here cancels
     // their own child's booking as the parent, not as staff.
     if (!isGuardianAction && !frozenStudentId && existing.studentId !== callerId && (await this.guardiansService.isActiveGuardianOf(callerId, existing.studentId))) {
       isGuardianAction = true;
@@ -478,7 +478,7 @@ export class BookingsService {
       if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee) {
         // No currency field on Class itself: the plan the Booking used, else
         // the School's (the one shared rule, common/school-currency.ts;
-        // Decision 430 MON-5). Never US dollars by default.
+        // Decision 431 MON-5). Never US dollars by default.
         const sourceMembership = resolvedBooking.sourceMembershipId
           ? await tx.membership.findUnique({
               where: { id: resolvedBooking.sourceMembershipId },

@@ -19,7 +19,7 @@ import { GrantConsentDto } from './dto/grant-consent.dto';
 import { baselineConsentState } from './baseline-consent';
 
 /**
- * What a parent is doing for their child (Decision 429 item 7, FAM-7). From
+ * What a parent is doing for their child (Decision 430 item 7, FAM-7). From
  * the child's 18th birthday (on the School's own date when a School is
  * known) a parent no longer acts for them: no booking, waitlist, waiver or
  * contract signing, consent or Kid Mode ('act'). For 30 more days they can
@@ -112,7 +112,7 @@ export class GuardiansService {
    * constant since there's no timing-attack concern to keep it stable for here.
    */
   async createMinor(guardianId: string, dto: CreateMinorDto) {
-    // Decision 429 items 2 and 3 (FAM-2, FAM-3): a parent is 18 or over (an
+    // Decision 430 items 2 and 3 (FAM-2, FAM-3): a parent is 18 or over (an
     // unknown date of birth is allowed: a Guardian account the School made
     // has none), and a child is under 18.
     await this.assertGuardianNotUnder18(guardianId);
@@ -150,7 +150,7 @@ export class GuardiansService {
     // neither does.
     const consentVersion = dto.consentPolicyVersion?.trim() || null;
     const created = await this.prismaApp.withMultiTenantContext(async (tx, setContext) => {
-      // Decision 429 item 4 (FAM-4): one add at a time per parent, and the
+      // Decision 430 item 4 (FAM-4): one add at a time per parent, and the
       // same child (name and date of birth, see same-person.ts) added again
       // — a retry on a bad connection — is the child already there.
       await setContext(guardianId);
@@ -176,7 +176,7 @@ export class GuardiansService {
       const link = await tx.guardianLink.create({
         data: { id: randomUUID(), guardianId, studentId: minorId },
       });
-      // Decision 429 item 9 (FAM-9): the parent's BASELINE consent, ticked
+      // Decision 430 item 9 (FAM-9): the parent's BASELINE consent, ticked
       // when adding the child, recorded with the policy version they saw.
       if (consentVersion) {
         await tx.consentRecord.create({ data: { id: randomUUID(), guardianId, studentId: minorId, tier: 'BASELINE', policyVersion: consentVersion } });
@@ -227,7 +227,7 @@ export class GuardiansService {
         ),
       ),
     );
-    // Decision 429 items 7 and 9: whether the child still needs a parent's
+    // Decision 430 items 7 and 9: whether the child still needs a parent's
     // consent, and whether they are 18 now (the app then asks them to make
     // their own account, and the parent's access ends after 30 days).
     const now = new Date();
@@ -247,7 +247,7 @@ export class GuardiansService {
   }
 
   /** Whether the child is 18 on `now` (in `zone`), and the last day a parent
-   * can still pay and read their history (Decision 429 item 7). */
+   * can still pay and read their history (Decision 430 item 7). */
   private adultStatus(dateOfBirth: Date | null, now: Date, zone: string | null) {
     if (!dateOfBirth || !isAdultOn(dateOfBirth, now, zone)) return { isAdult: false, parentAccessEndsOn: null as string | null };
     const turned = new Date(`${eighteenthBirthday(dateOfBirth)}T00:00:00Z`);
@@ -277,7 +277,7 @@ export class GuardiansService {
     };
   }
 
-  /** Decision 429 item 2 (FAM-2): a Guardian whose date of birth shows them
+  /** Decision 430 item 2 (FAM-2): a Guardian whose date of birth shows them
    * under 18 can't add or act for a child. Unknown is allowed. */
   private async assertGuardianNotUnder18(guardianId: string): Promise<void> {
     const me = await this.prismaJobs.user.findUnique({ where: { id: guardianId }, select: { dateOfBirth: true } });
@@ -286,7 +286,7 @@ export class GuardiansService {
     }
   }
 
-  /** True when `guardianId` has a live link to `studentId` (Decision 429
+  /** True when `guardianId` has a live link to `studentId` (Decision 430
    * item 1, FAM-1): bookings and the waitlist decide a parent's request by
    * the relationship first, not by whether the parent can see the Class. */
   async isActiveGuardianOf(guardianId: string, studentId: string): Promise<boolean> {
@@ -333,9 +333,9 @@ export class GuardiansService {
     if (!link || link.revokedAt) {
       throw new ForbiddenException('You are not an active Guardian for this Student.');
     }
-    // Decision 429 item 2 (FAM-2): never a Guardian under 18.
+    // Decision 430 item 2 (FAM-2): never a Guardian under 18.
     await this.assertGuardianNotUnder18(guardianId);
-    // Decision 429 item 7 (FAM-7): a parent's authority ends at 18.
+    // Decision 430 item 7 (FAM-7): a parent's authority ends at 18.
     await this.assertChildNotAdult(studentId, opts);
   }
 
@@ -375,7 +375,7 @@ export class GuardiansService {
     if (!link || link.revokedAt) {
       throw new BadRequestException('This Guardian has no active link to this Student.');
     }
-    // Decision 429 item 7: no consent for an adult.
+    // Decision 430 item 7: no consent for an adult.
     await this.assertGuardianNotUnder18(guardianId);
     await this.assertChildNotAdult(studentId, { purpose: 'act' });
 
@@ -444,7 +444,7 @@ export class GuardiansService {
     if (existing.tier === 'BASELINE') {
       this.stepUpService.assertVerified(guardianId, stepUpToken);
     }
-    // Decision 429 item 7: no consent decisions for an adult.
+    // Decision 430 item 7: no consent decisions for an adult.
     await this.assertChildNotAdult(existing.studentId, { purpose: 'act' });
 
     // FOUND ON REVIEW: an earlier version flipped ConsentRecord to WITHDRAWN
@@ -493,7 +493,7 @@ export class GuardiansService {
       this.logger.log(
         `account-deletion-processing: Student ${existing.studentId} — no data-erasure pipeline yet (Phase 12 scope), recorded only.`,
       );
-      // Decision 429 item 9: from now on the child needs fresh consent before
+      // Decision 430 item 9: from now on the child needs fresh consent before
       // re-enrolling, booking or checking in, whichever parent's link it is.
       await this.prismaJobs.guardianLink.updateMany({ where: { studentId: existing.studentId, consentGrandfathered: true }, data: { consentGrandfathered: false } });
     }
@@ -510,7 +510,7 @@ export class GuardiansService {
       // request's own), so this is a benign race, not a partial-failure state.
       throw new ConflictException('This consent record is already Withdrawn.');
     }
-    // Decision 429 item 9: the child's other parents are told.
+    // Decision 430 item 9: the child's other parents are told.
     await this.notifyOtherGuardians(guardianId, existing.studentId, existing.tier, existing.id);
 
     return this.prismaApp.withTenantContext(guardianId, (tx) => tx.consentRecord.findUniqueOrThrow({ where: { id: consentRecordId } }));
@@ -527,7 +527,7 @@ export class GuardiansService {
     if (!link || link.revokedAt) {
       throw new BadRequestException('This Guardian has no active link to this Student.');
     }
-    // Decision 429 item 7: no Kid Mode for an adult.
+    // Decision 430 item 7: no Kid Mode for an adult.
     await this.assertGuardianNotUnder18(guardianId);
     await this.assertChildNotAdult(studentId, { purpose: 'act' });
 
@@ -689,11 +689,11 @@ export class GuardiansService {
   }
 
   // ---------------------------------------------------------------------------
-  // Decision 429 items 8 and 9: two parents of one child
+  // Decision 430 items 8 and 9: two parents of one child
   // ---------------------------------------------------------------------------
 
   /**
-   * GET /guardians/me/minors/{studentId}/consent (Decision 429 item 9). Every
+   * GET /guardians/me/minors/{studentId}/consent (Decision 430 item 9). Every
    * parent's consent for this child, each read-only to the others: who, which
    * tier, Active or Withdrawn, and when; plus whether the child still needs
    * consent. Read on the jobs connection (each parent's records are their own
@@ -763,7 +763,7 @@ export class GuardiansService {
   }
 
   /**
-   * DELETE /guardians/me/minors/{studentId} — "Remove me" (Decision 429 item
+   * DELETE /guardians/me/minors/{studentId} — "Remove me" (Decision 430 item
    * 8): a parent ends their own link to a child. Never the last parent of a
    * child still enrolled at a School (the child would have nobody to act for
    * them); the owner can still remove a parent from the portal under the same
@@ -784,7 +784,7 @@ export class GuardiansService {
   }
 
   /**
-   * Decision 429 item 8: the owner's "Remove Guardian" (StudentAccessService
+   * Decision 430 item 8: the owner's "Remove Guardian" (StudentAccessService
    * checks the owner and the School first). Ends the link on the jobs
    * connection, since the link is the parent's own row under RLS.
    */
@@ -831,7 +831,7 @@ export class GuardiansService {
     }
   }
 
-  /** Decision 429 item 6: links a parent to a child already on ULTM8 (the
+  /** Decision 430 item 6: links a parent to a child already on ULTM8 (the
    * owner's "Add another Guardian", accepted in the app), or restores a link
    * that was removed. Written as the parent: the link is their own row. */
   async linkExistingChild(guardianId: string, studentId: string) {
@@ -846,7 +846,7 @@ export class GuardiansService {
     );
   }
 
-  /** A notice to every active parent of the child (Decision 429 item 6). */
+  /** A notice to every active parent of the child (Decision 430 item 6). */
   async tellGuardians(studentId: string, title: string, body: string, key: string, schoolId?: string) {
     const links = await this.prismaJobs.guardianLink.findMany({ where: { studentId, revokedAt: null }, select: { guardianId: true } });
     for (const { guardianId } of links) {

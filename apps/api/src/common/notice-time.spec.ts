@@ -2,7 +2,7 @@ import { SERVER_KEY_LOADERS, createEnglishServerTextTranslator, createServerText
 import { noticeWallTime } from './notice-time';
 
 /**
- * Decision 433 (TXT-3): notices store a class's date and time as the class's
+ * Decision 434 (TXT-3): notices store a class's date and time as the class's
  * wall time in machine form, and each reader's app formats it in their own
  * language; notices written before keep their English text.
  */
@@ -19,7 +19,7 @@ async function translatorFor(locale: string) {
   return createServerTextTranslator(t, locale, undefined);
 }
 
-describe('noticeWallTime (Decision 433, TXT-3)', () => {
+describe('noticeWallTime (Decision 434, TXT-3)', () => {
   const at = new Date('2026-11-12T16:00:00.000Z');
 
   it("is the class's own wall time, YYYY-MM-DD HH:mm", () => {
@@ -33,7 +33,7 @@ describe('noticeWallTime (Decision 433, TXT-3)', () => {
   });
 });
 
-describe('formatWhen in the apps (Decision 433, TXT-3)', () => {
+describe('formatWhen in the apps (Decision 434, TXT-3)', () => {
   it("formats the machine form in the reader's language, without shifting it", () => {
     expect(formatWhen('2026-11-12 20:00', 'en-GB')).toMatch(/^Thu,? 12 Nov 2026,? 20:00$/);
     expect(formatWhen('2026-11-12 20:00', 'en-US')).toMatch(/^Thu, Nov 12, 2026, 8:00\sPM$/);

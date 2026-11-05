@@ -15,7 +15,7 @@ const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? val
  * `gender` (optional, matches the base User field's own optionality elsewhere in
  * this schema).
  *
- * Decision 429 item 3 (FAM-3): the same rules as the owner's Add a child
+ * Decision 430 item 3 (FAM-3): the same rules as the owner's Add a child
  * (ChildDetailsDto, Decision 341): names trimmed, not blank, at most 100
  * characters; a real date of birth (no 30 February, not in the future, not
  * over 120 years ago). GuardiansService.createMinor refuses an adult.
@@ -45,7 +45,7 @@ export class CreateMinorDto {
 
   @ApiPropertyOptional({
     description:
-      "Decision 429 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it.",
+      "Decision 430 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it.",
   })
   @IsOptional()
   @Transform(trim)

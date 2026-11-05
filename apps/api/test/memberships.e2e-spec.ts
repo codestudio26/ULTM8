@@ -130,7 +130,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
       ],
     });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
-    // Decision 429 items 7 and 9: a minor is under 18, and the parent has given BASELINE consent.
+    // Decision 430 items 7 and 9: a minor is under 18, and the parent has given BASELINE consent.
     await superuser.user.update({ where: { id: minor.id }, data: { dateOfBirth: new Date('2015-01-01') } });
     await superuser.consentRecord.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id, tier: 'BASELINE', policyVersion: '2026-09-v1' } });
 

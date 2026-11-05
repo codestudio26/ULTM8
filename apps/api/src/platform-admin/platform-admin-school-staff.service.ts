@@ -10,7 +10,7 @@ import { AuditLogService, AuditAction } from './audit-log.service';
 const PAUSABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF'] as const;
 
 /**
- * Decision 432 item 6 (stress test round 5, PRIV-6; amends Decision 423
+ * Decision 433 item 6 (stress test round 5, PRIV-6; amends Decision 423
  * item 10) — ULTM8 support's emergency "pause staff". Only a School's main
  * owner pauses or removes its coaches and Branch Staff; when the main owner
  * is away or has lost their account, support can pause one, the same Pause

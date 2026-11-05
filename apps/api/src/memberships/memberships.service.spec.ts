@@ -60,7 +60,7 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
       // convention every other argument here already follows.
       null as never,
       null as never, // StripeClientService (Decision 348 cancel)
-      // PrismaJobsService (Decision 404 freezes); Decision 431 item 8 reads the
+      // PrismaJobsService (Decision 404 freezes); Decision 432 item 8 reads the
       // School's zone with it for an N-day pass's expiry.
       { school: { findUnique: jest.fn().mockResolvedValue({ timezone: 'America/New_York' }) } } as never,
       null as never, // IncomeCategoriesService (Decision 316 item 10)
@@ -331,7 +331,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
   }) {
     const tx = {
       membershipPlan: { findUnique: jest.fn().mockResolvedValue(opts.plan) },
-      // Decision 429 item 5: the School's zone for the buyer's age.
+      // Decision 430 item 5: the School's zone for the buyer's age.
       school: { findUnique: jest.fn().mockResolvedValue({ timezone: null }) },
       paymentAccount: { findUnique: jest.fn().mockResolvedValue(opts.paymentAccount) },
       user: { findUniqueOrThrow: jest.fn().mockResolvedValue(opts.student ?? { email: 'minor@example.test', paymentRestrictedAt: null, dateOfBirth: new Date('1990-01-01') }) },

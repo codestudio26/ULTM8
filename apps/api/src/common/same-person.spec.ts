@@ -1,6 +1,6 @@
 import { sameDay, sameName } from './same-person';
 
-/** Decision 429 item 4 (FAM-4): the same child added again is recognised. */
+/** Decision 430 item 4 (FAM-4): the same child added again is recognised. */
 describe('sameName / sameDay', () => {
   it('ignores spaces at the ends and case', () => {
     expect(sameName('  Abubakar ', 'abubakar')).toBe(true);

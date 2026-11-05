@@ -21,7 +21,7 @@ import { TaxLineAmountDto } from '../../charges/dto/charge.dto';
  * strings, on that path's actual JSON response despite being typed
  * required here.
  */
-/** Decision 430 (MON-6 step 1): the tax a membership price included. */
+/** Decision 431 (MON-6 step 1): the tax a membership price included. */
 export class IncludedTaxDto {
   @ApiProperty({ description: 'The tax included, minor units (the lines added up).' })
   amount!: number;
@@ -106,7 +106,7 @@ export class TransactionResponseDto {
     type: () => IncludedTaxDto,
     nullable: true,
     description:
-      "Decision 430 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded.",
+      "Decision 431 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded.",
   })
   includedTax!: IncludedTaxDto | null;
 

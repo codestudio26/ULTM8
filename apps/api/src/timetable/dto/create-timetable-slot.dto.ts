@@ -164,7 +164,7 @@ export class CreateTimetableSlotDto {
   @IsBoolean()
   membershipInclusion?: boolean;
 
-  // Decision 431 item 14 (AE-6): who can book. Omitted: everyone, no ages.
+  // Decision 432 item 14 (AE-6): who can book. Omitted: everyone, no ages.
   @ApiPropertyOptional({ enum: ['EVERYONE', 'WOMEN', 'MEN'], description: 'Who can book: everyone (default), women only or men only, by the member\'s recorded gender. Staff can book anyone with an overrideReason.' })
   @IsOptional()
   @IsIn(['EVERYONE', 'WOMEN', 'MEN'])

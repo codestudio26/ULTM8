@@ -114,11 +114,11 @@ export class BranchesService {
     // Decision 414 item 6: no price before the School's currency is set.
     // The School's currency, not the Branch's own currency override.
     if (setsNewPrice(dto.noShowFee, existing.noShowFee)) {
-      // Decision 430 (MON-3): and in whole units of that currency.
+      // Decision 431 (MON-3): and in whole units of that currency.
       assertWholeMinorUnits(dto.noShowFee, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId)));
     }
 
-    // Decision 430 (MON-6): the two lines as they will be after this save.
+    // Decision 431 (MON-6): the two lines as they will be after this save.
     if (dto.taxRateBasisPoints !== undefined || dto.tax2RateBasisPoints !== undefined || dto.tax2Name !== undefined) {
       assertTaxLinesValid(
         dto.taxRateBasisPoints ?? existing.taxRateBasisPoints,
@@ -150,7 +150,7 @@ export class BranchesService {
           schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
           defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
           noShowFee: dto.noShowFee,
-          // Decision 430 (MON-6): the Branch's own tax lines.
+          // Decision 431 (MON-6): the Branch's own tax lines.
           taxOverride: dto.taxOverride,
           taxName: dto.taxName,
           taxRateBasisPoints: dto.taxRateBasisPoints,
@@ -161,7 +161,7 @@ export class BranchesService {
         },
       }),
     );
-    // Decision 431 item 2: a new time zone re-times the Branch's upcoming
+    // Decision 432 item 2: a new time zone re-times the Branch's upcoming
     // timetable classes (booked students get the usual "Class moved").
     if (dto.timezone !== undefined && (dto.timezone || null) !== (existing.timezone || null)) {
       await this.timeZoneChange.changed({ callerId, schoolId: existing.schoolId, branchId });

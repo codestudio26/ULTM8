@@ -21,7 +21,7 @@ interface ClassSummary {
   breakEndAt?: string | null;
   /** Decision 427 (SP6): the clock the class runs on (its Branch's zone, else the School's). */
   timezone?: string | null;
-  /** Decision 431 item 14: who can book; shown only, the API enforces it. */
+  /** Decision 432 item 14: who can book; shown only, the API enforces it. */
   audience?: 'EVERYONE' | 'WOMEN' | 'MEN';
   minAge?: number | null;
   maxAge?: number | null;
@@ -158,7 +158,7 @@ export function ClassBookingRow({
       <Text style={{ fontWeight: '600' }}>{classItem.title}</Text>
       <Text style={{ color: '#5F6368', fontSize: 12 }}>
         {formatClassTimes(classItem.startDate, classItem.endDate, zone)}
-        {/* Decision 431 item 3: a class past midnight says so. */}
+        {/* Decision 432 item 3: a class past midnight says so. */}
         {endsNextDayInZone(classItem.startDate, classItem.endDate, zone) ? ` (${t('bookings.classRow.endsNextDay')})` : ''}
       </Text>
       {whoCanBook ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{whoCanBook}</Text> : null}

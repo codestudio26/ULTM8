@@ -21,7 +21,7 @@ export function formatTimeInZone(iso: string, zone: string): string {
 }
 
 /** Whether a class ends on a later local date than it starts, on `zone`'s
- * clock: a class past midnight (Decision 431 item 3). */
+ * clock: a class past midnight (Decision 432 item 3). */
 export function endsNextDayInZone(startIso: string, endIso: string, zone: string): boolean {
   const day = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: safeZone(zone), year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
   return day(endIso) > day(startIso);

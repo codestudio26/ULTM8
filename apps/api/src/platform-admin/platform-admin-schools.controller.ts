@@ -55,7 +55,7 @@ export class PlatformAdminSchoolsController {
     return this.schoolOwners.changeMainOwner(admin.sub, id, dto);
   }
 
-  /** Decision 432 item 6 — see PlatformAdminSchoolStaffService. */
+  /** Decision 433 item 6 — see PlatformAdminSchoolStaffService. */
   @ApiOkResponse({ type: SchoolStaffResponseDto })
   @Get(':id/staff')
   listStaff(@CurrentAdminUser() admin: AdminJwtPayload, @Param('id', ParseUUIDPipe) id: string) {

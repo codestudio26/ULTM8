@@ -610,7 +610,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // Stripe Refund API call, and for a Subscription, cancelling it too) — instead
     // of only logging the collision permanently via `onFailed` once BullMQ's
     // retries exhaust, which is what happened here before that method existed.
-    // Decision 431 item 8: an N-day pass ends on calendar days in the School's zone.
+    // Decision 432 item 8: an N-day pass ends on calendar days in the School's zone.
     const schoolZone = await schoolZoneFor(tx, transaction.schoolId);
     try {
       const membership = await tx.membership.create({

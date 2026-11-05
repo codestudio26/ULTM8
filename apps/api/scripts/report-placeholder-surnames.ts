@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 /**
- * Decision 433 (TXT-8): a one-off, read-only report for School owners of the
+ * Decision 434 (TXT-8): a one-off, read-only report for School owners of the
  * people whose surname is only a placeholder (".", "-" or "_"), typed before
  * the "Has only one name" tick existed. Nothing is changed: each owner opens
  * the person's profile, ticks "Has only one name" and saves, or types the

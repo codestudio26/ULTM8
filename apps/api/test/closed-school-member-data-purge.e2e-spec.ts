@@ -1,5 +1,5 @@
 /**
- * Decision 432 (stress test round 5, PRIV-1): a closed School kept after its
+ * Decision 433 (stress test round 5, PRIV-1): a closed School kept after its
  * 90 days for its members' payment history (or signed waivers) no longer
  * keeps their other data. The purge ends every role there, dated at the
  * close, and deletes the non-financial member rows; payment history and
@@ -35,7 +35,7 @@ if (!hasDb) {
 
 const DAY = 24 * 3_600_000;
 
-describeIfDb('Closed School member data purge (Decision 432, PRIV-1)', () => {
+describeIfDb('Closed School member data purge (Decision 433, PRIV-1)', () => {
   let app: INestApplication;
   let processor: TenantLifecyclePurgeProcessor;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });

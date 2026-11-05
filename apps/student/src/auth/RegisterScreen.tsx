@@ -28,7 +28,7 @@ export function RegisterScreen({ navigation }: Props) {
     passcodeConfirm: '',
     dateOfBirth: '',
   });
-  // Decision 433 (TXT-8): "I have only one name" sends an empty surname.
+  // Decision 434 (TXT-8): "I have only one name" sends an empty surname.
   const [oneName, setOneName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

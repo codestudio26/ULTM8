@@ -23,7 +23,7 @@ export class CreateClosureDto {
   branchId?: string;
 }
 
-/** PATCH /closures/:id (Decision 431 item 11): any of the dates and the
+/** PATCH /closures/:id (Decision 432 item 11): any of the dates and the
  * reason. The Branch a closure covers doesn't change. */
 export class UpdateClosureDto {
   @ApiPropertyOptional({ description: 'First closed date, YYYY-MM-DD (local).' })

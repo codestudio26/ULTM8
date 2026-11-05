@@ -10,7 +10,7 @@ export function formatMoney(minorUnits: number, currency?: string | null): strin
   const amount = minorUnits / 100;
   const code = (currency ?? 'usd').toUpperCase();
   try {
-    // Each currency's own decimals (Decision 430, TXT-6), as the portal shows them.
+    // Each currency's own decimals (Decision 431, TXT-6), as the portal shows them.
     return new Intl.NumberFormat(formatLocale(), { style: 'currency', currency: code, ...moneyDigits(code) }).format(amount);
   } catch {
     return `${plainMoney(minorUnits, code)} ${code}`;

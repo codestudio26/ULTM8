@@ -20,7 +20,7 @@ export function useAddChildManually(schoolId: string | null) {
   });
 }
 
-/** Decision 429 item 6: the owner invites another adult to be a parent or
+/** Decision 430 item 6: the owner invites another adult to be a parent or
  * guardian of a child already here. */
 export function useAddGuardian(schoolId: string, studentId: string) {
   const queryClient = useQueryClient();
@@ -31,7 +31,7 @@ export function useAddGuardian(schoolId: string, studentId: string) {
   });
 }
 
-/** Decision 429 item 8: the owner removes a parent or guardian (never the last). */
+/** Decision 430 item 8: the owner removes a parent or guardian (never the last). */
 export function useRemoveGuardian(schoolId: string, studentId: string) {
   const queryClient = useQueryClient();
   return useMutation({

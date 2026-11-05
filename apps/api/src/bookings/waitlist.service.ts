@@ -64,7 +64,7 @@ export class WaitlistService {
     const studentId = dto?.studentId ?? callerId;
     const isOnBehalfOf = dto?.studentId !== undefined && dto.studentId !== callerId;
 
-    // Decision 429 item 1 (FAM-1): relationship first, as BookingsService.bookClass.
+    // Decision 430 item 1 (FAM-1): relationship first, as BookingsService.bookClass.
     let isGuardianAction = isOnBehalfOf && (await this.guardiansService.isActiveGuardianOf(callerId, studentId));
     let cls = isGuardianAction ? null : await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
     if (!cls && isOnBehalfOf) {
@@ -91,7 +91,7 @@ export class WaitlistService {
     assertClassBookable(resolvedClass, { byStaff: isOnBehalfOf && !isGuardianAction });
     // Decision 110: a closed School takes no new waitlist places (Classes review C16).
     await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
-    // Decision 429 item 9: no place for a child still waiting for a parent's consent.
+    // Decision 430 item 9: no place for a child still waiting for a parent's consent.
     await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -120,7 +120,7 @@ export class WaitlistService {
       if (resolvedClass.capacity === null) {
         throw new ConflictException('This Class has no seat limit. Book it instead.');
       }
-      // Decision 431 item 14: a member the class isn't for can't queue for it.
+      // Decision 432 item 14: a member the class isn't for can't queue for it.
       await assertWhoCanBook(tx, studentId, resolvedClass);
       // Waivers review W15: the claim step needs a signed Waiver, so a
       // student without one would hold an offered seat they can never take.
@@ -195,7 +195,7 @@ export class WaitlistService {
       throw new NotFoundException('Waitlist entry not found');
     }
     const resolvedEntry = existing;
-    // Decision 429 item 1 (FAM-1): a parent who is also staff acts as the parent.
+    // Decision 430 item 1 (FAM-1): a parent who is also staff acts as the parent.
     if (!isGuardianAction && resolvedEntry.studentId !== callerId && (await this.guardiansService.isActiveGuardianOf(callerId, resolvedEntry.studentId))) {
       isGuardianAction = true;
     }
@@ -248,7 +248,7 @@ export class WaitlistService {
       throw new NotFoundException('Waitlist entry not found');
     }
     const resolvedEntry = existing;
-    // Decision 429 item 1 (FAM-1): a parent who is also staff acts as the parent.
+    // Decision 430 item 1 (FAM-1): a parent who is also staff acts as the parent.
     if (!isGuardianAction && resolvedEntry.studentId !== callerId && (await this.guardiansService.isActiveGuardianOf(callerId, resolvedEntry.studentId))) {
       isGuardianAction = true;
     }
@@ -275,7 +275,7 @@ export class WaitlistService {
     await this.subscriptionGate.assertNotDegraded(resolvedEntry.studentId, resolvedEntry.schoolId);
     // Decision 110: a closed School takes no new Bookings (Classes review C16).
     await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
-    // Decision 429 item 9: a claim is a booking; it waits for a parent's consent.
+    // Decision 430 item 9: a claim is a booking; it waits for a parent's consent.
     await assertBaselineConsentGiven(this.prismaJobs, resolvedEntry.studentId, await schoolZone(this.prismaJobs, resolvedEntry.schoolId, resolvedEntry.branchId));
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
@@ -299,7 +299,7 @@ export class WaitlistService {
       }
 
       await this.assertRankEligible(tx, studentId, cls);
-      // Decision 431 item 14: "Who can book" may have changed since they queued.
+      // Decision 432 item 14: "Who can book" may have changed since they queued.
       await assertWhoCanBook(tx, studentId, cls);
 
       let locked: LockedClass;

@@ -210,7 +210,7 @@ export function SignUpScreen({
             {field('firstName', t('frontDesk.signUp.firstName'), 'text', true)}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {field('surname', t('frontDesk.signUp.surname'), 'text', !form.hasOnlyOneName, form.hasOnlyOneName)}
-              {/* Decision 433 (TXT-8): someone with one name doesn't type a "." as a surname. */}
+              {/* Decision 434 (TXT-8): someone with one name doesn't type a "." as a surname. */}
               <label className="fd-class__meta" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <input
                   type="checkbox"

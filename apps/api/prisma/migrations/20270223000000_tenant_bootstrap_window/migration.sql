@@ -1,4 +1,4 @@
--- Stress test round 5, PRIV-9 (Decision 432): a School or Franchise with no
+-- Stress test round 5, PRIV-9 (Decision 433): a School or Franchise with no
 -- RoleGrant at all was readable by every signed-in user. The bootstrap clause
 -- `OR NOT school_has_any_role_grant(id)` (20260906000000; the Franchise copy
 -- in 20260920000000) exists only so the person creating a School or Franchise

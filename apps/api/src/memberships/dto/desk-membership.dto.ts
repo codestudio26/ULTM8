@@ -20,7 +20,7 @@ export class SellMembershipDto {
   paymentMethod!: DeskPaymentMethod;
 }
 
-/** Decision 430 (MON-15): the most Friend Passes given in one action. */
+/** Decision 431 (MON-15): the most Friend Passes given in one action. */
 export const MAX_FRIEND_PASSES_AT_ONCE = 5;
 
 /** POST /schools/{schoolId}/students/{studentId}/memberships/gift — the owner
@@ -31,9 +31,9 @@ export class GiftFriendPassDto {
   @IsUUID()
   membershipPlanId!: string;
 
-  /** Decision 430 (MON-15): give several passes in one action (one per guest),
+  /** Decision 431 (MON-15): give several passes in one action (one per guest),
    * so a second pass doesn't have to wait out the repeat guard. */
-  @ApiPropertyOptional({ minimum: 1, maximum: MAX_FRIEND_PASSES_AT_ONCE, default: 1, description: 'Decision 430 (MON-15): how many Friend Passes to give at once (1-5).' })
+  @ApiPropertyOptional({ minimum: 1, maximum: MAX_FRIEND_PASSES_AT_ONCE, default: 1, description: 'Decision 431 (MON-15): how many Friend Passes to give at once (1-5).' })
   @IsOptional()
   @IsInt()
   @Min(1)

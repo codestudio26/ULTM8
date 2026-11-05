@@ -32,11 +32,11 @@ export function minuteOfDay(time: Date): number {
   return time.getUTCHours() * 60 + time.getUTCMinutes();
 }
 
-/** The longest a weekly class may run (Decision 431 item 3): 12 hours. */
+/** The longest a weekly class may run (Decision 432 item 3): 12 hours. */
 export const MAX_SLOT_MINUTES = 720;
 
 /** Wall-clock minutes from one HH:mm (as minutes after midnight) to the next
- * one, going past midnight when the second is earlier (Decision 431 item 3):
+ * one, going past midnight when the second is earlier (Decision 432 item 3):
  * 23:00 to 00:30 is 90. The same two times give 0. */
 export function minutesBetween(fromMinute: number, toMinute: number): number {
   return (toMinute - fromMinute + 1440) % 1440;
@@ -48,7 +48,7 @@ export function endsNextDay(startTime: Date, endTime: Date): boolean {
 }
 
 /**
- * A time inside one occurrence, as an instant (Decision 431 items 3 and 4).
+ * A time inside one occurrence, as an instant (Decision 432 items 3 and 4).
  * It is on the class's start date, or on the next day when `nextDay` says so
  * (an overnight class). The printed wall-clock time is kept; only when that
  * lands at or before `after` (a DST night: the clock skipped the start, or
@@ -66,7 +66,7 @@ function instantInClass(localDate: DateTime, time: Date, nextDay: boolean, after
 /** A slot's occurrence fields for one local date: times, cut-offs and the copied
  * Class fields. Shared by the daily generator and slot edits (Decision 322).
  * The occurrence belongs to its start date, also when the class ends after
- * midnight (Decision 431 item 3): closures and the calendar use that date. */
+ * midnight (Decision 432 item 3): closures and the calendar use that date. */
 export function occurrenceFields(slot: TimetableSlot, localDate: DateTime) {
   const start = minuteOfDay(slot.startTime);
   const startDate = combineDateAndTime(localDate, slot.startTime);
@@ -98,7 +98,7 @@ export function occurrenceFields(slot: TimetableSlot, localDate: DateTime) {
     cancellationCharge: slot.cancellationCharge,
     termsWaiverRequired: slot.termsWaiverRequired,
     membershipInclusion: slot.membershipInclusion,
-    // Decision 431 item 14: who can book.
+    // Decision 432 item 14: who can book.
     audience: slot.audience,
     minAge: slot.minAge,
     maxAge: slot.maxAge,

@@ -290,7 +290,7 @@ function BranchCancellationSettingsCard({ branch }: { branch: BranchResponse }) 
 }
 
 /**
- * Decision 430 (MON-6 step 2): this Branch's own tax lines (GST and QST in
+ * Decision 431 (MON-6 step 2): this Branch's own tax lines (GST and QST in
  * Québec, say), used for the members whose home Branch this is instead of the
  * School's. Off (the default) = the School's lines. Whether prices include
  * tax, and the tax country, stay School-wide. Its own Card and save.

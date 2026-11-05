@@ -32,7 +32,7 @@ export const server = {
     signUpUnder18: 'Under 18s are signed up by their Guardian in the ULTM8 app.',
     signUpWaiting: 'This email has already signed up here. A member of staff will be in touch.',
     signUpAlreadyStudent: 'This email already belongs to a student of this School.',
-    // Decision 429 (families).
+    // Decision 430 (families).
     consentPending: 'This child\'s parent or guardian hasn\'t given consent yet. They can give it in the ULTM8 app; until then the child can\'t book or check in.',
     consentWithdrawn: 'A parent or guardian withdrew consent for this child. A parent must give consent again in the ULTM8 app before the child can be enrolled.',
     childIsAdult: 'This child is 18 now and signs for themselves. They can make their own ULTM8 account.',
@@ -76,7 +76,7 @@ export const server = {
     noPackToRecharge: 'This person has no used-up Class Pack to buy again.',
     packNotForSale: 'This pack is no longer sold. Ask at the desk about another plan.',
     rechargeNotPaid: "The pack hasn't been paid for yet.",
-    // Decision 431: who can book, closures, time zones.
+    // Decision 432: who can book, closures, time zones.
     whoCanBookWomenOnly: "This class is for women only.",
     whoCanBookMenOnly: "This class is for men only.",
     whoCanBookGenderMissing: "This class is for women or men only, and no gender is recorded on this member's profile. Ask the School to add it.",
@@ -301,7 +301,7 @@ export const server = {
     franchiseClosedBody: '{franchise} has been closed. {school} stays open, and its franchise fees have stopped.',
     studentAddedTitle: 'Added to a School',
     studentAddedBody: "You've been added to {school}.",
-    // Decision 429 (families).
+    // Decision 430 (families).
     consentWithdrawnTitle: 'Consent withdrawn',
     consentWithdrawnBody: '{name} withdrew consent for {child}. {child} can\'t book or check in until a parent gives consent again in the app.',
     cameraConsentWithdrawnBody: '{name} withdrew camera consent for {child}. Staff will check them in by hand.',

@@ -33,7 +33,7 @@ function signedIn(u: { email: string; mustChangePasscode: boolean; phone: string
 }
 
 /**
- * Decision 429 item 13 (PRIV-2, narrows Decision 341 item 1): a member's
+ * Decision 430 item 13 (PRIV-2, narrows Decision 341 item 1): a member's
  * name, date of birth and gender live on their one User row, which every
  * School they belong to reads. Staff of one School may change them only while
  * the person is theirs alone: 409 IDENTITY_SHARED when the person holds a

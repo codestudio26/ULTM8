@@ -95,7 +95,7 @@ describeIfDb('Staff-on-behalf-of Student profile update (v1.2 backend backlog)',
   });
 
   it('Staff can update an allowed field on a Student\'s behalf', async () => {
-    // Decision 429 item 13: staff change a name only while the person hasn't signed in themselves.
+    // Decision 430 item 13: staff change a name only while the person hasn't signed in themselves.
     await superuser.user.update({ where: { id: id.student }, data: { mustChangePasscode: true } });
     const res = await patch('owner', 'Home Dojo', 'student', { firstName: 'Updated', address: '123 Mat Street' });
     expect(res.status).toBe(200);

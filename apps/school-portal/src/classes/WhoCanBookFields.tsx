@@ -40,7 +40,7 @@ export function whoCanBookLabel(c: { audience?: Audience | null; minAge?: number
 }
 
 /**
- * Decision 431 item 14 (AE-6): the optional "Who can book" on a one-off class
+ * Decision 432 item 14 (AE-6): the optional "Who can book" on a one-off class
  * and on a weekly slot — everyone, women only or men only, plus an optional age
  * range. The API checks it at booking, waitlist, Kid Mode and the desk; staff
  * can still book anyone with an override reason.

@@ -3,7 +3,7 @@ import { formatMoney } from './money';
 import { schoolTime, transactionsCsv } from '../transactions/transactionsCsv';
 import { taxLinesProblem } from '../charges/taxLines';
 
-/** Decision 430 (stress test round 5, MONEY): the portal's own money helpers. */
+/** Decision 431 (stress test round 5, MONEY): the portal's own money helpers. */
 describe('each currency its own decimals (TXT-6, MON-10)', () => {
   it('shows yen without decimals and dollars with two', () => {
     expect(formatMoney(123400, 'JPY')).not.toMatch(/[.,]00\b/);

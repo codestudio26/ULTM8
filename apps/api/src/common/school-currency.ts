@@ -39,7 +39,7 @@ export async function assertSchoolCurrencySet(db: Pick<Prisma.TransactionClient,
 }
 
 /**
- * The one currency rule for money a member is charged (Decision 430, MON-5;
+ * The one currency rule for money a member is charged (Decision 431, MON-5;
  * Decision 334 M6, Decision 389 item 2): the plan's own currency, else the
  * School's. Null when neither is set: the caller refuses or skips the charge,
  * and never falls back to US dollars.

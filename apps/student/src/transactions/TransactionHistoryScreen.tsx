@@ -108,7 +108,7 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
           })}
         </Text>
       ) : null}
-      {/* Decision 430 (MON-6 step 1): the tax a membership's price included. */}
+      {/* Decision 431 (MON-6 step 1): the tax a membership's price included. */}
       {transaction.includedTax ? (
         <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
           {t('transactions.row.includedTax', {

@@ -5,14 +5,14 @@ import { matchesSearch } from './studentSearch';
 
 const student = (firstName: string, surname: string, email = 'someone@example.test') => ({ firstName, surname, email });
 
-describe('the shared search fold (Decision 433, TXT-1)', () => {
+describe('the shared search fold (Decision 434, TXT-1)', () => {
   it('finds every spelling of the 46 shared vectors that must be found, and merges none that must not', () => {
     expect(NAME_SEARCH_MUST_MATCH.filter(([f, l, q]) => !matchesNameSearch(f, l, q))).toEqual([]);
     expect(NAME_SEARCH_MUST_NOT_MATCH.filter(([f, l, q]) => matchesNameSearch(f, l, q))).toEqual([]);
   });
 });
 
-describe('Students list search (Decision 371, folded per Decision 433)', () => {
+describe('Students list search (Decision 371, folded per Decision 434)', () => {
   it('every typed word starts a word of the name, ignoring case and accents', () => {
     expect(matchesSearch(student('João', 'Conceição'), 'joao conc')).toBe(true);
     expect(matchesSearch(student('Sébastien', 'Martin'), 'Sebastien')).toBe(true);

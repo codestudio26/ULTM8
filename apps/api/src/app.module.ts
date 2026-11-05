@@ -131,7 +131,7 @@ import { NoNulCharactersPipe } from './common/pipes/no-nul-characters.pipe';
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    // Decision 433 (TXT-4): a NUL character anywhere in a request is a 400, before any work starts.
+    // Decision 434 (TXT-4): a NUL character anywhere in a request is a 400, before any work starts.
     { provide: APP_PIPE, useClass: NoNulCharactersPipe },
   ],
 })

@@ -40,7 +40,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
   const [rate, setRate] = useState(rateText(school.taxRateBasisPoints ?? 0));
   const [inclusive, setInclusive] = useState(school.taxInclusive ?? true);
   const [taxId, setTaxId] = useState(school.taxId ?? '');
-  // Decision 430 (MON-6): the first line's name and an optional second line.
+  // Decision 431 (MON-6): the first line's name and an optional second line.
   const [taxName, setTaxName] = useState(school.taxName ?? '');
   const [line2, setLine2] = useState<TaxLineDraft>(() => taxLineDraft(school.tax2Name, school.tax2RateBasisPoints, school.tax2Id));
   const [reasonRequired, setReasonRequired] = useState(school.chargeCancelReasonRequired ?? true);

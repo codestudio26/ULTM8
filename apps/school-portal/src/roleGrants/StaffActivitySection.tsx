@@ -27,12 +27,12 @@ function describe(t: T, e: StaffActivityEntry): string {
     case 'ROLE_GIVEN':
       return t(d.manual ? 'roleGrants.activity.roleGivenManual' : 'roleGrants.activity.roleGiven', vars);
     case 'ROLE_REMOVED':
-      // Decision 432 item 6: someone gave up their own role.
+      // Decision 433 item 6: someone gave up their own role.
       return t(d.self ? 'roleGrants.activity.steppedDown' : 'roleGrants.activity.roleRemoved', vars);
     case 'REMOVED_FROM_SCHOOL':
       return t('roleGrants.activity.removedFromSchool', vars);
     case 'PAUSED':
-      // Decision 432 item 6: ULTM8 support's emergency pause.
+      // Decision 433 item 6: ULTM8 support's emergency pause.
       return t(d.byUltm8Support ? 'roleGrants.activity.pausedBySupport' : 'roleGrants.activity.paused', vars);
     case 'UNPAUSED':
       return t('roleGrants.activity.unpaused', vars);
@@ -66,7 +66,7 @@ function describe(t: T, e: StaffActivityEntry): string {
     // Decision 315 item 13: a duplicate member merged into the kept one.
     case 'MEMBERS_MERGED':
       return t('roleGrants.activity.membersMerged', { ...vars, duplicate: String(d.duplicateName ?? '') || t('roleGrants.activity.someone') });
-    // Decision 429 items 6 and 8: a child's parents and guardians.
+    // Decision 430 items 6 and 8: a child's parents and guardians.
     case 'GUARDIAN_INVITED':
       return t('roleGrants.activity.guardianInvited', { ...vars, child: String(d.studentName ?? '') });
     case 'GUARDIAN_REMOVED':

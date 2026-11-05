@@ -5,7 +5,7 @@ type ZoneReader = Pick<PrismaClient, 'school' | 'branch'>;
 /**
  * The time zone a School keeps its calendar in: the Branch's own zone when a
  * Branch is known and has one, else the School's, else null (UTC). Used to
- * count an 18th birthday on the local date (Decision 429 item 10, FAM-10),
+ * count an 18th birthday on the local date (Decision 430 item 10, FAM-10),
  * the same Branch-then-School order a Class's clock uses (classTimeZone).
  *
  * Read on the connection the caller passes; callers pass the jobs connection

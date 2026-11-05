@@ -166,7 +166,7 @@ export class PlanContractsService {
   /** Signs the plan's current contract. The member signs for themselves
    * (18 or over); a Guardian signs for their child. */
   async sign(callerId: string, planId: string, dto: SignPlanContractDto) {
-    // Decision 429 item 7: a parent doesn't sign for a child who is 18.
+    // Decision 430 item 7: a parent doesn't sign for a child who is 18.
     const target = await this.resolveSigner(callerId, dto.studentId, 'act');
     const plan = await this.findPlanForMember(target, planId);
     if (plan.contractVersion == null || !plan.contractBody) throw new BadRequestException('This plan has no contract to sign.');
@@ -326,7 +326,7 @@ export class PlanContractsService {
     const currency = (sig.currency ?? school?.defaultCurrency)?.toUpperCase();
     if (!school || !currency) return null;
     const fee = sig.earlyExitFee!;
-    // Decision 430 (MON-6): the member's tax lines (their home Branch's when it overrides).
+    // Decision 431 (MON-6): the member's tax lines (their home Branch's when it overrides).
     const tax = taxLinesForCharge(await loadEffectiveTax(this.prismaJobs, membership.schoolId, membership.studentId), false);
     const totals = computeCharge({ unitAmount: fee, discount: null, ...tax, currency });
     let created: { id: string; invoiceNumber: number };

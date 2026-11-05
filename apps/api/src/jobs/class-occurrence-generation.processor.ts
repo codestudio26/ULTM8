@@ -141,7 +141,7 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
         const timezone = slot.branch?.timezone ?? slot.school.timezone ?? 'UTC';
         // A zone Luxon doesn't know (typed before the API checked it) skips this
         // slot only. It used to throw outside this try and stop the whole run,
-        // so every School after it got no new classes (Decision 431 item 1).
+        // so every School after it got no new classes (Decision 432 item 1).
         if (!DateTime.local().setZone(timezone).isValid) {
           this.logger.error(`Skipped TimetableSlot ${slot.id}: its time zone "${timezone}" is not a valid IANA zone. Fix the Branch's or School's time zone.`);
           continue;

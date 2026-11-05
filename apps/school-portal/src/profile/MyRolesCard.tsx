@@ -14,7 +14,7 @@ const ROLE_KEYS: Record<string, TranslationKey> = {
 };
 
 /**
- * Decision 432 item 6 (amends Decision 423 item 10): a co-owner, coach or
+ * Decision 433 item 6 (amends Decision 423 item 10): a co-owner, coach or
  * Branch Staff member gives up their own role at the School they're working
  * in. The main owner's role is never listed: it can't be given up here
  * (Decision 370). The API refuses a coach who still teaches upcoming classes

@@ -482,7 +482,7 @@ function OccurrenceCard({
           <strong style={cancelled ? { textDecoration: 'line-through' } : undefined}>{title}</strong>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
             {cls ? cls.startTime : slot!.startTime} – {cls ? cls.endTime : slot!.endTime}
-            {/* Decision 431 item 3: a class past midnight says so. */}
+            {/* Decision 432 item 3: a class past midnight says so. */}
             {slotEndsNextDay(cls ? cls.startTime : slot!.startTime, cls ? cls.endTime : slot!.endTime) ? ` (${t('timetable.endsNextDayShort')})` : ''} · {branchLabel(branches, cls ? cls.branchId : slot!.branchId, t)}
           </div>
           {cls ? (

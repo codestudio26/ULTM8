@@ -4,7 +4,7 @@ const OBJECT = { type: 'object', additionalProperties: true } as const;
 const LIST = { type: 'array', items: { type: 'object', additionalProperties: true } } as const;
 
 /**
- * GET /schools/{id}/students/{studentId}/data-export (Decision 432 item 10):
+ * GET /schools/{id}/students/{studentId}/data-export (Decision 433 item 10):
  * what this School holds about one member, downloaded as a JSON file. The
  * portal saves it as is, so its sections are left open here.
  */

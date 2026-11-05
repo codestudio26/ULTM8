@@ -3,7 +3,7 @@ import { useSchool } from '../schools/schoolQueries';
 import { classZone } from '../lib/datetime';
 
 /**
- * The clock a Class runs on, for showing its times (Decision 431 item 5): its
+ * The clock a Class runs on, for showing its times (Decision 432 item 5): its
  * Branch's zone, else the School's, else UTC, as on the Classes page, not the
  * viewer's browser zone. An owner in New York sees Honolulu's 6am class at 6:00.
  */

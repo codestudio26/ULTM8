@@ -169,7 +169,7 @@ export class ChargeResponseDto {
     type: () => TaxLineAmountDto,
     isArray: true,
     nullable: true,
-    description: 'Decision 430 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before.',
+    description: 'Decision 431 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before.',
   })
   taxLines!: TaxLineAmountDto[] | null;
 
@@ -458,7 +458,7 @@ export class ChargeAbilitiesDto {
   resendInvoice!: boolean;
 }
 
-/** Decision 430 (MON-6): one named tax line. */
+/** Decision 431 (MON-6): one named tax line. */
 export class TaxLineDto {
   @ApiPropertyOptional({ type: String, nullable: true, example: 'GST' })
   name!: string | null;
@@ -470,7 +470,7 @@ export class TaxLineDto {
   taxId!: string | null;
 }
 
-/** Decision 430 (MON-6): one named tax line, worked out on a charge or receipt. */
+/** Decision 431 (MON-6): one named tax line, worked out on a charge or receipt. */
 export class TaxLineAmountDto extends TaxLineDto {
   @ApiProperty({ description: 'Minor units.' })
   amount!: number;
@@ -489,7 +489,7 @@ export class ChargeSettingsDto {
   @ApiProperty()
   taxInclusive!: boolean;
 
-  @ApiProperty({ type: () => TaxLineDto, isArray: true, description: "Decision 430 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax." })
+  @ApiProperty({ type: () => TaxLineDto, isArray: true, description: "Decision 431 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax." })
   taxLines!: TaxLineDto[];
 
   @ApiProperty()

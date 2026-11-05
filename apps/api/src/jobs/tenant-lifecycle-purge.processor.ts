@@ -107,7 +107,7 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  * cascade away when a School with none of the above is deleted.
  *
  * A School kept (anonymized) for any of the reasons above still loses its
- * members' other data (Decision 432, stress test round 5 PRIV-1): every role
+ * members' other data (Decision 433, stress test round 5 PRIV-1): every role
  * there ends, dated at the close, so nobody can sign in to it any more, and
  * the member rows that are not payment history or signed waivers are deleted
  * (purgeMemberData). That runs for every purged School not yet done, so
@@ -149,7 +149,7 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
       }
     }
 
-    // Decision 432 (PRIV-1): Schools anonymized above, and any purged before
+    // Decision 433 (PRIV-1): Schools anonymized above, and any purged before
     // this existed, lose their members' non-financial data.
     const pending = await this.prismaJobs.school.findMany({
       where: { purgedAt: { not: null }, memberDataPurgedAt: null },
@@ -308,7 +308,7 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
   }
 
   /**
-   * Decision 432 (stress test round 5, PRIV-1), for a School kept anonymized
+   * Decision 433 (stress test round 5, PRIV-1), for a School kept anonymized
    * after its 90 days:
    * 1. Every role still live there ends, dated at the close (`closedAt`, the
    *    School's archivedAt), not today: the waiver retention clock counts from

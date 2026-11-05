@@ -6,7 +6,7 @@ import type { TransactionResponse } from './transactionQueries';
  * filters pick out, not just the page on screen. Amounts are written as plain
  * numbers with two decimals (they are stored in hundredths) and the currency in
  * its own column, so a spreadsheet can add them up. Dates are ISO 8601 (UTC),
- * then the same moment in the School's time zone (Decision 430, MON-7).
+ * then the same moment in the School's time zone (Decision 431, MON-7).
  */
 export interface CsvLabels {
   headers: string[];
@@ -15,7 +15,7 @@ export interface CsvLabels {
   kind: (row: TransactionResponse) => string;
   status: (row: TransactionResponse) => string;
   method: (row: TransactionResponse) => string;
-  /** Decision 430 (MON-7): the School's time zone, for the "Date (School
+  /** Decision 431 (MON-7): the School's time zone, for the "Date (School
    * time)" column next to the ISO date. UTC when the School has none. */
   timeZone?: string | null;
 }
@@ -27,10 +27,10 @@ export function csvCell(value: string): string {
   return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 
-// Each currency's own decimals (Decision 430, TXT-6): 12345 for yen, 12.50 for dollars.
+// Each currency's own decimals (Decision 431, TXT-6): 12345 for yen, 12.50 for dollars.
 const money = (minor: number | null | undefined, currency: string | null | undefined) => (minor == null ? '' : plainMoney(minor, currency));
 
-/** An instant as "2026-04-01 01:00" in the School's time zone (Decision 430, MON-7). */
+/** An instant as "2026-04-01 01:00" in the School's time zone (Decision 431, MON-7). */
 export function schoolTime(iso: string, timeZone: string | null | undefined): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '';

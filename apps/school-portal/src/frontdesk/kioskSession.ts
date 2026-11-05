@@ -134,7 +134,7 @@ export type KioskSignUpInput = {
   kind: 'VISITOR' | 'MEMBER';
   firstName: string;
   surname: string;
-  /** Decision 433 (TXT-8): "I have only one name"; the surname is sent empty. */
+  /** Decision 434 (TXT-8): "I have only one name"; the surname is sent empty. */
   hasOnlyOneName: boolean;
   dateOfBirth: string;
   gender: '' | 'FEMALE' | 'MALE';

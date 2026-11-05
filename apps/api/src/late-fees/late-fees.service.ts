@@ -43,7 +43,7 @@ export class LateFeesService {
     // Decision 414 item 6: a new fixed amount is a price, so it needs the
     // School's currency even while late fees stay off (the amount is kept).
     if (!current.currency && setsNewPrice(dto.fixedAmount, current.fixedAmount)) throw schoolCurrencyRequired();
-    // Decision 430 (MON-3): a fixed fee in whole units of the School's currency.
+    // Decision 431 (MON-3): a fixed fee in whole units of the School's currency.
     if (setsNewPrice(dto.fixedAmount, current.fixedAmount)) assertWholeMinorUnits(dto.fixedAmount, current.currency);
     assertWithinChargeCap(dto.fixedAmount);
     if (dto.enabled) {

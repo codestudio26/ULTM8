@@ -5,7 +5,7 @@ import { apiClient } from '../api';
 import { useT } from '../i18n/I18nProvider';
 
 /**
- * Decision 432 item 10: "Download this member's data", for the School's
+ * Decision 433 item 10: "Download this member's data", for the School's
  * owner only (the API refuses everyone else). Saves what this School holds
  * about the member as one JSON file; the API logs every download.
  */

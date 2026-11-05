@@ -3,7 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { MAX_BASIS_POINTS, computeCharge } from './charge-maths';
 
 /**
- * Named tax lines (Decision 430, stress test round 5 MON-6 step 2): up to two
+ * Named tax lines (Decision 431, stress test round 5 MON-6 step 2): up to two
  * per School, each with a name, a rate and its own registration number (GST
  * 5% and PST 7% in British Columbia; 消費税 10% in Japan; VAT 5% in the UAE),
  * and a Branch override for both. Whether prices include tax and the tax
@@ -126,7 +126,7 @@ export interface IncludedTax {
 }
 
 /**
- * Decision 430 (MON-6 step 1): the tax a membership sale or renewal of
+ * Decision 431 (MON-6 step 1): the tax a membership sale or renewal of
  * `amount` included, from the tax settings stamped on its Transaction when it
  * was paid (taxSnapshot). Membership prices are never taxed on top (that is
  * MON-6 step 3, v1.3 backlog), so this is only shown when the School's prices

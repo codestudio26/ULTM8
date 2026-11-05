@@ -144,7 +144,7 @@ function Balances({ schoolId }: { schoolId: string }) {
   const name = (r: MemberBalanceRow) => `${r.firstName} ${r.surname}`.trim();
 
   function exportCsv() {
-    // Each currency's own decimals (Decision 430, TXT-6), as the Transactions CSV.
+    // Each currency's own decimals (Decision 431, TXT-6), as the Transactions CSV.
     const header = [t('charges.reports.columnMember'), t('charges.reports.columnOwes'), t('charges.reports.columnOverdue'), t('charges.reports.columnCredit'), t('charges.reports.columnBalance'), t('charges.reports.columnCurrency')];
     const lines = [header.map(csvCell).join(',')];
     for (const r of rows) lines.push([name(r), plainMoney(r.owed, r.currency), plainMoney(r.overdue, r.currency), plainMoney(r.credit, r.currency), plainMoney(r.net, r.currency), r.currency].map(csvCell).join(','));

@@ -37,7 +37,7 @@ const Muted = ({ children }: { children: React.ReactNode }) => (
 type Form = {
   firstName: string;
   surname: string;
-  /** Decision 433 (TXT-8): "I have only one name"; an empty surname records it. */
+  /** Decision 434 (TXT-8): "I have only one name"; an empty surname records it. */
   oneName: boolean;
   username: string;
   dateOfBirth: string;

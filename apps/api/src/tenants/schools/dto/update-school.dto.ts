@@ -82,7 +82,7 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @ApiPropertyOptional({ description: 'IANA timezone name. Same field as Branch.timezone (Decisions 76, 172).', type: String, nullable: true })
   @IsOptional()
   @IsString()
-  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 431).' })
+  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 432).' })
   @MaxLength(100)
   timezone?: string | null;
 

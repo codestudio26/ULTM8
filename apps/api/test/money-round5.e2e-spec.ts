@@ -11,7 +11,7 @@ import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-pro
 import { fakePaymentCheckoutSession } from './stripe-fakes';
 
 /**
- * Decision 430 (stress test round 5, MONEY), over real HTTP against a real
+ * Decision 431 (stress test round 5, MONEY), over real HTTP against a real
  * Postgres and Redis, with Stripe faked (StripeClientService):
  * - MON-3: zero-decimal amounts with a fraction are refused (400
  *   AMOUNT_NOT_WHOLE_UNIT); MON-2: a yen charge with a % discount rounds to
@@ -42,7 +42,7 @@ if (!hasDb) {
 const DAY = 24 * 60 * 60 * 1000;
 const day = (offset: number) => new Date(Date.now() + offset * DAY).toISOString().slice(0, 10);
 
-describeIfDb('Money fixes (Decision 430, stress test round 5)', () => {
+describeIfDb('Money fixes (Decision 431, stress test round 5)', () => {
   let app: INestApplication;
   let webhook: StripeWebhookProcessingProcessor;
   const su = new PrismaClient({ datasourceUrl: DATABASE_URL });
@@ -323,7 +323,7 @@ describeIfDb('Money fixes (Decision 430, stress test round 5)', () => {
         taxId: '123456789RT0001',
         tax2Name: 'QST',
         // Rates are whole hundredths of a percent, so QST's 9.975% can't be
-        // entered exactly (open point, Decision 430 report).
+        // entered exactly (open point, Decision 431 report).
         tax2RateBasisPoints: 997,
         tax2Id: '1234567890TQ0001',
       });

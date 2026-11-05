@@ -15,7 +15,7 @@ import { MemberContactFields } from './MemberDetails';
 type Form = {
   firstName: string;
   surname: string;
-  /** Decision 433 (TXT-8): "Has only one name"; an empty surname is what records it. */
+  /** Decision 434 (TXT-8): "Has only one name"; an empty surname is what records it. */
   oneName: boolean;
   username: string;
   dateOfBirth: string;

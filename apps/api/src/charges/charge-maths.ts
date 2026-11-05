@@ -7,7 +7,7 @@
  *   left.
  * - Tax added on top: tax = round(price × rate).
  * - Prices include tax: tax = price − round(price ÷ (1 + rate)).
- * - Rounding is half up, to the currency's real minor unit (Decision 430,
+ * - Rounding is half up, to the currency's real minor unit (Decision 431,
  *   MON-2): whole yen for a zero-decimal currency (minorUnitStep()), so a
  *   member who pays every yen owes nothing; the cent everywhere else.
  * - "No tax on this item" (Decision 414 item 5): a rate of 0, so the price
@@ -36,7 +36,7 @@ export interface ChargeInput {
   /** The charge's currency: sets the step every sum rounds to (MON-2). */
   currency: string | null | undefined;
   /**
-   * Decision 430 (MON-6): the named tax lines, when the School (or the
+   * Decision 431 (MON-6): the named tax lines, when the School (or the
    * member's Branch) has them. Their combined rate is the charge's rate, and
    * the result carries each line's amount. Left out: one unnamed rate.
    */
@@ -77,7 +77,7 @@ export function taxForCharge(
 }
 
 /**
- * taxForCharge() for the tax that applies to one member (Decision 430,
+ * taxForCharge() for the tax that applies to one member (Decision 431,
  * MON-6): the School's lines, or their home Branch's when it overrides
  * (loadEffectiveTax()). The combined rate is the charge's rate and the lines
  * go to computeCharge(). "No tax on this item": rate 0 and no lines.

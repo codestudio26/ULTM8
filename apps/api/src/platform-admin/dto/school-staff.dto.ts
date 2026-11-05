@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-/** One coach or Branch Staff role (Decision 432 item 6). */
+/** One coach or Branch Staff role (Decision 433 item 6). */
 export class SchoolStaffRoleDto {
   @ApiProperty({ enum: ['INSTRUCTOR', 'BRANCH_STAFF'] })
   role!: string;
@@ -9,7 +9,7 @@ export class SchoolStaffRoleDto {
   branchName!: string | null;
 }
 
-/** GET /platform-admin/schools/{id}/staff (Decision 432 item 6). */
+/** GET /platform-admin/schools/{id}/staff (Decision 433 item 6). */
 export class SchoolStaffMemberDto {
   @ApiProperty()
   userId!: string;

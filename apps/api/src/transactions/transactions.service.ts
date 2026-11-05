@@ -38,7 +38,7 @@ import { freezeZone } from '../memberships/freeze/membership-freeze';
  * explicitly-deferred half of this module) — see its own method comment
  * below for why this needed no PDF-generation infra after all.
  */
-/** A Transaction row as the API shows it (taxSnapshot is internal: Decision 430). */
+/** A Transaction row as the API shows it (taxSnapshot is internal: Decision 431). */
 type WithPlanTitle<T> = Omit<T, 'membershipPlan' | 'booking' | 'membership' | 'charge' | 'taxSnapshot'> & {
   includedTax: IncludedTax | null;
   membershipPlanTitle: string | null;
@@ -82,7 +82,7 @@ export class TransactionsService {
     return {
       ...rest,
       ...(currency ? { currency: currency.toUpperCase() } : {}),
-      // Decision 430 (MON-6 step 1): the tax a membership price included.
+      // Decision 431 (MON-6 step 1): the tax a membership price included.
       includedTax: includedTax((rest as { amount?: number }).amount ?? 0, currency ?? null, taxSnapshot),
       membershipPlanTitle: membershipPlan?.title ?? membership?.membershipPlan.title ?? null,
       // A late-cancellation fee (Decision 346) names the class it was for.
@@ -95,7 +95,7 @@ export class TransactionsService {
 
   /** The Transactions page's filters (Decision 346, G3) as a Prisma filter. */
   private filterWhere(schoolId: string, f: TransactionFilterDto, timezone: string | null | undefined): Prisma.TransactionWhereInput {
-    // Decision 430 (MON-7): from/to are days in the School's time zone (as the
+    // Decision 431 (MON-7): from/to are days in the School's time zone (as the
     // billing reports count them), not UTC days: a Tokyo payment at 08:00 on
     // the 1st is on the 1st.
     const zone = freezeZone(timezone);

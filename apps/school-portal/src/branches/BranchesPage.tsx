@@ -15,7 +15,7 @@ import { countryDisplayName, formatLocale } from '../i18n/format';
 const timezoneLabel = (zone: string) => (formatLocale() ? formatTimezone(zone, formatLocale()) : zone);
 
 /** Case, accents and spelling variants ignored, so "São Paulo" and "Sao Paulo"
- * are one city: the API's own search fold (Decision 433, TXT-1). */
+ * are one city: the API's own search fold (Decision 434, TXT-1). */
 const cityKey = (city: string) => foldForSearch(city);
 
 /** Decision 294 — the City dropdown's choices, built from the School's own

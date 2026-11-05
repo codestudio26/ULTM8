@@ -83,7 +83,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const { data: me } = useCurrentUser({ enabled: !!claims });
   const [storedLocale, setStoredLocale] = useState(readStoredLocale);
   const locale = resolveLocale((claims ? me?.language : null) ?? storedLocale);
-  // "English (US)" reads the English (UK) text; only its dates differ (Decision 433).
+  // "English (US)" reads the English (UK) text; only its dates differ (Decision 434).
   const textLocale = messageLocaleFor(locale);
   const dir = directionFor(locale);
   setFormatLocale(locale === DEFAULT_LOCALE ? undefined : locale);
@@ -127,7 +127,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const serverText = useMemo(
     () =>
       // English passes the API's text through, with a class's date and time in
-      // a notice formatted (Decision 433, TXT-3).
+      // a notice formatted (Decision 434, TXT-3).
       textLocale === DEFAULT_LOCALE
         ? createEnglishServerTextTranslator(locale)
         : createServerTextTranslator(t as (key: string, vars?: MessageVars) => string, locale, SERVER_MESSAGE_LOADERS[locale]),

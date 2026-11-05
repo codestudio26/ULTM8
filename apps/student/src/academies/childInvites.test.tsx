@@ -41,7 +41,7 @@ describe('ChildInvites (Decision 403)', () => {
     await waitFor(() => expect(apiClient.POST).toHaveBeenCalledWith('/v1/child-invites/{id}/accept', { params: { path: { id: 'inv1' } }, body: {} }));
   });
 
-  it('sends the consent ticked when accepting (Decision 429 item 9)', async () => {
+  it('sends the consent ticked when accepting (Decision 430 item 9)', async () => {
     (apiClient.GET as jest.Mock).mockImplementation(() => ok({ items: [INVITE] }) as never);
     (apiClient.POST as jest.Mock).mockImplementation(() => ok({ schoolId: 's1', studentId: 'kid' }) as never);
     const screen = await renderInvites();
@@ -53,7 +53,7 @@ describe('ChildInvites (Decision 403)', () => {
     );
   });
 
-  it('words an invite to be another parent of a child already at the School (Decision 429 item 6)', async () => {
+  it('words an invite to be another parent of a child already at the School (Decision 430 item 6)', async () => {
     (apiClient.GET as jest.Mock).mockImplementation(() => ok({ items: [{ ...INVITE, addsGuardian: true }] }) as never);
     const screen = await renderInvites();
     await waitFor(() => expect(screen.getByText('Be a parent or guardian of Kit Young at Alpha Dojo?')).toBeTruthy());

@@ -1,5 +1,5 @@
 /**
- * Stress test round 5, privacy/staff/races panel (Decision 432), staff and
+ * Stress test round 5, privacy/staff/races panel (Decision 433), staff and
  * member-data items:
  *
  * - PRIV-6: anyone may give up their own co-owner, coach or Branch Staff role,
@@ -36,7 +36,7 @@ if (!hasDb) {
 const HOUR = 3_600_000;
 type Role = 'SCHOOL_OWNER_MANAGER' | 'BRANCH_STAFF' | 'INSTRUCTOR' | 'STUDENT';
 
-describeIfDb('Round-5 stress test: staff and member data (Decision 432)', () => {
+describeIfDb('Round-5 stress test: staff and member data (Decision 433)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

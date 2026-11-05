@@ -1246,7 +1246,7 @@ model School {
   taxInclusive                   Boolean                         @default(true)
   /// Decision 338 item 6: the School's tax ID, shown on its invoices and receipts.
   taxId                          String?
-  /// Decision 430 (MON-6): named tax lines. Line 1 is taxRateBasisPoints and
+  /// Decision 431 (MON-6): named tax lines. Line 1 is taxRateBasisPoints and
   /// taxId above, with an optional name (e.g. "GST"); line 2 is its own name,
   /// rate and registration number (e.g. "PST", 7%). A line-2 rate of 0 means
   /// no second line. A Branch may override both (Branch.taxOverride).
@@ -1387,7 +1387,7 @@ model School {
   archivedAt DateTime?
   purgeAt    DateTime?
   purgedAt   DateTime?
-  /// Decision 432 (PRIV-1): when the purge ended every role here and deleted
+  /// Decision 433 (PRIV-1): when the purge ended every role here and deleted
   /// the members' non-financial data of this anonymized School. Null on a
   /// purged School means that is still to do (the daily sweep does it).
   memberDataPurgedAt DateTime?
@@ -1513,7 +1513,7 @@ model Branch {
   schoolCancelledClassResolution SchoolCancelledClassResolution @default(CREDIT_ALL)
   defaultRefundCutoffHours       Int?
   noShowFee                      Int?
-  /// Decision 430 (MON-6): this Branch's own tax lines instead of the
+  /// Decision 431 (MON-6): this Branch's own tax lines instead of the
   /// School's (a Montréal Branch with GST + QST in a Vancouver School). Off by
   /// default; when on, these replace the School's lines for the members whose
   /// home Branch this is. Whether prices include tax stays School-wide.
@@ -1578,7 +1578,7 @@ model Branch {
 /// branch relationship; nullable mirrors RoleGrant.branchId's already-established
 /// "School-wide by default, narrowable to one Branch" shape. Inferred, not confirmed —
 /// flagged for Architect review.
-/// Decision 431 item 14 (AE-6): who a Class or weekly slot is for.
+/// Decision 432 item 14 (AE-6): who a Class or weekly slot is for.
 enum ClassAudience {
   EVERYONE
   WOMEN
@@ -1645,7 +1645,7 @@ model Class {
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false) // default is opt-out (confirmed §6)
 
-  /// Decision 431 item 14 (AE-6): who can book. EVERYONE (default), WOMEN or
+  /// Decision 432 item 14 (AE-6): who can book. EVERYONE (default), WOMEN or
   /// MEN (User.gender), and an optional age range in whole years on the
   /// Class's date. Checked at booking, waitlist, Kid Mode and the desk; staff
   /// can book anyway with an override reason.
@@ -1801,7 +1801,7 @@ model TimetableSlot {
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false)
 
-  /// Decision 431 item 14 (AE-6): who can book. EVERYONE (default), WOMEN or
+  /// Decision 432 item 14 (AE-6): who can book. EVERYONE (default), WOMEN or
   /// MEN (User.gender), and an optional age range in whole years on the
   /// Class's date. Checked at booking, waitlist, Kid Mode and the desk; staff
   /// can book anyway with an override reason.
@@ -2643,13 +2643,13 @@ model Transaction {
   /// reports aren't changed by the surcharge.
   surchargeAmount Int @default(0)
 
-  /// Decision 430 (MON-6 step 1): MEMBERSHIP and RENEWAL only, the tax settings
+  /// Decision 431 (MON-6 step 1): MEMBERSHIP and RENEWAL only, the tax settings
   /// that applied when the row was written ({ inclusive, branchId, lines }),
   /// filled by a database trigger on insert (migration 20270221000000). The
   /// receipt shows the tax a price included from it.
   taxSnapshot Json?
 
-  /// Decision 430 (MON-8): refunds of a membership sold at the desk.
+  /// Decision 431 (MON-8): refunds of a membership sold at the desk.
   deskSaleRefunds DeskSaleRefund[]
 
   /// CHARGE_PAYMENT only: the charge the desk recorded it against; null when
@@ -4521,7 +4521,7 @@ model GuardianLink {
   createdAt DateTime  @default(now())
   revokedAt DateTime?
 
-  /// Decision 429 item 9: the link existed before BASELINE consent became a
+  /// Decision 430 item 9: the link existed before BASELINE consent became a
   /// condition of booking and check-in, so the child is not "consent pending"
   /// on its account. Never set on a new link; cleared on every link to the
   /// child once a parent withdraws BASELINE consent.
@@ -5491,7 +5491,7 @@ model SignUp {
 
   @@index([schoolId, status])
   @@index([userId])
-  // Decision 433 (TXT-9): also a partial unique index, "SignUp_one_waiting_per_email",
+  // Decision 434 (TXT-9): also a partial unique index, "SignUp_one_waiting_per_email",
   // on (schoolId, email) WHERE status IN ('PENDING', 'INVITED'), made in SQL
   // (migration 20270224000000_sign_up_one_waiting_per_email): Prisma can't declare one.
 }
@@ -5894,7 +5894,7 @@ model StudentExportLog {
   exportedBy   User   @relation("StudentExportLogExportedBy", fields: [exportedById], references: [id], onDelete: Cascade)
 
   /// ALL, ACTIVE, MEMBERS or VISITORS; MEMBER_DATA for one member's data
-  /// (Decision 432 item 10).
+  /// (Decision 433 item 10).
   filter   String
   rowCount Int
 
@@ -6171,7 +6171,7 @@ model Charge {
   /// netAmount = grossAmount = the price after any discount. Never on a late
   /// fee or a promotion fee (they always take the School's tax settings).
   taxExempt          Boolean @default(false)
-  /// Decision 430 (MON-6): each tax line as worked out, [{ name, rateBasisPoints,
+  /// Decision 431 (MON-6): each tax line as worked out, [{ name, rateBasisPoints,
   /// taxId, amount }]; taxRateBasisPoints is their combined rate and taxAmount
   /// their sum. Null for a charge made before named lines (one rate).
   taxLines           Json?
@@ -6380,7 +6380,7 @@ model ChargeRefund {
   @@index([transactionId])
 }
 
-/// Decision 430 (stress test round 5, MON-8): one refund of a membership sold
+/// Decision 431 (stress test round 5, MON-8): one refund of a membership sold
 /// at the desk (cash, Pix, bank transfer, card terminal). Owner only, part or
 /// full, notes required; the money is given back by hand, so only the records
 /// change (Transaction.refundedAmount goes up; Refunded once all is back).

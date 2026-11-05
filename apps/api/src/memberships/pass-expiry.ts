@@ -5,7 +5,7 @@ type SchoolReader = { school: Pick<Prisma.TransactionClient['school'], 'findUniq
 
 /**
  * When an N-day pass (Weekly Pass, Trial, a Class Pack with a validity) bought
- * or given at `now` ends (Decision 431 item 8): N calendar days later at the
+ * or given at `now` ends (Decision 432 item 8): N calendar days later at the
  * same wall-clock time in the School's time zone. It used to be N × 24 real
  * hours, an hour off the clock when a DST change fell inside the pass. A
  * School with no (or an unknown) zone counts in UTC. Hour-based cut-offs

@@ -58,7 +58,7 @@ const CLASS_DISCOVERY_SELECT = {
   // Decision 427 (SP6): which Branch, only to work out the class's clock
   // (`timezone` below); not returned. Granted by 20270214000001.
   branchId: true,
-  // Decision 431 item 14: who can book, shown on the class card. Granted by
+  // Decision 432 item 14: who can book, shown on the class card. Granted by
   // 20270222000000.
   audience: true,
   minAge: true,

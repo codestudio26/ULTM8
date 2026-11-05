@@ -110,7 +110,7 @@ export function InstructorsPage() {
   const instructors = allInstructors.filter(
     (i) =>
       (showArchived || !i.archivedAt) &&
-      // Names through the one search fold (Decision 433, TXT-1); the email as typed.
+      // Names through the one search fold (Decision 434, TXT-1); the email as typed.
       (!query || matchesNameSearch(i.firstName, i.surname, query) || i.email.toLowerCase().includes(query)) &&
       (!branchFilter || (branchFilter === WHOLE_SCHOOL ? !i.branchId : i.branchId === branchFilter)) &&
       (!styleFilter || i.specializationStyleIds.includes(styleFilter)) &&

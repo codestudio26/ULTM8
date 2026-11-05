@@ -3,11 +3,11 @@ import { NAME_SEARCH_MUST_MATCH, NAME_SEARCH_MUST_NOT_MATCH } from '@ultm8/i18n/
 import { firstGrapheme, foldForSearch, foldText, matchesPersonName } from './name-search';
 
 /**
- * Decision 433 (TXT-1, TXT-7): one search fold, kept as two identical copies
+ * Decision 434 (TXT-1, TXT-7): one search fold, kept as two identical copies
  * (this API's and packages/i18n's for the apps), both checked against the
  * round-5 text panel's 46 shared vectors.
  */
-describe('foldForSearch / matchesPersonName (Decision 433, TXT-1)', () => {
+describe('foldForSearch / matchesPersonName (Decision 434, TXT-1)', () => {
   it('has the 46 shared vectors', () => {
     expect(NAME_SEARCH_MUST_MATCH.length + NAME_SEARCH_MUST_NOT_MATCH.length).toBe(46);
   });
@@ -49,7 +49,7 @@ describe('foldForSearch / matchesPersonName (Decision 433, TXT-1)', () => {
   });
 });
 
-describe('firstGrapheme (Decision 433, TXT-7)', () => {
+describe('firstGrapheme (Decision 434, TXT-7)', () => {
   const cases: Array<[string, string]> = [
     // A whole grapheme: the consonant with its nukta and vowel sign, never "ख" alone.
     ['ख\u093C\u093Eन', 'ख\u093C\u093E'],

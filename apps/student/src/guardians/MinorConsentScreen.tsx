@@ -23,9 +23,9 @@ export function MinorConsentScreen({ route, navigation }: Props) {
   const { studentId, name } = route.params;
   const consent = useMyConsentRecords();
   const delegations = useMyBookingDelegations();
-  // Decision 429 item 9: each parent sees the others' consent, read-only.
+  // Decision 430 item 9: each parent sees the others' consent, read-only.
   const childConsent = useChildConsent(studentId);
-  // Decision 429 item 7: nothing to give or withdraw for a child who is 18.
+  // Decision 430 item 7: nothing to give or withdraw for a child who is 18.
   const isAdult = !!useMyMinors().data?.items.find((m) => m.studentId === studentId)?.isAdult;
   const removeMe = useRemoveMe();
   const [confirmingRemove, setConfirmingRemove] = useState(false);
@@ -95,7 +95,7 @@ export function MinorConsentScreen({ route, navigation }: Props) {
         ) : null}
         {/* Decision 419 item 1: the Guardian sees and withdraws their child's medical information sharing. */}
         <MedicalInfoSharing studentId={studentId} />
-        {/* Decision 429 item 8: "Remove me" — never the last parent of an enrolled child. */}
+        {/* Decision 430 item 8: "Remove me" — never the last parent of an enrolled child. */}
         <View style={{ paddingVertical: 14 }}>
           {removeMe.isError ? <ErrorBanner message={getApiErrorMessage(removeMe.error, t('guardians.minorConsent.removeFailed'))} /> : null}
           {confirmingRemove ? (

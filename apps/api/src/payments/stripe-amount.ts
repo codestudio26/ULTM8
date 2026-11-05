@@ -23,7 +23,7 @@ const THREE_DECIMAL = new Set(['BHD', 'JOD', 'KWD', 'OMR', 'TND']);
 const WHOLE_UNITS_ONLY = new Set(['ISK']);
 
 /**
- * The currency's real smallest unit, in ULTM8 hundredths (Decision 430, stress
+ * The currency's real smallest unit, in ULTM8 hundredths (Decision 431, stress
  * test round 5 MON-1..3): 100 for a currency with no decimals (1 yen is 100
  * hundredths), 1 for every other currency (a cent is 1; the three-decimal
  * dinars can't be stored finer than hundredths anyway). Every sum that divides

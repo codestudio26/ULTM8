@@ -58,7 +58,7 @@ export class UpdateBranchDto extends PartialType(OmitType(CreateBranchDto, NULLA
   @ApiPropertyOptional({ description: 'IANA timezone name.', type: String, nullable: true })
   @IsOptional()
   @IsString()
-  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 431).' })
+  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 432).' })
   @MaxLength(100)
   timezone?: string | null;
 
@@ -140,9 +140,9 @@ export class UpdateBranchDto extends PartialType(OmitType(CreateBranchDto, NULLA
   @Min(1)
   noShowFee?: number | null;
 
-  // Decision 430 (MON-6): this Branch's own tax lines, used for the members
+  // Decision 431 (MON-6): this Branch's own tax lines, used for the members
   // whose home Branch this is, instead of the School's. Off by default.
-  @ApiPropertyOptional({ description: "Decision 430 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec)." })
+  @ApiPropertyOptional({ description: "Decision 431 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec)." })
   @IsOptional()
   @IsBoolean()
   taxOverride?: boolean;

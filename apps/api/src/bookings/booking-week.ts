@@ -8,7 +8,7 @@ import { dayNumber, localDay } from '../ranks/engine';
  * separate from BookingsService so it can be unit-reasoned about on its own.
  *
  * Week boundary: the School's own week-start day (School.weekStartsOn, Decision
- * 431 item 7); it used to reuse the grading engine's Monday week. "Today" is
+ * 432 item 7); it used to reuse the grading engine's Monday week. "Today" is
  * anchored to the School's own `timezone` (falls back to UTC when the School hasn't
  * set one — School.timezone is nullable), the same local-day reasoning the grading
  * engine already applies per-Branch/School.
@@ -33,7 +33,7 @@ export function weekStartOf(today: string, weekStartsOn: 'MONDAY' | 'SUNDAY'): s
 
 /** The current week as a `{ from, to }` inclusive YYYY-MM-DD pair, anchored to
  * "today" in `timeZone` (null/undefined -> UTC). It starts on the School's
- * week-start day (Decision 431 item 7: a Sunday-start School used to get
+ * week-start day (Decision 432 item 7: a Sunday-start School used to get
  * Monday–Sunday). The grading engine's weekly cap keeps its own Monday week
  * (Decision 171) and doesn't use this. */
 export function defaultWeekRange(timeZone: string | null | undefined, weekStartsOn: 'MONDAY' | 'SUNDAY' = 'MONDAY', now: Date = new Date()): { from: string; to: string } {

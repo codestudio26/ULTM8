@@ -5,7 +5,7 @@ import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
 type Reader = Pick<PrismaClient, 'guardianLink' | 'consentRecord' | 'user'>;
 
 /**
- * Decision 429 item 9 (FAM-9): BASELINE consent (SKILL.md §14 — the tier
+ * Decision 430 item 9 (FAM-9): BASELINE consent (SKILL.md §14 — the tier
  * "every Guardian-linked minor account requires") for a Guardian-linked child.
  *
  * - NOT_NEEDED: no active parent link, or the person is 18 or over.
@@ -17,7 +17,7 @@ type Reader = Pick<PrismaClient, 'guardianLink' | 'consentRecord' | 'user'>;
  *   check-in and re-enrolling all wait for fresh consent.
  * - PENDING: never given.
  *
- * Either parent's consent counts for the child (Decision 429 item 9). Read on
+ * Either parent's consent counts for the child (Decision 430 item 9). Read on
  * the jobs connection (ConsentRecord and GuardianLink are each Guardian's own
  * rows under RLS), after the caller's own access checks.
  */
@@ -41,7 +41,7 @@ export async function baselineConsentState(db: Reader, studentId: string, zone?:
   return 'PENDING';
 }
 
-/** Booking and check-in (Decision 429 item 9): refused while the child's
+/** Booking and check-in (Decision 430 item 9): refused while the child's
  * consent is pending or withdrawn, whoever asks (the parent, staff, the
  * tablet). */
 export async function assertBaselineConsentGiven(db: Reader, studentId: string, zone?: string | null): Promise<void> {
@@ -54,7 +54,7 @@ export async function assertBaselineConsentGiven(db: Reader, studentId: string, 
   }
 }
 
-/** Enrolling (Decision 429 item 9): after a parent withdrew BASELINE consent,
+/** Enrolling (Decision 430 item 9): after a parent withdrew BASELINE consent,
  * the child is enrolled again only once a parent gives fresh consent. A child
  * whose consent was simply never given can still be enrolled (the School's
  * own Add a child does that before the parent signs in); booking waits. */

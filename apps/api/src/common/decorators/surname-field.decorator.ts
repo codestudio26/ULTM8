@@ -10,7 +10,7 @@ const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? val
 
 /**
  * A surname, which may be empty only for someone who has only one name
- * (Decision 433, TXT-8): the form's "Has only one name" tick sends
+ * (Decision 434, TXT-8): the form's "Has only one name" tick sends
  * `hasOnlyOneName: true` with `surname: ''`. Without the tick a blank surname
  * is refused as before, so nobody has to type "." or "-" for a mononym. The
  * column stays NOT NULL; an empty string is the one name's empty surname.
@@ -42,7 +42,7 @@ export function SurnameField(options: { optional?: boolean } = {}) {
   );
 }
 
-/** The "Has only one name" tick (Decision 433, TXT-8). Not stored: an empty
+/** The "Has only one name" tick (Decision 434, TXT-8). Not stored: an empty
  * surname is what records it. */
 export function HasOnlyOneNameField() {
   return applyDecorators(

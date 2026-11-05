@@ -1,5 +1,5 @@
 /**
- * Shared test vectors for foldForSearch / matchesNameSearch (Decision 433, TXT-1):
+ * Shared test vectors for foldForSearch / matchesNameSearch (Decision 434, TXT-1):
  * the 46 cases the round-5 text panel checked across five scripts. Each row is
  * [stored first name, stored surname, what was typed]. Both copies of the fold
  * (this package's, and apps/api's common/search/name-search.ts) are tested

@@ -134,7 +134,7 @@ export class WaiverRenewalSweepProcessor extends WorkerHost {
       const dob = new Map(users.map((u) => [u.id, u.dateOfBirth]));
       for (const s of signed) {
         const born = dob.get(s.studentId);
-        // Decision 429 item 10: both 18th-birthday checks on the School's own date.
+        // Decision 430 item 10: both 18th-birthday checks on the School's own date.
         if (born && !isAdultOn(born, s.signedDate!, school.timezone) && isAdultOn(born, now, school.timezone)) {
           toExpire.set(s.id, { waiverId: s.waiverId, studentId: s.studentId, reason: 'adult' });
         }

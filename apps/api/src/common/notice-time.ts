@@ -1,7 +1,7 @@
 import { DateTime } from 'luxon';
 
 /**
- * A class's date and time as a notice stores it (Decision 433, TXT-3): the
+ * A class's date and time as a notice stores it (Decision 434, TXT-3): the
  * wall time in the class's own zone, in a machine form, "2026-11-12 20:00",
  * which each reader's app formats in their own language
  * (@ultm8/i18n server/translate.ts `formatWhen`). Notices used to carry it in

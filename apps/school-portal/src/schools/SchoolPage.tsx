@@ -475,7 +475,7 @@ function ClosedSchoolNotice({ school }: { school: SchoolResponse }) {
       <p data-testid="school-closed-notice">
         {t('schools.close.closedBody', { date: school.purgeAt ? new Date(school.purgeAt).toLocaleDateString(formatLocale()) : '—' })}
       </p>
-      {/* Decision 432 (PRIV-1): after the 90 days nobody can sign in to it. */}
+      {/* Decision 433 (PRIV-1): after the 90 days nobody can sign in to it. */}
       <p>{t('schools.close.closedExportReminder')}</p>
     </Card>
   );

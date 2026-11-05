@@ -218,7 +218,7 @@ export class ChargesService {
     if (!!dto.discountType !== (dto.discountValue !== null && dto.discountValue !== undefined)) {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });
     }
-    // Decision 430 (MON-3): whole units of the currency (no ¥0.50 charge).
+    // Decision 431 (MON-3): whole units of the currency (no ¥0.50 charge).
     assertWholeMinorUnits(dto.amount, currency);
     if (dto.discountType === 'FIXED') assertWholeMinorUnits(dto.discountValue, currency);
     // MON-11: the cap, with its own code.
@@ -226,7 +226,7 @@ export class ChargesService {
     if (dto.discountType === 'FIXED') assertWithinChargeCap(dto.discountValue);
     // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
     const taxExempt = dto.taxExempt === true;
-    // Decision 430 (MON-6): the School's named lines, or the member's home
+    // Decision 431 (MON-6): the School's named lines, or the member's home
     // Branch's when it overrides them.
     const tax = taxLinesForCharge(await loadEffectiveTax(this.prismaJobs, schoolId, studentId), taxExempt);
     let totals;
@@ -366,7 +366,7 @@ export class ChargesService {
     if (!currency) {
       throw schoolCurrencyRequired();
     }
-    // Decision 430 (MON-3, MON-11): whole units of the currency, within the cap.
+    // Decision 431 (MON-3, MON-11): whole units of the currency, within the cap.
     assertWholeMinorUnits(dto.amount, currency);
     assertWithinChargeCap(dto.amount);
 
@@ -479,7 +479,7 @@ export class ChargesService {
     }
     const payment = await this.prismaJobs.transaction.findFirst({ where: { id: transactionId, schoolId, kind: 'CHARGE_PAYMENT' } });
     if (!payment) throw new NotFoundException({ code: 'CHARGE_PAYMENT_NOT_FOUND', message: 'Payment not found' });
-    // Decision 430 (MON-3): whole units of the payment's currency (a ¥0.49
+    // Decision 431 (MON-3): whole units of the payment's currency (a ¥0.49
     // refund reached Stripe as 0).
     assertWholeMinorUnits(dto.amount, payment.currency);
     assertWithinChargeCap(dto.amount);
@@ -506,7 +506,7 @@ export class ChargesService {
           if (fresh.status !== 'SUCCESSFUL') {
             throw new ConflictException({ code: 'CHARGE_REFUND_NOT_PAID', message: 'Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.' });
           }
-          // Decision 430 (stress test round 5 MON-4): the same repeat guard as
+          // Decision 431 (stress test round 5 MON-4): the same repeat guard as
           // the other money actions (Decision 372 item 3). The same refund of
           // this payment (same amount, same destination) within the minute is
           // a resend or a double tap, whoever sent it (the owner and a co-owner
@@ -579,7 +579,7 @@ export class ChargesService {
     if (!currency) {
       throw schoolCurrencyRequired();
     }
-    // Decision 430 (MON-3, MON-11): whole units of the currency, within the cap.
+    // Decision 431 (MON-3, MON-11): whole units of the currency, within the cap.
     assertWholeMinorUnits(dto.amount, currency);
     assertWithinChargeCap(dto.amount);
     const note = dto.note.trim();

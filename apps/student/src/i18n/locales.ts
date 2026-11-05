@@ -27,7 +27,7 @@ export const LOCALE_LOADERS: Record<string, () => Promise<PartialMessages<Englis
   th: () => withServerText('th', import('./messages/th')),
 };
 
-/** "English (US)" (Decision 433) is a formatting variant: English text, US dates. */
+/** "English (US)" (Decision 434) is a formatting variant: English text, US dates. */
 export function resolveLocale(preferred: string | null | undefined): string {
   return sharedResolveLocale(preferred, [DEFAULT_LOCALE, ...Object.keys(FORMAT_VARIANTS), ...Object.keys(LOCALE_LOADERS)]);
 }

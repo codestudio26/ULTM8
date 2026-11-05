@@ -37,7 +37,7 @@ const on = (date: string, zone: string) => DateTime.fromISO(date, { zone }).star
 const minutes = (f: { startDate: Date; endDate: Date }) => (f.endDate.getTime() - f.startDate.getTime()) / 60_000;
 const local = (d: Date, zone: string) => DateTime.fromJSDate(d).setZone(zone).toFormat('yyyy-LL-dd HH:mm');
 
-describe('occurrenceFields on DST nights (Decision 431 item 4)', () => {
+describe('occurrenceFields on DST nights (Decision 432 item 4)', () => {
   it('Sydney spring forward: a 02:30–03:30 class is not 0 minutes long', () => {
     const f = occurrenceFields(slot('02:30', '03:30'), on('2027-10-03', 'Australia/Sydney'));
     expect(minutes(f)).toBe(60);
@@ -73,7 +73,7 @@ describe('occurrenceFields on DST nights (Decision 431 item 4)', () => {
   });
 });
 
-describe('a weekly class past midnight (Decision 431 item 3)', () => {
+describe('a weekly class past midnight (Decision 432 item 3)', () => {
   it('23:00–00:30 ends the next day and belongs to its start date', () => {
     const f = occurrenceFields(slot('23:00', '00:30'), on('2027-03-05', 'Asia/Dubai'));
     expect(local(f.startDate, 'Asia/Dubai')).toBe('2027-03-05 23:00');
@@ -102,7 +102,7 @@ describe('a weekly class past midnight (Decision 431 item 3)', () => {
   });
 });
 
-describe('assertValidTimes (Decision 332 T8 as amended by Decision 431 item 3)', () => {
+describe('assertValidTimes (Decision 332 T8 as amended by Decision 432 item 3)', () => {
   it('accepts a class that ends after midnight', () => {
     expect(() => assertValidTimes('23:00', '00:30', null, null)).not.toThrow();
     expect(() => assertValidTimes('22:00', '00:30', '23:30', '23:45')).not.toThrow();

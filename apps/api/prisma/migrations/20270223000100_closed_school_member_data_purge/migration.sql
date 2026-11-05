@@ -1,4 +1,4 @@
--- Stress test round 5, PRIV-1 stage 2 (Decision 432): a closed School kept
+-- Stress test round 5, PRIV-1 stage 2 (Decision 433): a closed School kept
 -- for its members' payment history or signed waivers (anonymized in place by
 -- the tenant-lifecycle purge) also loses its members' other data. Stage 1
 -- (code only) ends every role at the School and deletes the member rows the

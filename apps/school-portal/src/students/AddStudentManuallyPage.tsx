@@ -20,7 +20,7 @@ type Form = MemberContacts & {
   guardianFirstName: string;
   guardianSurname: string;
   guardianEmail: string;
-  /** Decision 433 (TXT-8): "Has only one name" — the surname is sent empty. */
+  /** Decision 434 (TXT-8): "Has only one name" — the surname is sent empty. */
   oneName: boolean;
   guardianOneName: boolean;
 };
@@ -84,7 +84,7 @@ export function AddStudentManuallyPage() {
   const child = !!form.dateOfBirth && isChild(form.dateOfBirth);
   const set = (key: Exclude<keyof Form, 'oneName' | 'guardianOneName'>, value: string) => setForm((f) => ({ ...f, [key]: value }));
   const tick = (key: 'oneName' | 'guardianOneName', value: boolean) => setForm((f) => ({ ...f, [key]: value }));
-  /** The surname as sent: empty, with the tick, for someone with only one name (Decision 433, TXT-8). */
+  /** The surname as sent: empty, with the tick, for someone with only one name (Decision 434, TXT-8). */
   const surnameOf = (surname: string, oneName: boolean) => (oneName ? { surname: '', hasOnlyOneName: true as const } : { surname });
   const fullName = (first: string, surname: string, oneName: boolean) => [first.trim(), oneName ? '' : surname.trim()].filter(Boolean).join(' ');
 

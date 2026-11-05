@@ -137,7 +137,7 @@ function cancelledLine(t: ReturnType<typeof useT>, row: TransactionResponse): st
   return row.cancelReason ? t('charges.card.cancelledLine', { date, name, reason: row.cancelReason }) : t('charges.card.cancelledNoReason', { date, name });
 }
 
-/** Decision 430 (MON-8): a membership paid at the desk (not by card in the
+/** Decision 431 (MON-8): a membership paid at the desk (not by card in the
  * app), taken, with something left to give back. */
 function isRefundableDeskSale(row: TransactionResponse): boolean {
   return row.kind === 'MEMBERSHIP' && row.paymentMethod !== 'STRIPE' && row.status === 'SUCCESSFUL' && (row.refundedAmount ?? 0) < row.amount;
@@ -192,7 +192,7 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
   const students = options?.students ?? [];
   const plans = options?.plans ?? [];
   const plan = plans.find((p) => p.id === planId);
-  // Decision 430 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
   const methods = useDeskMethods(schoolId, ['CASH', 'BANK_TRANSFER', 'PIX', 'CARD_TERMINAL'] as const);
 
   async function handleSave() {
@@ -537,7 +537,7 @@ export function TransactionsPage() {
                       </Button>
                     </div>
                   ) : isRefundableDeskSale(row) ? (
-                    // Decision 430 (MON-8): a membership paid at the desk can be refunded by hand.
+                    // Decision 431 (MON-8): a membership paid at the desk can be refunded by hand.
                     <Button variant="secondary" onClick={() => setSettling({ row, action: 'refund' })}>
                       {t('transactions.refund.action')}
                     </Button>

@@ -118,7 +118,7 @@ export class MembershipsService {
     // set, even on a plan given its own currency. A free plan needs none.
     if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) {
       const schoolCurrency = await this.assertSchoolCurrencySet(callerId, schoolId);
-      // Decision 430 (MON-3): no decimals a currency doesn't have (¥999.50).
+      // Decision 431 (MON-3): no decimals a currency doesn't have (¥999.50).
       const planCurrency = this.normalizeCurrency(dto.currency) ?? schoolCurrency;
       assertWholeMinorUnits(price, planCurrency);
       assertWholeMinorUnits(dto.cancellationCharge, planCurrency);
@@ -264,7 +264,7 @@ export class MembershipsService {
     if (setsNewPrice(nextPrice, existing.price) || setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
       await this.assertSchoolCurrencySet(callerId, existing.schoolId);
     }
-    // Decision 430 (MON-3): the amounts this save sets (or moves to another
+    // Decision 431 (MON-3): the amounts this save sets (or moves to another
     // currency) must be whole units of the plan's currency (no ¥999.50).
     const newPrice = setsNewPrice(nextPrice, existing.price) || currencyChanged;
     const newCancellationCharge = dto.cancellationCharge !== undefined || currencyChanged;
@@ -355,7 +355,7 @@ export class MembershipsService {
         productName: title ?? existing.title,
         amount: nextPrice,
         currency: chargeCurrency.toLowerCase(),
-        // Decision 430 (MON-12): the same new price saved twice makes one Stripe Price.
+        // Decision 431 (MON-12): the same new price saved twice makes one Stripe Price.
         planId,
       });
       stripeProductId = created.productId;
@@ -375,7 +375,7 @@ export class MembershipsService {
       stripePriceId = null;
     }
 
-    // Decision 430 (MON-12): a price change saves only if the price is still
+    // Decision 431 (MON-12): a price change saves only if the price is still
     // the one this edit started from, so the same change sent five times at
     // once records (and migrates) once. The others answer 409.
     const priceMoves = priceOrTypeChanged && nextPrice !== existing.price;
@@ -679,7 +679,7 @@ export class MembershipsService {
    * it for Stripe.
    */
   private async resolveChargeCurrency(contextUserId: string, schoolId: string, planCurrency: string | null): Promise<string> {
-    // The shared rule (common/school-currency.ts, Decision 430 MON-5).
+    // The shared rule (common/school-currency.ts, Decision 431 MON-5).
     const currency = await this.prismaApp.withTenantContext(contextUserId, (tx) => resolveChargeCurrency(tx, schoolId, planCurrency));
     if (!currency) {
       throw new BadRequestException("This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.");
@@ -777,7 +777,7 @@ export class MembershipsService {
     const studentId = dto?.studentId ?? callerId;
     const isGuardianAction = dto?.studentId !== undefined && dto.studentId !== callerId;
     if (isGuardianAction) {
-      // Decision 429 item 7: a parent keeps paying for 30 days after 18.
+      // Decision 430 item 7: a parent keeps paying for 30 days after 18.
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'pay' });
     }
     // Decision 236's own follow-up — the saved-payment-method endpoints
@@ -816,7 +816,7 @@ export class MembershipsService {
     // the School can hold its Membership. Staff buying as themselves, and a
     // removed Student, are refused.
     await this.assertActiveStudent(studentId, plan.schoolId);
-    // Decision 429 item 5 (FAM-5; SKILL.md §13, Decision 67): buying for
+    // Decision 430 item 5 (FAM-5; SKILL.md §13, Decision 67): buying for
     // yourself is a first consequential action, so the self-attested-adult
     // check runs here as at waiver signing. A parent buying for their child
     // is the Guardian path above; desk sales don't come through here.
@@ -1316,7 +1316,7 @@ export class MembershipsService {
    * under an advisory lock — see that function's own comment for why.
    */
   async createMembershipAndReturn(studentId: string, plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null }, stripeSubscriptionId: string | null) {
-    // Decision 431 item 8: an N-day pass ends on calendar days in the School's
+    // Decision 432 item 8: an N-day pass ends on calendar days in the School's
     // zone (read only for a plan that expires).
     const schoolZone = plan.expiryDurationDays ? await schoolZoneFor(this.prismaJobs, plan.schoolId) : null;
     try {
@@ -1450,7 +1450,7 @@ export class MembershipsService {
     } catch (err) {
       throw this.toCreationConflict(err);
     }
-    // Decision 346 / Decision 430 (MON-14): the member (and their Guardians)
+    // Decision 346 / Decision 431 (MON-14): the member (and their Guardians)
     // hear that the desk payment was taken, whichever desk path recorded it,
     // once it is committed. notifyCashPayment never throws.
     if (sale.transactionId) {
@@ -1544,7 +1544,7 @@ export class MembershipsService {
       throw new BadRequestException('Only a Friend Pass plan can be given. Use Sell a plan for the others.');
     }
     const schoolZone = await schoolZoneFor(this.prismaJobs, schoolId);
-    // Decision 430 (MON-15): one action may give up to five passes. The repeat
+    // Decision 431 (MON-15): one action may give up to five passes. The repeat
     // guard runs once for the action, so a second guest no longer needs a
     // second click a minute later.
     const quantity = dto.quantity ?? 1;
@@ -1768,7 +1768,7 @@ export class MembershipsService {
       { membershipPlanId: dto.membershipPlanId, paymentMethod: dto.paymentMethod },
       { recordedById: callerId },
     );
-    // recordDeskSale() tells the member (Decision 430, MON-14).
+    // recordDeskSale() tells the member (Decision 431, MON-14).
     return { transactionId, membershipId: membership.id };
   }
 

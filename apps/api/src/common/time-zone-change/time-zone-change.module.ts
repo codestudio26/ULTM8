@@ -7,7 +7,7 @@ export type TimeZoneChange = { callerId: string; schoolId: string; branchId: str
 type Listener = (change: TimeZoneChange) => Promise<void>;
 
 /**
- * Decision 431 item 2: when a Branch's or School's time zone changes, the 4
+ * Decision 432 item 2: when a Branch's or School's time zone changes, the 4
  * weeks of classes already made from the timetable are re-timed to the new
  * zone. BranchesService and SchoolsService (TenantsModule) say that a zone
  * changed; TimetableService (TimetableModule, which imports TenantsModule)

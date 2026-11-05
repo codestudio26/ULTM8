@@ -7,7 +7,7 @@ export const DEFAULT_LOCALE = 'en-GB';
 export const SUPPORTED_LOCALES = ['en-GB', 'pt-BR', 'es', 'ar', 'fr', 'de', 'it', 'nl', 'pl', 'ru', 'tr', 'ja', 'ko', 'zh-CN', 'th'] as const;
 
 /**
- * Formatting variants (Decision 433, TXT-3): a locale with its own date and
+ * Formatting variants (Decision 434, TXT-3): a locale with its own date and
  * number formats but another locale's text. "English (US)" reads the English
  * (UK) text, with US dates ("Nov 12, 2026, 8:00 PM"). A variant has no
  * catalogue of its own.

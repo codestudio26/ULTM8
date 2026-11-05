@@ -59,7 +59,7 @@ export class CreateBranchDto {
   @ApiPropertyOptional({ description: 'IANA timezone name.' })
   @IsOptional()
   @IsString()
-  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 431).' })
+  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 432).' })
   @MaxLength(100)
   timezone?: string;
 

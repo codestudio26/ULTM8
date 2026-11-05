@@ -7,7 +7,7 @@ import { MoneyField } from '../lib/MoneyField';
 import { useRefundDeskSale } from './transactionQueries';
 
 /**
- * Decision 430 (MON-8): "Refund" for a membership paid at the desk (cash,
+ * Decision 431 (MON-8): "Refund" for a membership paid at the desk (cash,
  * bank transfer, Pix or the School's card terminal). The owner records money
  * given back by hand, part or all of what is left, with a note (staff only),
  * and chooses whether the membership ends now. Nothing is sent to a card.

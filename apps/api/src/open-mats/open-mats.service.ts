@@ -226,7 +226,7 @@ export class OpenMatsService {
 
     const school = await this.prismaJobs.school.findUniqueOrThrow({ where: { id: o.schoolId }, select: { name: true, timezone: true } });
     const zone = o.branch?.timezone ?? school.timezone ?? 'UTC';
-    // Decision 433 (TXT-3): machine form, formatted in each reader's language.
+    // Decision 434 (TXT-3): machine form, formatted in each reader's language.
     const when = noticeWallTime(o.startDate, zone);
     const place = o.branch?.name ?? school.name;
     const body = `Open mat${o.styleName ? ` (${o.styleName})` : ''} at ${place} on ${when}, for ${o.minutes} minutes. Book in the app to join.`;

@@ -1,4 +1,4 @@
--- Decision 430 (stress test round 5, MON-8): refunding a membership sold at
+-- Decision 431 (stress test round 5, MON-8): refunding a membership sold at
 -- the desk (cash, Pix, bank transfer or the card terminal). Owner only, part
 -- or full, with a note; the money is given back by hand, so only the records
 -- change. Each refund is a row here; the payment's Transaction.refundedAmount

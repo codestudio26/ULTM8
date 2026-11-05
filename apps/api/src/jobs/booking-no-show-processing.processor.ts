@@ -180,7 +180,7 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
     amount: number,
   ): Promise<void> {
     // The fee is a School (or Branch) amount, so it is in the School's
-    // currency (Decisions 414/416; Decision 430 MON-5), never US dollars by
+    // currency (Decisions 414/416; Decision 431 MON-5), never US dollars by
     // default. No currency set: nothing is charged, and the log says why.
     const school = await this.prismaJobs.school.findUnique({ where: { id: booking.schoolId }, select: { defaultCurrency: true } });
     const currency = chargeCurrency(null, school?.defaultCurrency);

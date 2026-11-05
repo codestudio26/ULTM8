@@ -44,7 +44,7 @@ export function RollCallPage() {
   const rosters = useRosters(cls?.schoolId ?? null);
   const rosterMembers = useRosterStudents(cls?.schoolId ?? null, rosterFilter || null);
   const onRoster = useMemo(() => (rosterFilter ? new Set(rosterMembers.data?.studentIds ?? []) : null), [rosterFilter, rosterMembers.data]);
-  // Times on the class's own clock (Decision 431 item 5).
+  // Times on the class's own clock (Decision 432 item 5).
   const zone = useClassZone(cls);
 
   if (!classId) return null;

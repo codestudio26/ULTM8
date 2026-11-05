@@ -12,7 +12,7 @@ import { typeableFractionDigits } from '@ultm8/i18n';
  * `value`/`onChange` are in hundredths; `null` is an empty field. Text that
  * isn't an amount (letters, a minus sign, more decimals than the currency has)
  * reports `valid: false`, so the form can say so rather than round silently.
- * Decision 430 (MON-3): the decimals follow the currency: none for yen or won
+ * Decision 431 (MON-3): the decimals follow the currency: none for yen or won
  * ("12,000" is twelve thousand yen, its comma a thousands separator), two
  * for most, and two for the three-decimal dinars too (the most that can be
  * stored).

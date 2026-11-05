@@ -45,7 +45,7 @@ export interface TimetableSlotFormValues {
   qrAttendanceWindowMinutes?: number | null;
   refundCutoffHoursBeforeStart?: number | null;
   cancellationCharge?: number | null;
-  /** Decision 431 item 14: who can book, copied onto every generated Class. */
+  /** Decision 432 item 14: who can book, copied onto every generated Class. */
   audience: Audience;
   minAge: number | null;
   maxAge: number | null;
@@ -139,7 +139,7 @@ export function TimetableSlotFormModal({
       return;
     }
     // The same time and break checks the API makes (Decision 332 T8, as
-    // amended by Decision 431 item 3: an end before the start is the next day).
+    // amended by Decision 432 item 3: an end before the start is the next day).
     const timesProblem = slotTimesProblem(form.startTime, form.endTime, form.breakStart || null, form.breakEnd || null);
     if (timesProblem) {
       setError(t(timesProblem));

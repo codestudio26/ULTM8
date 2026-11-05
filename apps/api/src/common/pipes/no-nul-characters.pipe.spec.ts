@@ -4,7 +4,7 @@ import { isNulCharacterError } from '../filters/http-exception.filter';
 
 const NUL = String.fromCharCode(0);
 
-describe('NoNulCharactersPipe (Decision 433, TXT-4)', () => {
+describe('NoNulCharactersPipe (Decision 434, TXT-4)', () => {
   const pipe = new NoNulCharactersPipe();
 
   it('finds NUL in strings, nested objects, arrays and keys', () => {

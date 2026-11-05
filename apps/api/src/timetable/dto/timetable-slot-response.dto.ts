@@ -63,7 +63,7 @@ export class TimetableSlotResponseDto {
   @ApiProperty()
   membershipInclusion!: boolean;
 
-  @ApiProperty({ enum: ['EVERYONE', 'WOMEN', 'MEN'], description: 'Decision 431: who can book.' })
+  @ApiProperty({ enum: ['EVERYONE', 'WOMEN', 'MEN'], description: 'Decision 432: who can book.' })
   audience!: 'EVERYONE' | 'WOMEN' | 'MEN';
 
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Youngest age that can book (whole years on the class date).' })

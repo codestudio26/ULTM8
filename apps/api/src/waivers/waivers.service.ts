@@ -41,7 +41,7 @@ const WAIVER_SETTINGS_SELECT = {
 } as const;
 
 /** Decision 318 item 8: the School lets children of this age sign
- * themselves. Counted on the School's own date (Decision 429 item 10). */
+ * themselves. Counted on the School's own date (Decision 430 item 10). */
 function childOldEnough(dateOfBirth: Date | null, childSignsFromAge: number | null, zone: string | null): boolean {
   return childSignsFromAge != null && dateOfBirth != null && ageOn(dateOfBirth, new Date(), zone) >= childSignsFromAge;
 }
@@ -658,7 +658,7 @@ export class WaiversService {
   async requestSignatureUploadUrl(callerId: string, waiverId: string, dto?: RequestSignatureUploadUrlDto) {
     const studentId = dto?.studentId ?? callerId;
     if (dto?.studentId !== undefined && dto.studentId !== callerId) {
-      // Decision 429 item 7: no signing for a child who is 18.
+      // Decision 430 item 7: no signing for a child who is 18.
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'act' });
     }
     const waiver = await this.findOneWaiver(studentId, waiverId); // 404s if not visible/doesn't exist
@@ -743,7 +743,7 @@ export class WaiversService {
 
     const waiver = await this.findOneWaiver(studentId, waiverId);
     if (isGuardianAction) {
-      // Decision 429 item 7 (FAM-7): "<name> is 18 now and signs for
+      // Decision 430 item 7 (FAM-7): "<name> is 18 now and signs for
       // themselves", counted on the School's own date.
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'act', schoolId: waiver.schoolId });
     }
@@ -879,7 +879,7 @@ export class WaiversService {
    * Decision 318 item 8: an under-18 student signs themselves when the
    * School lets children of their age sign. */
   private async assertSelfAttestedAdult(callerId: string, schoolId: string): Promise<void> {
-    // Shared with MembershipsService.purchase() (Decision 429 item 5).
+    // Shared with MembershipsService.purchase() (Decision 430 item 5).
     const fromAge = await this.childSignsFromAge(callerId, schoolId);
     await this.prismaApp.withTenantContext(callerId, (tx) =>
       assertSelfAttestedAdult(tx, callerId, schoolId, 'waiver', async (dob, zone) => childOldEnough(dob, fromAge, zone)),

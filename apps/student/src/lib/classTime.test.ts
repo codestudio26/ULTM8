@@ -18,7 +18,7 @@ describe('classTime', () => {
     expect(formatTimeInZone('2030-01-08T17:00:00Z', 'America/New_York')).toMatch(/^12:00\sPM$/);
   });
 
-  it("knows a class ends the next day on the zone's clock (Decision 431 item 3)", () => {
+  it("knows a class ends the next day on the zone's clock (Decision 432 item 3)", () => {
     // 23:00–00:30 in New York, which is the same UTC day.
     expect(endsNextDayInZone('2030-01-09T04:00:00Z', '2030-01-09T05:30:00Z', 'America/New_York')).toBe(true);
     // 18:00–19:30 UTC stays on one day; 23:30–00:30 in Tokyo does not.

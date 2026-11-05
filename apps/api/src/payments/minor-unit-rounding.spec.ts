@@ -5,7 +5,7 @@ import { classShare } from '../bookings/cancellation.service';
 import { toStripeAmount } from './stripe-amount';
 
 /**
- * Decision 430 (stress test round 5, MON-1 and MON-2): every sum that divides
+ * Decision 431 (stress test round 5, MON-1 and MON-2): every sum that divides
  * money rounds once to the currency's real smallest unit. In yen that is
  * whole yen (100 hundredths), so the ledger and Stripe always agree.
  */

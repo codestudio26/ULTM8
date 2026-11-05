@@ -1,6 +1,6 @@
 import { changedIdentityFields } from './identity-lock';
 
-/** Decision 429 item 13 (PRIV-2): only a real change to who the person is
+/** Decision 430 item 13 (PRIV-2): only a real change to who the person is
  * counts; sending the same values back (the edit form sends every field) does
  * not. */
 describe('changedIdentityFields', () => {

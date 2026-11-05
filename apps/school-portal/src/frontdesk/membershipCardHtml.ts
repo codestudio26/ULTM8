@@ -35,7 +35,7 @@ export function membershipCardHtml(t: TranslateFn, card: MembershipCard): string
   const name = [card.firstName, card.surname].filter(Boolean).join(' ');
   const logo = safeUrl(card.schoolLogoUrl);
   const photo = safeUrl(card.photoUrl);
-  // Whole letters (Decision 433, TXT-7).
+  // Whole letters (Decision 434, TXT-7).
   const initials = `${firstGrapheme(card.firstName)}${firstGrapheme(card.surname)}`;
   return (
     printHtmlOpening() +

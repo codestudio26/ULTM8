@@ -9,7 +9,7 @@ export const BIRTH_DATE_MESSAGE = 'Enter a real date of birth: not in the future
 /** True when `value` starts with a real calendar date (YYYY-MM-DD) that is
  * not after today and not more than MAX_AGE_YEARS before it. "Today" is the
  * latest calendar date anywhere on Earth (UTC+14), so a baby born today in
- * Kolkata or Kiritimati is never "in the future" (Decision 429 item 10,
+ * Kolkata or Kiritimati is never "in the future" (Decision 430 item 10,
  * IN-4). `@IsDateString` alone accepts 2021-02-30, which Postgres then saves
  * as 2 March, and any future date (Decision 341, S5). */
 export function isBirthDate(value: unknown, today: Date = new Date()): boolean {
@@ -52,7 +52,7 @@ export function localDateIn(now: Date, zone?: string | null): string {
 }
 
 /** Whole years someone born on `dateOfBirth` (a calendar date stored at UTC
- * midnight) is on `now`, counted on the calendar date in `zone` (Decision 429
+ * midnight) is on `now`, counted on the calendar date in `zone` (Decision 430
  * item 10, FAM-10: the School's or Branch's own date, not the UTC one, so a
  * Sydney teen is 18 from midnight in Sydney). A 29 February birthday counts
  * from 1 March in a common year. */

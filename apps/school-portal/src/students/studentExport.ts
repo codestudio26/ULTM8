@@ -45,7 +45,7 @@ export function studentExportTable(t: TranslateFn, rows: StudentExportRow[], wit
     r.belts.map((b) => `${b.style}: ${b.rank}`).join('; '),
     r.lastVisitAt ? r.lastVisitAt.slice(0, 10) : '',
     r.guardians.map((g) => g.name).join('; '),
-    // Decision 429 item 11: no email for a parent this School never dealt with.
+    // Decision 430 item 11: no email for a parent this School never dealt with.
     r.guardians.map((g) => g.email ?? '').join('; '),
   ]);
   return [headers, ...body];

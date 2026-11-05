@@ -12,11 +12,11 @@ import { PaymentsService } from './payments.service';
 import { RefundDeskSaleDto } from './dto/refund-desk-sale.dto';
 
 /** A second identical refund this soon after the first is a double tap (as
- * charge refunds, Decision 372 item 3 and Decision 430 MON-4). */
+ * charge refunds, Decision 372 item 3 and Decision 431 MON-4). */
 const DESK_REPEAT_WINDOW_MS = 60_000;
 
 /**
- * Decision 430 (stress test round 5, MON-8): refunding a membership paid at
+ * Decision 431 (stress test round 5, MON-8): refunding a membership paid at
  * the desk. The School gave the money back by hand (cash, Pix, a bank
  * transfer, or its own card terminal), so only the records change: a
  * DeskSaleRefund row with the owner's note, the payment's refundedAmount
@@ -76,7 +76,7 @@ export class DeskSaleRefundsService {
       }
       const currency = (t.currency ?? '').toUpperCase();
       assertWholeMinorUnits(dto.amount, currency || null);
-      // Decision 430 (MON-4 applied here): the same amount on the same payment
+      // Decision 431 (MON-4 applied here): the same amount on the same payment
       // a moment ago, by anyone, is a double tap.
       const recent = await tx.deskSaleRefund.findFirst({
         where: { transactionId, amount: dto.amount, createdAt: { gt: new Date(Date.now() - DESK_REPEAT_WINDOW_MS) } },

@@ -86,7 +86,7 @@ export class MembershipPlanPriceMigrationProcessor extends WorkerHost {
       where: { membershipPlanId: plan.id, status: 'ACTIVE', stripeSubscriptionId: { not: null } },
       select: { id: true, studentId: true, stripeSubscriptionId: true },
     });
-    // Decision 430 (MON-9): members moved to a higher price are told.
+    // Decision 431 (MON-9): members moved to a higher price are told.
     const increase = priceChange.newPrice > priceChange.oldPrice;
     const currency = priceChange.newCurrency ?? plan.currency ?? plan.school.defaultCurrency;
 

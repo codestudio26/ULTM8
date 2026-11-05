@@ -257,7 +257,7 @@ export class LateFeeProcessor extends WorkerHost {
         if (!currency) return null;
         const fee = lateFeeAmount(setting, overdue.owed, currency);
         if (fee <= 0) return null;
-        // Decision 430 (MON-6): the member's tax lines (their home Branch's when it overrides).
+        // Decision 431 (MON-6): the member's tax lines (their home Branch's when it overrides).
         const tax = taxLinesForCharge(await loadEffectiveTax(tx, school.id, overdue.studentId), false);
         const totals = computeCharge({ unitAmount: fee, ...tax, currency });
         // Invoice number, balance and any credit, as for every charge.

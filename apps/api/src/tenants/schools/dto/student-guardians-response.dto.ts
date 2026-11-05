@@ -18,7 +18,7 @@ export class StudentGuardiansResponseDto {
 
   @ApiProperty({
     enum: ['NOT_NEEDED', 'GIVEN', 'GRANDFATHERED', 'WITHDRAWN', 'PENDING'],
-    description: "Decision 429 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app.",
+    description: "Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app.",
   })
   consent!: 'NOT_NEEDED' | 'GIVEN' | 'GRANDFATHERED' | 'WITHDRAWN' | 'PENDING';
 }

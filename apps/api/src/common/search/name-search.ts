@@ -5,7 +5,7 @@
  * the caller's own, unchanged list query has already authorized — it narrows a
  * result, it never widens one.
  *
- * Decision 433 (TXT-1) extends it to ignore case, accents and spelling
+ * Decision 434 (TXT-1) extends it to ignore case, accents and spelling
  * variants (`foldForSearch`), and to match the name written surname first
  * ("佐藤 翔太") and with or without spaces ("佐藤翔太", "Al Mansouri" for
  * "Al-Mansouri").
@@ -47,7 +47,7 @@ const LETTERS: Readonly<Record<string, string>> = {
 };
 
 /**
- * One fold for every name and text search (Decision 433, TXT-1). Case, Latin
+ * One fold for every name and text search (Decision 434, TXT-1). Case, Latin
  * and Greek accents, Arabic spelling variants and invisible marks are
  * ignored; the marks that make a different name in Hindi, Tamil, Japanese or
  * Thai (virama, nukta, pulli, dakuten, tone marks) are kept, so शर्मा and
@@ -82,7 +82,7 @@ export function foldForSearch(value: string): string {
 export const foldText = foldForSearch;
 
 /**
- * The first whole letter of a name, upper-cased (Decision 433, TXT-7): "ख़ान"
+ * The first whole letter of a name, upper-cased (Decision 434, TXT-7): "ख़ान"
  * gives "ख़", not "ख", and a letter outside the Basic Multilingual Plane is
  * never cut in half. `packages/i18n` (text/firstGrapheme.ts) keeps an
  * identical copy for the apps. Blank in, blank out.

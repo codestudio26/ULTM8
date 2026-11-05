@@ -3,7 +3,7 @@
  * name and surname, compared trimmed, Unicode-normalised (NFC, so "Ọ̀ṣọ́" typed
  * two ways matches) and case-folded, and the same date of birth. Twins have
  * different first names, so they stay two children. Shared by
- * GuardiansService.createMinor (Decision 429 item 4) and the owner's Add a
+ * GuardiansService.createMinor (Decision 430 item 4) and the owner's Add a
  * child / child invites (StudentAccessService, Decision 403).
  */
 export function foldName(value: string): string {

@@ -112,7 +112,7 @@ export class NotificationFanoutProcessor extends WorkerHost {
       return;
     }
 
-    // Decision 429 item 7 (FAM-7): a parent's copies stop on the child's 18th
+    // Decision 430 item 7 (FAM-7): a parent's copies stop on the child's 18th
     // birthday (the School's own date when the notice is from a School).
     const adult = !guardianCopyOf && isAdultOn(user.dateOfBirth, new Date(), schoolId ? await schoolZone(this.prismaJobs, schoolId) : null);
     if (!guardianCopyOf && !adult) {

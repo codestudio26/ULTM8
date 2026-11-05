@@ -142,7 +142,7 @@ export class PaymentsController {
     return this.paymentsService.cancelTransaction(user.sub, id, dto);
   }
 
-  /** Decision 430 (MON-8): the owner records money given back by hand for a
+  /** Decision 431 (MON-8): the owner records money given back by hand for a
    * membership paid at the desk, part or all of it, with a note, and chooses
    * whether the membership ends. */
   @ApiBearerAuth()

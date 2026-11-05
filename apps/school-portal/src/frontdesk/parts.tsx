@@ -56,7 +56,7 @@ export interface DeskClass {
 
 /** "Lucas M." — how the shared tablet names people (Decision 351). */
 export function shortName(p: { firstName: string; surname: string }): string {
-  // The surname's first whole letter (Decision 433, TXT-7); just the first name for someone with one name.
+  // The surname's first whole letter (Decision 434, TXT-7); just the first name for someone with one name.
   const initial = firstGrapheme(p.surname);
   return initial ? `${p.firstName} ${initial}.` : p.firstName;
 }
@@ -818,7 +818,7 @@ function PackUsedUp({
               {t('frontDesk.packUsedUp.paidBy')}
             </label>
             <select id="fd-pack-method" value={method} onChange={(e) => setMethod(e.target.value as DeskPaymentMethod)}>
-              {/* Decision 430 (MON-13): Pix only when the pack is priced in reais. */}
+              {/* Decision 431 (MON-13): Pix only when the pack is priced in reais. */}
               {deskMethodsFor(DESK_PAYMENT_METHODS, { defaultCurrency: offer?.currency }).map((m) => (
                 <option key={m} value={m}>
                   {t(PAYMENT_METHOD_LABELS[m])}

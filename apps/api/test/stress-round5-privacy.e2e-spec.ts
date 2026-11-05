@@ -1,5 +1,5 @@
 /**
- * Stress test round 5, privacy/staff/races panel (Decision 432):
+ * Stress test round 5, privacy/staff/races panel (Decision 433):
  *
  * - PRIV-4: Branch Staff with "Bookings and check-in" off can't read a
  *   class's roll call or waitlist (Decision 425 Q1).
@@ -37,7 +37,7 @@ if (!hasDb) {
 const HOUR = 3_600_000;
 type Role = 'SCHOOL_OWNER_MANAGER' | 'BRANCH_STAFF' | 'INSTRUCTOR' | 'STUDENT';
 
-describeIfDb('Round-5 stress test: privacy, staff and races (Decision 432)', () => {
+describeIfDb('Round-5 stress test: privacy, staff and races (Decision 433)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const appDb = new PrismaClient({ datasourceUrl: DATABASE_URL_APP });

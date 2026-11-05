@@ -1,5 +1,5 @@
 /**
- * Decision 429 — families (stress test round 5, FAM-1 to FAM-12 and PRIV-2).
+ * Decision 430 — families (stress test round 5, FAM-1 to FAM-12 and PRIV-2).
  * A parent who also trains or coaches at the School books as the parent; a
  * Guardian is an adult; a child is added once; a child can't buy on their
  * own; the same child isn't added twice and a second parent is invited
@@ -40,7 +40,7 @@ const PASSCODE = '424242';
 type Grant = { role: string; schoolId: string | null };
 type U = { id: string; email: string; token: string };
 
-describeIfDb('Families (Decision 429)', () => {
+describeIfDb('Families (Decision 430)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

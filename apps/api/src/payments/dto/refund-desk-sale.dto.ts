@@ -5,7 +5,7 @@ import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-va
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
 /**
- * POST /transactions/{id}/refund (Decision 430, MON-8): the owner records
+ * POST /transactions/{id}/refund (Decision 431, MON-8): the owner records
  * money given back by hand for a membership paid at the desk (cash, bank
  * transfer, Pix or the School's own card terminal), part or all of it.
  */

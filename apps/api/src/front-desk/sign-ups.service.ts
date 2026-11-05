@@ -42,7 +42,7 @@ type Coverage = { all: true } | { all: false; branchIds: Set<string> };
  * context may read the table), after the checks here.
  */
 /** A walk-in's tablet contacts, as a new account's contact fields (Decision
- * 433, TXT-10). Only what was typed: a blank stays empty. */
+ * 434, TXT-10). Only what was typed: a blank stays empty. */
 export function walkInContacts(signUp: { phone: string | null; emergencyName: string | null; emergencyPhone: string | null; emergencyRelationship: string | null }) {
   const contacts: { secondaryPhone?: string; emergencyContactName?: string; emergencyContactPhone?: string; emergencyContactRelationship?: string } = {};
   if (signUp.phone?.trim()) contacts.secondaryPhone = signUp.phone.trim();
@@ -77,7 +77,7 @@ export class SignUpsService {
       where: { id: session.schoolId },
       select: { visitorPeriodDays: true, heardFromOptions: true, timezone: true },
     });
-    // Decision 429 item 10: the 18th birthday on the School's own date.
+    // Decision 430 item 10: the 18th birthday on the School's own date.
     if (!isAdultOn(new Date(dto.dateOfBirth), new Date(), school.timezone)) {
       throw new BadRequestException(UNDER_18);
     }
@@ -102,7 +102,7 @@ export class SignUpsService {
       throw new ConflictException({ code: 'SIGN_UP_WAITING', message: 'This email has already signed up here. A member of staff will be in touch.' });
     }
     // Two sends at the same moment both pass the check above; the database's
-    // one-waiting-per-email index (Decision 433, TXT-9) stops the second.
+    // one-waiting-per-email index (Decision 434, TXT-9) stops the second.
     const created = await this.prismaJobs.signUp.create({
       data: {
         schoolId: session.schoolId,
@@ -191,7 +191,7 @@ export class SignUpsService {
         dateOfBirth: signUp.dateOfBirth,
         gender: signUp.gender,
         schoolId,
-        // Decision 433 (TXT-10, replacing Decision 392 item 8): what the walk-in
+        // Decision 434 (TXT-10, replacing Decision 392 item 8): what the walk-in
         // typed on the tablet reaches their new profile: the phone as the second
         // phone (not a login, which needs a verified number) and the emergency
         // contact. Only on this path, a new account, whose fields are all empty;

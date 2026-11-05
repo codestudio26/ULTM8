@@ -99,12 +99,12 @@ const BOOKING_RULE_FIELDS = [
 /** Class fields that reach every upcoming Class whatever the owner chose for booked
  * ones, since they change nobody's booking or money (Decision 332, T6). Capacity has
  * its own rule: it reaches each Class whose booked seats fit (T5). */
-// "Who can book" (Decision 431 item 14) is only checked when someone books, so
+// "Who can book" (Decision 432 item 14) is only checked when someone books, so
 // it reaches booked Classes too without touching their bookings.
 const ALWAYS_FOLLOW: ReadonlySet<OccurrenceField> = new Set<OccurrenceField>(['title', 'description', 'bannerUrl', 'instructorId', 'activities', 'styles', 'audience', 'minAge', 'maxAge']);
 
 /** Checks a slot's times once the edit is applied (Decision 332, T8, as amended
- * by Decision 431 item 3): an end time at or before the start means the next
+ * by Decision 432 item 3): an end time at or before the start means the next
  * day, so 23:00–00:30 is a 90-minute class; the end can't equal the start and
  * the class can't run longer than 12 hours. A break has both ends, in order,
  * inside the class, counted the same way from the class's start. */
@@ -185,7 +185,7 @@ export class TimetableService implements OnModuleInit {
   }
 
   /**
-   * Decision 431 item 2: a Branch's or School's time zone changed, so the
+   * Decision 432 item 2: a Branch's or School's time zone changed, so the
    * upcoming classes already made from the affected live slots move to the
    * slot's wall-clock time in the new zone. Booked ones move too (a zone
    * change is a correction, not a reschedule) and their students and waitlist
@@ -238,7 +238,7 @@ export class TimetableService implements OnModuleInit {
     await this.assertZoneUsable(callerId, { schoolId, branchId: dto.branchId ?? null });
 
     // Decision 414 item 6: no price before the School's currency is set.
-    // Decision 430 (MON-3): and in whole units of that currency.
+    // Decision 431 (MON-3): and in whole units of that currency.
     if (setsNewPrice(dto.cancellationCharge)) assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId)));
 
     const slotId = randomUUID();
@@ -264,7 +264,7 @@ export class TimetableService implements OnModuleInit {
           bannerUrl: dto.bannerUrl,
           termsWaiverRequired: dto.termsWaiverRequired ?? false,
           membershipInclusion: dto.membershipInclusion ?? false,
-          // Decision 431 item 14: who can book, copied onto its Classes.
+          // Decision 432 item 14: who can book, copied onto its Classes.
           audience: dto.audience,
           minAge: dto.minAge,
           maxAge: dto.maxAge,
@@ -341,7 +341,7 @@ export class TimetableService implements OnModuleInit {
     ]);
     // Decision 414 item 6: no price before the School's currency is set.
     if (setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
-      // Decision 430 (MON-3): and in whole units of that currency.
+      // Decision 431 (MON-3): and in whole units of that currency.
       assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId)));
     }
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
@@ -769,7 +769,7 @@ export class TimetableService implements OnModuleInit {
   }
 
   /** A closure's dates and reason, checked the same way for a create and a
-   * change (Decision 353 Q8, Decision 431 item 11). */
+   * change (Decision 353 Q8, Decision 432 item 11). */
   private checkClosureFields(startDate: string, endDate: string, rawReason: string) {
     const start = DateTime.fromISO(startDate, { zone: 'UTC' });
     const end = DateTime.fromISO(endDate, { zone: 'UTC' });
@@ -841,7 +841,7 @@ export class TimetableService implements OnModuleInit {
   }
 
   /**
-   * PATCH /closures/:id (Decision 431 item 11) — owner only. Changes a
+   * PATCH /closures/:id (Decision 432 item 11) — owner only. Changes a
    * closure's dates or reason, e.g. an Eid closure after the moon sighting.
    * - Days it newly covers: their classes are cancelled as on create.
    * - Days it no longer covers (and no other closure does): the timetable
@@ -931,7 +931,7 @@ export class TimetableService implements OnModuleInit {
 
   /** DELETE /closures/:id — owner only. Classes it cancelled stay cancelled
    * (their students were told; the portal says so before deleting, Decision
-   * 431 item 11); slots' dates it skipped get their classes now. */
+   * 432 item 11); slots' dates it skipped get their classes now. */
   async deleteClosure(callerId: string, closureId: string): Promise<void> {
     const closure = await this.prismaApp.withTenantContext(callerId, (tx) => tx.closure.findUnique({ where: { id: closureId } }));
     if (!closure) throw new NotFoundException('Closure not found');
@@ -960,7 +960,7 @@ export class TimetableService implements OnModuleInit {
   }
 
   /** Refuses a slot whose classes would run on a time zone Luxon doesn't know,
-   * before anything is saved (Decision 431 item 1): saving first left a slot
+   * before anything is saved (Decision 432 item 1): saving first left a slot
    * with no classes, and a retry made a second one. */
   private async assertZoneUsable(callerId: string, place: Pick<TimetableSlot, 'schoolId' | 'branchId'>): Promise<void> {
     const zone = await this.zoneOf(callerId, place);

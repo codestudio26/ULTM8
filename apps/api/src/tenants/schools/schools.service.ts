@@ -326,7 +326,7 @@ export class SchoolsService {
       } catch (err) {
         if (!(err instanceof ForbiddenException)) throw err;
         try {
-          // Decision 429 item 7: a parent doesn't enrol a child who is 18.
+          // Decision 430 item 7: a parent doesn't enrol a child who is 18.
           await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'act', schoolId, branchId: dto?.branchId });
         } catch (guardianErr) {
           // Staff here who aren't the owner (and aren't this child's
@@ -345,7 +345,7 @@ export class SchoolsService {
       }
     }
 
-    // Decision 429 item 9 (FAM-9): after a parent withdrew BASELINE consent,
+    // Decision 430 item 9 (FAM-9): after a parent withdrew BASELINE consent,
     // the child is enrolled again only once a parent gives fresh consent.
     if (isOnBehalfOf) await assertNotConsentWithdrawn(this.prismaJobs, studentId);
 
@@ -994,7 +994,7 @@ export class SchoolsService {
     await this.assertTaxLines(callerId, schoolId, dto);
     await assertCodeDigitsAllowed(this.prismaJobs, schoolId, dto.checkInCodeDigits);
     const nextGradingDate = parseNextGradingDate(dto.nextGradingDate);
-    // Decision 431 item 2: the zone before the change, to re-time classes after.
+    // Decision 432 item 2: the zone before the change, to re-time classes after.
     const zoneBefore = dto.timezone !== undefined
       ? (await this.prismaApp.withTenantContext(callerId, (tx) => tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } })))?.timezone ?? null
       : undefined;
@@ -1064,7 +1064,7 @@ export class SchoolsService {
           taxRateBasisPoints: dto.taxRateBasisPoints,
           taxInclusive: dto.taxInclusive,
           taxId: dto.taxId,
-          // Decision 430 (MON-6): named tax lines.
+          // Decision 431 (MON-6): named tax lines.
           taxName: dto.taxName,
           tax2Name: dto.tax2Name,
           tax2RateBasisPoints: dto.tax2RateBasisPoints,
@@ -1083,7 +1083,7 @@ export class SchoolsService {
         },
       }),
     );
-    // Decision 431 item 2: a new School zone re-times the upcoming classes of
+    // Decision 432 item 2: a new School zone re-times the upcoming classes of
     // School-wide slots and of Branches with no zone of their own.
     if (zoneBefore !== undefined && (dto.timezone || null) !== (zoneBefore || null)) {
       await this.timeZoneChange.changed({ callerId, schoolId, branchId: null });
@@ -1103,7 +1103,7 @@ export class SchoolsService {
   /** Decision 414 item 6: the School's fees (no-show, freeze) are prices, so a
    * new non-zero amount needs the School's currency, set before or in the same
    * save. Unchanged amounts saved before the rule are left alone. */
-  /** Decision 430 (MON-6): the two tax lines as they will be after this save. */
+  /** Decision 431 (MON-6): the two tax lines as they will be after this save. */
   private async assertTaxLines(callerId: string, schoolId: string, dto: UpdateSchoolDto) {
     if (dto.taxRateBasisPoints === undefined && dto.tax2RateBasisPoints === undefined && dto.tax2Name === undefined) return;
     const current = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -1123,7 +1123,7 @@ export class SchoolsService {
     );
     if (!setsNewPrice(dto.noShowFee, current?.noShowFee) && !setsNewPrice(dto.freezeFeeAmount, current?.freezeFeeAmount)) return;
     const currency = requireSchoolCurrency(dto.defaultCurrency !== undefined ? dto.defaultCurrency : current?.defaultCurrency);
-    // Decision 430 (MON-3): whole units of the School's currency (no ¥0.50 fee).
+    // Decision 431 (MON-3): whole units of the School's currency (no ¥0.50 fee).
     if (setsNewPrice(dto.noShowFee, current?.noShowFee)) assertWholeMinorUnits(dto.noShowFee, currency);
     if (setsNewPrice(dto.freezeFeeAmount, current?.freezeFeeAmount)) assertWholeMinorUnits(dto.freezeFeeAmount, currency);
   }
@@ -1233,7 +1233,7 @@ export class SchoolsService {
     // Decision 315 item 4: the join date, checked before anything is saved.
     const { joinedOn, ...profile } = dto;
     if (joinedOn !== undefined) await assertJoinDateAllowed(this.prismaJobs, schoolId, joinedOn);
-    // Decision 429 item 13 (PRIV-2): name, birth date and gender are locked
+    // Decision 430 item 13 (PRIV-2): name, birth date and gender are locked
     // for staff once they're shared with another School or the person's (or
     // their parent's) own login.
     if (IDENTITY_FIELDS.some((f) => dto[f] !== undefined)) {
@@ -1276,7 +1276,7 @@ export class SchoolsService {
     const names = await resolveUserNames(this.prismaAuth, links.map((l) => l.guardianId));
     return {
       items: links.map((l) => ({ id: l.guardianId, firstName: names.get(l.guardianId)?.firstName ?? '', surname: names.get(l.guardianId)?.surname ?? '' })),
-      // Decision 429 item 9: staff see "consent pending" (no booking or check-in).
+      // Decision 430 item 9: staff see "consent pending" (no booking or check-in).
       consent: await baselineConsentState(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, schoolId)),
     };
   }

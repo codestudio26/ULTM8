@@ -27,7 +27,7 @@ const RECENT = 10;
 // "Today" on the tablet's clock is at most a day and a half long, and near now.
 const MAX_WINDOW_MS = 36 * 3_600_000;
 
-/** A surname's first whole letter (Decision 433, TXT-7); blank for someone with only one name. */
+/** A surname's first whole letter (Decision 434, TXT-7); blank for someone with only one name. */
 function initial(surname: string): string {
   return firstGrapheme(surname);
 }
@@ -318,7 +318,7 @@ export class FrontDeskKioskService {
 }
 
 /** A name compared without case, accents, spelling variants, punctuation or
- * extra spaces: the one search fold (Decision 433, TXT-1). It used to strip
+ * extra spaces: the one search fold (Decision 434, TXT-1). It used to strip
  * every combining mark, which merged different Hindi and Tamil names. */
 function normalizeName(name: string): string {
   // Spaces left out too, so "佐藤翔太" is "佐藤 翔太" (both name parts still have to match).

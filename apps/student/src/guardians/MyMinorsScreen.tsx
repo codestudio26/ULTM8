@@ -20,7 +20,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'MyMinors'>;
  * design pass this screen is standing in for, not built here. */
 const EMPTY_FORM = { firstName: '', surname: '', dateOfBirth: '', consent: false };
 
-/** Decision 429 item 3: a real date, not in the future, under 18 — checked
+/** Decision 430 item 3: a real date, not in the future, under 18 — checked
  * here as well as by the API, so the parent sees why at once. */
 export function birthDateProblem(value: string, today = new Date()): TranslationKey | null {
   const text = value.trim();
@@ -83,12 +83,12 @@ export function MyMinorsScreen({ navigation }: Props) {
         firstName: form.firstName.trim(),
         surname: form.surname.trim(),
         dateOfBirth: form.dateOfBirth.trim(),
-        // Decision 429 item 9: the consent ticked here is recorded with the child.
+        // Decision 430 item 9: the consent ticked here is recorded with the child.
         ...(form.consent ? { consentPolicyVersion: CURRENT_POLICY_VERSION } : {}),
       },
       {
         onSuccess: (res) => {
-          // Decision 429 item 4: the same child sent twice is added once.
+          // Decision 430 item 4: the same child sent twice is added once.
           setAdded(res.alreadyAdded ? t('guardians.myMinors.alreadyAdded', { name: res.firstName }) : null);
           setAdding(false);
           setForm(EMPTY_FORM);
@@ -116,7 +116,7 @@ export function MyMinorsScreen({ navigation }: Props) {
           <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>
             {t('guardians.myMinors.born', { date: formatDateOnly(minor.dateOfBirth) })}
           </Text>
-          {/* Decision 429 item 7: at 18 they sign for themselves; the parent keeps reading and paying for 30 days. */}
+          {/* Decision 430 item 7: at 18 they sign for themselves; the parent keeps reading and paying for 30 days. */}
           {minor.isAdult ? (
             <Text style={{ color: '#8A4B00', marginTop: 6, fontSize: 13 }}>
               {minor.parentAccessEndsOn
@@ -124,7 +124,7 @@ export function MyMinorsScreen({ navigation }: Props) {
                 : t('guardians.myMinors.adult', { name: minor.firstName })}
             </Text>
           ) : null}
-          {/* Decision 429 item 9: no booking or check-in until a parent gives consent. */}
+          {/* Decision 430 item 9: no booking or check-in until a parent gives consent. */}
           {!minor.isAdult && (minor.consent === 'PENDING' || minor.consent === 'WITHDRAWN') ? (
             <Text style={{ color: '#8A4B00', marginTop: 6, fontSize: 13 }}>
               {t(minor.consent === 'PENDING' ? 'guardians.myMinors.consentPending' : 'guardians.myMinors.consentWithdrawn', { name: minor.firstName })}

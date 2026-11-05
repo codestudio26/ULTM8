@@ -494,7 +494,7 @@ function ChargesBody({
                   c.taxExempt
                     ? t('charges.card.noTax')
                     : c.taxLines && c.taxLines.length > 0
-                      ? // Decision 430 (MON-6): each named line with its amount.
+                      ? // Decision 431 (MON-6): each named line with its amount.
                         c.taxLines
                           .map((l) => t('charges.card.taxLine', { name: l.name || t('charges.card.taxLineUnnamed'), rate: rateText(l.rateBasisPoints), amount: formatMoney(l.amount, c.currency) }))
                           .join(' · ')
@@ -641,7 +641,7 @@ function CreateChargeModal({
   const t = useT();
   const create = useCreateCharge(schoolId, studentId);
   const { currency, taxInclusive } = data.settings;
-  // Decision 430 (MON-6): this member's lines (their home Branch's when it
+  // Decision 431 (MON-6): this member's lines (their home Branch's when it
   // has its own), added up; the School's single rate if none came back.
   const rate = data.settings.taxLines ? data.settings.taxLines.reduce((n, l) => n + l.rateBasisPoints, 0) : data.settings.taxRateBasisPoints;
   const [description, setDescription] = useState('');
@@ -793,7 +793,7 @@ function RecordPaymentModal({
 }) {
   const t = useT();
   const record = useRecordChargePayment(schoolId, studentId);
-  // Decision 430 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
   const methods = useDeskMethods(schoolId, CHARGE_PAYMENT_METHODS);
   const open = data.charges.filter((c) => c.status === 'OPEN' || c.status === 'PART_PAID');
   const [toward, setToward] = useState(chargeId ?? '');

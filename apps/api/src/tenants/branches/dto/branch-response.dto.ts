@@ -69,7 +69,7 @@ export class BranchResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true })
   noShowFee!: number | null;
 
-  @ApiProperty({ description: "Decision 430 (MON-6): this Branch's own tax lines replace the School's." })
+  @ApiProperty({ description: "Decision 431 (MON-6): this Branch's own tax lines replace the School's." })
   taxOverride!: boolean;
 
   @ApiPropertyOptional({ type: String, nullable: true })

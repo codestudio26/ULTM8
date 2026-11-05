@@ -43,7 +43,7 @@ export const timetable = {
   waitlisted: 'Added to the waitlist for {title} on {date}, at position {position}.',
   wholeSchool: 'Whole School',
   nothingScheduled: 'Nothing scheduled.',
-  // Decision 431 item 3: a class past midnight.
+  // Decision 432 item 3: a class past midnight.
   endsNextDayShort: 'next day',
   occurrence: {
     actionsAria: 'Actions for {title} on {date}',

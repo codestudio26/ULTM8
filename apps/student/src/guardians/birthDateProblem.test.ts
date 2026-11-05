@@ -5,7 +5,7 @@ jest.mock('../api', () => ({ apiClient: {} }));
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { birthDateProblem } = require('./MyMinorsScreen') as typeof import('./MyMinorsScreen');
 
-/** Decision 429 item 3: the app checks a child's date of birth before sending it. */
+/** Decision 430 item 3: the app checks a child's date of birth before sending it. */
 describe('birthDateProblem', () => {
   const today = new Date(2026, 10, 5);
 

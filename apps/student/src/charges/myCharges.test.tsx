@@ -153,7 +153,7 @@ describe('MyChargesScreen (Decisions 303, 338)', () => {
     expect(getAllByText('£120.00').length).toBeGreaterThanOrEqual(2);
   });
 
-  it('shows each named tax line with its registration number (Decision 430, MON-6)', async () => {
+  it('shows each named tax line with its registration number (Decision 431, MON-6)', async () => {
     const taxLines = [
       { name: 'GST', rateBasisPoints: 500, taxId: '123456789RT0001', amount: 500 },
       { name: 'PST', rateBasisPoints: 700, taxId: null, amount: 700 },

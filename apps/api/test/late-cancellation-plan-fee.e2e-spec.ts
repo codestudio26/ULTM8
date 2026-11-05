@@ -133,7 +133,7 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
     expect(tx).toMatchObject({ kind: 'LATE_CANCEL_FEE', amount: 700, currency: 'GBP', status: 'SUCCESSFUL' });
   });
 
-  // Decision 430 (MON-5): a plan with no currency charges in the School's,
+  // Decision 431 (MON-5): a plan with no currency charges in the School's,
   // never US dollars; with neither, nothing is charged.
   it("charges a plan without a currency in the School's currency, not USD", async () => {
     await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: 'CAD' } });

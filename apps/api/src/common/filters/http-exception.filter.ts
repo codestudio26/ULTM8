@@ -74,7 +74,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     // exception.message through: Prisma embeds query snippets, file paths, and
     // connection details directly in it.
     //
-    // Decision 433 (TXT-4): Postgres refusing a NUL character in text (SQLSTATE
+    // Decision 434 (TXT-4): Postgres refusing a NUL character in text (SQLSTATE
     // 22021) is the caller's input, not a server fault. NoNulCharactersPipe
     // refuses it up front; this is the backstop for text that reaches a write
     // another way (a job, a value built from stored text).

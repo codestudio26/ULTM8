@@ -4,7 +4,7 @@ import { formatLocale } from '../i18n/format';
 /**
  * The opening of a page the portal writes for printing (the student list, a
  * membership card): `<html>` carries the reader's language and direction, so
- * an Arabic printout reads right to left (Decision 433, TXT-5). Pair it with
+ * an Arabic printout reads right to left (Decision 434, TXT-5). Pair it with
  * `text-align: start` in the page's own styles.
  */
 export function printHtmlOpening(locale: string = formatLocale() ?? DEFAULT_LOCALE): string {

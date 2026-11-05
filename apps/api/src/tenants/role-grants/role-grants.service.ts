@@ -47,7 +47,7 @@ import { RolesChangedService } from '../../common/prisma/roles-changed.service';
 import { recordStaffActivity } from '../staff-activity/staff-activity';
 import { deleteMedicalInfoOfLeavers } from '../../medical-info/medical-info-erasure';
 
-/** Decision 429 item 12 (FAM-12): one email is one person's login (Decision
+/** Decision 430 item 12 (FAM-12): one email is one person's login (Decision
  * 295), so a family that shares one is told how to carry on. */
 const EMAIL_IN_USE = {
   code: 'EMAIL_IN_USE',
@@ -86,7 +86,7 @@ const ROLE_LABELS: Record<string, string> = {
  */
 const REVOCABLE_ROLES = ['INSTRUCTOR', 'BRANCH_STAFF', 'STUDENT'] as const;
 
-/** Roles a person may give up themselves (Decision 432 item 6, amending
+/** Roles a person may give up themselves (Decision 433 item 6, amending
  * Decision 423 item 10): a co-owner, coach or Branch Staff role. The main
  * owner's role is never one of them (Decision 370). */
 const SELF_REMOVABLE_ROLES: readonly string[] = ['SCHOOL_OWNER_MANAGER', 'INSTRUCTOR', 'BRANCH_STAFF'];
@@ -471,7 +471,7 @@ export class RoleGrantsService {
     const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    // Decision 429 item 10: the 18th birthday on the School's (or chosen Branch's) own date.
+    // Decision 430 item 10: the 18th birthday on the School's (or chosen Branch's) own date.
     if (!isAdultOn(new Date(dto.dateOfBirth), new Date(), await schoolZone(this.prismaJobs, schoolId, dto.branchId))) {
       throw new BadRequestException("Add manually is for adults (18 or over). A child joins through their Guardian's app.");
     }
@@ -719,7 +719,7 @@ export class RoleGrantsService {
       throw new NotFoundException('RoleGrant not found');
     }
     if (target.schoolId && target.role !== 'STUDENT') {
-      // Decision 432 item 6: anyone may give up their own staff role.
+      // Decision 433 item 6: anyone may give up their own staff role.
       if (targetUserId === callerId && SELF_REMOVABLE_ROLES.includes(target.role)) return this.stepDown(callerId, roleGrantId);
       await this.tenantAuth.assertSchoolMainOwnerOrNotFound(callerId, target.schoolId, 'RoleGrant not found');
     }
@@ -822,7 +822,7 @@ export class RoleGrantsService {
   }
 
   /**
-   * Decision 432 item 6 (stress test round 5, PRIV-6; amends Decision 423
+   * Decision 433 item 6 (stress test round 5, PRIV-6; amends Decision 423
    * item 10): a co-owner, coach or Branch Staff member gives up their own
    * role at a School, through DELETE /users/{their id}/role-grants/{id}. It
    * is their own access, not the account's, so the main owner isn't needed;
@@ -1465,7 +1465,7 @@ export class RoleGrantsService {
     const covered = (branchId: string | null) => others.some((g) => g.branchId === null || branchId === null || g.branchId === branchId);
     if (classes.some((c) => !covered(c.branchId)) || slots.some((t) => !covered(t.branchId))) {
       if (opts.self) {
-        // Decision 432 item 6: only the owner can hand classes over.
+        // Decision 433 item 6: only the owner can hand classes over.
         throw new ConflictException('You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.');
       }
       throw new ConflictException(

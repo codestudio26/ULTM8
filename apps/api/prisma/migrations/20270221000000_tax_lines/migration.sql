@@ -1,4 +1,4 @@
--- Decision 430 (stress test round 5, MON-6 steps 1 and 2): named tax lines,
+-- Decision 431 (stress test round 5, MON-6 steps 1 and 2): named tax lines,
 -- a Branch override, and the tax included in membership receipts.
 --
 -- 1. Up to two named tax lines per School (Canada's GST + PST/QST; Japan's

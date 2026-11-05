@@ -1,4 +1,4 @@
--- Decision 431 item 14 (stress test round 5, AE-6): an optional "Who can book"
+-- Decision 432 item 14 (stress test round 5, AE-6): an optional "Who can book"
 -- on a one-off Class and on a weekly TimetableSlot (copied onto the Classes it
 -- makes): everyone, women only or men only, plus an optional age range in whole
 -- years. Enforced at booking, waitlist join and claim, Kid Mode and the front

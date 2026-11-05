@@ -50,7 +50,7 @@ export class GuardiansController {
     return this.guardiansService.grantConsent(user.sub, studentId, dto);
   }
 
-  /** Decision 429 item 9: every parent's consent for this child, the other
+  /** Decision 430 item 9: every parent's consent for this child, the other
    * parents' read-only. */
   @ApiOkResponse({ type: ChildConsentResponseDto })
   @Get('minors/:studentId/consent')
@@ -58,7 +58,7 @@ export class GuardiansController {
     return this.guardiansService.findChildConsent(user.sub, studentId);
   }
 
-  /** Decision 429 item 8: "Remove me" — this parent's own link to the child
+  /** Decision 430 item 8: "Remove me" — this parent's own link to the child
    * ends (never the last parent of an enrolled child). */
   @HttpCode(204)
   @Delete('minors/:studentId')

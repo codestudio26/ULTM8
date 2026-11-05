@@ -277,7 +277,7 @@ export class CancellationService {
   /**
    * One class's share of a Class Pack's price: the cumulative entitlement after
    * this refund minus the cumulative entitlement before it, each rounded once to
-   * the currency's real minor unit (domain rules §7; Decision 430 MON-1: whole
+   * the currency's real minor unit (domain rules §7; Decision 431 MON-1: whole
    * yen for JPY, so a ¥1,000 3-pack refunds ¥333 + ¥333 + ¥334, never ¥333.33
    * that Stripe then rounds again). Capped at what's left unrefunded, itself
    * rounded down to the step (a fraction kept from before MON-3 can't be sent).
@@ -516,7 +516,7 @@ export class CancellationService {
 
     const branch = cls.branchId ? await this.prismaJobs.branch.findUnique({ where: { id: cls.branchId }, select: { timezone: true } }) : null;
     // The class's own zone (its Branch's, else the School's), in machine form:
-    // each reader's app formats it in their language (Decision 433, TXT-3).
+    // each reader's app formats it in their language (Decision 434, TXT-3).
     const when = noticeWallTime(cls.startDate, branch?.timezone ?? school.timezone ?? 'UTC');
     // The portal translates these exact shapes (i18n/server/translate.ts) — keep them in step.
     const body = `${cls.title} on ${when} has been cancelled by the school.${trimmedReason ? ` Reason: ${trimmedReason}` : ''}`;

@@ -1,5 +1,5 @@
 /**
- * One fold for every name and text search (Decision 433, TXT-1; extends
+ * One fold for every name and text search (Decision 434, TXT-1; extends
  * Decision 278): case, Latin and Greek accents, Arabic spelling variants and
  * invisible marks are ignored, while the marks that make a different name in
  * Hindi, Tamil, Japanese or Thai (virama, nukta, pulli, dakuten, tone marks)
@@ -48,7 +48,7 @@ export function foldForSearch(value: string): string {
 }
 
 /**
- * A person's name search (Decision 278 as extended by Decision 433): the
+ * A person's name search (Decision 278 as extended by Decision 434): the
  * folded query is part of the first name, the surname, "first surname" or
  * "surname first" (family name first, as Japanese is written), with or
  * without the spaces. A blank query matches everyone.

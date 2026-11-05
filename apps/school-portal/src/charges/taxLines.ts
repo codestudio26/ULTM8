@@ -1,4 +1,4 @@
-/** Decision 430 (MON-6 step 2): the pure parts of the tax line fields. */
+/** Decision 431 (MON-6 step 2): the pure parts of the tax line fields. */
 
 /** "20" / "8.10" / "0" → 2000 / 810 / 0; null when it isn't a rate from 0 to 100 with at most 2 decimals. */
 export function parseRate(text: string): number | null {
@@ -14,7 +14,7 @@ export function rateText(basisPoints: number): string {
 }
 
 /**
- * Decision 430 (MON-6 step 2): one named tax line as an owner types it: its
+ * Decision 431 (MON-6 step 2): one named tax line as an owner types it: its
  * name (GST, PST, VAT…), its rate in percent and its registration number,
  * shown on invoices and receipts. Used for the School's two lines and a
  * Branch's own two.

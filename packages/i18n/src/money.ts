@@ -1,6 +1,6 @@
 /**
  * Decimals per currency, shared by the School Portal, the student app and the
- * API's translated notices (Decision 430: stress test round 5 MON-3, MON-10,
+ * API's translated notices (Decision 431: stress test round 5 MON-3, MON-10,
  * TXT-6). Amounts are stored in hundredths for every currency; this says how
  * many of those decimals are real.
  *
@@ -25,7 +25,7 @@ export function currencyFractionDigits(currency: string | null | undefined): num
 /**
  * The decimals to show for an amount kept in hundredths (TXT-6): at least the
  * currency's own, at most max(own, 2). So ¥12,345 (not ¥12,345.00), US$12.50,
- * KWD 25.000; and a fraction of a yen kept from before Decision 430 still
+ * KWD 25.000; and a fraction of a yen kept from before Decision 431 still
  * shows honestly as ¥1,332.72, never rounded away. Pass these to
  * Intl.NumberFormat's minimumFractionDigits / maximumFractionDigits.
  */

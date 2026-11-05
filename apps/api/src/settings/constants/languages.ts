@@ -16,7 +16,7 @@ import { CodeNameOption } from './code-name-option';
  * Decision 273 (20 Oct 2026): the product owner widened the list to 15
  * languages — the original 4 plus the 11 below them.
  *
- * Decision 433 (TXT-3): "English (US)" is a formatting variant, not a 16th
+ * Decision 434 (TXT-3): "English (US)" is a formatting variant, not a 16th
  * language: the apps show the English (UK) text with US dates and numbers.
  */
 export const LANGUAGES: readonly CodeNameOption[] = [

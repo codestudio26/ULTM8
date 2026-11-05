@@ -293,7 +293,7 @@ export function ClassDetailPage() {
   const [adding, setAdding] = useState(false);
   const [cancelling, setCancelling] = useState<BookingResponse | null>(null);
   const [done, setDone] = useState<string | null>(null);
-  // Times on the class's own clock, not the browser's (Decision 431 item 5).
+  // Times on the class's own clock, not the browser's (Decision 432 item 5).
   const zone = useClassZone(cls);
   const at = (iso: string) => formatInZone(iso, zone, formatLocale());
 
@@ -340,7 +340,7 @@ export function ClassDetailPage() {
                     end: formatTimeInZone(cls.breakEndAt, zone, formatLocale()),
                   })}`
                 : '') +
-              // Decision 431 item 14: who can book.
+              // Decision 432 item 14: who can book.
               (whoCanBookLabel(cls, t) ? ` · ${whoCanBookLabel(cls, t)}` : '')
             : undefined
         }

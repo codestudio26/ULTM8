@@ -57,13 +57,13 @@ export class StudentAccessService {
     const school = await this.schools.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    // Decision 429 item 10: under 18 on the School's (or chosen Branch's) own date.
+    // Decision 430 item 10: under 18 on the School's (or chosen Branch's) own date.
     const zone = await schoolZone(this.prismaJobs, schoolId, dto.branchId);
     if (isAdultOn(new Date(dto.child.dateOfBirth), new Date(), zone)) {
       throw new BadRequestException('This is for children (under 18). Add an adult with their own email instead.');
     }
     await this.roleGrants.assertHomeBranchChoice(callerId, schoolId, dto.branchId);
-    // Decision 429 item 6 (FAM-6): a child already at this School with a
+    // Decision 430 item 6 (FAM-6): a child already at this School with a
     // parent is not added a second time (a second copy splits their bookings,
     // waivers and medical note); the owner adds the other parent to the child
     // already here instead.
@@ -206,7 +206,7 @@ export class StudentAccessService {
   async acceptChildInvite(callerId: string, id: string, dto: AcceptChildInviteDto = {}) {
     const invite = await this.loadMyInvite(callerId, id);
     const consentVersion = dto.consentPolicyVersion?.trim() || null;
-    // Decision 429 item 6: "Add another Guardian" names the child already here.
+    // Decision 430 item 6: "Add another Guardian" names the child already here.
     if (invite.studentId) return this.acceptAddGuardianInvite(callerId, invite, consentVersion);
     await this.claim(invite, { status: 'ACCEPTED', respondedAt: new Date() });
 
@@ -223,7 +223,7 @@ export class StudentAccessService {
           surname: invite.childSurname,
           dateOfBirth: invite.childDateOfBirth.toISOString().slice(0, 10),
           gender: (invite.childGender as 'FEMALE' | 'MALE' | null) ?? null,
-          // Decision 429 item 9: the consent ticked when accepting.
+          // Decision 430 item 9: the consent ticked when accepting.
           consentPolicyVersion: consentVersion ?? undefined,
         }));
         createdStudentId = studentId;
@@ -258,12 +258,12 @@ export class StudentAccessService {
   }
 
   // ---------------------------------------------------------------------------
-  // Two parents of one child (Decision 429 items 6 and 8)
+  // Two parents of one child (Decision 430 items 6 and 8)
   // ---------------------------------------------------------------------------
 
   /**
    * POST /schools/{schoolId}/students/{studentId}/guardians — "Add another
-   * Guardian" (Decision 429 item 6, FAM-6). The owner names another adult
+   * Guardian" (Decision 430 item 6, FAM-6). The owner names another adult
    * for a child already here. An existing account gets an invite to accept
    * in the app; a new email gets an account with a temporary passcode and the
    * same invite. Accepting links them to this child (ChildInvite.studentId),
@@ -337,7 +337,7 @@ export class StudentAccessService {
       action: 'GUARDIAN_INVITED',
       details: { studentId, studentName: childName, email },
     });
-    // The child's current parents are told (Decision 429 item 6).
+    // The child's current parents are told (Decision 430 item 6).
     await this.guardians.tellGuardians(studentId, 'Another parent or guardian invited', `${school.name} invited ${`${dto.firstName} ${dto.surname}`.trim()} to be a parent or guardian of ${child.firstName} on ULTM8.`, `guardian-invite-${invite.id}`, schoolId);
 
     const lines = [
@@ -362,7 +362,7 @@ export class StudentAccessService {
 
   /**
    * DELETE /schools/{schoolId}/students/{studentId}/guardians/{guardianId} —
-   * "Remove Guardian" (Decision 429 item 8, FAM-8). Owner only, for a student
+   * "Remove Guardian" (Decision 430 item 8, FAM-8). Owner only, for a student
    * enrolled here; never the last parent of an enrolled child. Logged in the
    * School's activity. Nothing else is touched: neither account is closed.
    */
@@ -416,7 +416,7 @@ export class StudentAccessService {
     return child;
   }
 
-  /** Decision 429 item 6: a current Student here with a parent on ULTM8 and
+  /** Decision 430 item 6: a current Student here with a parent on ULTM8 and
    * the same name and date of birth (see same-person.ts). */
   private async findSameChildHere(schoolId: string, child: { firstName: string; surname: string; dateOfBirth: string }): Promise<string | null> {
     const day = new Date(`${child.dateOfBirth.slice(0, 10)}T00:00:00.000Z`);
@@ -505,7 +505,7 @@ export class StudentAccessService {
       childFirstName: r.childFirstName,
       childSurname: r.childSurname,
       childDateOfBirth: r.childDateOfBirth.toISOString().slice(0, 10),
-      // Decision 429 item 6: an invite to be another parent of a child
+      // Decision 430 item 6: an invite to be another parent of a child
       // already at the School, not to add a new child.
       addsGuardian: r.studentId !== null,
       createdAt: r.createdAt.toISOString(),

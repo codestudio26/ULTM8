@@ -78,9 +78,9 @@ export class ClassesService {
     });
 
     // Decision 414 item 6: no price before the School's currency is set.
-    // Decision 430 (MON-3): and in whole units of that currency.
+    // Decision 431 (MON-3): and in whole units of that currency.
     if (setsNewPrice(dto.cancellationCharge)) assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId)));
-    // Decision 431 item 13: a one-off class on a closed day is allowed (a
+    // Decision 432 item 13: a one-off class on a closed day is allowed (a
     // special event during a holiday), once the owner has seen the warning.
     if (!dto.confirmClosedDay) await this.assertNotOnClosedDay(callerId, schoolId, dto.branchId ?? null, startDate);
 
@@ -107,7 +107,7 @@ export class ClassesService {
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired ?? false,
           membershipInclusion: dto.membershipInclusion ?? false,
-          // Decision 431 item 14: who can book.
+          // Decision 432 item 14: who can book.
           audience: dto.audience,
           minAge: dto.minAge,
           maxAge: dto.maxAge,
@@ -254,7 +254,7 @@ export class ClassesService {
       await this.tenantAuth.assertValidInstructor(callerId, nextInstructorId, existing.schoolId, nextBranchId);
     }
 
-    // Decision 431 item 14: the age range as it will be after this edit.
+    // Decision 432 item 14: the age range as it will be after this edit.
     assertAgeRange(dto.minAge !== undefined ? dto.minAge : existing.minAge, dto.maxAge !== undefined ? dto.maxAge : existing.maxAge);
 
     const nextStartDate = dto.startDate ? new Date(dto.startDate) : existing.startDate;
@@ -282,7 +282,7 @@ export class ClassesService {
 
     // Decision 414 item 6: no price before the School's currency is set.
     if (setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
-      // Decision 430 (MON-3): and in whole units of that currency.
+      // Decision 431 (MON-3): and in whole units of that currency.
       assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId)));
     }
 
@@ -438,7 +438,7 @@ export class ClassesService {
   }
 
   /**
-   * POST /classes/:id/recreate (Decision 431 item 11): the one-tap "Recreate
+   * POST /classes/:id/recreate (Decision 432 item 11): the one-tap "Recreate
    * class" for a class a closure cancelled on a day it no longer covers. A
    * cancelled class is never un-cancelled (its students were told and their
    * credit went back), so this makes a new copy with no bookings: the same
@@ -536,7 +536,7 @@ export class ClassesService {
     }
   }
 
-  /** Decision 431 item 13: a one-off class whose start date (in its Branch's
+  /** Decision 432 item 13: a one-off class whose start date (in its Branch's
    * zone, else the School's) a closure covers needs the owner's confirmation.
    * A Branch closure covers that Branch's classes; a School-wide one, all. */
   private async assertNotOnClosedDay(callerId: string, schoolId: string, branchId: string | null, startDate: Date): Promise<void> {

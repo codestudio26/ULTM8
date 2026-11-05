@@ -126,7 +126,7 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
       }
       // The School's tax at this moment (Decision 411), kept on the charge;
       // none for a series set up with "No tax on this item" (Decision 414 item 5).
-      // Decision 430 (MON-6): the member's home Branch's lines when it overrides.
+      // Decision 431 (MON-6): the member's home Branch's lines when it overrides.
       const school = await loadEffectiveTax(tx, row.schoolId, row.studentId);
       const tax = taxLinesForCharge(school, row.taxExempt);
       const totals = computeCharge({

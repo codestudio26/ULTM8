@@ -68,7 +68,7 @@ export class TimetableController {
     return this.timetableService.createClosure(user.sub, schoolId, dto);
   }
 
-  /** Decision 431 item 11: change a closure's dates or reason (owner only). */
+  /** Decision 432 item 11: change a closure's dates or reason (owner only). */
   @ApiOkResponse({ type: ClosureUpdatedResponseDto })
   @Patch('closures/:id')
   updateClosure(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateClosureDto) {

@@ -86,7 +86,7 @@ export const classes = {
     closedDay: 'That date is closed. Add the class anyway?',
     closedDayConfirm: 'Add it anyway',
   },
-  // Decision 431 item 14: who can book a class or weekly slot.
+  // Decision 432 item 14: who can book a class or weekly slot.
   whoCanBook: {
     title: 'Who can book',
     hint: 'Optional. Staff can still book anyone with an override reason.',

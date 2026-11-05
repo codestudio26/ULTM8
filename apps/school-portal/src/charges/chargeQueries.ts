@@ -235,7 +235,7 @@ export function previewCharge(input: {
   discountValue: number | null;
   taxRateBasisPoints: number;
   taxInclusive: boolean;
-  /** Decision 430 (MON-2): rounds to the currency's own unit (whole yen). */
+  /** Decision 431 (MON-2): rounds to the currency's own unit (whole yen). */
   currency?: string | null;
 }): { discount: number; net: number; tax: number; gross: number } | null {
   const step = currencyFractionDigits(input.currency) === 0 ? 100 : 1;

@@ -23,10 +23,10 @@ const MESSAGES: Record<SelfAttestedAction, { noBirthDate: string; under18: strin
  * themselves is a self-attested adult by date of birth is checked at the
  * first consequential action — a Membership purchase, a booking-triggered
  * payment, or waiver-signing — and the action is blocked otherwise, pointing
- * to a Guardian. Shared by WaiversService.sign() and, since Decision 429
+ * to a Guardian. Shared by WaiversService.sign() and, since Decision 430
  * item 5 (FAM-5), MembershipsService.purchase()'s own (not a Guardian's)
  * path. An unknown date of birth is refused, as an under-18 one is. The 18th
- * birthday is counted on the School's own date (Decision 429 item 10).
+ * birthday is counted on the School's own date (Decision 430 item 10).
  *
  * `childMayAct` lets the waiver path keep Decision 318 item 8 (a School that
  * lets children of an age sign their own waivers). `db` is a connection that

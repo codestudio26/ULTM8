@@ -22,7 +22,7 @@ function codedMessage(err: ApiError): string | null {
       return translate('lib.apiError.waitlistFirst');
     case 'BOOKING_CLOSED':
       return translate('lib.apiError.bookingClosed');
-    // "Who can book" (Decision 431): the shared wording in @ultm8/i18n.
+    // "Who can book" (Decision 432): the shared wording in @ultm8/i18n.
     case 'WHO_CAN_BOOK_GENDER':
       return translate(/for women only/.test(err.message) ? 'server.codes.whoCanBookWomenOnly' : 'server.codes.whoCanBookMenOnly');
     case 'WHO_CAN_BOOK_GENDER_MISSING':
@@ -90,7 +90,7 @@ function codedMessage(err: ApiError): string | null {
     // The School's free trial of ULTM8 ended (backlog 3.14).
     case 'TRIAL_ENDED':
       return translate('lib.apiError.trialEnded');
-    // Families (Decision 429).
+    // Families (Decision 430).
     case 'CONSENT_PENDING':
       return translate('server.codes.consentPending');
     case 'CONSENT_WITHDRAWN':

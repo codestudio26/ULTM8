@@ -177,7 +177,7 @@ function BookingForm({
 }) {
   const t = useT();
   const instructor = instructors.find((i) => i.userId === occurrence.instructorId);
-  // On the class's own clock, not the browser's (Decision 431 item 5); a
+  // On the class's own clock, not the browser's (Decision 432 item 5); a
   // class past midnight says so (item 3).
   const zone = useClassZone(occurrence);
   const timeOf = (iso: string) => formatTimeInZone(iso, zone, formatLocale());

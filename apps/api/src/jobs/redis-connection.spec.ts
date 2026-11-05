@@ -1,7 +1,7 @@
 import IORedis from 'ioredis';
 import { redisConnectionArgs } from './queue.module';
 
-/** Decision 430 (stress test round 5 MON-16): the whole REDIS_URL reaches ioredis. */
+/** Decision 431 (stress test round 5 MON-16): the whole REDIS_URL reaches ioredis. */
 describe('REDIS_URL', () => {
   const clientFor = (url: string | undefined) => {
     const client = new IORedis(...redisConnectionArgs(url));

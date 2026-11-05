@@ -36,7 +36,7 @@ describe('stripe-amount (stress test round 4, M1)', () => {
   });
 });
 
-describe('the currency\'s real minor unit (Decision 430, stress test round 5 MON-1..3)', () => {
+describe('the currency\'s real minor unit (Decision 431, stress test round 5 MON-1..3)', () => {
   it('is whole yen, won and krónur for zero-decimal currencies, the cent elsewhere', () => {
     expect(minorUnitStep('JPY')).toBe(100);
     expect(minorUnitStep('krw')).toBe(100);

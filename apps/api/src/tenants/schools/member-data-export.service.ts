@@ -8,7 +8,7 @@ import { TenantAuthorizationService } from '../tenant-authorization.service';
 export const MEMBER_DATA_EXPORT_FILTER = 'MEMBER_DATA';
 
 /**
- * Decision 432 item 10 (stress test round 5, PRIV-10): "Download this
+ * Decision 433 item 10 (stress test round 5, PRIV-10): "Download this
  * member's data". The School's owner gets, as one JSON file, what this School
  * holds about one person who is or was its student: their profile, enrolment,
  * join date and home Branch, tags, custom fields and statuses, Guardians,

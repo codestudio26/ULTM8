@@ -209,7 +209,7 @@ export function MyProfilePage() {
       <ChangePasscodeCard />
       {/* Decision 319 item 4: staff see their classes in Google Calendar. */}
       <MyCalendarFeedCard />
-      {/* Decision 432 item 6: give up your own staff role. */}
+      {/* Decision 433 item 6: give up your own staff role. */}
       <MyRolesCard />
     </>
   );

@@ -63,7 +63,7 @@ export class StudentAccessController {
     return this.access.acceptChildInvite(user.sub, id, dto ?? {});
   }
 
-  /** Decision 429 item 6: "Add another Guardian" for a child already here. Owner only. */
+  /** Decision 430 item 6: "Add another Guardian" for a child already here. Owner only. */
   @ApiCreatedResponse({ type: AddChildManuallyResponseDto })
   @Throttle(ADD_MANUALLY_THROTTLE)
   @Post('schools/:schoolId/students/:studentId/guardians')
@@ -76,7 +76,7 @@ export class StudentAccessController {
     return this.access.addGuardian(user.sub, schoolId, studentId, dto);
   }
 
-  /** Decision 429 item 8: "Remove Guardian". Owner only; never the last parent of an enrolled child. */
+  /** Decision 430 item 8: "Remove Guardian". Owner only; never the last parent of an enrolled child. */
   @ApiNoContentResponse()
   @HttpCode(204)
   @Delete('schools/:schoolId/students/:studentId/guardians/:guardianId')

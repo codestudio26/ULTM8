@@ -3,7 +3,7 @@ import type { StudentSummary } from './studentQueries';
 
 /** Students list search (Decision 371, Students Q2): every word typed must
  * start a word of the name, or appear in the email. Case, accents and spelling
- * variants don't matter: the one search fold the API uses too (Decision 433,
+ * variants don't matter: the one search fold the API uses too (Decision 434,
  * TXT-1), so Hindi, Tamil and Japanese names that differ by a mark stay
  * different. A name typed whole without its spaces ("佐藤翔太", "AlMansouri")
  * also matches, in either order. */

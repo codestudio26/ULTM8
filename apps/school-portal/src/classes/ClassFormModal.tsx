@@ -49,11 +49,11 @@ export interface ClassFormValues {
   /** Always populated — the checkbox defaults to false, never undefined. */
   termsWaiverRequired: boolean;
   membershipInclusion: boolean;
-  /** Decision 431 item 14: who can book. */
+  /** Decision 432 item 14: who can book. */
   audience: Audience;
   minAge: number | null;
   maxAge: number | null;
-  /** Decision 431 item 13: the owner saw the "this day is closed" warning. */
+  /** Decision 432 item 13: the owner saw the "this day is closed" warning. */
   confirmClosedDay?: boolean;
 }
 
@@ -139,7 +139,7 @@ export function ClassFormModal({
   const usesStyles = disciplines.length > 0;
   const [error, setError] = useState<string | null>(null);
   const [whoCanBook, setWhoCanBook] = useState(whoCanBookForm(initial as Parameters<typeof whoCanBookForm>[0]));
-  // Decision 431 item 13: the API said the date is closed; the owner may
+  // Decision 432 item 13: the API said the date is closed; the owner may
   // create the class anyway (a special event during a holiday).
   const [closedDay, setClosedDay] = useState(false);
   const requestPhotoUpload = useRequestPublicPhotoUploadUrl();

@@ -143,7 +143,7 @@ export function useCreateClosure(schoolId: string) {
   });
 }
 
-/** Decision 431 item 11: change a closure's dates or reason. Classes on newly
+/** Decision 432 item 11: change a closure's dates or reason. Classes on newly
  * closed days are cancelled; classes it cancelled on released days come back
  * as `recreatable`, for a one-tap Recreate. */
 export function useUpdateClosure(schoolId: string) {
@@ -155,7 +155,7 @@ export function useUpdateClosure(schoolId: string) {
   });
 }
 
-/** Decision 431 item 11: a one-off copy of a cancelled class that hasn't started. */
+/** Decision 432 item 11: a one-off copy of a cancelled class that hasn't started. */
 export function useRecreateClass(schoolId: string) {
   const queryClient = useQueryClient();
   return useMutation({
