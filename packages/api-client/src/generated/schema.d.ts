@@ -7515,7 +7515,10 @@ export interface components {
             /** @description E.164 format */
             phone: string;
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description Mobile-only per confirmed field list */
             username?: string;
             /** @description Exactly 6 digits — the account's sole login credential (Decision 72) */
@@ -8186,7 +8189,10 @@ export interface components {
         };
         UpdateStudentProfileDto: {
             firstName?: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname?: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description Mobile-only per confirmed field list. Null clears it. */
             username?: string | null;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
@@ -8553,7 +8559,10 @@ export interface components {
             /** @description How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it. */
             emergencyContactRelationship?: string | null;
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             email: string;
             /** @description YYYY-MM-DD. The student must be 18 or over. */
             dateOfBirth: string;
@@ -9171,7 +9180,10 @@ export interface components {
         };
         UpdateUserDto: {
             firstName?: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname?: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description Mobile-only per confirmed field list. Null clears it. */
             username?: string | null;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
@@ -13066,7 +13078,10 @@ export interface components {
             /** @enum {string} */
             kind: "VISITOR" | "MEMBER";
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description YYYY-MM-DD. 18 or over: a child is signed up by their Guardian in the app. */
             dateOfBirth: string;
             /**
@@ -13776,7 +13791,10 @@ export interface components {
         };
         ChildDetailsDto: {
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description YYYY-MM-DD. The child must be under 18. */
             dateOfBirth: string;
             /**
@@ -13787,7 +13805,10 @@ export interface components {
         };
         GuardianDetailsDto: {
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             email: string;
         };
         AddChildManuallyDto: {

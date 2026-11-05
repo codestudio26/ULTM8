@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
 import { useT } from '../i18n/I18nProvider';
 import { MedicalInfoSharing } from './MedicalInfoSharing';
+import { OneNameSwitch } from '../components/OneNameSwitch';
 import { useMemberAppSettings } from '../lib/memberAppQueries';
 import {
   useCurrencies,
@@ -36,6 +37,8 @@ const Muted = ({ children }: { children: React.ReactNode }) => (
 type Form = {
   firstName: string;
   surname: string;
+  /** Decision 433 (TXT-8): "I have only one name"; an empty surname records it. */
+  oneName: boolean;
   username: string;
   dateOfBirth: string;
   gender: string;
@@ -60,6 +63,7 @@ function formFrom(profile: UserProfile): Form {
   return {
     firstName: profile.firstName,
     surname: profile.surname,
+    oneName: profile.surname === '',
     username: profile.username ?? '',
     dateOfBirth: profile.dateOfBirth.slice(0, 10),
     gender: profile.gender ?? '',
@@ -153,7 +157,7 @@ export function ProfileScreen() {
     updateProfile.mutate(
       {
         firstName: form.firstName.trim(),
-        surname: form.surname.trim(),
+        ...(form.oneName ? { surname: '', hasOnlyOneName: true } : { surname: form.surname.trim() }),
         // `null`, not `undefined`, when blank — `UpdateUserDto` now accepts
         // `null` for each of these to CLEAR them (see profileQueries.ts's own
         // header comment); `undefined` still means "leave the existing value
@@ -275,8 +279,9 @@ export function ProfileScreen() {
           <TextField value={form.firstName} onChangeText={(v) => set('firstName', v)} />
         </Field>
         <Field label={t('profile.screen.surname')}>
-          <TextField value={form.surname} onChangeText={(v) => set('surname', v)} />
+          <TextField value={form.oneName ? '' : form.surname} editable={!form.oneName} onChangeText={(v) => set('surname', v)} />
         </Field>
+        <OneNameSwitch value={form.oneName} onChange={(v) => setForm((f) => (f ? { ...f, oneName: v } : f))} label={t('profile.screen.hasOnlyOneName')} />
         <Field label={t('profile.screen.username')} hint={t('profile.screen.usernameHint')}>
           <TextField autoCapitalize="none" value={form.username} onChangeText={(v) => set('username', v)} />
         </Field>
@@ -372,7 +377,7 @@ export function ProfileScreen() {
         title={t('profile.screen.save')}
         onPress={handleSave}
         loading={updateProfile.isPending}
-        disabled={!locked && (!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth.trim())}
+        disabled={!locked && (!form.firstName.trim() || (!form.oneName && !form.surname.trim()) || !form.dateOfBirth.trim())}
       />
 
       {/* Decision 419 item 1: which Schools hold medical information, and withdrawing consent. */}

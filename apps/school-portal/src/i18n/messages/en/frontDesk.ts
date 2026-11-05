@@ -166,6 +166,7 @@ export const frontDesk = {
     member: 'Member',
     firstName: 'First name',
     surname: 'Last name',
+    hasOnlyOneName: 'I have only one name',
     dateOfBirth: 'Date of birth',
     gender: 'Gender',
     female: 'Female',

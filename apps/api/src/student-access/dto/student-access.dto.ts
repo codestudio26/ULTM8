@@ -5,6 +5,7 @@ import { NormalizeEmail } from '../../common/decorators/normalize-email.decorato
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
 import { GenderField } from '../../common/decorators/gender-field.decorator';
 import { JOIN_DATE_FORMAT } from '../../tenants/schools/student-join-dates';
+import { HasOnlyOneNameField, SurnameField } from '../../common/decorators/surname-field.decorator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -16,12 +17,11 @@ export class ChildDetailsDto {
   @MaxLength(100)
   firstName!: string;
 
-  @ApiProperty()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1, { message: "Surname can't be blank." })
-  @MaxLength(100)
+  @SurnameField()
   surname!: string;
+
+  @HasOnlyOneNameField()
+  hasOnlyOneName?: boolean;
 
   @ApiProperty({ description: 'YYYY-MM-DD. The child must be under 18.' })
   @IsDateString()
@@ -41,12 +41,11 @@ export class GuardianDetailsDto {
   @MaxLength(100)
   firstName!: string;
 
-  @ApiProperty()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1, { message: "Surname can't be blank." })
-  @MaxLength(100)
+  @SurnameField()
   surname!: string;
+
+  @HasOnlyOneNameField()
+  hasOnlyOneName?: boolean;
 
   @ApiProperty()
   @NormalizeEmail()
