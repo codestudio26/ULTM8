@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "未找到免责声明",
   "You are already a Student at this School.": "你已是此学校的学员。",
   "You are not an active Guardian for this Student.": "你不是该学员的有效监护人。",
+  "This child is not on your account.": "这个孩子不在你的账户中。",
+  "This person isn't a parent or guardian of this student.": "此人不是该学员的家长或监护人。",
   "You do not have grading permission for this style. The School owner grants it.": "你没有此项目的晋级权限。该权限由学校负责人授予。",
   "You have no Instructor profile.": "你没有教练员资料。",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "你在此学校没有已保存的付款方式——请先添加卡片，或使用新卡付款。",

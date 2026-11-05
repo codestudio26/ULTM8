@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "Отказ от претензий не найден",
   "You are already a Student at this School.": "Вы уже являетесь учеником этой школы.",
   "You are not an active Guardian for this Student.": "Вы не являетесь активным опекуном этого ученика.",
+  "This child is not on your account.": "Этого ребёнка нет в вашем аккаунте.",
+  "This person isn't a parent or guardian of this student.": "Этот человек не является родителем или опекуном этого ученика.",
   "You do not have grading permission for this style. The School owner grants it.": "У вас нет права на аттестацию в этом стиле. Его выдаёт владелец школы.",
   "You have no Instructor profile.": "У вас нет профиля инструктора.",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "У вас нет сохранённого способа оплаты в этой школе — сначала добавьте карту или оплатите новой картой.",

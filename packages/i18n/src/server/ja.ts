@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "免責同意書が見つかりません",
   "You are already a Student at this School.": "あなたはすでにこのスクールの生徒です。",
   "You are not an active Guardian for this Student.": "あなたはこの生徒の有効な保護者ではありません。",
+  "This child is not on your account.": "この子どもはあなたのアカウントにいません。",
+  "This person isn't a parent or guardian of this student.": "この人はこの生徒の親または保護者ではありません。",
   "You do not have grading permission for this style. The School owner grants it.": "この種目の昇級権限がありません。権限はスクールのオーナーが付与します。",
   "You have no Instructor profile.": "インストラクターのプロフィールがありません。",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "このスクールに保存済みのお支払い方法がありません。先にカードを追加するか、新しいカードでお支払いください。",

@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "إقرار إخلاء المسؤولية غير موجود",
   "You are already a Student at this School.": "أنت طالب في هذه المدرسة بالفعل.",
   "You are not an active Guardian for this Student.": "لست ولي أمر نشطًا لهذا الطالب.",
+  "This child is not on your account.": "هذا الطفل ليس على حسابك.",
+  "This person isn't a parent or guardian of this student.": "هذا الشخص ليس أحد الوالدين أو ولي أمر لهذا الطالب.",
   "You do not have grading permission for this style. The School owner grants it.": "ليست لديك صلاحية الترقية في هذا الأسلوب. يمنحها مالك المدرسة.",
   "You have no Instructor profile.": "ليس لديك ملف مدرب.",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "ليست لديك طريقة دفع محفوظة في هذه المدرسة — أضف بطاقة أولًا أو ادفع ببطاقة جديدة.",

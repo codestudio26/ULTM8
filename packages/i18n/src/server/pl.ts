@@ -328,6 +328,8 @@ export const serverMessages: Record<string, string> = {
   "Waiver not found": "Nie znaleziono oświadczenia",
   "You are already a Student at this School.": "Jesteś już uczniem tej szkoły.",
   "You are not an active Guardian for this Student.": "Nie jesteś aktywnym opiekunem tego ucznia.",
+  "This child is not on your account.": "Tego dziecka nie ma na twoim koncie.",
+  "This person isn't a parent or guardian of this student.": "Ta osoba nie jest rodzicem ani opiekunem tego ucznia.",
   "You do not have grading permission for this style. The School owner grants it.": "Nie masz uprawnienia do egzaminowania w tym stylu. Nadaje je właściciel szkoły.",
   "You have no Instructor profile.": "Nie masz profilu instruktora.",
   "You have no saved payment method at this School — add a card first, or pay with a new card.": "Nie masz zapisanej metody płatności w tej szkole — najpierw dodaj kartę albo zapłać nową kartą.",
