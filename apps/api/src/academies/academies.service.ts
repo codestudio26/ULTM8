@@ -192,6 +192,8 @@ export class AcademiesService {
         ...SCHOOL_SUMMARY_SELECT,
         // Decision 315 item 10: whether joining asks for medical information.
         medicalInfoEnabled: true,
+        // Decision 318 item 7: whether a Guardian may add their child here.
+        memberAppAddFamily: true,
         membershipPlans: {
           where: { visible: true, archivedAt: null },
           orderBy: { id: 'asc' },
@@ -247,6 +249,8 @@ export class AcademiesService {
         ...SCHOOL_SUMMARY_SELECT,
         // Decision 315 item 10: whether joining asks for medical information.
         medicalInfoEnabled: true,
+        // Decision 318 item 7: whether a Guardian may add their child here.
+        memberAppAddFamily: true,
         membershipPlans: {
           // v1.2 backend backlog "Archive action" — an archived plan must
           // never appear in the Student-facing purchase list, same

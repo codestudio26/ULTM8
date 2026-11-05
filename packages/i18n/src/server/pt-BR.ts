@@ -1,5 +1,9 @@
 /** Portuguese (Brazil) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate deve ser uma data (AAAA-MM-DD)",
+  "Your School keeps your profile up to date. Ask the School to change your details.": "Sua escola mantém seu perfil atualizado. Peça à escola para alterar seus dados.",
+  "This School cancels memberships itself. Ask the School to cancel it for you.": "Esta escola cancela as assinaturas ela mesma. Peça à escola para cancelar para você.",
+  "This School adds family members itself. Ask the School to add your child.": "Esta escola adiciona os familiares ela mesma. Peça à escola para adicionar seu filho.",
   "This School doesn't let children sign their own waivers.": "Esta escola não permite que crianças assinem os próprios termos.",
   "This child isn't old enough yet to sign this School's waivers themselves.": "Esta criança ainda não tem idade para assinar sozinha os termos desta escola.",
   "Add the child's date of birth before they sign a waiver themselves.": "Adicione a data de nascimento da criança antes que ela assine um termo sozinha.",

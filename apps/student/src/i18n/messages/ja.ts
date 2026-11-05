@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "自分",
       loadFailed: "このスクールを読み込めませんでした。もう一度お試しください。",
       alreadyStudentMe: "あなたはすでにこのスクールの生徒です。",
+      familyOff: "このスクールではお子さまの追加をスクールが行います。お子さまの追加はスクールに依頼してください。",
       alreadyStudentOther: "{name}さんはすでにこのスクールの生徒です。",
       title: "{name}に入会",
       whoIsJoining: "どなたが入会しますか？",
@@ -569,6 +570,16 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        other: "審査まであと{count}日",
+      },
+      gradingToday: "本日審査",
+      classesToGo: {
+        other: "あと{count}回のクラス",
+      },
+      daysToGo: {
+        other: "あと{count}日",
+      },
       loadError: "昇級情報を読み込めませんでした。もう一度お試しください。",
       noRank: "級はまだありません。スクールで昇級するか、入会時に帯を申告すると、ここに級が表示されます。",
       historyTitle: "{style}の履歴",
@@ -821,6 +832,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "会員プランを読み込めませんでした。もう一度お試しください。",
       cancelSubscription: "サブスクリプションを解約",
       keepSubscription: "継続する",
+      cancelBySchool: "解約するには、スクールに依頼してください。",
       cancelConfirm: "支払い済みの月の終わりまでサブスクリプションを利用できます。その後終了し、以降の支払いは発生しません。",
       cancelError: "サブスクリプションを解約できませんでした。もう一度お試しください。",
       cancelledEnds: "解約済み、{date} に終了",
@@ -912,6 +924,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "確認済み",
       notVerified: "未確認",
       identifiersNote: "メールアドレスと電話番号はログインに使う情報のため、ここでは変更できません。",
+      lockedNote: "あなたの情報はスクールが管理しています。変更はスクールに依頼してください。アプリの言語と通貨は引き続き変更できます。",
       firstName: "名",
       surname: "姓",
       username: "ユーザー名",

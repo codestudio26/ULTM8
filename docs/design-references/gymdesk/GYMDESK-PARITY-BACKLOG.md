@@ -519,17 +519,17 @@ in code. Every toggle below would be a new School-level setting (one settings en
 | # | Gymdesk setting | ULTM8 behaviour today |
 |---|---|---|
 | MS1 | Enable member portal | Always on (`apps/student`) |
-| MS2 | Members/visitors can edit their profile | 🟡 Fixed: students edit their own profile |
+| MS2 | Members/visitors can edit their profile | ✅ School switch, on by default (Decision 318 item 7, built 5 Nov 2026); language and currency stay editable |
 | MS3 | Visitors can access the portal | ❌ No visitors (Q6) |
-| MS4 | Show payments / membership cards in member accounts | 🟡 Fixed |
+| MS4 | Show payments / membership cards in member accounts | 🟡 Payment history: School switch, on by default (Decision 318 item 7, built 5 Nov 2026). Membership cards stay fixed |
 | MS5 | Members can remove their payment method | ❓ |
 | MS6 | **Members can update their own rank** | **Decided 20 Oct 2026: no, coaches only.** New: students can *request a belt correction* for a coach to approve (MS6a) |
 | MS7 | Show promotion criteria to members | 🟡 Guardians can see progress/skills (Decision 132) |
-| MS8 | Members can renew / add memberships / **request cancellation / cancel** | 🟡 Purchase ✅ (Checkout); self-cancel ❓ |
+| MS8 | Members can renew / add memberships / **request cancellation / cancel** | 🟡 Purchase ✅ (Checkout); self-cancel ✅ (Decision 348) with a School switch, on by default (Decision 318 item 7, built 5 Nov 2026) |
 | MS9 | Members/visitors can use **manual payments** (cash/bank) | 🟡 Cash/Bank Transfer transactions exist (staff-recorded) |
 | MS10 | Assign new payment method to overdue/scheduled payments; pay before due date | ❌ |
 | MS11 | Customise name on invoices | ❌ |
-| MS12 | **Members can sign up family members through their account** | 🟡 Guardian adds minors ✅. Adults adding other adults ❌ (Q13) |
+| MS12 | **Members can sign up family members through their account** | 🟡 Guardian adds their child to the School ✅, with a School switch, on by default (Decision 318 item 7, built 5 Nov 2026). Adults adding other adults ❌ (Q13) |
 | MS13 | Show "Book a Class" quick action | ✅ Booking exists |
 | MS14 | Hide "Other" gender option | ❌ (gender is free text) |
 | MS15 | Manage member-portal messaging · Dashboard quick actions · Member content settings | ❌ (sub-pages not captured) |

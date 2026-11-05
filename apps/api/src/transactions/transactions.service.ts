@@ -2,6 +2,8 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { schoolsHidingPaymentHistory } from '../member-app/member-app-switches';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -38,6 +40,7 @@ export class TransactionsService {
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
     private readonly schoolsService: SchoolsService,
     private readonly stripeClient: StripeClientService,
@@ -193,7 +196,13 @@ export class TransactionsService {
    * payment says when, never who or why: the reason is for staff only
    * (Decision 338 item 1). */
   async findMyTransactions(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
-    const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, { studentId: callerId }, cursor, limit));
+    // Decision 318 item 7: a School can hide payment history from its members.
+    const mySchools = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.transaction.findMany({ where: { studentId: callerId }, distinct: ['schoolId'], select: { schoolId: true } }),
+    );
+    const hidden = await schoolsHidingPaymentHistory(this.prismaJobs, mySchools.map((r) => r.schoolId));
+    const where: Prisma.TransactionWhereInput = hidden.length ? { studentId: callerId, schoolId: { notIn: hidden } } : { studentId: callerId };
+    const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, where, cursor, limit));
     return {
       ...page,
       items: page.items.map((t) => ({ ...this.withMembershipPlanTitle(t), cancelledById: null, cancelledByName: null, cancelReason: null, incomeCategoryName: null })),
@@ -277,6 +286,9 @@ export class TransactionsService {
     }
     if (transaction.studentId !== callerId) {
       await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
+    } else if ((await schoolsHidingPaymentHistory(this.prismaJobs, [transaction.schoolId])).length > 0) {
+      // Decision 318 item 7: hidden from the member, as in their list.
+      throw new NotFoundException('Transaction not found');
     }
     // CASH/BANK_TRANSFER transactions have no Stripe charge at all — a real,
     // normal state (not every Transaction is Stripe-paid), not an error.

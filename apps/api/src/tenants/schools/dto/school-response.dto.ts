@@ -218,6 +218,24 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Decision 315 item 10: the School asks for medical information at sign-up (off by default).' })
   medicalInfoEnabled!: boolean;
 
+  @ApiProperty({ description: 'Decision 318 item 7: members may edit their own profile in the app (default on).' })
+  memberAppEditProfile!: boolean;
+
+  @ApiProperty({ description: 'Decision 318 item 7: members (or a Guardian, for a child) may cancel their own Subscription in the app (default on).' })
+  memberAppCancelMembership!: boolean;
+
+  @ApiProperty({ description: 'Decision 318 item 7: a Guardian may add their child to this School in the app (default on).' })
+  memberAppAddFamily!: boolean;
+
+  @ApiProperty({ description: 'Decision 318 item 7: members see their payment history in the app (default on).' })
+  memberAppPaymentHistory!: boolean;
+
+  @ApiProperty({ description: 'Decision 318 item 7: the grading countdown shows in the app (default off).' })
+  memberAppGradingCountdown!: boolean;
+
+  @ApiPropertyOptional({ type: String, format: 'date', nullable: true, description: "Decision 318 item 7: the School's next grading day. Null until the School sets it." })
+  nextGradingDate!: Date | null;
+
   @ApiProperty({ enum: [4, 6], description: 'Length of the check-in codes ULTM8 generates here (staff kiosk codes, members\' personal codes).' })
   checkInCodeDigits!: number;
 

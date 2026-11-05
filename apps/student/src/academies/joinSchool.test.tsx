@@ -147,3 +147,26 @@ describe('JoinSchoolScreen', () => {
     expect((navigation as { navigate: jest.Mock }).navigate).not.toHaveBeenCalled();
   });
 });
+
+/** Decision 318 item 7: a School may add children itself ("add family members" off). */
+describe('JoinSchoolScreen — add family members switch', () => {
+  beforeEach(() => {
+    mocked(auth.useIsGuardian).mockReturnValue(true);
+    mocked(guardians.useMyMinors).mockReturnValue(ok({ items: [{ studentId: 'kid', firstName: 'Kai', surname: 'Lee' }] }));
+  });
+
+  it('offers a parent their child when the switch is on', async () => {
+    mocked(academies.useAcademy).mockReturnValue(ok({ id: 'dojo', name: 'Alpha Dojo', branches: [], memberAppAddFamily: true }));
+    const screen = await render(<JoinSchoolScreen navigation={nav()} route={route()} />);
+    expect(screen.getByLabelText('Kai Lee')).toBeTruthy();
+    expect(screen.queryByText(/adds children itself/)).toBeNull();
+  });
+
+  it('offers only the parent themselves, and says why, when it is off', async () => {
+    mocked(academies.useAcademy).mockReturnValue(ok({ id: 'dojo', name: 'Alpha Dojo', branches: [], memberAppAddFamily: false }));
+    const screen = await render(<JoinSchoolScreen navigation={nav()} route={route()} />);
+    expect(screen.queryByLabelText('Kai Lee')).toBeNull();
+    expect(screen.getByLabelText('Me')).toBeTruthy();
+    expect(screen.getByText('This School adds children itself. Ask the School to add your child.')).toBeTruthy();
+  });
+});

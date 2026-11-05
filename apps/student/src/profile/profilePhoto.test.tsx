@@ -5,6 +5,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as q from './profileQueries';
 import { ProfileScreen } from './ProfileScreen';
 
+// Decision 318 item 7: the member app switches (on unless a test turns one off).
+jest.mock('../lib/memberAppQueries', () => {
+  const actual = jest.requireActual('../lib/memberAppQueries') as object;
+  return { ...actual, useMemberAppSettings: jest.fn(() => ({ data: undefined })) };
+});
+
 // Decision 419 item 1's medical information section has its own tests
 // (medicalInfoSharing.test.tsx); here no School holds any.
 jest.mock('./medicalInfoQueries', () => ({

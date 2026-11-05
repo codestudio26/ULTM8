@@ -6212,6 +6212,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/member-app/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberAppController_mySettings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/custom-member-fields": {
         parameters: {
             query?: never;
@@ -7617,6 +7633,21 @@ export interface components {
             heardFromOptions?: string[] | null;
             /** @description Decision 315 item 10: the School asks for medical information at sign-up (off by default). */
             medicalInfoEnabled: boolean;
+            /** @description Decision 318 item 7: members may edit their own profile in the app (default on). */
+            memberAppEditProfile: boolean;
+            /** @description Decision 318 item 7: members (or a Guardian, for a child) may cancel their own Subscription in the app (default on). */
+            memberAppCancelMembership: boolean;
+            /** @description Decision 318 item 7: a Guardian may add their child to this School in the app (default on). */
+            memberAppAddFamily: boolean;
+            /** @description Decision 318 item 7: members see their payment history in the app (default on). */
+            memberAppPaymentHistory: boolean;
+            /** @description Decision 318 item 7: the grading countdown shows in the app (default off). */
+            memberAppGradingCountdown: boolean;
+            /**
+             * Format: date
+             * @description Decision 318 item 7: the School's next grading day. Null until the School sets it.
+             */
+            nextGradingDate?: string | null;
             /**
              * @description Length of the check-in codes ULTM8 generates here (staff kiosk codes, members' personal codes).
              * @enum {number}
@@ -7796,6 +7827,21 @@ export interface components {
             confirmCurrencyChange?: boolean;
             /** @description Ask for medical information at sign-up, with consent (Decision 315 item 10). Off by default. */
             medicalInfoEnabled?: boolean;
+            /** @description Members may edit their own profile in the app (Decision 318 item 7). */
+            memberAppEditProfile?: boolean;
+            /** @description Members (or a Guardian, for a child) may cancel their own Subscription in the app (Decision 318 item 7). */
+            memberAppCancelMembership?: boolean;
+            /** @description A Guardian may add their child to this School in the app (Decision 318 item 7). */
+            memberAppAddFamily?: boolean;
+            /** @description Members see their payment history in the app (Decision 318 item 7). */
+            memberAppPaymentHistory?: boolean;
+            /** @description The grading countdown shows in the app (Decision 318 item 7). */
+            memberAppGradingCountdown?: boolean;
+            /**
+             * Format: date
+             * @description The School's next grading day, YYYY-MM-DD (Decision 318 item 7). Null clears it.
+             */
+            nextGradingDate?: string | null;
         };
         /** @enum {string} */
         StudentStatus: "ACTIVE" | "INACTIVE";
@@ -10995,6 +11041,19 @@ export interface components {
             /** @description Required for the next grade; false when optional (time-only stripes). */
             required: boolean;
         };
+        GradingCountdownDto: {
+            /**
+             * Format: date
+             * @description The School's next grading day, only when it is today or later.
+             */
+            nextGradingDate?: string | null;
+            /** @description Whole days until that day in the School's time zone (0 = today). */
+            daysUntilGrading?: number | null;
+            /** @description Classes still needed for the next rank; null on a time-only rank or with no next rank. */
+            classesToGo?: number | null;
+            /** @description Days still needed for the next rank; null with no next rank. */
+            daysToGo?: number | null;
+        };
         StudentGradingStyleDto: {
             schoolId: string;
             schoolName: string;
@@ -11014,6 +11073,8 @@ export interface components {
             hoursTrained: components["schemas"]["HoursTrainedResponseDto"];
             /** @description The skills for the next grade. */
             skills: components["schemas"]["GradingSkillDto"][];
+            /** @description Decision 318 item 7: null unless the School turns the grading countdown on. */
+            countdown?: components["schemas"]["GradingCountdownDto"] | null;
         };
         StudentGradingOverviewResponseDto: {
             items: components["schemas"]["StudentGradingStyleDto"][];
@@ -12195,6 +12256,8 @@ export interface components {
             bannerUrl?: string | null;
             /** @description Decision 315 item 10: joining asks for medical information (optional, with consent). */
             medicalInfoEnabled: boolean;
+            /** @description Decision 318 item 7: a Guardian may add their child to this School in the app. */
+            memberAppAddFamily: boolean;
             /** @description The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches. */
             branches: components["schemas"]["AcademyBranchDto"][];
             membershipPlans: components["schemas"]["AcademyMembershipPlanDto"][];
@@ -13064,6 +13127,25 @@ export interface components {
             tagId?: string;
             /** @description A new tag, added to the School's list. Send this or tagId. */
             name?: string;
+        };
+        MemberAppSchoolSwitchesDto: {
+            schoolId: string;
+            /** @description Members may edit their own profile. */
+            editProfile: boolean;
+            /** @description Members (or a Guardian, for a child) may cancel their own Subscription. */
+            cancelMembership: boolean;
+            /** @description A Guardian may add their child to this School. */
+            addFamily: boolean;
+            /** @description Members see their payment history. */
+            paymentHistory: boolean;
+            /** @description The grading countdown shows. */
+            gradingCountdown: boolean;
+        };
+        MemberAppSettingsResponseDto: {
+            /** @description The member can't change their own details: a School where they are a Student has "edit own profile" off. Language and currency stay theirs. */
+            profileLocked: boolean;
+            /** @description Each School where the caller, or a child linked to them, is a Student. */
+            schools: components["schemas"]["MemberAppSchoolSwitchesDto"][];
         };
         /** @enum {string} */
         CustomMemberFieldType: "TEXT" | "NUMBER" | "DATE" | "DROPDOWN" | "YES_NO";
@@ -24774,6 +24856,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    MemberAppController_mySettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberAppSettingsResponseDto"];
+                };
             };
         };
     };

@@ -131,6 +131,9 @@ export class AcademyDetailDto extends AcademySummaryDto {
   @ApiProperty({ description: 'Decision 315 item 10: joining asks for medical information (optional, with consent).' })
   medicalInfoEnabled!: boolean;
 
+  @ApiProperty({ description: 'Decision 318 item 7: a Guardian may add their child to this School in the app.' })
+  memberAppAddFamily!: boolean;
+
   @ApiProperty({ type: [AcademyBranchDto], description: 'The School\'s branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches.' })
   branches!: AcademyBranchDto[];
 

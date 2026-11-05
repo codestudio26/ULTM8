@@ -28,6 +28,7 @@ import { HeardFromCard } from './HeardFromCard';
 import { AdTrackingCard } from './AdTrackingCard';
 import { StudentTagsSettingsCard } from './StudentTagsSettingsCard';
 import { MedicalInfoSettingsCard } from './MedicalInfoSettingsCard';
+import { MemberAppSettingsCard } from './MemberAppSettingsCard';
 import { CustomMemberFieldsSettingsCard } from './CustomMemberFieldsSettingsCard';
 import { FreezeSettingsCard } from './FreezeSettingsCard';
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
@@ -105,6 +106,8 @@ export function SchoolPage() {
         <StudentTagsSettingsCard key={`tags-${schoolId}`} schoolId={schoolId} />
         {/* Decision 315 item 10: medical information at sign-up, off by default. */}
         <MedicalInfoSettingsCard key={`medical-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 318 item 7: what members may do in the ULTM8 app. */}
+        <MemberAppSettingsCard key={`member-app-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 315 item 14: the School's own member fields and statuses. */}
         <CustomMemberFieldsSettingsCard key={`custom-fields-${schoolId}`} schoolId={schoolId} />
         <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />
