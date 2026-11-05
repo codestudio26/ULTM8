@@ -4921,7 +4921,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   adTracking: {
     title: "Tracciamento pubblicitario",
     subtitle: "Collega il tuo Meta Pixel o Google Analytics inserendo il suo ID. Sono disponibili solo queste connessioni già pronte: ULTM8 non aggiunge mai codice tuo alle sue pagine.",
-    notUsedYet: "Salvati per le pagine pubbliche della tua scuola. Nessuna pagina li usa ancora.",
+    whereUsed: "Usati solo nella pagina pubblica dell’orario della tua scuola (l’incorporamento sul sito), dopo che il visitatore ha accettato i cookie. Mai nel portale, nell’accesso, nelle liberatorie, nei pagamenti o nell’app dei membri.",
     metaPixelLabel: "ID Meta Pixel",
     metaPixelHint: "Solo cifre, come in Gestione eventi di Meta, ad esempio 123456789012345.",
     metaPixelInvalid: "Un ID Meta Pixel è composto da 10 a 20 cifre, nient’altro.",

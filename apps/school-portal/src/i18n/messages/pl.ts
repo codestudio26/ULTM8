@@ -5033,7 +5033,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   adTracking: {
     title: "Śledzenie reklam",
     subtitle: "Połącz swój Meta Pixel lub Google Analytics, wpisując jego identyfikator. Dostępne są tylko te gotowe połączenia: ULTM8 nigdy nie dodaje do swoich stron Twojego własnego kodu.",
-    notUsedYet: "Zapisane dla publicznych stron Twojej szkoły. Żadna strona jeszcze ich nie używa.",
+    whereUsed: "Używane tylko na publicznej stronie planu zajęć Twojej szkoły (osadzonej na stronie WWW), po zaakceptowaniu plików cookie przez odwiedzającego. Nigdy w portalu, przy logowaniu, w oświadczeniach, płatnościach ani w aplikacji członka.",
     metaPixelLabel: "Identyfikator Meta Pixel",
     metaPixelHint: "Same cyfry, jak w Menedżerze zdarzeń Meta, np. 123456789012345.",
     metaPixelInvalid: "Identyfikator Meta Pixel to od 10 do 20 cyfr i nic więcej.",

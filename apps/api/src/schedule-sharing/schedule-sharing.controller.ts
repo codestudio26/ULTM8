@@ -8,6 +8,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ScheduleSharingService } from './schedule-sharing.service';
 import { DeletedDto, MyCalendarFeedDto, ScheduleEmbedDto, ScheduleSharingSettingsDto, UpdateScheduleSharingDto } from './schedule-sharing.dto';
 import { embedLocale, schedulePage, unavailablePage } from './embed-page';
+import { TRACKING_QUERY_ON, TRACKING_QUERY_PARAM, trackingConsent, trackingCsp, validTrackingIds } from '../public-pages/tracking-consent';
 
 /** Decision 319 item 4: the School's settings and each staff member's link. */
 @ApiTags('schedule-sharing')
@@ -89,15 +90,21 @@ export class ScheduleEmbedsController {
     return { ...found.school, classes: found.classes };
   }
 
-  /** The page for an <iframe>: plain HTML, no script; any site may frame it. */
+  /** The page for an <iframe>: plain HTML; any site may frame it. With the
+   * School's ad tracking IDs (Decision 318 item 10; Decision 435 items
+   * 24–27) it also carries the cookie-consent banner and its one inline
+   * script; the Meta/Google hosts are allowed only on the `?tracking=on`
+   * address the script reloads to after Accept. */
   @Throttle(PUBLIC_THROTTLE)
   @ApiProduces('text/html')
   @Get(':key/page')
-  async page(@Param('key') key: string, @Query('lang') lang: string | undefined, @Res() res: Response) {
+  async page(@Param('key') key: string, @Query('lang') lang: string | undefined, @Query(TRACKING_QUERY_PARAM) tracking: string | undefined, @Res() res: Response) {
     const locale = embedLocale(typeof lang === 'string' ? lang : undefined);
     const found = await this.sharing.embedFor(key);
+    const ids = found ? await this.sharing.embedTrackingFor(key) : validTrackingIds(null);
+    const consent = trackingConsent(locale, ids);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors *; base-uri 'none'; form-action 'none'");
+    res.setHeader('Content-Security-Policy', trackingCsp(ids, consent, tracking === TRACKING_QUERY_ON));
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
     if (!found) {
@@ -105,6 +112,6 @@ export class ScheduleEmbedsController {
       return;
     }
     res.setHeader('Cache-Control', 'public, max-age=300');
-    res.status(200).send(schedulePage(locale, found.school, found.classes));
+    res.status(200).send(schedulePage(locale, found.school, found.classes, consent));
   }
 }

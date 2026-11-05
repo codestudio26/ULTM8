@@ -4921,7 +4921,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   adTracking: {
     title: "Reklam izleme",
     subtitle: "Meta Pixel veya Google Analytics kimliğinizi girerek bağlayın. Yalnızca bu hazır bağlantılar sunulur: ULTM8 sayfalarına asla kendi kodunuzu eklemez.",
-    notUsedYet: "Okulunuzun herkese açık sayfaları için kaydedildi. Henüz hiçbir sayfa bunları kullanmıyor.",
+    whereUsed: "Yalnızca okulunuzun herkese açık ders programı sayfasında (web sitesi yerleştirmesi), ziyaretçi çerezleri kabul ettikten sonra kullanılır. Portalda, girişte, feragatnamelerde, ödemelerde veya üye uygulamasında asla kullanılmaz.",
     metaPixelLabel: "Meta Pixel kimliği",
     metaPixelHint: "Yalnızca rakamlar, Meta Olay Yöneticisi'nde göründüğü gibi; örneğin 123456789012345.",
     metaPixelInvalid: "Meta Pixel kimliği 10 ile 20 rakamdan oluşur, başka bir şey içermez.",

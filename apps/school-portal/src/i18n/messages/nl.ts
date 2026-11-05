@@ -4921,7 +4921,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   adTracking: {
     title: "Advertentietracking",
     subtitle: "Koppel je Meta Pixel of Google Analytics door de ID in te vullen. Alleen deze kant-en-klare koppelingen zijn mogelijk: ULTM8 voegt nooit je eigen code aan zijn pagina’s toe.",
-    notUsedYet: "Bewaard voor de openbare pagina’s van je school. Nog geen enkele pagina gebruikt ze.",
+    whereUsed: "Alleen gebruikt op het openbare rooster van je school (de insluiting op je website), nadat de bezoeker cookies accepteert. Nooit in het portaal, bij inloggen, verklaringen, betalingen of in de leden-app.",
     metaPixelLabel: "Meta Pixel-ID",
     metaPixelHint: "Alleen cijfers, zoals in Meta Events Manager, bijv. 123456789012345.",
     metaPixelInvalid: "Een Meta Pixel-ID bestaat uit 10 tot 20 cijfers en verder niets.",
