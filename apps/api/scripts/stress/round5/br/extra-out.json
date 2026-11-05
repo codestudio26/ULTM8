@@ -1,0 +1,92 @@
+{
+ "plain parent": {
+  "delegation": 201,
+  "token": 201,
+  "book": {
+   "status": 201,
+   "body": "UPCOMING"
+  }
+ },
+ "parent who trains": {
+  "delegation": 201,
+  "token": 201,
+  "book": {
+   "status": 403,
+   "body": {
+    "code": "FORBIDDEN",
+    "message": "Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action."
+   }
+  }
+ },
+ "deskMinor": {
+  "sellPath": {
+   "status": 201,
+   "guardians": 1,
+   "notices": []
+  },
+  "deskPaymentsPath": {
+   "status": 201,
+   "guardians": 1,
+   "notices": [
+    {
+     "userId": "44d1c96a-300c-4d4f-8cc0-023af9fce635",
+     "title": "Payment confirmed",
+     "body": "Iara Sá's payment of 199.90 BRL for Pacote 5 aulas (Kids) was confirmed. The membership is now active."
+    }
+   ]
+  }
+ },
+ "undo": {
+  "cancel": {
+   "status": 200,
+   "body": {
+    "transaction": {
+     "id": "c84fd58f-aa74-46c3-98d9-2e9b12c5746e",
+     "schoolId": "c75f8f6c-ac25-405f-9674-6ee4cd957c94",
+     "studentId": "b3df621c-4abe-4dd4-9ffe-de7f099c0d9c",
+     "paymentAccountId": "c9c722f8-899f-4027-b8fc-fe073a293930",
+     "membershipPlanId": "daaae07d-8242-4d42-abe4-38c3fb111307",
+     "kind": "MEMBERSHIP",
+     "bookingId": null,
+     "stripeInvoiceId": null,
+     "membershipId": "4bee44b1-830e-47a3-9c72-c5dd61f808f2",
+     "billingDate": "2026-11-04T21:19:38.716Z",
+     "amount": 19990,
+     "currency": "BRL",
+     "status": "SUCCESSFUL",
+     "paymentMethod": "PIX",
+     "recordedById": "6cdde0dc-d3d6-40c0-a64a-be93526ece97",
+     "cancelledAt": null,
+     "cancelledById": null,
+     "cancelReason": null,
+     "disputedAmount": null,
+     "disputeLostAt": null,
+     "refundedAmount": null,
+     "stripePaymentIntentId": null,
+     "stripeSubscriptionId": null,
+     "surchargeAmount": 0,
+     "chargeId": null,
+     "chargePaymentChannel": null,
+     "createdAt": "2026-11-04T21:19:38.716Z",
+     "updatedAt": "2026-11-04T21:19:38.716Z"
+    },
+    "cancelled": false
+   }
+  },
+  "refund": {
+   "status": 404,
+   "body": {
+    "error": {
+     "code": "CHARGE_PAYMENT_NOT_FOUND",
+     "message": "Payment not found"
+    }
+   }
+  }
+ },
+ "week": {
+  "weekStartsOn": "SUNDAY",
+  "from": "2026-11-02",
+  "to": "2026-11-08",
+  "todaySaoPaulo": "Wednesday, 2026-11-04"
+ }
+}

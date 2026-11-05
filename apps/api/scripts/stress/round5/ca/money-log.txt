@@ -1,0 +1,50 @@
+S0 tax-rates CA: [{"country":"CA","rateBasisPoints":500,"national":true}]
+S0 school tax PATCH 200 1200 
+S0 late fees 200 {"enabled":true,"type":"FIXED","fixedAmount":1500,"percentBps":null,"graceDays":3,"currency":"CAD","confirmedAt":"2026-11-04T21:13:52.511Z","enabledAt":"2026-11-04T21:13:52.511Z"}
+S0 branch tax PATCH 400 {"error":{"code":"BAD_REQUEST","message":"property taxRateBasisPoints should not exist"}}
+S0 branch timezone America/Montreal 200 {"id":"f63f5e2d-1803-4d02-a7ee-1f1ab122135a","schoolId":"b1d6a9ad-d1f7-44b4-8f4e-8eb8c0dbd4c8","name":"Montréal – Plateau","address":null,"addressLine1":null,"addressLine2":null,"addressCity":"Montréa
+S1 subscribers 60
+S2 membership after renewal {"status":"ACTIVE","expiryDate":null,"cancelAt":null}
+S3 membership after failed renewal ACTIVE
+S3 unpaid failed renewal billingDate 
+S3 membership after failed renewal ACTIVE
+S3 unpaid failed renewal billingDate "2026-10-29T21:16:53.000Z"
+S4 charge 201 {"net":12000,"tax":1440,"gross":13440,"rate":1200}
+S4 late fees [{"for":"charge","unit":1500,"net":1500,"tax":180,"gross":1680,"cur":"CAD","student":"charge-student"},{"for":"renewal","unit":1500,"net":1500,"tax":180,"gross":1680,"cur":"CAD","student":"renewal-student"}]
+S5 freeze 201 {"id":"4859d6c3-afb4-402b-b991-d7d601247137","membershipId":"6544d2db-b259-4f42-9b3b-4d6e3af96bcb","schoolId":"b1d6a9ad-d1f7-44b4-8f4e-8eb8c0dbd4c8","studentId":"0fb3aec2-5ff2-41c0-bd6e-aa2af45f7fbb","startsAt":"2026-11-06","endsAt":"2026-12-18","backOn":"2026-12-18","status":"APPROVED","frozenNow":false,"endedEarlyAt":null,"requestedById":"05f6c3d2-6bb8-404b-b458-b6a5359a8920","decidedById":"05f6
+S5 Stripe calls during freeze {"GET /__calls":1,"POST /v1/payment_intents":1,"GET /v1/subscriptions/dp_87a9ef9fb76e0aa26e":1,"POST /v1/subscriptions/dp_87a9ef9fb76e0aa26e":1,"GET /v1/customers/cus_8ee5936761ed817b91":1}
+S5 freeze fee {"kind":"FREEZE_FEE","amount":2500,"status":"SUCCESSFUL","method":"STRIPE"} null
+S5 fake subscription after freeze {"trial_end":"1799183633","proration_behavior":"none"}
+S6 no strategy 400 This SUBSCRIPTION plan has 60 active subscriber(s) — choose priceChangeStrategy ("MIGRATE" or "GRANDFATHER") before changing its price.
+S6 plan after {"price":19900,"stripePriceId":"price_27e3cd7c60bac5a0c7"}
+S6 renewal after migrate {"amount":19900,"status":"SUCCESSFUL"}
+S6 grandfather 200 20900
+S6 price-change log 200 
+S7 archive 201 active-count {"activeCount":60,"subscriberCount":60}
+S8 after refund reversal null
+S10 member cancels 500  {"code":"INTERNAL_ERROR","message":"Internal server error"}
+S11 transactions 200 90 kinds ["RENEWAL","FREEZE_FEE","MEMBERSHIP"]
+S11 accented names on ledger ["Siobhan Côté","Hélène Bélanger","Raphaël Gagné","François Bouchard"]
+S11 summary 200 {"total":90,"successful":86,"pending":0,"failedOrDisputed":3,"cancelled":0,"revenue":[{"currency":"CAD","amount":1593626}]}
+S11 failed renewals filter 200 2
+S11 bad dates 400
+S10A member cancels 201 2026-11-24T21:19:15.000Z
+S10B plan without currency 201 null 
+S10B class 400 {"code":"BAD_REQUEST","message":"Choose a class type for \"BJJ\" from its list: Kids Fundamentals, Kids Sparring, Adult Fundamentals, Adult Sparring, Competition Team."}
+S10B plan without currency 201 null 
+S10B class 201 
+S10B plan without currency: book 404 {"error":{"code":"NOT_FOUND","message":"Class not found"}}
+S10C declined card: cancel 200 outcome FAILED tx {"amount":1513,"currency":"CAD","status":"FAILED"} stripe PI {"amount":1513,"currency":"cad"}
+S10B plan without currency 201 null 
+S10B class 201 
+S10B plan without currency: cancel 200 outcome CHARGED tx {"amount":1500,"currency":"USD","status":"SUCCESSFUL"} stripe PI {"amount":1500,"currency":"usd"}
+S10C declined card: book 404 {"error":{"code":"NOT_FOUND","message":"Class not found"}}
+S1 subscribers 60
+S2 membership after renewal {"status":"ACTIVE","expiryDate":null,"cancelAt":null}
+S3 membership after failed renewal ACTIVE
+S3 unpaid failed renewal billingDate "2026-10-29T21:20:20.000Z"
+S8 after refund reversal null
+S10B plan without currency 201 null 
+S10B class 201 
+S10B plan without currency: cancel 200 outcome CHARGED tx {"amount":1500,"currency":"USD","status":"SUCCESSFUL"} stripe PI {"amount":1500,"currency":"usd"}
+S10C declined card: cancel 200 outcome FAILED tx {"amount":1513,"currency":"CAD","status":"FAILED"} stripe PI {"amount":1513,"currency":"cad"}

@@ -1,0 +1,40 @@
+{
+ "ptPix": {
+  "status": 201,
+  "body": {
+   "transactionId": "c1b8b1d0-0ad3-461f-ab56-4d76b731d262",
+   "membershipId": "e301b0c7-a9a9-480b-ba08-da06176f47ae"
+  },
+  "bytes": 110
+ },
+ "ptTx": {
+  "id": "c1b8b1d0-0ad3-461f-ab56-4d76b731d262",
+  "schoolId": "03823a34-29c5-4e98-a7b5-927623fde046",
+  "studentId": "353e7cb1-fd17-4b3c-9290-96c545bf9e55",
+  "paymentAccountId": "62f86e15-549e-4c89-9e48-d044ffa1bcf7",
+  "membershipPlanId": "0b509eb0-852d-4580-a186-33fdbac021dd",
+  "kind": "MEMBERSHIP",
+  "bookingId": null,
+  "stripeInvoiceId": null,
+  "membershipId": "e301b0c7-a9a9-480b-ba08-da06176f47ae",
+  "billingDate": "2026-11-04T21:12:32.661Z",
+  "amount": 9000,
+  "currency": "EUR",
+  "status": "SUCCESSFUL",
+  "paymentMethod": "PIX",
+  "recordedById": "e2ca000e-6cc1-403c-b2b2-47708c4b2afc",
+  "cancelledAt": null,
+  "cancelledById": null,
+  "cancelReason": null,
+  "disputedAmount": null,
+  "disputeLostAt": null,
+  "refundedAmount": null,
+  "stripePaymentIntentId": null,
+  "stripeSubscriptionId": null,
+  "surchargeAmount": 0,
+  "chargeId": null,
+  "chargePaymentChannel": null,
+  "createdAt": "2026-11-04T21:12:32.661Z",
+  "updatedAt": "2026-11-04T21:12:32.661Z"
+ }
+}

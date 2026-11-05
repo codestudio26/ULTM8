@@ -1,0 +1,13 @@
+{
+ "tx": "ee1a1e73-cf31-4c37-aede-bf0797f36797",
+ "rfPack": {
+  "status": 404,
+  "body": {
+   "error": {
+    "code": "CHARGE_PAYMENT_NOT_FOUND",
+    "message": "Payment not found"
+   }
+  },
+  "bytes": 75
+ }
+}

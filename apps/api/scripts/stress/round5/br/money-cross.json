@@ -1,0 +1,9 @@
+{
+ "x3": {
+  "error": {
+   "code": "NOT_FOUND",
+   "message": "School not found"
+  }
+ },
+ "x4": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"School not found\"}}"
+}

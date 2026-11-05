@@ -1,0 +1,27 @@
+[
+ {
+  "label": "a pure parent books child",
+  "status": 201,
+  "body": "{\"id\":\"be1fef17-3389-4c9b-bd46-24e6880f8bcb\",\"studentId\":\"533f08e6-416b-4db2-871e-435fc5185b74\",\"classId\":\"c5155358-0b18-47b1-9889-af0d41314bfc\",\"schoolId\":\"448212ad-75a9-43b7-8b17-a88e19592017\",\"branchId\":\"2601a6a5-4230"
+ },
+ {
+  "label": "b parent who trains at the same Branch books child",
+  "status": 403,
+  "body": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+ },
+ {
+  "label": "b2 same parent books child at the other Branch",
+  "status": 201,
+  "body": "{\"id\":\"ae11e5a8-c11b-4710-8861-b131e2be5d1a\",\"studentId\":\"6a16a20d-8ac8-4305-afc0-ad7bd64b945a\",\"classId\":\"7c406d5c-2473-4c38-a763-18294356848b\",\"schoolId\":\"448212ad-75a9-43b7-8b17-a88e19592017\",\"branchId\":\"bec6ee7d-1deb"
+ },
+ {
+  "label": "c coach-parent books own child",
+  "status": 201,
+  "body": "{\"id\":\"abf980fa-87ad-4584-85f8-b553f0375931\",\"studentId\":\"478676b7-f710-4c04-9c9f-ce48c3e7b44d\",\"classId\":\"7c406d5c-2473-4c38-a763-18294356848b\",\"schoolId\":\"448212ad-75a9-43b7-8b17-a88e19592017\",\"branchId\":\"bec6ee7d-1deb"
+ },
+ {
+  "label": "d owner-parent books own child",
+  "status": 201,
+  "body": "{\"id\":\"1eb33303-1a9a-42d6-8d62-daba83328e51\",\"studentId\":\"306cc282-122f-4588-8919-a944fe63c491\",\"classId\":\"c5155358-0b18-47b1-9889-af0d41314bfc\",\"schoolId\":\"448212ad-75a9-43b7-8b17-a88e19592017\",\"branchId\":\"2601a6a5-4230"
+ }
+]

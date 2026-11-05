@@ -1,0 +1,31 @@
+{
+ "class": "201 297d09cb-20b5-462c-b0d6-10da751f6d88",
+ "people": {
+  "kids": 200,
+  "total": 200
+ },
+ "book": {
+  "codes": {
+   "201": 200
+  },
+  "secs": 9.881,
+  "sampleErr": []
+ },
+ "rush": {
+  "secs": 12.45,
+  "ok": 200,
+  "fails": []
+ },
+ "double": {
+  "200": 5
+ },
+ "attendance": [
+  {
+   "n": 0,
+   "d": 0
+  }
+ ],
+ "bookings": 200,
+ "todayStatus": 200,
+ "todayKb": 3
+}

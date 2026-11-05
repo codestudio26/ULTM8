@@ -1,0 +1,9 @@
+{
+ "set4": "400 {\"error\":{\"code\":\"CHECK_IN_CODE_DIGITS_LOCKED\",\"message\":\"This School has more than 500 members, so its check-in codes have 6 digits.\"}}",
+ "lengths": {
+  "6": 501
+ },
+ "interleave": "404,404,404,404,404,404,404,404,404,200,404,404,404,404,404,404,404,404,404",
+ "lockedAfter18Wrong": false,
+ "codesInSchool": 501
+}

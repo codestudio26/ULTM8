@@ -1,0 +1,39 @@
+{
+ "w1race": [
+  [
+   201,
+   null
+  ],
+  [
+   409,
+   "This Class filled up again before the claim completed — please try the next opening."
+  ],
+  [
+   409,
+   "This Class filled up again before the claim completed — please try the next opening."
+  ],
+  [
+   409,
+   "This Class filled up again before the claim completed — please try the next opening."
+  ],
+  [
+   409,
+   "This Class filled up again before the claim completed — please try the next opening."
+  ],
+  [
+   409,
+   "Students are waiting for this Class. Join the waitlist instead (POST /classes/{id}/waitlis"
+  ],
+  [
+   409,
+   "This Class is full for the requested party size — join the waitlist instead (POST /classes"
+  ]
+ ],
+ "winnerMembership": [
+  null
+ ],
+ "w2statuses": {
+  "NOTIFIED": 9,
+  "CLAIMED": 1
+ }
+}

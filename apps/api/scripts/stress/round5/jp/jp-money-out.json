@@ -1,0 +1,15 @@
+{
+ "j4": {
+  "fee": {
+   "amount": 99950,
+   "currency": "JPY",
+   "status": "SUCCESSFUL"
+  }
+ },
+ "j7": {
+  "charge": "d3514b75-4772-4be0-bb12-53e908aca66b",
+  "student": "4c1d9ae9-9ea2-41f0-83fc-5675210dd537",
+  "owed": 72,
+  "pay": 201
+ }
+}

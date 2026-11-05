@@ -1,0 +1,97 @@
+[
+ {
+  "id": "M1 Pix desk sale R$ 450,00 recorded as PIX/BRL/45000",
+  "pass": true,
+  "detail": "201 201 [[\"PIX\",45000,\"BRL\",\"MEMBERSHIP\"],[\"PIX\",45000,\"BRL\"]]"
+ },
+ {
+  "id": "M1b Student told of a desk sale on both paths",
+  "pass": false,
+  "detail": "sell(student page): 0 notices; desk-payments: 1 notices"
+ },
+ {
+  "id": "M2 Pix desk sale clicked 8 times → one payment",
+  "pass": true,
+  "detail": "{\"201\":1,\"409\":7} payments=1"
+ },
+ {
+  "id": "M3 sub at desk 400, friend pass sale 400, gift 201",
+  "pass": true,
+  "detail": "400 400 201"
+ },
+ {
+  "id": "M3b unknown/STRIPE method refused",
+  "pass": true,
+  "detail": "400 400"
+ },
+ {
+  "id": "M4 Manaus staff: off 403, on → own branch 201, SP student refused, instructor refused",
+  "pass": false,
+  "detail": "off 201 switch 200 mao 409 sp 400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This person is not a student at this School.\"}} instr 403"
+ },
+ {
+  "id": "M4b options list only Manaus students",
+  "pass": true,
+  "detail": "200 282 students; outside MAO: 0"
+ },
+ {
+  "id": "M4c options exclude non-students",
+  "pass": true,
+  "detail": ""
+ },
+ {
+  "id": "M5 charge created in BRL",
+  "pass": true,
+  "detail": "201 {\"id\":\"9ff27902-3ac1-4ae7-a498-efc639279f44\",\"schoolId\":\"c75f8f6c-ac25-405f-9674-6ee4cd957c94\",\"studentId\":\"64edaf9e-04b5-4693-b785-38cb20ce5bc4\",\"invoiceNumber\":3,\"invoiceLabel\":\"#0000003\",\"descripti"
+ },
+ {
+  "id": "M5b Guardian sees child's charge",
+  "pass": true,
+  "detail": "200 {\"schools\":[{\"schoolId\":\"c75f8f6c-ac25-405f-9674-6ee4cd957c94\",\"schoolName\":\"R5 BR Academia Conceição Jiu-Jitsu mw2lzfw4\",\"taxId\":null,\"receiptAddress\":null,\"re"
+ },
+ {
+  "id": "M5c another Guardian cannot see it",
+  "pass": true,
+  "detail": "403"
+ },
+ {
+  "id": "M5d R$200 Pix + R$300 cash on a R$389,90 charge → paid, R$110,10 credit",
+  "pass": true,
+  "detail": "p1 201 p2 201 credit=10020"
+ },
+ {
+  "id": "M5e refund: notes required, partial ok, too much 400, card 400, staff 403",
+  "pass": true,
+  "detail": "400 201 400 400 403"
+ },
+ {
+  "id": "M6 card pack R$ 450,00 asks Stripe for 45000 brl",
+  "pass": false,
+  "detail": "503 {\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}} pi=undefined undefined"
+ },
+ {
+  "id": "M7 Guardian buys Kids pack for each child",
+  "pass": false,
+  "detail": "[503,503,503,503]"
+ },
+ {
+  "id": "M7b Guardian cannot buy for someone else's child",
+  "pass": true,
+  "detail": "403"
+ },
+ {
+  "id": "M8 cross-School money refused (owner→PT, PT→SP, franchise owner→SP ledger/students, EUR plan sold at SP)",
+  "pass": true,
+  "detail": "[404,404,404,404,403,404]"
+ },
+ {
+  "id": "M11 bad amounts/dates/currency refused",
+  "pass": true,
+  "detail": "[400,400,400,400,400,400,400,400]"
+ },
+ {
+  "id": "M11b unicode charge description kept",
+  "pass": true,
+  "detail": "201"
+ }
+]

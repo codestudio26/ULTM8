@@ -1,0 +1,46 @@
+{
+ "I1_surnameEmpty": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Surname can't be blank.\"}}",
+ "I1_surnameSpace": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Surname can't be blank.\"}}",
+ "I1_surnameMissing": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"surname must be shorter than or equal to 100 characters; Surname can't be blank.; surname must be a string\"}}",
+ "I1_surnameDot": "201 {\"id\":\"12210200-95b5-4ad8-8516-4c2a0bbc9df8\",\"firstName\":\"Venkataraghavan\",\"surname\":\".\",\"email\":\"r5-in-656281-m4@stress.test\",\"emailSent\":false,\"temporaryPasscode\":\"674014\",\"temporaryPasscodeExpiresAt\":\"2026-11-11T21:10",
+ "I1b_childNoSurname": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"child.Surname can't be blank.; guardian.Surname can't be blank.\"}}",
+ "I1c_patchSurnameEmpty": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Surname can't be blank.\"}}",
+ "I2_sharedPhone": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"property phone should not exist\"}}",
+ "I3_sharedEmail": "409 {\"error\":{\"code\":\"CONFLICT\",\"message\":\"An account with this email already exists — use \\\"Invite\\\" instead.\"}}",
+ "I3b_plusTag": "201 {\"id\":\"4fc34b61-15a7-4616-99a8-a95da3f61da6\",\"firstName\":\"Ravi\",\"surname\":\"Iyer\",\"email\":\"r5-in-513390-18+ravi@stress.test\",\"emailSent\":false,\"temporaryPasscode\":\"266728\",\"temporaryPasscodeExpiresAt\":\"2026-11-11T21:10:56",
+ "I4_adultAsMinor": "201 {\"linkId\":\"ed499ae4-de64-476b-a37d-bb03856ccc9e\",\"studentId\":\"107a8bd3-b7f3-4fef-99fa-6afb345597b3\",\"firstName\":\"Grown\",\"surname\":\"Up\",\"dateOfBirth\":\"1960-01-01T00:00:00.000Z\",\"gender\":null}",
+ "I4_futureBirth": "201 {\"linkId\":\"b8154ec2-7634-4818-9d18-899a5c5c02dc\",\"studentId\":\"ab6741c9-4023-4fe3-89cd-fcd100553acb\",\"firstName\":\"Not\",\"surname\":\"Born\",\"dateOfBirth\":\"2090-01-01T00:00:00.000Z\",\"gender\":null}",
+ "I4_blankSurname": "201 {\"linkId\":\"bc84f6e2-8c16-478f-ace7-d14a135c0167\",\"studentId\":\"d3f79aef-43ff-4ddd-a4d9-66072e4e71c7\",\"firstName\":\"Kavya\",\"surname\":\"   \",\"dateOfBirth\":\"2018-06-06T00:00:00.000Z\",\"gender\":null}",
+ "I4_150chars": "201 {\"linkId\":\"b322af1d-c3e1-4620-9678-c64bdc7c8283\",\"studentId\":\"f48ded5f-125a-4bef-87fe-a69fb552d839\",\"firstName\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+ "I4_feb29_2023": "201 {\"linkId\":\"5543bc43-18e8-44f2-9ba5-e49b187b7908\",\"studentId\":\"ad414248-6d8e-42fe-8684-d4f1563f5833\",\"firstName\":\"Leap\",\"surname\":\"Wrong\",\"dateOfBirth\":\"2023-03-01T00:00:00.000Z\",\"gender\":null}",
+ "I5": {
+  "storedPrecomposed_searchPrecomposed": 1,
+  "storedPrecomposed_searchNFC": 0,
+  "nfcOfStored": [
+   "91c",
+   "93c",
+   "94b",
+   "92f",
+   "93e"
+  ]
+ },
+ "I5_writeNormalised": {
+  "status": 201,
+  "stored": [
+   "95b",
+   "94b",
+   "92f",
+   "93e"
+  ]
+ },
+ "I5_tamilZWNJ": 0,
+ "I5_accentFold": 0,
+ "I6": {
+  "session": 201,
+  "monoAsTyped": "200 {\"alreadyMember\":true}",
+  "monoWithDot": "200 {\"alreadyMember\":true}",
+  "initialsFull": "200 {\"alreadyMember\":true}",
+  "initialsNoDots": "200 {\"alreadyMember\":false}",
+  "initialsSurnameFirst": "200 {\"alreadyMember\":true}"
+ }
+}

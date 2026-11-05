@@ -1,0 +1,67 @@
+[
+ {
+  "id": "setup classes generated",
+  "pass": true,
+  "detail": "19 18"
+ },
+ {
+  "id": "F0 Manaus class at 18:00 Manaus time, SP at 18:00 São Paulo time",
+  "pass": true,
+  "detail": "2026-11-05T22:00:00.000Z 2026-11-05T21:00:00.000Z"
+ },
+ {
+  "id": "F1 both divorced parents see all 4 children",
+  "pass": true,
+  "detail": "200 200 4 4 {\"items\":[{\"linkId\":\"adef832c-262e-4832-839b-645d0c48c563\",\"studentId\":\"c09b71d1-5fe4-4613-96ef-4de99e55a22c\",\"firstName\":\"Isabela\",\"surname\":\"Ferreira\",\"dateOfBirth\":\"2021-01-02T00:00:00.000Z\",\"gende"
+ },
+ {
+  "id": "F2t a parent who also trains here can book their own kids",
+  "pass": false,
+  "detail": "[403,403,403,403]"
+ },
+ {
+  "id": "F2 parent books kids who have a membership",
+  "pass": false,
+  "detail": "[201,404,404,404]"
+ },
+ {
+  "id": "F2b other parent sees bookings; a stranger parent cannot read or book",
+  "pass": true,
+  "detail": "200 403 403"
+ },
+ {
+  "id": "F2c parent double-clicks Book ×6 → one booking, one credit",
+  "pass": true,
+  "detail": "{\"201\":1,\"409\":5} bookings=1 credits 5→4"
+ },
+ {
+  "id": "F4 class cancelled → booked kids and both their parents told, no other family",
+  "pass": true,
+  "detail": "cancel 201; booked 1; parents 2, told 2; other families told 0"
+ },
+ {
+  "id": "F5 stranger parent cannot consent for the child",
+  "pass": true,
+  "detail": "400"
+ },
+ {
+  "id": "F6 Carnaval closure: Feb 8–10 have no classes on the calendar, Feb 11 does",
+  "pass": true,
+  "detail": "201 closed days shown:  later dates 2027-02-01,2027-02-02,2027-02-03,2027-02-04,2027-02-05,2027-02-11,2027-02-12,2027-02-13,2027-02-14"
+ },
+ {
+  "id": "F6b Manaus-only closure cancels Manaus class, not São Paulo; credits back; parents told",
+  "pass": true,
+  "detail": "closure 201 {\"id\":\"ca503c9c-9c9b-494e-9e2a-1e7b65e1d115\",\"schoolId\":\"c75f8f6c-ac25-405f-9674-6ee4cd957c94\",\"branchId\":\"60ed0a07-2df1; booked {\"201\":6}; MAO cancelled true; SP cancelled 0; packs credited back 0/0; parent notices 6"
+ },
+ {
+  "id": "F6c bad closures refused (reversed, 29 Feb 2027, past, >1y, staff, other School, blank, other School's branch)",
+  "pass": true,
+  "detail": "[400,400,400,400,403,403,400,400]"
+ },
+ {
+  "id": "F8 one-off class across midnight created and bookable",
+  "pass": true,
+  "detail": "201 201 {\"id\":\"31c281dc-09a2-44a7-bc0a-737e9b946d4b\",\"studentId\":\"4d725bc6-7a98-4ac6-a8b9-298c10ebdb02\",\"classId\":\"cf91b4a7-959d-491b-99f4-958ff99f7b83\",\"scho"
+ }
+]

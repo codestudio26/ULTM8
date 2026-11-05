@@ -1,0 +1,84 @@
+{
+ "midnightSlot": {
+  "status": 400,
+  "body": {
+   "error": {
+    "code": "BAD_REQUEST",
+    "message": "The end time must be after the start time."
+   }
+  }
+ },
+ "midnightCalendar": {
+  "id": "7f16f239-d5d9-428b-8072-1e247c1081ce",
+  "timetableSlotId": null,
+  "title": "Midnight Madness (one-off)",
+  "branchId": "327149fe-3c61-4147-897e-39fba33fddb7",
+  "instructorId": "940ad8e2-0600-4fee-9d64-a6b1a1db60a0",
+  "activities": [
+   "MMA"
+  ],
+  "styles": [
+   {
+    "classType": null,
+    "disciplineId": "f2be1880-ff80-476f-b813-f17977f63fc5"
+   }
+  ],
+  "date": "2026-11-13",
+  "startTime": "23:00",
+  "endTime": "00:30",
+  "breakStart": null,
+  "breakEnd": null,
+  "startDate": "2026-11-14T04:00:00.000Z",
+  "endDate": "2026-11-14T05:30:00.000Z",
+  "capacity": 20,
+  "seatsTaken": 0,
+  "waiting": 0,
+  "cancelledAt": null,
+  "archivedAt": null
+ },
+ "thanksgiving": {
+  "id": "53d59c05-2dff-4d92-befa-fced9e60e590",
+  "schoolId": "b00299b6-d290-41eb-bcd4-323ed431fd10",
+  "branchId": null,
+  "startDate": "2026-11-26",
+  "endDate": "2026-11-26",
+  "reason": "Thanksgiving",
+  "createdAt": "2026-11-04T21:09:41.847Z",
+  "cancelledClasses": 4
+ },
+ "tucson": {
+  "patch": 200,
+  "job": true,
+  "classes": [
+   "Tue 10 Nov 04:00",
+   "Tue 17 Nov 04:00",
+   "Tue 24 Nov 04:00",
+   "Tue 1 Dec 04:00"
+  ]
+ },
+ "tucsonCalendar": [
+  "2026-11-10 04:00",
+  "2026-11-17 04:00",
+  "2026-11-24 04:00",
+  "2026-12-01 04:00"
+ ],
+ "typoBranch": {
+  "status": 201,
+  "tz": "Mountain Standard Time"
+ },
+ "typo": {
+  "slot": 500,
+  "slotBody": {
+   "error": {
+    "code": "INTERNAL_ERROR",
+    "message": "Internal server error"
+   }
+  },
+  "classes": null,
+  "calendar": 200
+ },
+ "summary": {
+  "from": "2026-11-02",
+  "to": "2026-11-08"
+ }
+}

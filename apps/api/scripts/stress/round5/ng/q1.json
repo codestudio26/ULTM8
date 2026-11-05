@@ -1,0 +1,108 @@
+{
+ "rs": [
+  {
+   "status": 409,
+   "body": {
+    "error": {
+     "code": "CONFLICT",
+     "message": "This sign-up has already been dealt with."
+    }
+   },
+   "bytes": 83
+  },
+  {
+   "status": 200,
+   "body": {
+    "signUp": {
+     "id": "9b317e40-e7a7-46d8-8fa1-ed8830bea69a",
+     "kind": "VISITOR",
+     "status": "APPROVED",
+     "firstName": "Ọ̀rẹ́olúwa",
+     "surname": "Adébáyọ̀",
+     "dateOfBirth": "1998-02-28T00:00:00.000Z",
+     "gender": "FEMALE",
+     "email": "r5-ng-6486128-walkin@stress.test",
+     "phone": "+2348031234567",
+     "heardFrom": "Friend at church",
+     "emergencyName": null,
+     "emergencyPhone": null,
+     "emergencyRelationship": null,
+     "branchId": "2601a6a5-4230-403c-92ac-c6b5c006c41b",
+     "branchName": "Lagos Island",
+     "hasAccount": true,
+     "userId": "6c61efcd-c9d7-4ce6-bdda-5b7f13919b3a",
+     "approvedByName": "Chukwuemeka Okonkwo-Adeyemi",
+     "approvedAt": "2026-11-04T21:15:24.817Z",
+     "rejectedByName": null,
+     "rejectedAt": null,
+     "deletesAt": null,
+     "respondedAt": null,
+     "createdAt": "2026-11-04T21:14:12.769Z"
+    },
+    "accountCreated": true,
+    "invited": false,
+    "visitPassGiven": true,
+    "emailFailed": true,
+    "temporaryPasscode": "844244"
+   },
+   "bytes": 835
+  },
+  {
+   "status": 409,
+   "body": {
+    "error": {
+     "code": "CONFLICT",
+     "message": "This sign-up has already been dealt with."
+    }
+   },
+   "bytes": 83
+  },
+  {
+   "status": 409,
+   "body": {
+    "error": {
+     "code": "CONFLICT",
+     "message": "This sign-up has already been dealt with."
+    }
+   },
+   "bytes": 83
+  },
+  {
+   "status": 409,
+   "body": {
+    "error": {
+     "code": "CONFLICT",
+     "message": "An account with this email already exists — use \"Invite\" instead."
+    }
+   },
+   "bytes": 111
+  },
+  {
+   "status": 409,
+   "body": {
+    "error": {
+     "code": "CONFLICT",
+     "message": "This sign-up has already been dealt with."
+    }
+   },
+   "bytes": 83
+  }
+ ],
+ "after": [
+  {
+   "status": "PENDING"
+  },
+  {
+   "status": "PENDING"
+  },
+  {
+   "status": "PENDING"
+  },
+  {
+   "status": "APPROVED"
+  },
+  {
+   "status": "PENDING"
+  }
+ ]
+}

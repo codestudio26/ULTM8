@@ -1,0 +1,47 @@
+{
+ "card": {
+  "paid": 15000,
+  "codes": {
+   "201": 3,
+   "409": 7
+  },
+  "refundRows": 3,
+  "rowAmounts": [
+   5000,
+   5000,
+   5000
+  ],
+  "stripeRefundCalls": 3,
+  "stripeRefundAmounts": [
+   5000,
+   5000,
+   5000
+  ],
+  "distinctStripeRefundIds": 3,
+  "errs": [
+   null,
+   null,
+   null
+  ]
+ },
+ "MONEY_BACK": {
+  "pay": 201,
+  "codes": {
+   "201": 3,
+   "409": 7
+  },
+  "refundRows": 3,
+  "total": 15000,
+  "notices": 3
+ },
+ "CREDIT": {
+  "pay": 201,
+  "codes": {
+   "201": 3,
+   "400": 7
+  },
+  "refundRows": 3,
+  "total": 15000,
+  "notices": 3
+ }
+}

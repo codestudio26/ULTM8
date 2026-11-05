@@ -1,0 +1,12 @@
+[
+ {
+  "id": "C1 card pack R$ 450,00 → Stripe 45000 brl",
+  "pass": true,
+  "detail": "201 {\"outcome\":\"requires_checkout\",\"checkoutUrl\":\"https://checkout.stripe.test/cs_7c707e1c471a766976\",\"transactionId\":\"29a1e51f-0855-54da-89ed-4cb4b482735c\"} pi 45000 brl"
+ },
+ {
+  "id": "C2 Guardian buys a Kids pack for each child by card (or is told the child already has one)",
+  "pass": true,
+  "detail": "[201,201,201,201]"
+ }
+]
