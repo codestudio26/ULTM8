@@ -3896,6 +3896,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "关闭时，任何人都不能凭访客通行证签到。",
       frozenMembers: "允许已冻结的会员签到",
       frozenMembersHint: "关闭时，会员资格已冻结的会员不能签到。",
+      openMatUsesCredit: "开放垫训练使用课程次数",
+      openMatUsesCreditHint: "开启：预约开放垫训练会像其他课程一样使用课程包或好友通行证的次数。关闭：不使用次数，但仍需要有效的会员资格或通行证。",
       withoutBooking: "无需预约即可签到",
       withoutBookingHint: "开启后，会员可以签到未预约的课程。签到时如课程还有名额会占用一个名额，并像预约一样使用其会员资格或课程次数。关闭时，需要先预约。",
       overdue: "逾期付款时禁止签到",

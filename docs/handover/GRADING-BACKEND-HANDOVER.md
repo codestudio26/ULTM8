@@ -295,7 +295,7 @@ Not grading features themselves, but B10 and B11 depend on them. Both are decide
 - **Scheduled open mat:** a timetable class with the class type "Open mat".
 - **Unplanned open mat:** "+ Open mat session" at the front desk: style, start time, length (default 60 min). It creates a one-off class, so check-in, attendance and hours work unchanged.
 - **Every check-in has a booking:** checking in without one creates it at that moment.
-- **"Open mat uses a class credit"**, a School setting in Check-in rules, **on by default**.
+- **"Open mat uses a class credit"**, a School setting in Check-in rules, **on by default**. *Built 5 Nov 2026:* `School.openMatUsesClassCredit` (check-in rules `openMatUsesCredit`); off, an open mat booking (every style "Open mat") is funded by the usual membership but takes no credit (`Booking.creditUsed` / `BookingAttendee.creditUsed` false), and a cancellation then resolves nothing. Migration `20270214000002_open_mat_class_credit`.
 - **Who can start an unplanned session:** the owner and staff with **"Can start open mat sessions"** (per person, **off for everyone by default**).
 - **Students are told in the app:** a notification plus a home-screen banner while it's on, with "Book"; a push alert only for students who turn on "Open mat alerts" (off by default). Audience: live membership or pass, home branch = that branch, trains that style.
 

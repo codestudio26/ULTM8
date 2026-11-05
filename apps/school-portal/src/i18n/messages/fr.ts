@@ -3941,6 +3941,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Si désactivé, personne ne s’enregistre avec un pass visite.",
       frozenMembers: "Autoriser les membres gelés à s'enregistrer",
       frozenMembersHint: "Désactivé, un membre dont l'abonnement est gelé ne peut pas s'enregistrer.",
+      openMatUsesCredit: "L'open mat utilise un crédit de cours",
+      openMatUsesCreditHint: "Activé : réserver un open mat utilise un crédit d'un carnet de cours ou d'un pass ami, comme tout cours. Désactivé : il n'utilise aucun crédit, mais un abonnement ou un pass reste nécessaire.",
       withoutBooking: "S'enregistrer sans réservation",
       withoutBookingHint: "Activé, les membres peuvent s'enregistrer à un cours qu'ils n'ont pas réservé. L'enregistrement prend une place s'il en reste une et utilise leur abonnement ou un crédit de cours, comme une réservation. Désactivé, ils doivent d'abord réserver.",
       overdue: "Bloquer l’enregistrement en cas de retard de paiement",
