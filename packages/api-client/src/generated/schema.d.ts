@@ -12668,6 +12668,15 @@ export interface components {
             breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
+            /**
+             * @description Decision 431: who can book.
+             * @enum {string}
+             */
+            audience: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age that can book (whole years on the class date). */
+            minAge?: number | null;
+            /** @description Oldest age that can book. */
+            maxAge?: number | null;
             /** @description The IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. Show the class's times on this clock. */
             timezone?: string | null;
         };

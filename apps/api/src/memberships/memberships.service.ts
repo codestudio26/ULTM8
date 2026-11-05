@@ -1283,8 +1283,9 @@ export class MembershipsService {
    * under an advisory lock — see that function's own comment for why.
    */
   async createMembershipAndReturn(studentId: string, plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null }, stripeSubscriptionId: string | null) {
-    // Decision 431 item 8: an N-day pass ends on calendar days in the School's zone.
-    const schoolZone = await schoolZoneFor(this.prismaJobs, plan.schoolId);
+    // Decision 431 item 8: an N-day pass ends on calendar days in the School's
+    // zone (read only for a plan that expires).
+    const schoolZone = plan.expiryDurationDays ? await schoolZoneFor(this.prismaJobs, plan.schoolId) : null;
     try {
       const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await assertCanCreateMembership(tx, studentId, plan.schoolId, plan);

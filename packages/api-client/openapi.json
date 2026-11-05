@@ -39466,6 +39466,25 @@
             "nullable": true,
             "description": "Nullable = unlimited."
           },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Decision 431: who can book."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Youngest age that can book (whole years on the class date)."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Oldest age that can book."
+          },
           "timezone": {
             "type": "string",
             "nullable": true,
@@ -39478,7 +39497,8 @@
           "title",
           "activities",
           "startDate",
-          "endDate"
+          "endDate",
+          "audience"
         ]
       },
       "AcademyDetailDto": {

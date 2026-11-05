@@ -88,6 +88,6 @@ export async function assertWhoCanBook(
   }
   const refusal = whoCanBookRefusal(cls, zone, { gender: member?.gender ?? null, dateOfBirth: member?.dateOfBirth ?? null });
   if (refusal) {
-    throw new ForbiddenException({ ...refusal, message: `${refusal.message} A member of staff can book them with an override reason.` });
+    throw new ForbiddenException({ code: refusal.code, message: `${refusal.message} A member of staff can book them with an override reason.` });
   }
 }
