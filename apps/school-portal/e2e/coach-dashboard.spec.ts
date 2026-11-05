@@ -161,3 +161,34 @@ test('a coach sees the student list, read only, and "Coming up" shows the time a
   await expect(row).toContainText('North');
   await expect(row).toContainText(/\d{1,2}:\d{2}/);
 });
+
+test('"Coming up" names no branch while the coach can\'t see the class\'s branch; "Whole School" is only for a class with no branch (Decision 425 Q4)', async ({ page }) => {
+  const north = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'North' } });
+  const coach = await coachWith({});
+  const start = new Date(Date.now() + 2 * 86_400_000);
+  const mk = (title: string, branchId: string | null) =>
+    db.class.create({ data: { id: randomUUID(), schoolId: s.schoolId, branchId, instructorId: coach.id, title, startDate: start, endDate: new Date(start.getTime() + 3_600_000) } });
+  await mk('Morning BJJ', north.id);
+  await mk('Open mat', null);
+  // Hold the branch list back: until it arrives the coach can't see North,
+  // and a class there must not be called "Whole School" (it used to be).
+  let release = () => {};
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route('**/v1/schools/*/branches?**', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await signIn(page, coach.token);
+  await page.goto('/coach');
+
+  const classes = page.getByRole('region', { name: 'My classes' });
+  const morning = classes.getByRole('listitem').filter({ hasText: 'Morning BJJ' });
+  await expect(morning).toContainText(/\d{1,2}:\d{2}.* · Morning BJJ/);
+  await expect(classes.getByRole('listitem').filter({ hasText: 'Open mat' })).toContainText('Open mat · Whole School');
+  await expect(morning).not.toContainText('Whole School');
+  await expect(morning).not.toContainText('North');
+
+  release();
+  await expect(morning).toContainText('Morning BJJ · North');
+  await expect(morning).not.toContainText('Whole School');
+});

@@ -233,12 +233,14 @@ function ClassList({ schoolId, classes, links }: { schoolId: string; classes: Cl
   return (
     <ul style={{ margin: 0, paddingLeft: 18 }}>
       {classes.map((c) => {
-        const branch = branches.find((b) => b.id === c.branchId);
+        const branch = c.branchId ? branches.find((b) => b.id === c.branchId) : undefined;
+        // "Whole School" only for a class with no branch. A branch the
+        // coach can't see is left out rather than guessed, as in the app.
+        const where = c.branchId ? branch?.name : t('coach.dashboard.wholeSchool');
         return (
           <li key={c.id}>
             {formatInZone(c.startDate, classZone(branch?.timezone, school.data?.timezone), formatLocale())} · {c.title}
-            {' · '}
-            {branch ? branch.name : t('coach.dashboard.wholeSchool')}
+            {where ? ` · ${where}` : null}
             {c.cancelledAt ? (
               <>
                 {' · '}

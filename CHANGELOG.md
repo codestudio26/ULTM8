@@ -51,6 +51,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (its branch's time zone, else the School's) and the branch name ("Whole
   School" when it has none), as the web dashboard does. No API or database
   change.
+- **Web coach dashboard: no "Whole School" for a branch it can't show** —
+  the portal's coach dashboard labelled a class "Whole School" whenever it
+  couldn't find the class's branch (for example while the branch list was
+  still loading). It now shows no branch name then, as the app does. "Whole
+  School" is only for a class with no branch.
 - **Coaches portal fixes** (Coaches portal review CP2–CP6, Decision 424) —
   the coach dashboard no longer lists archived weekly slots, and marks a
   cancelled class "Cancelled" with no roll call or QR link. An owner who also
