@@ -12,6 +12,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { ResolveCancellationAction } from './dto/resolve-cancellation.dto';
+import { noticeWallTime } from '../common/notice-time';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -89,16 +90,6 @@ const SETTINGS_SELECT = {
 
 const OPEN_RESOLUTIONS: RefundResolution[] = ['PENDING', 'REFUND_OWED'];
 
-/** "Sat 24 Oct 2026, 18:00" in the class's own timezone (its branch's, else the
- * School's), for the class-cancelled notification. */
-function formatClassTime(date: Date, timeZone: string): string {
-  const opts: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
-  try {
-    return new Intl.DateTimeFormat('en-GB', { ...opts, timeZone }).format(date);
-  } catch {
-    return `${new Intl.DateTimeFormat('en-GB', { ...opts, timeZone: 'UTC' }).format(date)} UTC`;
-  }
-}
 const MONEY_RESOLUTIONS: RefundResolution[] = ['MONEY_REFUNDED', 'REFUND_OWED'];
 
 /**
@@ -521,7 +512,9 @@ export class CancellationService {
     });
 
     const branch = cls.branchId ? await this.prismaJobs.branch.findUnique({ where: { id: cls.branchId }, select: { timezone: true } }) : null;
-    const when = formatClassTime(cls.startDate, branch?.timezone ?? school.timezone ?? 'UTC');
+    // The class's own zone (its Branch's, else the School's), in machine form:
+    // each reader's app formats it in their language (Decision 433, TXT-3).
+    const when = noticeWallTime(cls.startDate, branch?.timezone ?? school.timezone ?? 'UTC');
     // The portal translates these exact shapes (i18n/server/translate.ts) — keep them in step.
     const body = `${cls.title} on ${when} has been cancelled by the school.${trimmedReason ? ` Reason: ${trimmedReason}` : ''}`;
     const recipients = new Set([...bookings.map((b) => b.studentId), ...earlier.map((b) => b.studentId), ...waiting.map((w) => w.studentId)]);

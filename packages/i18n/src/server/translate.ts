@@ -203,6 +203,40 @@ function formatDay(day: string, locale: string): string {
   }
 }
 
+/** A class's wall time as notices store it (Decision 433, TXT-3):
+ * "YYYY-MM-DD HH:mm", maybe followed by " UTC" when the class's zone couldn't
+ * be read. */
+const WALL_TIME = /^(\d{4}-\d{2}-\d{2}) (\d{2}):(\d{2})( UTC)?$/;
+
+/**
+ * A class's date and time in the reader's language, from the machine form the
+ * API writes (Decision 433, TXT-3), like `formatDay` does for a day: "Thu, 12
+ * Nov 2026, 20:00" in English (UK), "Thu, Nov 12, 2026, 8:00 PM" in English
+ * (US), "الخميس، ١٢ نوفمبر ٢٠٢٦ ..." in Arabic. The time is the class's own
+ * wall time, so it is formatted as is, never shifted to the reader's zone.
+ * Notices written before the change hold English ("Thu, 12 Nov 2026, 20:00",
+ * "Monday 9 Nov at 21:30") with no year to rebuild them from, so anything
+ * that isn't the machine form is shown as it was.
+ */
+export function formatWhen(when: string, locale: string): string {
+  const m = when.match(WALL_TIME);
+  if (!m) return when;
+  try {
+    const text = new Intl.DateTimeFormat(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'UTC',
+    }).format(new Date(`${m[1]}T${m[2]}:${m[3]}:00.000Z`));
+    return m[4] ? `${text} UTC` : text;
+  } catch {
+    return when;
+  }
+}
+
 const NOTIFICATION_TITLES: Record<string, string> = {
   'A spot opened up': 'spotOpenedTitle',
   'Ready to grade': 'readyToGradeTitle',
@@ -294,9 +328,9 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   // Decision 291 — CancellationService (apps/api/src/bookings/cancellation.service.ts).
   [
     /^(.+) on (.+?) has been cancelled by the school\. Reason: (.+)$/s,
-    (m, { t }) => n(t, 'classCancelledBySchoolBodyWithReason', { class: m[1], when: m[2], reason: m[3] }),
+    (m, { t, locale }) => n(t, 'classCancelledBySchoolBodyWithReason', { class: m[1], when: formatWhen(m[2], locale), reason: m[3] }),
   ],
-  [/^(.+) on (.+?) has been cancelled by the school\.$/s, (m, { t }) => n(t, 'classCancelledBySchoolBody', { class: m[1], when: m[2] })],
+  [/^(.+) on (.+?) has been cancelled by the school\.$/s, (m, { t, locale }) => n(t, 'classCancelledBySchoolBody', { class: m[1], when: formatWhen(m[2], locale) })],
   [
     /^A cancelled booking needs a refund decision or a cash refund paid\. See Cancellations to resolve\.$/,
     (_m, { t }) => n(t, 'cancellationReviewBody'),
@@ -340,11 +374,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
   // apps/api/src/timetable/timetable.service.ts — "Your booking moved with it." is
   // the wording before the waitlist was told too.
-  [/^(.+) has moved to (.+)\. (?:Bookings|Your booking) moved with it\.$/s, (m, { t }) => n(t, 'classMovedBody', { class: m[1], when: m[2] })],
-  [/^(.+) has moved to (.+)\. Your waitlist place moved with it\.$/s, (m, { t }) => n(t, 'classMovedWaitlistBody', { class: m[1], when: m[2] })],
+  [/^(.+) has moved to (.+)\. (?:Bookings|Your booking) moved with it\.$/s, (m, { t, locale }) => n(t, 'classMovedBody', { class: m[1], when: formatWhen(m[2], locale) })],
+  [/^(.+) has moved to (.+)\. Your waitlist place moved with it\.$/s, (m, { t, locale }) => n(t, 'classMovedWaitlistBody', { class: m[1], when: formatWhen(m[2], locale) })],
   [
     /^(.+) on (.+) was cancelled by your School\. Any class credit you used has been given back\.$/s,
-    (m, { t }) => n(t, 'classCancelledBody', { class: m[1], when: m[2] }),
+    (m, { t, locale }) => n(t, 'classCancelledBody', { class: m[1], when: formatWhen(m[2], locale) }),
   ],
   // Decision 364 — apps/api/src/tenants/franchises/franchise-notifications.ts.
   [/^(.+) has asked to join (.+)\.$/s, (m, { t }) => n(t, 'joinAskedBody', { school: m[1], franchise: m[2] })],
@@ -363,9 +397,12 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   // Decision 386 — apps/api/src/open-mats/open-mats.service.ts.
   [
     /^Open mat \((.+)\) at (.+) on (.+), for (\d+) minutes\. Book in the app to join\.$/s,
-    (m, { t }) => n(t, 'openMatStyleBody', { style: m[1], place: m[2], when: m[3], minutes: m[4] }),
+    (m, { t, locale }) => n(t, 'openMatStyleBody', { style: m[1], place: m[2], when: formatWhen(m[3], locale), minutes: m[4] }),
   ],
-  [/^Open mat at (.+) on (.+), for (\d+) minutes\. Book in the app to join\.$/s, (m, { t }) => n(t, 'openMatBody', { place: m[1], when: m[2], minutes: m[3] })],
+  [
+    /^Open mat at (.+) on (.+), for (\d+) minutes\. Book in the app to join\.$/s,
+    (m, { t, locale }) => n(t, 'openMatBody', { place: m[1], when: formatWhen(m[2], locale), minutes: m[3] }),
+  ],
   [
     body(String.raw`^(.+) was promoted automatically to (.+) \(${STYLE}\)\.$`),
     (m, { t }) => n(t, 'autoPromotedBody', { name: m[1], rank: m[2], style: m[3] }),
@@ -589,6 +626,24 @@ function known({ messages, patterns, prefixes }: CompiledMap, message: string): 
     }
   }
   return null;
+}
+
+/**
+ * English readers (English (UK), and the "English (US)" formatting variant):
+ * the API's own text as it is, except a class's date and time in a notice,
+ * which the API now writes in machine form (Decision 433, TXT-3) and is
+ * formatted here for `locale`. A School's broadcast is its own words and is
+ * never touched.
+ */
+export function createEnglishServerTextTranslator(locale: string): ServerTextTranslator {
+  const times = /\b(\d{4}-\d{2}-\d{2} \d{2}:\d{2})( UTC)?\b/g;
+  return {
+    error: (_status, _code, message) => message,
+    notification({ title, body, type }) {
+      if (type === 'SCHOOL_BROADCAST') return { title, body };
+      return { title, body: body.replace(times, (_m, when: string, utc?: string) => formatWhen(`${when}${utc ?? ''}`, locale)) };
+    },
+  };
 }
 
 /** `loadMessages` is the locale's map loader: awaited per error, so an error that

@@ -76,6 +76,27 @@ describe('I18nProvider (Decision 323)', () => {
     expect(getByTestId('locale').props.children).toBe('en-GB');
   });
 
+  it('"English (US)" reads the English text with US dates (Decision 433)', async () => {
+    mocked(locales.deviceLocale).mockReturnValue('en-US');
+    let notice: { title: string; body: string } | null = null;
+    function NoticeProbe() {
+      const { serverText, locale } = useI18n();
+      notice = serverText.notification({ title: 'Class moved', body: 'Sparring has moved to 2026-11-12 20:00. Bookings moved with it.', type: 'CLASS_MOVED' });
+      return <Text testID="locale">{locale}</Text>;
+    }
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { getByTestId } = await render(
+      <QueryClientProvider client={client}>
+        <I18nProvider>
+          <NoticeProbe />
+        </I18nProvider>
+      </QueryClientProvider>,
+    );
+    await waitFor(() => expect(getByTestId('locale').props.children).toBe('en-US'));
+    expect(notice!.title).toBe('Class moved');
+    expect(notice!.body).toMatch(/^Sparring has moved to Thu, Nov 12, 2026, 8:00\s?PM\. Bookings moved with it\.$/);
+  });
+
   it('a Platform Admin row under studentApp.* replaces the built-in text; a portal row does not', async () => {
     overrides = [
       { screen: 'home', labelKey: 'title', content: 'Portal wording' },

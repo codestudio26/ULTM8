@@ -1,7 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { DateTime } from 'luxon';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
@@ -15,6 +14,7 @@ import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { recordStaffActivity } from '../tenants/staff-activity/staff-activity';
 import { StartOpenMatDto } from './dto/open-mat.dto';
+import { noticeWallTime } from '../common/notice-time';
 
 const STAFF_ROLES = ['BRANCH_STAFF', 'INSTRUCTOR'] as const;
 const DEFAULT_MINUTES = 60;
@@ -226,7 +226,8 @@ export class OpenMatsService {
 
     const school = await this.prismaJobs.school.findUniqueOrThrow({ where: { id: o.schoolId }, select: { name: true, timezone: true } });
     const zone = o.branch?.timezone ?? school.timezone ?? 'UTC';
-    const when = DateTime.fromJSDate(o.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm");
+    // Decision 433 (TXT-3): machine form, formatted in each reader's language.
+    const when = noticeWallTime(o.startDate, zone);
     const place = o.branch?.name ?? school.name;
     const body = `Open mat${o.styleName ? ` (${o.styleName})` : ''} at ${place} on ${when}, for ${o.minutes} minutes. Book in the app to join.`;
     for (const userId of recipients) {
