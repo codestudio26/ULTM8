@@ -107,6 +107,10 @@ export const charges = {
     forRank: "{rank} · {style}",
   },
   // Decision 413 — late fees.
+  // Decision 435 item 19.
+  earlyExitFee: {
+    label: "Early-exit fee",
+  },
   lateFee: {
     label: "Late fee",
     forInvoice: "For invoice {invoice} ({description}), due {date}",

@@ -3237,6 +3237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Le contrat n'a pas pu être enregistré.",
       invalidTerm: "Saisis un nombre entier de mois entre 1 et 120.",
       invalidFee: "Saisis les frais comme un montant, par exemple 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Arrêter l'abonnement après la durée minimale",
+      endsAfterTermHint: "Il s'arrête le jour où la durée minimale se termine au lieu de se renouveler. Un gel repousse ce jour du nombre de jours gelés.",
+      endsAfterTermLine: "Se termine après la durée minimale (sans renouvellement)",
       studentCardTitle: "Contrats signés",
       loadFailed: "Impossible de charger les contrats signés.",
       signedOn: "Signé le {date} par {name}",
@@ -4793,6 +4797,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Y renoncer ou les annuler dans la progression",
       waivedLine: "Frais annulés par renonciation dans la progression le {date} par {name}",
       cancelledLine: "Frais annulés dans la progression le {date} par {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Frais de résiliation anticipée",
     },
     lateFee: {
       badge: "Frais de retard",

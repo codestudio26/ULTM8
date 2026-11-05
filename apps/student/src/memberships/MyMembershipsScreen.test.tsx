@@ -54,6 +54,26 @@ describe('MembershipRow — cancelling a Subscription', () => {
     expect(queryByText('Cancel subscription')).toBeNull();
   });
 
+  const ENDS_AFTER_TERM = { minimumTermEndsAt: '2030-03-15T12:00:00Z', earlyExitFee: 0, currency: 'GBP', endsAfterMinimumTerm: true };
+
+  it('Decision 435 item 16: a contract that ends after its minimum term says so', async () => {
+    const { getByText } = await render(<MembershipRow membership={{ ...SUBSCRIPTION, contract: ENDS_AFTER_TERM } as never} />);
+    expect(getByText(/^Ends after its minimum term, on .*\. It doesn't renew\.$/)).toBeTruthy();
+  });
+
+  it('Decision 435 item 16: once set to stop on that day, it still reads as ending after the term, not cancelled', async () => {
+    const { getByText, queryByText } = await render(
+      <MembershipRow membership={{ ...SUBSCRIPTION, contract: ENDS_AFTER_TERM, cancelAt: '2030-03-15T12:00:00Z' } as never} />,
+    );
+    expect(getByText(/^Ends after its minimum term/)).toBeTruthy();
+    expect(queryByText(/Cancelled, ends/)).toBeNull();
+  });
+
+  it('Decision 435 item 16: cancelled to an earlier day, it reads as cancelled', async () => {
+    const { getByText } = await render(<MembershipRow membership={{ ...SUBSCRIPTION, contract: ENDS_AFTER_TERM, cancelAt: '2029-11-01T12:00:00Z' } as never} />);
+    expect(getByText(/Cancelled, ends/)).toBeTruthy();
+  });
+
   it('offers nothing for a one-time plan', async () => {
     const { queryByText } = await render(<MembershipRow membership={{ ...SUBSCRIPTION, frequency: 'ONE_TIME' } as never} />);
     expect(queryByText('Cancel subscription')).toBeNull();

@@ -72,6 +72,9 @@ export class MembershipPlanResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Goes up by one each time the contract changes; null = no contract.' })
   contractVersion!: number | null;
 
+  @ApiProperty({ description: 'Decision 435 item 16: the Subscription stops when the minimum term ends instead of renewing.' })
+  contractEndsAfterMinimumTerm!: boolean;
+
   @ApiProperty()
   createdAt!: string;
 

@@ -3237,6 +3237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Het contract kon niet worden opgeslagen.",
       invalidTerm: "Vul een heel aantal maanden in van 1 tot 120.",
       invalidFee: "Vul de kosten in als bedrag, bijvoorbeeld 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Abonnement na de minimale looptijd beëindigen",
+      endsAfterTermHint: "Het stopt op de dag dat de minimale looptijd eindigt in plaats van te verlengen. Bevriezen schuift die dag op met het aantal bevroren dagen.",
+      endsAfterTermLine: "Eindigt na de minimale looptijd (geen verlenging)",
       studentCardTitle: "Getekende contracten",
       loadFailed: "De getekende contracten konden niet worden geladen.",
       signedOn: "Getekend op {date} door {name}",
@@ -4793,6 +4797,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Kwijtschelden of annuleren bij graduatie",
       waivedLine: "Vergoeding op {date} door {name} kwijtgescholden bij graduatie",
       cancelledLine: "Vergoeding op {date} door {name} geannuleerd bij graduatie",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Kosten voor vroegtijdig opzeggen",
     },
     lateFee: {
       badge: "Te-laatvergoeding",

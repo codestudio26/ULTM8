@@ -231,6 +231,9 @@ export class ChargeResponseDto {
   })
   promotionFee!: PromotionFeeChargeDetailsDto | null;
 
+  @ApiProperty({ description: "Decision 435 item 19: this charge is a signed plan contract's early-exit fee, labelled \"Early-exit fee\" in both apps." })
+  earlyExitFee!: boolean;
+
   @ApiProperty({ description: 'Step 4 (Decision 338 item 3): refunded off its total, to the card, in cash or as credit. A refund never re-opens a charge.' })
   refundedAmount!: number;
 

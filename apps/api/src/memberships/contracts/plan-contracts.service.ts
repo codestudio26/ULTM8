@@ -2,7 +2,6 @@ import { BadRequestException, ConflictException, ForbiddenException, Injectable,
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
-import { DateTime } from 'luxon';
 import { Prisma, PlanContractSignature } from '@prisma/client';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
@@ -19,6 +18,7 @@ import { NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types';
 import { SetPlanContractDto, SignPlanContractDto } from './plan-contract.dto';
 import { loadEffectiveTax } from '../../charges/tax-lines';
+import { minimumTermEndsAt, termEndForMembership } from './minimum-term';
 
 const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency.toUpperCase()}`;
 
@@ -29,24 +29,23 @@ export function contractSha256(body: string): string {
   return createHash('sha256').update(body, 'utf8').digest('hex');
 }
 
-/** The day the minimum term ends: the Membership's start plus the signed
- * number of whole months (calendar months, UTC). */
-export function minimumTermEndsAt(startDate: Date, months: number): Date {
-  return DateTime.fromJSDate(startDate, { zone: 'utc' }).plus({ months }).toJSDate();
-}
+export { minimumTermEndsAt };
 
 /**
  * Whether cancelling now is "early" under a signed contract (Decision 316
  * item 6): the Membership ends (Stripe's cancel_at, the end of the paid
  * period) before the minimum term does. A fee of 0 or no term is never due.
+ * `termEnd` is the term's end with freezes added (Decision 435 item 17);
+ * without it, the term counted from the start with no freeze.
  */
 export function earlyExitFeeDue(
   contract: { minimumTermMonths: number | null; earlyExitFee: number | null },
   membership: { startDate: Date },
   endsAt: Date,
+  termEnd?: Date,
 ): boolean {
   if (!contract.minimumTermMonths || !contract.earlyExitFee || contract.earlyExitFee <= 0) return false;
-  return endsAt < minimumTermEndsAt(membership.startDate, contract.minimumTermMonths);
+  return endsAt < (termEnd ?? minimumTermEndsAt(membership.startDate, contract.minimumTermMonths));
 }
 
 function ageToday(dateOfBirth: Date, today: Date = new Date()): number {
@@ -96,6 +95,7 @@ export class PlanContractsService {
     const body = dto.body?.trim() ? dto.body.trim() : null;
     const minimumTermMonths = body ? dto.minimumTermMonths ?? null : null;
     const earlyExitFee = body ? dto.earlyExitFee ?? null : null;
+    const endsAfterMinimumTerm = body ? dto.endsAfterMinimumTerm ?? false : false;
     if (body) {
       if (plan.type === 'FRIEND_PASS') {
         throw new BadRequestException('A Friend Pass is given, not bought, so it has no contract.');
@@ -106,18 +106,31 @@ export class PlanContractsService {
       if (earlyExitFee !== null && minimumTermMonths === null) {
         throw new BadRequestException('Set a minimum term before an early-exit fee.');
       }
+      // Decision 435 item 16.
+      if (endsAfterMinimumTerm && minimumTermMonths === null) {
+        throw new BadRequestException('Set a minimum term before choosing that the plan ends after it.');
+      }
       if (earlyExitFee && earlyExitFee > 0) {
         await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, plan.schoolId));
       }
     }
     const changed =
-      body !== plan.contractBody || minimumTermMonths !== plan.contractMinimumTermMonths || earlyExitFee !== plan.contractEarlyExitFee;
+      body !== plan.contractBody ||
+      minimumTermMonths !== plan.contractMinimumTermMonths ||
+      earlyExitFee !== plan.contractEarlyExitFee ||
+      endsAfterMinimumTerm !== plan.contractEndsAfterMinimumTerm;
     if (!changed) return plan;
     const contractVersion = body ? (plan.contractVersion ?? 0) + 1 : null;
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.membershipPlan.update({
         where: { id: planId },
-        data: { contractBody: body, contractMinimumTermMonths: minimumTermMonths, contractEarlyExitFee: earlyExitFee, contractVersion },
+        data: {
+          contractBody: body,
+          contractMinimumTermMonths: minimumTermMonths,
+          contractEarlyExitFee: earlyExitFee,
+          contractEndsAfterMinimumTerm: endsAfterMinimumTerm,
+          contractVersion,
+        },
       }),
     );
   }
@@ -149,6 +162,7 @@ export class PlanContractsService {
       body: plan.contractBody,
       minimumTermMonths: plan.contractMinimumTermMonths,
       earlyExitFee: plan.contractEarlyExitFee,
+      endsAfterMinimumTerm: plan.contractEndsAfterMinimumTerm,
       currency: await this.planCurrency(target, plan),
       version: plan.contractVersion,
     };
@@ -210,6 +224,7 @@ export class PlanContractsService {
           contractBody: current.contractBody,
           minimumTermMonths: current.contractMinimumTermMonths,
           earlyExitFee: current.contractEarlyExitFee,
+          endsAfterMinimumTerm: current.contractEndsAfterMinimumTerm,
           currency: current.contractEarlyExitFee != null ? currency : null,
           contractVersion: current.contractVersion,
           contractSha256: contractSha256(current.contractBody),
@@ -290,16 +305,18 @@ export class PlanContractsService {
   }
 
   /** What the member is shown before cancelling: when the minimum term ends
-   * and the fee due if they leave before then. */
-  async termsForMemberships(memberships: Array<{ id: string; startDate: Date }>) {
-    const out = new Map<string, { minimumTermEndsAt: string; earlyExitFee: number; currency: string | null }>();
+   * (freezes added, Decision 435 item 17), the fee due if they leave before
+   * then, and whether the membership stops then (item 16). */
+  async termsForMemberships(memberships: Array<{ id: string; schoolId: string; startDate: Date }>) {
+    const out = new Map<string, { minimumTermEndsAt: string; earlyExitFee: number; currency: string | null; endsAfterMinimumTerm: boolean }>();
     for (const m of memberships) {
       const sig = await this.findForMembership(m.id);
       if (!sig?.minimumTermMonths) continue;
       out.set(m.id, {
-        minimumTermEndsAt: minimumTermEndsAt(m.startDate, sig.minimumTermMonths).toISOString(),
+        minimumTermEndsAt: (await termEndForMembership(this.prismaJobs, m, sig.minimumTermMonths)).toISOString(),
         earlyExitFee: sig.earlyExitFee ?? 0,
         currency: sig.currency,
+        endsAfterMinimumTerm: sig.endsAfterMinimumTerm,
       });
     }
     return out;
@@ -318,7 +335,10 @@ export class PlanContractsService {
     const sig = await this.findForMembership(membership.id);
     if (!sig) return null;
     const endsAt = membership.cancelAt ?? new Date();
-    if (!earlyExitFeeDue(sig, membership, endsAt)) return null;
+    if (!sig.minimumTermMonths) return null;
+    // Decision 435 item 17: the term's end with the membership's freezes added.
+    const termEnd = await termEndForMembership(this.prismaJobs, membership, sig.minimumTermMonths);
+    if (!earlyExitFeeDue(sig, membership, endsAt, termEnd)) return null;
     const school = await this.prismaJobs.school.findUnique({
       where: { id: membership.schoolId },
       select: { defaultCurrency: true, timezone: true, taxCountry: true, taxRateBasisPoints: true, taxInclusive: true },
@@ -453,6 +473,7 @@ export class PlanContractsService {
       contractBody: r.contractBody,
       minimumTermMonths: r.minimumTermMonths,
       earlyExitFee: r.earlyExitFee,
+      endsAfterMinimumTerm: r.endsAfterMinimumTerm,
       currency: r.currency,
       contractVersion: r.contractVersion,
       contractSha256: r.contractSha256,

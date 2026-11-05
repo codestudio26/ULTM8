@@ -831,6 +831,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "Un Pass Amico si regala, non si compra, quindi non ha contratto.",
   "A minimum term and an early-exit fee are for Subscription plans only.": "Durata minima e penale di recesso anticipato valgono solo per i piani in abbonamento.",
   "Set a minimum term before an early-exit fee.": "Imposta una durata minima prima di una penale di recesso anticipato.",
+  "Set a minimum term before choosing that the plan ends after it.": "Imposta una durata minima prima di scegliere che il piano termini dopo di essa.",
   "This plan has no contract.": "Questo piano non ha un contratto.",
   "This plan has no contract to sign.": "Questo piano non ha un contratto da firmare.",
   "Type your full name and your signature.": "Scrivi il tuo nome completo e la tua firma.",

@@ -831,6 +831,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "Пропуск для друга дарится, а не покупается, поэтому у него нет договора.",
   "A minimum term and an early-exit fee are for Subscription plans only.": "Минимальный срок и плата за досрочный выход бывают только у подписок.",
   "Set a minimum term before an early-exit fee.": "Сначала задайте минимальный срок, потом плату за досрочный выход.",
+  "Set a minimum term before choosing that the plan ends after it.": "Сначала задайте минимальный срок, потом выбирайте, что тариф заканчивается после него.",
   "This plan has no contract.": "У этого тарифа нет договора.",
   "This plan has no contract to sign.": "У этого тарифа нет договора для подписи.",
   "Type your full name and your signature.": "Введите полное имя и подпись.",

@@ -852,6 +852,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "서명하고 계속",
       signError: "계약에 서명할 수 없습니다.",
       loadError: "계약을 불러올 수 없습니다.",
+      // Decision 435 item 16.
+      endsAfterTerm: "이 멤버십은 최소 약정 기간이 끝나면 종료됩니다. 갱신되지 않습니다.",
+      endsOn: "최소 약정 기간 후 {date}에 종료됩니다. 갱신되지 않습니다.",
       cancelFee: "계약의 최소 약정 기간은 {date}까지입니다. 그 전에 멤버십이 끝나면 중도 해지 수수료 {amount}가 잔액에 추가됩니다.",
     },
     recharge: {
@@ -1213,6 +1216,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "승급비",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "중도 해지 수수료",
     },
     lateFee: {
       label: "연체료",

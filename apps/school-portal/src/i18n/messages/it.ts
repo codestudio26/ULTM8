@@ -3237,6 +3237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Impossibile salvare il contratto.",
       invalidTerm: "Inserisci un numero intero di mesi da 1 a 120.",
       invalidFee: "Inserisci la penale come importo, per esempio 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Terminare l'abbonamento dopo la durata minima",
+      endsAfterTermHint: "Si ferma il giorno in cui finisce la durata minima invece di rinnovarsi. Una sospensione sposta quel giorno in avanti dei giorni sospesi.",
+      endsAfterTermLine: "Termina dopo la durata minima (senza rinnovo)",
       studentCardTitle: "Contratti firmati",
       loadFailed: "Impossibile caricare i contratti firmati.",
       signedOn: "Firmato il {date} da {name}",
@@ -4793,6 +4797,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Condonala o annullala nella graduazione",
       waivedLine: "Quota condonata nella graduazione il {date} da {name}",
       cancelledLine: "Quota annullata nella graduazione il {date} da {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Penale di recesso anticipato",
     },
     lateFee: {
       badge: "Penale di ritardo",

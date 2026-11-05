@@ -852,6 +852,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "署名して続ける",
       signError: "契約に署名できませんでした。",
       loadError: "契約を読み込めませんでした。",
+      // Decision 435 item 16.
+      endsAfterTerm: "このメンバーシップは最低契約期間の終了時に終わります。更新されません。",
+      endsOn: "最低契約期間の終了後、{date} に終了します。更新されません。",
       cancelFee: "契約の最低契約期間は {date} までです。それより前にメンバーシップが終わると、途中解約料 {amount} が残高に計上されます。",
     },
     recharge: {
@@ -1213,6 +1216,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "昇級費",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "途中解約料",
     },
     lateFee: {
       label: "延滞料",

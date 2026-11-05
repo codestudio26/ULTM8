@@ -831,6 +831,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "フレンドパスは購入ではなく贈られるものなので、契約はありません。",
   "A minimum term and an early-exit fee are for Subscription plans only.": "最低契約期間と途中解約料はサブスクリプションプランのみです。",
   "Set a minimum term before an early-exit fee.": "途中解約料の前に最低契約期間を設定してください。",
+  "Set a minimum term before choosing that the plan ends after it.": "プランを最低契約期間の後に終了させる前に、最低契約期間を設定してください。",
   "This plan has no contract.": "このプランには契約がありません。",
   "This plan has no contract to sign.": "このプランには署名する契約がありません。",
   "Type your full name and your signature.": "氏名と署名を入力してください。",

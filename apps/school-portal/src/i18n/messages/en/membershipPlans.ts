@@ -18,6 +18,10 @@ export const membershipPlans = {
     failed: "The contract could not be saved.",
     invalidTerm: "Enter a whole number of months from 1 to 120.",
     invalidFee: "Enter the fee as an amount, for example 50.00.",
+    // Decision 435 item 16.
+    endsAfterTermLabel: "End the Subscription after the minimum term",
+    endsAfterTermHint: "It stops on the day the minimum term ends instead of renewing. A freeze moves that day later by the days frozen.",
+    endsAfterTermLine: "Ends after the minimum term (no renewal)",
     studentCardTitle: "Signed contracts",
     loadFailed: "Could not load the signed contracts.",
     signedOn: "Signed {date} by {name}",

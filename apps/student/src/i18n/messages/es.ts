@@ -877,6 +877,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Firmar y continuar",
       signError: "No se pudo firmar el contrato.",
       loadError: "No se pudo cargar el contrato.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Esta membresía termina cuando acaba el plazo mínimo. No se renueva.",
+      endsOn: "Termina tras su plazo mínimo, el {date}. No se renueva.",
       cancelFee: "El plazo mínimo de tu contrato dura hasta el {date}. Si tu membresía termina antes, se añade a tu saldo la tarifa por baja anticipada de {amount}.",
     },
     recharge: {
@@ -1223,6 +1226,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Tarifa de promoción",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Tarifa por baja anticipada",
     },
     lateFee: {
       label: "Recargo por retraso",

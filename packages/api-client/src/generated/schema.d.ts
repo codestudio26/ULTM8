@@ -10708,6 +10708,8 @@ export interface components {
             contractEarlyExitFee?: number | null;
             /** @description Goes up by one each time the contract changes; null = no contract. */
             contractVersion?: number | null;
+            /** @description Decision 435 item 16: the Subscription stops when the minimum term ends instead of renewing. */
+            contractEndsAfterMinimumTerm: boolean;
             createdAt: string;
             updatedAt: string;
         };
@@ -10933,8 +10935,10 @@ export interface components {
             planIds: string[];
         };
         MembershipContractTermsDto: {
-            /** @description When the signed minimum term ends. */
+            /** @description When the signed minimum term ends, with any freezes added (Decision 435 item 17). */
             minimumTermEndsAt: string;
+            /** @description Decision 435 item 16: the membership stops when the minimum term ends instead of renewing. */
+            endsAfterMinimumTerm: boolean;
             /** @description The early-exit fee put on the balance if the membership ends before then; minor units, before the School's tax. 0 = none. */
             earlyExitFee: number;
             currency?: string | null;
@@ -11092,6 +11096,8 @@ export interface components {
             minimumTermMonths?: number | null;
             /** @description Subscription only, with a minimum term: the School's fee, in the plan's currency's minor units, put on the member's balance when they cancel and the membership ends before the minimum term does. The School's tax settings apply. */
             earlyExitFee?: number | null;
+            /** @description Decision 435 item 16. Subscription only, with a minimum term: the Subscription stops on the day the minimum term ends (freezes added) instead of renewing. Default false. */
+            endsAfterMinimumTerm?: boolean;
         };
         PlanContractDto: {
             planId: string;
@@ -11101,6 +11107,8 @@ export interface components {
             minimumTermMonths: number | null;
             /** @description Minor units, before the School's tax. */
             earlyExitFee: number | null;
+            /** @description Decision 435 item 16: the Subscription stops when the minimum term ends instead of renewing. */
+            endsAfterMinimumTerm: boolean;
             currency: string | null;
             version: number;
         };
@@ -11141,6 +11149,8 @@ export interface components {
             contractBody: string;
             minimumTermMonths: number | null;
             earlyExitFee: number | null;
+            /** @description Decision 435 item 16: signed with "ends after the minimum term". */
+            endsAfterMinimumTerm: boolean;
             currency: string | null;
             contractVersion: number;
             /** @description SHA-256 of the signed text. */
@@ -14550,6 +14560,8 @@ export interface components {
             lateFee?: components["schemas"]["LateFeeDetailsDto"] | null;
             /** @description Backlog §3.6 step 6 (Decision 303 item 5): set when this charge is an accepted promotion fee, with the grade it is for. */
             promotionFee?: components["schemas"]["PromotionFeeChargeDetailsDto"] | null;
+            /** @description Decision 435 item 19: this charge is a signed plan contract's early-exit fee, labelled "Early-exit fee" in both apps. */
+            earlyExitFee: boolean;
             /** @description Step 4 (Decision 338 item 3): refunded off its total, to the card, in cash or as credit. A refund never re-opens a charge. */
             refundedAmount: number;
             refundStatus?: components["schemas"]["RefundStatus"];

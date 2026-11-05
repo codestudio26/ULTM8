@@ -874,6 +874,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Signer et continuer",
       signError: "Le contrat n'a pas pu être signé.",
       loadError: "Le contrat n'a pas pu être chargé.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Cette adhésion s'arrête à la fin de la durée minimale. Elle ne se renouvelle pas.",
+      endsOn: "Se termine après sa durée minimale, le {date}. Elle ne se renouvelle pas.",
       cancelFee: "La durée minimale de ton contrat court jusqu'au {date}. Si ton adhésion se termine avant, les frais de résiliation anticipée de {amount} sont ajoutés à ton solde.",
     },
     recharge: {
@@ -1241,6 +1244,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Frais de promotion",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Frais de résiliation anticipée",
     },
     lateFee: {
       label: "Frais de retard",

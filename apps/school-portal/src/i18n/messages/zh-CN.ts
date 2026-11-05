@@ -3198,6 +3198,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "无法保存合同。",
       invalidTerm: "请输入 1 到 120 之间的整数月数。",
       invalidFee: "请以金额输入费用，例如 50.00。",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "最短期限结束后终止订阅",
+      endsAfterTermHint: "在最短期限结束当天停止，而不是续订。冻结会把这一天顺延冻结的天数。",
+      endsAfterTermLine: "最短期限结束后终止（不续订）",
       studentCardTitle: "已签署的合同",
       loadFailed: "无法加载已签署的合同。",
       signedOn: "{name} 于 {date} 签署",
@@ -4747,6 +4751,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "在晋级页面免除或取消",
       waivedLine: "{name} 于 {date} 在晋级页面免除了该费用",
       cancelledLine: "{name} 于 {date} 在晋级页面取消了该费用",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "提前退出费",
     },
     lateFee: {
       badge: "滞纳金",

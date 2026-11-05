@@ -831,6 +831,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "บัตรเพื่อนเป็นของที่มอบให้ ไม่ได้ซื้อ จึงไม่มีสัญญา",
   "A minimum term and an early-exit fee are for Subscription plans only.": "ระยะเวลาขั้นต่ำและค่าธรรมเนียมยกเลิกก่อนกำหนดใช้ได้กับแผนสมัครสมาชิกเท่านั้น",
   "Set a minimum term before an early-exit fee.": "กำหนดระยะเวลาขั้นต่ำก่อนตั้งค่าธรรมเนียมยกเลิกก่อนกำหนด",
+  "Set a minimum term before choosing that the plan ends after it.": "กำหนดระยะเวลาขั้นต่ำก่อนเลือกให้แพ็กเกจสิ้นสุดหลังจากนั้น",
   "This plan has no contract.": "แผนนี้ไม่มีสัญญา",
   "This plan has no contract to sign.": "แผนนี้ไม่มีสัญญาให้ลงนาม",
   "Type your full name and your signature.": "พิมพ์ชื่อเต็มและลายเซ็นของคุณ",
