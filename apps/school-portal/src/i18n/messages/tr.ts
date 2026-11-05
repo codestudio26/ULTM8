@@ -3244,6 +3244,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Sözleşme kaydedilemedi.",
       invalidTerm: "1 ile 120 arasında tam bir ay sayısı girin.",
       invalidFee: "Ücreti tutar olarak girin, örneğin 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Aboneliği asgari süreden sonra bitir",
+      endsAfterTermHint: "Yenilenmek yerine asgari sürenin bittiği gün durur. Dondurma, o günü dondurulan gün sayısı kadar ileri alır.",
+      endsAfterTermLine: "Asgari süreden sonra biter (yenilenmez)",
       studentCardTitle: "İmzalı sözleşmeler",
       loadFailed: "İmzalı sözleşmeler yüklenemedi.",
       signedOn: "{date} tarihinde {name} imzaladı",
@@ -4808,6 +4812,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Kuşak sayfasından affet veya iptal et",
       waivedLine: "Ücret {date} tarihinde {name} tarafından kuşak sayfasında affedildi",
       cancelledLine: "Ücret {date} tarihinde {name} tarafından kuşak sayfasında iptal edildi",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Erken çıkış ücreti",
     },
     lateFee: {
       badge: "Gecikme ücreti",

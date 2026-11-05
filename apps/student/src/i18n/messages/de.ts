@@ -861,6 +861,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Unterschreiben und weiter",
       signError: "Der Vertrag konnte nicht unterschrieben werden.",
       loadError: "Der Vertrag konnte nicht geladen werden.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Diese Mitgliedschaft endet mit der Mindestlaufzeit. Sie verlängert sich nicht.",
+      endsOn: "Endet nach der Mindestlaufzeit am {date}. Sie verlängert sich nicht.",
       cancelFee: "Die Mindestlaufzeit deines Vertrags läuft bis {date}. Endet deine Mitgliedschaft vorher, wird die Gebühr für vorzeitige Kündigung von {amount} deinem Guthaben belastet.",
     },
     recharge: {
@@ -1224,6 +1227,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Beförderungsgebühr",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Gebühr für vorzeitige Kündigung",
     },
     lateFee: {
       label: "Säumnisgebühr",

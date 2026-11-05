@@ -833,6 +833,7 @@ export const serverMessages: Record<string, string> = {
   "A Friend Pass is given, not bought, so it has no contract.": "Een Vriendenpas wordt cadeau gegeven, niet gekocht, en heeft dus geen contract.",
   "A minimum term and an early-exit fee are for Subscription plans only.": "Een minimale looptijd en een vroegtijdige-opzegkosten gelden alleen voor abonnementen.",
   "Set a minimum term before an early-exit fee.": "Stel eerst een minimale looptijd in, dan pas opzegkosten.",
+  "Set a minimum term before choosing that the plan ends after it.": "Stel eerst een minimale looptijd in voordat je kiest dat het abonnement daarna eindigt.",
   "This plan has no contract.": "Dit abonnement heeft geen contract.",
   "This plan has no contract to sign.": "Dit abonnement heeft geen contract om te ondertekenen.",
   "Type your full name and your signature.": "Typ je volledige naam en je handtekening.",

@@ -3322,6 +3322,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "Nie udało się zapisać umowy.",
       invalidTerm: "Wpisz pełną liczbę miesięcy od 1 do 120.",
       invalidFee: "Wpisz opłatę jako kwotę, na przykład 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Zakończ subskrypcję po minimalnym okresie",
+      endsAfterTermHint: "Kończy się w dniu, w którym kończy się minimalny okres, zamiast się odnawiać. Zamrożenie przesuwa ten dzień o liczbę zamrożonych dni.",
+      endsAfterTermLine: "Kończy się po minimalnym okresie (bez odnowienia)",
       studentCardTitle: "Podpisane umowy",
       loadFailed: "Nie udało się wczytać podpisanych umów.",
       signedOn: "Podpisano {date}, {name}",
@@ -4920,6 +4924,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Umórz lub anuluj ją w stopniach",
       waivedLine: "Opłata umorzona w stopniach {date} przez {name}",
       cancelledLine: "Opłata anulowana w stopniach {date} przez {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Opłata za wcześniejsze rozwiązanie",
     },
     lateFee: {
       badge: "Opłata za zwłokę",

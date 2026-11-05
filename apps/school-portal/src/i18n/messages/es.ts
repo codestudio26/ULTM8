@@ -3244,6 +3244,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "No se pudo guardar el contrato.",
       invalidTerm: "Escribe un número entero de meses entre 1 y 120.",
       invalidFee: "Escribe la tarifa como importe, por ejemplo 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "Terminar la suscripción tras el plazo mínimo",
+      endsAfterTermHint: "Se detiene el día en que termina el plazo mínimo en lugar de renovarse. Congelar retrasa ese día tantos días como dure la congelación.",
+      endsAfterTermLine: "Termina tras el plazo mínimo (sin renovación)",
       studentCardTitle: "Contratos firmados",
       loadFailed: "No se pudieron cargar los contratos firmados.",
       signedOn: "Firmado el {date} por {name}",
@@ -4808,6 +4812,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "Condónala o cancélala en graduación",
       waivedLine: "Tarifa condonada en graduación el {date} por {name}",
       cancelledLine: "Tarifa cancelada en graduación el {date} por {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "Tarifa por baja anticipada",
     },
     lateFee: {
       badge: "Recargo por retraso",

@@ -2353,6 +2353,10 @@ model MembershipPlan {
   contractMinimumTermMonths Int?
   contractEarlyExitFee      Int?
   contractVersion           Int?
+  /// Decision 435 item 16: the Subscription stops at the end of the minimum
+  /// term instead of renewing (needs a minimum term; part of the contract's
+  /// version).
+  contractEndsAfterMinimumTerm Boolean @default(false)
 
   /// Decision 316 item 10: the School's income category for this plan, shown
   /// in the Transactions export. Optional; one from the School's own list.
@@ -6695,7 +6699,8 @@ model StaffCalendarFeed {
 /// once: purchase() marks it used and links the order (`transactionId`) or,
 /// for a free plan, the Membership. The early-exit fee is worked out from
 /// this copy, never from the plan's current terms. Never deleted by any job:
-/// how long a signed contract is kept is not decided yet.
+/// Decision 435 item 18 keeps signed contracts by the waiver rule (Decision
+/// 426), subject to the lawyer's answer; not applied yet.
 /// RLS: the School's Owner/Manager, or the row's own Student (a Guardian
 /// writes under the child's context, as for waivers).
 model PlanContractSignature {
@@ -6726,6 +6731,12 @@ model PlanContractSignature {
   currency          String?
   contractVersion   Int
   contractSha256    String
+  /// Decision 435 item 16: signed with "ends after the minimum term".
+  endsAfterMinimumTerm Boolean @default(false)
+  /// The membership sweep's bookkeeping: when it set the Subscription to stop
+  /// at the end of the minimum term (freezes added), or found nothing left to
+  /// stop. Null = still to do. Written on the jobs connection only.
+  termEndHandledAt     DateTime?
 
   usedAt        DateTime?
   transactionId String?   @unique

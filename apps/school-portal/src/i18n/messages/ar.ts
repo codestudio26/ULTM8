@@ -3400,6 +3400,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       failed: "تعذّر حفظ العقد.",
       invalidTerm: "أدخل عددًا صحيحًا من الأشهر من 1 إلى 120.",
       invalidFee: "أدخل الرسوم كمبلغ، مثل 50.00.",
+      // Decision 435 item 16.
+      endsAfterTermLabel: "إنهاء الاشتراك بعد المدة الدنيا",
+      endsAfterTermHint: "يتوقف في يوم انتهاء المدة الدنيا بدلًا من التجديد. التجميد يؤخر ذلك اليوم بعدد أيام التجميد.",
+      endsAfterTermLine: "ينتهي بعد المدة الدنيا (دون تجديد)",
       studentCardTitle: "العقود الموقّعة",
       loadFailed: "تعذّر تحميل العقود الموقّعة.",
       signedOn: "وقّعه {name} في {date}",
@@ -5020,6 +5024,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       cancelHint: "أعفِ منها أو ألغها من الترقيات",
       waivedLine: "أُعفي من الرسوم في الترقيات بتاريخ {date} بواسطة {name}",
       cancelledLine: "أُلغيت الرسوم في الترقيات بتاريخ {date} بواسطة {name}",
+    },
+    // Decision 435 item 19 — a signed contract's early-exit fee.
+    earlyExitFee: {
+      badge: "رسوم الخروج المبكر",
     },
     lateFee: {
       badge: "رسوم تأخير",

@@ -851,6 +851,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "ลงนามและดำเนินการต่อ",
       signError: "ลงนามในสัญญาไม่ได้",
       loadError: "โหลดสัญญาไม่ได้",
+      // Decision 435 item 16.
+      endsAfterTerm: "สมาชิกภาพนี้จะหยุดเมื่อระยะเวลาขั้นต่ำสิ้นสุด และไม่ต่ออายุ",
+      endsOn: "สิ้นสุดหลังระยะเวลาขั้นต่ำในวันที่ {date} และไม่ต่ออายุ",
       cancelFee: "ระยะเวลาขั้นต่ำของสัญญาคุณถึง {date} หากสมาชิกภาพสิ้นสุดก่อนนั้น ค่าธรรมเนียมยกเลิกก่อนกำหนด {amount} จะถูกเพิ่มในยอดของคุณ",
     },
     recharge: {
@@ -1213,6 +1216,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "ค่าเลื่อนระดับ",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "ค่าธรรมเนียมยกเลิกก่อนกำหนด",
     },
     lateFee: {
       label: "ค่าปรับล่าช้า",

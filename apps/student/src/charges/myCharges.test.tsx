@@ -346,6 +346,15 @@ describe('MyChargesScreen: paying in the app (backlog 3.6 step 2)', () => {
     expect(getByText('Blue Belt · BJJ')).toBeTruthy();
   });
 
+  it('labels a contract\'s early-exit fee "Early-exit fee", with the plan it is for (Decision 435 item 19)', async () => {
+    mocked(q.useMemberCharges).mockReturnValue(
+      ok({ schools: [{ ...SCHOOL, charges: [charge({ id: 'x1', invoiceLabel: '#0000006', description: 'Unlimited 12 months', earlyExitFee: true })] }] }),
+    );
+    const { getByText } = await render(<MyChargesScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('Early-exit fee')).toBeTruthy();
+    expect(getByText('Unlimited 12 months')).toBeTruthy();
+  });
+
   describe('recurring charges (Decision 412)', () => {
     const recurring = (over: Record<string, unknown>) => ({
       id: 'r1',

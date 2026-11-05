@@ -851,6 +851,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "签署并继续",
       signError: "无法签署合同。",
       loadError: "无法加载合同。",
+      // Decision 435 item 16.
+      endsAfterTerm: "此会员资格在最短期限结束时终止，不会续订。",
+      endsOn: "最短期限结束后于 {date} 终止，不会续订。",
       cancelFee: "你的合同最短期限到 {date}。如果会员资格在此之前结束，{amount} 的提前退出费将计入你的余额。",
     },
     recharge: {
@@ -1213,6 +1216,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "晋级费",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "提前退出费",
     },
     lateFee: {
       label: "滞纳金",

@@ -1177,6 +1177,8 @@ export class ChargesService {
         refundStatus: c.refundedAmount <= 0 ? null : c.refundedAmount >= c.grossAmount ? ('REFUNDED' as const) : ('PART_REFUNDED' as const),
         lateFee: lateFees.get(c.id) ?? null,
         promotionFee: promotionFees.get(c.id) ?? null,
+        // Decision 435 item 19: a signed contract's early-exit fee.
+        earlyExitFee: c.contractSignatureId !== null,
       };
     });
   }
