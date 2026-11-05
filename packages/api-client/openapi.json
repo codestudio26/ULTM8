@@ -44893,7 +44893,12 @@
             "type": "string"
           },
           "surname": {
-            "type": "string"
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
           },
           "email": {
             "type": "string"

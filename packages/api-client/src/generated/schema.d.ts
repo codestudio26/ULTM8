@@ -14321,7 +14321,10 @@ export interface components {
         };
         AddGuardianDto: {
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             email: string;
         };
         TemporaryPasscodeStatusDto: {
