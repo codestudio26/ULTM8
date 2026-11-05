@@ -26,6 +26,7 @@ import { localDay } from '../ranks/engine';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { bookingUsesCredit } from './open-mat-credit';
 import { classTimeZones } from '../classes/class-time-zone';
+import { assertWhoCanBook } from '../classes/who-can-book';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
@@ -210,6 +211,9 @@ export class BookingsService {
 
     if (!dto.overrideReason) {
       await this.assertRankEligible(tx, studentId, resolvedClass);
+      // Decision 431 item 14: "Who can book" (women or men only, ages). Staff
+      // skip it with the same override reason as the rank gate.
+      await assertWhoCanBook(tx, studentId, resolvedClass);
     }
 
     const attendeeMembershipIds = dto.attendeeMembershipIds ?? [];

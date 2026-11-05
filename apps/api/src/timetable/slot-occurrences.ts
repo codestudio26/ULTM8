@@ -98,6 +98,10 @@ export function occurrenceFields(slot: TimetableSlot, localDate: DateTime) {
     cancellationCharge: slot.cancellationCharge,
     termsWaiverRequired: slot.termsWaiverRequired,
     membershipInclusion: slot.membershipInclusion,
+    // Decision 431 item 14: who can book.
+    audience: slot.audience,
+    minAge: slot.minAge,
+    maxAge: slot.maxAge,
   };
 }
 
