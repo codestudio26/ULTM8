@@ -5428,6 +5428,9 @@ model SignUp {
 
   @@index([schoolId, status])
   @@index([userId])
+  // Decision 433 (TXT-9): also a partial unique index, "SignUp_one_waiting_per_email",
+  // on (schoolId, email) WHERE status IN ('PENDING', 'INVITED'), made in SQL
+  // (migration 20270224000000_sign_up_one_waiting_per_email): Prisma can't declare one.
 }
 
 /// Decision 393 (Decision 316 item 7, handover F8): a Class Pack ran out at
