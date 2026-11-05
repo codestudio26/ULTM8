@@ -34,6 +34,7 @@ export function signedDocumentLabels(t: TranslateFn): Labels {
     signedBy: l('signedBy'),
     file: l('file'),
     guardian: l('guardian'),
+    childInParentApp: l('childInParentApp'),
     onPaper: l('onPaper'),
     guest: l('guest'),
     signedName: l('signedName'),

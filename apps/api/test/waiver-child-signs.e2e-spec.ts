@@ -18,6 +18,10 @@ import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
+import { getQueueToken } from '@nestjs/bullmq';
+import type { Queue } from 'bullmq';
+import { NOTIFICATION_FANOUT_QUEUE } from '../src/jobs/queue.constants';
+import type { NotificationFanoutJobData } from '../src/jobs/notification-fanout.types';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -196,6 +200,50 @@ describeIfDb('Children sign their own waivers from an age the School sets (Decis
     const alone = await sign(s.teen.token, s.waiver.id, { signedByChild: true });
     expect(alone.status).toBe(400);
     expect(alone.body.error.message).toBe('Only a parent signing for their child can choose that the child signs.');
+  });
+
+  describe('Decision 435 item 30: the parents are told when their child signs', () => {
+    let addBulk: jest.SpyInstance;
+    beforeEach(() => {
+      addBulk = jest.spyOn(app.get<Queue>(getQueueToken(NOTIFICATION_FANOUT_QUEUE)), 'addBulk').mockResolvedValue([] as never);
+    });
+    afterEach(() => addBulk.mockRestore());
+    const told = () => addBulk.mock.calls.flatMap((c) => (c[0] as Array<{ data: NotificationFanoutJobData }>).map((j) => j.data));
+
+    it("a child signing in a parent's app: every parent of theirs, as a notice about the child", async () => {
+      const s = await setup(12);
+      const other = await person('otherparent', yearsAgo(44), []);
+      await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: other.id, studentId: s.kid.id } });
+      const res = await sign(s.parent.token, s.waiver.id, { studentId: s.kid.id, signedByChild: true });
+      expect(res.status).toBe(201);
+      const notices = told();
+      expect(notices.map((n) => n.userId).sort()).toEqual([s.parent.id, other.id].sort());
+      expect(notices[0]).toMatchObject({
+        title: 'Waiver signed by your child',
+        body: `kid signed the waiver "Liability" at ${s.school.name}.`,
+        guardianCopyOf: s.kid.id,
+        schoolId: s.school.id,
+        targetType: 'WAIVER',
+        targetId: s.waiver.id,
+      });
+    });
+
+    it('a teen signing with their own login: their parent is told', async () => {
+      const s = await setup(15);
+      await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: s.parent.id, studentId: s.teen.id } });
+      expect((await sign(s.teen.token, s.waiver.id, {})).status).toBe(201);
+      expect(told().map((n) => n.userId)).toEqual([s.parent.id]);
+    });
+
+    it('nobody when the parent signs for the child, or an adult signs', async () => {
+      const s = await setup(12);
+      expect((await sign(s.parent.token, s.waiver.id, { studentId: s.kid.id })).status).toBe(201);
+      const adult = await person('adultstudent', yearsAgo(30), [{ role: 'STUDENT', schoolId: s.school.id }]);
+      // An adult who still has a parent link on file is not a child.
+      await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: s.parent.id, studentId: adult.id } });
+      expect((await sign(adult.token, s.waiver.id, {})).status).toBe(201);
+      expect(told()).toEqual([]);
+    });
   });
 
   it('a child with no date of birth on file cannot sign themselves', async () => {

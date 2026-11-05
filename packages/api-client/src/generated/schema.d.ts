@@ -14198,6 +14198,8 @@ export interface components {
             signedBy?: string;
             file?: string;
             guardian?: string;
+            /** @description Decision 435 item 32: marks a waiver the child signed in their parent's app. */
+            childInParentApp?: string;
             onPaper?: string;
             guest?: string;
             signedName?: string;

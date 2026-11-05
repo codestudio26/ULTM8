@@ -3757,6 +3757,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         signedBy: "서명자",
         file: "파일",
         guardian: "보호자",
+        // Decision 435 item 32.
+        childInParentApp: "보호자 앱에서 자녀가 직접 서명",
         onPaper: "종이",
         guest: "게스트",
         signedName: "서명한 이름",

@@ -1448,6 +1448,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   account kept beside it, and the Signatures list says "signed by the child,
   in their parent's app". All 15 languages. **Needs a database migration**
   (`20270213000001_waiver_child_signs`).
+- **Children's waivers and photos: follow-ups** (Decision 435 items 28, 30,
+  32) — the Students list now shows a child's photo only when a parent has
+  given camera consent, the same rule as the Grading Board and the front-desk
+  tablet. When a child signs a waiver themselves (with their own login, or in
+  a parent's app), each of their parents gets a "Waiver signed by your child"
+  notice in the app (and by push and email where those are set up). In the
+  "Export all signed documents" ZIP, a waiver the child signed in their
+  parent's app is marked "Signed by the child in their parent's app" in the
+  index and on its PDF. All 15 languages. No database change.
 - **Member app switches** (Decision 318 item 7) — a new "Member app" card on
   the School page. The owner turns on or off what members may do themselves
   in the ULTM8 app: edit their own profile (their language and currency stay

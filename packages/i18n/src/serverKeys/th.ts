@@ -280,6 +280,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "{school} อัปเดตเอกสารสละสิทธิ์ \"{waiver}\" แล้ว โปรดอ่านและลงนามอีกครั้ง",
     waiverRenewalBody: "ลายเซ็นของคุณในเอกสารสละสิทธิ์ \"{waiver}\" ที่ {school} หมดอายุแล้ว โปรดลงนามอีกครั้ง",
     waiverAdultBody: "ตอนนี้คุณอายุ 18 ปีแล้ว {school} จึงขอให้คุณลงนามในเอกสารสละสิทธิ์ \"{waiver}\" ด้วยตนเอง",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "บุตรของคุณลงนามในเอกสารสละสิทธิ์แล้ว",
+    waiverSignedByChildBody: "{child} ลงนามในเอกสารสละสิทธิ์ \"{waiver}\" ที่ {school} แล้ว",
     classMovedBody: "{class} ย้ายไปเป็น {when} แล้ว การจองย้ายตามไปด้วย",
     classMovedWaitlistBody: "{class} ย้ายไปเป็น {when} แล้ว ลำดับในรายชื่อรอย้ายตามไปด้วย",
     classCancelledBody: "{class} วันที่ {when} ถูกยกเลิกโดยโรงเรียนของคุณ เครดิตคลาสที่ใช้ไปได้รับคืนแล้ว",
