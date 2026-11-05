@@ -62,6 +62,11 @@ const LETTERS: Readonly<Record<string, string>> = {
  * anything that isn't a letter, mark or digit becomes one space.
  */
 export function foldForSearch(value: string): string {
+  return foldLetters(value).replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
+}
+
+/** The fold's letter steps, everything except turning punctuation into spaces. */
+function foldLetters(value: string): string {
   let text = value
     .normalize('NFKC')
     .replace(/\p{Cf}/gu, '')
@@ -72,14 +77,18 @@ export function foldForSearch(value: string): string {
     .replace(/([\p{Script=Latin}\p{Script=Greek}])[\u0300-\u036F\u1AB0-\u1AFF\u1DC0-\u1DFF]+/gu, '$1')
     .normalize('NFC');
   for (const [re, to] of ARABIC) text = text.replace(re, to);
-  text = text.replace(/[\u0451\u00DF\u0142\u00F8\u0111\u00E6\u0153\u0131]/gu, (c) => LETTERS[c]);
-  return text.replace(/[^\p{L}\p{M}\p{N}]+/gu, ' ').trim();
+  return text.replace(/[\u0451\u00DF\u0142\u00F8\u0111\u00E6\u0153\u0131]/gu, (c) => LETTERS[c]);
 }
 
-/** The older name for `foldForSearch` (Branch filters, waiver signatures). It
- * used to strip every `\p{Diacritic}`, which merged different Hindi, Tamil
- * and Japanese names; it is now the one shared fold. */
-export const foldText = foldForSearch;
+/** The same fold for Branch filters and waiver signatures, except that
+ * punctuation is kept as typed: Decision 294 treats "%" and "_" as plain
+ * text, so "%" finds "100% Fight Club" and "Lond_n" finds nothing. It used to
+ * strip every `\p{Diacritic}`, which merged different Hindi, Tamil and
+ * Japanese names; it now shares `foldForSearch`'s letter steps. Runs of
+ * spaces become one. */
+export function foldText(value: string): string {
+  return foldLetters(value).replace(/\s+/gu, ' ').trim();
+}
 
 /**
  * The first whole letter of a name, upper-cased (Decision 434, TXT-7): "ख़ान"

@@ -43,9 +43,12 @@ describe('foldForSearch / matchesPersonName (Decision 434, TXT-1)', () => {
     expect(matchesPersonName('Venkataraghavan', '', 'souza')).toBe(false);
   });
 
-  it('foldText is the same fold (Branch filters and waiver signatures)', () => {
+  it('foldText is the same fold, keeping punctuation (Branch filters and waiver signatures)', () => {
     expect(foldText('São Paulo')).toBe('sao paulo');
     expect(foldText('शर\u094Dम\u093E')).not.toBe(foldText('शरम\u093E'));
+    // Decision 294: punctuation stays plain text in Branch filters.
+    expect(foldText('100% Fight Club')).toBe('100% fight club');
+    expect(foldText('Lond_n')).toBe('lond_n');
   });
 });
 
