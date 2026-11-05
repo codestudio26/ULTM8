@@ -535,6 +535,7 @@ export const SERVER_MESSAGES: string[] = [
  "This person is not a co-owner of this School.",
  "entityId must equal schoolId for entityType SCHOOL.",
   "The School owner hasn't let you manage classes and the timetable here.",
+  "Coaches can't do this. Ask the School owner.",
   "The School owner hasn't let you manage bookings and check-in here.",
   "The School owner hasn't let you see or edit students.",
   "The School owner hasn't let you cancel classes or give credit back.",

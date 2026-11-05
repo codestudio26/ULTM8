@@ -57,6 +57,11 @@ import { assertPersonMayCheckIn, checkInClosesAt, loadCheckInRules } from './che
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
+/** The Booking being checked in. `classBranchId`, when given, is its Class's
+ * Branch as the staff caller read it, so the check-in rules don't re-read the
+ * Class in the student's context (DE-4). */
+type CheckInBooking = { id: string; classId: string; classBranchId?: string | null };
+
 @Injectable()
 export class AttendanceService {
   constructor(
@@ -210,8 +215,11 @@ export class AttendanceService {
       method = 'INSTRUCTOR_MANUAL';
     }
 
+    // The Class is the one read above in the staff member's context, not
+    // re-read through the Booking in the student's (stress test round 5,
+    // DE-4: a Class the student's context can't see made that read a 500).
     const booking = await this.prismaApp.withTenantContext(dto.studentId, (tx) =>
-      tx.booking.findFirst({ where: { studentId: dto.studentId, classId, status: 'UPCOMING' }, include: { class: true } }),
+      tx.booking.findFirst({ where: { studentId: dto.studentId, classId, status: 'UPCOMING' }, select: { id: true, classId: true } }),
     );
     if (!booking) {
       // Decision 422 item 2: unless the School checks members in without a
@@ -220,9 +228,9 @@ export class AttendanceService {
       await this.assertWithinWindow(unbooked);
       return this.bookAndCheckIn(dto.studentId, unbooked, method, instructorId, { callerId: instructorId, byStaff: true });
     }
-    await this.assertWithinWindow(booking.class);
+    await this.assertWithinWindow(cls);
 
-    return this.completeBooking(dto.studentId, booking, method, instructorId);
+    return this.completeBooking(dto.studentId, { ...booking, classBranchId: cls.branchId }, method, instructorId);
   }
 
   /** POST /schools/{schoolId}/front-desk/qr-lookups — staff at the desk scan a
@@ -404,7 +412,7 @@ export class AttendanceService {
 
   private async completeBooking(
     studentId: string,
-    booking: { id: string; classId: string },
+    booking: CheckInBooking,
     method: CheckInMethod,
     checkedInById: string | null,
   ) {
@@ -426,14 +434,14 @@ export class AttendanceService {
   async completeInTx(
     tx: TenantTx,
     studentId: string,
-    booking: { id: string; classId: string },
+    booking: CheckInBooking,
     method: CheckInMethod,
     checkedInById: string | null,
     opts: CreditAttendanceOptions = {},
   ) {
     // The School's check-in rules about the person (Decision 394), for every
     // way in: waiver, home Branch, visitors.
-    await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id);
+    await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id, booking.classBranchId);
 
     // Optimistic-concurrency guard, same established pattern as every other
     // status transition in this codebase — guards against a double-scan

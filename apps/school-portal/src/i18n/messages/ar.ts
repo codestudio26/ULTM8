@@ -823,6 +823,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistLoadFailed: "تعذّر تحميل قائمة الانتظار.",
       bookingsHeading: "الحجوزات",
       bookingsEmptyTitle: "لا توجد حجوزات بعد",
+      rosterHidden: "لم يسمح لك مالك المدرسة برؤية حجوزات هذه الحصة وقائمة انتظارها.",
       bookingsEmptyDescription: "تظهر الحجوزات هنا عندما يبدأ الطلاب الحجز في هذه الحصة.",
       waitlistHeading: "قائمة الانتظار",
       waitlistEmptyTitle: "لا أحد في قائمة الانتظار",

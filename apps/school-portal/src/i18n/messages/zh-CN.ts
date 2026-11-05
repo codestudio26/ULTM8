@@ -808,6 +808,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistLoadFailed: "无法加载候补名单。",
       bookingsHeading: "预约",
       bookingsEmptyTitle: "还没有预约",
+      rosterHidden: "学校所有者未允许你查看此课程的预订和候补名单。",
       bookingsEmptyDescription: "学员开始预约此课程后，预约会显示在这里。",
       waitlistHeading: "候补名单",
       waitlistEmptyTitle: "候补名单中没有人",

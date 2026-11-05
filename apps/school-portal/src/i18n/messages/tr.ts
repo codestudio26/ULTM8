@@ -811,6 +811,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistLoadFailed: "Bekleme listesi yüklenemedi.",
       bookingsHeading: "Rezervasyonlar",
       bookingsEmptyTitle: "Henüz rezervasyon yok",
+      rosterHidden: "Okul sahibi bu dersin rezervasyonlarını ve bekleme listesini görmenize izin vermedi.",
       bookingsEmptyDescription: "Öğrenciler bu derse rezervasyon yapmaya başladığında rezervasyonlar burada görünür.",
       waitlistHeading: "Bekleme listesi",
       waitlistEmptyTitle: "Bekleme listesinde kimse yok",

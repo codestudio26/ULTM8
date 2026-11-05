@@ -811,6 +811,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistLoadFailed: "Impossible de charger la liste d'attente.",
       bookingsHeading: "Réservations",
       bookingsEmptyTitle: "Aucune réservation pour le moment",
+      rosterHidden: "Le propriétaire de l’école ne vous a pas autorisé à voir les réservations et la liste d'attente de ce cours.",
       bookingsEmptyDescription: "Les réservations apparaissent ici dès que des élèves s’inscrivent à ce cours.",
       waitlistHeading: "Liste d'attente",
       waitlistEmptyTitle: "Personne sur la liste d'attente",

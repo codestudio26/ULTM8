@@ -402,7 +402,16 @@ export class BookingsService {
     let cancellationChargeCurrency = 'usd';
     const refunds: StripeRefundPlan[] = [];
     let needsStaff = 0;
-    const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
+    const booking = await withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
+      // First, before any row lock (see lockStudentClass): a booking of the
+      // same Student into the same Class waits here instead of deadlocking
+      // with this cancel at the one-upcoming-booking index and the
+      // Membership row (stress test round 5, PRIV-7). A retry starts afresh.
+      await lockStudentClass(tx, resolvedBooking.studentId, resolvedBooking.classId);
+      cancellationChargeAmount = null;
+      cancellationChargeCurrency = 'usd';
+      refunds.length = 0;
+      needsStaff = 0;
       // Read past RLS: the Booking above already proved the caller may act on it,
       // and a Student can lose sight of their Class (moved to another Branch
       // before Decision 345 blocked that, C14), which left the Booking stuck.
@@ -486,7 +495,7 @@ export class BookingsService {
       }
 
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
-    });
+    }));
 
     const { failed } = await this.cancellation.sendStripeRefunds(refunds);
     if (needsStaff + failed > 0) {
@@ -719,6 +728,9 @@ export class BookingsService {
     // common single-grant wrong-Branch case is already a 404 via RLS alone,
     // before this line is ever reached).
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    // Decision 425 Q1 (stress test round 5, PRIV-4): the roll call is Branch
+    // Staff's only while the owner leaves "Bookings and check-in" on.
+    await this.tenantAuth.assertStaffMay(callerId, cls.schoolId, 'bookings', cls.branchId);
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
         (args) => tx.booking.findMany({ ...args, where: { classId }, include: { attendees: true } }),

@@ -808,6 +808,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistLoadFailed: "ไม่สามารถโหลดรายชื่อรอได้",
       bookingsHeading: "การจอง",
       bookingsEmptyTitle: "ยังไม่มีการจอง",
+      rosterHidden: "เจ้าของโรงเรียนไม่ได้อนุญาตให้คุณดูการจองและรายชื่อรอของคลาสนี้",
       bookingsEmptyDescription: "การจองจะแสดงที่นี่เมื่อนักเรียนเริ่มจองคลาสนี้",
       waitlistHeading: "รายชื่อรอ",
       waitlistEmptyTitle: "ไม่มีใครในรายชื่อรอ",

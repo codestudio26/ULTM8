@@ -808,6 +808,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistLoadFailed: "대기자 명단을 불러올 수 없습니다.",
       bookingsHeading: "예약",
       bookingsEmptyTitle: "아직 예약이 없습니다",
+      rosterHidden: "학교 소유자가 이 수업의 예약과 대기자 명단을 볼 수 있도록 허용하지 않았습니다.",
       bookingsEmptyDescription: "수련생이 이 수업을 예약하기 시작하면 여기에 표시됩니다.",
       waitlistHeading: "대기자 명단",
       waitlistEmptyTitle: "대기자가 없습니다",

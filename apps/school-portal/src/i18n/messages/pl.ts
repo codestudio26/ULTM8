@@ -817,6 +817,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistLoadFailed: "Nie udało się wczytać listy oczekujących.",
       bookingsHeading: "Rezerwacje",
       bookingsEmptyTitle: "Brak rezerwacji",
+      rosterHidden: "Właściciel szkoły nie pozwolił ci zobaczyć rezerwacji i listy oczekujących na te zajęcia.",
       bookingsEmptyDescription: "Rezerwacje pojawią się tutaj, gdy uczniowie zaczną zapisywać się na te zajęcia.",
       waitlistHeading: "Lista oczekujących",
       waitlistEmptyTitle: "Nikt nie czeka na liście",

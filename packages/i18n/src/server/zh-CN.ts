@@ -633,6 +633,7 @@ export const serverMessages: Record<string, string> = {
   "An open mat starts from 30 minutes ago to 24 hours ahead.": "自由练习的开始时间须在 30 分钟前到 24 小时后之间。",
   "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "“可以开始自由练习”仅适用于本校的分校员工和教练。",
   "The School owner hasn't let you manage classes and the timetable here.": "学校所有者未允许你在此管理课程和课表。",
+  "Coaches can't do this. Ask the School owner.": "教练无法执行此操作。请联系学校所有者。",
   "The School owner hasn't let you manage bookings and check-in here.": "学校所有者未允许你在此管理预约和签到。",
   "The School owner hasn't let you see or edit students.": "学校所有者未允许你查看或编辑学员。",
   "The School owner hasn't let you cancel classes or give credit back.": "学校所有者未允许你取消课程或退还额度。",

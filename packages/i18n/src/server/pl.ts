@@ -633,6 +633,7 @@ export const serverMessages: Record<string, string> = {
   "An open mat starts from 30 minutes ago to 24 hours ahead.": "Open mat zaczyna się od 30 minut temu do 24 godzin w przód.",
   "\"Can start open mat sessions\" is for Branch Staff and coaches at this School.": "„Może rozpoczynać open maty” jest dla personelu oddziałów i trenerów tej szkoły.",
   "The School owner hasn't let you manage classes and the timetable here.": "Właściciel szkoły nie pozwolił ci zarządzać tutaj zajęciami i grafikiem.",
+  "Coaches can't do this. Ask the School owner.": "Trenerzy nie mogą tego zrobić. Poproś właściciela szkoły.",
   "The School owner hasn't let you manage bookings and check-in here.": "Właściciel szkoły nie pozwolił ci zarządzać tutaj rezerwacjami i meldowaniem.",
   "The School owner hasn't let you see or edit students.": "Właściciel szkoły nie pozwolił ci przeglądać ani edytować uczniów.",
   "The School owner hasn't let you cancel classes or give credit back.": "Właściciel szkoły nie pozwolił ci odwoływać zajęć ani zwracać kredytów.",

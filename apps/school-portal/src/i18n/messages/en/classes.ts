@@ -115,6 +115,7 @@ export const classes = {
     loadFailed: 'Could not load this Class.',
     bookingsLoadFailed: 'Could not load Bookings.',
     waitlistLoadFailed: 'Could not load the Waitlist.',
+    rosterHidden: "The School owner hasn't let you see this class's bookings and waitlist.",
     bookingsHeading: 'Bookings',
     bookingsEmptyTitle: 'No Bookings yet',
     bookingsEmptyDescription: 'Bookings appear here once Students start booking into this Class.',

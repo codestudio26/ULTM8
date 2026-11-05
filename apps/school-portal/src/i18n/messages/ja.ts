@@ -808,6 +808,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistLoadFailed: "キャンセル待ちリストを読み込めませんでした。",
       bookingsHeading: "予約",
       bookingsEmptyTitle: "まだ予約はありません",
+      rosterHidden: "スクールオーナーは、このクラスの予約とキャンセル待ちリストの閲覧を許可していません。",
       bookingsEmptyDescription: "生徒がこのクラスを予約すると、ここに表示されます。",
       waitlistHeading: "キャンセル待ち",
       waitlistEmptyTitle: "キャンセル待ちはいません",
