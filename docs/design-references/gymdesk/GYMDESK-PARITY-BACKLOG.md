@@ -177,16 +177,16 @@ including a filled-in example where possible. Empty screens hide most fields.
 | ST3 | **Account Access** tick boxes per staff member with **Toggle All**, grouped: Members (view, invoices, edit, check-in, settings, tags), Billing (payment list, modify, collect, mark paid, settings, processor), Point-of-sale, Website, Marketing, Account (staff management, tasks, payroll), Functionality (front-desk mode, dashboard notifications), Gym (schedule, settings) | ❌ | Wanted: one Access page per staff member, holding every "staff the owner grants access" right and the existing toggles (Decision 320). Each box is checked against Spec 55 §8 before it is built |
 | ST4 | Owner row: **Owner profile**, all permissions, can't be removed | ✅ | The owner always has every right |
 | ST5 | Personal staff **Check-in Code** (4 digits) | ❌ | Wanted: personal code per staff member, unlocks the kiosk, logged (Decision 320) |
-| ST6 | **Payroll** on the staff form: hourly rate and default session rate; blank = left out of payroll | ❌ | Wanted: hourly and per-class rates (Decision 320) |
+| ST6 | **Payroll** on the staff form: hourly rate and default session rate; blank = left out of payroll | ✅ **5 Nov 2026: built** (Decision 320 item 4) | Hourly and per-class rates, set by the owner on the Payroll page's Rates tab (not on the staff form). Owner only until the Access page right (ST3) is decided |
 | ST7 | Billing/Point-of-sale/Website/Marketing boxes | — | Only the boxes for features ULTM8 has or decides to build |
 
 ### Gym → Payroll (screenshots 25 Oct 2026)
 
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
-| PY1 | **Payroll Report**: date range with presets (Last 14 Days, Last 30 Days, This Month, Last Month, Last 12 Months, Custom Range), **Change dates** | ❌ | Wanted, report only (Decision 320) |
-| PY2 | **Download** the report | ❌ | Wanted (Decision 320) |
-| PY3 | Pay = hours × hourly rate + sessions × session rate | ❌ | Hours = classes taught only; no clock in or out. The substitute is paid, not the assigned coach (needs a way to mark a substitute on a single class, not built yet). With more than one coach, each is paid in full (Decision 320) |
+| PY1 | **Payroll Report**: date range with presets (Last 14 Days, Last 30 Days, This Month, Last Month, Last 12 Months, Custom Range), **Change dates** | ✅ **5 Nov 2026: built** (Decision 320 item 4) | Report only, owner only. Presets in the School's time zone; custom range up to 366 days |
+| PY2 | **Download** the report | ✅ **5 Nov 2026: built** | CSV, one line per person plus a total |
+| PY3 | Pay = hours × hourly rate + sessions × session rate | ✅/🟡 **5 Nov 2026: built** | Hours = classes taught only (start to end), no clock in or out; cancelled classes and classes still to come don't count. The coach on each single class is paid, so changing one class's coach pays the substitute. Not built: a separate "substitute" mark on a class, and more than one coach per class (ULTM8 classes have one coach), so "each coach paid in full" has nothing to apply to yet |
 
 ### Gym → Programs (recording 25 Oct 2026)
 

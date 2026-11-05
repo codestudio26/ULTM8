@@ -63,6 +63,8 @@ const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.membershipPlans', to: '/membership-plans' },
   { label: 'layout.nav.transactions', to: '/transactions' },
   BILLING_REPORTS_NAV,
+  // Decision 320 item 4: the owner's payroll report.
+  { label: 'payroll.nav', to: '/payroll' },
   { label: 'layout.nav.cancellations', to: '/cancellations' },
   { label: 'layout.nav.waivers', to: '/waivers' },
   { label: 'layout.nav.franchises', to: '/franchises' },

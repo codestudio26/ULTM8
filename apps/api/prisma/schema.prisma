@@ -545,6 +545,8 @@ model User {
   gradingPermissionsGiven           GradingPermission[]         @relation("GradingPermissionGrantedBy")
   staffPermissions                  StaffPermission[]           @relation("StaffPermissionUser")
   staffPermissionsGiven             StaffPermission[]           @relation("StaffPermissionGrantedBy")
+  staffPayRates                     StaffPayRate[]              @relation("StaffPayRateUser")
+  staffPayRatesSet                  StaffPayRate[]              @relation("StaffPayRateUpdatedBy")
   coachInvitesSent                  CoachInvite[]               @relation("CoachInviteInvitedBy")
   coachInvitesAccepted              CoachInvite[]               @relation("CoachInviteAcceptedBy")
   coachInvitesCancelled             CoachInvite[]               @relation("CoachInviteCancelledBy")
@@ -1359,6 +1361,7 @@ model School {
   studentHomeBranches   StudentHomeBranch[]
   gradingPermissions    GradingPermission[]
   staffPermissions      StaffPermission[]
+  staffPayRates         StaffPayRate[]
   coachInvites          CoachInvite[]
   staffActivity         StaffActivity[]
   lessonCategories      LessonCategory[]
@@ -4828,6 +4831,34 @@ model StaffPermission {
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([schoolId, userId])
+  @@index([userId])
+}
+
+/// The payroll report's rates for one staff member at one School (Decision
+/// 320 item 4): an hourly rate and a per-class rate, in the School's currency,
+/// minor units. A null rate is blank; a person with both blank has no row and
+/// is left out of the report. Kept when the person leaves the School, so the
+/// classes they taught before leaving still add up. Read and written by the
+/// School's owners only (RLS: is_active_school_owner_manager).
+model StaffPayRate {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation("StaffPayRateUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  hourlyRate   Int?
+  perClassRate Int?
+
+  updatedById String?
+  updatedBy   User?   @relation("StaffPayRateUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -21602,6 +21602,165 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/payroll/rates": {
+      "get": {
+        "operationId": "PayrollController_listRates",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayRatesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payroll"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payroll/rates/{userId}": {
+      "put": {
+        "operationId": "PayrollController_setRate",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPayRateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayRatesResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payroll"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/payroll/report": {
+      "get": {
+        "operationId": "PayrollController_report",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "preset",
+            "required": false,
+            "in": "query",
+            "description": "A preset range in the School's time zone, or CUSTOM with from and to.",
+            "schema": {
+              "default": "LAST_30_DAYS",
+              "enum": [
+                "LAST_14_DAYS",
+                "LAST_30_DAYS",
+                "THIS_MONTH",
+                "LAST_MONTH",
+                "LAST_12_MONTHS",
+                "CUSTOM"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "CUSTOM only: the first date, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "CUSTOM only: the last date, YYYY-MM-DD.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PayrollReportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payroll"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/imports/limits": {
       "get": {
         "operationId": "DataImportsController_limits",
@@ -43459,6 +43618,178 @@
         },
         "required": [
           "studentIds"
+        ]
+      },
+      "PayRateRowDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The School's name for the person (Decision 381), else their account's name."
+          },
+          "roles": {
+            "description": "Their live staff roles at the School. Empty: no longer on the staff (their rates are kept for the classes they taught).",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hourlyRate": {
+            "type": "number",
+            "nullable": true
+          },
+          "perClassRate": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "userId",
+          "name",
+          "roles",
+          "hourlyRate",
+          "perClassRate"
+        ]
+      },
+      "PayRatesResponseDto": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "nullable": true,
+            "description": "The School's currency; null until it is set on the School page."
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayRateRowDto"
+            }
+          }
+        },
+        "required": [
+          "currency",
+          "items"
+        ]
+      },
+      "SetPayRateDto": {
+        "type": "object",
+        "properties": {
+          "hourlyRate": {
+            "type": "number",
+            "nullable": true,
+            "description": "Hourly rate, in the School's currency, minor units. Null: blank."
+          },
+          "perClassRate": {
+            "type": "number",
+            "nullable": true,
+            "description": "Per-class rate, in the School's currency, minor units. Null: blank."
+          }
+        },
+        "required": [
+          "hourlyRate",
+          "perClassRate"
+        ]
+      },
+      "PayrollRowDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "onStaff": {
+            "type": "boolean",
+            "description": "False when the person is no longer on the staff."
+          },
+          "hourlyRate": {
+            "type": "number",
+            "nullable": true
+          },
+          "perClassRate": {
+            "type": "number",
+            "nullable": true
+          },
+          "classesTaught": {
+            "type": "number",
+            "description": "Classes they taught in the range."
+          },
+          "minutesTaught": {
+            "type": "number",
+            "description": "The length of those classes, in minutes."
+          },
+          "pay": {
+            "type": "number",
+            "description": "hours × hourly rate + classes × per-class rate, minor units."
+          }
+        },
+        "required": [
+          "userId",
+          "name",
+          "onStaff",
+          "hourlyRate",
+          "perClassRate",
+          "classesTaught",
+          "minutesTaught",
+          "pay"
+        ]
+      },
+      "PayrollReportResponseDto": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "type": "string",
+            "enum": [
+              "LAST_14_DAYS",
+              "LAST_30_DAYS",
+              "THIS_MONTH",
+              "LAST_MONTH",
+              "LAST_12_MONTHS",
+              "CUSTOM"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "description": "First date covered, YYYY-MM-DD."
+          },
+          "to": {
+            "type": "string",
+            "description": "Last date covered, YYYY-MM-DD."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "rows": {
+            "description": "Everyone with a rate, by name.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PayrollRowDto"
+            }
+          },
+          "totalClasses": {
+            "type": "number"
+          },
+          "totalMinutes": {
+            "type": "number"
+          },
+          "totalPay": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "preset",
+          "from",
+          "to",
+          "currency",
+          "rows",
+          "totalClasses",
+          "totalMinutes",
+          "totalPay"
         ]
       },
       "ImportLimitsDto": {

@@ -7044,6 +7044,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/payroll/rates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PayrollController_listRates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/payroll/rates/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["PayrollController_setRate"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/payroll/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PayrollController_report"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/imports/limits": {
         parameters: {
             query?: never;
@@ -13863,6 +13911,54 @@ export interface components {
         AddRosterStudentsDto: {
             /** @description Students of this School to add. Ones already on the roster are left as they are. */
             studentIds: string[];
+        };
+        PayRateRowDto: {
+            userId: string;
+            /** @description The School's name for the person (Decision 381), else their account's name. */
+            name: string;
+            /** @description Their live staff roles at the School. Empty: no longer on the staff (their rates are kept for the classes they taught). */
+            roles: string[];
+            hourlyRate: number | null;
+            perClassRate: number | null;
+        };
+        PayRatesResponseDto: {
+            /** @description The School's currency; null until it is set on the School page. */
+            currency: string | null;
+            items: components["schemas"]["PayRateRowDto"][];
+        };
+        SetPayRateDto: {
+            /** @description Hourly rate, in the School's currency, minor units. Null: blank. */
+            hourlyRate: number | null;
+            /** @description Per-class rate, in the School's currency, minor units. Null: blank. */
+            perClassRate: number | null;
+        };
+        PayrollRowDto: {
+            userId: string;
+            name: string;
+            /** @description False when the person is no longer on the staff. */
+            onStaff: boolean;
+            hourlyRate: number | null;
+            perClassRate: number | null;
+            /** @description Classes they taught in the range. */
+            classesTaught: number;
+            /** @description The length of those classes, in minutes. */
+            minutesTaught: number;
+            /** @description hours × hourly rate + classes × per-class rate, minor units. */
+            pay: number;
+        };
+        PayrollReportResponseDto: {
+            /** @enum {string} */
+            preset: "LAST_14_DAYS" | "LAST_30_DAYS" | "THIS_MONTH" | "LAST_MONTH" | "LAST_12_MONTHS" | "CUSTOM";
+            /** @description First date covered, YYYY-MM-DD. */
+            from: string;
+            /** @description Last date covered, YYYY-MM-DD. */
+            to: string;
+            currency: string | null;
+            /** @description Everyone with a rate, by name. */
+            rows: components["schemas"]["PayrollRowDto"][];
+            totalClasses: number;
+            totalMinutes: number;
+            totalPay: number;
         };
         ImportLimitsDto: {
             /** @description The most rows a file of members or memberships may have. */
@@ -25931,6 +26027,81 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    PayrollController_listRates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayRatesResponseDto"];
+                };
+            };
+        };
+    };
+    PayrollController_setRate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPayRateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayRatesResponseDto"];
+                };
+            };
+        };
+    };
+    PayrollController_report: {
+        parameters: {
+            query?: {
+                /** @description A preset range in the School's time zone, or CUSTOM with from and to. */
+                preset?: "LAST_14_DAYS" | "LAST_30_DAYS" | "THIS_MONTH" | "LAST_MONTH" | "LAST_12_MONTHS" | "CUSTOM";
+                /** @description CUSTOM only: the first date, YYYY-MM-DD. */
+                from?: string;
+                /** @description CUSTOM only: the last date, YYYY-MM-DD. */
+                to?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PayrollReportResponseDto"];
+                };
             };
         };
     };
