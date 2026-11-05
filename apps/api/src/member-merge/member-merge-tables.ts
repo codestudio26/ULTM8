@@ -19,6 +19,7 @@
 export const MOVED_BY_STUDENT_ID = [
   'Membership',
   'MembershipFreeze',
+  'PlanContractSignature',
   'PackRecharge',
   'Transaction',
   'Booking',

@@ -1,5 +1,9 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "새 소식은 학교 운영자와 직원용입니다.",
+  "Give each language once.": "각 언어는 한 번만 입력하세요.",
+  "Post not found": "게시물을 찾을 수 없습니다",
+  "Only a Full Platform Admin may write What's new posts.": "새 소식은 전체 권한 플랫폼 관리자만 작성할 수 있습니다.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate는 날짜(YYYY-MM-DD)여야 합니다",
   "Your School keeps your profile up to date. Ask the School to change your details.": "학교에서 프로필을 관리합니다. 정보 변경은 학교에 요청하세요.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "이 학교는 회원권 해지를 직접 처리합니다. 학교에 해지를 요청하세요.",
@@ -803,4 +807,18 @@ export const serverMessages: Record<string, string> = {
   "Calendar not found": "캘린더를 찾을 수 없습니다",
   "Schedule not found": "시간표를 찾을 수 없습니다",
   "Your School hasn't switched on calendar links.": "학교에서 캘린더 링크를 켜지 않았습니다.",
+  "A Friend Pass is given, not bought, so it has no contract.": "친구 패스는 구매가 아니라 선물이므로 계약이 없습니다.",
+  "A minimum term and an early-exit fee are for Subscription plans only.": "최소 약정 기간과 중도 해지 수수료는 구독 플랜에만 있습니다.",
+  "Set a minimum term before an early-exit fee.": "중도 해지 수수료보다 최소 약정 기간을 먼저 정하세요.",
+  "This plan has no contract.": "이 플랜에는 계약이 없습니다.",
+  "This plan has no contract to sign.": "이 플랜에는 서명할 계약이 없습니다.",
+  "Type your full name and your signature.": "전체 이름과 서명을 입력하세요.",
+  "signatureImageKey does not match this plan and member.": "signatureImageKey가 이 플랜과 회원에 맞지 않습니다.",
+  "This contract was changed while you were reading it. Please read it again before signing.": "읽는 동안 이 계약이 변경되었습니다. 서명하기 전에 다시 읽어 주세요.",
+  "Sign this plan's contract before buying it.": "구매하기 전에 이 플랜의 계약에 서명하세요.",
+  "This contract signature is not for this plan.": "이 계약 서명은 이 플랜의 것이 아닙니다.",
+  "Only a current Student of this School can sign its plan contracts.": "이 학교의 플랜 계약은 현재 학생만 서명할 수 있습니다.",
+  "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.": "만 18세 미만이므로 부모나 보호자가 보호자 계정에서 대신 이 계약에 서명해야 합니다.",
+  "Remove this plan's contract terms before changing its type.": "유형을 바꾸기 전에 이 플랜의 계약 조건을 삭제하세요.",
+  "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.": "이 플랜에는 회원이 앱에서 구매할 때 서명하는 계약이 있어 데스크에서 판매할 수 없습니다.",
 };

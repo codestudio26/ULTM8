@@ -1,5 +1,9 @@
 /** Russian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Новости предназначены для владельцев и сотрудников школ.",
+  "Give each language once.": "Укажите каждый язык один раз.",
+  "Post not found": "Публикация не найдена",
+  "Only a Full Platform Admin may write What's new posts.": "Писать новости может только полный администратор платформы.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate должен быть датой (ГГГГ-ММ-ДД)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "Ваша школа сама обновляет ваш профиль. Попросите школу изменить ваши данные.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "Эта школа сама отменяет абонементы. Попросите школу отменить его за вас.",
@@ -803,4 +807,18 @@ export const serverMessages: Record<string, string> = {
   "Calendar not found": "Календарь не найден",
   "Schedule not found": "Расписание не найдено",
   "Your School hasn't switched on calendar links.": "Ваша школа не включила ссылки на календарь.",
+  "A Friend Pass is given, not bought, so it has no contract.": "Пропуск для друга дарится, а не покупается, поэтому у него нет договора.",
+  "A minimum term and an early-exit fee are for Subscription plans only.": "Минимальный срок и плата за досрочный выход бывают только у подписок.",
+  "Set a minimum term before an early-exit fee.": "Сначала задайте минимальный срок, потом плату за досрочный выход.",
+  "This plan has no contract.": "У этого тарифа нет договора.",
+  "This plan has no contract to sign.": "У этого тарифа нет договора для подписи.",
+  "Type your full name and your signature.": "Введите полное имя и подпись.",
+  "signatureImageKey does not match this plan and member.": "signatureImageKey не соответствует этому тарифу и участнику.",
+  "This contract was changed while you were reading it. Please read it again before signing.": "Договор изменили, пока вы его читали. Прочитайте его снова перед подписью.",
+  "Sign this plan's contract before buying it.": "Подпишите договор этого тарифа перед покупкой.",
+  "This contract signature is not for this plan.": "Эта подпись договора относится не к этому тарифу.",
+  "Only a current Student of this School can sign its plan contracts.": "Подписывать договоры тарифов этой школы может только её текущий ученик.",
+  "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.": "Вам меньше 18 лет, поэтому этот договор за вас должен подписать родитель или опекун из своего аккаунта опекуна.",
+  "Remove this plan's contract terms before changing its type.": "Уберите условия договора этого тарифа, прежде чем менять его тип.",
+  "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.": "У этого тарифа есть договор, который участник подписывает при покупке в приложении, поэтому его нельзя продать на ресепшене.",
 };

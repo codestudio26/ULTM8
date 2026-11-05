@@ -1,5 +1,9 @@
 /** Polish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Nowości są dla właścicieli i personelu szkół.",
+  "Give each language once.": "Podaj każdy język tylko raz.",
+  "Post not found": "Nie znaleziono wpisu",
+  "Only a Full Platform Admin may write What's new posts.": "Tylko pełny administrator platformy może pisać nowości.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate musi być datą (RRRR-MM-DD)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "Twoja szkoła aktualizuje Twój profil. Poproś szkołę o zmianę Twoich danych.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "Ta szkoła sama anuluje członkostwa. Poproś szkołę, aby anulowała je za Ciebie.",
@@ -803,4 +807,18 @@ export const serverMessages: Record<string, string> = {
   "Calendar not found": "Nie znaleziono kalendarza",
   "Schedule not found": "Nie znaleziono planu",
   "Your School hasn't switched on calendar links.": "Twoja szkoła nie włączyła linków do kalendarza.",
+  "A Friend Pass is given, not bought, so it has no contract.": "Karnet dla znajomego jest podarunkiem, nie zakupem, więc nie ma umowy.",
+  "A minimum term and an early-exit fee are for Subscription plans only.": "Minimalny okres i opłata za wcześniejsze rozwiązanie dotyczą tylko planów subskrypcyjnych.",
+  "Set a minimum term before an early-exit fee.": "Ustaw minimalny okres przed opłatą za wcześniejsze rozwiązanie.",
+  "This plan has no contract.": "Ten plan nie ma umowy.",
+  "This plan has no contract to sign.": "Ten plan nie ma umowy do podpisania.",
+  "Type your full name and your signature.": "Wpisz swoje pełne imię i nazwisko oraz podpis.",
+  "signatureImageKey does not match this plan and member.": "signatureImageKey nie pasuje do tego planu i członka.",
+  "This contract was changed while you were reading it. Please read it again before signing.": "Ta umowa zmieniła się, gdy ją czytałeś. Przeczytaj ją ponownie przed podpisaniem.",
+  "Sign this plan's contract before buying it.": "Podpisz umowę tego planu przed jego zakupem.",
+  "This contract signature is not for this plan.": "Ten podpis umowy nie dotyczy tego planu.",
+  "Only a current Student of this School can sign its plan contracts.": "Tylko obecny uczeń tej szkoły może podpisywać jej umowy planów.",
+  "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.": "Masz mniej niż 18 lat, więc rodzic lub opiekun musi podpisać tę umowę za ciebie ze swojego konta opiekuna.",
+  "Remove this plan's contract terms before changing its type.": "Usuń warunki umowy tego planu przed zmianą jego typu.",
+  "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.": "Ten plan ma umowę, którą członek podpisuje przy zakupie w aplikacji, więc nie można go sprzedać w recepcji.",
 };

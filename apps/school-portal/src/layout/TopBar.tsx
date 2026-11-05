@@ -26,6 +26,9 @@ function roleLabel(allGrants: RoleGrantClaim[] | undefined, schoolId: string | n
   return grants[0].role;
 }
 
+/** Who reads "What's new" (Decision 318 item 3): owners and staff, not students. */
+const STAFF_ROLES: string[] = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR', 'FRANCHISE_OWNER'];
+
 /** Each language listed in its own script ("Deutsch", "العربية"), so a
  * reader can find theirs whatever the page is showing now. */
 function nativeName(code: string, fallback: string): string {
@@ -60,6 +63,7 @@ export function TopBar() {
   const { t, locale, rememberLocale } = useI18n();
 
   const hasUnread = (counts?.unread ?? 0) > 0;
+  const isStaff = (claims?.grants ?? []).some((g) => STAFF_ROLES.includes(g.role));
 
   return (
     <>
@@ -87,6 +91,25 @@ export function TopBar() {
           (stress test round 4). */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
         <GlobalSearch />
+
+        {/* Decision 318 item 3: news from ULTM8 HQ, for owners and staff. */}
+        {isStaff ? (
+          <Link
+            to="/whats-new"
+            data-testid="whats-new-link"
+            aria-label={t('whatsNew.title')}
+            title={t('whatsNew.title')}
+            style={{ display: 'inline-flex', color: 'var(--text-secondary)' }}
+          >
+            {/* An icon, like the bell beside it, so the header keeps to one
+                line on a tablet (a text pill wrapped it, and the open account
+                menu then covered the page heading). */}
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M3.5 8v4h2.5l6 3.5v-11L6 8H3.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+              <path d="M14.5 7.5a3.5 3.5 0 0 1 0 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          </Link>
+        ) : null}
 
         <Link
           to="/notifications"

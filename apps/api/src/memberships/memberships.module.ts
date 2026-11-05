@@ -11,6 +11,9 @@ import { MembershipsController } from './memberships.controller';
 import { MembershipsService } from './memberships.service';
 import { MembershipFreezesController } from './freeze/membership-freezes.controller';
 import { MembershipFreezesService } from './freeze/membership-freezes.service';
+import { PlanContractsController } from './contracts/plan-contracts.controller';
+import { PlanContractsService } from './contracts/plan-contracts.service';
+import { R2ClientService } from '../common/object-storage/r2-client.service';
 
 /**
  * Phase 9 scope: MembershipPlan CRUD + purchase (Stripe one-time/Subscription,
@@ -56,8 +59,10 @@ import { MembershipFreezesService } from './freeze/membership-freezes.service';
 @Module({
   imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule, BookingsModule, IncomeCategoriesModule],
   // Decision 404: freezing a membership.
-  controllers: [MembershipsController, MembershipFreezesController],
-  providers: [MembershipsService, MembershipFreezesService],
+  controllers: [MembershipsController, MembershipFreezesController, PlanContractsController],
+  // Decision 316 item 6: R2ClientService for the drawn contract signatures,
+  // a plain provider as in the other modules that store files.
+  providers: [MembershipsService, MembershipFreezesService, PlanContractsService, R2ClientService],
   // The locked front-desk tablet's welcome card (FrontDeskModule, Decision 380).
   exports: [MembershipsService],
 })

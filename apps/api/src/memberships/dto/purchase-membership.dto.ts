@@ -62,4 +62,9 @@ export class PurchaseMembershipDto {
   @IsOptional()
   @IsBoolean()
   useHostedCheckout?: boolean;
+
+  @ApiPropertyOptional({ description: "Decision 316 item 6: required for a plan with a contract — the id from POST /membership-plans/{id}/contract/sign (signed within the last day, not used yet)." })
+  @IsOptional()
+  @IsUUID()
+  contractSignatureId?: string;
 }

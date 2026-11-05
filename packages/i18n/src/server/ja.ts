@@ -1,5 +1,9 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "お知らせはスクールのオーナーとスタッフ向けです。",
+  "Give each language once.": "各言語は1回だけ指定してください。",
+  "Post not found": "投稿が見つかりません",
+  "Only a Full Platform Admin may write What's new posts.": "お知らせを書けるのはフル権限のプラットフォーム管理者だけです。",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate は日付（YYYY-MM-DD）で指定してください",
   "Your School keeps your profile up to date. Ask the School to change your details.": "プロフィールはスクールが管理しています。情報の変更はスクールに依頼してください。",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "このスクールでは会員資格の解約をスクールが行います。解約はスクールに依頼してください。",
@@ -803,4 +807,18 @@ export const serverMessages: Record<string, string> = {
   "Calendar not found": "カレンダーが見つかりません",
   "Schedule not found": "スケジュールが見つかりません",
   "Your School hasn't switched on calendar links.": "スクールがカレンダーリンクを有効にしていません。",
+  "A Friend Pass is given, not bought, so it has no contract.": "フレンドパスは購入ではなく贈られるものなので、契約はありません。",
+  "A minimum term and an early-exit fee are for Subscription plans only.": "最低契約期間と途中解約料はサブスクリプションプランのみです。",
+  "Set a minimum term before an early-exit fee.": "途中解約料の前に最低契約期間を設定してください。",
+  "This plan has no contract.": "このプランには契約がありません。",
+  "This plan has no contract to sign.": "このプランには署名する契約がありません。",
+  "Type your full name and your signature.": "氏名と署名を入力してください。",
+  "signatureImageKey does not match this plan and member.": "signatureImageKey がこのプランとメンバーに一致しません。",
+  "This contract was changed while you were reading it. Please read it again before signing.": "読んでいる間にこの契約が変更されました。署名する前にもう一度お読みください。",
+  "Sign this plan's contract before buying it.": "購入する前にこのプランの契約に署名してください。",
+  "This contract signature is not for this plan.": "この契約の署名はこのプランのものではありません。",
+  "Only a current Student of this School can sign its plan contracts.": "このスクールのプラン契約に署名できるのは、現在の生徒だけです。",
+  "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.": "18歳未満のため、この契約は保護者が保護者アカウントから代わりに署名する必要があります。",
+  "Remove this plan's contract terms before changing its type.": "種類を変更する前に、このプランの契約条件を削除してください。",
+  "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.": "このプランにはメンバーがアプリで購入時に署名する契約があるため、受付では販売できません。",
 };

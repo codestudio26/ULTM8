@@ -35,6 +35,7 @@ import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
 import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
 import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
+import { PlanContractsService } from './contracts/plan-contracts.service';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -78,6 +79,7 @@ export class MembershipsService {
     private readonly stripeClient: StripeClientService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly incomeCategories: IncomeCategoriesService,
+    private readonly planContracts: PlanContractsService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -220,6 +222,13 @@ export class MembershipsService {
     // member's Membership means (credits, expiry, renewal), so it is locked
     // while anyone holds one. Duplicating the plan is the way to sell a
     // different type.
+    // Decision 316 item 6: a contract's minimum term and fee are Subscription
+    // only, and a Friend Pass has no contract.
+    if (typeChanged && existing.contractVersion != null) {
+      if (nextType === 'FRIEND_PASS' || (nextType !== 'SUBSCRIPTION' && existing.contractMinimumTermMonths != null)) {
+        throw new BadRequestException("Remove this plan's contract terms before changing its type.");
+      }
+    }
     if (typeChanged) {
       const liveMembers = await this.countLiveMembers(callerId, planId);
       if (liveMembers > 0) {
@@ -813,6 +822,31 @@ export class MembershipsService {
     if (plan.scopedClassId) {
       await this.assertScopedClassSellable(studentId, plan.schoolId, plan.scopedClassId);
     }
+    // Decision 316 item 6: a plan with a contract is bought with a fresh
+    // signature of its current version, used once. Released again if the
+    // purchase then fails, and linked to what it bought when it succeeds.
+    if (plan.contractVersion == null) return this.purchaseChecked(callerId, studentId, plan, dto, stepUpToken);
+    const contract = await this.planContracts.reserveForPurchase(studentId, plan, dto?.contractSignatureId);
+    if (!contract) return this.purchaseChecked(callerId, studentId, plan, dto, stepUpToken);
+    let result: Awaited<ReturnType<MembershipsService['purchaseChecked']>>;
+    try {
+      result = await this.purchaseChecked(callerId, studentId, plan, dto, stepUpToken);
+    } catch (err) {
+      await this.planContracts.releaseReservation(studentId, contract.id).catch(() => undefined);
+      throw err;
+    }
+    await this.planContracts.linkPurchase(studentId, contract.id, result as { transactionId?: string | null; membership?: { id: string } | null });
+    return result;
+  }
+
+  /** purchase() after the plan, the Student and the contract are checked. */
+  private async purchaseChecked(
+    callerId: string,
+    studentId: string,
+    plan: Awaited<ReturnType<MembershipsService['findOnePlan']>>,
+    dto: PurchaseMembershipDto | undefined,
+    stepUpToken: string | undefined,
+  ) {
     // Decision 334 (Memberships review M1/M20/M3): checked before any charge,
     // so a Student who can't hold this Membership is never asked to pay. The
     // same check runs again where the Membership is created.
@@ -1327,6 +1361,11 @@ export class MembershipsService {
     if (plan.type === 'SUBSCRIPTION') {
       throw new BadRequestException('A Subscription is paid by card in the app, so it can\'t be sold at the desk.');
     }
+    // Decision 316 item 6: the member signs the plan's contract when buying
+    // it, in the app.
+    if (plan.contractVersion != null) {
+      throw new BadRequestException("This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.");
+    }
     if (plan.termsWaiverRequired) {
       const signed = await this.prismaApp.withTenantContext(studentId, (tx) => hasCountingWaiverSignature(tx, studentId, schoolId));
       if (!signed) {
@@ -1573,7 +1612,21 @@ export class MembershipsService {
       }
     }
     const found = membership;
-    return this.prismaApp.withTenantContext(contextUserId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, found, callerId));
+    const cancelled = await this.prismaApp.withTenantContext(contextUserId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, found, callerId));
+    // Decision 316 item 6: the member (or their Guardian) cancelling before
+    // the signed minimum term ends puts the School's early-exit fee on their
+    // balance. Only when this call is the one that cancelled (asking twice
+    // changes nothing), and not when the owner cancels for them.
+    if (membership.studentId === contextUserId && !found.cancelAt && cancelled.cancelAt) {
+      try {
+        await this.planContracts.chargeEarlyExitFee(cancelled);
+      } catch (err) {
+        // The Subscription is cancelled either way; the owner can still add
+        // the fee as a charge by hand.
+        this.logger.error(`Could not charge the early-exit fee for Membership ${cancelled.id}`, err as Error);
+      }
+    }
+    return cancelled;
   }
 
   /** Every Membership a Student holds at the School, newest first, for the
@@ -1756,9 +1809,17 @@ export class MembershipsService {
     }).then(async (page) => {
       // Decision 404: each membership's freeze, and whether it is frozen today.
       const freezes = await loadFreezeStates(this.prismaJobs, page.items.map((m) => m.id));
+      // Decision 316 item 6: the signed contract's term and fee, shown
+      // before cancelling a Subscription.
+      const contracts = await this.planContracts.termsForMemberships(page.items.filter((m) => m.frequency === 'RECURRING'));
       return {
         ...page,
-        items: page.items.map((m) => ({ ...m, frozen: freezes.get(m.id)?.frozen ?? false, freeze: freezes.get(m.id)?.freeze ?? null })),
+        items: page.items.map((m) => ({
+          ...m,
+          frozen: freezes.get(m.id)?.frozen ?? false,
+          freeze: freezes.get(m.id)?.freeze ?? null,
+          contract: contracts.get(m.id) ?? null,
+        })),
       };
     });
   }

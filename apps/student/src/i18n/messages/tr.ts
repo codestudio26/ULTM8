@@ -823,6 +823,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "Sözleşmeyi oku ve imzala",
+      title: "Sözleşme",
+      intro: "Planı satın almak için bu planın sözleşmesini okuyun ve imzalayın.",
+      guardianSigns: "Ebeveyni veya vasisi olarak bu sözleşmeyi çocuğunuz adına imzalıyorsunuz.",
+      termsLine: "Asgari süre {months} ay · erken çıkış ücreti {amount}",
+      taxNote: "Okulun diğer ücretlerinde olduğu gibi ücrete vergi eklenebilir.",
+      signAndContinue: "İmzala ve devam et",
+      signError: "Sözleşme imzalanamadı.",
+      loadError: "Sözleşme yüklenemedi.",
+      cancelFee: "Sözleşmenizin asgari süresi {date} tarihine kadar sürer. Üyeliğiniz bundan önce biterse {amount} erken çıkış ücreti bakiyenize eklenir.",
+    },
     recharge: {
       title: "Ders paketiniz bitti",
       titleChild: "{name} adlı kişinin ders paketi bitti",

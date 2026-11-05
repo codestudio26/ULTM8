@@ -101,7 +101,8 @@ export function StudentMembershipsCard({
   }
 
   const activePlans = (plans.data?.items ?? []).filter((p) => !p.archivedAt);
-  const sellable = activePlans.filter((p) => DESK_TYPES.includes(p.type));
+  // Decision 316 item 6: a plan with a contract is signed and bought in the app.
+  const sellable = activePlans.filter((p) => DESK_TYPES.includes(p.type) && p.contractVersion == null);
   const friendPasses = activePlans.filter((p) => p.type === 'FRIEND_PASS');
 
   function statusOf(m: MembershipRow) {

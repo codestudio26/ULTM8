@@ -9,6 +9,7 @@ import { StepUpPrompt } from '../auth/StepUpPrompt';
 import { usePaymentMethod } from '../payments/paymentMethodQueries';
 import { useInvalidateMyMemberships, usePurchaseMembership } from './membershipQueries';
 import { useT } from '../i18n/I18nProvider';
+import { PlanContractSigner } from './PlanContractSigner';
 
 type MembershipPlan = components['schemas']['AcademyMembershipPlanDto'];
 type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
@@ -78,6 +79,11 @@ export function MembershipPlanRow({
   const invalidateMyMemberships = useInvalidateMyMemberships();
   const { data: paymentMethod } = usePaymentMethod(schoolId);
   const [steppingUp, setSteppingUp] = useState(false);
+  // Decision 316 item 6: a plan with a contract is signed first; the
+  // signature then goes with the purchase (and the step-up, for a saved card).
+  const hasContract = plan.contractVersion != null;
+  const [signing, setSigning] = useState<'checkout' | 'savedCard' | null>(null);
+  const [contractSignatureId, setContractSignatureId] = useState<string | undefined>(undefined);
   const isFriendPass = plan.type === 'FRIEND_PASS';
   const outcome = purchase.isSuccess ? purchase.data.outcome : null;
   const canPayWithSavedCard = !forStudentId && !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
@@ -98,12 +104,28 @@ export function MembershipPlanRow({
 
   function handlePurchase() {
     if (purchase.isPending) return;
+    if (hasContract) return setSigning('checkout');
     purchase.mutate({ planId: plan.id, useHostedCheckout: true, studentId: forStudentId }, { onSuccess: handlePurchaseSuccess });
   }
 
   function openPayWithSavedCard() {
     if (purchase.isPending) return;
+    if (hasContract) return setSigning('savedCard');
     setSteppingUp(true);
+  }
+
+  function handleContractSigned(signatureId: string) {
+    const next = signing;
+    setSigning(null);
+    setContractSignatureId(signatureId);
+    if (next === 'savedCard') {
+      setSteppingUp(true);
+      return;
+    }
+    purchase.mutate(
+      { planId: plan.id, useHostedCheckout: true, studentId: forStudentId, contractSignatureId: signatureId },
+      { onSuccess: handlePurchaseSuccess },
+    );
   }
 
   function cancelStepUp() {
@@ -112,7 +134,7 @@ export function MembershipPlanRow({
 
   function handleStepUpVerified(stepUpToken: string) {
     setSteppingUp(false);
-    purchase.mutate({ planId: plan.id, payWithSavedCard: true, stepUpToken });
+    purchase.mutate({ planId: plan.id, payWithSavedCard: true, stepUpToken, ...(contractSignatureId ? { contractSignatureId } : {}) });
   }
 
   return (
@@ -145,11 +167,13 @@ export function MembershipPlanRow({
         <Text style={{ color: '#9AA0A6', fontSize: 12, marginTop: 4 }}>{t('memberships.planRow.friendPass')}</Text>
       ) : !canBuy ? (
         <Text style={{ color: '#9AA0A6', fontSize: 12, marginTop: 4 }}>{t('memberships.planRow.joinFirst')}</Text>
+      ) : outcome === null && signing ? (
+        <PlanContractSigner planId={plan.id} forStudentId={forStudentId} onSigned={handleContractSigned} onCancel={() => setSigning(null)} />
       ) : outcome === null && steppingUp ? (
         <StepUpPrompt onVerified={handleStepUpVerified} onCancel={cancelStepUp} />
       ) : outcome === null ? (
         <View style={{ flexDirection: 'row', marginTop: 4, gap: 8 }}>
-          <Button title={t('memberships.planRow.purchase')} onPress={handlePurchase} loading={purchase.isPending} />
+          <Button title={hasContract ? t('memberships.contract.readAndSign') : t('memberships.planRow.purchase')} onPress={handlePurchase} loading={purchase.isPending} />
           {canPayWithSavedCard ? (
             <Button title={t('memberships.planRow.payWithSavedCard')} variant="secondary" onPress={openPayWithSavedCard} loading={purchase.isPending} />
           ) : null}

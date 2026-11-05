@@ -1,5 +1,9 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "ข่าวสารใหม่สำหรับเจ้าของโรงเรียนและพนักงานเท่านั้น",
+  "Give each language once.": "ระบุแต่ละภาษาเพียงครั้งเดียว",
+  "Post not found": "ไม่พบโพสต์",
+  "Only a Full Platform Admin may write What's new posts.": "เฉพาะผู้ดูแลแพลตฟอร์มแบบเต็มเท่านั้นที่เขียนโพสต์ข่าวสารใหม่ได้",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate ต้องเป็นวันที่ (YYYY-MM-DD)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "โรงเรียนของคุณดูแลโปรไฟล์ของคุณให้เป็นปัจจุบัน โปรดขอให้โรงเรียนเปลี่ยนข้อมูลของคุณ",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "โรงเรียนนี้ยกเลิกสมาชิกภาพเอง โปรดขอให้โรงเรียนยกเลิกให้คุณ",
@@ -803,4 +807,18 @@ export const serverMessages: Record<string, string> = {
   "Calendar not found": "ไม่พบปฏิทิน",
   "Schedule not found": "ไม่พบตาราง",
   "Your School hasn't switched on calendar links.": "โรงเรียนของคุณยังไม่ได้เปิดลิงก์ปฏิทิน",
+  "A Friend Pass is given, not bought, so it has no contract.": "บัตรเพื่อนเป็นของที่มอบให้ ไม่ได้ซื้อ จึงไม่มีสัญญา",
+  "A minimum term and an early-exit fee are for Subscription plans only.": "ระยะเวลาขั้นต่ำและค่าธรรมเนียมยกเลิกก่อนกำหนดใช้ได้กับแผนสมัครสมาชิกเท่านั้น",
+  "Set a minimum term before an early-exit fee.": "กำหนดระยะเวลาขั้นต่ำก่อนตั้งค่าธรรมเนียมยกเลิกก่อนกำหนด",
+  "This plan has no contract.": "แผนนี้ไม่มีสัญญา",
+  "This plan has no contract to sign.": "แผนนี้ไม่มีสัญญาให้ลงนาม",
+  "Type your full name and your signature.": "พิมพ์ชื่อเต็มและลายเซ็นของคุณ",
+  "signatureImageKey does not match this plan and member.": "signatureImageKey ไม่ตรงกับแผนและสมาชิกนี้",
+  "This contract was changed while you were reading it. Please read it again before signing.": "สัญญานี้ถูกแก้ไขระหว่างที่คุณอ่าน โปรดอ่านอีกครั้งก่อนลงนาม",
+  "Sign this plan's contract before buying it.": "ลงนามในสัญญาของแผนนี้ก่อนซื้อ",
+  "This contract signature is not for this plan.": "ลายเซ็นสัญญานี้ไม่ใช่ของแผนนี้",
+  "Only a current Student of this School can sign its plan contracts.": "เฉพาะนักเรียนปัจจุบันของโรงเรียนนี้เท่านั้นที่ลงนามในสัญญาแผนได้",
+  "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.": "คุณอายุต่ำกว่า 18 ปี ผู้ปกครองต้องลงนามในสัญญานี้แทนคุณจากบัญชีผู้ปกครอง",
+  "Remove this plan's contract terms before changing its type.": "ลบเงื่อนไขสัญญาของแผนนี้ก่อนเปลี่ยนประเภท",
+  "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.": "แผนนี้มีสัญญาที่สมาชิกลงนามเมื่อซื้อในแอป จึงขายที่เคาน์เตอร์ไม่ได้",
 };

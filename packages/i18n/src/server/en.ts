@@ -6,6 +6,10 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "What's new is for School owners and staff.",
+ "Give each language once.",
+ "Post not found",
+ "Only a Full Platform Admin may write What's new posts.",
  "nextGradingDate must be a date (YYYY-MM-DD)",
  "Your School keeps your profile up to date. Ask the School to change your details.",
  "This School cancels memberships itself. Ask the School to cancel it for you.",
@@ -821,4 +825,18 @@ export const SERVER_PATTERNS: string[] = [
  "Calendar not found",
  "Schedule not found",
  "Your School hasn't switched on calendar links.",
+ "A Friend Pass is given, not bought, so it has no contract.",
+ "A minimum term and an early-exit fee are for Subscription plans only.",
+ "Set a minimum term before an early-exit fee.",
+ "This plan has no contract.",
+ "This plan has no contract to sign.",
+ "Type your full name and your signature.",
+ "signatureImageKey does not match this plan and member.",
+ "This contract was changed while you were reading it. Please read it again before signing.",
+ "Sign this plan's contract before buying it.",
+ "This contract signature is not for this plan.",
+ "Only a current Student of this School can sign its plan contracts.",
+ "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.",
+ "Remove this plan's contract terms before changing its type.",
+ "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.",
 ];

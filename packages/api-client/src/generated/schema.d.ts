@@ -3124,6 +3124,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/membership-plans/{id}/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanContractsController_getForSigning"];
+        put: operations["PlanContractsController_setContract"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/contract/signature-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlanContractsController_uploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/contract/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlanContractsController_sign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/plan-contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanContractsController_listForStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/income-categories": {
         parameters: {
             query?: never;
@@ -6290,6 +6354,54 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/whats-new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["WhatsNewController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/whats-new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminWhatsNewController_list"];
+        put?: never;
+        post: operations["PlatformAdminWhatsNewController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/whats-new/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["PlatformAdminWhatsNewController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["PlatformAdminWhatsNewController_update"];
         trace?: never;
     };
     "/v1/member-app/me": {
@@ -10153,6 +10265,14 @@ export interface components {
             newMemberBillingStrategy: string;
             /** @description Day of month (1-28) — set only when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE. */
             billingCycleAnchorDay?: number | null;
+            /** @description Decision 316 item 6: the contract the member signs when buying this plan; null when the plan has none. Set with PUT /membership-plans/{id}/contract. */
+            contractBody?: string | null;
+            /** @description Subscription only: the minimum term in months. */
+            contractMinimumTermMonths?: number | null;
+            /** @description Subscription only: the early-exit fee, minor units, before the School's tax. */
+            contractEarlyExitFee?: number | null;
+            /** @description Goes up by one each time the contract changes; null = no contract. */
+            contractVersion?: number | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -10250,6 +10370,8 @@ export interface components {
             payWithSavedCard?: boolean;
             /** @description Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard. */
             useHostedCheckout?: boolean;
+            /** @description Decision 316 item 6: required for a plan with a contract — the id from POST /membership-plans/{id}/contract/sign (signed within the last day, not used yet). */
+            contractSignatureId?: string;
         };
         MembershipResponseDto: {
             id: string;
@@ -10368,6 +10490,13 @@ export interface components {
         ClassTicketPlansDto: {
             planIds: string[];
         };
+        MembershipContractTermsDto: {
+            /** @description When the signed minimum term ends. */
+            minimumTermEndsAt: string;
+            /** @description The early-exit fee put on the balance if the membership ends before then; minor units, before the School's tax. 0 = none. */
+            earlyExitFee: number;
+            currency?: string | null;
+        };
         MyMembershipResponseDto: {
             id: string;
             studentId: string;
@@ -10385,6 +10514,8 @@ export interface components {
             cancelledById?: string | null;
             createdAt: string;
             updatedAt: string;
+            /** @description Decision 316 item 6: the signed contract's minimum term and early-exit fee, when it has one. */
+            contract?: components["schemas"]["MembershipContractTermsDto"] | null;
             /** @description Decision 391: a Visitor's free visit pass (its plan is hidden from the School's plan list). */
             visitPass: boolean;
             /** @description Decision 404: an approved freeze covers today. */
@@ -10511,6 +10642,72 @@ export interface components {
         };
         MyFreezableMembershipListResponseDto: {
             items: components["schemas"]["MyFreezableMembershipDto"][];
+        };
+        SetPlanContractDto: {
+            /** @description The contract text the member signs. null or blank removes the contract from the plan. */
+            body?: string | null;
+            /** @description Subscription only: the minimum term in whole months (1–120), counted from the membership start. */
+            minimumTermMonths?: number | null;
+            /** @description Subscription only, with a minimum term: the School's fee, in the plan's currency's minor units, put on the member's balance when they cancel and the membership ends before the minimum term does. The School's tax settings apply. */
+            earlyExitFee?: number | null;
+        };
+        PlanContractDto: {
+            planId: string;
+            planTitle: string;
+            planType: string;
+            body: string;
+            minimumTermMonths: number | null;
+            /** @description Minor units, before the School's tax. */
+            earlyExitFee: number | null;
+            currency: string | null;
+            version: number;
+        };
+        PlanContractUploadUrlDto: {
+            /** @description A Guardian signing for their linked child. */
+            studentId?: string;
+        };
+        PlanContractUploadUrlResponseDto: {
+            uploadUrl: string;
+            objectKey: string;
+        };
+        SignPlanContractDto: {
+            signerFullName: string;
+            /** @description The typed signature. */
+            signatureText: string;
+            /** @description The drawn signature uploaded with signature-upload-url, if any. */
+            signatureImageKey?: string;
+            /** @description The version of the contract the member read. A newer version is refused (409): read it again. */
+            contractVersion: number;
+            /** @description A Guardian signing for their linked child. */
+            studentId?: string;
+        };
+        PlanContractSignatureDto: {
+            id: string;
+            schoolId: string;
+            membershipPlanId: string;
+            studentId: string;
+            /** @description Who signed: the member, or their Guardian. */
+            signedById: string;
+            signerFullName: string;
+            signatureText: string;
+            /** @description A short-lived link to the drawn signature. */
+            signatureImageUrl: string | null;
+            signedAt: string;
+            /** @description The plan as it was named when signed. */
+            planTitle: string;
+            /** @description The exact text signed. */
+            contractBody: string;
+            minimumTermMonths: number | null;
+            earlyExitFee: number | null;
+            currency: string | null;
+            contractVersion: number;
+            /** @description SHA-256 of the signed text. */
+            contractSha256: string;
+            /** @description Whether a purchase used this signature. */
+            used: boolean;
+        };
+        PlanContractSignatureListDto: {
+            data: components["schemas"]["PlanContractSignatureDto"][];
         };
         IncomeCategoryDto: {
             id: string;
@@ -12345,6 +12542,8 @@ export interface components {
             expiryDurationDays?: number | null;
             classesIncluded?: number | null;
             visible: boolean;
+            /** @description Goes up by one each time the contract changes; null = no contract. */
+            contractVersion?: number | null;
             /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment. */
             cardSurchargeAmount: number;
         };
@@ -13251,6 +13450,50 @@ export interface components {
             /** @description A new tag, added to the School's list. Send this or tagId. */
             name?: string;
         };
+        WhatsNewItemDto: {
+            id: string;
+            title: string;
+            body: string;
+            /** @description The language shown: the one asked for, or en-GB when the post has no translation in it. */
+            locale: string;
+            /**
+             * Format: date-time
+             * @description When HQ posted it.
+             */
+            createdAt: string;
+        };
+        WhatsNewListDto: {
+            items: components["schemas"]["WhatsNewItemDto"][];
+            /** @description Cursor for older posts, or null. */
+            nextCursor?: string | null;
+        };
+        ProductUpdateTranslationDto: {
+            /** @enum {string} */
+            locale: "pt-BR" | "es" | "ar" | "fr" | "de" | "it" | "nl" | "pl" | "ru" | "tr" | "ja" | "ko" | "zh-CN" | "th";
+            title: string;
+            body: string;
+        };
+        ProductUpdateAdminDto: {
+            id: string;
+            title: string;
+            body: string;
+            translations: components["schemas"]["ProductUpdateTranslationDto"][];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        ProductUpdateAdminListDto: {
+            items: components["schemas"]["ProductUpdateAdminDto"][];
+        };
+        WriteProductUpdateDto: {
+            /** @description English title. */
+            title: string;
+            /** @description English text (plain text; line breaks kept). */
+            body: string;
+            /** @description Translations, at most one per language. On an edit, the list replaces the old one. */
+            translations?: components["schemas"]["ProductUpdateTranslationDto"][];
+        };
         MemberAppSchoolSwitchesDto: {
             schoolId: string;
             /** @description Members may edit their own profile. */
@@ -13390,6 +13633,7 @@ export interface components {
         MergeRecordCountsDto: {
             Membership: number;
             MembershipFreeze: number;
+            PlanContractSignature: number;
             PackRecharge: number;
             Transaction: number;
             Booking: number;
@@ -19612,6 +19856,127 @@ export interface operations {
             };
         };
     };
+    PlanContractsController_getForSigning: {
+        parameters: {
+            query?: {
+                /** @description A Guardian reading the contract for their linked child. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanContractDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_setContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPlanContractDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponseDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_uploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanContractUploadUrlDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanContractUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_sign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignPlanContractDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanContractSignatureDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_listForStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanContractSignatureListDto"];
+                };
+            };
+        };
+    };
     IncomeCategoriesController_list: {
         parameters: {
             query?: never;
@@ -25147,6 +25512,117 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    WhatsNewController_list: {
+        parameters: {
+            query?: {
+                /** @description The reader's language. English when missing or when a post has no translation in it. */
+                locale?: "en-GB" | "pt-BR" | "es" | "ar" | "fr" | "de" | "it" | "nl" | "pl" | "ru" | "tr" | "ja" | "ko" | "zh-CN" | "th";
+                /** @description nextCursor from the previous page. */
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsNewListDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminWhatsNewController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUpdateAdminListDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminWhatsNewController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteProductUpdateDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUpdateAdminDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminWhatsNewController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    PlatformAdminWhatsNewController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WriteProductUpdateDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductUpdateAdminDto"];
+                };
             };
         };
     };

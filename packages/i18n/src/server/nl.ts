@@ -1,5 +1,9 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Nieuws is voor schooleigenaren en personeel.",
+  "Give each language once.": "Geef elke taal één keer op.",
+  "Post not found": "Bericht niet gevonden",
+  "Only a Full Platform Admin may write What's new posts.": "Alleen een volledige platformbeheerder mag nieuwsberichten schrijven.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate moet een datum zijn (JJJJ-MM-DD)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "Je school houdt je profiel bij. Vraag de school om je gegevens te wijzigen.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "Deze school zegt lidmaatschappen zelf op. Vraag de school om het voor je op te zeggen.",
@@ -803,4 +807,18 @@ export const serverMessages: Record<string, string> = {
   "Calendar not found": "Agenda niet gevonden",
   "Schedule not found": "Rooster niet gevonden",
   "Your School hasn't switched on calendar links.": "Je school heeft agendalinks niet aangezet.",
+  "A Friend Pass is given, not bought, so it has no contract.": "Een Vriendenpas wordt cadeau gegeven, niet gekocht, en heeft dus geen contract.",
+  "A minimum term and an early-exit fee are for Subscription plans only.": "Een minimale looptijd en een vroegtijdige-opzegkosten gelden alleen voor abonnementen.",
+  "Set a minimum term before an early-exit fee.": "Stel eerst een minimale looptijd in, dan pas opzegkosten.",
+  "This plan has no contract.": "Dit abonnement heeft geen contract.",
+  "This plan has no contract to sign.": "Dit abonnement heeft geen contract om te ondertekenen.",
+  "Type your full name and your signature.": "Typ je volledige naam en je handtekening.",
+  "signatureImageKey does not match this plan and member.": "signatureImageKey hoort niet bij dit abonnement en dit lid.",
+  "This contract was changed while you were reading it. Please read it again before signing.": "Dit contract is gewijzigd terwijl je het las. Lees het opnieuw voordat je tekent.",
+  "Sign this plan's contract before buying it.": "Onderteken het contract van dit abonnement voordat je het koopt.",
+  "This contract signature is not for this plan.": "Deze contracthandtekening hoort niet bij dit abonnement.",
+  "Only a current Student of this School can sign its plan contracts.": "Alleen een huidige leerling van deze school kan de contracten van haar abonnementen ondertekenen.",
+  "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.": "Je bent jonger dan 18, dus een ouder of voogd moet dit contract voor je ondertekenen vanuit diens voogdaccount.",
+  "Remove this plan's contract terms before changing its type.": "Verwijder de contractvoorwaarden van dit abonnement voordat je het type wijzigt.",
+  "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.": "Dit abonnement heeft een contract dat het lid tekent bij aankoop in de app, dus het kan niet aan de balie verkocht worden.",
 };

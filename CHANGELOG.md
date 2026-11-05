@@ -737,6 +737,23 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   renewal) or of the charge (a payment toward it), as it is now. Members never
   see categories. No accounting codes and no accounting integration. **Needs
   a database migration** (`20270212000001_income_categories`).
+- **Contracts on plans** (Decision 316 item 6; Gymdesk DOC2) — a new
+  **Contract** card on a plan's edit page (owner only) holds the School's own
+  contract text and, for a Subscription, a **minimum term** (months) and an
+  **early-exit fee**. In the ULTM8 app, buying a plan with a contract shows
+  **Read and sign the contract** first: the member reads it in full and signs
+  it like a waiver (full name, typed signature, optional drawn signature); a
+  parent signs for their child, and someone under 18 can't sign for
+  themselves. A copy of exactly what was signed is kept with its SHA-256
+  fingerprint, so later edits never change it (each edit is a new version, and
+  only new buyers sign it). Each signature buys once. Before cancelling, the
+  app shows when the minimum term ends and the fee; if the member (or their
+  parent) cancels and the membership ends before the signed term does, the
+  signed fee goes on their balance as a charge with the School's tax, and they
+  get the usual "New invoice" notice. A plan with a contract can't be sold at
+  the desk. The owner sees a student's **Signed contracts** on their page,
+  with the text signed. **Needs a database migration**
+  (`20270217000001_plan_contracts`).
 - **Medical information at sign-up** (Decision 315 item 10; Gymdesk SF6) — a
   new **Medical information at sign-up** card on the School page (owner only)
   lets a School ask for medical information. It is **off by default**, so
@@ -1225,6 +1242,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   coach dashboard; and a setup checklist for new Schools (Branch, style and
   belts, class, plan, waiver, Stripe, staff) that ticks itself and can be
   hidden. **Needs a database migration.**
+- **"What's new"** (Decision 318 item 3) — news about ULTM8 written by ULTM8
+  HQ on a new "What's new" page in Platform Admin (Full Admins write, edit and
+  delete; every change is audit-logged), with an optional translation for each
+  School Portal language. School owners and staff open it from a "What's new"
+  button in the portal header and read the posts newest first, in their
+  language, or in English when a post has no translation. The same posts for
+  every School; students never see them. All 15 languages. **Needs a database
+  migration** (`20270216000001_whats_new_feed`).
 
 - **Check-in and front desk review fixes** (Decision 377) — a checked-in
   student keeps their seat, so a full class can't be booked past its limit; the

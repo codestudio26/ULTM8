@@ -19,6 +19,7 @@ import {
   type MembershipPlanResponse,
 } from './membershipPlanQueries';
 import { OwnerOnly } from './MembershipPlansPage';
+import { PlanContractCard } from './PlanContractCard';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 import { incomeCategoryOptions, useIncomeCategories, type IncomeCategory } from '../charges/incomeCategoryQueries';
 
@@ -98,6 +99,7 @@ export function MembershipPlanFormPage() {
   const initial = isEdit ? existingPlan : duplicateFrom;
 
   return (
+    <>
     <MembershipPlanForm
       mode={isEdit ? 'edit' : 'create'}
       initial={initial}
@@ -126,6 +128,9 @@ export function MembershipPlanFormPage() {
       }}
       onCancel={() => navigate('/membership-plans')}
     />
+    {/* Decision 316 item 6: the plan's contract, saved on its own. */}
+    {isEdit && existingPlan ? <PlanContractCard key={`${existingPlan.id}-${existingPlan.contractVersion ?? 0}`} plan={existingPlan} currency={school?.defaultCurrency} /> : null}
+    </>
   );
 }
 

@@ -1,5 +1,9 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "قسم الجديد مخصص لأصحاب المدارس وموظفيها.",
+  "Give each language once.": "أدخل كل لغة مرة واحدة.",
+  "Post not found": "المنشور غير موجود",
+  "Only a Full Platform Admin may write What's new posts.": "يمكن لمسؤول المنصة الكامل فقط كتابة منشورات الجديد.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "يجب أن يكون nextGradingDate تاريخًا (YYYY-MM-DD)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "مدرستك تحدّث ملفك الشخصي. اطلب من المدرسة تغيير بياناتك.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "هذه المدرسة تلغي الاشتراكات بنفسها. اطلب من المدرسة إلغاءه نيابةً عنك.",
@@ -803,4 +807,18 @@ export const serverMessages: Record<string, string> = {
   "Calendar not found": "لم يتم العثور على التقويم",
   "Schedule not found": "لم يتم العثور على الجدول",
   "Your School hasn't switched on calendar links.": "لم تفعّل مدرستك روابط التقويم.",
+  "A Friend Pass is given, not bought, so it has no contract.": "تذكرة الصديق تُهدى ولا تُشترى، لذا ليس لها عقد.",
+  "A minimum term and an early-exit fee are for Subscription plans only.": "المدة الدنيا ورسوم الخروج المبكر خاصة بخطط الاشتراك فقط.",
+  "Set a minimum term before an early-exit fee.": "حدّد مدة دنيا قبل رسوم الخروج المبكر.",
+  "This plan has no contract.": "هذه الخطة ليس لها عقد.",
+  "This plan has no contract to sign.": "هذه الخطة ليس لها عقد للتوقيع.",
+  "Type your full name and your signature.": "اكتب اسمك الكامل وتوقيعك.",
+  "signatureImageKey does not match this plan and member.": "signatureImageKey لا يطابق هذه الخطة وهذا العضو.",
+  "This contract was changed while you were reading it. Please read it again before signing.": "تغيّر هذا العقد أثناء قراءتك له. يرجى قراءته مجددًا قبل التوقيع.",
+  "Sign this plan's contract before buying it.": "وقّع عقد هذه الخطة قبل شرائها.",
+  "This contract signature is not for this plan.": "توقيع العقد هذا لا يخص هذه الخطة.",
+  "Only a current Student of this School can sign its plan contracts.": "لا يوقّع عقود خطط هذه المدرسة إلا طالب حالي فيها.",
+  "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.": "عمرك أقل من 18 عامًا، لذا يجب أن يوقّع أحد الوالدين أو الوصي هذا العقد عنك من حساب الوصي.",
+  "Remove this plan's contract terms before changing its type.": "أزل شروط عقد هذه الخطة قبل تغيير نوعها.",
+  "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.": "لهذه الخطة عقد يوقّعه العضو عند شرائها في التطبيق، لذا لا يمكن بيعها في مكتب الاستقبال.",
 };

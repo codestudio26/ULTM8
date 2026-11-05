@@ -38,7 +38,7 @@ export function useMergeDuplicate(schoolId: string, keptId: string) {
 /** The rows the preview counts, grouped the way the modal lists them. Each
  * table the API counts belongs to exactly one group. */
 export const MERGE_GROUPS = {
-  memberships: ['Membership', 'MembershipFreeze', 'PackRecharge'],
+  memberships: ['Membership', 'MembershipFreeze', 'PackRecharge', 'PlanContractSignature'],
   payments: ['Transaction', 'Charge', 'ChargeAllocation', 'BalanceEntry', 'ChargeRefund', 'RecurringCharge', 'PromotionFeeRequest'],
   bookings: ['Booking', 'WaitlistEntry'],
   grading: ['StudentRank', 'StudentRankSkillStatus', 'PromotionEvent', 'PromotionEventNoteLog', 'SkillSignOffLog', 'TrainingLog', 'RankCorrectionRequest'],

@@ -37,6 +37,8 @@ const MEMBERSHIP_PLAN_DISCOVERY_SELECT = {
   expiryDurationDays: true,
   classesIncluded: true,
   visible: true,
+  // Decision 316 item 6: whether buying asks the member to sign a contract.
+  contractVersion: true,
 } as const;
 
 const CLASS_DISCOVERY_SELECT = {

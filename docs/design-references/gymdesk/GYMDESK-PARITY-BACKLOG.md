@@ -70,7 +70,7 @@ including a filled-in example where possible. Empty screens hide most fields.
 | D2 | Notifications widget | 🟡 | Notifications exist; frontend-only |
 | D3 | Upcoming Birthdays widget | ❌ | `dateOfBirth` exists on the profile |
 | D4 | Setup / onboarding checklist (progress + task tiles + "Next setup step" toast) | ❌ | |
-| D5 | "What's new?" product-updates feed | ❌ | |
+| D5 | "What's new?" product-updates feed | ✅ | Built 5 Nov 2026 (Decision 318 item 3): HQ writes in Platform Admin, owners and staff read in the portal, translated or English. No unread count yet |
 | D6 | Trial "days left" + Upgrade banner | 🟡 | Platform subscription exists (`SubscriptionPlan`); trial countdown display not confirmed |
 | D7 | In-app chat/support bubble | ❌ | Would need a third-party vendor |
 
@@ -406,7 +406,7 @@ the current check-in rules in code before deciding.
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
 | DOC1 | Document templates list: name, members, signatures, last updated, edit/delete | ✅ | Waivers + Signatures panel |
-| DOC2 | General **contracts** beyond liability waivers | 🟡 | Waiver entity only. Decision 253: waivers are never deleted, so Gymdesk's **delete** icon must be **archive** in ULTM8 |
+| DOC2 | General **contracts** beyond liability waivers | ✅ **5 Nov 2026: built** (Decision 316 item 6, feature/plan-contracts): a contract on a plan, its own entity (`PlanContractSignature`), signed in the app before buying, never deleted (retention not decided) | Waiver entity only. Decision 253: waivers are never deleted, so Gymdesk's **delete** icon must be **archive** in ULTM8 |
 
 **Questions:** DOC2: are contracts a Waiver type or a separate entity? Retention period is still an open legal item (CLAUDE.md "Current phase").
 

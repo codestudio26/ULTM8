@@ -1,5 +1,9 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "新功能动态仅供学校负责人和员工查看。",
+  "Give each language once.": "每种语言只能填写一次。",
+  "Post not found": "未找到该帖子",
+  "Only a Full Platform Admin may write What's new posts.": "只有完全权限的平台管理员可以撰写新功能动态。",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate 必须是日期（YYYY-MM-DD）",
   "Your School keeps your profile up to date. Ask the School to change your details.": "你的学校负责更新你的资料。请让学校修改你的信息。",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "此学校自行取消会员资格。请让学校为你取消。",
@@ -803,4 +807,18 @@ export const serverMessages: Record<string, string> = {
   "Calendar not found": "未找到日历",
   "Schedule not found": "未找到课程表",
   "Your School hasn't switched on calendar links.": "你的学校尚未开启日历链接。",
+  "A Friend Pass is given, not bought, so it has no contract.": "好友通行证是赠送的，不是购买的，所以没有合同。",
+  "A minimum term and an early-exit fee are for Subscription plans only.": "最短期限和提前退出费仅适用于订阅计划。",
+  "Set a minimum term before an early-exit fee.": "请先设置最短期限，再设置提前退出费。",
+  "This plan has no contract.": "此计划没有合同。",
+  "This plan has no contract to sign.": "此计划没有需要签署的合同。",
+  "Type your full name and your signature.": "请输入你的全名和签名。",
+  "signatureImageKey does not match this plan and member.": "signatureImageKey 与此计划和会员不匹配。",
+  "This contract was changed while you were reading it. Please read it again before signing.": "你阅读时此合同已被修改。请重新阅读后再签署。",
+  "Sign this plan's contract before buying it.": "购买前请先签署此计划的合同。",
+  "This contract signature is not for this plan.": "此合同签名不属于此计划。",
+  "Only a current Student of this School can sign its plan contracts.": "只有本校的在读学员才能签署其计划合同。",
+  "You're under 18, so a parent or guardian needs to sign this contract for you from their Guardian account.": "你未满18岁，需要父母或监护人用监护人账号代你签署此合同。",
+  "Remove this plan's contract terms before changing its type.": "更改类型前，请先删除此计划的合同条款。",
+  "This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.": "此计划有会员在应用内购买时签署的合同，因此不能在前台出售。",
 };
