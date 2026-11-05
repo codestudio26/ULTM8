@@ -3,10 +3,12 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { loadLadder } from '../ranks/grading-attendance';
-import { eligibilityOnLadder, studentTimeZone } from '../ranks/grading-eligibility';
+import { eligibilityOnLadder, REQUIREMENT_SETTINGS_SELECT, requirementExtrasFor, studentTimeZone } from '../ranks/grading-eligibility';
+import { ticksOf } from '../ranks/engine';
+import { GradingService } from '../ranks/grading.service';
 import { GRADING_NOTIFICATIONS_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
-import { GradingFeeRequestedJobData, GradingPromotedJobData, GradingReadyCheckJobData } from './grading-notifications.types';
+import { GradingAutoPromotedJobData, GradingFeeRequestedJobData, GradingPromotedJobData, GradingReadyCheckJobData } from './grading-notifications.types';
 import { formatFee } from '../ranks/promotion-fee';
 
 /** Days are served at each student's local midnight, so a daily pass catches
@@ -93,6 +95,20 @@ export class GradingNotificationsScheduler implements OnModuleInit {
  * day they are (Decision 313 doesn't say whether a student who becomes ready
  * after day 3 is reminded; this build does, once). Needs product-owner
  * confirmation.
+ *
+ * Automatic promotion (Decision 321 item 5): a style set to AUTO_STRIPES or
+ * AUTO_ALL promotes a student who meets every ticked requirement for a step
+ * it covers. Checked on every 'ready-check' (after a check-in or a grading
+ * action) and in the daily 'sweep' (for days in rank and age). The decision
+ * is GradingService.autoPromote(), which applies it under the student's own
+ * context; this job only finds the candidates. A student promoted (or whose
+ * promotion now waits for its fee) gets no "ready to grade" for that step:
+ * nobody needs to grade them. "Ready to grade" and "to decide" use the
+ * style's ticked requirements (Decision 321 item 7), and "to decide" is not
+ * sent for a step the style gives automatically.
+ *
+ * "Promoted automatically" ('auto-promoted', Decision 321 item 5): the
+ * coaches of the style are told, the same people "ready to grade" goes to.
  */
 @Processor(GRADING_NOTIFICATIONS_QUEUE)
 export class GradingNotificationsProcessor extends WorkerHost {
@@ -101,6 +117,7 @@ export class GradingNotificationsProcessor extends WorkerHost {
   constructor(
     private readonly prismaJobs: PrismaJobsService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
+    private readonly grading: GradingService,
   ) {
     super();
   }
@@ -109,7 +126,9 @@ export class GradingNotificationsProcessor extends WorkerHost {
     if (job.name === 'ready-check') return this.readyCheck(job.data as GradingReadyCheckJobData);
     if (job.name === 'promoted') return this.promoted(job.data as GradingPromotedJobData);
     if (job.name === 'fee-requested') return this.feeRequested(job.data as GradingFeeRequestedJobData);
+    if (job.name === 'auto-promoted') return this.autoPromoted(job.data as GradingAutoPromotedJobData);
     if (job.name === 'sweep') {
+      await this.autoPromoteSweep();
       await this.sweep();
       await this.toDecideSweep();
       return;
@@ -118,11 +137,58 @@ export class GradingNotificationsProcessor extends WorkerHost {
   }
 
   private async readyCheck({ studentId, disciplineId }: GradingReadyCheckJobData): Promise<void> {
+    // Automatic promotion first (Decision 321 item 5): a student it promotes
+    // is checked again for the next step by the check its grading queues.
+    const automatic = await this.prismaJobs.studentRank.findMany({
+      where: { studentId, ...(disciplineId ? { disciplineId } : {}), discipline: { promotionMode: { not: 'MANUAL' } } },
+      select: { disciplineId: true },
+    });
+    const handled = new Set<string>();
+    for (const r of automatic) {
+      if ((await this.grading.autoPromote(studentId, r.disciplineId)) !== 'NOT_AUTOMATIC') handled.add(r.disciplineId);
+    }
     const ranks = await this.prismaJobs.studentRank.findMany({
       where: { studentId, ...(disciplineId ? { disciplineId } : {}), readyNotifiedAt: null },
-      select: { id: true },
+      select: { id: true, disciplineId: true },
     });
-    for (const r of ranks) await this.checkStudentRank(r.id);
+    for (const r of ranks) if (!handled.has(r.disciplineId)) await this.checkStudentRank(r.id);
+  }
+
+  /** The daily pass of automatic promotion (Decision 321 item 5): every rank
+   * in a style set to promote automatically, for those who became ready by
+   * time or age alone. One student at a time; one failing doesn't stop it. */
+  private async autoPromoteSweep(): Promise<void> {
+    let cursor: string | undefined;
+    let checked = 0;
+    for (;;) {
+      const batch = await this.prismaJobs.studentRank.findMany({
+        where: { discipline: { promotionMode: { not: 'MANUAL' }, archivedAt: null } },
+        select: { id: true, studentId: true, disciplineId: true },
+        orderBy: { id: 'asc' },
+        take: SWEEP_BATCH,
+        ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      });
+      for (const r of batch) {
+        try {
+          await this.grading.autoPromote(r.studentId, r.disciplineId);
+        } catch (err) {
+          this.logger.error(`grading-notifications: automatic promotion failed for StudentRank ${r.id}`, err as Error);
+        }
+      }
+      checked += batch.length;
+      if (batch.length < SWEEP_BATCH) break;
+      cursor = batch[batch.length - 1].id;
+    }
+    this.logger.log(`grading-notifications: automatic promotion sweep checked ${checked} student rank(s).`);
+  }
+
+  /** The style's ticked requirements, and what they need beyond the rank row,
+   * for one student (Decision 321). */
+  private async extrasFor(sr: { studentId: string; schoolId: string; disciplineId: string; dateOfCurrentRank: Date }, timeZone: string) {
+    const style = await this.prismaJobs.discipline.findUnique({ where: { id: sr.disciplineId }, select: { promotionMode: true, ...REQUIREMENT_SETTINGS_SELECT } });
+    if (!style) return { extras: undefined, promotionMode: 'MANUAL' };
+    const extras = await requirementExtrasFor(this.prismaJobs, sr.disciplineId, ticksOf(style), [{ studentId: sr.studentId, dateOfCurrentRank: sr.dateOfCurrentRank, timeZone }]);
+    return { extras: extras.get(sr.studentId), promotionMode: style.promotionMode };
   }
 
   private async sweep(): Promise<void> {
@@ -168,7 +234,9 @@ export class GradingNotificationsProcessor extends WorkerHost {
     if (!enrolled) return;
 
     const ladder = await loadLadder(db, sr.disciplineId);
-    const eligibility = eligibilityOnLadder(ladder, sr, await studentTimeZone(db, sr.studentId, sr.schoolId));
+    const timeZone = await studentTimeZone(db, sr.studentId, sr.schoolId);
+    const { extras } = await this.extrasFor(sr, timeZone);
+    const eligibility = eligibilityOnLadder(ladder, sr, timeZone, undefined, undefined, extras);
     if (!eligibility.hasNext || !eligibility.eligible) return;
 
     // Claim "once per rank" — on the rung just checked, so a rank change in
@@ -262,8 +330,14 @@ export class GradingNotificationsProcessor extends WorkerHost {
     // is reminded like any other promotion left "to decide" (Decision 421 item 6).
     if (!request.toDisciplineId) {
       const ladder = await loadLadder(db, sr.disciplineId);
-      const eligibility = eligibilityOnLadder(ladder, sr, await studentTimeZone(db, sr.studentId, sr.schoolId));
+      const timeZone = await studentTimeZone(db, sr.studentId, sr.schoolId);
+      const { extras, promotionMode } = await this.extrasFor(sr, timeZone);
+      const eligibility = eligibilityOnLadder(ladder, sr, timeZone, undefined, undefined, extras);
       if (!eligibility.hasNext || !eligibility.eligible) return;
+      // Not for a step the style gives automatically (Decision 321 item 5).
+      const from = ladder.find((r) => r.id === request.expectedCurrentRungId);
+      const to = ladder.find((r) => r.id === request.toRungId);
+      if (promotionMode === 'AUTO_ALL' || (promotionMode === 'AUTO_STRIPES' && from && to && from.rankId === to.rankId)) return;
     }
 
     const claimedAt = new Date();
@@ -333,6 +407,32 @@ export class GradingNotificationsProcessor extends WorkerHost {
       }
     }
     return [...new Set([...owners.map((o) => o.userId), ...staff])].filter((id) => id !== studentId);
+  }
+
+  /** An automatic promotion (Decision 321 item 5): the coaches of the style,
+   * as "ready to grade". */
+  private async autoPromoted(data: GradingAutoPromotedJobData): Promise<void> {
+    const [recipients, student] = await Promise.all([
+      this.readyRecipients(data.schoolId, data.disciplineId, data.studentId),
+      this.prismaJobs.user.findUnique({ where: { id: data.studentId }, select: { firstName: true, surname: true } }),
+    ]);
+    const name = student ? `${student.firstName} ${student.surname}` : 'A student';
+    for (const userId of recipients) {
+      const id = `grading-auto-${data.promotionEventId}-${userId}`;
+      await this.fanoutQueue.add(
+        'notify',
+        {
+          notificationId: id,
+          userId,
+          title: 'Promoted automatically',
+          body: `${name} was promoted automatically to ${data.toRungName} (${data.disciplineName}).`,
+          type: 'GRADING_AUTO_PROMOTED',
+          schoolId: data.schoolId,
+          targetType: 'GRADING',
+        } satisfies NotificationFanoutJobData,
+        { jobId: id, ...FANOUT_OPTIONS },
+      );
+    }
   }
 
   /** A promotion fee request was made (Decision 300): to the student, or to

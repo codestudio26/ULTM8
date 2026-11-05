@@ -796,4 +796,11 @@ export const SERVER_PATTERNS: string[] = [
  "A child's contact details are changed by their Guardian or the School.",
  "Attendance can only be logged from {v1} to {v2}.",
  "Tick the consent box to upload a certification.",
+ "{v1} needs the student to be at least {v2}. Add their date of birth first.",
+ "{v1} needs the student to be at least {v2} on the grading day.",
+ "This automatic promotion has already been undone.",
+ "Only an automatic promotion can be undone.",
+ "This history entry has been voided.",
+ "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.",
+ "Only the School owner can change a style's requirements and automatic grading.",
 ];

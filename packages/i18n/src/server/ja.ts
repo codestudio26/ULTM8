@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "インポートが見つかりません",
   "Each row number can only be sent once.": "各行番号は一度だけ送信できます。",
   "Tick the consent box to upload a certification.": "資格証明書をアップロードするには、同意のチェックボックスをオンにしてください。",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "{v1}には{v2}歳以上である必要があります。先に生年月日を追加してください。",
+  "{v1} needs the student to be at least {v2} on the grading day.": "{v1}には昇級日に{v2}歳以上である必要があります。",
+  "This automatic promotion has already been undone.": "この自動昇級はすでに取り消されています。",
+  "Only an automatic promotion can be undone.": "取り消せるのは自動昇級のみです。",
+  "This history entry has been voided.": "この履歴項目は無効化されています。",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "自動昇級後にこの生徒のランクが変わったため、取り消せません。代わりに降格してください。",
+  "Only the School owner can change a style's requirements and automatic grading.": "スタイルの要件と自動昇級を変更できるのはスクールのオーナーだけです。",
 };

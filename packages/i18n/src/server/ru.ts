@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Импорт не найден",
   "Each row number can only be sent once.": "Каждый номер строки можно отправить только один раз.",
   "Tick the consent box to upload a certification.": "Отметьте согласие, чтобы загрузить сертификат.",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "Для {v1} ученику должно быть не меньше {v2} лет. Сначала добавьте дату рождения.",
+  "{v1} needs the student to be at least {v2} on the grading day.": "Для {v1} ученику должно быть не меньше {v2} лет в день аттестации.",
+  "This automatic promotion has already been undone.": "Это автоматическое повышение уже отменено.",
+  "Only an automatic promotion can be undone.": "Отменить можно только автоматическое повышение.",
+  "This history entry has been voided.": "Эта запись истории аннулирована.",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Ранг этого ученика изменился после автоматического повышения, поэтому его нельзя отменить. Вместо этого понизьте ученика.",
+  "Only the School owner can change a style's requirements and automatic grading.": "Только владелец школы может менять требования и автоматическую аттестацию стиля.",
 };

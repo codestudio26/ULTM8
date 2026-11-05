@@ -15,10 +15,10 @@ import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateD
 import { ADULT_ALREADY, ADULT_FIRST_BELT, ADULT_NOT_LINKED, ADULT_TOO_YOUNG, hasReachedAge } from './kids-adult';
 import { RequestContext } from '../common/request-context';
 import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
-import { GradingFeeRequestedJobData, GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
+import { GradingAutoPromotedJobData, GradingFeeRequestedJobData, GradingPromotedJobData, queueReadyCheck } from '../jobs/grading-notifications.types';
 import { feeStatusFor, isOpenToDecide, isWaitingForFee, PendingGrade, UNSETTLED_STATUSES } from './promotion-fee';
-import { eligibilityOnLadder, startOfLocalDay, studentEligibility, studentTimeZone, thresholdsOf } from './grading-eligibility';
-import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
+import { eligibilityOnLadder, REQUIREMENT_SETTINGS_SELECT, requirementExtrasFor, startOfLocalDay, studentEligibility, studentTimeZone, thresholdsOf } from './grading-eligibility';
+import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, GradingRequirementsDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
 import { isMembershipLive } from '../memberships/memberships.service';
 import { PermissionToggle } from './dto/grading-permission.dto';
 
@@ -34,7 +34,7 @@ const TOGGLE_LABELS: Record<PermissionToggle, string> = {
 };
 import { DateTime } from 'luxon';
 import { loadLadder } from './grading-attendance';
-import { boardMove, dayNumber, gradingDateProblem, localDay, progressBreakdown, requirementFor, Rung, rungIndex } from './engine';
+import { ageOn, boardMove, dayNumber, gradingDateProblem, localDay, progressBreakdown, requirementFor, Rung, rungIndex, ticksOf } from './engine';
 import { classMinutes, DEFAULT_LOGGED_MINUTES, hoursTrained, recordLoggedMinutes } from './hours-trained';
 import { CORRECTION_RUNG_GONE, CORRECTION_STALE } from './rank-correction-rules';
 
@@ -82,7 +82,19 @@ type ApplyingFee = {
   from: PromotionFeeStatus[];
   to: 'PAID' | 'WAIVED';
   closedById?: string;
+  /** The grade waiting for its fee was an automatic promotion (Decision 321 item 5). */
+  automatic?: boolean;
 };
+
+/** How changeRung was reached, beyond a coach grading (Decision 321 item 5):
+ * - automatic: the style's automatic promotion, under the student's own
+ *   context, with no performer. Its fee always waits for payment.
+ * - undoOf: a coach undoing that automatic promotion (the id of its history
+ *   entry): a move back down, allowed with "Promote". */
+type ChangeRungOptions = { automatic?: boolean; undoOf?: string };
+
+/** The history note of an undone automatic promotion. */
+const AUTOMATIC_UNDONE_NOTE = 'Automatic promotion undone.';
 
 /** A move into Adult that waited for its fee can't apply: the Kids style is no
  * longer linked to the Adult style it was made for (Decision 419 item 2). */
@@ -174,7 +186,7 @@ export class GradingService {
       // Each style's own board columns (Decisions 75, 136, 181).
       const styles = await tx.discipline.findMany({
         where: { schoolId },
-        select: { id: true, boardGettingThere: true, boardReadyToGrade: true, adultDisciplineId: true, readyForAdultAge: true },
+        select: { id: true, boardGettingThere: true, boardReadyToGrade: true, adultDisciplineId: true, readyForAdultAge: true, ...REQUIREMENT_SETTINGS_SELECT },
       });
       // Backlog 3.20: "Ready for Adult program" on a Kids style.
       const born = (await tx.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } }))?.dateOfBirth ?? null;
@@ -182,14 +194,19 @@ export class GradingService {
       const items: Array<Record<string, unknown>> = [];
       for (const row of page.items as Array<Parameters<typeof studentEligibility>[1] & { id: string; studentId: string; schoolId: string }>) {
         const style = styles.find((d) => d.id === row.disciplineId);
-        const eligibility = await studentEligibility(tx, row, timeZone, undefined, style ? thresholdsOf(style) : undefined);
+        // The style's ticked requirements (Decision 321): hours, days attended
+        // and age are read only when it ticks them.
+        const ticks = style ? ticksOf(style) : undefined;
+        const extras = ticks
+          ? (await requirementExtrasFor(tx, row.disciplineId, ticks, [{ studentId, dateOfCurrentRank: row.dateOfCurrentRank, timeZone }])).get(studentId)
+          : undefined;
+        const eligibility = await studentEligibility(tx, row, timeZone, undefined, style ? thresholdsOf(style) : undefined, extras);
         items.push({
           ...row,
           eligibility,
-          // The student page's breakdown and hours trained (Decisions 301
-          // item 4, 306): information only, read off the same eligibility,
-          // never fed back into it.
-          progressBreakdown: progressBreakdown(eligibility),
+          // The student page's breakdown (Decisions 301 item 4, 306, 321),
+          // read off the same eligibility.
+          progressBreakdown: progressBreakdown(eligibility, ticks),
           hoursTrained: await hoursTrained(tx, row),
           readyForAdult: !!style?.adultDisciplineId && hasReachedAge(born, style.readyForAdultAge, today),
         });
@@ -632,18 +649,23 @@ export class GradingService {
     // the caller already authorized it (a waive by the owner or by staff with
     // "Can cancel charges", Decision 420; or the payment).
     applying?: ApplyingFee,
+    opts: ChangeRungOptions = {},
   ) {
     const discipline =
       batch?.discipline ?? (await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } })));
     if (!discipline) {
       throw new NotFoundException('Discipline not found');
     }
-    if (applying) {
+    // An automatic promotion (Decision 321 item 5) runs as the student, who
+    // is graded by the style's own setting: autoPromote() checked it.
+    const automatic = opts.automatic === true || applying?.automatic === true;
+    if (applying || opts.automatic) {
       await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
     } else if (batch) {
       await batch.authorize(studentId);
     } else {
-      await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, type === 'DOWNGRADE' ? 'canDowngrade' : 'canPromote');
+      // Undoing an automatic promotion needs "Promote" (Decision 321 item 5).
+      await this.assertCanGrade(callerId, discipline.schoolId, disciplineId, studentId, type === 'DOWNGRADE' && !opts.undoOf ? 'canDowngrade' : 'canPromote');
       await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
     }
 
@@ -720,10 +742,11 @@ export class GradingService {
         throw new ConflictException('The ladder has changed since this promotion was made, so it can\'t be applied as it was. Cancel the fee and grade the student again.');
       }
 
-      // --- Skills for the student's next rung (Decision 127).
+      // --- Skills for the student's next rung (Decision 127), when the
+      // style ticks Skills (Decision 321 item 1).
       let missingSkillIds: string[] = [];
       if (from && type !== 'DOWNGRADE') {
-        const req = requirementFor(ladder, from.id);
+        const req = requirementFor(ladder, from.id, ticksOf(discipline));
         if (req.kind === 'NEXT' && !req.timeOnly) {
           const signed = new Set(existing!.skillStatuses.filter((s) => s.status === 'SIGNED_OFF').map((s) => s.skillId));
           missingSkillIds = req.requiredSkillIds.filter((id) => !signed.has(id));
@@ -759,12 +782,31 @@ export class GradingService {
         if (dto.effectiveDate !== today) rankDate = startOfLocalDay(dto.effectiveDate, timeZone);
       }
 
+      // --- Minimum age (Decision 321 items 4, 7): in a style that ticks it,
+      // the student must have reached the new rank's age on the grading day.
+      // Not for a first rank (not a promotion), a move down, or a promotion
+      // that waited for its fee (checked when it was graded).
+      if (existing && type !== 'DOWNGRADE' && !applying && discipline.requireMinimumAge && to.minimumAge !== null && to.minimumAge > 0) {
+        const born = (await tx.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } }))?.dateOfBirth ?? null;
+        const age = ageOn(born ? born.toISOString().slice(0, 10) : null, dto.effectiveDate ?? today);
+        if (age === null || age < to.minimumAge) {
+          throw new BadRequestException(
+            age === null
+              ? `${to.name} needs the student to be at least ${to.minimumAge}. Add their date of birth first.`
+              : `${to.name} needs the student to be at least ${to.minimumAge} on the grading day.`,
+          );
+        }
+      }
+
       // --- Starting classes toward the new next rung.
       const { total: startingTotal, byType: startingByType } = this.startingClasses(ladder, to, dto);
 
       // --- Promotion fee (Decisions 287, 300, 307). Grading up a student who
       // already holds a rank; a first rank and a downgrade have no fee.
-      const fee = existing && type !== 'DOWNGRADE' && !applying ? await this.feeForGrade(tx, callerId, discipline.schoolId, studentId, disciplineId, from!.id, to) : null;
+      const found = existing && type !== 'DOWNGRADE' && !applying ? await this.feeForGrade(tx, callerId, discipline.schoolId, studentId, disciplineId, from!.id, to) : null;
+      // An automatic promotion always waits for its fee (Decision 321 item 5:
+      // "ULTM8 waits for it"), whatever "Allow grading before the fee is paid" says.
+      const fee = found && automatic ? { ...found, waitsForFee: true } : found;
       if (fee?.waitsForFee) {
         // "Allow grading before the fee is paid" off (the default): nothing
         // changes yet; the grade is kept and applied once the fee is paid or
@@ -779,8 +821,11 @@ export class GradingService {
           ...(dto.startingClasses !== undefined ? { startingClasses: dto.startingClasses } : {}),
           ...(dto.startingClassesByType !== undefined ? { startingClassesByType: dto.startingClassesByType } : {}),
           ...(bulk ? { bulk } : {}),
+          ...(automatic ? { automatic: true } : {}),
         };
-        const feeRequest = await this.createFeeRequest(tx, { ...fee, schoolId: discipline.schoolId, studentId, disciplineId, from: from!.id, to, gradedById: callerId, pendingGrade });
+        const feeRequest = await this.createFeeRequest(tx, {
+          ...fee, schoolId: discipline.schoolId, studentId, disciplineId, from: from!.id, to, gradedById: automatic ? null : callerId, pendingGrade,
+        });
         const { skillStatuses: _skills, ...studentRank } = existing!;
         return { studentRank, promotionEvent: null, toRungName: to.name, feeRequest };
       }
@@ -817,6 +862,16 @@ export class GradingService {
         });
       }
 
+      // Undoing an automatic promotion (Decision 321 item 5): marked on that
+      // entry once, in the same transaction as the move back.
+      if (opts.undoOf) {
+        const undone = await tx.promotionEvent.updateMany({
+          where: { id: opts.undoOf, studentId, automatic: true, automaticUndoneAt: null, voidedAt: null },
+          data: { automaticUndoneAt: now, automaticUndoneById: callerId },
+        });
+        if (undone.count === 0) throw new ConflictException('This automatic promotion has already been undone.');
+      }
+
       const skipped = from && type === 'PROMOTION' ? toIndex - fromIndex - 1 : 0;
       const promotionEvent = await tx.promotionEvent.create({
         data: {
@@ -825,8 +880,10 @@ export class GradingService {
           schoolId: discipline.schoolId,
           studentId,
           type: bulk?.eventType ?? type,
-          // A promotion that waited for its fee is the coach's grade.
-          performedById: applying ? applying.gradedById : callerId,
+          // A promotion that waited for its fee is the coach's grade; an
+          // automatic one has no performer (Decision 321 item 5).
+          performedById: automatic ? null : applying ? applying.gradedById : callerId,
+          automatic,
           fromRankId: from?.rankId ?? null,
           toRankId: to.rankId,
           fromStripeTierId: from?.id ?? null,
@@ -838,7 +895,10 @@ export class GradingService {
           note: dto.note ?? null,
           rungsSkipped: Math.max(0, skipped),
           // A batch's own note, and a skip from its "Promote to" pick (Decision 281 item 2).
-          systemNote: [bulk?.systemNote, skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null].filter(Boolean).join(' ') || null,
+          systemNote:
+            [bulk?.systemNote, skipped > 0 ? `Skipped ${skipped} rank${skipped > 1 ? 's' : ''} in between.` : null, opts.undoOf ? AUTOMATIC_UNDONE_NOTE : null]
+              .filter(Boolean)
+              .join(' ') || null,
           startingClasses: type === 'DOWNGRADE' ? null : startingTotal,
           startingClassesByType: startingByType ?? undefined,
         },
@@ -884,6 +944,17 @@ export class GradingService {
         toRungName: result.toRungName,
         kind: isStripe ? 'STRIPE' : 'PROMOTED',
       });
+      // The coaches of the style are told of an automatic promotion too (Decision 321 item 5).
+      if (automatic) {
+        await this.notifyAutoPromoted({
+          promotionEventId: result.promotionEvent.id,
+          studentId,
+          schoolId: discipline.schoolId,
+          disciplineId,
+          disciplineName: discipline.name,
+          toRungName: result.toRungName,
+        });
+      }
     }
     await queueReadyCheck(this.gradingNotificationsQueue, studentId, disciplineId);
 
@@ -1074,7 +1145,8 @@ export class GradingService {
       disciplineId: string;
       from: string;
       to: Rung;
-      gradedById: string;
+      /** Null for an automatic promotion (Decision 321 item 5). */
+      gradedById: string | null;
       pendingGrade?: PendingGrade;
       promotionEventId?: string;
       /** A move into the linked Adult program: the Adult style. */
@@ -1104,6 +1176,176 @@ export class GradingService {
   /** Tell the payer a fee request was made (Decision 300): the student, or a
    * minor's guardians, routed by the grading-notifications job as for
    * "promoted" (GuardianLink is readable only there). */
+  /** Tell the coaches of the style about an automatic promotion (Decision 321
+   * item 5): the job picks them, as for "ready to grade". */
+  private async notifyAutoPromoted(data: GradingAutoPromotedJobData): Promise<void> {
+    await this.gradingNotificationsQueue.add('auto-promoted', data, {
+      jobId: `grading-auto-promoted-${data.promotionEventId}`,
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Automatic grading (Decision 321 items 5, 6)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * The style's automatic promotion for one student (Decision 321 item 5),
+   * called by the grading-notifications job after a check-in or grading
+   * action and in its daily sweep. Runs as the student, like every grading
+   * write. Promotes one rung when the style's setting covers it (AUTO_ALL;
+   * AUTO_STRIPES for the next stripe of the same belt only) and the student
+   * meets every ticked requirement for it, minimum age included (100%).
+   *
+   * Never automatic (the coach decides, as today), each the safest reading
+   * where the decisions say nothing:
+   * - an archived style, a School that is closed or has ranks off, a student
+   *   no longer enrolled, or an inactive one (Decision 283);
+   * - a self-declared rank not yet verified (Decisions 137, 147);
+   * - a step that already had a fee request (waiting, declined, cancelled or
+   *   "to decide"): a cancelled fee doesn't promote (Decision 307), and a
+   *   declined one is the payer's answer;
+   * - a step whose automatic promotion a coach undid;
+   * - the move from Kids into the Adult program (a coach's decision).
+   * A priced rung waits for its fee: the request goes out and the promotion
+   * applies once it is paid or waived (Decision 314), through the existing
+   * waiting-promotion path. Returns what happened.
+   */
+  async autoPromote(studentId: string, disciplineId: string): Promise<'PROMOTED' | 'WAITING_FOR_FEE' | 'NOT_AUTOMATIC'> {
+    const plan = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const discipline = await tx.discipline.findUnique({ where: { id: disciplineId } });
+      if (!discipline || discipline.promotionMode === 'MANUAL' || discipline.archivedAt) return null;
+      const school = await tx.school.findUnique({ where: { id: discipline.schoolId }, select: { archivedAt: true, ranksToggle: true } });
+      if (!school || school.archivedAt || !school.ranksToggle) return null;
+      const enrolled = await tx.roleGrant.findFirst({
+        where: { userId: studentId, schoolId: discipline.schoolId, role: 'STUDENT', revokedAt: null },
+        select: { id: true },
+      });
+      if (!enrolled) return null;
+      const sr = await tx.studentRank.findUnique({
+        where: { studentId_disciplineId: { studentId, disciplineId } },
+        include: { skillStatuses: { select: { skillId: true, status: true } } },
+      });
+      if (!sr || !sr.currentStripeId || sr.verificationStatus !== 'VERIFIED') return null;
+      if (!(await isActiveForGrading(tx, sr, studentId, discipline.schoolId))) return null;
+      const ladder = await loadLadder(tx, disciplineId);
+      const fromIndex = rungIndex(ladder, sr.currentStripeId);
+      if (fromIndex < 0) return null;
+      const timeZone = await studentTimeZone(tx, studentId, discipline.schoolId);
+      const ticks = ticksOf(discipline);
+      const extras = (await requirementExtrasFor(tx, disciplineId, ticks, [{ studentId, dateOfCurrentRank: sr.dateOfCurrentRank, timeZone }])).get(studentId);
+      const eligibility = eligibilityOnLadder(ladder, sr, timeZone, new Date(), thresholdsOf(discipline), extras);
+      if (!eligibility.hasNext || !eligibility.eligible) return null;
+      // A step that asks for nothing (no ticked requirement with a number)
+      // is never given automatically: it would be met at once, and a ladder
+      // whose numbers aren't filled in yet would move everyone to the top.
+      const asksSomething =
+        eligibility.requiredClasses > 0 ||
+        eligibility.requiredDays > 0 ||
+        eligibility.requiredSkillIds.length > 0 ||
+        eligibility.requiredHours > 0 ||
+        eligibility.requiredDaysAttended > 0;
+      if (!asksSomething) return null;
+      const from = ladder[fromIndex];
+      const next = ladder[fromIndex + 1];
+      if (!next || next.id !== eligibility.nextRungId) return null;
+      const stripe = next.rankId === from.rankId;
+      if (discipline.promotionMode === 'AUTO_STRIPES' && !stripe) return null;
+      const feeAsked = await tx.promotionFeeRequest.findFirst({
+        where: { studentId, disciplineId, expectedCurrentRungId: from.id, toRungId: next.id },
+        select: { id: true },
+      });
+      if (feeAsked) return null;
+      const undone = await tx.promotionEvent.findFirst({
+        where: { studentRankId: sr.id, automatic: true, automaticUndoneAt: { not: null }, fromStripeTierId: from.id, toStripeTierId: next.id },
+        select: { id: true },
+      });
+      if (undone) return null;
+      return { from, next, stripe };
+    });
+    if (!plan) return 'NOT_AUTOMATIC';
+    try {
+      const result = await this.changeRung(
+        studentId,
+        studentId,
+        disciplineId,
+        { expectedCurrentRungId: plan.from.id, ...(plan.stripe ? {} : { targetRungId: plan.next.id }) },
+        plan.stripe ? 'STRIPE_AWARD' : 'PROMOTION',
+        undefined,
+        undefined,
+        undefined,
+        { automatic: true },
+      );
+      return result.promotionEvent ? 'PROMOTED' : 'WAITING_FOR_FEE';
+    } catch (err) {
+      // Changed at the same time, or a coach's grade is waiting for its fee:
+      // nothing automatic happens, and the coach decides.
+      if (err instanceof ConflictException || err instanceof BadRequestException) {
+        this.logger.log(`Automatic promotion skipped for student ${studentId} in style ${disciplineId}: ${err.message}`);
+        return 'NOT_AUTOMATIC';
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Undo an automatic promotion (Decision 321 item 5): a coach who may
+   * promote this student in this style moves them back to the rank they were
+   * on. Recorded as its own history entry (a move back down, "Automatic
+   * promotion undone."), and the automatic entry is marked undone, so that
+   * step is never given automatically again; a coach promotes when ready.
+   * Only while the student is still on the rank it gave. Progress toward the
+   * next rank starts again from today, as after any move down.
+   */
+  async undoAutomaticPromotion(callerId: string, studentId: string, schoolId: string, eventId: string, dto: { note?: string }) {
+    if (!schoolId) {
+      throw new BadRequestException('schoolId query parameter is required');
+    }
+    if (!UUID_PATTERN.test(studentId) || !UUID_PATTERN.test(schoolId) || !UUID_PATTERN.test(eventId)) {
+      throw new BadRequestException('id, eventId and schoolId must be valid UUIDs');
+    }
+    // Staff first, so an outsider learns nothing about which entries exist.
+    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    const entry = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.promotionEvent.findFirst({
+        where: { id: eventId, studentId, schoolId },
+        include: { studentRank: { select: { disciplineId: true, currentStripeId: true } } },
+      }),
+    );
+    if (!entry) {
+      throw new NotFoundException('History entry not found');
+    }
+    if (!entry.automatic || !entry.fromStripeTierId || !entry.toStripeTierId) {
+      throw new BadRequestException('Only an automatic promotion can be undone.');
+    }
+    if (entry.voidedAt) {
+      throw new ConflictException('This history entry has been voided.');
+    }
+    if (entry.automaticUndoneAt) {
+      throw new ConflictException('This automatic promotion has already been undone.');
+    }
+    if (entry.studentRank.currentStripeId !== entry.toStripeTierId) {
+      throw new ConflictException("This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.");
+    }
+    return this.changeRung(
+      callerId,
+      studentId,
+      entry.studentRank.disciplineId,
+      {
+        targetRungId: entry.fromStripeTierId,
+        expectedCurrentRungId: entry.toStripeTierId,
+        reason: AUTOMATIC_UNDONE_NOTE,
+        ...(dto.note ? { note: dto.note } : {}),
+      },
+      'DOWNGRADE',
+      undefined,
+      undefined,
+      undefined,
+      { undoOf: entry.id },
+    );
+  }
+
   private async notifyFeeRequested(data: GradingFeeRequestedJobData): Promise<void> {
     await this.gradingNotificationsQueue.add('fee-requested', data, {
       jobId: `grading-fee-requested-${data.feeRequestId}`,
@@ -1132,6 +1374,7 @@ export class GradingService {
       from: to === 'PAID' ? ['ACCEPTED'] : UNSETTLED_STATUSES,
       to,
       closedById,
+      automatic: pg.automatic === true,
     };
     if (pg.type === 'MOVE_TO_ADULT') {
       // A move into the linked Adult program (Decision 419 item 2): applied
@@ -1315,8 +1558,15 @@ export class GradingService {
         }
         // A kid on the top Kids rank has no next Kids rank, but can still move into Adult.
         if (!to || (!next && !toAdult)) return { cannot: 'no next rank' };
-        const el = eligibilityOnLadder(ladder, sr, timeZone);
+        // The style's ticked requirements only (Decision 321 item 1).
+        const el = eligibilityOnLadder(ladder, sr, timeZone, undefined, undefined, { ticks: ticksOf(discipline) });
         if (!el.hasNext && !toAdult) return { cannot: 'no next rank' };
+        // Minimum age (Decision 321 item 4): not before the new rank's age, on the grading day.
+        if (!toAdult && discipline.requireMinimumAge && to.minimumAge !== null && to.minimumAge > 0) {
+          const born = (await tx.user.findUnique({ where: { id: studentId }, select: { dateOfBirth: true } }))?.dateOfBirth ?? null;
+          const age = ageOn(born ? born.toISOString().slice(0, 10) : null, dto.effectiveDate ?? localDay(new Date(), timeZone));
+          if (age === null || age < to.minimumAge) return { cannot: `too young for ${to.name} (from age ${to.minimumAge})` };
+        }
         // The next Kids rank's checks apply to a skip and to a move into Adult (Decision 289).
         const missing = el.hasNext && !el.timeOnly ? el.missingSkillIds.length : 0;
         if (missing > 0 && discipline.skillsRequiredToGrade) return { cannot: 'required skills not signed off (this style requires them)' };
@@ -1560,6 +1810,18 @@ export class GradingService {
     const feeRequestsOf = new Map<string, PromotionFeeRequest[]>();
     for (const r of feeRequests) feeRequestsOf.set(r.studentId, [...(feeRequestsOf.get(r.studentId) ?? []), r]);
 
+    // The style's ticked requirements (Decision 321): hours, days attended and
+    // dates of birth, read only when it ticks them, for the students this
+    // caller's board already shows (as the dates of birth for "Ready for
+    // Adult" below).
+    const ticks = ticksOf(discipline);
+    const extrasOf = await requirementExtrasFor(
+      this.prismaJobs,
+      disciplineId,
+      ticks,
+      rows.map((r) => ({ studentId: r.student.id, dateOfCurrentRank: r.studentRank.dateOfCurrentRank, timeZone: r.homeTimeZone ?? schoolTimeZone ?? 'UTC' })),
+    );
+
     const needle = opts.search?.trim().toLowerCase();
     const now = new Date();
     let hiddenInactive = 0;
@@ -1578,6 +1840,7 @@ export class GradingService {
       hasActiveMembership: boolean;
       noHomeBranch: boolean;
       hardBlocked: boolean;
+      automaticNext: boolean;
       eligibility: Extract<ReturnType<typeof eligibilityOnLadder>, { hasNext: true }>;
       feeStatus: 'blocked' | 'waiting' | 'declined' | 'toDecide' | null;
       feeRequest: {
@@ -1603,7 +1866,7 @@ export class GradingService {
         continue;
       }
       if (needle && !`${student.firstName} ${student.surname}`.toLowerCase().includes(needle)) continue;
-      const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now, thresholdsOf(discipline));
+      const eligibility = eligibilityOnLadder(ladder, sr, row.homeTimeZone ?? schoolTimeZone ?? 'UTC', now, thresholdsOf(discipline), extrasOf.get(student.id));
       if (!eligibility.hasNext) {
         atTopRank++; // nothing to progress toward: not a card (prototype), but counted
         continue;
@@ -1621,6 +1884,8 @@ export class GradingService {
         hasActiveMembership,
         noHomeBranch: row.noHomeBranch,
         hardBlocked: discipline.skillsRequiredToGrade && !eligibility.timeOnly && eligibility.missingSkillIds.length > 0,
+        // Decision 321 item 5: this student's next rank is given automatically.
+        automaticNext: this.isAutomaticStep(discipline, ladder, sr.currentStripeId, eligibility.nextRungId),
         eligibility,
         ...this.boardFee(feeRequestsOf.get(student.id) ?? [], sr.currentStripeId),
       });
@@ -1641,6 +1906,17 @@ export class GradingService {
         a.firstName.localeCompare(b.firstName),
     );
     return { items, hiddenInactive, atTopRank };
+  }
+
+  /** Whether the style's automatic promotion gives this step (Decision 321
+   * item 5): every step in AUTO_ALL; the next stripe of the same belt in
+   * AUTO_STRIPES. */
+  private isAutomaticStep(discipline: { promotionMode: string }, ladder: Rung[], fromRungId: string | null, toRungId: string): boolean {
+    if (discipline.promotionMode === 'AUTO_ALL') return true;
+    if (discipline.promotionMode !== 'AUTO_STRIPES' || !fromRungId) return false;
+    const from = ladder.find((r) => r.id === fromRungId);
+    const to = ladder.find((r) => r.id === toRungId);
+    return !!from && !!to && from.rankId === to.rankId;
   }
 
   /** A card's promotion fee (Decisions 300, 307). For "to decide", the
@@ -1676,7 +1952,7 @@ export class GradingService {
     fn: (
       tx: TenantTx,
       ctx: {
-        discipline: { id: string; schoolId: string; classTypesOffered: string[]; boardGettingThere: number; boardReadyToGrade: number };
+        discipline: Discipline;
         studentRank: Prisma.StudentRankGetPayload<{ include: { skillStatuses: true } }>;
         ladder: Rung[];
         timeZone: string;
@@ -1743,6 +2019,38 @@ export class GradingService {
     }
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.discipline.update({ where: { id: disciplineId }, data: { boardGettingThere: dto.gettingThere, boardReadyToGrade: dto.readyToGrade } }),
+    );
+  }
+
+  /** A style's requirement tick boxes, automatic promotion and "Auto-assign
+   * first belt" (Decision 321 items 1, 5, 6): the School owner only ("the
+   * owner ticks", "set by the owner", "owner switch"). */
+  async setGradingRequirements(callerId: string, disciplineId: string, dto: GradingRequirementsDto) {
+    if (!UUID_PATTERN.test(disciplineId)) {
+      throw new BadRequestException('disciplineId must be a valid UUID');
+    }
+    const discipline = await this.prismaApp.withTenantContext(callerId, (tx) => tx.discipline.findUnique({ where: { id: disciplineId } }));
+    if (!discipline) {
+      throw new NotFoundException('Discipline not found');
+    }
+    if (!(await this.isSchoolOwner(callerId, discipline.schoolId))) {
+      throw new ForbiddenException("Only the School owner can change a style's requirements and automatic grading.");
+    }
+    await this.assertSchoolAcceptsGradingWrites(callerId, discipline.schoolId, discipline);
+    return this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.discipline.update({
+        where: { id: disciplineId },
+        data: {
+          requireClasses: dto.requireClasses,
+          requireDaysInRank: dto.requireDaysInRank,
+          requireSkills: dto.requireSkills,
+          requireHours: dto.requireHours,
+          requireDaysAttended: dto.requireDaysAttended,
+          requireMinimumAge: dto.requireMinimumAge,
+          promotionMode: dto.promotionMode,
+          autoAssignFirstRank: dto.autoAssignFirstRank,
+        },
+      }),
     );
   }
 
@@ -1915,7 +2223,7 @@ export class GradingService {
 
       // The checks for the student's next Kids rank still apply, as for any skip.
       let missingSkillIds: string[] = [];
-      const req = requirementFor(kidsLadder, from.id);
+      const req = requirementFor(kidsLadder, from.id, ticksOf(kids));
       if (req.kind === 'NEXT' && !req.timeOnly) {
         const signed = new Set(existing.skillStatuses.filter((st) => st.status === 'SIGNED_OFF').map((st) => st.skillId));
         missingSkillIds = req.requiredSkillIds.filter((id) => !signed.has(id));
@@ -2066,11 +2374,14 @@ export class GradingService {
   async moveOnBoard(callerId: string, studentId: string, disciplineId: string, dto: BoardMoveDto) {
     return this.thenCheckReady(studentId, disciplineId, this.withBoardTarget(callerId, studentId, disciplineId, async (tx, { discipline, studentRank: sr, ladder, timeZone }) => {
       const thresholds = thresholdsOf(discipline);
-      const current = eligibilityOnLadder(ladder, sr, timeZone, undefined, thresholds);
+      // The same % as the board (Decision 321 item 7: the ticked requirements).
+      const ticks = ticksOf(discipline);
+      const extras = (await requirementExtrasFor(tx, disciplineId, ticks, [{ studentId, dateOfCurrentRank: sr.dateOfCurrentRank, timeZone }])).get(studentId);
+      const current = eligibilityOnLadder(ladder, sr, timeZone, undefined, thresholds, extras);
       if (current.hasNext && current.boardColumn === dto.column) {
         throw new BadRequestException('This student is already in that column.');
       }
-      const move = boardMove(requirementFor(ladder, sr.currentStripeId ?? ''), dto.column, thresholds);
+      const move = boardMove(requirementFor(ladder, sr.currentStripeId ?? '', ticks), dto.column, thresholds);
       if (move.kind === 'NOT_MOVABLE') {
         throw new BadRequestException('This student can\'t be moved: there is no next rank, or nothing required to split into columns.');
       }

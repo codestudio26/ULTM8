@@ -129,6 +129,9 @@ export class GradingBoardItemDto {
   @ApiProperty({ description: 'The style requires skills and some for the next rank are not signed off: grading is blocked (Decision 128, item 10).' })
   hardBlocked!: boolean;
 
+  @ApiProperty({ description: "The style's automatic promotion gives this student's next rank once every ticked requirement is met (Decision 321)." })
+  automaticNext!: boolean;
+
   @ApiProperty({ type: EligibilityResponseDto })
   eligibility!: EligibilityResponseDto;
 
@@ -312,4 +315,42 @@ export class BoardThresholdsDto {
   @Min(2)
   @Max(99)
   readyToGrade!: number;
+}
+
+export const PROMOTION_MODES = ['MANUAL', 'AUTO_STRIPES', 'AUTO_ALL'] as const;
+
+/** A style's requirement tick boxes and automatic grading (Decision 321),
+ * set by the School owner. The whole set is sent each time. */
+export class GradingRequirementsDto {
+  @ApiProperty({ description: 'Classes count toward the next rank.' })
+  @IsBoolean()
+  requireClasses!: boolean;
+
+  @ApiProperty({ description: 'Days in rank.' })
+  @IsBoolean()
+  requireDaysInRank!: boolean;
+
+  @ApiProperty({ description: 'Skills.' })
+  @IsBoolean()
+  requireSkills!: boolean;
+
+  @ApiProperty({ description: 'Hours trained (open mat only while its switch is on).' })
+  @IsBoolean()
+  requireHours!: boolean;
+
+  @ApiProperty({ description: 'Different days attended since the last promotion.' })
+  @IsBoolean()
+  requireDaysAttended!: boolean;
+
+  @ApiProperty({ description: 'Minimum age, per rank.' })
+  @IsBoolean()
+  requireMinimumAge!: boolean;
+
+  @ApiProperty({ enum: PROMOTION_MODES, description: 'MANUAL: the coach decides. AUTO_STRIPES: stripes are given automatically, belts stay manual. AUTO_ALL: every rank is given automatically.' })
+  @IsEnum(PROMOTION_MODES)
+  promotionMode!: (typeof PROMOTION_MODES)[number];
+
+  @ApiProperty({ description: '"Auto-assign first belt": a student with no rank in the style gets its first rank on their first check-in to a class of it.' })
+  @IsBoolean()
+  autoAssignFirstRank!: boolean;
 }

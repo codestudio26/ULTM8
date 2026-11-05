@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "ไม่พบการนำเข้า",
   "Each row number can only be sent once.": "ส่งหมายเลขแถวแต่ละหมายเลขได้เพียงครั้งเดียว",
   "Tick the consent box to upload a certification.": "ติ๊กช่องยินยอมเพื่ออัปโหลดใบรับรอง",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "{v1} กำหนดให้นักเรียนมีอายุอย่างน้อย {v2} ปี โปรดเพิ่มวันเกิดก่อน",
+  "{v1} needs the student to be at least {v2} on the grading day.": "{v1} กำหนดให้นักเรียนมีอายุอย่างน้อย {v2} ปีในวันเลื่อนระดับ",
+  "This automatic promotion has already been undone.": "การเลื่อนระดับอัตโนมัตินี้ถูกยกเลิกไปแล้ว",
+  "Only an automatic promotion can be undone.": "ยกเลิกได้เฉพาะการเลื่อนระดับอัตโนมัติเท่านั้น",
+  "This history entry has been voided.": "รายการประวัตินี้ถูกทำให้เป็นโมฆะแล้ว",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "ระดับของนักเรียนคนนี้เปลี่ยนไปหลังการเลื่อนระดับอัตโนมัติ จึงยกเลิกไม่ได้ ให้ลดระดับแทน",
+  "Only the School owner can change a style's requirements and automatic grading.": "เฉพาะเจ้าของโรงเรียนเท่านั้นที่เปลี่ยนข้อกำหนดและการเลื่อนระดับอัตโนมัติของสไตล์ได้",
 };

@@ -37,6 +37,16 @@ export function weekStart(dayNum: number): number {
   return dayNum - (((dayNum + 3) % 7) + 7) % 7;
 }
 
+/** Whole years of age on a local day, from a date of birth (both
+ * YYYY-MM-DD), as hasReachedAge (kids-adult.ts) counts it. Null when either
+ * can't be read. */
+export function ageOn(dateOfBirth: string | null | undefined, day: string): number | null {
+  if (dayNumber(dateOfBirth) === null || dayNumber(day) === null) return null;
+  const [by, bm, bd] = String(dateOfBirth).split('-').map(Number);
+  const [y, m, d] = day.split('-').map(Number);
+  return y - by - (m < bm || (m === bm && d < bd) ? 1 : 0);
+}
+
 /** The calendar day an instant falls on in an IANA time zone. */
 export function localDay(instant: Date, timeZone: string): string {
   const dt = DateTime.fromJSDate(instant, { zone: timeZone });

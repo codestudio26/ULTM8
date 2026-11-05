@@ -123,9 +123,21 @@ function refEligible(req: RefReq, stu: RefStudent): boolean {
   const st = stu.skillStatus || {};
   return c >= req.classes && d >= req.days && req.skills.every((id) => st[id] === 'signed');
 }
+/** Decision 321 item 7 replaces the prototype's classes-only %: the average
+ * of what the next rung asks for (classes, days, skills), each capped at
+ * 100%, and 100 only when the student is eligible. A time-only rung: days. */
 function refPct(req: RefReq, stu: RefStudent): number {
-  if (req.timeOnly) return req.days > 0 ? Math.min(100, Math.round((refDays(stu.since) / req.days) * 100)) : 100;
-  return req.classes > 0 ? Math.min(100, Math.round(((Number(stu.classesAttended) || 0) / req.classes) * 100)) : 100;
+  const capped = (done: number, need: number) => Math.min(1, done / need);
+  const parts: number[] = [];
+  if (req.timeOnly) {
+    if (req.days > 0) parts.push(capped(refDays(stu.since), req.days));
+  } else {
+    if (req.classes > 0) parts.push(capped(Number(stu.classesAttended) || 0, req.classes));
+    if (req.days > 0) parts.push(capped(refDays(stu.since), req.days));
+    if (req.skills.length > 0) parts.push(capped(req.skills.filter((id) => (stu.skillStatus || {})[id] === 'signed').length, req.skills.length));
+  }
+  const pct = parts.length ? Math.round((parts.reduce((a, b) => a + b, 0) / parts.length) * 100) : 100;
+  return refEligible(req, stu) ? pct : Math.min(99, pct);
 }
 const refBand = (p: number) => (p >= 66 ? 'READY_TO_GRADE' : p >= 33 ? 'GETTING_THERE' : 'JUST_STARTING');
 
@@ -373,14 +385,16 @@ describe('grading engine — "each ticked type required" (Decisions 149, 171)', 
     const el = run(18, 4);
     if (!el.hasNext) throw new Error();
     expect(el.requiredClasses).toBe(30);
-    expect(el.progressPercent).toBe(73);
+    expect(el.classesPercent).toBe(73);
+    // Decision 321 item 7: the overall % averages it with the days served (30 of 30): (73 + 100) / 2.
+    expect(el.progressPercent).toBe(87);
     expect(el.classesOk).toBe(false);
   });
 
   it('extra classes of one type never make up for another: 40 + 0 is 20/30', () => {
     const el = run(40, 0);
     if (!el.hasNext) throw new Error();
-    expect(el.progressPercent).toBe(67);
+    expect(el.classesPercent).toBe(67);
     expect(el.classesOk).toBe(false);
     expect(el.byType).toEqual([
       { classType: 'Fundamentals', required: 20, counted: 40 },

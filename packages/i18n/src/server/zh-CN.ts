@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "未找到导入",
   "Each row number can only be sent once.": "每个行号只能发送一次。",
   "Tick the consent box to upload a certification.": "请勾选同意框后再上传资格证书。",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "{v1} 要求学员至少 {v2} 岁。请先添加出生日期。",
+  "{v1} needs the student to be at least {v2} on the grading day.": "{v1} 要求学员在晋级当天至少 {v2} 岁。",
+  "This automatic promotion has already been undone.": "此自动晋级已被撤销。",
+  "Only an automatic promotion can be undone.": "只能撤销自动晋级。",
+  "This history entry has been voided.": "此历史记录已作废。",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "自动晋级后该学员的级别已变更，因此无法撤销。请改为降级。",
+  "Only the School owner can change a style's requirements and automatic grading.": "只有学校所有者可以更改某个风格的要求和自动晋级。",
 };

@@ -52,6 +52,15 @@ export class RankStripeTierResponseDto {
     description: 'Promotion fee for this grade, minor units of the School\'s currency; null = free (Decision 300). Present only while the School\'s promotion fee is on (Decision 307).',
   })
   promotionFeeMinor?: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Hours trained needed since the last promotion; checked only in a style that ticks Hours (Decision 321).' })
+  hoursRequired!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Different days attended needed since the last promotion; checked only in a style that ticks Days attended (Decision 321).' })
+  daysAttendedRequired!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Age the student must have reached on the day they are promoted into this rung; checked only in a style that ticks Minimum age (Decision 321).' })
+  minimumAge!: number | null;
 }
 
 export class StripeSegmentResponseDto {

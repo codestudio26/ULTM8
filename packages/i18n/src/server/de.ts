@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Import nicht gefunden",
   "Each row number can only be sent once.": "Jede Zeilennummer kann nur einmal gesendet werden.",
   "Tick the consent box to upload a certification.": "Setze das Häkchen bei der Einwilligung, um ein Zertifikat hochzuladen.",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "Für {v1} muss das Mitglied mindestens {v2} Jahre alt sein. Trage zuerst das Geburtsdatum ein.",
+  "{v1} needs the student to be at least {v2} on the grading day.": "Für {v1} muss das Mitglied am Graduierungstag mindestens {v2} Jahre alt sein.",
+  "This automatic promotion has already been undone.": "Diese automatische Beförderung wurde bereits rückgängig gemacht.",
+  "Only an automatic promotion can be undone.": "Nur eine automatische Beförderung kann rückgängig gemacht werden.",
+  "This history entry has been voided.": "Dieser Verlaufseintrag wurde storniert.",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Der Rang dieses Mitglieds hat sich seit der automatischen Beförderung geändert, daher kann sie nicht rückgängig gemacht werden. Stufe es stattdessen herab.",
+  "Only the School owner can change a style's requirements and automatic grading.": "Nur der Schulinhaber kann die Anforderungen und die automatische Graduierung eines Stils ändern.",
 };

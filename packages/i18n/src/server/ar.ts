@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "لم يتم العثور على الاستيراد",
   "Each row number can only be sent once.": "لا يمكن إرسال رقم كل صف إلا مرة واحدة.",
   "Tick the consent box to upload a certification.": "ضع علامة في مربع الموافقة لرفع الشهادة.",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "تتطلب {v1} أن يكون عمر الطالب {v2} على الأقل. أضف تاريخ ميلاده أولاً.",
+  "{v1} needs the student to be at least {v2} on the grading day.": "تتطلب {v1} أن يكون عمر الطالب {v2} على الأقل في يوم الترقية.",
+  "This automatic promotion has already been undone.": "تم التراجع عن هذه الترقية التلقائية بالفعل.",
+  "Only an automatic promotion can be undone.": "يمكن التراجع عن الترقية التلقائية فقط.",
+  "This history entry has been voided.": "تم إلغاء سجل التاريخ هذا.",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "تغيرت رتبة هذا الطالب منذ الترقية التلقائية، لذا لا يمكن التراجع عنها. أنزله رتبة بدلاً من ذلك.",
+  "Only the School owner can change a style's requirements and automatic grading.": "مالك المدرسة وحده يمكنه تغيير متطلبات النمط والترقية التلقائية.",
 };

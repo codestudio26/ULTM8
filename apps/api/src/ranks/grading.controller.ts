@@ -4,10 +4,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { GradingService } from './grading.service';
-import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MoveToAdultDto, ReadyForAdultAgeDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
+import { ChangeHistoryNoteDto, DeclareRankDto, DowngradeActionDto, EditRankDateDto, GradingActionDto, MoveToAdultDto, ReadyForAdultAgeDto, UndoAutomaticPromotionDto, VerifyRankDto, VoidPromotionEventDto } from './dto/grading-action.dto';
 import { DeclareOptionsResponseDto, PendingVerificationListResponseDto, StudentEligibilityListResponseDto, StudentGradingOverviewResponseDto, StudentRankListResponseDto } from './dto/student-rank-response.dto';
 import { PromotionEventListResponseDto, PromotionEventNoteLogResponseDto, PromotionEventResponseDto } from './dto/promotion-event-response.dto';
-import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
+import { BoardActiveDto, BoardMoveDto, BoardThresholdsDto, BulkPromoteDto, BulkPromoteResponseDto, GradingBoardResponseDto, GradingRequirementsDto, LogClassDto, OpenMatHoursSettingDto } from './dto/grading-board.dto';
 import { DisciplineResponseDto } from './dto/discipline-response.dto';
 import { RankDisplayDto } from './dto/create-discipline.dto';
 import { Throttle } from '@nestjs/throttler';
@@ -76,6 +76,20 @@ export class GradingController {
     @Body() dto: VoidPromotionEventDto,
   ) {
     return this.gradingService.voidPromotionEvent(user.sub, id, schoolId, eventId, dto);
+  }
+
+  /** Undo an automatic promotion (Decision 321 item 5): a coach who may
+   * promote this student in this style moves them back, recorded in the history. */
+  @ApiOkResponse({ type: PromotionEventResponseDto })
+  @Post('students/:id/rank-history/:eventId/undo-automatic')
+  undoAutomaticPromotion(
+    @CurrentUser() user: JwtPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @Query('schoolId') schoolId: string,
+    @Body() dto: UndoAutomaticPromotionDto,
+  ) {
+    return this.gradingService.undoAutomaticPromotion(user.sub, id, schoolId, eventId, dto);
   }
 
   /** Edit a history entry's note, or hide or show it (Decision 192). */
@@ -239,6 +253,14 @@ export class GradingController {
   @Put('disciplines/:id/rank-display')
   setRankDisplay(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: RankDisplayDto) {
     return this.gradingService.setRankDisplay(user.sub, id, dto);
+  }
+
+  /** Requirement tick boxes, automatic promotion and "Auto-assign first
+   * belt" (Decision 321): the School owner. */
+  @ApiOkResponse({ type: DisciplineResponseDto, description: 'The style, with its new requirements and automatic grading.' })
+  @Put('disciplines/:id/grading-requirements')
+  setGradingRequirements(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: GradingRequirementsDto) {
+    return this.gradingService.setGradingRequirements(user.sub, id, dto);
   }
 
   @ApiOkResponse({ type: DisciplineResponseDto, description: 'The style, with its new board columns.' })

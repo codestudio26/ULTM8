@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "가져오기를 찾을 수 없습니다",
   "Each row number can only be sent once.": "각 행 번호는 한 번만 보낼 수 있습니다.",
   "Tick the consent box to upload a certification.": "자격증을 업로드하려면 동의 상자에 체크하세요.",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "{v1}에는 학생이 최소 {v2}세여야 합니다. 먼저 생년월일을 추가하세요.",
+  "{v1} needs the student to be at least {v2} on the grading day.": "{v1}에는 승급일에 학생이 최소 {v2}세여야 합니다.",
+  "This automatic promotion has already been undone.": "이 자동 승급은 이미 취소되었습니다.",
+  "Only an automatic promotion can be undone.": "자동 승급만 취소할 수 있습니다.",
+  "This history entry has been voided.": "이 기록 항목은 무효 처리되었습니다.",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "자동 승급 이후 이 학생의 등급이 바뀌어 취소할 수 없습니다. 대신 강등하세요.",
+  "Only the School owner can change a style's requirements and automatic grading.": "스타일의 요건과 자동 승급은 스쿨 소유자만 변경할 수 있습니다.",
 };

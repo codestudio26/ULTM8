@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "İçe aktarma bulunamadı",
   "Each row number can only be sent once.": "Her satır numarası yalnızca bir kez gönderilebilir.",
   "Tick the consent box to upload a certification.": "Sertifika yüklemek için onay kutusunu işaretleyin.",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "{v1} için öğrencinin en az {v2} yaşında olması gerekir. Önce doğum tarihini ekleyin.",
+  "{v1} needs the student to be at least {v2} on the grading day.": "{v1} için öğrencinin kuşak sınavı gününde en az {v2} yaşında olması gerekir.",
+  "This automatic promotion has already been undone.": "Bu otomatik terfi zaten geri alındı.",
+  "Only an automatic promotion can be undone.": "Yalnızca otomatik bir terfi geri alınabilir.",
+  "This history entry has been voided.": "Bu geçmiş kaydı geçersiz kılındı.",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Bu öğrencinin derecesi otomatik terfiden sonra değişti, bu yüzden geri alınamaz. Bunun yerine derecesini düşürün.",
+  "Only the School owner can change a style's requirements and automatic grading.": "Bir stilin gereksinimlerini ve otomatik terfisini yalnızca okul sahibi değiştirebilir.",
 };

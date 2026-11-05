@@ -86,6 +86,15 @@ export class PromotionEventResponseDto {
   })
   mergedFromUserId!: string | null;
 
+  @ApiProperty({ description: 'Given automatically (the style\'s automatic promotion, or the first belt on the first check-in), with no performer (Decision 321).' })
+  automatic!: boolean;
+
+  @ApiProperty({ type: String, nullable: true, description: 'An automatic promotion a coach undid: when. The undo is its own entry (a move back down).' })
+  automaticUndoneAt!: string | null;
+
+  @ApiProperty({ type: String, nullable: true })
+  automaticUndoneById!: string | null;
+
   @ApiProperty({ description: 'When the entry was written (audit timestamp).' })
   createdAt!: string;
 }

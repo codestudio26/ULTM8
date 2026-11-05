@@ -778,4 +778,11 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Importazione non trovata",
   "Each row number can only be sent once.": "Ogni numero di riga può essere inviato una sola volta.",
   "Tick the consent box to upload a certification.": "Spunta la casella del consenso per caricare una certificazione.",
+  "{v1} needs the student to be at least {v2}. Add their date of birth first.": "{v1} richiede che l'allievo abbia almeno {v2} anni. Aggiungi prima la sua data di nascita.",
+  "{v1} needs the student to be at least {v2} on the grading day.": "{v1} richiede che l'allievo abbia almeno {v2} anni il giorno della promozione.",
+  "This automatic promotion has already been undone.": "Questa promozione automatica è già stata annullata.",
+  "Only an automatic promotion can be undone.": "Si può annullare solo una promozione automatica.",
+  "This history entry has been voided.": "Questa voce dello storico è stata annullata.",
+  "This student's rank has changed since the automatic promotion, so it can't be undone. Move them down instead.": "Il grado di questo allievo è cambiato dopo la promozione automatica, quindi non si può annullare. Retrocedilo invece.",
+  "Only the School owner can change a style's requirements and automatic grading.": "Solo il proprietario della scuola può modificare i requisiti e la promozione automatica di uno stile.",
 };
