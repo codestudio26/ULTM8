@@ -28,6 +28,40 @@ export function useSchoolNames(schoolIds: string[]): Array<{ id: string; name: s
   return schoolIds.map((id, i) => ({ id, name: results[i]?.data?.name ?? null }));
 }
 
+/** The School (for its time zone). Shares useSchoolNames' cache entry. */
+export function useSchool(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['school', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{id}', { params: { path: { id: schoolId! } } })),
+    enabled: !!schoolId,
+  });
+}
+
+/** The School's Branches the caller can see (their name and time zone),
+ * archived ones included so an older class still finds its Branch. Same read
+ * as the School Portal's coach dashboard (Decision 425 Q4). */
+export function useSchoolBranches(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['coach-branches', schoolId],
+    queryFn: async () => {
+      const items: Array<{ id: string; name: string; timezone: string | null }> = [];
+      let cursor: string | undefined;
+      do {
+        const page = await unwrap(
+          apiClient.GET('/v1/schools/{schoolId}/branches', {
+            params: { path: { schoolId: schoolId! }, query: { includeArchived: true, limit: 100, cursor } },
+          }),
+        );
+        items.push(...page.items.map((b) => ({ id: b.id, name: b.name, timezone: b.timezone ?? null })));
+        cursor = page.nextCursor ?? undefined;
+      } while (cursor);
+      return items;
+    },
+    enabled: !!schoolId,
+    staleTime: 5 * 60_000,
+  });
+}
+
 export type GradingToggle =
   | 'canPromote'
   | 'canDowngrade'
