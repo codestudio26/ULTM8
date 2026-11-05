@@ -3033,6 +3033,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     export: {
       button: "تصدير",
       title: "تصدير الطلاب",
+      memberDataTitle: "بيانات هذا العضو",
+      memberDataIntro: "كل ما تحتفظ به هذه المدرسة عنه في ملف واحد: الملف الشخصي والتسجيل والملاحظات والمعلومات الطبية والحجوزات والعضويات والمدفوعات والإقرارات والأحزمة. يُسجَّل كل تنزيل.",
+      memberDataDownload: "تنزيل بيانات هذا العضو",
+      memberDataFailed: "تعذّر تنزيل بيانات هذا العضو.",
       filterLabel: "الطلاب",
       filterActive: "النشطون فقط",
       filterAll: "النشطون والسابقون",

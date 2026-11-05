@@ -2877,6 +2877,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     export: {
       button: "Exportar",
       title: "Exportar alumnos",
+      memberDataTitle: "Datos de este miembro",
+      memberDataIntro: "Todo lo que esta escuela guarda sobre esta persona, en un solo archivo: perfil, inscripción, notas, información médica, reservas, membresías, pagos, exenciones y cinturones. Cada descarga queda registrada.",
+      memberDataDownload: "Descargar los datos de este miembro",
+      memberDataFailed: "No se pudieron descargar los datos de este miembro.",
       filterLabel: "Alumnos",
       filterActive: "Solo activos",
       filterAll: "Activos y antiguos",

@@ -2838,6 +2838,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     export: {
       button: "내보내기",
       title: "학생 내보내기",
+      memberDataTitle: "이 회원의 데이터",
+      memberDataIntro: "이 학교가 보유한 해당 회원의 모든 정보를 하나의 파일로 제공합니다: 프로필, 등록, 메모, 의료 정보, 예약, 멤버십, 결제, 면책 동의서, 벨트. 모든 다운로드는 기록됩니다.",
+      memberDataDownload: "이 회원의 데이터 다운로드",
+      memberDataFailed: "이 회원의 데이터를 다운로드할 수 없습니다.",
       filterLabel: "학생",
       filterActive: "활동 중만",
       filterAll: "활동 중 및 이전",

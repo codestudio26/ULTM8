@@ -4,6 +4,7 @@ import { GuardiansModule } from '../guardians/guardians.module';
 import { SchoolsController } from './schools/schools.controller';
 import { SchoolsService } from './schools/schools.service';
 import { StudentExportService } from './schools/student-export.service';
+import { MemberDataExportService } from './schools/member-data-export.service';
 import { BranchesController } from './branches/branches.controller';
 import { BranchesService } from './branches/branches.service';
 import { RoleGrantsController } from './role-grants/role-grants.controller';
@@ -102,7 +103,7 @@ import { MedicalInfoService } from '../medical-info/medical-info.service';
 @Module({
   imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController, MedicalInfoController, MemberMedicalInfoController],
-  providers: [SchoolsService, StudentExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
+  providers: [SchoolsService, StudentExportService, MemberDataExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService, MedicalInfoService],
 })
 export class TenantsModule {}

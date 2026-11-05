@@ -2838,6 +2838,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     export: {
       button: "导出",
       title: "导出学员",
+      memberDataTitle: "此会员的数据",
+      memberDataIntro: "这所学校保存的关于此人的所有信息，合为一个文件：个人资料、注册、备注、医疗信息、预订、会员资格、付款、免责声明和腰带。每次下载都会被记录。",
+      memberDataDownload: "下载此会员的数据",
+      memberDataFailed: "无法下载此会员的数据。",
       filterLabel: "学员",
       filterActive: "仅在读",
       filterAll: "在读和以往",

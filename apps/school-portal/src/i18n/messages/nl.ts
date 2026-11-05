@@ -2877,6 +2877,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     export: {
       button: "Exporteren",
       title: "Leerlingen exporteren",
+      memberDataTitle: "Gegevens van dit lid",
+      memberDataIntro: "Alles wat deze school over dit lid bewaart, in één bestand: profiel, inschrijving, notities, medische informatie, boekingen, lidmaatschappen, betalingen, vrijwaringen en banden. Elke download wordt vastgelegd.",
+      memberDataDownload: "Gegevens van dit lid downloaden",
+      memberDataFailed: "Kon de gegevens van dit lid niet downloaden.",
       filterLabel: "Leerlingen",
       filterActive: "Alleen actief",
       filterAll: "Actief en voormalig",

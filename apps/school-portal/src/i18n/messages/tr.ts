@@ -2877,6 +2877,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     export: {
       button: "Dışa aktar",
       title: "Öğrencileri dışa aktar",
+      memberDataTitle: "Bu üyenin verileri",
+      memberDataIntro: "Bu okulun bu kişi hakkında tuttuğu her şey tek bir dosyada: profil, kayıt, notlar, sağlık bilgileri, rezervasyonlar, üyelikler, ödemeler, feragatnameler ve kuşaklar. Her indirme kaydedilir.",
+      memberDataDownload: "Bu üyenin verilerini indir",
+      memberDataFailed: "Bu üyenin verileri indirilemedi.",
       filterLabel: "Öğrenciler",
       filterActive: "Yalnızca aktif",
       filterAll: "Aktif ve eski",

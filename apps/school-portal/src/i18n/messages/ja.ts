@@ -2838,6 +2838,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     export: {
       button: "エクスポート",
       title: "生徒をエクスポート",
+      memberDataTitle: "このメンバーのデータ",
+      memberDataIntro: "このスクールが保有するこのメンバーの情報をすべて1つのファイルにまとめます：プロフィール、在籍、メモ、医療情報、予約、メンバーシップ、支払い、免責同意書、帯。ダウンロードはすべて記録されます。",
+      memberDataDownload: "このメンバーのデータをダウンロード",
+      memberDataFailed: "このメンバーのデータをダウンロードできませんでした。",
       filterLabel: "生徒",
       filterActive: "在籍中のみ",
       filterAll: "在籍中と退会者",

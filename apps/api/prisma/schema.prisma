@@ -5831,9 +5831,14 @@ model StudentExportLog {
   exportedById String
   exportedBy   User   @relation("StudentExportLogExportedBy", fields: [exportedById], references: [id], onDelete: Cascade)
 
-  /// ALL, ACTIVE, MEMBERS or VISITORS.
+  /// ALL, ACTIVE, MEMBERS or VISITORS; MEMBER_DATA for one member's data
+  /// (Decision 432 item 10).
   filter   String
   rowCount Int
+
+  /// The member a MEMBER_DATA export was about; null for a student-list
+  /// export. No foreign key: the log outlives what it records.
+  studentId String?
 
   createdAt DateTime @default(now())
 

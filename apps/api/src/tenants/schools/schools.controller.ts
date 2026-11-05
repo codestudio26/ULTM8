@@ -18,6 +18,8 @@ import { StudentListResponseDto } from './dto/student-summary-response.dto';
 import { StudentRosterQueryDto } from './dto/student-roster-query.dto';
 import { StudentExportQueryDto, StudentExportResponseDto } from './dto/student-export.dto';
 import { StudentExportService } from './student-export.service';
+import { MemberDataExportResponseDto } from './dto/member-data-export.dto';
+import { MemberDataExportService } from './member-data-export.service';
 import { SetHomeBranchDto, StudentHomeBranchResponseDto } from './dto/home-branch.dto';
 import { StudentProfileResponseDto, UpdateStudentProfileDto } from './dto/update-student-profile.dto';
 import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
@@ -35,6 +37,7 @@ export class SchoolsController {
   constructor(
     private readonly schoolsService: SchoolsService,
     private readonly studentExport: StudentExportService,
+    private readonly memberDataExport: MemberDataExportService,
   ) {}
 
   @ApiCreatedResponse({ type: SchoolResponseDto })
@@ -90,6 +93,14 @@ export class SchoolsController {
   @Get(':id/students/export')
   exportStudents(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query() query: StudentExportQueryDto) {
     return this.studentExport.export(user.sub, id, query.filter);
+  }
+
+  /** Decision 432 item 10: what this School holds about one member, for the
+   * owner only. Logged. */
+  @ApiOkResponse({ type: MemberDataExportResponseDto })
+  @Get(':id/students/:studentId/data-export')
+  exportMemberData(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Param('studentId', ParseUUIDPipe) studentId: string) {
+    return this.memberDataExport.export(user.sub, id, studentId);
   }
 
   /** School Owner/Manager only — assign or change a student's home branch
