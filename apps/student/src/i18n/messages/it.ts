@@ -681,6 +681,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Tessera associativa di {name}",
+      intro: "Alla reception, {name} può dare questo codice di check-in per registrarsi.",
+      loadError: "Impossibile caricare la tessera associativa — riprova.",
+    },
     childPlans: {
       loadError: "Impossibile caricare i piani. Riprova.",
       empty: "Questa scuola non ha piani in vendita.",
@@ -704,6 +709,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Impossibile caricare le lezioni — riprova.",
     },
     myMinors: {
+      card: "Tessera associativa",
       plans: "Acquista un piano",
       waivers: "Liberatorie",
       empty: "Ancora nessun minore collegato.",

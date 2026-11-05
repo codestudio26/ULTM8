@@ -103,6 +103,12 @@ export function MyMinorsScreen({ navigation }: Props) {
             variant="secondary"
             onPress={() => navigation.navigate('ChildPlans', { studentId: minor.studentId, name: minor.firstName })}
           />
+          {/* Their membership card at each of their Schools (Decision 398). */}
+          <Button
+            title={t('guardians.myMinors.card')}
+            variant="secondary"
+            onPress={() => navigation.navigate('ChildCard', { studentId: minor.studentId, name: minor.firstName })}
+          />
           {/* Their ranks, progress, skills and history, read-only (Decision 132). */}
           <Button
             title={t('guardians.myMinors.grading')}

@@ -666,6 +666,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "บัตรสมาชิกของ {name}",
+      intro: "ที่เคาน์เตอร์ {name} สามารถแจ้งรหัสเช็กอินนี้เพื่อเช็กอินได้",
+      loadError: "โหลดบัตรสมาชิกไม่ได้ โปรดลองอีกครั้ง",
+    },
     childPlans: {
       loadError: "โหลดแพ็กเกจไม่ได้ โปรดลองอีกครั้ง",
       empty: "โรงเรียนนี้ไม่มีแพ็กเกจที่วางขาย",
@@ -689,6 +694,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "โหลดคลาสไม่ได้ — โปรดลองอีกครั้ง",
     },
     myMinors: {
+      card: "บัตรสมาชิก",
       plans: "ซื้อแพ็กเกจ",
       waivers: "เอกสารสละสิทธิ์",
       empty: "ยังไม่มีผู้เยาว์ที่เชื่อมโยงไว้",

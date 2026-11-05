@@ -6,10 +6,13 @@ import * as bookingQueries from '../bookings/bookingQueries';
 import * as academyQueries from '../academies/academyQueries';
 import { ChildWaiversScreen } from './ChildWaiversScreen';
 import { ChildPlansScreen } from './ChildPlansScreen';
+import { ChildCardScreen } from './ChildCardScreen';
+import * as attendanceQueries from '../attendance/attendanceQueries';
 
 jest.mock('../waivers/waiverQueries', () => ({ useMinorWaivers: jest.fn() }));
 jest.mock('../bookings/bookingQueries', () => ({ useMinorSchools: jest.fn() }));
 jest.mock('../academies/academyQueries', () => ({ useAcademy: jest.fn() }));
+jest.mock('../attendance/attendanceQueries', () => ({ useChildMembershipCards: jest.fn() }));
 jest.mock('../waivers/WaiverRow', () => {
   const { Text } = require('react-native');
   return {
@@ -75,6 +78,54 @@ describe('ChildPlansScreen — a parent buys a plan for their child', () => {
   it("says when the child isn't at any School", async () => {
     mocked(bookingQueries.useMinorSchools).mockReturnValue({ isLoading: false, data: { items: [] } });
     const screen = await render(<ChildPlansScreen {...props()} />);
+    expect(screen.getByText("Mia isn't a student at any School yet.")).toBeTruthy();
+  });
+});
+
+/** Decision 398: a parent sees their child's membership card. */
+describe("ChildCardScreen — a parent sees their child's membership card", () => {
+  const card = (schoolId: string, schoolName: string) => ({
+    schoolId,
+    schoolName,
+    schoolLogoUrl: null,
+    studentId: 'kid-1',
+    firstName: 'Mia',
+    surname: 'Lee',
+    photoUrl: null,
+    checkInCode: schoolId === 's1' ? '4821' : '7310',
+    memberships: schoolId === 's1' ? [{ title: 'Kids Unlimited', type: 'SUBSCRIPTION', expiryDate: null, classesRemaining: null }] : [],
+  });
+
+  it("asks for the child's card at each of the child's Schools and shows them", async () => {
+    mocked(bookingQueries.useMinorSchools).mockReturnValue({
+      isLoading: false,
+      data: { items: [{ schoolId: 's1', name: 'Kids Dojo' }, { schoolId: 's2', name: 'Swim Club' }] },
+    });
+    mocked(attendanceQueries.useChildMembershipCards).mockReturnValue([
+      { isLoading: false, isError: false, data: card('s1', 'Kids Dojo') },
+      { isLoading: false, isError: false, data: card('s2', 'Swim Club') },
+    ]);
+    const screen = await render(<ChildCardScreen {...props()} />);
+    expect(mocked(attendanceQueries.useChildMembershipCards)).toHaveBeenLastCalledWith('kid-1', ['s1', 's2']);
+    expect(screen.getByText('Kids Dojo')).toBeTruthy();
+    expect(screen.getByText('Swim Club')).toBeTruthy();
+    expect(screen.getByText('4821')).toBeTruthy();
+    expect(screen.getByText('7310')).toBeTruthy();
+    expect(screen.getByText('Kids Unlimited')).toBeTruthy();
+    expect(screen.getByText('No current membership')).toBeTruthy();
+  });
+
+  it('says when a card could not be loaded', async () => {
+    mocked(bookingQueries.useMinorSchools).mockReturnValue({ isLoading: false, data: { items: [{ schoolId: 's1', name: 'Kids Dojo' }] } });
+    mocked(attendanceQueries.useChildMembershipCards).mockReturnValue([{ isLoading: false, isError: true, error: new Error('boom'), data: undefined }]);
+    const screen = await render(<ChildCardScreen {...props()} />);
+    expect(screen.getByText('Could not load the membership card — please try again.')).toBeTruthy();
+  });
+
+  it("says when the child isn't at any School", async () => {
+    mocked(bookingQueries.useMinorSchools).mockReturnValue({ isLoading: false, data: { items: [] } });
+    mocked(attendanceQueries.useChildMembershipCards).mockReturnValue([]);
+    const screen = await render(<ChildCardScreen {...props()} />);
     expect(screen.getByText("Mia isn't a student at any School yet.")).toBeTruthy();
   });
 });

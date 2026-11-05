@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap, type components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 
@@ -76,5 +76,19 @@ export function useMyMembershipCards(enabled: boolean) {
     queryKey: ['myMembershipCards'],
     queryFn: () => unwrap(apiClient.GET('/v1/membership-cards/me', {})),
     enabled,
+  });
+}
+
+/** A parent's view of their child's membership card at each of the child's
+ * Schools (Decision 398's "a Guardian's view of their child's card in the
+ * app"; `GET /schools/{schoolId}/students/{studentId}/membership-card` already
+ * lets a Guardian read it). One query per School, in the order given. */
+export function useChildMembershipCards(studentId: string, schoolIds: string[]) {
+  return useQueries({
+    queries: schoolIds.map((schoolId) => ({
+      queryKey: ['childMembershipCard', studentId, schoolId],
+      queryFn: () =>
+        unwrap(apiClient.GET('/v1/schools/{schoolId}/students/{studentId}/membership-card', { params: { path: { schoolId, studentId } } })),
+    })),
   });
 }

@@ -672,6 +672,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Tarjeta de socio de {name}",
+      intro: "En recepción, {name} puede dar este código de registro para registrarse.",
+      loadError: "No se pudo cargar la tarjeta de socio. Inténtalo de nuevo.",
+    },
     childPlans: {
       loadError: "No se pudieron cargar los planes. Inténtalo de nuevo.",
       empty: "Esta escuela no tiene planes a la venta.",
@@ -695,6 +700,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "No se pudieron cargar las clases — inténtalo de nuevo.",
     },
     myMinors: {
+      card: "Tarjeta de socio",
       plans: "Comprar un plan",
       waivers: "Exenciones",
       empty: "Aún no hay menores vinculados.",

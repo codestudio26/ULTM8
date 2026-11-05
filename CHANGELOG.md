@@ -875,6 +875,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   memberships. It has no QR code, because a printed one would never change. In
   the app, the same card sits under the live QR on "Show my code". No
   migration.
+- **A parent sees their child's membership card** (Track B, `apps/student`;
+  Decision 398) — each child in "My children" has "Membership card": the
+  child's card at each of their Schools (photo, name, check-in code, current
+  memberships), the same card the child sees. No QR on it. Uses the existing
+  `GET /schools/{schoolId}/students/{studentId}/membership-card`. No database
+  change.
 - **Gender: Female or Male** (backlog 3.15; Decision 315 item 15) — gender is
   now a choice of Female, Male or not given, in the portal (Edit profile,
   register) and the student app (profile), and the API refuses anything else.

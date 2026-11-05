@@ -666,6 +666,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "{name}님의 회원 카드",
+      intro: "프런트에서 {name}님은 이 체크인 코드를 알려 주고 체크인할 수 있습니다.",
+      loadError: "회원 카드를 불러오지 못했습니다. 다시 시도해 주세요.",
+    },
     childPlans: {
       loadError: "플랜을 불러오지 못했습니다. 다시 시도해 주세요.",
       empty: "이 학원에는 판매 중인 플랜이 없습니다.",
@@ -689,6 +694,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "수업을 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     myMinors: {
+      card: "회원 카드",
       plans: "플랜 구매",
       waivers: "동의서",
       empty: "아직 연결된 자녀가 없습니다.",
