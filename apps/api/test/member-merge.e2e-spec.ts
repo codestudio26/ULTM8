@@ -64,6 +64,8 @@ const CLEANUP_TABLES = [
   'Transaction',
   'Booking',
   'Membership',
+  // Decision 316 item 6: signed plan contracts (RESTRICT to the plan).
+  'PlanContractSignature',
   'MembershipPlan',
   'PaymentAccount',
   'WaiverSignature',
@@ -215,6 +217,13 @@ describeIfDb('Merge duplicate members (Decision 315 item 13)', () => {
     });
     await superuser.membershipFreeze.create({
       data: { id: randomUUID(), membershipId, schoolId: school, studentId, startsAt: new Date(), endsAt: new Date(Date.now() + 86_400_000), status: 'APPROVED' },
+    });
+    // Decision 316 item 6: the contract signed for that membership.
+    await superuser.planContractSignature.create({
+      data: {
+        id: randomUUID(), schoolId: school, membershipPlanId: c('pack'), studentId, signedById: studentId, signerFullName: 'Signer', signatureText: 'Signer',
+        planTitle: 'Ten classes', planType: 'CLASS_PACK', contractBody: 'Terms', contractVersion: 1, contractSha256: 'a'.repeat(64), usedAt: new Date(), membershipId,
+      },
     });
     await superuser.packRecharge.create({
       data: {
