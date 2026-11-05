@@ -10571,6 +10571,67 @@
         ]
       }
     },
+    "/v1/students/{id}/rank-history/{eventId}/undo-automatic": {
+      "post": {
+        "operationId": "GradingController_undoAutomaticPromotion",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UndoAutomaticPromotionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromotionEventResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/students/{id}/rank-history/{eventId}/note": {
       "patch": {
         "operationId": "GradingController_changeHistoryNote",
@@ -11286,6 +11347,51 @@
         "responses": {
           "200": {
             "description": "The style, with its ranks now shown as Belts or Levels.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DisciplineResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "ranks"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/disciplines/{id}/grading-requirements": {
+      "put": {
+        "operationId": "GradingController_setGradingRequirements",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GradingRequirementsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The style, with its new requirements and automatic grading.",
             "content": {
               "application/json": {
                 "schema": {
@@ -32172,6 +32278,43 @@
             ],
             "description": "Ranks shown as Belts or as Levels (no belt), Decision 290."
           },
+          "requireClasses": {
+            "type": "boolean",
+            "description": "Requirement tick box: classes count toward the next rank (Decision 321). Default on."
+          },
+          "requireDaysInRank": {
+            "type": "boolean",
+            "description": "Requirement tick box: days in rank (Decision 321). Default on."
+          },
+          "requireSkills": {
+            "type": "boolean",
+            "description": "Requirement tick box: skills (Decision 321). Default on."
+          },
+          "requireHours": {
+            "type": "boolean",
+            "description": "Requirement tick box: hours trained (Decision 321). Default off."
+          },
+          "requireDaysAttended": {
+            "type": "boolean",
+            "description": "Requirement tick box: different days attended (Decision 321). Default off."
+          },
+          "requireMinimumAge": {
+            "type": "boolean",
+            "description": "Requirement tick box: minimum age (Decision 321). Default off."
+          },
+          "promotionMode": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_STRIPES",
+              "AUTO_ALL"
+            ],
+            "description": "Automatic promotion (Decision 321): MANUAL (the default), AUTO_STRIPES or AUTO_ALL."
+          },
+          "autoAssignFirstRank": {
+            "type": "boolean",
+            "description": "\"Auto-assign first belt\" (Decision 321): the first rung on the first check-in to a class of the style. Default off."
+          },
           "studentCount": {
             "type": "number",
             "description": "Students with a rank in this style (Decision 309)."
@@ -32193,6 +32336,14 @@
           "boardReadyToGrade",
           "readyForAdultAge",
           "rankDisplay",
+          "requireClasses",
+          "requireDaysInRank",
+          "requireSkills",
+          "requireHours",
+          "requireDaysAttended",
+          "requireMinimumAge",
+          "promotionMode",
+          "autoAssignFirstRank",
           "studentCount",
           "createdAt",
           "updatedAt"
@@ -32477,6 +32628,25 @@
             "minimum": 1,
             "description": "Promotion fee for being graded into this rung, in the School's currency, minor units (e.g. 2500 = 25.00). null = free. Owner only, and only while the School's promotion fee is on: sent while it is off, the request is refused (400). When omitted: free on a new rung; kept on an existing rung."
           },
+          "hoursRequired": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "description": "Hours trained needed for this rung since the last promotion (Decision 321). Checked only in a style that ticks Hours. null = not asked. When omitted: none on a new rung; kept on an existing rung."
+          },
+          "daysAttendedRequired": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "description": "Different days attended needed for this rung since the last promotion (Decision 321). Checked only in a style that ticks Days attended. null = not asked. When omitted: none on a new rung; kept on an existing rung."
+          },
+          "minimumAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "The age (whole years) a student must have reached on the day they are promoted into this rung (Decision 321). Checked only in a style that ticks Minimum age. null = any age. When omitted: any age on a new rung; kept on an existing rung."
+          },
           "requiredSkillIds": {
             "description": "Skills required to be promoted INTO this rung (Decision 127). Replaced when sent; kept when omitted.",
             "type": "array",
@@ -32631,6 +32801,21 @@
             "type": "number",
             "nullable": true,
             "description": "Promotion fee for this grade, minor units of the School's currency; null = free (Decision 300). Present only while the School's promotion fee is on (Decision 307)."
+          },
+          "hoursRequired": {
+            "type": "number",
+            "nullable": true,
+            "description": "Hours trained needed since the last promotion; checked only in a style that ticks Hours (Decision 321)."
+          },
+          "daysAttendedRequired": {
+            "type": "number",
+            "nullable": true,
+            "description": "Different days attended needed since the last promotion; checked only in a style that ticks Days attended (Decision 321)."
+          },
+          "minimumAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Age the student must have reached on the day they are promoted into this rung; checked only in a style that ticks Minimum age (Decision 321)."
           }
         },
         "required": [
@@ -33136,9 +33321,45 @@
           "skillsOk": {
             "type": "boolean"
           },
+          "requiredHours": {
+            "type": "number",
+            "description": "Hours trained the next rank needs; 0 when the style does not tick Hours."
+          },
+          "minutesTrained": {
+            "type": "number",
+            "description": "Minutes trained since the current rank date that count toward hours (0 when not asked for)."
+          },
+          "hoursOk": {
+            "type": "boolean"
+          },
+          "requiredDaysAttended": {
+            "type": "number",
+            "description": "Different days attended the next rank needs; 0 when the style does not tick Days attended."
+          },
+          "daysAttended": {
+            "type": "number",
+            "description": "Different days with a check-in to a class of the style since the current rank date."
+          },
+          "daysAttendedOk": {
+            "type": "boolean"
+          },
+          "minimumAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "The next rank's minimum age, when the style ticks Minimum age; null = any age."
+          },
+          "ageOk": {
+            "type": "boolean",
+            "description": "False while the student is younger than minimumAge (or has no date of birth)."
+          },
+          "waitingForAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Every ticked requirement is met but the student is too young: \"Waiting for age N\". Null otherwise."
+          },
           "eligible": {
             "type": "boolean",
-            "description": "Classes, days and skills all met."
+            "description": "Every ticked requirement met, minimum age included."
           },
           "requiredSkillIds": {
             "type": "array",
@@ -33159,9 +33380,13 @@
               "type": "string"
             }
           },
+          "classesPercent": {
+            "type": "number",
+            "description": "0–100: the classes on their own."
+          },
           "progressPercent": {
             "type": "number",
-            "description": "0–100: classes (days for a time-only rung). Skills and minimum days are not part of it (Decision 136)."
+            "description": "0–100: the average of the ticked requirements the next rank asks for (classes, days in rank, skills, hours, days attended), each capped at 100%. Minimum age is not part of it. Days for a time-only rank. 100 only when every one is met."
           },
           "boardColumn": {
             "type": "string",
@@ -33189,7 +33414,7 @@
           },
           "percent": {
             "type": "number",
-            "description": "0–100. The same number as eligibility.progressPercent: the overall % is classes only."
+            "description": "0–100: the classes on their own (eligibility.classesPercent)."
           },
           "byType": {
             "description": "\"Each ticked type required\" rungs only; otherwise empty.",
@@ -33250,12 +33475,72 @@
           "percent"
         ]
       },
+      "HoursProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "trainedMinutes": {
+            "type": "number",
+            "description": "Minutes trained since the current rank date that count toward hours."
+          },
+          "requiredHours": {
+            "type": "number",
+            "description": "Hours the next rank needs."
+          },
+          "percent": {
+            "type": "number",
+            "description": "0–100, capped. 100 when none are required."
+          }
+        },
+        "required": [
+          "trainedMinutes",
+          "requiredHours",
+          "percent"
+        ]
+      },
+      "DaysAttendedProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "attended": {
+            "type": "number",
+            "description": "Different days attended since the current rank date."
+          },
+          "required": {
+            "type": "number"
+          },
+          "percent": {
+            "type": "number",
+            "description": "0–100, capped. 100 when none are required."
+          }
+        },
+        "required": [
+          "attended",
+          "required",
+          "percent"
+        ]
+      },
+      "MinimumAgeProgressResponseDto": {
+        "type": "object",
+        "properties": {
+          "age": {
+            "type": "number",
+            "description": "The next rank's minimum age."
+          },
+          "met": {
+            "type": "boolean",
+            "description": "The student has reached it."
+          }
+        },
+        "required": [
+          "age",
+          "met"
+        ]
+      },
       "ProgressBreakdownResponseDto": {
         "type": "object",
         "properties": {
           "classes": {
             "nullable": true,
-            "description": "null on a time-only rank (days only).",
+            "description": "null on a time-only rank, or when the style does not tick Classes.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/ClassesProgressResponseDto"
@@ -33263,21 +33548,51 @@
             ]
           },
           "days": {
-            "$ref": "#/components/schemas/DaysProgressResponseDto"
+            "nullable": true,
+            "description": "Always on a time-only rank; otherwise null when the style does not tick Days in rank.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DaysProgressResponseDto"
+              }
+            ]
           },
           "skills": {
             "nullable": true,
-            "description": "null on a time-only rank (days only).",
+            "description": "null on a time-only rank, or when the style does not tick Skills.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/SkillsProgressResponseDto"
               }
             ]
+          },
+          "hours": {
+            "nullable": true,
+            "description": "Only in a style that ticks Hours.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/HoursProgressResponseDto"
+              }
+            ]
+          },
+          "daysAttended": {
+            "nullable": true,
+            "description": "Only in a style that ticks Days attended.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DaysAttendedProgressResponseDto"
+              }
+            ]
+          },
+          "minimumAge": {
+            "nullable": true,
+            "description": "Only when the next rank has a minimum age the style checks.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MinimumAgeProgressResponseDto"
+              }
+            ]
           }
-        },
-        "required": [
-          "days"
-        ]
+        }
       },
       "HoursTrainedResponseDto": {
         "type": "object",
@@ -33713,6 +34028,19 @@
             "nullable": true,
             "description": "Set on the entries of a belt that was not kept when two duplicate records were merged (Decision 422 item 8): the member record the entry was on. Show it as coming from the merged record."
           },
+          "automatic": {
+            "type": "boolean",
+            "description": "Given automatically (the style's automatic promotion, or the first belt on the first check-in), with no performer (Decision 321)."
+          },
+          "automaticUndoneAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "An automatic promotion a coach undid: when. The undo is its own entry (a move back down)."
+          },
+          "automaticUndoneById": {
+            "type": "string",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "description": "When the entry was written (audit timestamp)."
@@ -33739,6 +34067,9 @@
           "noteEditedById",
           "noteHiddenAt",
           "mergedFromUserId",
+          "automatic",
+          "automaticUndoneAt",
+          "automaticUndoneById",
           "createdAt"
         ]
       },
@@ -33771,6 +34102,15 @@
         "required": [
           "reason"
         ]
+      },
+      "UndoAutomaticPromotionDto": {
+        "type": "object",
+        "properties": {
+          "note": {
+            "type": "string",
+            "description": "An optional note for the history entry."
+          }
+        }
       },
       "ChangeHistoryNoteDto": {
         "type": "object",
@@ -34287,6 +34627,10 @@
             "type": "boolean",
             "description": "The style requires skills and some for the next rank are not signed off: grading is blocked (Decision 128, item 10)."
           },
+          "automaticNext": {
+            "type": "boolean",
+            "description": "The style's automatic promotion gives this student's next rank once every ticked requirement is met (Decision 321)."
+          },
           "eligibility": {
             "$ref": "#/components/schemas/EligibilityResponseDto"
           },
@@ -34330,6 +34674,7 @@
           "activeSource",
           "hasActiveMembership",
           "hardBlocked",
+          "automaticNext",
           "eligibility",
           "noHomeBranch",
           "readyForAdult"
@@ -34387,6 +34732,58 @@
         },
         "required": [
           "rankDisplay"
+        ]
+      },
+      "GradingRequirementsDto": {
+        "type": "object",
+        "properties": {
+          "requireClasses": {
+            "type": "boolean",
+            "description": "Classes count toward the next rank."
+          },
+          "requireDaysInRank": {
+            "type": "boolean",
+            "description": "Days in rank."
+          },
+          "requireSkills": {
+            "type": "boolean",
+            "description": "Skills."
+          },
+          "requireHours": {
+            "type": "boolean",
+            "description": "Hours trained (open mat only while its switch is on)."
+          },
+          "requireDaysAttended": {
+            "type": "boolean",
+            "description": "Different days attended since the last promotion."
+          },
+          "requireMinimumAge": {
+            "type": "boolean",
+            "description": "Minimum age, per rank."
+          },
+          "promotionMode": {
+            "type": "string",
+            "enum": [
+              "MANUAL",
+              "AUTO_STRIPES",
+              "AUTO_ALL"
+            ],
+            "description": "MANUAL: the coach decides. AUTO_STRIPES: stripes are given automatically, belts stay manual. AUTO_ALL: every rank is given automatically."
+          },
+          "autoAssignFirstRank": {
+            "type": "boolean",
+            "description": "\"Auto-assign first belt\": a student with no rank in the style gets its first rank on their first check-in to a class of it."
+          }
+        },
+        "required": [
+          "requireClasses",
+          "requireDaysInRank",
+          "requireSkills",
+          "requireHours",
+          "requireDaysAttended",
+          "requireMinimumAge",
+          "promotionMode",
+          "autoAssignFirstRank"
         ]
       },
       "BoardThresholdsDto": {
