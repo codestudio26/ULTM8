@@ -2820,6 +2820,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/membership-plans/{id}/joining-fee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MembershipsController_previewJoiningFee"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/membership-plans/{id}/members": {
         parameters: {
             query?: never;
@@ -7787,6 +7803,8 @@ export interface components {
             freezeMaxDaysPer12Months?: number;
             /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
             freezeFeeAmount?: number | null;
+            /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged. */
+            joiningFeesEnabled?: boolean;
             /**
              * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
              * @example GB
@@ -7936,6 +7954,8 @@ export interface components {
             freezeMaxDaysPer12Months: number;
             /** @description Decision 404: the freeze fee in minor units of the School's currency; null = no fee. */
             freezeFeeAmount?: number | null;
+            /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged. */
+            joiningFeesEnabled: boolean;
             /** @description Decision 411: the country the School is in, for its tax. */
             taxCountry?: string | null;
             /** @description Decision 411: the School's tax rate on charges, in hundredths of a percent (default 0). */
@@ -8085,6 +8105,8 @@ export interface components {
             freezeMaxDaysPer12Months?: number;
             /** @description Decision 404: a one-off fee for freezing a membership, in minor units of the School's currency, charged when a freeze is approved. null = no fee (the default). */
             freezeFeeAmount?: number | null;
+            /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged. */
+            joiningFeesEnabled?: boolean;
             /**
              * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
              * @example GB
@@ -10660,6 +10682,10 @@ export interface components {
             cancellationCharge?: number;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
+            /** @description Decision 435 items 1-6: a one-off joining fee, in the plan's currency (minor units), added to a member's first-ever plan at this School (never a rejoin or a renewal), with the plan's tax and card surcharge. Paid plans only. Charged only while the School has joining fees on (School.joiningFeesEnabled). Omit for none. */
+            joiningFee?: number;
+            /** @description Decision 435 item 5: whether the joining fee is refunded together with the membership payment. Defaults to false (never refunded). */
+            joiningFeeRefundable?: boolean;
             /** @description One of the School's income categories (Decision 316 item 10), shown in the Transactions export. */
             incomeCategoryId?: string;
             /** @description The School's styles this plan covers (Decision 195). */
@@ -10692,6 +10718,10 @@ export interface components {
             termsWaiverRequired: boolean;
             /** @description The plan's income category (Decision 316 item 10), from GET /schools/{id}/income-categories. */
             incomeCategoryId?: string | null;
+            /** @description Decision 435 items 1-6: the one-off joining fee on a member's first-ever plan at the School, in the plan's currency (minor units); null = none. Charged only while the School has joining fees on. */
+            joiningFee?: number | null;
+            /** @description Decision 435 item 5: whether the joining fee is refunded together with the membership payment. */
+            joiningFeeRefundable: boolean;
             /** @description The styles this plan covers (Decision 195). */
             disciplineIds: string[];
             /** @description Whether a live membership on this plan can watch its styles' lessons (Decision 195). */
@@ -10727,6 +10757,8 @@ export interface components {
             visible?: boolean;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
+            /** @description Decision 435 item 5: whether the joining fee is refunded together with the membership payment. Defaults to false (never refunded). */
+            joiningFeeRefundable?: boolean;
             /** @description The School's styles this plan covers (Decision 195). */
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
@@ -10755,11 +10787,21 @@ export interface components {
             priceChangeStrategy?: "MIGRATE" | "GRANDFATHER";
             /** @description One of the School's income categories (Decision 316 item 10). Pass null to clear. */
             incomeCategoryId?: string | null;
+            /** @description Decision 435 items 1-6: the joining fee in the plan's currency (minor units). Pass null to remove it. */
+            joiningFee?: number | null;
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
             /** @description Active members paying by a running Stripe subscription: the ones a price change can migrate or grandfather (Decision 334). */
             subscriberCount: number;
+        };
+        JoiningFeeResponseDto: {
+            /** @description The joining fee added to this payment, in the plan's minor units. 0 = none (not a first plan, no fee on the plan, or the School's joining fees are off). */
+            joiningFee: number;
+            /** @description Whether that fee is refunded together with the membership payment. */
+            refundable: boolean;
+            /** @description Paid by card in the app only: the card surcharge the joining fee adds to this payment (Decision 406), in the same minor units. 0 when none. Never at the desk. */
+            cardSurchargeAmount: number;
         };
         PlanMemberResponseDto: {
             membershipId: string;
@@ -11201,6 +11243,10 @@ export interface components {
             amount: number;
             /** @description Card surcharge paid on top of amount, in the same minor units. 0 when none. */
             surchargeAmount: number;
+            /** @description Decision 435: the joining fee this first payment included, as part of amount (same minor units). 0 when none. */
+            joiningFeeAmount: number;
+            /** @description Decision 435 item 5: whether that joining fee is refunded with the payment. A non-refundable one is always left out of refunds. */
+            joiningFeeRefundable: boolean;
             /** @description Decision 431 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded. */
             includedTax?: components["schemas"]["IncludedTaxDto"] | null;
             currency?: string | null;
@@ -13001,6 +13047,10 @@ export interface components {
             expiryDurationDays?: number | null;
             classesIncluded?: number | null;
             visible: boolean;
+            /** @description Decision 435 items 1-6: the one-off joining fee on a member's first-ever plan at the School, in the plan's currency (minor units); null = none. Charged only while the School has joining fees on. */
+            joiningFee?: number | null;
+            /** @description Decision 435 item 5: whether the joining fee is refunded together with the membership payment. */
+            joiningFeeRefundable: boolean;
             /** @description Goes up by one each time the contract changes; null = no contract. */
             contractVersion?: number | null;
             /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment. */
@@ -19959,6 +20009,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipPlanActiveCountResponseDto"];
+                };
+            };
+        };
+    };
+    MembershipsController_previewJoiningFee: {
+        parameters: {
+            query?: {
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoiningFeeResponseDto"];
                 };
             };
         };
