@@ -46,6 +46,24 @@ test('clicking a card opens the student panel; ✕ closes it', async ({ page }) 
   await expect(panel).toHaveCount(0);
 });
 
+test("a student's photo shows on the card, row and panel; no photo shows initials (handover B6)", async ({ page }) => {
+  // A 1×1 PNG, so the picture loads without a network call.
+  const photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+  await db.user.update({ where: { id: cat.id }, data: { profilePhotoUrl: photo } });
+  await page.goto('/grading');
+  await expect(card(page, cat.name).locator('img.ultm8-avatar')).toHaveAttribute('src', photo);
+  await expect(card(page, ben.name).locator('img')).toHaveCount(0);
+  await expect(card(page, ben.name).getByText('BO', { exact: true })).toBeAttached();
+
+  await card(page, cat.name).getByText('White 0').click();
+  const panel = page.getByRole('region', { name: `${cat.name}: grading` });
+  await expect(panel.locator('img.ultm8-avatar')).toHaveAttribute('src', photo);
+  await panel.getByRole('button', { name: 'Close' }).click();
+
+  await page.getByRole('button', { name: 'Rows' }).click();
+  await expect(card(page, cat.name).locator('img.ultm8-avatar')).toHaveAttribute('src', photo);
+});
+
 test('Rows puts Ready to Grade on top, and Name sorts each stage', async ({ page }) => {
   await addStudent(s, 'Al', 'Zed', { rung: 'White 0', classes: 0, activeOverride: true });
   await page.goto('/grading');

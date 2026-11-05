@@ -1634,6 +1634,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     then promotes or doesn't.
   - Progress bars take their level's colour; a two-tone belt has its second
     colour as a band through the middle.
+- **Student photos on the Grading Board** (grading handover B6): the cards,
+  rows, student panel and selection panel show each student's profile photo,
+  or their initials when there is none. The board sends a photo only when the
+  person looking may already see it, and a child's only while a Guardian's
+  camera consent is active, as on the front-desk tablet.
 - **Booking and schedule rules on screen** (Decision 322):
   - **School page:** "Check-in opens (minutes before class)" and "Cancelling
     after a class starts" (no refund once started — the default — refund

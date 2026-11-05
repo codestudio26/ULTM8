@@ -11048,6 +11048,8 @@ export interface components {
             feeRequest?: components["schemas"]["BoardFeeRequestDto"] | null;
             /** @description Backlog 3.20: on a Kids style, the student has reached "Ready for Adult from age" ("Ready for Adult program" tag). Always false on other styles. */
             readyForAdult: boolean;
+            /** @description The student's profile photo (handover B6), or null: none set, or a child (a Student with a Guardian) without an active camera consent (Decisions 57, 69). Read under the caller's own access, so only a photo the caller may already see. */
+            photoUrl?: string | null;
         };
         GradingBoardResponseDto: {
             /** @description Students with a next rank in this style, highest progress first. */
