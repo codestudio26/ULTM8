@@ -379,6 +379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Demnächst",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Abgesagt",
+      wholeSchool: "Ganze Schule",
       weekdays: {
         monday: "Montag",
         tuesday: "Dienstag",
@@ -672,6 +673,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Mitgliedskarte von {name}",
+      intro: "Am Empfang kann {name} diesen Check-in-Code nennen, um einzuchecken.",
+      loadError: "Die Mitgliedskarte konnte nicht geladen werden — bitte versuche es erneut.",
+    },
     childPlans: {
       loadError: "Tarife konnten nicht geladen werden. Bitte versuche es erneut.",
       empty: "Diese Schule hat keine Tarife im Angebot.",
@@ -695,6 +701,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Die Kurse konnten nicht geladen werden — bitte versuche es erneut.",
     },
     myMinors: {
+      card: "Mitgliedskarte",
       plans: "Tarif kaufen",
       waivers: "Verzichtserklärungen",
       empty: "Noch keine verknüpften Minderjährigen.",

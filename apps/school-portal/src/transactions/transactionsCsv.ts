@@ -45,6 +45,8 @@ export function transactionsCsv(rows: TransactionResponse[], labels: CsvLabels):
         row.cancelledAt ?? '',
         row.cancelledByName ?? '',
         row.cancelReason ?? '',
+        // Decision 316 item 10: the plan's or the charge's income category.
+        row.incomeCategoryName ?? '',
       ]
         .map((v) => csvCell(String(v)))
         .join(','),

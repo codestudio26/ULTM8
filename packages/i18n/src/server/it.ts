@@ -778,4 +778,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Importazione non trovata",
   "Each row number can only be sent once.": "Ogni numero di riga può essere inviato una sola volta.",
   "Tick the consent box to upload a certification.": "Spunta la casella del consenso per caricare una certificazione.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Categoria di entrata non trovata",
+  "This School already has an income category with that name.": "Questa scuola ha già una categoria di entrata con questo nome.",
+  "This School already has 100 income categories. Delete one before adding another.": "Questa scuola ha già 100 categorie di entrata. Eliminane una prima di aggiungerne un'altra.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Questa categoria di entrata è usata da un piano o da un addebito, quindi non si può eliminare. Rinominala invece.",
+  "Choose an income category from this School's list.": "Scegli una categoria di entrata dall'elenco di questa scuola.",
 };

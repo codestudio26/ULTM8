@@ -14,6 +14,7 @@ import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { bookingUsesCredit } from './open-mat-credit';
+import { classTimeZones } from '../classes/class-time-zone';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
@@ -377,10 +378,15 @@ export class WaitlistService {
         take: 100,
       });
       const [classes, schools] = await Promise.all([
-        tx.class.findMany({ where: { id: { in: [...new Set(entries.map((e) => e.classId))] } }, select: { id: true, title: true, startDate: true } }),
+        tx.class.findMany({
+          where: { id: { in: [...new Set(entries.map((e) => e.classId))] } },
+          select: { id: true, schoolId: true, branchId: true, title: true, startDate: true },
+        }),
         tx.school.findMany({ where: { id: { in: [...new Set(entries.map((e) => e.schoolId))] } }, select: { id: true, name: true } }),
       ]);
       const classById = new Map(classes.map((c) => [c.id, c]));
+      // Decision 427 (SP6): the class's own clock (its Branch's zone, else the School's).
+      const zones = await classTimeZones(tx, classes);
       const schoolName = new Map(schools.map((sch) => [sch.id, sch.name]));
       const now = new Date();
       return entries
@@ -395,6 +401,7 @@ export class WaitlistService {
             claimByDeadline: e.claimByDeadline,
             classTitle: cls?.title ?? null,
             classStartsAt: cls?.startDate ?? null,
+            classTimezone: cls ? zones.get(cls.id) ?? null : null,
             schoolName: schoolName.get(e.schoolId) ?? null,
           };
         })

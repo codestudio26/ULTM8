@@ -143,4 +143,17 @@ describe('MyBookingsScreen — class details', () => {
     expect(queryByText(/c1/)).toBeNull();
     expect(getByText('Status: Upcoming')).toBeTruthy();
   });
+
+  it("shows the class's times on its own clock (Decision 427, SP6)", async () => {
+    mocked(bookingQueries.useMyBookings).mockReturnValue(
+      pagedQuery([
+        {
+          id: 'b1', classId: 'c1', status: 'UPCOMING', attendees: [], classTimezone: 'Asia/Tokyo',
+          classTitle: 'Adult Fundamentals', classStartsAt: '2026-11-05T18:00:00.000Z', classEndsAt: '2026-11-05T19:00:00.000Z', schoolName: 'Alpha Dojo',
+        },
+      ]),
+    );
+    const { getByText } = await render(<MyBookingsScreen />);
+    expect(getByText(/^Fri, Nov 6, 2026, 3:00\sAM – 4:00\sAM$/)).toBeTruthy();
+  });
 });

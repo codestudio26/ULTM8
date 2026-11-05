@@ -25,6 +25,7 @@ import { styleIdsOf } from '../classes/class-styles';
 import { localDay } from '../ranks/engine';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { bookingUsesCredit } from './open-mat-credit';
+import { classTimeZones } from '../classes/class-time-zone';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
@@ -630,17 +631,26 @@ export class BookingsService {
     const bookings = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.booking.findMany({
         where: { studentId, status: 'UPCOMING', class: { endDate: { gt: new Date() } } },
-        select: { id: true, classId: true, schoolId: true, class: { select: { title: true, startDate: true } }, _count: { select: { attendees: true } } },
+        select: {
+          id: true,
+          classId: true,
+          schoolId: true,
+          class: { select: { id: true, schoolId: true, branchId: true, title: true, startDate: true } },
+          _count: { select: { attendees: true } },
+        },
         orderBy: [{ class: { startDate: 'asc' } }, { id: 'asc' }],
         take: 100,
       }),
     );
+    // Decision 427 (SP6): each class's own clock, read as the child.
+    const zones = await this.prismaApp.withTenantContext(studentId, (tx) => classTimeZones(tx, bookings.map((b) => b.class)));
     return {
       items: bookings.map((b) => ({
         id: b.id,
         classId: b.classId,
         classTitle: b.class.title,
         classStartsAt: b.class.startDate.toISOString(),
+        classTimezone: zones.get(b.class.id) ?? null,
         schoolId: b.schoolId,
         guestCount: b._count.attendees,
       })),
@@ -661,11 +671,13 @@ export class BookingsService {
       const classIds = [...new Set(page.items.map((b) => b.classId))];
       const schoolIds = [...new Set(page.items.map((b) => b.schoolId))];
       const [classes, schools] = await Promise.all([
-        tx.class.findMany({ where: { id: { in: classIds } }, select: { id: true, title: true, startDate: true, endDate: true } }),
+        tx.class.findMany({ where: { id: { in: classIds } }, select: { id: true, schoolId: true, branchId: true, title: true, startDate: true, endDate: true } }),
         tx.school.findMany({ where: { id: { in: schoolIds } }, select: { id: true, name: true } }),
       ]);
       const classById = new Map(classes.map((c) => [c.id, c]));
       const schoolName = new Map(schools.map((sch) => [sch.id, sch.name]));
+      // Decision 427 (SP6): the class's own clock (its Branch's zone, else the School's).
+      const zones = await classTimeZones(tx, classes);
       return {
         ...page,
         items: page.items.map((b) => {
@@ -675,6 +687,7 @@ export class BookingsService {
             classTitle: cls?.title ?? null,
             classStartsAt: cls?.startDate ?? null,
             classEndsAt: cls?.endDate ?? null,
+            classTimezone: cls ? zones.get(cls.id) ?? null : null,
             schoolName: schoolName.get(b.schoolId) ?? null,
           };
         }),

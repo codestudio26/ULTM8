@@ -124,7 +124,9 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 ---
 
-### B6. Student photos on grading data
+### B6. Student photos on grading data — ✅ built (board)
+
+> **Built** (5 Nov 2026). `photoUrl` on every `GradingBoardItemDto`: read under the caller's own access (RLS `user_self_or_shared_school`), so only a photo the caller may already see; a child's (a Student with a Guardian) only while a Guardian's CAMERA consent is active, the front-desk tablet's rule (`photosShownFor`, `apps/api/src/common/prisma/student-photos.ts`). The portal's board cards, rows, student panel and selection panel show it, with initials otherwise. Not done: the promote window, the bulk-promote rows and the printable report still show names only (no avatar there today); the rank-history and bulk responses don't carry a photo.
 
 **What it must do:** the redesigned board, the student panel, the selection panel, the promote window and the printable report show each student's photo (or initials).
 

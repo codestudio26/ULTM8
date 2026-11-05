@@ -31,12 +31,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the signing form has Cancel. Already-booked classes show as booked, plans
   say "Join this School to buy" to non-members, status words read as words,
   the sign-in screen shows the picked School, and removing a card asks first.
+- **Student app: class times on the School's clock** (Track B, `apps/student`;
+  Decision 427 SP6) — class times in the app (a School's classes, Kid Mode,
+  My bookings, My waitlist, a child's bookings) now show on the class's own
+  clock (its branch's time zone, else the School's), not the phone's, so a
+  member travelling or in another zone sees the times the School advertises.
+  **Needs a database migration** (`20270214000001_discovery_class_timezone`):
+  three column-level read grants to the discovery role (School and Branch
+  time zone, and which Branch a class is at), nothing else.
 - **Coaches portal answers** (Decision 425) — Branch Staff see their
   branch's classes this week on their dashboard, with roll call and QR links
   when they handle bookings. Coaches get a read-only Students page with the
   Attendance tab. Uploading a certification needs the consent tick. "Coming
   up" shows each class's start time and branch. "Complete your profile" is
   now "My coach profile".
+- **Coach dashboard in the app: class time and branch** (Track B,
+  `apps/student`; Decision 425 Q4) — "Coming up" on the app's coach
+  dashboard shows each class's start date and time on the class's own clock
+  (its branch's time zone, else the School's) and the branch name ("Whole
+  School" when it has none), as the web dashboard does. No API or database
+  change.
 - **Coaches portal fixes** (Coaches portal review CP2–CP6, Decision 424) —
   the coach dashboard no longer lists archived weekly slots, and marks a
   cancelled class "Cancelled" with no roll call or QR link. An owner who also
@@ -661,6 +675,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   staff with "Can cancel charges" can **Waive** it; the student app labels it
   "Late fee" too. **Needs a database migration**
   (`20270116000000_late_fees`).
+- **Income categories** (Decision 316 item 10; Gymdesk P17/BL18) — a new
+  **Income categories** card on the School page (owner only) lets a School
+  name its own categories (e.g. "Kids programme", "Merchandise"): add, rename,
+  and delete one nothing uses (one in use can only be renamed). A membership
+  plan (Policies step of the plan form), a staff-created charge and a
+  recurring charge can each carry one; every charge a recurring charge makes
+  carries its category. The student's **Payments** card shows a charge's
+  category to staff, and the **Transactions** CSV export has a new last
+  column, **Income category**: the category of the plan (a purchase or a
+  renewal) or of the charge (a payment toward it), as it is now. Members never
+  see categories. No accounting codes and no accounting integration. **Needs
+  a database migration** (`20270212000001_income_categories`).
 - **Medical information at sign-up** (Decision 315 item 10; Gymdesk SF6) — a
   new **Medical information at sign-up** card on the School page (owner only)
   lets a School ask for medical information. It is **off by default**, so
@@ -875,6 +901,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   memberships. It has no QR code, because a printed one would never change. In
   the app, the same card sits under the live QR on "Show my code". No
   migration.
+- **A parent sees their child's membership card** (Track B, `apps/student`;
+  Decision 398) — each child in "My children" has "Membership card": the
+  child's card at each of their Schools (photo, name, check-in code, current
+  memberships), the same card the child sees. No QR on it. Uses the existing
+  `GET /schools/{schoolId}/students/{studentId}/membership-card`. No database
+  change.
 - **Gender: Female or Male** (backlog 3.15; Decision 315 item 15) — gender is
   now a choice of Female, Male or not given, in the portal (Edit profile,
   register) and the student app (profile), and the API refuses anything else.
@@ -1629,6 +1661,11 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     then promotes or doesn't.
   - Progress bars take their level's colour; a two-tone belt has its second
     colour as a band through the middle.
+- **Student photos on the Grading Board** (grading handover B6): the cards,
+  rows, student panel and selection panel show each student's profile photo,
+  or their initials when there is none. The board sends a photo only when the
+  person looking may already see it, and a child's only while a Guardian's
+  camera consent is active, as on the front-desk tablet.
 - **Booking and schedule rules on screen** (Decision 322):
   - **School page:** "Check-in opens (minutes before class)" and "Cancelling
     after a class starts" (no refund once started — the default — refund

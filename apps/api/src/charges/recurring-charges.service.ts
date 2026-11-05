@@ -15,6 +15,7 @@ import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { ChargesService } from './charges.service';
+import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 import { ChargeMathsError, ChargeTotals, computeCharge, taxForCharge } from './charge-maths';
 import { InvoiceNotice, runSeries, seriesState } from './recurring-occurrences';
 import { dayOf, dayValue, firstIndexOnOrAfter, nextDay, schoolToday, type RecurringFrequency } from './recurring-schedule';
@@ -64,6 +65,7 @@ export class RecurringChargesService {
     private readonly guardiansService: GuardiansService,
     private readonly charges: ChargesService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
+    private readonly incomeCategories: IncomeCategoriesService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -137,6 +139,8 @@ export class RecurringChargesService {
     if (endDate !== null && endDate < dto.firstDate) {
       throw new BadRequestException({ code: 'RECURRING_CHARGE_END_BEFORE_FIRST', message: 'The end date must be on or after the first date.' });
     }
+    // Decision 316 item 10: one of this School's own income categories.
+    const incomeCategoryId = await this.incomeCategories.resolveForSchool(schoolId, dto.incomeCategoryId);
 
     const id = randomUUID();
     await this.prismaJobs.$transaction(async (tx) => {
@@ -164,6 +168,7 @@ export class RecurringChargesService {
           maxOccurrences,
           nextDate: dayValue(dto.firstDate),
           createdById: callerId,
+          incomeCategoryId,
         },
       });
     });
@@ -352,6 +357,14 @@ export class RecurringChargesService {
       const n = forStaff && id ? names.get(id) : undefined;
       return n ? `${n.firstName} ${n.surname}`.trim() : null;
     };
+    // Decision 316 item 10: staff see each series' income category.
+    const categoryNames = new Map<string, string>();
+    if (forStaff) {
+      for (const schoolId of new Set(rows.map((r) => r.schoolId))) {
+        const found = await this.incomeCategories.namesFor(schoolId, rows.filter((r) => r.schoolId === schoolId).map((r) => r.incomeCategoryId));
+        for (const [id, name] of found) categoryNames.set(id, name);
+      }
+    }
     const items = rows.map((r) => {
       const status: RecurringChargeStatus = r.stoppedAt ? 'STOPPED' : r.nextDate ? 'ACTIVE' : 'ENDED';
       const e = this.estimate(r, taxes.get(r.schoolId) ?? { taxRateBasisPoints: 0, taxInclusive: true });
@@ -365,6 +378,7 @@ export class RecurringChargesService {
         discountValue: r.discountValue,
         currency: r.currency,
         taxExempt: r.taxExempt,
+        incomeCategoryName: forStaff && r.incomeCategoryId ? (categoryNames.get(r.incomeCategoryId) ?? null) : null,
         frequency: r.frequency,
         firstDate: dayOf(r.firstDate),
         endDate: r.endDate ? dayOf(r.endDate) : null,

@@ -30,6 +30,7 @@ import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { VISIT_PASS_TITLE } from './visitors';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
 import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
@@ -76,6 +77,7 @@ export class MembershipsService {
     @InjectQueue(MEMBERSHIP_PLAN_PRICE_MIGRATION_QUEUE) private readonly priceMigrationQueue: Queue,
     private readonly stripeClient: StripeClientService,
     private readonly prismaJobs: PrismaJobsService,
+    private readonly incomeCategories: IncomeCategoriesService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -110,6 +112,8 @@ export class MembershipsService {
     // Decision 414 item 6: no price is saved before the School's currency is
     // set, even on a plan given its own currency. A free plan needs none.
     if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) await this.assertSchoolCurrencySet(callerId, schoolId);
+    // Decision 316 item 10: one of this School's own income categories.
+    const incomeCategoryId = await this.incomeCategories.resolveForSchool(schoolId, dto.incomeCategoryId);
 
     const id = randomUUID();
     return this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -133,6 +137,7 @@ export class MembershipsService {
           includesLessons: dto.includesLessons ?? price > 0,
           newMemberBillingStrategy: dto.newMemberBillingStrategy ?? 'FRESH_CYCLE',
           billingCycleAnchorDay: dto.billingCycleAnchorDay,
+          incomeCategoryId,
         },
       }),
     );
@@ -271,6 +276,8 @@ export class MembershipsService {
     this.assertValidNewMemberBillingStrategy(nextType, nextNewMemberBillingStrategy, nextBillingCycleAnchorDay);
 
     if (dto.disciplineIds) await this.assertStylesOfSchool(callerId, existing.schoolId, dto.disciplineIds, existing.disciplineIds);
+    // Decision 316 item 10: undefined leaves it, null clears it.
+    const incomeCategoryId = await this.incomeCategories.resolveForSchool(existing.schoolId, dto.incomeCategoryId);
 
     // Only a new scope is checked: re-saving a plan for a class that has since
     // taken place must still work for its other fields.
@@ -364,6 +371,7 @@ export class MembershipsService {
           billingCycleAnchorDay: dto.billingCycleAnchorDay,
           stripeProductId,
           stripePriceId,
+          incomeCategoryId,
         },
       }),
     );

@@ -28,6 +28,7 @@ test.afterEach(async () => {
   await db.transaction.deleteMany({ where });
   await db.membership.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where });
+  await db.incomeCategory.deleteMany({ where });
   await db.paymentAccount.deleteMany({ where });
 });
 
@@ -256,6 +257,9 @@ test('renewal and late-cancel fee rows are labelled, and the filters narrow rows
 });
 
 test('Export CSV downloads every filtered row', async ({ page }) => {
+  // Decision 316 item 10: the plan's income category is its own column.
+  const category = await db.incomeCategory.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'Kids programme' } });
+  await db.membershipPlan.update({ where: { id: planId }, data: { incomeCategoryId: category.id } });
   await addTransaction({ status: 'SUCCESSFUL', daysAgo: 1 });
   await addTransaction({ status: 'FAILED', method: 'STRIPE', amount: 500, daysAgo: 2, kind: 'LATE_CANCEL_FEE' });
 
@@ -268,10 +272,12 @@ test('Export CSV downloads every filtered row', async ({ page }) => {
   expect(file.suggestedFilename()).toMatch(/^transactions-\d{4}-\d{2}-\d{2}\.csv$/);
   const text = (await import('fs')).readFileSync((await file.path())!, 'utf8').replace(/^\uFEFF/, '');
   const lines = text.trim().split('\r\n');
-  expect(lines[0]).toBe('Date,Student,Plan,Type,Amount,Card surcharge,Currency,Status,Method,Refunded,Disputed,Transaction ID,Cancelled on,Cancelled by,Cancel reason');
+  expect(lines[0]).toBe('Date,Student,Plan,Type,Amount,Card surcharge,Currency,Status,Method,Refunded,Disputed,Transaction ID,Cancelled on,Cancelled by,Cancel reason,Income category');
   expect(lines).toHaveLength(3);
   expect(lines[1]).toContain('Sam Lee,10-Class Pack,Membership,150.00,0.00,GBP,Successful');
+  expect(lines[1]).toMatch(/,Kids programme$/);
   expect(lines[2]).toContain('Late-cancellation fee,5.00,0.00,GBP,Failed');
+  expect(lines[2]).toMatch(/,$/);
 });
 
 test('Record a payment starts the membership and shows the row as taken at the desk', async ({ page }) => {

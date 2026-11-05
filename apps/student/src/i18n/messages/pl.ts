@@ -383,6 +383,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Wkrótce",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Odwołane",
+      wholeSchool: "Cała szkoła",
       weekdays: {
         monday: "Poniedziałek",
         tuesday: "Wtorek",
@@ -689,6 +690,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Karta członkowska: {name}",
+      intro: "W recepcji {name} może podać ten kod meldunkowy, aby się zameldować.",
+      loadError: "Nie udało się wczytać karty członkowskiej — spróbuj ponownie.",
+    },
     childPlans: {
       loadError: "Nie udało się wczytać planów. Spróbuj ponownie.",
       empty: "Ta szkoła nie ma planów w sprzedaży.",
@@ -712,6 +718,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "Nie udało się wczytać zajęć — spróbuj ponownie.",
     },
     myMinors: {
+      card: "Karta członkowska",
       plans: "Kup plan",
       waivers: "Oświadczenia",
       empty: "Brak powiązanych podopiecznych.",

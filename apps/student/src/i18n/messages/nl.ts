@@ -379,6 +379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Binnenkort",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Geannuleerd",
+      wholeSchool: "Hele school",
       weekdays: {
         monday: "maandag",
         tuesday: "dinsdag",
@@ -672,6 +673,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "Lidmaatschapskaart van {name}",
+      intro: "Bij de balie kan {name} deze incheckcode opgeven om in te checken.",
+      loadError: "De lidmaatschapskaart kon niet worden geladen — probeer het opnieuw.",
+    },
     childPlans: {
       loadError: "Kon de abonnementen niet laden. Probeer het opnieuw.",
       empty: "Deze school heeft geen abonnementen te koop.",
@@ -695,6 +701,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "De lessen konden niet worden geladen — probeer het opnieuw.",
     },
     myMinors: {
+      card: "Lidmaatschapskaart",
       plans: "Abonnement kopen",
       waivers: "Verklaringen",
       empty: "Nog geen gekoppelde minderjarigen.",

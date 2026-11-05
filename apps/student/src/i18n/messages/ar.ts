@@ -387,6 +387,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "القادم",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · ملغى",
+      wholeSchool: "المدرسة كلها",
       weekdays: {
         monday: "الاثنين",
         tuesday: "الثلاثاء",
@@ -703,6 +704,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "بطاقة عضوية {name}",
+      intro: "في مكتب الاستقبال، يمكن لـ {name} إعطاء رمز تسجيل الحضور هذا لتسجيل الحضور.",
+      loadError: "تعذّر تحميل بطاقة العضوية — يرجى المحاولة مرة أخرى.",
+    },
     childPlans: {
       loadError: "تعذّر تحميل الخطط. حاول مرة أخرى.",
       empty: "لا توجد خطط معروضة للبيع في هذه المدرسة.",
@@ -726,6 +732,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "تعذّر تحميل الصفوف — يُرجى المحاولة مرة أخرى.",
     },
     myMinors: {
+      card: "بطاقة العضوية",
       plans: "شراء خطة",
       waivers: "الإقرارات",
       empty: "لا يوجد قاصرون مرتبطون بعد.",

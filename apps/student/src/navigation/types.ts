@@ -54,6 +54,8 @@ export type AppStackParamList = {
   /** Decision 428 (M1, M2): a parent signs this child's waivers, and buys them a plan. */
   ChildWaivers: { studentId: string; name: string };
   ChildPlans: { studentId: string; name: string };
+  /** Decision 398: a parent sees this child's membership card at each of their Schools. */
+  ChildCard: { studentId: string; name: string };
   /** Decision 428 (M3): change one's own passcode. */
   ChangePasscode: undefined;
   KidModePin: undefined;

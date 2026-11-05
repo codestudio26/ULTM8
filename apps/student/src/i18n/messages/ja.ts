@@ -377,6 +377,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "今後の予定",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · 中止",
+      wholeSchool: "スクール全体",
       weekdays: {
         monday: "月曜日",
         tuesday: "火曜日",
@@ -666,6 +667,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   guardians: {
+    childCard: {
+      title: "{name}さんの会員カード",
+      intro: "受付で、{name}さんはこのチェックインコードを伝えてチェックインできます。",
+      loadError: "会員カードを読み込めませんでした。もう一度お試しください。",
+    },
     childPlans: {
       loadError: "プランを読み込めませんでした。もう一度お試しください。",
       empty: "このスクールには販売中のプランがありません。",
@@ -689,6 +695,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       classesLoadError: "クラスを読み込めませんでした。もう一度お試しください。",
     },
     myMinors: {
+      card: "会員カード",
       plans: "プランを購入",
       waivers: "同意書",
       empty: "連携しているお子さまはまだいません。",
