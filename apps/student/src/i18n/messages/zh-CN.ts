@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "我",
       loadFailed: "无法加载这所学校，请重试。",
       alreadyStudentMe: "你已经是这里的学员了。",
+      familyOff: "此学校自行添加孩子。请让学校添加你的孩子。",
       alreadyStudentOther: "{name} 已经是这里的学员了。",
       title: "加入 {name}",
       whoIsJoining: "谁要加入？",
@@ -569,6 +570,16 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        other: "距离考级还有 {count} 天",
+      },
+      gradingToday: "今天考级",
+      classesToGo: {
+        other: "还需 {count} 节课",
+      },
+      daysToGo: {
+        other: "还需 {count} 天",
+      },
       loadError: "无法加载晋级信息，请重试。",
       noRank: "还没有级别。学校为你评定晋级后，或你在加入时自报腰带后，级别会显示在这里。",
       historyTitle: "{style}历史",
@@ -832,6 +843,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "无法加载会员，请重试。",
       cancelSubscription: "取消订阅",
       keepSubscription: "保留",
+      cancelBySchool: "如需取消，请联系学校。",
       cancelConfirm: "你可以使用订阅至已付费月份结束。之后订阅结束，不再扣款。",
       cancelError: "无法取消你的订阅，请重试。",
       cancelledEnds: "已取消，{date} 结束",
@@ -923,6 +935,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "已验证",
       notVerified: "尚未验证",
       identifiersNote: "邮箱和手机无法在此更改 — 它们是你的登录标识。",
+      lockedNote: "你的学校负责更新你的资料。如需修改，请联系学校。你仍可更改应用的语言和货币。",
       firstName: "名",
       surname: "姓",
       username: "用户名",

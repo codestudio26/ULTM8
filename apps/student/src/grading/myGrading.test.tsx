@@ -304,3 +304,28 @@ describe('asking for a belt correction (backlog 3.13)', () => {
     expect(queryByText('Ask for a belt correction')).toBeNull();
   });
 });
+
+/** Decision 318 item 7: the grading countdown, when the School turns it on. */
+describe('MyGradingScreen — grading countdown', () => {
+  const working = { ...BJJ, eligibility: { ...BJJ.eligibility, eligible: false, progressPercent: 40, countedClasses: 4, elapsedDays: 10 } };
+
+  it('shows nothing when the School leaves it off (no countdown from the API)', async () => {
+    mocked(q.useGradingOverview).mockReturnValue(ok({ items: [{ ...working, countdown: null }] }));
+    const { queryByTestId } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(queryByTestId('grading-countdown')).toBeNull();
+  });
+
+  it('shows the next grading day and what is still needed', async () => {
+    mocked(q.useGradingOverview).mockReturnValue(ok({ items: [{ ...working, countdown: { nextGradingDate: '2027-03-24', daysUntilGrading: 23, classesToGo: 6, daysToGo: 1 } }] }));
+    const { getByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('Grading in 23 days')).toBeTruthy();
+    expect(getByText('6 classes to go · 1 day to go')).toBeTruthy();
+  });
+
+  it('says "Grading today", and nothing to go once ready', async () => {
+    mocked(q.useGradingOverview).mockReturnValue(ok({ items: [{ ...BJJ, countdown: { nextGradingDate: '2027-03-01', daysUntilGrading: 0, classesToGo: 0, daysToGo: 0 } }] }));
+    const { getByText, queryByText } = await render(<MyGradingScreen navigation={nav()} route={{ params: undefined } as never} />);
+    expect(getByText('Grading today')).toBeTruthy();
+    expect(queryByText(/to go/)).toBeNull();
+  });
+});

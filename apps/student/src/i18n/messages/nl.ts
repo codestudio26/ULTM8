@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "Ik",
       loadFailed: "Deze school kon niet worden geladen — probeer het opnieuw.",
       alreadyStudentMe: "Je bent hier al leerling.",
+      familyOff: "Deze school voegt kinderen zelf toe. Vraag de school om je kind toe te voegen.",
       alreadyStudentOther: "{name} is hier al leerling.",
       title: "Lid worden van {name}",
       whoIsJoining: "Wie wordt er lid?",
@@ -574,6 +575,19 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        one: "Graduatie over {count} dag",
+        other: "Graduatie over {count} dagen",
+      },
+      gradingToday: "Graduatie vandaag",
+      classesToGo: {
+        one: "Nog {count} les",
+        other: "Nog {count} lessen",
+      },
+      daysToGo: {
+        one: "Nog {count} dag",
+        other: "Nog {count} dagen",
+      },
       loadError: "De gradering kon niet worden geladen — probeer het opnieuw.",
       noRank: "Nog geen graad. Graden verschijnen hier zodra de school je gradeert, of zodra je bij het lid worden je band opgeeft.",
       historyTitle: "Geschiedenis {style}",
@@ -839,6 +853,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Lidmaatschappen konden niet worden geladen — probeer het opnieuw.",
       cancelSubscription: "Abonnement opzeggen",
       keepSubscription: "Behouden",
+      cancelBySchool: "Vraag de school om op te zeggen.",
       cancelConfirm: "Je houdt je abonnement tot het einde van de betaalde maand. Daarna stopt het en worden er geen betalingen meer afgeschreven.",
       cancelError: "Je abonnement kon niet worden opgezegd — probeer het opnieuw.",
       cancelledEnds: "Opgezegd, eindigt op {date}",
@@ -930,6 +945,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "Geverifieerd",
       notVerified: "Nog niet geverifieerd",
       identifiersNote: "E-mail en telefoon kun je hier niet wijzigen — dat zijn je inloggegevens.",
+      lockedNote: "Je school houdt je gegevens bij. Vraag de school om ze te wijzigen. De taal en valuta van de app kun je nog steeds wijzigen.",
       firstName: "Voornaam",
       surname: "Achternaam",
       username: "Gebruikersnaam",

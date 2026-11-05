@@ -203,4 +203,35 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @IsOptional()
   @IsBoolean()
   medicalInfoEnabled?: boolean;
+
+  /** Decision 318 item 7 — member app switches. */
+  @ApiPropertyOptional({ description: 'Members may edit their own profile in the app (Decision 318 item 7).' })
+  @IsOptional()
+  @IsBoolean()
+  memberAppEditProfile?: boolean;
+
+  @ApiPropertyOptional({ description: 'Members (or a Guardian, for a child) may cancel their own Subscription in the app (Decision 318 item 7).' })
+  @IsOptional()
+  @IsBoolean()
+  memberAppCancelMembership?: boolean;
+
+  @ApiPropertyOptional({ description: 'A Guardian may add their child to this School in the app (Decision 318 item 7).' })
+  @IsOptional()
+  @IsBoolean()
+  memberAppAddFamily?: boolean;
+
+  @ApiPropertyOptional({ description: 'Members see their payment history in the app (Decision 318 item 7).' })
+  @IsOptional()
+  @IsBoolean()
+  memberAppPaymentHistory?: boolean;
+
+  @ApiPropertyOptional({ description: 'The grading countdown shows in the app (Decision 318 item 7).' })
+  @IsOptional()
+  @IsBoolean()
+  memberAppGradingCountdown?: boolean;
+
+  @ApiPropertyOptional({ type: String, format: 'date', nullable: true, description: "The School's next grading day, YYYY-MM-DD (Decision 318 item 7). Null clears it." })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'nextGradingDate must be a date (YYYY-MM-DD)' })
+  nextGradingDate?: string | null;
 }

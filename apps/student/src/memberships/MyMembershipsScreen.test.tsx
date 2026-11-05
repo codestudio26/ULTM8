@@ -3,6 +3,13 @@ import { describe, expect, it, jest, beforeEach } from '@jest/globals';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import * as membershipQueries from './membershipQueries';
 import { MembershipRow } from './MyMembershipsScreen';
+import * as memberApp from '../lib/memberAppQueries';
+
+// Decision 318 item 7: the member app switches (on unless a test turns one off).
+jest.mock('../lib/memberAppQueries', () => {
+  const actual = jest.requireActual('../lib/memberAppQueries') as object;
+  return { ...actual, useMemberAppSettings: jest.fn(() => ({ data: undefined })) };
+});
 
 jest.mock('./membershipQueries', () => ({ useCancelSubscription: jest.fn(), useMyMemberships: jest.fn() }));
 
@@ -72,5 +79,26 @@ describe('MembershipRow — names', () => {
     const { getByText, queryByText } = await render(<MembershipRow membership={row as never} />);
     expect(getByText('Membership')).toBeTruthy();
     expect(queryByText(/unknown-plan/)).toBeNull();
+  });
+});
+
+/** Decision 318 item 7: a School may cancel memberships itself. */
+describe('MembershipRow — the School cancels memberships itself', () => {
+  beforeEach(() => {
+    mocked(membershipQueries.useCancelSubscription).mockReturnValue({ mutateAsync: jest.fn(), isPending: false });
+  });
+
+  it('offers no Cancel button and says to ask the School when the switch is off', async () => {
+    mocked(memberApp.useMemberAppSettings).mockReturnValue({ data: { profileLocked: false, schools: [{ ...{ schoolId: 'school-1', editProfile: true, cancelMembership: true, addFamily: true, paymentHistory: true, gradingCountdown: false }, cancelMembership: false }] } });
+    const { getByText, queryByText } = await render(<MembershipRow membership={SUBSCRIPTION as never} />);
+    expect(queryByText('Cancel subscription')).toBeNull();
+    expect(getByText('To cancel, ask the School.')).toBeTruthy();
+  });
+
+  it('keeps the Cancel button at a School that leaves it on', async () => {
+    mocked(memberApp.useMemberAppSettings).mockReturnValue({ data: { profileLocked: false, schools: [{ ...{ schoolId: 'school-1', editProfile: true, cancelMembership: true, addFamily: true, paymentHistory: true, gradingCountdown: false }, schoolId: 'other', cancelMembership: false }, { schoolId: 'school-1', editProfile: true, cancelMembership: true, addFamily: true, paymentHistory: true, gradingCountdown: false }] } });
+    const { getByText, queryByText } = await render(<MembershipRow membership={SUBSCRIPTION as never} />);
+    expect(getByText('Cancel subscription')).toBeTruthy();
+    expect(queryByText('To cancel, ask the School.')).toBeNull();
   });
 });

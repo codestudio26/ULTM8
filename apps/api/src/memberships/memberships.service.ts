@@ -1602,6 +1602,14 @@ export class MembershipsService {
     if (membership.studentId !== contextUserId) {
       // Seen through staff access: only the owner may cancel for a Student.
       await this.tenantAuth.assertSchoolOwner(callerId, membership.schoolId);
+    } else {
+      // Decision 318 item 7: the School may turn off members (and a Guardian,
+      // for a child) cancelling their own Subscription in the app. The owner
+      // still cancels from the Student's page.
+      const school = await this.prismaJobs.school.findUnique({ where: { id: membership.schoolId }, select: { memberAppCancelMembership: true } });
+      if (school && !school.memberAppCancelMembership) {
+        throw new ForbiddenException('This School cancels memberships itself. Ask the School to cancel it for you.');
+      }
     }
     const found = membership;
     const cancelled = await this.prismaApp.withTenantContext(contextUserId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, found, callerId));

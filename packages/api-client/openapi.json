@@ -19082,6 +19082,32 @@
         ]
       }
     },
+    "/v1/member-app/me": {
+      "get": {
+        "operationId": "MemberAppController_mySettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberAppSettingsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "member-app"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/custom-member-fields": {
       "get": {
         "operationId": "CustomMemberFieldsController_listFields",
@@ -23502,6 +23528,32 @@
             "type": "boolean",
             "description": "Decision 315 item 10: the School asks for medical information at sign-up (off by default)."
           },
+          "memberAppEditProfile": {
+            "type": "boolean",
+            "description": "Decision 318 item 7: members may edit their own profile in the app (default on)."
+          },
+          "memberAppCancelMembership": {
+            "type": "boolean",
+            "description": "Decision 318 item 7: members (or a Guardian, for a child) may cancel their own Subscription in the app (default on)."
+          },
+          "memberAppAddFamily": {
+            "type": "boolean",
+            "description": "Decision 318 item 7: a Guardian may add their child to this School in the app (default on)."
+          },
+          "memberAppPaymentHistory": {
+            "type": "boolean",
+            "description": "Decision 318 item 7: members see their payment history in the app (default on)."
+          },
+          "memberAppGradingCountdown": {
+            "type": "boolean",
+            "description": "Decision 318 item 7: the grading countdown shows in the app (default off)."
+          },
+          "nextGradingDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Decision 318 item 7: the School's next grading day. Null until the School sets it."
+          },
           "checkInCodeDigits": {
             "type": "number",
             "enum": [
@@ -23618,6 +23670,11 @@
           "chargeNoticeDueReminder",
           "chargeNoticeRefund",
           "medicalInfoEnabled",
+          "memberAppEditProfile",
+          "memberAppCancelMembership",
+          "memberAppAddFamily",
+          "memberAppPaymentHistory",
+          "memberAppGradingCountdown",
           "checkInCodeDigits",
           "lateCancelRefundPolicy",
           "branchStaffCanRecordPayments",
@@ -23997,6 +24054,32 @@
           "medicalInfoEnabled": {
             "type": "boolean",
             "description": "Ask for medical information at sign-up, with consent (Decision 315 item 10). Off by default."
+          },
+          "memberAppEditProfile": {
+            "type": "boolean",
+            "description": "Members may edit their own profile in the app (Decision 318 item 7)."
+          },
+          "memberAppCancelMembership": {
+            "type": "boolean",
+            "description": "Members (or a Guardian, for a child) may cancel their own Subscription in the app (Decision 318 item 7)."
+          },
+          "memberAppAddFamily": {
+            "type": "boolean",
+            "description": "A Guardian may add their child to this School in the app (Decision 318 item 7)."
+          },
+          "memberAppPaymentHistory": {
+            "type": "boolean",
+            "description": "Members see their payment history in the app (Decision 318 item 7)."
+          },
+          "memberAppGradingCountdown": {
+            "type": "boolean",
+            "description": "The grading countdown shows in the app (Decision 318 item 7)."
+          },
+          "nextGradingDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "The School's next grading day, YYYY-MM-DD (Decision 318 item 7). Null clears it."
           }
         }
       },
@@ -34741,6 +34824,32 @@
           "required"
         ]
       },
+      "GradingCountdownDto": {
+        "type": "object",
+        "properties": {
+          "nextGradingDate": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "The School's next grading day, only when it is today or later."
+          },
+          "daysUntilGrading": {
+            "type": "number",
+            "nullable": true,
+            "description": "Whole days until that day in the School's time zone (0 = today)."
+          },
+          "classesToGo": {
+            "type": "number",
+            "nullable": true,
+            "description": "Classes still needed for the next rank; null on a time-only rank or with no next rank."
+          },
+          "daysToGo": {
+            "type": "number",
+            "nullable": true,
+            "description": "Days still needed for the next rank; null with no next rank."
+          }
+        }
+      },
       "StudentGradingStyleDto": {
         "type": "object",
         "properties": {
@@ -34802,6 +34911,15 @@
             "items": {
               "$ref": "#/components/schemas/GradingSkillDto"
             }
+          },
+          "countdown": {
+            "nullable": true,
+            "description": "Decision 318 item 7: null unless the School turns the grading countdown on.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GradingCountdownDto"
+              }
+            ]
           }
         },
         "required": [
@@ -38494,6 +38612,10 @@
             "type": "boolean",
             "description": "Decision 315 item 10: joining asks for medical information (optional, with consent)."
           },
+          "memberAppAddFamily": {
+            "type": "boolean",
+            "description": "Decision 318 item 7: a Guardian may add their child to this School in the app."
+          },
           "branches": {
             "description": "The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches.",
             "type": "array",
@@ -38520,6 +38642,7 @@
           "activities",
           "facilities",
           "medicalInfoEnabled",
+          "memberAppAddFamily",
           "branches",
           "membershipPlans",
           "upcomingClasses"
@@ -41452,6 +41575,62 @@
             "description": "A new tag, added to the School's list. Send this or tagId."
           }
         }
+      },
+      "MemberAppSchoolSwitchesDto": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string"
+          },
+          "editProfile": {
+            "type": "boolean",
+            "description": "Members may edit their own profile."
+          },
+          "cancelMembership": {
+            "type": "boolean",
+            "description": "Members (or a Guardian, for a child) may cancel their own Subscription."
+          },
+          "addFamily": {
+            "type": "boolean",
+            "description": "A Guardian may add their child to this School."
+          },
+          "paymentHistory": {
+            "type": "boolean",
+            "description": "Members see their payment history."
+          },
+          "gradingCountdown": {
+            "type": "boolean",
+            "description": "The grading countdown shows."
+          }
+        },
+        "required": [
+          "schoolId",
+          "editProfile",
+          "cancelMembership",
+          "addFamily",
+          "paymentHistory",
+          "gradingCountdown"
+        ]
+      },
+      "MemberAppSettingsResponseDto": {
+        "type": "object",
+        "properties": {
+          "profileLocked": {
+            "type": "boolean",
+            "description": "The member can't change their own details: a School where they are a Student has \"edit own profile\" off. Language and currency stay theirs."
+          },
+          "schools": {
+            "description": "Each School where the caller, or a child linked to them, is a Student.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberAppSchoolSwitchesDto"
+            }
+          }
+        },
+        "required": [
+          "profileLocked",
+          "schools"
+        ]
       },
       "CustomMemberFieldType": {
         "type": "string",

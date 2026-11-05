@@ -11,6 +11,7 @@ import { getRememberedPlanName } from './planNameCache';
 import { FreezeControls, FreezeStatusLine } from './FreezeControls';
 import { useMyFreezes, type FreezableMembership } from './freezeQueries';
 import { useT } from '../i18n/I18nProvider';
+import { schoolAllows, useMemberAppSettings } from '../lib/memberAppQueries';
 import type { TranslationKey } from '../i18n/types';
 
 const MEMBERSHIP_STATUS: Record<string, TranslationKey> = {
@@ -33,7 +34,10 @@ export function MembershipRow({ membership, freezable }: { membership: Membershi
   const cancel = useCancelSubscription();
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const canCancel = membership.frequency === 'RECURRING' && membership.status === 'ACTIVE' && !membership.cancelAt;
+  // Decision 318 item 7: the School may cancel memberships itself.
+  const schoolCancels = !schoolAllows(useMemberAppSettings().data, membership.schoolId, 'cancelMembership');
+  const cancellable = membership.frequency === 'RECURRING' && membership.status === 'ACTIVE' && !membership.cancelAt;
+  const canCancel = cancellable && !schoolCancels;
 
   async function confirmCancel() {
     if (cancel.isPending) return;
@@ -96,6 +100,8 @@ export function MembershipRow({ membership, freezable }: { membership: Membershi
         <View style={{ marginTop: 8 }}>
           <Button title={t('memberships.myMemberships.cancelSubscription')} variant="secondary" onPress={() => setConfirming(true)} loading={cancel.isPending} />
         </View>
+      ) : cancellable ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 8 }}>{t('memberships.myMemberships.cancelBySchool')}</Text>
       ) : null}
     </View>
   );

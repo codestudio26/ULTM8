@@ -11,6 +11,7 @@ import { HomeFeeCards, type FeePerson } from '../grading/HomeFeeCards';
 import { SignUpInvites } from '../academies/SignUpInvites';
 import { ChildInvites } from '../academies/ChildInvites';
 import { PackRechargeCards } from '../memberships/PackRechargeCards';
+import { anySchoolShowsPaymentHistory, useMemberAppSettings } from '../lib/memberAppQueries';
 import type { AppStackParamList } from './types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
@@ -25,6 +26,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
  * this doesn't replace the Student options, it adds to them. */
 export function HomeScreen({ navigation }: Props) {
   const t = useT();
+  const showPaymentHistory = anySchoolShowsPaymentHistory(useMemberAppSettings().data);
   const { logout, claims, pendingSchoolPick, clearPendingSchoolPick } = useAuth();
   const isGuardian = useIsGuardian();
   const isCoach = !!useCoachSchoolId();
@@ -89,7 +91,8 @@ export function HomeScreen({ navigation }: Props) {
       {isStudent ? <Button title={t('home.schoolNotes')} variant="secondary" onPress={() => navigation.navigate('SchoolNotes')} /> : null}
       <Button title={t('home.myBookings')} onPress={() => navigation.navigate('MyBookings')} />
       <Button title={t('home.myMemberships')} onPress={() => navigation.navigate('MyMemberships')} />
-      <Button title={t('home.paymentHistory')} variant="secondary" onPress={() => navigation.navigate('TransactionHistory')} />
+      {/* Decision 318 item 7: hidden when every one of the member's Schools hides payment history. */}
+      {showPaymentHistory ? <Button title={t('home.paymentHistory')} variant="secondary" onPress={() => navigation.navigate('TransactionHistory')} /> : null}
       {isStudent ? <Button title={t('charges.home')} variant="secondary" onPress={() => navigation.navigate('MyCharges')} /> : null}
       <Button title={t('home.waivers')} onPress={() => navigation.navigate('Waivers')} />
       {isStudent ? <Button title={t('home.paymentMethods')} onPress={() => navigation.navigate('PaymentMethods')} /> : null}

@@ -33,6 +33,7 @@ export const memberships = {
     loadError: 'Failed to load memberships — please try again.',
     cancelSubscription: 'Cancel subscription',
     keepSubscription: 'Keep it',
+    cancelBySchool: "To cancel, ask the School.",
     cancelConfirm: 'You keep your subscription until the end of the month you have paid for. It then ends, and no more payments are taken.',
     cancelError: 'Could not cancel your subscription — please try again.',
     cancelledEnds: 'Cancelled, ends {date}',

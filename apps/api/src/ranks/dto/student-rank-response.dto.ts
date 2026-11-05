@@ -382,6 +382,21 @@ export class GradingSkillDto {
   required!: boolean;
 }
 
+/** Decision 318 item 7: the grading countdown, when the School turns it on. */
+export class GradingCountdownDto {
+  @ApiPropertyOptional({ type: String, format: 'date', nullable: true, description: "The School's next grading day, only when it is today or later." })
+  nextGradingDate!: string | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: "Whole days until that day in the School's time zone (0 = today)." })
+  daysUntilGrading!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Classes still needed for the next rank; null on a time-only rank or with no next rank.' })
+  classesToGo!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Days still needed for the next rank; null with no next rank.' })
+  daysToGo!: number | null;
+}
+
 /** A student's grading in one style at one School: what the student app shows
  * read-only to the student and their guardians (Decisions 132, 142, 155, 161). */
 export class StudentGradingStyleDto {
@@ -423,6 +438,9 @@ export class StudentGradingStyleDto {
 
   @ApiProperty({ type: [GradingSkillDto], description: 'The skills for the next grade.' })
   skills!: GradingSkillDto[];
+
+  @ApiPropertyOptional({ type: GradingCountdownDto, nullable: true, description: 'Decision 318 item 7: null unless the School turns the grading countdown on.' })
+  countdown!: GradingCountdownDto | null;
 }
 
 export class StudentGradingOverviewResponseDto {

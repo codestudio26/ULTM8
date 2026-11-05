@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "Eu",
       loadFailed: "Não foi possível carregar esta Escola — tente novamente.",
       alreadyStudentMe: "Você já é aluno aqui.",
+      familyOff: "Esta escola adiciona as crianças ela mesma. Peça à escola para adicionar seu filho.",
       alreadyStudentOther: "{name} já é aluno aqui.",
       title: "Entrar em {name}",
       whoIsJoining: "Quem vai entrar?",
@@ -574,6 +575,19 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        one: "Graduação em {count} dia",
+        other: "Graduação em {count} dias",
+      },
+      gradingToday: "Graduação hoje",
+      classesToGo: {
+        one: "Falta {count} aula",
+        other: "Faltam {count} aulas",
+      },
+      daysToGo: {
+        one: "Falta {count} dia",
+        other: "Faltam {count} dias",
+      },
       loadError: "Não foi possível carregar a graduação — tente novamente.",
       noRank: "Nenhuma graduação ainda. As graduações aparecem aqui quando a Escola gradua você ou quando você declara sua faixa ao entrar.",
       historyTitle: "Histórico de {style}",
@@ -855,6 +869,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Não foi possível carregar as matrículas — tente novamente.",
       cancelSubscription: "Cancelar assinatura",
       keepSubscription: "Manter",
+      cancelBySchool: "Para cancelar, peça à escola.",
       cancelConfirm: "Você mantém sua assinatura até o fim do mês já pago. Depois ela termina e nenhuma outra cobrança é feita.",
       cancelError: "Não foi possível cancelar sua assinatura — tente novamente.",
       cancelledEnds: "Cancelado, termina em {date}",
@@ -946,6 +961,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "Verificado",
       notVerified: "Ainda não verificado",
       identifiersNote: "O e-mail e o telefone não podem ser alterados aqui — eles são seus identificadores de login.",
+      lockedNote: "Sua escola mantém seus dados atualizados. Peça à escola para alterá-los. Você ainda pode mudar o idioma e a moeda do app.",
       firstName: "Nome",
       surname: "Sobrenome",
       username: "Nome de usuário",
