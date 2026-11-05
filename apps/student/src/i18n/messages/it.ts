@@ -822,6 +822,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "Leggi e firma il contratto",
+      title: "Contratto",
+      intro: "Leggi il contratto di questo piano e firmalo per acquistarlo.",
+      guardianSigns: "Come genitore o tutore, firmi questo contratto per tuo figlio.",
+      termsLine: "Durata minima {months} mesi · penale di recesso anticipato {amount}",
+      taxNote: "Alla penale può aggiungersi l'imposta, come per gli altri addebiti della scuola.",
+      signAndContinue: "Firma e continua",
+      signError: "Impossibile firmare il contratto.",
+      loadError: "Impossibile caricare il contratto.",
+      cancelFee: "La durata minima del tuo contratto dura fino al {date}. Se l'abbonamento finisce prima, la penale di recesso anticipato di {amount} viene addebitata sul tuo saldo.",
+    },
     recharge: {
       title: "Il tuo pacchetto lezioni è esaurito",
       titleChild: "Il pacchetto lezioni di {name} è esaurito",

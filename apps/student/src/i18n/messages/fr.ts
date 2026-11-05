@@ -822,6 +822,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "Lire et signer le contrat",
+      title: "Contrat",
+      intro: "Lis le contrat de cette formule et signe-le pour l'acheter.",
+      guardianSigns: "En tant que parent ou tuteur, tu signes ce contrat pour ton enfant.",
+      termsLine: "Durée minimale {months} mois · frais de résiliation anticipée {amount}",
+      taxNote: "Une taxe peut s'ajouter aux frais, comme pour les autres frais de l'école.",
+      signAndContinue: "Signer et continuer",
+      signError: "Le contrat n'a pas pu être signé.",
+      loadError: "Le contrat n'a pas pu être chargé.",
+      cancelFee: "La durée minimale de ton contrat court jusqu'au {date}. Si ton adhésion se termine avant, les frais de résiliation anticipée de {amount} sont ajoutés à ton solde.",
+    },
     recharge: {
       title: "Votre carnet de cours est épuisé",
       titleChild: "Le carnet de cours de {name} est épuisé",

@@ -6,11 +6,24 @@ import * as membershipQueries from './membershipQueries';
 import * as paymentMethodQueries from '../payments/paymentMethodQueries';
 import * as stepUpQueries from '../auth/stepUpQueries';
 import { MembershipPlanRow } from './MembershipPlanRow';
+import * as planContractQueries from './planContractQueries';
 
 jest.mock('./membershipQueries', () => ({ usePurchaseMembership: jest.fn(), useInvalidateMyMemberships: jest.fn() }));
 jest.mock('../payments/paymentMethodQueries', () => ({ usePaymentMethod: jest.fn() }));
 jest.mock('../auth/stepUpQueries', () => ({ useVerifyStepUp: jest.fn() }));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn() }));
+// Decision 316 item 6: the contract signer's queries and its signature pad
+// (a WebView canvas this environment can't run; see WaiverRow.test.tsx).
+jest.mock('./planContractQueries', () => ({ usePlanContract: jest.fn(), useSignPlanContract: jest.fn() }));
+jest.mock('react-native-signature-canvas', () => {
+  const ReactActual = require('react');
+  const { Text } = require('react-native');
+  const SignatureScreen = ReactActual.forwardRef((_props: unknown, ref: unknown) => {
+    ReactActual.useImperativeHandle(ref, () => ({ clearSignature: jest.fn(), readSignature: jest.fn() }));
+    return <Text>pad</Text>;
+  });
+  return { __esModule: true, default: SignatureScreen };
+});
 
 // The first render loads every React Native component these screens use; on a
 // busy CI runner that alone can pass jest's default 5 s (as in myGrading.test.tsx).
@@ -209,5 +222,51 @@ describe('MembershipPlanRow — not joined yet', () => {
     const { getByText, queryByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" canBuy={false} />);
     expect(getByText('Join this School to buy.')).toBeTruthy();
     expect(queryByText('Purchase')).toBeNull();
+  });
+});
+
+/** Decision 316 item 6: a plan with a contract is read and signed first. */
+describe('MembershipPlanRow — plan contract', () => {
+  let purchase: ReturnType<typeof idlePurchase>;
+  let signMutate: jest.Mock;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    purchase = idlePurchase();
+    mocked(membershipQueries.usePurchaseMembership).mockReturnValue(purchase);
+    mocked(membershipQueries.useInvalidateMyMemberships).mockReturnValue(jest.fn());
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
+    mocked(planContractQueries.usePlanContract).mockReturnValue({
+      isLoading: false,
+      isError: false,
+      data: { planId: 'plan-1', planTitle: '5-Class Pack', planType: 'CLASS_PACK', body: 'No refunds after the first class.', minimumTermMonths: null, earlyExitFee: null, currency: 'GBP', version: 3 },
+    } as never);
+    signMutate = jest.fn((_vars: unknown, opts?: { onSuccess?: (s: { id: string }) => void }) => opts?.onSuccess?.({ id: 'sig-1' })) as unknown as jest.Mock;
+    mocked(planContractQueries.useSignPlanContract).mockReturnValue({ mutate: signMutate, isPending: false, isError: false, error: null } as never);
+  });
+
+  it('shows the contract instead of buying at once, then buys with the signature', async () => {
+    const plan = { ...CLASS_PACK, cardSurchargeAmount: 0, contractVersion: 3 };
+    const { getByText, getByPlaceholderText } = await render(<MembershipPlanRow plan={plan as never} schoolId="school-1" />);
+    await fireEvent.press(getByText('Read and sign the contract'));
+    expect(purchase.mutate).not.toHaveBeenCalled();
+    expect(getByText('No refunds after the first class.')).toBeTruthy();
+
+    await fireEvent.changeText(getByPlaceholderText('Your full legal name'), 'Pat Member');
+    await fireEvent.changeText(getByPlaceholderText('Type your signature'), 'Pat Member');
+    await fireEvent.press(getByText('Sign and continue'));
+
+    expect(signMutate).toHaveBeenCalledWith(expect.objectContaining({ planId: 'plan-1', contractVersion: 3, signerFullName: 'Pat Member' }), expect.anything());
+    expect(purchase.mutate).toHaveBeenCalledWith(
+      { planId: 'plan-1', useHostedCheckout: true, studentId: undefined, contractSignatureId: 'sig-1' },
+      expect.anything(),
+    );
+  });
+
+  it('a plan without a contract still buys straight away', async () => {
+    const { getByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0, contractVersion: null } as never} schoolId="school-1" />);
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenCalled();
+    expect(signMutate).not.toHaveBeenCalled();
   });
 });

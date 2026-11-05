@@ -4,6 +4,7 @@ import type { components } from '@ultm8/api-client';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { formatMoney } from '../lib/formatMoney';
 import { formatDate } from '../lib/formatDate';
 import { useCancelSubscription, useMyMemberships } from './membershipQueries';
 import { getRememberedPlanName } from './planNameCache';
@@ -73,6 +74,15 @@ export function MembershipRow({ membership, freezable }: { membership: Membershi
       {canCancel && confirming ? (
         <View style={{ marginTop: 8 }}>
           <Text style={{ color: '#C5221F', fontSize: 13 }}>{t('memberships.myMemberships.cancelConfirm')}</Text>
+          {/* Decision 316 item 6: the signed early-exit fee, before the member decides. */}
+          {membership.contract && membership.contract.earlyExitFee > 0 && new Date(membership.contract.minimumTermEndsAt) > new Date() ? (
+            <Text style={{ color: '#C5221F', fontSize: 13, marginTop: 4 }}>
+              {t('memberships.contract.cancelFee', {
+                date: formatDate(membership.contract.minimumTermEndsAt),
+                amount: formatMoney(membership.contract.earlyExitFee, membership.contract.currency),
+              })}
+            </Text>
+          ) : null}
           <View style={{ flexDirection: 'row', marginTop: 10, gap: 8 }}>
             <View style={{ flex: 1 }}>
               <Button title={t('memberships.myMemberships.keepSubscription')} variant="secondary" onPress={() => setConfirming(false)} />

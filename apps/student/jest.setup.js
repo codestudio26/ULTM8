@@ -13,3 +13,17 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(async () => undefined),
   removeItem: jest.fn(async () => undefined),
 }));
+
+// Global stand-in for the signature pad (a WebView canvas, which has no
+// native module under jest): the plan contract signer (Decision 316 item 6)
+// sits in MembershipPlanRow, which many screens render. Tests that drive the
+// pad (WaiverRow.test.tsx) mock it themselves; that mock wins.
+jest.mock('react-native-signature-canvas', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  const SignatureScreen = React.forwardRef((_props, ref) => {
+    React.useImperativeHandle(ref, () => ({ clearSignature: () => undefined, readSignature: () => undefined }));
+    return React.createElement(Text, null, 'signature pad');
+  });
+  return { __esModule: true, default: SignatureScreen };
+});

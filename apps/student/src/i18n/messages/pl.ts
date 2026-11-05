@@ -831,6 +831,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "Przeczytaj i podpisz umowę",
+      title: "Umowa",
+      intro: "Przeczytaj umowę tego planu i podpisz ją, aby kupić plan.",
+      guardianSigns: "Jako rodzic lub opiekun podpisujesz tę umowę za swoje dziecko.",
+      termsLine: "Minimalny okres {months} mies. · opłata za wcześniejsze rozwiązanie {amount}",
+      taxNote: "Do opłaty może zostać doliczony podatek, jak do innych należności szkoły.",
+      signAndContinue: "Podpisz i kontynuuj",
+      signError: "Nie udało się podpisać umowy.",
+      loadError: "Nie udało się wczytać umowy.",
+      cancelFee: "Minimalny okres twojej umowy trwa do {date}. Jeśli członkostwo skończy się wcześniej, do salda zostanie dopisana opłata za wcześniejsze rozwiązanie {amount}.",
+    },
     recharge: {
       title: "Twój pakiet zajęć się wyczerpał",
       titleChild: "Pakiet zajęć {name} się wyczerpał",

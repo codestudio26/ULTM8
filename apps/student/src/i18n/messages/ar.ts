@@ -847,6 +847,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "اقرأ العقد ووقّعه",
+      title: "العقد",
+      intro: "اقرأ عقد هذه الخطة ووقّعه لشراء الخطة.",
+      guardianSigns: "بصفتك أحد الوالدين أو الوصي، توقّع هذا العقد عن طفلك.",
+      termsLine: "المدة الدنيا {months} أشهر · رسوم الخروج المبكر {amount}",
+      taxNote: "قد تُضاف ضريبة إلى الرسوم، كما في رسوم المدرسة الأخرى.",
+      signAndContinue: "وقّع وتابع",
+      signError: "تعذّر توقيع العقد.",
+      loadError: "تعذّر تحميل العقد.",
+      cancelFee: "تستمر المدة الدنيا لعقدك حتى {date}. إذا انتهت عضويتك قبل ذلك، تُضاف رسوم الخروج المبكر البالغة {amount} إلى رصيدك.",
+    },
     recharge: {
       title: "نفدت باقة الحصص الخاصة بك",
       titleChild: "نفدت باقة الحصص الخاصة بـ {name}",

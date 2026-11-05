@@ -406,7 +406,7 @@ the current check-in rules in code before deciding.
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
 | DOC1 | Document templates list: name, members, signatures, last updated, edit/delete | ✅ | Waivers + Signatures panel |
-| DOC2 | General **contracts** beyond liability waivers | 🟡 | Waiver entity only. Decision 253: waivers are never deleted, so Gymdesk's **delete** icon must be **archive** in ULTM8 |
+| DOC2 | General **contracts** beyond liability waivers | ✅ **5 Nov 2026: built** (Decision 316 item 6, feature/plan-contracts): a contract on a plan, its own entity (`PlanContractSignature`), signed in the app before buying, never deleted (retention not decided) | Waiver entity only. Decision 253: waivers are never deleted, so Gymdesk's **delete** icon must be **archive** in ULTM8 |
 
 **Questions:** DOC2: are contracts a Waiver type or a separate entity? Retention period is still an open legal item (CLAUDE.md "Current phase").
 

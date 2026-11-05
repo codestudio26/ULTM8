@@ -825,6 +825,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "Leer y firmar el contrato",
+      title: "Contrato",
+      intro: "Lee el contrato de este plan y fírmalo para comprar el plan.",
+      guardianSigns: "Como padre, madre o tutor, firmas este contrato por tu hijo o hija.",
+      termsLine: "Plazo mínimo {months} meses · tarifa por baja anticipada {amount}",
+      taxNote: "Puede sumarse impuesto a la tarifa, como en los demás cargos de la escuela.",
+      signAndContinue: "Firmar y continuar",
+      signError: "No se pudo firmar el contrato.",
+      loadError: "No se pudo cargar el contrato.",
+      cancelFee: "El plazo mínimo de tu contrato dura hasta el {date}. Si tu membresía termina antes, se añade a tu saldo la tarifa por baja anticipada de {amount}.",
+    },
     recharge: {
       title: "Tu bono de clases se ha agotado",
       titleChild: "El bono de clases de {name} se ha agotado",

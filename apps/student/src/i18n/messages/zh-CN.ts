@@ -802,6 +802,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "阅读并签署合同",
+      title: "合同",
+      intro: "请阅读此计划的合同并签署后购买。",
+      guardianSigns: "作为家长或监护人，你代孩子签署此合同。",
+      termsLine: "最短期限 {months} 个月 · 提前退出费 {amount}",
+      taxNote: "与学校的其他费用一样，此费用可能另加税费。",
+      signAndContinue: "签署并继续",
+      signError: "无法签署合同。",
+      loadError: "无法加载合同。",
+      cancelFee: "你的合同最短期限到 {date}。如果会员资格在此之前结束，{amount} 的提前退出费将计入你的余额。",
+    },
     recharge: {
       title: "你的课时包已用完",
       titleChild: "{name} 的课时包已用完",

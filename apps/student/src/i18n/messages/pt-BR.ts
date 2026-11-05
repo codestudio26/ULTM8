@@ -825,6 +825,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "Ler e assinar o contrato",
+      title: "Contrato",
+      intro: "Leia o contrato deste plano e assine para comprar o plano.",
+      guardianSigns: "Como responsável, você assina este contrato pela criança.",
+      termsLine: "Prazo mínimo {months} meses · multa por saída antecipada {amount}",
+      taxNote: "Pode haver imposto sobre a multa, como nas outras cobranças da escola.",
+      signAndContinue: "Assinar e continuar",
+      signError: "Não foi possível assinar o contrato.",
+      loadError: "Não foi possível carregar o contrato.",
+      cancelFee: "O prazo mínimo do seu contrato vai até {date}. Se sua assinatura terminar antes, a multa por saída antecipada de {amount} é lançada no seu saldo.",
+    },
     recharge: {
       title: "Seu pacote de aulas acabou",
       titleChild: "O pacote de aulas de {name} acabou",
