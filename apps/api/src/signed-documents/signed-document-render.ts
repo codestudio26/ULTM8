@@ -16,6 +16,9 @@ export interface SignedDocument {
   signerName: string;
   signatureText: string | null;
   byGuardian: boolean;
+  /** Decision 435 item 32: the child signed themselves, in their parent's
+   * app (Decision 318 item 8; WaiverSignature.signedViaGuardianId). */
+  byChildInParentApp: boolean;
   onPaper: boolean;
   recordedByName: string | null;
   expired: boolean;
@@ -54,10 +57,15 @@ export function documentFileName(index: number, doc: SignedDocument): string {
   return `documents/${String(index).padStart(5, '0')} ${clean(doc.memberName)} - ${clean(doc.title)}.pdf`;
 }
 
-/** Who signed, for the index: the typed name, marked when a Guardian signed
- * for a child or it was signed on paper. */
+/** Who signed, for the index and the document: the typed name, marked when a
+ * Guardian signed for a child, the child signed in their parent's app
+ * (Decision 435 item 32), or it was signed on paper. */
 export function signedByCell(doc: SignedDocument, labels: SignedDocumentLabels): string {
-  const marks = [doc.byGuardian ? labels.guardian : null, doc.onPaper ? labels.onPaper : null].filter(Boolean);
+  const marks = [
+    doc.byGuardian ? labels.guardian : null,
+    doc.byChildInParentApp ? labels.childInParentApp : null,
+    doc.onPaper ? labels.onPaper : null,
+  ].filter(Boolean);
   return marks.length > 0 ? `${doc.signerName} (${marks.join(', ')})` : doc.signerName;
 }
 

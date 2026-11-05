@@ -1,6 +1,6 @@
 import { SIGNED_DOCUMENT_LABEL_DEFAULTS } from './dto/signed-documents.dto';
 import { labelsFrom } from './signed-documents-builder';
-import { csvCell, documentFileName, imageTypeOf, indexCsv, type SignedDocument } from './signed-document-render';
+import { csvCell, documentFileName, imageTypeOf, indexCsv, signedByCell, type SignedDocument } from './signed-document-render';
 
 const doc = (over: Partial<SignedDocument> = {}): SignedDocument => ({
   id: 'sig-1',
@@ -14,6 +14,7 @@ const doc = (over: Partial<SignedDocument> = {}): SignedDocument => ({
   signerName: 'Ana Lima',
   signatureText: 'Ana',
   byGuardian: false,
+  byChildInParentApp: false,
   onPaper: false,
   recordedByName: null,
   expired: false,
@@ -53,6 +54,15 @@ describe('signed-document rendering', () => {
       'Gus (Guest),Liability waiver (Expired),,2026-05-06 07:08 UTC,Ana Lima,c.pdf',
       '',
     ]);
+  });
+
+  it('Decision 435 item 32: marks a waiver the child signed in their parent’s app, in the index and the document', () => {
+    const child = doc({ memberName: 'Kid Lima', signerName: 'Kid Lima', byChildInParentApp: true });
+    expect(signedByCell(child, labels)).toBe("Kid Lima (Signed by the child in their parent's app)");
+    expect(signedByCell(child, labelsFrom({ childInParentApp: 'Assinado pela criança no app do responsável' }))).toBe(
+      'Kid Lima (Assinado pela criança no app do responsável)',
+    );
+    expect(signedByCell(doc(), labels)).toBe('Ana Lima');
   });
 
   it('names each document’s PDF safely and reads the image type from its bytes', () => {

@@ -3770,6 +3770,8 @@ export const messages: PartialMessages<EnglishMessages> = {
         signedBy: "ลงนามโดย",
         file: "ไฟล์",
         guardian: "ผู้ปกครอง",
+        // Decision 435 item 32.
+        childInParentApp: "บุตรลงนามเองในแอปของผู้ปกครอง",
         onPaper: "บนกระดาษ",
         guest: "แขก",
         signedName: "ชื่อที่ลงนาม",

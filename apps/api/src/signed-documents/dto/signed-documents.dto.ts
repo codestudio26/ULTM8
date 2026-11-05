@@ -13,6 +13,8 @@ export const SIGNED_DOCUMENT_LABEL_DEFAULTS = {
   signedBy: 'Signed by',
   file: 'File',
   guardian: 'Guardian',
+  // Decision 435 item 32.
+  childInParentApp: "Signed by the child in their parent's app",
   onPaper: 'On paper',
   guest: 'Guest',
   signedName: 'Signed name',
@@ -33,6 +35,7 @@ export class SignedDocumentLabelsDto implements Partial<SignedDocumentLabels> {
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200) signedBy?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200) file?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200) guardian?: string;
+  @ApiPropertyOptional({ description: "Decision 435 item 32: marks a waiver the child signed in their parent's app." }) @IsOptional() @IsString() @MaxLength(200) childInParentApp?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200) onPaper?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200) guest?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(200) signedName?: string;

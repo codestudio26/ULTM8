@@ -322,6 +322,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "Отказ от ответственности «{waiver}» ({school}) обновлён. Прочитайте его и подпишите снова.",
     waiverRenewalBody: "Срок вашей подписи под отказом от ответственности «{waiver}» ({school}) истёк. Подпишите его снова.",
     waiverAdultBody: "Вам исполнилось 18, поэтому {school} просит вас самостоятельно подписать отказ от ответственности «{waiver}».",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "Ваш ребёнок подписал отказ от ответственности",
+    waiverSignedByChildBody: "{child} подписал(а) отказ от ответственности «{waiver}» в {school}.",
     classMovedBody: "{class} перенесено на {when}. Брони перенесены вместе с ним.",
     classMovedWaitlistBody: "{class} перенесено на {when}. Ваше место в листе ожидания перенесено вместе с ним.",
     classCancelledBody: "{class} {when} отменено вашей школой. Использованный кредит занятий возвращён.",
