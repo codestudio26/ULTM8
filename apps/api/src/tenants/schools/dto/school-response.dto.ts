@@ -101,6 +101,12 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   footerTwitterUrl!: string | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 318 item 10: the Meta Pixel ID (digits only).' })
+  metaPixelId!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 318 item 10: the Google Analytics GA4 measurement ID ("G-…").' })
+  googleAnalyticsId!: string | null;
+
   @ApiProperty({ enum: ClassCancellationPolicyDto })
   classCancellationPolicy!: ClassCancellationPolicyDto;
 

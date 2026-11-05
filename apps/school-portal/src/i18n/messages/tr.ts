@@ -4746,6 +4746,17 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "E-posta gönderilemedi. Öğrencinin sayfasında yeni bir geçici giriş kodu oluşturun.",
     },
   },
+  adTracking: {
+    title: "Reklam izleme",
+    subtitle: "Meta Pixel veya Google Analytics kimliğinizi girerek bağlayın. Yalnızca bu hazır bağlantılar sunulur: ULTM8 sayfalarına asla kendi kodunuzu eklemez.",
+    notUsedYet: "Okulunuzun herkese açık sayfaları için kaydedildi. Henüz hiçbir sayfa bunları kullanmıyor.",
+    metaPixelLabel: "Meta Pixel kimliği",
+    metaPixelHint: "Yalnızca rakamlar, Meta Olay Yöneticisi'nde göründüğü gibi; örneğin 123456789012345.",
+    metaPixelInvalid: "Meta Pixel kimliği 10 ile 20 rakamdan oluşur, başka bir şey içermez.",
+    googleAnalyticsLabel: "Google Analytics ölçüm kimliği",
+    googleAnalyticsHint: "G- ile başlar; örneğin G-AB12CD34EF.",
+    googleAnalyticsInvalid: "Google Analytics ölçüm kimliği G- ile başlar ve ardından 4 ile 16 harf veya rakam gelir.",
+  },
   payroll: {
     nav: "Bordro",
     title: "Bordro",
