@@ -7799,18 +7799,18 @@ export interface components {
             /** @description Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it. */
             taxId?: string | null;
             /**
-             * @description Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".
+             * @description Decision 431 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".
              * @example GST
              */
             taxName?: string | null;
             /**
-             * @description Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0).
+             * @description Decision 431 (MON-6): the name of a second tax line (required when its rate is above 0).
              * @example PST
              */
             tax2Name?: string | null;
-            /** @description Decision 430 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%. */
+            /** @description Decision 431 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%. */
             tax2RateBasisPoints?: number;
-            /** @description Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it. */
+            /** @description Decision 431 (MON-6): the second tax line's registration number. Empty or null clears it. */
             tax2Id?: string | null;
             /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
             chargeCancelReasonRequired?: boolean;
@@ -7944,13 +7944,13 @@ export interface components {
             taxInclusive: boolean;
             /** @description Decision 338 item 6: the School's tax ID for its invoices. */
             taxId?: string | null;
-            /** @description Decision 430 (MON-6): the first tax line's name. */
+            /** @description Decision 431 (MON-6): the first tax line's name. */
             taxName?: string | null;
-            /** @description Decision 430 (MON-6): the second tax line's name. */
+            /** @description Decision 431 (MON-6): the second tax line's name. */
             tax2Name?: string | null;
-            /** @description Decision 430 (MON-6): the second tax line's rate (0 = none). */
+            /** @description Decision 431 (MON-6): the second tax line's rate (0 = none). */
             tax2RateBasisPoints: number;
-            /** @description Decision 430 (MON-6): the second tax line's registration number. */
+            /** @description Decision 431 (MON-6): the second tax line's registration number. */
             tax2Id?: string | null;
             /** @description Decision 338 item 1: a reason is required when cancelling a charge (default on). */
             chargeCancelReasonRequired: boolean;
@@ -8097,18 +8097,18 @@ export interface components {
             /** @description Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it. */
             taxId?: string | null;
             /**
-             * @description Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".
+             * @description Decision 431 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".
              * @example GST
              */
             taxName?: string | null;
             /**
-             * @description Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0).
+             * @description Decision 431 (MON-6): the name of a second tax line (required when its rate is above 0).
              * @example PST
              */
             tax2Name?: string | null;
-            /** @description Decision 430 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%. */
+            /** @description Decision 431 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%. */
             tax2RateBasisPoints?: number;
-            /** @description Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it. */
+            /** @description Decision 431 (MON-6): the second tax line's registration number. Empty or null clears it. */
             tax2Id?: string | null;
             /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
             chargeCancelReasonRequired?: boolean;
@@ -8237,7 +8237,7 @@ export interface components {
         };
         StudentExportGuardianDto: {
             name: string;
-            /** @description Decision 429 item 11: null for a parent this School never dealt with (known only through the child's other School). */
+            /** @description Decision 430 item 11: null for a parent this School never dealt with (known only through the child's other School). */
             email?: string | null;
         };
         StudentExportRowDto: {
@@ -8376,7 +8376,7 @@ export interface components {
         StudentGuardiansResponseDto: {
             items: components["schemas"]["StudentGuardianDto"][];
             /**
-             * @description Decision 429 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app.
+             * @description Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app.
              * @enum {string}
              */
             consent: "NOT_NEEDED" | "GIVEN" | "GRANDFATHERED" | "WITHDRAWN" | "PENDING";
@@ -8563,7 +8563,7 @@ export interface components {
             schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
             defaultRefundCutoffHours?: number | null;
             noShowFee?: number | null;
-            /** @description Decision 430 (MON-6): this Branch's own tax lines replace the School's. */
+            /** @description Decision 431 (MON-6): this Branch's own tax lines replace the School's. */
             taxOverride: boolean;
             taxName?: string | null;
             taxRateBasisPoints: number;
@@ -8615,7 +8615,7 @@ export interface components {
             schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
             defaultRefundCutoffHours?: number | null;
             noShowFee?: number | null;
-            /** @description Decision 430 (MON-6): this Branch's own tax lines replace the School's. */
+            /** @description Decision 431 (MON-6): this Branch's own tax lines replace the School's. */
             taxOverride: boolean;
             taxName?: string | null;
             taxRateBasisPoints: number;
@@ -8669,7 +8669,7 @@ export interface components {
             defaultRefundCutoffHours?: number | null;
             /** @description Minor-unit amount. null = off. */
             noShowFee?: number | null;
-            /** @description Decision 430 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec). */
+            /** @description Decision 431 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec). */
             taxOverride?: boolean;
             /** @description The first tax line's name, e.g. GST. */
             taxName?: string | null;
@@ -9249,7 +9249,7 @@ export interface components {
              * @enum {string|null}
              */
             gender?: "FEMALE" | "MALE" | null;
-            /** @description Decision 429 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it. */
+            /** @description Decision 430 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it. */
             consentPolicyVersion?: string;
         };
         MinorResponseDto: {
@@ -9259,14 +9259,14 @@ export interface components {
             surname: string;
             dateOfBirth: string;
             gender?: string | null;
-            /** @description Decision 429 item 4: true when this child was already on the account (same name and date of birth), so nothing new was added. */
+            /** @description Decision 430 item 4: true when this child was already on the account (same name and date of birth), so nothing new was added. */
             alreadyAdded?: boolean;
             /**
-             * @description Decision 429 item 9: the child's BASELINE consent. PENDING and WITHDRAWN block booking and check-in until a parent gives it.
+             * @description Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN block booking and check-in until a parent gives it.
              * @enum {string}
              */
             consent?: "NOT_NEEDED" | "GIVEN" | "GRANDFATHERED" | "WITHDRAWN" | "PENDING";
-            /** @description Decision 429 item 7: the child is 18 now (they make their own account; the parent can pay and read history until parentAccessEndsOn). */
+            /** @description Decision 430 item 7: the child is 18 now (they make their own account; the parent can pay and read history until parentAccessEndsOn). */
             isAdult?: boolean;
             /** @description YYYY-MM-DD: the last day a parent can still pay for, and read the history of, a child who is 18. */
             parentAccessEndsOn?: string | null;
@@ -9541,7 +9541,7 @@ export interface components {
             minAge?: number | null;
             /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
             maxAge?: number | null;
-            /** @description Confirms creating this class on a day a closure covers (Decision 431). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure. */
+            /** @description Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure. */
             confirmClosedDay?: boolean;
         };
         ClassStyleResponseDto: {
@@ -9574,7 +9574,7 @@ export interface components {
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
             /**
-             * @description Decision 431: who can book.
+             * @description Decision 432: who can book.
              * @enum {string}
              */
             audience: "EVERYONE" | "WOMEN" | "MEN";
@@ -9624,7 +9624,7 @@ export interface components {
             minAge?: number | null;
             /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
             maxAge?: number | null;
-            /** @description Confirms creating this class on a day a closure covers (Decision 431). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure. */
+            /** @description Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure. */
             confirmClosedDay?: boolean;
             /** @description Branch to scope this Class to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
@@ -9974,7 +9974,7 @@ export interface components {
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
             /**
-             * @description Decision 431: who can book.
+             * @description Decision 432: who can book.
              * @enum {string}
              */
             audience: "EVERYONE" | "WOMEN" | "MEN";
@@ -10889,13 +10889,13 @@ export interface components {
             membership: components["schemas"]["MembershipResponseDto"];
             /** @description The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass. */
             transactionId?: string | null;
-            /** @description Decision 430 (MON-15): a Friend Pass gift only: every pass given (membership is the first). */
+            /** @description Decision 431 (MON-15): a Friend Pass gift only: every pass given (membership is the first). */
             memberships?: components["schemas"]["MembershipResponseDto"][];
         };
         GiftFriendPassDto: {
             membershipPlanId: string;
             /**
-             * @description Decision 430 (MON-15): how many Friend Passes to give at once (1-5).
+             * @description Decision 431 (MON-15): how many Friend Passes to give at once (1-5).
              * @default 1
              */
             quantity: number;
@@ -11201,7 +11201,7 @@ export interface components {
             amount: number;
             /** @description Card surcharge paid on top of amount, in the same minor units. 0 when none. */
             surchargeAmount: number;
-            /** @description Decision 430 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded. */
+            /** @description Decision 431 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded. */
             includedTax?: components["schemas"]["IncludedTaxDto"] | null;
             currency?: string | null;
             status: string;
@@ -13021,7 +13021,7 @@ export interface components {
             /** @description Nullable = unlimited. */
             capacity?: number | null;
             /**
-             * @description Decision 431: who can book.
+             * @description Decision 432: who can book.
              * @enum {string}
              */
             audience: "EVERYONE" | "WOMEN" | "MEN";
@@ -14300,7 +14300,7 @@ export interface components {
             childFirstName: string;
             childSurname: string;
             childDateOfBirth: string;
-            /** @description Decision 429 item 6: an invite to be another parent or guardian of a child already at the School ("Add another Guardian"), not to add a new child. */
+            /** @description Decision 430 item 6: an invite to be another parent or guardian of a child already at the School ("Add another Guardian"), not to add a new child. */
             addsGuardian: boolean;
             /** @description For the School's list: the Guardian's name. */
             guardianName?: string | null;
@@ -14516,7 +14516,7 @@ export interface components {
             taxInclusive: boolean;
             /** @description "No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax". */
             taxExempt: boolean;
-            /** @description Decision 430 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before. */
+            /** @description Decision 431 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before. */
             taxLines?: components["schemas"]["TaxLineAmountDto"][] | null;
             /** @description The charge's income category (Decision 316 item 10). Staff only; null for the member. */
             incomeCategoryName?: string | null;
@@ -14677,7 +14677,7 @@ export interface components {
             taxCountry?: string | null;
             taxRateBasisPoints: number;
             taxInclusive: boolean;
-            /** @description Decision 430 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax. */
+            /** @description Decision 431 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax. */
             taxLines: components["schemas"]["TaxLineDto"][];
             cancelReasonRequired: boolean;
             /** @description A desk payment can be recorded: the School has its payments set up. */
@@ -20758,9 +20758,9 @@ export interface operations {
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
-                /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7). */
+                /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 from?: string;
-                /** @description Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7). */
+                /** @description Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 to?: string;
             };
             header?: never;
@@ -20788,9 +20788,9 @@ export interface operations {
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
-                /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7). */
+                /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 from?: string;
-                /** @description Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7). */
+                /** @description Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 to?: string;
             };
             header?: never;

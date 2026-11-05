@@ -9789,7 +9789,7 @@
             "name": "from",
             "required": false,
             "in": "query",
-            "description": "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7).",
+            "description": "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9798,7 +9798,7 @@
             "name": "to",
             "required": false,
             "in": "query",
-            "description": "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7).",
+            "description": "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9896,7 +9896,7 @@
             "name": "from",
             "required": false,
             "in": "query",
-            "description": "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7).",
+            "description": "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9905,7 +9905,7 @@
             "name": "to",
             "required": false,
             "in": "query",
-            "description": "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7).",
+            "description": "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -23998,26 +23998,26 @@
             "nullable": true,
             "maxLength": 40,
             "example": "GST",
-            "description": "Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: \"Tax\"."
+            "description": "Decision 431 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: \"Tax\"."
           },
           "tax2Name": {
             "type": "string",
             "nullable": true,
             "maxLength": 40,
             "example": "PST",
-            "description": "Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0)."
+            "description": "Decision 431 (MON-6): the name of a second tax line (required when its rate is above 0)."
           },
           "tax2RateBasisPoints": {
             "type": "number",
             "minimum": 0,
             "maximum": 10000,
-            "description": "Decision 430 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%."
+            "description": "Decision 431 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%."
           },
           "tax2Id": {
             "type": "string",
             "nullable": true,
             "maxLength": 50,
-            "description": "Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it."
+            "description": "Decision 431 (MON-6): the second tax line's registration number. Empty or null clears it."
           },
           "chargeCancelReasonRequired": {
             "type": "boolean",
@@ -24372,21 +24372,21 @@
           "taxName": {
             "type": "string",
             "nullable": true,
-            "description": "Decision 430 (MON-6): the first tax line's name."
+            "description": "Decision 431 (MON-6): the first tax line's name."
           },
           "tax2Name": {
             "type": "string",
             "nullable": true,
-            "description": "Decision 430 (MON-6): the second tax line's name."
+            "description": "Decision 431 (MON-6): the second tax line's name."
           },
           "tax2RateBasisPoints": {
             "type": "number",
-            "description": "Decision 430 (MON-6): the second tax line's rate (0 = none)."
+            "description": "Decision 431 (MON-6): the second tax line's rate (0 = none)."
           },
           "tax2Id": {
             "type": "string",
             "nullable": true,
-            "description": "Decision 430 (MON-6): the second tax line's registration number."
+            "description": "Decision 431 (MON-6): the second tax line's registration number."
           },
           "chargeCancelReasonRequired": {
             "type": "boolean",
@@ -24794,26 +24794,26 @@
             "nullable": true,
             "maxLength": 40,
             "example": "GST",
-            "description": "Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: \"Tax\"."
+            "description": "Decision 431 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: \"Tax\"."
           },
           "tax2Name": {
             "type": "string",
             "nullable": true,
             "maxLength": 40,
             "example": "PST",
-            "description": "Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0)."
+            "description": "Decision 431 (MON-6): the name of a second tax line (required when its rate is above 0)."
           },
           "tax2RateBasisPoints": {
             "type": "number",
             "minimum": 0,
             "maximum": 10000,
-            "description": "Decision 430 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%."
+            "description": "Decision 431 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%."
           },
           "tax2Id": {
             "type": "string",
             "nullable": true,
             "maxLength": 50,
-            "description": "Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it."
+            "description": "Decision 431 (MON-6): the second tax line's registration number. Empty or null clears it."
           },
           "chargeCancelReasonRequired": {
             "type": "boolean",
@@ -25156,7 +25156,7 @@
           "email": {
             "type": "string",
             "nullable": true,
-            "description": "Decision 429 item 11: null for a parent this School never dealt with (known only through the child's other School)."
+            "description": "Decision 430 item 11: null for a parent this School never dealt with (known only through the child's other School)."
           }
         },
         "required": [
@@ -25613,7 +25613,7 @@
               "WITHDRAWN",
               "PENDING"
             ],
-            "description": "Decision 429 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app."
+            "description": "Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app."
           }
         },
         "required": [
@@ -26197,7 +26197,7 @@
           },
           "taxOverride": {
             "type": "boolean",
-            "description": "Decision 430 (MON-6): this Branch's own tax lines replace the School's."
+            "description": "Decision 431 (MON-6): this Branch's own tax lines replace the School's."
           },
           "taxName": {
             "type": "string",
@@ -26388,7 +26388,7 @@
           },
           "taxOverride": {
             "type": "boolean",
-            "description": "Decision 430 (MON-6): this Branch's own tax lines replace the School's."
+            "description": "Decision 431 (MON-6): this Branch's own tax lines replace the School's."
           },
           "taxName": {
             "type": "string",
@@ -26586,7 +26586,7 @@
           },
           "taxOverride": {
             "type": "boolean",
-            "description": "Decision 430 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec)."
+            "description": "Decision 431 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec)."
           },
           "taxName": {
             "type": "string",
@@ -28478,7 +28478,7 @@
           },
           "consentPolicyVersion": {
             "type": "string",
-            "description": "Decision 429 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it."
+            "description": "Decision 430 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it."
           }
         },
         "required": [
@@ -28511,7 +28511,7 @@
           },
           "alreadyAdded": {
             "type": "boolean",
-            "description": "Decision 429 item 4: true when this child was already on the account (same name and date of birth), so nothing new was added."
+            "description": "Decision 430 item 4: true when this child was already on the account (same name and date of birth), so nothing new was added."
           },
           "consent": {
             "type": "string",
@@ -28522,11 +28522,11 @@
               "WITHDRAWN",
               "PENDING"
             ],
-            "description": "Decision 429 item 9: the child's BASELINE consent. PENDING and WITHDRAWN block booking and check-in until a parent gives it."
+            "description": "Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN block booking and check-in until a parent gives it."
           },
           "isAdult": {
             "type": "boolean",
-            "description": "Decision 429 item 7: the child is 18 now (they make their own account; the parent can pay and read history until parentAccessEndsOn)."
+            "description": "Decision 430 item 7: the child is 18 now (they make their own account; the parent can pay and read history until parentAccessEndsOn)."
           },
           "parentAccessEndsOn": {
             "type": "string",
@@ -29402,7 +29402,7 @@
           },
           "confirmClosedDay": {
             "type": "boolean",
-            "description": "Confirms creating this class on a day a closure covers (Decision 431). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure."
+            "description": "Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure."
           }
         },
         "required": [
@@ -29518,7 +29518,7 @@
               "WOMEN",
               "MEN"
             ],
-            "description": "Decision 431: who can book."
+            "description": "Decision 432: who can book."
           },
           "minAge": {
             "type": "number",
@@ -29661,7 +29661,7 @@
           },
           "confirmClosedDay": {
             "type": "boolean",
-            "description": "Confirms creating this class on a day a closure covers (Decision 431). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure."
+            "description": "Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure."
           },
           "branchId": {
             "type": "string",
@@ -30770,7 +30770,7 @@
               "WOMEN",
               "MEN"
             ],
-            "description": "Decision 431: who can book."
+            "description": "Decision 432: who can book."
           },
           "minAge": {
             "type": "number",
@@ -33771,7 +33771,7 @@
             "description": "The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass."
           },
           "memberships": {
-            "description": "Decision 430 (MON-15): a Friend Pass gift only: every pass given (membership is the first).",
+            "description": "Decision 431 (MON-15): a Friend Pass gift only: every pass given (membership is the first).",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/MembershipResponseDto"
@@ -33793,7 +33793,7 @@
             "minimum": 1,
             "maximum": 5,
             "default": 1,
-            "description": "Decision 430 (MON-15): how many Friend Passes to give at once (1-5)."
+            "description": "Decision 431 (MON-15): how many Friend Passes to give at once (1-5)."
           }
         },
         "required": [
@@ -34842,7 +34842,7 @@
           },
           "includedTax": {
             "nullable": true,
-            "description": "Decision 430 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded.",
+            "description": "Decision 431 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded.",
             "allOf": [
               {
                 "$ref": "#/components/schemas/IncludedTaxDto"
@@ -40498,7 +40498,7 @@
               "WOMEN",
               "MEN"
             ],
-            "description": "Decision 431: who can book."
+            "description": "Decision 432: who can book."
           },
           "minAge": {
             "type": "number",
@@ -44821,7 +44821,7 @@
           },
           "addsGuardian": {
             "type": "boolean",
-            "description": "Decision 429 item 6: an invite to be another parent or guardian of a child already at the School (\"Add another Guardian\"), not to add a new child."
+            "description": "Decision 430 item 6: an invite to be another parent or guardian of a child already at the School (\"Add another Guardian\"), not to add a new child."
           },
           "guardianName": {
             "type": "string",
@@ -45455,7 +45455,7 @@
           },
           "taxLines": {
             "nullable": true,
-            "description": "Decision 430 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before.",
+            "description": "Decision 431 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TaxLineAmountDto"
@@ -45962,7 +45962,7 @@
             "type": "boolean"
           },
           "taxLines": {
-            "description": "Decision 430 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax.",
+            "description": "Decision 431 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TaxLineDto"
