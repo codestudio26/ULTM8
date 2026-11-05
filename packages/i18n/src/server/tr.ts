@@ -588,6 +588,8 @@ export const serverMessages: Record<string, string> = {
   "Pick a coach only when giving their classes to another coach.": "Antrenör yalnızca dersler başka bir antrenöre verilecekse seçilir.",
   "Choose a different coach to take over.": "Devralmak için farklı bir antrenör seçin.",
   "The end time must be after the start time.": "Bitiş saati başlangıç saatinden sonra olmalıdır.",
+  "The end time can't be the same as the start time.": "Bitiş saati başlangıç saatiyle aynı olamaz.",
+  "A weekly class can be at most 12 hours long. An end time before the start time means the next day.": "Haftalık bir ders en fazla 12 saat sürebilir. Başlangıçtan önceki bir bitiş saati ertesi gün anlamına gelir.",
   "Give the break both a start and an end time, or neither.": "Mola için hem başlangıç hem bitiş saati girin ya da hiçbirini girmeyin.",
   "The break must end after it starts.": "Mola başladıktan sonra bitmelidir.",
   "The break must fall inside the class times.": "Mola ders saatleri içinde olmalıdır.",

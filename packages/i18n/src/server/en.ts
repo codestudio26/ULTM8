@@ -511,6 +511,8 @@ export const SERVER_MESSAGES: string[] = [
  "Pick a coach only when giving their classes to another coach.",
  "Choose a different coach to take over.",
  "The end time must be after the start time.",
+ "The end time can't be the same as the start time.",
+ "A weekly class can be at most 12 hours long. An end time before the start time means the next day.",
  "Give the break both a start and an end time, or neither.",
  "The break must end after it starts.",
  "The break must fall inside the class times.",

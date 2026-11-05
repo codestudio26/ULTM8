@@ -588,6 +588,8 @@ export const serverMessages: Record<string, string> = {
   "Pick a coach only when giving their classes to another coach.": "Kies alleen een coach als de lessen naar een andere coach gaan.",
   "Choose a different coach to take over.": "Kies een andere coach om over te nemen.",
   "The end time must be after the start time.": "De eindtijd moet na de begintijd liggen.",
+  "The end time can't be the same as the start time.": "De eindtijd kan niet gelijk zijn aan de begintijd.",
+  "A weekly class can be at most 12 hours long. An end time before the start time means the next day.": "Een wekelijkse les duurt hooguit 12 uur. Een eindtijd vóór de begintijd betekent de volgende dag.",
   "Give the break both a start and an end time, or neither.": "Geef de pauze een begin- en een eindtijd, of geen van beide.",
   "The break must end after it starts.": "De pauze moet eindigen nadat hij begint.",
   "The break must fall inside the class times.": "De pauze moet binnen de lestijden vallen.",

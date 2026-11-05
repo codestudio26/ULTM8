@@ -588,6 +588,8 @@ export const serverMessages: Record<string, string> = {
   "Pick a coach only when giving their classes to another coach.": "コーチを選ぶのは、クラスを別のコーチに引き継ぐ場合だけです。",
   "Choose a different coach to take over.": "引き継ぐ別のコーチを選んでください。",
   "The end time must be after the start time.": "終了時刻は開始時刻より後にしてください。",
+  "The end time can't be the same as the start time.": "終了時刻を開始時刻と同じにすることはできません。",
+  "A weekly class can be at most 12 hours long. An end time before the start time means the next day.": "毎週のクラスは最長12時間です。開始時刻より前の終了時刻は翌日を意味します。",
   "Give the break both a start and an end time, or neither.": "休憩は開始時刻と終了時刻の両方を入力するか、どちらも空欄にしてください。",
   "The break must end after it starts.": "休憩の終了は開始より後にしてください。",
   "The break must fall inside the class times.": "休憩はクラスの時間内にしてください。",
