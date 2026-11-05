@@ -105,6 +105,8 @@ describeIfDb('Open mat uses a class credit (Decision 304 item 3)', () => {
   });
 
   afterAll(async () => {
+    // Cancelling a class tells its students.
+    await superuser.notification.deleteMany({ where: { userId: { in: Object.values(users).map((u) => u.id) } } });
     await superuser.bookingAttendee.deleteMany({ where: { schoolId: school.id } });
     await superuser.booking.deleteMany({ where: { schoolId: school.id } });
     await superuser.trainingLog.deleteMany({ where: { schoolId: school.id } });
@@ -180,6 +182,11 @@ describeIfDb('Open mat uses a class credit (Decision 304 item 3)', () => {
       expect(booking.status).toBe('CANCELLED');
       expect(booking.refundResolution).toBeNull();
       expect(await credits(pack.id)).toBe(5);
+      // The cancellation notice is written by a queue worker: let it land
+      // before the clean-up deletes the student.
+      for (let i = 0; i < 50 && (await superuser.notification.count({ where: { userId: users.ben.id } })) === 0; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
       await superuser.booking.deleteMany({ where: { studentId: users.ben.id } });
       await superuser.membership.delete({ where: { id: pack.id } });
     });

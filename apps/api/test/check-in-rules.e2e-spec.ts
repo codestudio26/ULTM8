@@ -32,6 +32,7 @@ const DEFAULT_RULES: {
   showBeltProgress: boolean;
   blockOverdueDays: number | null;
   requireBooking: boolean;
+  openMatUsesCredit: boolean;
   codeDigits: number;
 } = {
   opensMinutesBeforeStart: 30,
@@ -47,6 +48,8 @@ const DEFAULT_RULES: {
   blockOverdueDays: null,
   // Decision 422 item 2: a booking is still needed by default.
   requireBooking: true,
+  // Decision 304 item 3: open mat uses a class credit by default.
+  openMatUsesCredit: true,
   codeDigits: 4,
 };
 const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
