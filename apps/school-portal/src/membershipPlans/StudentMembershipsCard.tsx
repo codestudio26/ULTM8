@@ -329,6 +329,8 @@ function DeskModal({
   // to the first one, as the select shows it, so the button never stays disabled.
   const planId = plans.some((p) => p.id === pickedPlanId) ? pickedPlanId : (plans[0]?.id ?? '');
   const [paymentMethod, setPaymentMethod] = useState<DeskPaymentMethod>('CASH');
+  // Decision 430 (MON-15): one pass per guest, up to five in one go.
+  const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const busy = sell.isPending || gift.isPending;
   const plan = plans.find((p) => p.id === planId);
@@ -337,7 +339,7 @@ function DeskModal({
     setError(null);
     try {
       if (kind === 'sell') await sell.mutateAsync({ membershipPlanId: planId, paymentMethod });
-      else await gift.mutateAsync({ membershipPlanId: planId });
+      else await gift.mutateAsync({ membershipPlanId: planId, quantity });
       onClose();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('membershipPlans.studentCard.deskFailed'));
@@ -369,6 +371,16 @@ function DeskModal({
               }))}
             />
           </Field>
+          {kind === 'gift' ? (
+            <Field label={t('membershipPlans.studentCard.giftQuantityLabel')} htmlFor="desk-gift-quantity" hint={t('membershipPlans.studentCard.giftQuantityHint')}>
+              <SelectField
+                id="desk-gift-quantity"
+                value={String(quantity)}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))}
+              />
+            </Field>
+          ) : null}
           {kind === 'sell' && plan && plan.price > 0 ? (
             <Field label={t('membershipPlans.studentCard.paidByLabel')} htmlFor="desk-paid-by">
               <SelectField

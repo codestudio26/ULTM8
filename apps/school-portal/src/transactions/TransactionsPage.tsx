@@ -21,6 +21,7 @@ import {
 } from './transactionQueries';
 import { downloadCsv, transactionsCsv } from './transactionsCsv';
 import { CancelPaymentModal } from './CancelPaymentModal';
+import { RefundDeskSaleModal } from './RefundDeskSaleModal';
 import { useT } from '../i18n/I18nProvider';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
@@ -134,6 +135,12 @@ function cancelledLine(t: ReturnType<typeof useT>, row: TransactionResponse): st
   const date = new Date(row.cancelledAt).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
   const name = row.cancelledByName ?? '';
   return row.cancelReason ? t('charges.card.cancelledLine', { date, name, reason: row.cancelReason }) : t('charges.card.cancelledNoReason', { date, name });
+}
+
+/** Decision 430 (MON-8): a membership paid at the desk (not by card in the
+ * app), taken, with something left to give back. */
+function isRefundableDeskSale(row: TransactionResponse): boolean {
+  return row.kind === 'MEMBERSHIP' && row.paymentMethod !== 'STRIPE' && row.status === 'SUCCESSFUL' && (row.refundedAmount ?? 0) < row.amount;
 }
 
 function studentName(row: TransactionResponse): string {
@@ -292,7 +299,7 @@ export function TransactionsPage() {
   const { data, isLoading, error } = useTransactions(schoolId, cursorStack[pageIndex], filters);
   const { data: summary } = useTransactionSummary(schoolId, filters);
   const { data: planData } = useAllMembershipPlans(schoolId);
-  const [settling, setSettling] = useState<{ row: TransactionResponse; action: 'confirm' | 'cancel' } | null>(null);
+  const [settling, setSettling] = useState<{ row: TransactionResponse; action: 'confirm' | 'cancel' | 'refund' } | null>(null);
   // The School's "reason required" setting for cancelling (Decision 338 item 1).
   const { data: school } = useSchool(schoolId);
   const [recording, setRecording] = useState(false);
@@ -332,6 +339,7 @@ export function TransactionsPage() {
       const csv = transactionsCsv(rows, {
         headers: [
           t('transactions.columnDate'),
+          t('transactions.columnDateSchoolTime'),
           t('transactions.columnStudent'),
           t('transactions.columnPlan'),
           t('transactions.columnKind'),
@@ -353,6 +361,7 @@ export function TransactionsPage() {
         kind: (row) => t(KIND_LABELS[row.kind]),
         status: statusLabel,
         method: methodLabel,
+        timeZone: school?.timezone ?? null,
       });
       downloadCsv(`transactions-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     } catch (err) {
@@ -527,6 +536,11 @@ export function TransactionsPage() {
                         {t('transactions.cancelPayment')}
                       </Button>
                     </div>
+                  ) : isRefundableDeskSale(row) ? (
+                    // Decision 430 (MON-8): a membership paid at the desk can be refunded by hand.
+                    <Button variant="secondary" onClick={() => setSettling({ row, action: 'refund' })}>
+                      {t('transactions.refund.action')}
+                    </Button>
                   ) : (
                     '—'
                   ),
@@ -555,6 +569,20 @@ export function TransactionsPage() {
           payment={{ id: settling.row.id, amount: settling.row.amount, currency: settling.row.currency ?? null, planTitle: settling.row.membershipPlanTitle ?? '' }}
           studentName={studentName(settling.row)}
           reasonRequired={school?.chargeCancelReasonRequired ?? true}
+          onClose={() => setSettling(null)}
+        />
+      ) : null}
+      {settling?.action === 'refund' ? (
+        <RefundDeskSaleModal
+          schoolId={schoolId}
+          payment={{
+            id: settling.row.id,
+            amount: settling.row.amount,
+            refundedAmount: settling.row.refundedAmount ?? null,
+            currency: settling.row.currency ?? null,
+            planTitle: settling.row.membershipPlanTitle ?? '',
+          }}
+          studentName={studentName(settling.row)}
           onClose={() => setSettling(null)}
         />
       ) : null}

@@ -201,6 +201,8 @@ export const membershipPlans = {
     sellIntro: 'Record a plan the Student has paid for at the desk. It starts straight away.',
     giftTitle: 'Give {name} a Friend Pass',
     giftIntro: 'A free pass the Student can use to bring one friend to a class.',
+    giftQuantityLabel: "How many passes",
+    giftQuantityHint: "One pass per guest, up to five at once.",
     planLabel: 'Plan',
     paidByLabel: 'Paid by',
     sellConfirm: 'Record sale',

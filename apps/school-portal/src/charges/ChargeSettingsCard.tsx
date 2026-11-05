@@ -5,6 +5,7 @@ import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { useUpdateSchool, type SchoolResponse } from '../schools/schoolQueries';
 import { parseRate, rateText, useStandardTaxRates } from './chargeQueries';
+import { TaxLineFields, taxLineBody, taxLineDraft, taxLinesProblem, type TaxLineDraft } from './TaxLineFields';
 
 /** Country names in the reader's language, sorted in it. */
 function useCountryOptions() {
@@ -39,6 +40,9 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
   const [rate, setRate] = useState(rateText(school.taxRateBasisPoints ?? 0));
   const [inclusive, setInclusive] = useState(school.taxInclusive ?? true);
   const [taxId, setTaxId] = useState(school.taxId ?? '');
+  // Decision 430 (MON-6): the first line's name and an optional second line.
+  const [taxName, setTaxName] = useState(school.taxName ?? '');
+  const [line2, setLine2] = useState<TaxLineDraft>(() => taxLineDraft(school.tax2Name, school.tax2RateBasisPoints, school.tax2Id));
   const [reasonRequired, setReasonRequired] = useState(school.chargeCancelReasonRequired ?? true);
   const [notesRequired, setNotesRequired] = useState(school.chargeRefundNotesRequired ?? true);
   const [address, setAddress] = useState(school.receiptAddress ?? '');
@@ -73,9 +77,15 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
     if (pre) setRate(rateText(pre.rateBasisPoints));
   }
 
+  const linesProblem = taxLinesProblem({ name: taxName, rate, taxId }, line2);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (parsedRate === null) return;
+    if (linesProblem === 'tooHigh') return setError(t('charges.settings.taxLinesTooHigh'));
+    if (linesProblem === 'secondNameRequired') return setError(t('charges.settings.tax2NameRequired'));
+    if (linesProblem) return;
+    const second = taxLineBody(line2);
     setError(null);
     setSaved(false);
     try {
@@ -84,6 +94,10 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
         taxRateBasisPoints: parsedRate,
         taxInclusive: inclusive,
         taxId: taxId.trim() || null,
+        taxName: taxName.trim() || null,
+        tax2Name: second.name,
+        tax2RateBasisPoints: second.rateBasisPoints ?? 0,
+        tax2Id: second.taxId,
         chargeCancelReasonRequired: reasonRequired,
         chargeRefundNotesRequired: notesRequired,
         receiptAddress: address.trim() || null,
@@ -117,6 +131,17 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
             value={country}
             onChange={(e) => chooseCountry(e.target.value)}
             options={[{ value: '', label: t('charges.settings.countryNone') }, ...countries]}
+          />
+        </Field>
+        <Field label={t('charges.settings.taxNameLabel')} htmlFor="charge-tax-name" hint={t('charges.settings.taxNameHint')}>
+          <TextField
+            id="charge-tax-name"
+            maxLength={40}
+            value={taxName}
+            onChange={(e) => {
+              setTaxName(e.target.value);
+              changed();
+            }}
           />
         </Field>
         <Field
@@ -160,6 +185,15 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
             }}
           />
         </Field>
+        <TaxLineFields
+          id="charge-tax2"
+          second
+          line={line2}
+          onChange={(line) => {
+            setLine2(line);
+            changed();
+          }}
+        />
         <Switch
           id="charge-cancel-reason-required"
           label={t('charges.settings.reasonRequired')}
