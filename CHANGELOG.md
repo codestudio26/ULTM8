@@ -661,6 +661,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   staff with "Can cancel charges" can **Waive** it; the student app labels it
   "Late fee" too. **Needs a database migration**
   (`20270116000000_late_fees`).
+- **Income categories** (Decision 316 item 10; Gymdesk P17/BL18) — a new
+  **Income categories** card on the School page (owner only) lets a School
+  name its own categories (e.g. "Kids programme", "Merchandise"): add, rename,
+  and delete one nothing uses (one in use can only be renamed). A membership
+  plan (Policies step of the plan form), a staff-created charge and a
+  recurring charge can each carry one; every charge a recurring charge makes
+  carries its category. The student's **Payments** card shows a charge's
+  category to staff, and the **Transactions** CSV export has a new last
+  column, **Income category**: the category of the plan (a purchase or a
+  renewal) or of the charge (a payment toward it), as it is now. Members never
+  see categories. No accounting codes and no accounting integration. **Needs
+  a database migration** (`20270212000001_income_categories`).
 - **Medical information at sign-up** (Decision 315 item 10; Gymdesk SF6) — a
   new **Medical information at sign-up** card on the School page (owner only)
   lets a School ask for medical information. It is **off by default**, so

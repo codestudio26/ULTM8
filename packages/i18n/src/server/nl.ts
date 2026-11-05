@@ -778,4 +778,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Import niet gevonden",
   "Each row number can only be sent once.": "Elk rijnummer kan maar één keer worden verstuurd.",
   "Tick the consent box to upload a certification.": "Vink het toestemmingsvakje aan om een certificaat te uploaden.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Inkomstencategorie niet gevonden",
+  "This School already has an income category with that name.": "Deze school heeft al een inkomstencategorie met die naam.",
+  "This School already has 100 income categories. Delete one before adding another.": "Deze school heeft al 100 inkomstencategorieën. Verwijder er een voordat je een nieuwe toevoegt.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Deze inkomstencategorie wordt gebruikt door een abonnement of een kostenpost en kan dus niet worden verwijderd. Wijzig in plaats daarvan de naam.",
+  "Choose an income category from this School's list.": "Kies een inkomstencategorie uit de lijst van deze school.",
 };

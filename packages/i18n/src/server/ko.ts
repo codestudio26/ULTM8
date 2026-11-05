@@ -778,4 +778,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "가져오기를 찾을 수 없습니다",
   "Each row number can only be sent once.": "각 행 번호는 한 번만 보낼 수 있습니다.",
   "Tick the consent box to upload a certification.": "자격증을 업로드하려면 동의 상자에 체크하세요.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "수입 카테고리를 찾을 수 없어요",
+  "This School already has an income category with that name.": "이 스쿨에 같은 이름의 수입 카테고리가 이미 있어요.",
+  "This School already has 100 income categories. Delete one before adding another.": "이 스쿨에는 이미 수입 카테고리가 100개 있어요. 새로 추가하기 전에 하나를 삭제하세요.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "이 수입 카테고리는 플랜이나 청구에서 사용 중이라 삭제할 수 없어요. 대신 이름을 바꾸세요.",
+  "Choose an income category from this School's list.": "이 스쿨의 목록에서 수입 카테고리를 선택하세요.",
 };

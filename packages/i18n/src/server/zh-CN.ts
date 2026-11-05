@@ -778,4 +778,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "未找到导入",
   "Each row number can only be sent once.": "每个行号只能发送一次。",
   "Tick the consent box to upload a certification.": "请勾选同意框后再上传资格证书。",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "未找到收入类别",
+  "This School already has an income category with that name.": "本学校已有同名收入类别。",
+  "This School already has 100 income categories. Delete one before adding another.": "本学校已有 100 个收入类别。请先删除一个再添加。",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "该收入类别正被某个套餐或收费项目使用，因此无法删除。请改为重命名。",
+  "Choose an income category from this School's list.": "请从本学校的列表中选择收入类别。",
 };

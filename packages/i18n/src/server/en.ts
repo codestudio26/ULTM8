@@ -796,4 +796,10 @@ export const SERVER_PATTERNS: string[] = [
  "A child's contact details are changed by their Guardian or the School.",
  "Attendance can only be logged from {v1} to {v2}.",
  "Tick the consent box to upload a certification.",
+ // Income categories (Decision 316 item 10).
+ "Income category not found",
+ "This School already has an income category with that name.",
+ "This School already has 100 income categories. Delete one before adding another.",
+ "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.",
+ "Choose an income category from this School's list.",
 ];
