@@ -379,6 +379,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "Binnenkort",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Geannuleerd",
+      wholeSchool: "Hele school",
       weekdays: {
         monday: "maandag",
         tuesday: "dinsdag",

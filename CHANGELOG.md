@@ -37,6 +37,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Attendance tab. Uploading a certification needs the consent tick. "Coming
   up" shows each class's start time and branch. "Complete your profile" is
   now "My coach profile".
+- **Coach dashboard in the app: class time and branch** (Track B,
+  `apps/student`; Decision 425 Q4) — "Coming up" on the app's coach
+  dashboard shows each class's start date and time on the class's own clock
+  (its branch's time zone, else the School's) and the branch name ("Whole
+  School" when it has none), as the web dashboard does. No API or database
+  change.
 - **Coaches portal fixes** (Coaches portal review CP2–CP6, Decision 424) —
   the coach dashboard no longer lists archived weekly slots, and marks a
   cancelled class "Cancelled" with no roll call or QR link. An owner who also

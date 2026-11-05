@@ -380,6 +380,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       comingUp: "In arrivo",
       upcomingClass: "{date} · {title}",
       upcomingClassCancelled: "{date} · {title} · Annullata",
+      wholeSchool: "Tutta la scuola",
       weekdays: {
         monday: "Lunedì",
         tuesday: "Martedì",
