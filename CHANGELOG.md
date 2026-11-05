@@ -944,6 +944,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   length), and students who train that style at that branch are told in the
   app. The owner, and staff given "Can start open mat sessions" on the
   Staff page. Needs migration `20261221000000_open_mat_permission`.
+- **"Open mat uses a class credit"** (Decision 304 item 3) — a new switch in
+  Settings → Check-in rules, on by default (as today: an open mat takes a
+  Class Pack or Friend Pass credit like any class). Off: booking an open mat
+  still needs a membership or pass that covers it, but takes no credit, and
+  cancelling it gives nothing back. A class counts as open mat when every
+  style on it has the class type "Open mat". **Needs a database migration**
+  (`20270214000002_open_mat_class_credit`).
 - **Visitors and visit passes** (Decision 391) — each School sets how long a
   free visit pass lasts (School settings; no default). The owner, or Branch
   Staff with the Students switch, gives a pass from the student's page; while it

@@ -59,6 +59,10 @@ export function assertClassBookable(
  * names the candidates an approved freeze covers today or on the Class's
  * day (frozen-lookup.ts). When only frozen ones are left, the refusal says
  * so (MEMBERSHIP_FROZEN).
+ *
+ * Decision 304 item 3: `spendCredit` false (an open mat while the School's
+ * "Open mat uses a class credit" is off) picks the same membership but takes
+ * no credit from it.
  */
 export async function selectAndConsumeMembership(
   tx: TenantTx,
@@ -67,6 +71,7 @@ export async function selectAndConsumeMembership(
   cls: OneOffMarkers,
   now: Date = new Date(),
   frozenAmong?: (membershipIds: string[]) => Promise<Set<string>>,
+  spendCredit = true,
 ): Promise<{ id: string }> {
   const classId = cls.id;
   const ticketOnly = needsOwnTicket(cls);
@@ -110,6 +115,9 @@ export async function selectAndConsumeMembership(
     }
     throw new BadRequestException('This Student has no Active Membership eligible to fund this Booking.');
   }
+  // Decision 304 item 3: an open mat while "Open mat uses a class credit" is
+  // off still needs a pack with classes left, but takes none of them.
+  if (!spendCredit) return packs[0];
   for (const pack of packs) {
     const result = await tx.membership.updateMany({
       where: { id: pack.id, classesRemaining: { gt: 0 } },

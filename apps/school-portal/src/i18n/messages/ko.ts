@@ -3886,6 +3886,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "끄면 아무도 방문 패스로 체크인할 수 없습니다.",
       frozenMembers: "일시정지된 회원의 체크인 허용",
       frozenMembersHint: "끄면 멤버십이 일시정지된 회원은 체크인할 수 없습니다.",
+      openMatUsesCredit: "오픈 매트에 수업 크레딧 사용",
+      openMatUsesCreditHint: "켜기: 오픈 매트를 예약하면 다른 수업처럼 수업 패키지나 친구 패스 크레딧을 사용합니다. 끄기: 크레딧은 사용하지 않지만 멤버십이나 패스는 여전히 필요합니다.",
       withoutBooking: "예약 없이 체크인",
       withoutBookingHint: "켜면 회원이 예약하지 않은 수업에도 체크인할 수 있습니다. 체크인은 자리가 있으면 자리를 잡고, 예약할 때처럼 멤버십이나 수업 크레딧을 사용합니다. 끄면 먼저 예약해야 합니다.",
       overdue: "연체 시 체크인 막기",

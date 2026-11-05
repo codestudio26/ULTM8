@@ -535,6 +535,21 @@ test('the owner switches on "Check in without a booking"; off by default (Decisi
   await expect(page.getByRole('switch', { name: 'Check in without a booking' })).toHaveAttribute('aria-checked', 'true');
 });
 
+test('the owner turns off "Open mat uses a class credit"; on by default (Decision 304 item 3)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in/rules');
+  const openMat = page.getByRole('switch', { name: 'Open mat uses a class credit' });
+  await expect(openMat).toHaveAttribute('aria-checked', 'true');
+  await openMat.click();
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Check-in rules saved.')).toBeVisible();
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).openMatUsesClassCredit).toBe(false);
+
+  await page.reload();
+  await expect(page.getByRole('switch', { name: 'Open mat uses a class credit' })).toHaveAttribute('aria-checked', 'false');
+  await db.school.update({ where: { id: s.schoolId }, data: { openMatUsesClassCredit: true } });
+});
+
 test('a check-in rule the person breaks is shown as its reason (Decision 394)', async ({ page }) => {
   const cls = await classNow();
   const m = await subscribe(s.student.id);

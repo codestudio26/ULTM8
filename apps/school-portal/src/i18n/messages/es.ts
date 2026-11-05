@@ -3931,6 +3931,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Si está desactivado, nadie se registra con un pase de visita.",
       frozenMembers: "Permitir check-in a miembros congelados",
       frozenMembersHint: "Si está desactivado, un miembro con la membresía congelada no puede hacer check-in.",
+      openMatUsesCredit: "El open mat usa un crédito de clase",
+      openMatUsesCreditHint: "Activado: reservar un open mat usa un crédito de un bono de clases o pase de amigo, como cualquier clase. Desactivado: no usa ningún crédito, pero sigue haciendo falta una membresía o un pase.",
       withoutBooking: "Check-in sin reserva",
       withoutBookingHint: "Si está activado, los miembros pueden hacer check-in en una clase que no han reservado. El check-in ocupa una plaza si la clase tiene alguna y usa su membresía o un crédito de clase, como al reservar. Si está desactivado, deben reservar primero.",
       overdue: "Bloquear el registro por pagos atrasados",

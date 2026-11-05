@@ -4021,6 +4021,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Gdy wyłączone, nikt nie melduje się z karnetem wizytowym.",
       frozenMembers: "Zezwalaj zamrożonym członkom na zameldowanie",
       frozenMembersHint: "Gdy wyłączone, członek z zamrożonym karnetem nie może się zameldować.",
+      openMatUsesCredit: "Open mat zużywa kredyt na zajęcia",
+      openMatUsesCreditHint: "Włączone: rezerwacja open matu zużywa kredyt z pakietu zajęć lub karnetu dla znajomego, jak każde zajęcia. Wyłączone: nie zużywa kredytu, ale nadal potrzebny jest karnet lub przepustka.",
       withoutBooking: "Meldowanie bez rezerwacji",
       withoutBookingHint: "Gdy włączone, członkowie mogą się zameldować na zajęcia, których nie zarezerwowali. Meldowanie zajmuje miejsce, jeśli zajęcia je mają, i korzysta z ich karnetu lub kredytu na zajęcia, tak jak rezerwacja. Gdy wyłączone, muszą najpierw zarezerwować.",
       overdue: "Blokuj meldowanie przy zaległych płatnościach",

@@ -39,6 +39,8 @@ export function checkInRulesBody(form: CheckInRulesForm): CheckInRules {
     showBeltProgress: form.showBeltProgress ?? true,
     blockOverdueDays: form.overdue === '7' ? 7 : form.overdue === '14' ? 14 : null,
     requireBooking: !form.withoutBooking,
+    // Decision 304 item 3: on by default (an older response leaves it out).
+    openMatUsesCredit: form.openMatUsesCredit ?? true,
     codeDigits: form.codeDigits,
   };
 }

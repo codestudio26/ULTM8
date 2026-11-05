@@ -3931,6 +3931,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Als dit uit staat, checkt niemand in met een bezoekerspas.",
       frozenMembers: "Bevroren leden mogen inchecken",
       frozenMembersHint: "Als dit uit staat, kan een lid met een bevroren lidmaatschap niet inchecken.",
+      openMatUsesCredit: "Open mat gebruikt een lestegoed",
+      openMatUsesCreditHint: "Aan: een open mat boeken gebruikt een tegoed van een lessenkaart of vriendenpas, zoals elke les. Uit: er wordt geen tegoed gebruikt, maar een lidmaatschap of pas is nog steeds nodig.",
       withoutBooking: "Inchecken zonder boeking",
       withoutBookingHint: "Als dit aan staat, kunnen leden inchecken voor een les die ze niet hebben geboekt. Het inchecken neemt een plek als de les er nog een heeft en gebruikt hun lidmaatschap of een lestegoed, net als boeken. Als dit uit staat, moeten ze eerst boeken.",
       overdue: "Inchecken blokkeren bij achterstallige betalingen",
