@@ -307,6 +307,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   own branches' students), one figure per currency. `ChargeOverviewCurrencyDto`
   gains `memberships` and `total`, and each month `memberships` and `total`.
   15 languages.
+- **Payroll report** (Decision 320 item 4) — a new **Payroll** page for the
+  School's owners. On its Rates tab the owner gives each member of staff an
+  hourly rate and/or a per-class rate in the School's currency (needs the
+  currency set first); both blank leaves the person out. The Report tab adds
+  up, per person, hours × the hourly rate plus classes taught × the per-class
+  rate over the last 14 or 30 days, this or last month, the last 12 months or
+  custom dates (up to 366 days), with a total line and a CSV download. Hours
+  are the classes taught only, start to end; cancelled classes and classes
+  still to come don't count; the coach on each single class is the one paid,
+  so changing one class's coach pays the substitute. Rates are kept when
+  someone leaves, so the classes they taught still add up. ULTM8 pays nobody.
+  New `StaffPayRate` table (migration `20270215000001_staff_pay_rates`,
+  owner-only RLS); `GET /schools/:id/payroll/rates`, `PUT …/rates/:userId`,
+  `GET …/payroll/report`. 15 languages.
 - **Data tools: merge duplicate members, export all signed documents**
   (Decision 315 item 13; imports are a separate change). **Merge a duplicate**
   on a student's page: the owner picks the other record of the same person at

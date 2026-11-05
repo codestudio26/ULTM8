@@ -56,6 +56,7 @@ import { CancellationsPage } from './cancellations/CancellationsPage';
 import { MembershipPlanMembersPage } from './membershipPlans/MembershipPlanMembersPage';
 import { TransactionsPage } from './transactions/TransactionsPage';
 import { BillingReportsPage } from './charges/BillingReportsPage';
+import { PayrollPage } from './payroll/PayrollPage';
 import { WaiversPage } from './waivers/WaiversPage';
 import { WaiverSettingsPage } from './waivers/WaiverSettingsPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
@@ -543,6 +544,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <BillingReportsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/payroll"
+        element={
+          <RequireAuth>
+            <Shell>
+              <PayrollPage />
             </Shell>
           </RequireAuth>
         }

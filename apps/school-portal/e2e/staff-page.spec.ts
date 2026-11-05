@@ -86,7 +86,9 @@ test('the list filters by role, branch and name, and "Remove from School" ends e
   await expect(listRow(page, 'Dee Desk')).toHaveCount(0);
   await expect(listRow(page, 'Cal Coach')).toBeVisible();
   await listCard(page).getByLabel('Branch').selectOption({ label: 'Any' });
-  await listCard(page).getByLabel('Search').fill('DEE');
+  // The search also matches email, and fixture emails carry a random hex UUID
+  // that can contain "dee"; a full name with a space never appears in one.
+  await listCard(page).getByLabel('Search').fill('DEE DESK');
   await expect(listRow(page, 'Cal Coach')).toHaveCount(0);
   await expect(listRow(page, 'Dee Desk')).toBeVisible();
   await listCard(page).getByLabel('Search').fill('');
