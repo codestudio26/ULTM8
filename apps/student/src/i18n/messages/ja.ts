@@ -596,11 +596,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} 認定済みの技：{signedOff} / {required} · {percent}% · これも必要、%には含まれません",
       timeOnlyNote: "%は必要な日数に対するこの級での日数です。",
       classesNote: "%は必要なクラス数に対する受講クラス数です。",
+      skillsCounts: "{tick} 承認済みの技：{signedOff} / {required} · {percent}% · %に含まれます",
+      hours: "{tick} 時間：{done} / {required} 時間 · {percent}% · %に含まれます",
+      daysAttended: "{tick} 出席日数：{attended} / {required} · {percent}% · %に含まれます",
+      minimumAge: "{tick} 最低年齢：{age}歳から · %には含まれません",
+      waitingForAge: "{age}歳になるまで待機中",
+      averageNote: "%は、このランクが求める項目の平均です（各項目は最大100%）。",
     },
     hours: {
       title: "練習時間",
       summary: "この級で{atRank}時間 · 合計{total}時間",
       note: "マットで過ごした時間の記録です。昇級の判断には使われません。",
+      counts: "このランク以降の時間は次のランクに数えます。",
     },
     correction: {
       a11yLabel: "帯の修正: {style}",

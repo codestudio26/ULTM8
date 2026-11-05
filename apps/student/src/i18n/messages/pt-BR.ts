@@ -602,11 +602,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} Habilidades aprovadas: {signedOff} de {required} · {percent}% · também exigido, fora do %",
       timeOnlyNote: "O % é dias nesta graduação sobre os dias exigidos.",
       classesNote: "O % é aulas sobre as aulas exigidas.",
+      skillsCounts: "{tick} Técnicas aprovadas: {signedOff} de {required} · {percent}% · conta para o %",
+      hours: "{tick} Horas: {done} de {required} h · {percent}% · conta para o %",
+      daysAttended: "{tick} Dias de presença: {attended} de {required} · {percent}% · conta para o %",
+      minimumAge: "{tick} Idade mínima: a partir de {age} · não entra no %",
+      waitingForAge: "Aguardando a idade de {age}",
+      averageNote: "O % é a média do que esta graduação pede, cada parte contada até 100%.",
     },
     hours: {
       title: "Horas treinadas",
       summary: "{atRank} h nesta graduação · {total} h no total",
       note: "Um registro do seu tempo no tatame. A graduação não o utiliza.",
+      counts: "As horas desde esta graduação contam para a próxima.",
     },
     correction: {
       a11yLabel: "Correção de faixa: {style}",

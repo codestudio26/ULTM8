@@ -596,11 +596,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} 인정된 기술: {signedOff}/{required} · {percent}% · 이것도 필요, %에는 미반영",
       timeOnlyNote: "%는 필요한 일수 대비 이 등급에서 보낸 일수입니다.",
       classesNote: "%는 필요한 수업 수 대비 수강한 수업 수입니다.",
+      skillsCounts: "{tick} 승인된 기술: {signedOff} / {required} · {percent}% · %에 반영됨",
+      hours: "{tick} 시간: {done} / {required}시간 · {percent}% · %에 반영됨",
+      daysAttended: "{tick} 출석 일수: {attended} / {required} · {percent}% · %에 반영됨",
+      minimumAge: "{tick} 최소 나이: {age}세부터 · %에 반영 안 됨",
+      waitingForAge: "{age}세가 될 때까지 대기",
+      averageNote: "%는 이 등급이 요구하는 항목의 평균이며, 각 항목은 최대 100%까지 반영됩니다.",
     },
     hours: {
       title: "수련 시간",
       summary: "이 등급에서 {atRank}시간 · 총 {total}시간",
       note: "매트 위에서 보낸 시간의 기록입니다. 승급에는 사용되지 않습니다.",
+      counts: "이 등급 이후의 시간이 다음 등급에 반영됩니다.",
     },
     correction: {
       a11yLabel: "띠 수정: {style}",

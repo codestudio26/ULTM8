@@ -619,11 +619,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} Принято навыков: {signedOff} из {required} · {percent}% · тоже нужно, не входит в %",
       timeOnlyNote: "% — это дни на этом ранге от требуемого числа дней.",
       classesNote: "% — это занятия от требуемого числа занятий.",
+      skillsCounts: "{tick} Зачтённые техники: {signedOff} из {required} · {percent}% · учитывается в %",
+      hours: "{tick} Часы: {done} из {required} ч · {percent}% · учитывается в %",
+      daysAttended: "{tick} Дни посещения: {attended} из {required} · {percent}% · учитывается в %",
+      minimumAge: "{tick} Минимальный возраст: с {age} · не входит в %",
+      waitingForAge: "Ждёт возраста {age}",
+      averageNote: "Процент — среднее того, что требует этот ранг; каждая часть засчитывается до 100%.",
     },
     hours: {
       title: "Часы тренировок",
       summary: "{atRank} ч на этом ранге · всего {total} ч",
       note: "Учёт вашего времени на ковре. При аттестации не используется.",
+      counts: "Часы с этого ранга идут в зачёт следующего.",
     },
     correction: {
       a11yLabel: "Исправление пояса: {style}",

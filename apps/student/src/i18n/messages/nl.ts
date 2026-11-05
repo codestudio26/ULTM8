@@ -602,11 +602,18 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} Afgetekende technieken: {signedOff} van {required} · {percent}% · ook nodig, niet in het %",
       timeOnlyNote: "Het % is het aantal dagen in deze graad ten opzichte van de vereiste dagen.",
       classesNote: "Het % is het aantal lessen ten opzichte van de vereiste lessen.",
+      skillsCounts: "{tick} Afgetekende technieken: {signedOff} van {required} · {percent}% · telt mee voor het %",
+      hours: "{tick} Uren: {done} van {required} u · {percent}% · telt mee voor het %",
+      daysAttended: "{tick} Aanwezigheidsdagen: {attended} van {required} · {percent}% · telt mee voor het %",
+      minimumAge: "{tick} Minimumleeftijd: vanaf {age} · niet in het %",
+      waitingForAge: "Wacht op leeftijd {age}",
+      averageNote: "Het % is het gemiddelde van wat deze rang vraagt, elk deel geteld tot 100%.",
     },
     hours: {
       title: "Getrainde uren",
       summary: "{atRank} u in deze graad · {total} u in totaal",
       note: "Een registratie van je tijd op de mat. Gradering gebruikt dit niet.",
+      counts: "Uren sinds deze rang tellen mee voor je volgende.",
     },
     correction: {
       a11yLabel: "Bandcorrectie: {style}",
