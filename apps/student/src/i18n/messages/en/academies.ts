@@ -44,6 +44,7 @@ export const academies = {
     me: 'Me',
     loadFailed: 'Failed to load this School — please try again.',
     alreadyStudentMe: 'You are already a student here.',
+    familyOff: "This School adds children itself. Ask the School to add your child.",
     /** {name} is a child's name. */
     alreadyStudentOther: '{name} is already a student here.',
     /** {name} is the School's name. */

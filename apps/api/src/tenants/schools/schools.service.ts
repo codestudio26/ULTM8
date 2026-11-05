@@ -333,6 +333,16 @@ export class SchoolsService {
       }
     }
 
+    // Decision 318 item 7: the School may turn off "add family members", a
+    // Guardian adding their child here from the app. The owner's own enrolment
+    // and the School's own invites are not this switch.
+    if (isGuardianAction) {
+      const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { memberAppAddFamily: true } });
+      if (school && !school.memberAppAddFamily) {
+        throw new ForbiddenException('This School adds family members itself. Ask the School to add your child.');
+      }
+    }
+
     // Decision 315 item 10: medical information given while joining, with
     // consent from the member, or the Guardian for a child. Checked before
     // anything is written; stored once the member has joined.
@@ -966,6 +976,7 @@ export class SchoolsService {
     }
     await this.assertCurrencyForNewFees(callerId, schoolId, dto);
     await assertCodeDigitsAllowed(this.prismaJobs, schoolId, dto.checkInCodeDigits);
+    const nextGradingDate = parseNextGradingDate(dto.nextGradingDate);
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({
@@ -1017,6 +1028,13 @@ export class SchoolsService {
           timetableDefaultLayout: dto.timetableDefaultLayout,
           // Decision 315 item 10: medical information at sign-up.
           medicalInfoEnabled: dto.medicalInfoEnabled,
+          // Decision 318 item 7: member app switches and the next grading day.
+          memberAppEditProfile: dto.memberAppEditProfile,
+          memberAppCancelMembership: dto.memberAppCancelMembership,
+          memberAppAddFamily: dto.memberAppAddFamily,
+          memberAppPaymentHistory: dto.memberAppPaymentHistory,
+          memberAppGradingCountdown: dto.memberAppGradingCountdown,
+          nextGradingDate,
           // Decision 404: freezing memberships.
           freezeMaxDaysPer12Months: dto.freezeMaxDaysPer12Months,
           freezeFeeAmount: dto.freezeFeeAmount,
@@ -1279,6 +1297,18 @@ export class SchoolsService {
  * internals no screen reads, so they're left out of those replies. Internal
  * callers (leaveFranchise) still use findOne()'s full row.
  */
+/** Decision 318 item 7: the next grading day as a calendar date. Undefined
+ * leaves it alone, null clears it; a date that doesn't exist (2027-02-30) is
+ * refused. */
+function parseNextGradingDate(value: string | null | undefined): Date | null | undefined {
+  if (value === undefined || value === null) return value;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
+    throw new BadRequestException('nextGradingDate must be a date (YYYY-MM-DD)');
+  }
+  return date;
+}
+
 export function withoutBillingIds<
   T extends { stripeFranchiseFeeSubscriptionId?: unknown; stripeFranchiseFeeCustomerId?: unknown; stripePlatformSubscriptionId?: unknown; platformSubscriptionStatus?: unknown },
 >(school: T): Omit<T, 'stripeFranchiseFeeSubscriptionId' | 'stripeFranchiseFeeCustomerId' | 'stripePlatformSubscriptionId' | 'platformSubscriptionStatus'> {

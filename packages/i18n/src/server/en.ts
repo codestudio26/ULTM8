@@ -6,6 +6,10 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "nextGradingDate must be a date (YYYY-MM-DD)",
+ "Your School keeps your profile up to date. Ask the School to change your details.",
+ "This School cancels memberships itself. Ask the School to cancel it for you.",
+ "This School adds family members itself. Ask the School to add your child.",
  "This School doesn't let children sign their own waivers.",
  "This child isn't old enough yet to sign this School's waivers themselves.",
  "Add the child's date of birth before they sign a waiver themselves.",

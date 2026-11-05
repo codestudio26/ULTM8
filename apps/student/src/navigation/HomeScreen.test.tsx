@@ -3,6 +3,13 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render } from '@testing-library/react-native';
 import * as auth from '../auth/AuthContext';
 import { HomeScreen } from './HomeScreen';
+import * as memberApp from '../lib/memberAppQueries';
+
+// Decision 318 item 7: the member app switches (on unless a test turns one off).
+jest.mock('../lib/memberAppQueries', () => {
+  const actual = jest.requireActual('../lib/memberAppQueries') as object;
+  return { ...actual, useMemberAppSettings: jest.fn(() => ({ data: undefined })) };
+});
 
 jest.mock('../auth/AuthContext', () => ({
   useAuth: jest.fn(),
@@ -77,5 +84,25 @@ describe('HomeScreen', () => {
     const parent = await render(<HomeScreen navigation={nav() as never} route={{} as never} />);
     expect(parent.getByText('Kid Mode')).toBeTruthy();
     expect(parent.getByText('Needs your review')).toBeTruthy();
+  });
+});
+
+/** Decision 318 item 7: payment history, when the member's Schools show it. */
+describe('HomeScreen — payment history switch', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mocked(auth.useEnrolledSchoolIds).mockReturnValue([]);
+    mocked(auth.useIsGuardian).mockReturnValue(false);
+    setAuth();
+  });
+
+  it('hides Payment history only when every School hides it', async () => {
+    mocked(memberApp.useMemberAppSettings).mockReturnValue({ data: { profileLocked: false, schools: [{ ...{ schoolId: 'school-1', editProfile: true, cancelMembership: true, addFamily: true, paymentHistory: true, gradingCountdown: false }, paymentHistory: false }] } });
+    const hidden = await render(<HomeScreen navigation={nav() as never} route={{} as never} />);
+    expect(hidden.queryByText('Payment history')).toBeNull();
+
+    mocked(memberApp.useMemberAppSettings).mockReturnValue({ data: { profileLocked: false, schools: [{ ...{ schoolId: 'school-1', editProfile: true, cancelMembership: true, addFamily: true, paymentHistory: true, gradingCountdown: false }, paymentHistory: false }, { ...{ schoolId: 'school-1', editProfile: true, cancelMembership: true, addFamily: true, paymentHistory: true, gradingCountdown: false }, schoolId: 'school-2' }] } });
+    const shown = await render(<HomeScreen navigation={nav() as never} route={{} as never} />);
+    expect(shown.getByText('Payment history')).toBeTruthy();
   });
 });

@@ -128,6 +128,7 @@ function StyleCard({ item, correction, onHistory }: { item: GradingStyle; correc
                 {t('grading.myGrading.readyToGrade')}
               </Text>
             ) : null}
+            <Countdown item={item} />
             <Breakdown item={item} />
           </>
         )}
@@ -154,6 +155,32 @@ function StyleCard({ item, correction, onHistory }: { item: GradingStyle; correc
       {correction ? <CorrectionCard item={item} latest={correction.latest} /> : null}
 
       <Button title={t('grading.myGrading.history')} variant="secondary" onPress={onHistory} />
+    </View>
+  );
+}
+
+/** Decision 318 item 7: the grading countdown, when the School turns it on
+ * (the API sends `countdown` only then): the School's next grading day, and
+ * the classes and days the student still needs for their next rank. */
+function Countdown({ item }: { item: GradingStyle }) {
+  const t = useT();
+  const c = item.countdown;
+  if (!c) return null;
+  const toGo = [
+    !item.eligibility.eligible && c.classesToGo ? t('grading.myGrading.classesToGo', { count: c.classesToGo }) : null,
+    !item.eligibility.eligible && c.daysToGo ? t('grading.myGrading.daysToGo', { count: c.daysToGo }) : null,
+  ].filter((x): x is string => !!x);
+  const day =
+    c.daysUntilGrading === null || c.daysUntilGrading === undefined
+      ? null
+      : c.daysUntilGrading === 0
+        ? t('grading.myGrading.gradingToday')
+        : t('grading.myGrading.gradingIn', { count: c.daysUntilGrading });
+  if (!day && toGo.length === 0) return null;
+  return (
+    <View testID="grading-countdown" style={{ marginTop: spacing[2] }}>
+      {day ? <Text style={{ fontWeight: '600', color: theme.textAccent }}>{day}</Text> : null}
+      {toGo.length > 0 ? <Text>{toGo.join(' · ')}</Text> : null}
     </View>
   );
 }

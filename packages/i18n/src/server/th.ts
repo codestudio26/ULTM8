@@ -1,5 +1,9 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate ต้องเป็นวันที่ (YYYY-MM-DD)",
+  "Your School keeps your profile up to date. Ask the School to change your details.": "โรงเรียนของคุณดูแลโปรไฟล์ของคุณให้เป็นปัจจุบัน โปรดขอให้โรงเรียนเปลี่ยนข้อมูลของคุณ",
+  "This School cancels memberships itself. Ask the School to cancel it for you.": "โรงเรียนนี้ยกเลิกสมาชิกภาพเอง โปรดขอให้โรงเรียนยกเลิกให้คุณ",
+  "This School adds family members itself. Ask the School to add your child.": "โรงเรียนนี้เพิ่มสมาชิกในครอบครัวเอง โปรดขอให้โรงเรียนเพิ่มบุตรของคุณ",
   "This School doesn't let children sign their own waivers.": "โรงเรียนนี้ไม่อนุญาตให้เด็กลงนามเอกสารสละสิทธิ์เอง",
   "This child isn't old enough yet to sign this School's waivers themselves.": "เด็กคนนี้ยังอายุไม่ถึงที่จะลงนามเอกสารสละสิทธิ์ของโรงเรียนนี้เอง",
   "Add the child's date of birth before they sign a waiver themselves.": "เพิ่มวันเกิดของเด็กก่อนให้เด็กลงนามเอกสารสละสิทธิ์เอง",
