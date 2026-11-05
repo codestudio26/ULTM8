@@ -1377,6 +1377,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   sets the Timetable's week start (Monday or Sunday) and whether it opens as
   Rows or Grid; the Timetable filters by branch, style and class type. Needs a
   database migration.
+- **Classes in Google Calendar and a schedule for the School's website**
+  (Decision 319 item 4; Gymdesk S6/S7) — a new **Calendar and website** card
+  on the School page (owner only, both **off by default**). "Staff can add
+  their classes to Google Calendar" gives each staff member (owner, Branch
+  Staff, coach) a **private calendar link** on **My Profile** with the classes
+  they teach at that School (30 days back to 6 months ahead; cancelled ones
+  marked cancelled), which they add in Google Calendar under "From URL" (any
+  calendar app works). No Google account is connected. A new link turns the
+  old one off; the link stops working when they remove it, lose their staff
+  role, or the School turns the setting off. "Show your schedule on your
+  website" gives a snippet to paste into the School's own site: a page with
+  the next four weeks of classes (class name, times, Branch, cancelled), in
+  the portal's language, and the same as JSON. No coaches, members or
+  bookings are shown. "New link" turns the old one off. **Needs a database
+  migration** (`20270217000002_calendar_feeds_and_schedule_embed`).
 - **Closures (Decision 353, Q8)** — the owner can close the School or one
   branch for some dates from the Timetable's Closures button; classes on those
   dates are cancelled under the normal cancellation rule and students are told,

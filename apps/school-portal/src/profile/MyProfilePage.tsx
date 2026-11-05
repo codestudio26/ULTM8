@@ -28,6 +28,7 @@ import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useI18n } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { MyCalendarFeedCard } from './MyCalendarFeedCard';
 
 /**
  * The signed-in user's own profile (`/profile`, reached from the header's
@@ -205,6 +206,8 @@ export function MyProfilePage() {
         </form>
       </Card>
       <ChangePasscodeCard />
+      {/* Decision 319 item 4: staff see their classes in Google Calendar. */}
+      <MyCalendarFeedCard />
     </>
   );
 }

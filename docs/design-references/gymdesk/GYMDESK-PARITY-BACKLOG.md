@@ -149,8 +149,8 @@ including a filled-in example where possible. Empty screens hide most fields.
 | S3 | Schedule settings: **week start** day (Sunday/Monday) | ❌ | Wanted (Decision 319) |
 | S4 | Schedule settings: **time zone** | ✅ | Branch, then School, time zone (Decision 172) |
 | S5 | Schedule settings: **default layout** (list or grid) | ❌ | Wanted (Decision 319) |
-| S6 | **Google Calendar** connect | ❌ | Wanted: staff see their classes in Google Calendar (Decision 319) |
-| S7 | **Schedule embed** for the School's own website | ❌ | Wanted (Decision 319) |
+| S6 | **Google Calendar** connect | ✅ | **5 Nov 2026: built** (Decision 319 item 4, feature/calendar-and-embed) as a private calendar (iCal) link per staff member that Google Calendar subscribes to; no Google sign-in. Owner switches it on (School page); each staff member's link is on My Profile |
+| S7 | **Schedule embed** for the School's own website | ✅ | **5 Nov 2026: built** (Decision 319 item 4): an iframe snippet (next 4 weeks: class name, times, Branch), plus JSON; owner switches it on and can replace the link |
 | S8 | **Close gym**: hide the schedule for a period, optionally freeze every membership | ❌ | Wanted as closure dates (Decision 319) |
 | S9 | **Several named schedules** ("Create Schedule": title, visibility *Visible to all* or narrower, *Receive booking notifications*); "All Schedules" filter | ❌ | Not wanted: one timetable per Branch, filtered by style and class type (Decision 319) |
 | S10 | **Assign → Assign Roster**: "Use rosters to assign members to a group of sessions on the schedule"; roster list with "+ Create new roster" | ❌ | Not wanted: rosters stay lists only (Decisions 317, 319) |
