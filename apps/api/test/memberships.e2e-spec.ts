@@ -130,6 +130,9 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
       ],
     });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
+    // Decision 429 items 7 and 9: a minor is under 18, and the parent has given BASELINE consent.
+    await superuser.user.update({ where: { id: minor.id }, data: { dateOfBirth: new Date('2015-01-01') } });
+    await superuser.consentRecord.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id, tier: 'BASELINE', policyVersion: '2026-09-v1' } });
 
     tokenOwner = signAccessToken(owner, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: school.id, branchId: null }]);
     tokenStudentA = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }]);
@@ -156,6 +159,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
     await superuser.paymentAccount.delete({ where: { id: paymentAccountId } });
+    await superuser.consentRecord.deleteMany({ where: { guardianId: guardian.id } });
     await superuser.guardianLink.deleteMany({ where: { guardianId: guardian.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { email: { contains: 'memberships-http-' } } });
