@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "Ich",
       loadFailed: "Diese Schule konnte nicht geladen werden — bitte versuche es erneut.",
       alreadyStudentMe: "Du bist hier bereits Schüler.",
+      familyOff: "Diese Schule fügt Kinder selbst hinzu. Bitte die Schule, dein Kind hinzuzufügen.",
       alreadyStudentOther: "{name} ist hier bereits Schüler.",
       title: "{name} beitreten",
       whoIsJoining: "Wer tritt bei?",
@@ -574,6 +575,19 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        one: "Graduierung in {count} Tag",
+        other: "Graduierung in {count} Tagen",
+      },
+      gradingToday: "Graduierung heute",
+      classesToGo: {
+        one: "Noch {count} Training",
+        other: "Noch {count} Trainings",
+      },
+      daysToGo: {
+        one: "Noch {count} Tag",
+        other: "Noch {count} Tage",
+      },
       loadError: "Die Graduierung konnte nicht geladen werden — bitte versuche es erneut.",
       noRank: "Noch kein Grad. Grade erscheinen hier, sobald die Schule dich graduiert oder du beim Beitritt deinen Gürtel angibst.",
       historyTitle: "Verlauf: {style}",
@@ -820,6 +834,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Mitgliedschaften konnten nicht geladen werden — bitte versuche es erneut.",
       cancelSubscription: "Abo kündigen",
       keepSubscription: "Behalten",
+      cancelBySchool: "Zum Kündigen wende dich an die Schule.",
       cancelConfirm: "Du behältst dein Abo bis zum Ende des bezahlten Monats. Danach endet es und es werden keine Zahlungen mehr eingezogen.",
       cancelError: "Dein Abo konnte nicht gekündigt werden — bitte versuche es erneut.",
       cancelledEnds: "Gekündigt, endet am {date}",
@@ -911,6 +926,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "Bestätigt",
       notVerified: "Noch nicht bestätigt",
       identifiersNote: "E-Mail und Telefon können hier nicht geändert werden — sie sind deine Anmeldekennungen.",
+      lockedNote: "Deine Schule hält deine Angaben aktuell. Bitte die Schule, sie zu ändern. Sprache und Währung der App kannst du weiterhin ändern.",
       firstName: "Vorname",
       surname: "Nachname",
       username: "Benutzername",

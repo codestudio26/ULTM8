@@ -7,6 +7,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
 import { useT } from '../i18n/I18nProvider';
 import { MedicalInfoSharing } from './MedicalInfoSharing';
+import { useMemberAppSettings } from '../lib/memberAppQueries';
 import {
   useCurrencies,
   useLanguages,
@@ -117,6 +118,9 @@ export function ProfileScreen() {
   const currencies = useCurrencies();
   const updateProfile = useUpdateProfile();
   const uploadPhoto = useUploadMyProfilePhoto();
+  // Decision 318 item 7: a School may keep its members' details itself. The
+  // app's language and currency stay the member's own.
+  const locked = useMemberAppSettings().data?.profileLocked ?? false;
 
   const [form, setForm] = useState<Form | null>(null);
   const [saved, setSaved] = useState(false);
@@ -135,6 +139,10 @@ export function ProfileScreen() {
 
   function handleSave() {
     if (!form || updateProfile.isPending) return;
+    if (locked) {
+      updateProfile.mutate({ language: form.language || undefined, currency: form.currency || undefined }, { onSuccess: () => setSaved(true) });
+      return;
+    }
     // Decision 315 item 5: only the contacts that changed (blank clears one).
     const initial = profile.data ? formFrom(profile.data) : null;
     const contacts: Partial<Record<(typeof CONTACT_FIELDS)[number], string | null>> = {};
@@ -234,10 +242,12 @@ export function ProfileScreen() {
     <ScrollView style={{ backgroundColor: theme.surface0 }} contentContainerStyle={{ padding: spacing[4] + spacing[1] }}>
       <View style={{ alignItems: 'center', marginBottom: spacing[4] }}>
         <Avatar firstName={profile.data.firstName} surname={profile.data.surname} photoUrl={profile.data.profilePhotoUrl} size={96} />
-        <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[3] }}>
-          <Button title={t('profile.screen.takePhoto')} variant="secondary" loading={uploadPhoto.isPending} onPress={takePhoto} />
-          <Button title={t('profile.screen.choosePhoto')} variant="secondary" loading={uploadPhoto.isPending} onPress={pickPhotoFromLibrary} />
-        </View>
+        {locked ? null : (
+          <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[3] }}>
+            <Button title={t('profile.screen.takePhoto')} variant="secondary" loading={uploadPhoto.isPending} onPress={takePhoto} />
+            <Button title={t('profile.screen.choosePhoto')} variant="secondary" loading={uploadPhoto.isPending} onPress={pickPhotoFromLibrary} />
+          </View>
+        )}
         {photoError ? <InlineError message={photoError} /> : null}
         {uploadPhoto.isError ? (
           <InlineError message={getApiErrorMessage(uploadPhoto.error, t('profile.screen.uploadFailed'))} />
@@ -254,72 +264,80 @@ export function ProfileScreen() {
 
       <View style={{ height: spacing[4] }} />
 
-      <Field label={t('profile.screen.firstName')}>
-        <TextField value={form.firstName} onChangeText={(v) => set('firstName', v)} />
-      </Field>
-      <Field label={t('profile.screen.surname')}>
-        <TextField value={form.surname} onChangeText={(v) => set('surname', v)} />
-      </Field>
-      <Field label={t('profile.screen.username')} hint={t('profile.screen.usernameHint')}>
-        <TextField autoCapitalize="none" value={form.username} onChangeText={(v) => set('username', v)} />
-      </Field>
-      <Field label={t('profile.screen.dateOfBirth')} hint={t('profile.screen.dateFormat')}>
-        <TextField value={form.dateOfBirth} onChangeText={(v) => set('dateOfBirth', v)} placeholder={t('profile.screen.dateFormat')} />
-      </Field>
-      <Field label={t('profile.screen.gender')}>
-        {/* Decision 315 item 15: Female, Male or not given. */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {(['FEMALE', 'MALE', ''] as const).map((g) => (
-            <View key={g || 'none'} style={{ flex: 1 }}>
-              <Button
-                title={g === 'FEMALE' ? t('profile.screen.genderFemale') : g === 'MALE' ? t('profile.screen.genderMale') : t('profile.screen.genderNotGiven')}
-                variant={form.gender === g ? 'primary' : 'secondary'}
-                onPress={() => set('gender', g)}
-              />
-            </View>
-          ))}
-        </View>
-      </Field>
-      <Field label={t('profile.screen.nationality')}>
-        <TextField value={form.nationality} onChangeText={(v) => set('nationality', v)} />
-      </Field>
-      <AddressSearch
-        onPicked={(details) => {
-          setPickedAddress(details);
-          set('address', details.formattedAddress);
-        }}
-      />
-      <Field label={t('profile.screen.address')}>
-        <TextField value={form.address} onChangeText={(v) => set('address', v)} multiline />
-      </Field>
+      {locked ? <Muted>{t('profile.screen.lockedNote')}</Muted> : null}
+      <View
+        testID="profile-details"
+        pointerEvents={locked ? 'none' : 'auto'}
+        accessibilityState={{ disabled: locked }}
+        style={locked ? { opacity: 0.6 } : undefined}
+      >
+        <Field label={t('profile.screen.firstName')}>
+          <TextField value={form.firstName} onChangeText={(v) => set('firstName', v)} />
+        </Field>
+        <Field label={t('profile.screen.surname')}>
+          <TextField value={form.surname} onChangeText={(v) => set('surname', v)} />
+        </Field>
+        <Field label={t('profile.screen.username')} hint={t('profile.screen.usernameHint')}>
+          <TextField autoCapitalize="none" value={form.username} onChangeText={(v) => set('username', v)} />
+        </Field>
+        <Field label={t('profile.screen.dateOfBirth')} hint={t('profile.screen.dateFormat')}>
+          <TextField value={form.dateOfBirth} onChangeText={(v) => set('dateOfBirth', v)} placeholder={t('profile.screen.dateFormat')} />
+        </Field>
+        <Field label={t('profile.screen.gender')}>
+          {/* Decision 315 item 15: Female, Male or not given. */}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {(['FEMALE', 'MALE', ''] as const).map((g) => (
+              <View key={g || 'none'} style={{ flex: 1 }}>
+                <Button
+                  title={g === 'FEMALE' ? t('profile.screen.genderFemale') : g === 'MALE' ? t('profile.screen.genderMale') : t('profile.screen.genderNotGiven')}
+                  variant={form.gender === g ? 'primary' : 'secondary'}
+                  onPress={() => set('gender', g)}
+                />
+              </View>
+            ))}
+          </View>
+        </Field>
+        <Field label={t('profile.screen.nationality')}>
+          <TextField value={form.nationality} onChangeText={(v) => set('nationality', v)} />
+        </Field>
+        <AddressSearch
+          onPicked={(details) => {
+            setPickedAddress(details);
+            set('address', details.formattedAddress);
+          }}
+        />
+        <Field label={t('profile.screen.address')}>
+          <TextField value={form.address} onChangeText={(v) => set('address', v)} multiline />
+        </Field>
 
-      <Field label={t('profile.screen.weightCategory')} hint={t('profile.screen.weightCategoryHint')}>
-        <TextField value={form.weightCategory} onChangeText={(v) => set('weightCategory', v)} />
-      </Field>
-      <Field label={t('profile.screen.kimonoSize')} hint={t('profile.screen.kimonoSizeHint')}>
-        <TextField value={form.kimonoSize} onChangeText={(v) => set('kimonoSize', v)} />
-      </Field>
-      <Field label={t('profile.screen.beltSize')} hint={t('profile.screen.beltSizeHint')}>
-        <TextField value={form.beltSize} onChangeText={(v) => set('beltSize', v)} />
-      </Field>
+        <Field label={t('profile.screen.weightCategory')} hint={t('profile.screen.weightCategoryHint')}>
+          <TextField value={form.weightCategory} onChangeText={(v) => set('weightCategory', v)} />
+        </Field>
+        <Field label={t('profile.screen.kimonoSize')} hint={t('profile.screen.kimonoSizeHint')}>
+          <TextField value={form.kimonoSize} onChangeText={(v) => set('kimonoSize', v)} />
+        </Field>
+        <Field label={t('profile.screen.beltSize')} hint={t('profile.screen.beltSizeHint')}>
+          <TextField value={form.beltSize} onChangeText={(v) => set('beltSize', v)} />
+        </Field>
 
-      <Field label={t('profile.screen.secondaryPhone')} hint={t('profile.screen.secondaryHint')}>
-        <TextField value={form.secondaryPhone} onChangeText={(v) => set('secondaryPhone', v)} keyboardType="phone-pad" maxLength={40} />
-      </Field>
-      <Field label={t('profile.screen.secondaryEmail')} hint={t('profile.screen.secondaryHint')}>
-        <TextField value={form.secondaryEmail} onChangeText={(v) => set('secondaryEmail', v)} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
-      </Field>
-      <Muted>{t('profile.screen.emergencyHeading')}</Muted>
-      <Muted>{t('profile.screen.emergencyHint')}</Muted>
-      <Field label={t('profile.screen.emergencyName')}>
-        <TextField value={form.emergencyContactName} onChangeText={(v) => set('emergencyContactName', v)} maxLength={100} />
-      </Field>
-      <Field label={t('profile.screen.emergencyPhone')}>
-        <TextField value={form.emergencyContactPhone} onChangeText={(v) => set('emergencyContactPhone', v)} keyboardType="phone-pad" maxLength={40} />
-      </Field>
-      <Field label={t('profile.screen.emergencyRelationship')}>
-        <TextField value={form.emergencyContactRelationship} onChangeText={(v) => set('emergencyContactRelationship', v)} maxLength={60} />
-      </Field>
+        <Field label={t('profile.screen.secondaryPhone')} hint={t('profile.screen.secondaryHint')}>
+          <TextField value={form.secondaryPhone} onChangeText={(v) => set('secondaryPhone', v)} keyboardType="phone-pad" maxLength={40} />
+        </Field>
+        <Field label={t('profile.screen.secondaryEmail')} hint={t('profile.screen.secondaryHint')}>
+          <TextField value={form.secondaryEmail} onChangeText={(v) => set('secondaryEmail', v)} keyboardType="email-address" autoCapitalize="none" maxLength={254} />
+        </Field>
+        <Muted>{t('profile.screen.emergencyHeading')}</Muted>
+        <Muted>{t('profile.screen.emergencyHint')}</Muted>
+        <Field label={t('profile.screen.emergencyName')}>
+          <TextField value={form.emergencyContactName} onChangeText={(v) => set('emergencyContactName', v)} maxLength={100} />
+        </Field>
+        <Field label={t('profile.screen.emergencyPhone')}>
+          <TextField value={form.emergencyContactPhone} onChangeText={(v) => set('emergencyContactPhone', v)} keyboardType="phone-pad" maxLength={40} />
+        </Field>
+        <Field label={t('profile.screen.emergencyRelationship')}>
+          <TextField value={form.emergencyContactRelationship} onChangeText={(v) => set('emergencyContactRelationship', v)} maxLength={60} />
+        </Field>
+      </View>
 
       <Field
         label={t('profile.screen.language')}
@@ -354,7 +372,7 @@ export function ProfileScreen() {
         title={t('profile.screen.save')}
         onPress={handleSave}
         loading={updateProfile.isPending}
-        disabled={!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth.trim()}
+        disabled={!locked && (!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth.trim())}
       />
 
       {/* Decision 419 item 1: which Schools hold medical information, and withdrawing consent. */}

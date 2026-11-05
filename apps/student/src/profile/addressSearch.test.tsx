@@ -5,6 +5,12 @@ import * as q from './profileQueries';
 import * as lookup from './addressLookupQueries';
 import { ProfileScreen } from './ProfileScreen';
 
+// Decision 318 item 7: the member app switches (on unless a test turns one off).
+jest.mock('../lib/memberAppQueries', () => {
+  const actual = jest.requireActual('../lib/memberAppQueries') as object;
+  return { ...actual, useMemberAppSettings: jest.fn(() => ({ data: undefined })) };
+});
+
 // The Profile screen's medical information section (#435) is tested on its own
 // (medicalInfoSharing.test.tsx); here no School holds any.
 jest.mock('./medicalInfoQueries', () => ({

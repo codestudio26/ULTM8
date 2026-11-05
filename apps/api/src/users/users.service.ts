@@ -4,6 +4,7 @@ import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { CONTACT_FIELDS, UpdateUserDto } from './dto/update-user.dto';
 import { addressWriteData } from '../common/address/postal-address.dto';
+import { PROFILE_PREFERENCE_FIELDS, isProfileLocked } from '../member-app/member-app-switches';
 
 /**
  * `SELECT` shape shared by getMe/updateMe — explicit, not `findUnique({ where })`'s
@@ -104,6 +105,14 @@ export class UsersService {
       if (guardian) {
         throw new ForbiddenException("A child's contact details are changed by their Guardian or the School.");
       }
+    }
+    // Decision 318 item 7: a School can turn off members editing their own
+    // profile. The app's own preferences (language, currency) stay theirs.
+    const changesDetails = (Object.keys(dto) as (keyof UpdateUserDto)[]).some(
+      (f) => dto[f] !== undefined && !(PROFILE_PREFERENCE_FIELDS as readonly string[]).includes(f),
+    );
+    if (changesDetails && (await isProfileLocked(this.prismaJobs, callerId))) {
+      throw new ForbiddenException('Your School keeps your profile up to date. Ask the School to change your details.');
     }
     return this.updateProfileFor(callerId, callerId, dto);
   }

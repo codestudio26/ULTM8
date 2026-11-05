@@ -88,9 +88,12 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
     );
   }
 
+  // Decision 318 item 7: a School may add children itself ("add family members" off).
+  const familyOff = academy.memberAppAddFamily === false;
+  const children = minors.data?.items ?? [];
   const people: Person[] = [
     ...(claims && !alreadyMine ? [{ studentId: claims.sub, name: t('academies.join.me') }] : []),
-    ...(minors.data?.items ?? []).map((m) => ({ studentId: m.studentId, name: `${m.firstName} ${m.surname}` })),
+    ...(familyOff ? [] : children.map((m) => ({ studentId: m.studentId, name: `${m.firstName} ${m.surname}` }))),
   ];
   const branches = academy.branches;
   const needsBranch = branches.length > 0;
@@ -142,6 +145,9 @@ export function JoinSchoolScreen({ route, navigation }: Props) {
     <ScrollView>
       <Screen>
         <Text style={{ fontSize: fontSize.headingMd, fontWeight: fontWeight.heading }}>{t('academies.join.title', { name: academy.name })}</Text>
+        {familyOff && children.length > 0 ? (
+          <Text style={{ marginTop: spacing[3], color: theme.textSecondary }}>{t('academies.join.familyOff')}</Text>
+        ) : null}
 
         {people.length === 0 ? (
           <Text style={{ marginTop: spacing[3], color: theme.textSecondary }}>{t('academies.join.alreadyStudentMe')}</Text>

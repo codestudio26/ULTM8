@@ -1,6 +1,19 @@
 /** English text: grading (Decision 323). */
 export const grading = {
   myGrading: {
+    gradingIn: {
+      one: "Grading in {count} day",
+      other: "Grading in {count} days",
+    },
+    gradingToday: "Grading today",
+    classesToGo: {
+      one: "{count} class to go",
+      other: "{count} classes to go",
+    },
+    daysToGo: {
+      one: "{count} day to go",
+      other: "{count} days to go",
+    },
     loadError: 'Could not load the grading — please try again.',
     noRank: 'No rank yet. Ranks show here once the School grades you, or you declare your belt when joining.',
     /** The title of a style's history screen. */

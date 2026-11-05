@@ -1,5 +1,9 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate は日付（YYYY-MM-DD）で指定してください",
+  "Your School keeps your profile up to date. Ask the School to change your details.": "プロフィールはスクールが管理しています。情報の変更はスクールに依頼してください。",
+  "This School cancels memberships itself. Ask the School to cancel it for you.": "このスクールでは会員資格の解約をスクールが行います。解約はスクールに依頼してください。",
+  "This School adds family members itself. Ask the School to add your child.": "このスクールでは家族の追加をスクールが行います。お子さまの追加はスクールに依頼してください。",
   "This School doesn't let children sign their own waivers.": "このスクールでは、子どもが自分で免責同意書に署名することはできません。",
   "This child isn't old enough yet to sign this School's waivers themselves.": "この子どもはまだ、このスクールの免責同意書に自分で署名できる年齢ではありません。",
   "Add the child's date of birth before they sign a waiver themselves.": "子どもが自分で免責同意書に署名する前に、生年月日を追加してください。",

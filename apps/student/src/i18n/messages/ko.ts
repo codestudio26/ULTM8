@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "나",
       loadFailed: "이 도장을 불러오지 못했습니다. 다시 시도해 주세요.",
       alreadyStudentMe: "이미 이 도장의 수련생입니다.",
+      familyOff: "이 학교는 자녀를 직접 추가합니다. 자녀 추가는 학교에 요청하세요.",
       alreadyStudentOther: "{name}님은 이미 이 도장의 수련생입니다.",
       title: "{name} 가입",
       whoIsJoining: "누가 가입하나요?",
@@ -569,6 +570,16 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        other: "심사까지 {count}일",
+      },
+      gradingToday: "오늘 심사",
+      classesToGo: {
+        other: "수업 {count}회 남음",
+      },
+      daysToGo: {
+        other: "{count}일 남음",
+      },
       loadError: "승급 정보를 불러오지 못했습니다. 다시 시도해 주세요.",
       noRank: "아직 등급이 없습니다. 도장에서 승급하거나 가입할 때 띠를 입력하면 여기에 등급이 표시됩니다.",
       historyTitle: "{style} 기록",
@@ -814,6 +825,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "회원권을 불러오지 못했습니다. 다시 시도해 주세요.",
       cancelSubscription: "구독 해지",
       keepSubscription: "유지하기",
+      cancelBySchool: "해지하려면 학교에 요청하세요.",
       cancelConfirm: "결제한 달이 끝날 때까지 구독을 유지합니다. 그 후 구독이 끝나고 더 이상 결제되지 않습니다.",
       cancelError: "구독을 해지할 수 없습니다 — 다시 시도해 주세요.",
       cancelledEnds: "해지됨, {date}에 종료",
@@ -905,6 +917,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "인증됨",
       notVerified: "아직 인증되지 않음",
       identifiersNote: "이메일과 전화번호는 로그인 식별 정보이므로 여기서 변경할 수 없습니다.",
+      lockedNote: "학교에서 내 정보를 관리합니다. 변경은 학교에 요청하세요. 앱의 언어와 통화는 계속 바꿀 수 있습니다.",
       firstName: "이름",
       surname: "성",
       username: "사용자 이름",

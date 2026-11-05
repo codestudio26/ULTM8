@@ -14,6 +14,7 @@ export const profile = {
     verified: 'Verified',
     notVerified: 'Not yet verified',
     identifiersNote: "Email and phone can't be changed here — they're your login identifiers.",
+    lockedNote: "Your School keeps your details up to date. Ask the School to change them. You can still change the app's language and currency.",
     firstName: 'First name',
     surname: 'Surname',
     username: 'Username',

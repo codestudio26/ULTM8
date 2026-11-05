@@ -3,6 +3,13 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render } from '@testing-library/react-native';
 import * as q from './profileQueries';
 import { ProfileScreen } from './ProfileScreen';
+import * as memberApp from '../lib/memberAppQueries';
+
+// Decision 318 item 7: the member app switches (on unless a test turns one off).
+jest.mock('../lib/memberAppQueries', () => {
+  const actual = jest.requireActual('../lib/memberAppQueries') as object;
+  return { ...actual, useMemberAppSettings: jest.fn(() => ({ data: undefined })) };
+});
 
 // Decision 419 item 1's medical information section has its own tests
 // (medicalInfoSharing.test.tsx); here no School holds any.
@@ -140,5 +147,30 @@ describe('ProfileScreen — clearing a field sends null, not undefined', () => {
     expect(call.emergencyContactName).toBe('Mum');
     expect('secondaryPhone' in call).toBe(false);
     expect('emergencyContactRelationship' in call).toBe(false);
+  });
+});
+
+/** Decision 318 item 7: a School may keep its members' details itself. */
+describe('ProfileScreen — the School keeps the details', () => {
+  let updateProfile: ReturnType<typeof idleMutation>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    updateProfile = idleMutation();
+    mocked(q.useMyProfile).mockReturnValue({ data: PROFILE, isLoading: false, isError: false, error: null });
+    mocked(q.useUpdateProfile).mockReturnValue(updateProfile);
+    mocked(q.useUploadMyProfilePhoto).mockReturnValue(idleMutation());
+    mocked(q.useLanguages).mockReturnValue({ data: [{ code: 'en', name: 'English' }], isLoading: false });
+    mocked(q.useCurrencies).mockReturnValue({ data: [{ code: 'USD', name: 'US Dollar' }], isLoading: false });
+    mocked(memberApp.useMemberAppSettings).mockReturnValue({ data: { profileLocked: true, schools: [] } });
+  });
+
+  it('says so, offers no photo change, and saves only the language and currency', async () => {
+    const { getByText, queryByText, getByTestId } = await render(<ProfileScreen />);
+    expect(getByText(/Your School keeps your details up to date/)).toBeTruthy();
+    expect(queryByText('Take Photo')).toBeNull();
+    expect(getByTestId('profile-details').props.pointerEvents).toBe('none');
+    await fireEvent.press(getByText('Save'));
+    expect(updateProfile.mutate).toHaveBeenCalledWith({ language: 'en', currency: 'USD' }, expect.anything());
   });
 });

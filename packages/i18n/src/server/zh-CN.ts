@@ -1,5 +1,9 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate 必须是日期（YYYY-MM-DD）",
+  "Your School keeps your profile up to date. Ask the School to change your details.": "你的学校负责更新你的资料。请让学校修改你的信息。",
+  "This School cancels memberships itself. Ask the School to cancel it for you.": "此学校自行取消会员资格。请让学校为你取消。",
+  "This School adds family members itself. Ask the School to add your child.": "此学校自行添加家庭成员。请让学校添加你的孩子。",
   "This School doesn't let children sign their own waivers.": "本学校不允许儿童自行签署免责声明。",
   "This child isn't old enough yet to sign this School's waivers themselves.": "该儿童尚未达到自行签署本学校免责声明的年龄。",
   "Add the child's date of birth before they sign a waiver themselves.": "请先添加该儿童的出生日期，再让其自行签署免责声明。",

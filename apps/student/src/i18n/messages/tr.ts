@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       me: "Ben",
       loadFailed: "Bu okul yüklenemedi — lütfen tekrar deneyin.",
       alreadyStudentMe: "Zaten bu okulun öğrencisisiniz.",
+      familyOff: "Bu okul çocukları kendisi ekliyor. Çocuğunuzu eklemesini okuldan isteyin.",
       alreadyStudentOther: "{name} zaten bu okulun öğrencisi.",
       title: "Katıl: {name}",
       whoIsJoining: "Kim katılıyor?",
@@ -574,6 +575,19 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   grading: {
     myGrading: {
+      gradingIn: {
+        one: "Kuşak sınavına {count} gün",
+        other: "Kuşak sınavına {count} gün",
+      },
+      gradingToday: "Kuşak sınavı bugün",
+      classesToGo: {
+        one: "{count} ders kaldı",
+        other: "{count} ders kaldı",
+      },
+      daysToGo: {
+        one: "{count} gün kaldı",
+        other: "{count} gün kaldı",
+      },
       loadError: "Kuşak bilgileri yüklenemedi — lütfen tekrar deneyin.",
       noRank: "Henüz kuşak yok. Okul sizi değerlendirdiğinde veya katılırken kuşağınızı beyan ettiğinizde kuşaklar burada görünür.",
       historyTitle: "{style} geçmişi",
@@ -820,6 +834,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Üyelikler yüklenemedi — lütfen tekrar deneyin.",
       cancelSubscription: "Aboneliği iptal et",
       keepSubscription: "Devam et",
+      cancelBySchool: "İptal etmek için okula başvurun.",
       cancelConfirm: "Ödediğin ayın sonuna kadar aboneliğini kullanmaya devam edersin. Sonra abonelik biter ve başka ödeme alınmaz.",
       cancelError: "Aboneliğin iptal edilemedi — lütfen tekrar dene.",
       cancelledEnds: "İptal edildi, {date} tarihinde bitiyor",
@@ -911,6 +926,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       verified: "Doğrulandı",
       notVerified: "Henüz doğrulanmadı",
       identifiersNote: "E-posta ve telefon burada değiştirilemez — bunlar giriş bilgilerinizdir.",
+      lockedNote: "Okulunuz bilgilerinizi güncel tutuyor. Değiştirmesi için okula başvurun. Uygulamanın dilini ve para birimini yine de değiştirebilirsiniz.",
       firstName: "Ad",
       surname: "Soyad",
       username: "Kullanıcı adı",

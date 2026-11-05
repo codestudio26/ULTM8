@@ -1,4 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { gradingCountdown } from '../member-app/member-app-switches';
+import { dayOf, schoolToday } from '../charges/recurring-schedule';
 import { ModuleRef } from '@nestjs/core';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -232,14 +234,19 @@ export class GradingService {
         styles: await tx.discipline.findMany({ where: { schoolId }, select: { id: true, name: true, archivedAt: true, rankDisplay: true } }),
         belts: await tx.rank.findMany({ where: { schoolId, archivedAt: null }, orderBy: { order: 'asc' }, include: { stripeTiers: { orderBy: { order: 'asc' } } } }),
         skills: await tx.skill.findMany({ where: { schoolId }, select: { id: true, name: true } }),
+        school: await tx.school.findUnique({ where: { id: schoolId }, select: { memberAppGradingCountdown: true, nextGradingDate: true, timezone: true } }),
       }));
+      // Decision 318 item 7: the grading countdown, only when the School turns it on.
+      const countdownOn = !!catalog.school?.memberAppGradingCountdown;
+      const schoolDay = schoolToday(new Date(), catalog.school?.timezone);
+      const nextGradingDate = catalog.school?.nextGradingDate ? dayOf(catalog.school.nextGradingDate) : null;
       for (const row of ranks as Array<{
         disciplineId: string;
         currentStripeId: string | null;
         dateOfCurrentRank: Date;
         verificationStatus: 'VERIFIED' | 'UNVERIFIED';
         skillStatuses: Array<{ skillId: string; status: string }>;
-        eligibility: { requiredSkillIds?: string[]; optionalSkillIds?: string[] };
+        eligibility: { requiredSkillIds?: string[]; optionalSkillIds?: string[]; hasNext?: boolean; timeOnly?: boolean; requiredClasses?: number; countedClasses?: number; requiredDays?: number; elapsedDays?: number };
         progressBreakdown: unknown;
         hoursTrained: unknown;
       }>) {
@@ -285,6 +292,7 @@ export class GradingService {
           eligibility: row.eligibility,
           progressBreakdown: row.progressBreakdown,
           hoursTrained: row.hoursTrained,
+          countdown: countdownOn ? gradingCountdown(nextGradingDate, schoolDay, row.eligibility, archived) : null,
           skills: archived
             ? []
             : [...(row.eligibility.requiredSkillIds ?? []).map((id) => skill(id, true)), ...(row.eligibility.optionalSkillIds ?? []).map((id) => skill(id, false))],
