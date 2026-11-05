@@ -35,6 +35,7 @@ import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
 import { LateFeesCard } from '../charges/LateFeesCard';
 import { IncomeCategoriesCard } from '../charges/IncomeCategoriesCard';
+import { ScheduleSharingCard } from './ScheduleSharingCard';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
@@ -112,6 +113,8 @@ export function SchoolPage() {
         <CustomMemberFieldsSettingsCard key={`custom-fields-${schoolId}`} schoolId={schoolId} />
         <FooterSettingsCard key={`footer-${schoolId}`} schoolId={schoolId} school={school} />
         <AdTrackingCard key={`ad-tracking-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 319 item 4: staff calendar links and the schedule embed. */}
+        {closed ? null : <ScheduleSharingCard key={`schedule-sharing-${schoolId}`} schoolId={schoolId} />}
         <FranchiseAffiliationCard key={`franchise-${schoolId}`} schoolId={schoolId} franchiseId={school.franchiseId ?? null} closed={closed} />
       </fieldset>
       {closed ? null : <CloseSchoolCard key={`close-${schoolId}`} schoolId={schoolId} school={school} />}

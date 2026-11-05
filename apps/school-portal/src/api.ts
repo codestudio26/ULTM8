@@ -4,6 +4,10 @@ import { handleUnauthorized } from './auth/sessionRefresh';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000';
 
+/** The API's address, for links that open outside the app (Decision 319
+ * item 4: calendar links and the schedule embed). */
+export const apiBaseUrl: string = baseUrl;
+
 /** The one apps/api client instance for the whole app — always reads the current
  * token fresh from the store (see @ultm8/auth's header comment for the storage
  * decision), never caches it, so a login/logout is reflected on the very next call.

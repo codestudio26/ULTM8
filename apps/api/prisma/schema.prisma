@@ -557,6 +557,7 @@ model User {
   trainingLogs                      TrainingLog[]               @relation("TrainingLogStudent")
   instructorBeltsVerified           InstructorBelt[]            @relation("InstructorBeltVerifiedBy")
   waiverSignatures                  WaiverSignature[]           @relation("WaiverSignatureStudent")
+  staffCalendarFeeds                StaffCalendarFeed[]
   waiverSignaturesSigned            WaiverSignature[]           @relation("WaiverSignatureSignedBy")
   planContractSignatures            PlanContractSignature[]     @relation("PlanContractSignatureStudent")
   planContractSignaturesSigned      PlanContractSignature[]     @relation("PlanContractSignatureSignedBy")
@@ -1316,6 +1317,13 @@ model School {
   /// layout it opens in. Monday and list are what it always did.
   weekStartsOn                   WeekStartDay                    @default(MONDAY)
   timetableDefaultLayout         TimetableLayout                 @default(LIST)
+  /// Decision 319 item 4: staff may add their classes to Google Calendar (a
+  /// private calendar link each, StaffCalendarFeed). Off by default.
+  staffCalendarFeedsEnabled      Boolean                         @default(false)
+  /// Decision 319 item 4: the key in the School's schedule embed link for its
+  /// own website. Null = no embed. Public by nature (it sits in the School's
+  /// web page); a new key turns the old link off.
+  scheduleEmbedKey               String?                         @unique
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
@@ -1379,6 +1387,7 @@ model School {
   classes               Class[]
   timetableSlots        TimetableSlot[]
   closures              Closure[]
+  staffCalendarFeeds    StaffCalendarFeed[]
   instructors           Instructor[]
   paymentAccount        PaymentAccount?
   studentPaymentMethods StudentPaymentMethod[]
@@ -1406,29 +1415,29 @@ model School {
   studentCheckInCodes   StudentCheckInCode[]
   studentJoinDates      StudentJoinDate[]
 
-  notificationBroadcasts NotificationBroadcast[]
-  rankCorrectionRequests RankCorrectionRequest[]
-  studentNotes           StudentNote[]
-  schoolTags             SchoolTag[]
-  incomeCategories       IncomeCategory[]
-  customMemberFields     CustomMemberField[]
-  customMemberStatuses   CustomMemberStatus[]
-  studentExportLogs      StudentExportLog[]
-  studentMedicalInfo     StudentMedicalInfo[]
-  memberFiles            MemberFile[]
-  dataImports            DataImport[]
-  signedDocumentExports  SignedDocumentExport[]
-  childInvites           ChildInvite[]
-  signUps                SignUp[]
-  packRecharges          PackRecharge[]
-  membershipFreezes      MembershipFreeze[]
-  charges                Charge[]
-  chargeAllocations      ChargeAllocation[]
-  balanceEntries         BalanceEntry[]
-  chargeRefunds          ChargeRefund[]
-  recurringCharges       RecurringCharge[]
-  rosters                Roster[]
-  absenceAlerts          StudentAbsenceAlert[]
+  notificationBroadcasts  NotificationBroadcast[]
+  rankCorrectionRequests  RankCorrectionRequest[]
+  studentNotes            StudentNote[]
+  schoolTags              SchoolTag[]
+  incomeCategories        IncomeCategory[]
+  customMemberFields      CustomMemberField[]
+  customMemberStatuses    CustomMemberStatus[]
+  studentExportLogs       StudentExportLog[]
+  studentMedicalInfo      StudentMedicalInfo[]
+  memberFiles             MemberFile[]
+  dataImports             DataImport[]
+  signedDocumentExports   SignedDocumentExport[]
+  childInvites            ChildInvite[]
+  signUps                 SignUp[]
+  packRecharges           PackRecharge[]
+  membershipFreezes       MembershipFreeze[]
+  charges                 Charge[]
+  chargeAllocations       ChargeAllocation[]
+  balanceEntries          BalanceEntry[]
+  chargeRefunds           ChargeRefund[]
+  recurringCharges        RecurringCharge[]
+  rosters                 Roster[]
+  absenceAlerts           StudentAbsenceAlert[]
   membershipEndingReports MembershipEndingReport[]
 
   // Composite index leading with the tenant column (Decision 30) — School's own
@@ -2301,10 +2310,10 @@ model MembershipPlan {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships   Membership[]
-  transactions  Transaction[]
-  priceChanges  MembershipPlanPriceChange[]
-  packRecharges PackRecharge[]
+  memberships        Membership[]
+  transactions       Transaction[]
+  priceChanges       MembershipPlanPriceChange[]
+  packRecharges      PackRecharge[]
   contractSignatures PlanContractSignature[]
 
   // Composite index leading with the tenant column (Decision 30).
@@ -2897,15 +2906,15 @@ model Discipline {
   school   School @relation(fields: [schoolId], references: [id])
 
   name                  String
-  classTypesOffered     String[]     @default([])
+  classTypesOffered     String[]             @default([])
   /// Per-style "skills required" switch (Decision 128, item 10): off — grading
   /// with required skills not signed off needs a written acknowledgement; on —
   /// it is blocked with no override.
-  skillsRequiredToGrade Boolean      @default(false)
+  skillsRequiredToGrade Boolean              @default(false)
   /// Grading Board columns for this style (Decisions 75, 136, 181): Getting
   /// There from this %, Ready to Grade from that %. 33 / 66 by default.
-  boardGettingThere     Int          @default(33)
-  boardReadyToGrade     Int          @default(66)
+  boardGettingThere     Int                  @default(33)
+  boardReadyToGrade     Int                  @default(66)
   /// Decision 309: archived (retired) — hidden from pickers, no new classes,
   /// slots or grading; rank history stays readable. Never purged.
   archivedAt            DateTime?
@@ -2913,34 +2922,34 @@ model Discipline {
   /// style points to its Adult style. Screens pair them as one discipline with
   /// a Kids · Adult switch; grading a kid into Adult moves their rank to it.
   adultDisciplineId     String?
-  adultDiscipline       Discipline?  @relation("KidsAdultProgram", fields: [adultDisciplineId], references: [id], onDelete: SetNull)
-  kidsDisciplines       Discipline[] @relation("KidsAdultProgram")
+  adultDiscipline       Discipline?          @relation("KidsAdultProgram", fields: [adultDisciplineId], references: [id], onDelete: SetNull)
+  kidsDisciplines       Discipline[]         @relation("KidsAdultProgram")
   /// On a Kids style: from this age a student may be graded into the Adult
   /// program and shows "Ready for Adult program" (Decision 285 item 2). The
   /// IBJJF age, 16, by default.
-  readyForAdultAge      Int          @default(16)
+  readyForAdultAge      Int                  @default(16)
   /// Ranks shown as Belts or as Levels (no belt) (Decision 290, backlog
   /// 3.19), never a mix. Display only: a level is a badge in the rank's
   /// primaryColour, and its steps are rungs with no stripes.
-  rankDisplay           RankDisplay  @default(BELTS)
+  rankDisplay           RankDisplay          @default(BELTS)
   /// Requirement tick boxes (Decision 321 item 1), set by the owner: which
   /// requirements count toward the next rank in this style. An unticked one
   /// is never checked, even if a rank still holds a number for it. Classes,
   /// days in rank and skills are ticked by default (what every style did
   /// before); hours, days attended and minimum age are not.
-  requireClasses        Boolean      @default(true)
-  requireDaysInRank     Boolean      @default(true)
-  requireSkills         Boolean      @default(true)
-  requireHours          Boolean      @default(false)
-  requireDaysAttended   Boolean      @default(false)
-  requireMinimumAge     Boolean      @default(false)
+  requireClasses        Boolean              @default(true)
+  requireDaysInRank     Boolean              @default(true)
+  requireSkills         Boolean              @default(true)
+  requireHours          Boolean              @default(false)
+  requireDaysAttended   Boolean              @default(false)
+  requireMinimumAge     Boolean              @default(false)
   /// Automatic promotion (Decision 321 item 5): MANUAL (the coach decides,
   /// the default), AUTO_STRIPES or AUTO_ALL.
   promotionMode         GradingPromotionMode @default(MANUAL)
   /// "Auto-assign first belt" (Decision 321 item 6): a student with no rank
   /// in this style gets its first rung, verified, on their first check-in to
   /// a class of the style. Off by default.
-  autoAssignFirstRank   Boolean      @default(false)
+  autoAssignFirstRank   Boolean              @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4914,27 +4923,27 @@ model StaffPermission {
   /// Decision 303 item 3: may create charges for the students of their own
   /// branches. Null = the role's default: on for Branch Staff, off for
   /// Instructors. Owners always can.
-  canCreateCharges     Boolean?
+  canCreateCharges      Boolean?
   /// Decision 338 item 1: may cancel charges. Off by default for all staff;
   /// owners always can.
-  canCancelCharges     Boolean  @default(false)
+  canCancelCharges      Boolean  @default(false)
   /// Decision 409: may freeze members' memberships, approve, decline or end
   /// a freeze, for the students of their own branches. Branch Staff only;
   /// off by default; owners always can. The School's freeze settings stay
   /// the owner's.
-  canFreezeMemberships Boolean  @default(false)
+  canFreezeMemberships  Boolean  @default(false)
   /// Decision 317 item 3 (backlog 5.6): may see attendance statistics, for
   /// their own Branches. Branch Staff only; off by default; owners always
   /// can, for the whole School.
-  canSeeAttendanceStats Boolean @default(false)
+  canSeeAttendanceStats Boolean  @default(false)
   /// Decision 315 item 10: may see students' medical information, for the
   /// students of their own branches. Branch Staff only; off by default;
   /// owners always can.
-  canSeeMedicalInfo     Boolean @default(false)
+  canSeeMedicalInfo     Boolean  @default(false)
   /// Decision 315 items 12, 13: may import members, memberships and past
   /// attendance from a spreadsheet, for their own Branches. Branch Staff
   /// only; off by default; owners always can.
-  canImportData Boolean @default(false)
+  canImportData         Boolean  @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -5011,10 +5020,10 @@ model FrontDeskSession {
   /// Wrong member check-in codes typed in a row on this tablet (Decision 417).
   /// A right one sets it back to 0; at FRONT_DESK_MAX_WRONG_MEMBER_CODES the
   /// tablet locks.
-  wrongMemberCodeCount Int @default(0)
+  wrongMemberCodeCount Int       @default(0)
   /// Set when the tablet locks after too many wrong member codes (Decision
   /// 417). Only a staff code lets it carry on; until then it does nothing else.
-  lockedAt DateTime?
+  lockedAt             DateTime?
 
   @@index([schoolId])
   @@index([startedById])
@@ -5218,16 +5227,16 @@ model PromotionFeeRequest {
   gradedBy   User?   @relation("PromotionFeeRequestGradedBy", fields: [gradedById], references: [id], onDelete: SetNull)
 
   /// Who accepted or declined (the student or a Guardian), and when.
-  respondedById String?
-  respondedBy   User?     @relation("PromotionFeeRequestRespondedBy", fields: [respondedById], references: [id], onDelete: SetNull)
-  acceptedAt    DateTime?
-  declinedAt    DateTime?
-  paidAt        DateTime?
+  respondedById      String?
+  respondedBy        User?     @relation("PromotionFeeRequestRespondedBy", fields: [respondedById], references: [id], onDelete: SetNull)
+  acceptedAt         DateTime?
+  declinedAt         DateTime?
+  paidAt             DateTime?
   /// The owner who waived or cancelled it, and when.
-  closedById    String?
-  closedBy      User?     @relation("PromotionFeeRequestClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
-  waivedAt      DateTime?
-  cancelledAt   DateTime?
+  closedById         String?
+  closedBy           User?     @relation("PromotionFeeRequestClosedBy", fields: [closedById], references: [id], onDelete: SetNull)
+  waivedAt           DateTime?
+  cancelledAt        DateTime?
   /// The fee's charge was paid in full but the promotion that waited for it
   /// can no longer apply as made (the student's rank or the belt ladder changed
   /// since the grade). Set once, when first found; the School's owner(s) are
@@ -5702,10 +5711,10 @@ model CustomMemberField {
   schoolId String
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
-  name String
-  type CustomMemberFieldType
+  name     String
+  type     CustomMemberFieldType
   /// The choices of a DROPDOWN field, in order; empty for the other types.
-  options String[] @default([])
+  options  String[]              @default([])
   /// Order on the student's page, from 0.
   position Int
 
@@ -6152,12 +6161,12 @@ model Charge {
   /// becomes PAID and a waiting promotion applies; waiving or cancelling the
   /// fee cancels it. Staff can't cancel it from the Payments card: the fee is
   /// waived or cancelled from grading (PromotionFeeService).
-  promotionFeeRequestId String?              @unique
-  promotionFeeRequest   PromotionFeeRequest? @relation(fields: [promotionFeeRequestId], references: [id], onDelete: Restrict)
+  promotionFeeRequestId String?                @unique
+  promotionFeeRequest   PromotionFeeRequest?   @relation(fields: [promotionFeeRequestId], references: [id], onDelete: Restrict)
   /// Decision 316 item 6: the early-exit fee of this signed plan contract.
   /// One per contract.
-  contractSignatureId String?                @unique
-  contractSignature   PlanContractSignature? @relation(fields: [contractSignatureId], references: [id], onDelete: Restrict)
+  contractSignatureId   String?                @unique
+  contractSignature     PlanContractSignature? @relation(fields: [contractSignatureId], references: [id], onDelete: Restrict)
 
   /// Backlog §3.6 step 3 (Decision 412): the recurring charge this charge is
   /// one occurrence of, and that occurrence's date (also its due date). One
@@ -6335,19 +6344,19 @@ model RecurringCharge {
   studentId String
   student   User   @relation("RecurringChargeStudent", fields: [studentId], references: [id], onDelete: Restrict)
 
-  description   String
+  description      String
   /// The price as typed and its discount, as on a Charge (minor units;
   /// discountValue is hundredths of a percent for PERCENT).
-  unitAmount    Int
-  discountType  ChargeDiscountType?
-  discountValue Int?
-  currency      String
+  unitAmount       Int
+  discountType     ChargeDiscountType?
+  discountValue    Int?
+  currency         String
   /// "No tax on this item (0% or exempt)" (Decision 414 item 5): every
   /// occurrence is made with no tax.
-  taxExempt     Boolean             @default(false)
+  taxExempt        Boolean             @default(false)
   /// Decision 316 item 10: the income category every occurrence is made with.
   incomeCategoryId String?
-  incomeCategory   IncomeCategory? @relation(fields: [incomeCategoryId], references: [id], onDelete: NoAction)
+  incomeCategory   IncomeCategory?     @relation(fields: [incomeCategoryId], references: [id], onDelete: NoAction)
 
   frequency      RecurringChargeFrequency
   firstDate      DateTime                 @db.Date
@@ -6503,22 +6512,22 @@ model SignedDocumentExport {
   requestedById String?
   requestedBy   User?   @relation("SignedDocumentExportRequestedBy", fields: [requestedById], references: [id], onDelete: SetNull)
 
-  status SignedDocumentExportStatus @default(PENDING)
+  status             SignedDocumentExportStatus @default(PENDING)
   /// The column headings and words the portal sent, in the reader's
   /// language (SignedDocumentLabelsDto).
-  labels Json
+  labels             Json
   /// Decision 422 item 9: the owner ticked "Include member files", so the
   /// ZIP also holds every file on the School's members' Profile → Documents.
-  includeMemberFiles Boolean @default(false)
+  includeMemberFiles Boolean                    @default(false)
 
-  documentCount Int?
+  documentCount   Int?
   /// Member files in the ZIP, once it is made; null when they weren't asked for.
   memberFileCount Int?
-  sizeBytes     Int?
+  sizeBytes       Int?
   /// Set while the ZIP is stored; null before it is made and once deleted.
-  objectKey     String? @unique
+  objectKey       String? @unique
   /// Why a FAILED export failed (for support; not shown to the School).
-  error         String?
+  error           String?
 
   createdAt  DateTime  @default(now())
   finishedAt DateTime?
@@ -6527,6 +6536,30 @@ model SignedDocumentExport {
 
   @@index([schoolId, createdAt])
   @@index([status, expiresAt])
+}
+
+/// Decision 319 item 4: a staff member's private calendar link (an iCal
+/// feed of the classes they teach at one School), which they add to Google
+/// Calendar. The link's token is derived from this row's id (HMAC with the
+/// API's secret, as guest waiver links are), so it can be shown again; only
+/// its SHA-256 is stored. A new link replaces the row; deleting it turns the
+/// link off. The feed answers only while the School has the setting on and
+/// the person still holds a staff role there.
+model StaffCalendarFeed {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String @unique
+
+  createdAt DateTime @default(now())
+
+  @@unique([schoolId, userId])
+  @@index([userId])
 }
 
 /// Decision 316 item 6: a member's signed copy of a plan's contract, made

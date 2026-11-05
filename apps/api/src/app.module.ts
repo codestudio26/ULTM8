@@ -18,6 +18,7 @@ import { MembershipsModule } from './memberships/memberships.module';
 import { TransactionsModule } from './transactions/transactions.module';
 import { RanksModule } from './ranks/ranks.module';
 import { WaiversModule } from './waivers/waivers.module';
+import { ScheduleSharingModule } from './schedule-sharing/schedule-sharing.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { GuardiansModule } from './guardians/guardians.module';
 import { AttendanceModule } from './attendance/attendance.module';
@@ -89,6 +90,8 @@ import { validateEnv } from './common/config/validate-env';
     TransactionsModule,
     RanksModule,
     WaiversModule,
+    // Decision 319 item 4: staff calendar links and the schedule embed.
+    ScheduleSharingModule,
     BookingsModule,
     GuardiansModule,
     AttendanceModule,
