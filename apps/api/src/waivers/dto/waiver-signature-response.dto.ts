@@ -37,6 +37,13 @@ export class WaiverSignatureResponseDto {
   })
   signedById!: string | null;
 
+  @ApiPropertyOptional({
+    type: String,
+    nullable: true,
+    description: "Decision 318 item 8: the child signed this themselves in their parent's app; the parent's account. Null otherwise.",
+  })
+  signedViaGuardianId!: string | null;
+
   @ApiProperty()
   schoolId!: string;
 

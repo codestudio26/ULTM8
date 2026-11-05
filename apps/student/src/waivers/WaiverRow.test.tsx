@@ -208,6 +208,41 @@ describe('WaiverRow — a parent signing for their child', () => {
     expect(sign.mutate).toHaveBeenCalledWith(expect.objectContaining({ waiverId: 'waiver-1', studentId: 'kid-1', signerFullName: 'Pat Doe' }));
   });
 
+  it('has no "who is signing" choice when the School does not let the child sign', async () => {
+    const sign = idleSign();
+    mocked(waiverQueries.useSignWaiver).mockReturnValue(sign);
+    const { getByText, queryByText, getByPlaceholderText } = await render(
+      <WaiverRow waiver={WAIVER as never} signature={undefined} forStudentId="kid-1" forName="Mia" />,
+    );
+    await fireEvent.press(getByText('Sign'));
+    expect(queryByText('Who is signing?')).toBeNull();
+    await fireEvent.changeText(getByPlaceholderText('Your full legal name'), 'Pat Doe');
+    await fireEvent.changeText(getByPlaceholderText('Type your signature'), 'Pat Doe');
+    await fireEvent.press(getByText('Submit signature'));
+    expect(sign.mutate).toHaveBeenCalledWith(expect.objectContaining({ studentId: 'kid-1', signedByChild: false }));
+  });
+
+  it('Decision 318 item 8: the child can sign themselves on the parent\'s phone', async () => {
+    const sign = idleSign();
+    mocked(waiverQueries.useSignWaiver).mockReturnValue(sign);
+    const { getByText, getByPlaceholderText } = await render(
+      <WaiverRow waiver={WAIVER as never} signature={undefined} forStudentId="kid-1" forName="Mia" childMaySign />,
+    );
+    await fireEvent.press(getByText('Sign'));
+    expect(getByText('Who is signing?')).toBeTruthy();
+    expect(getByText('Signing for Mia, as their parent.')).toBeTruthy();
+    await fireEvent.press(getByText('Mia signs'));
+    expect(getByText(/Mia signs this waiver themselves on your phone/)).toBeTruthy();
+    await fireEvent.changeText(getByPlaceholderText('Your full legal name'), 'Mia Doe');
+    await fireEvent.changeText(getByPlaceholderText('Type your signature'), 'Mia Doe');
+    await fireEvent.press(getByText('Submit signature'));
+    expect(sign.mutate).toHaveBeenCalledWith(expect.objectContaining({ studentId: 'kid-1', signedByChild: true, signerFullName: 'Mia Doe' }));
+
+    // Switching back to the parent signs as today.
+    await fireEvent.press(getByText('I sign, as their parent'));
+    expect(getByText('Signing for Mia, as their parent.')).toBeTruthy();
+  });
+
   it('shows a signed child waiver as signed', async () => {
     mocked(waiverQueries.useSignWaiver).mockReturnValue(idleSign());
     const { getByText, queryByText } = await render(

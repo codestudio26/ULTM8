@@ -1,5 +1,9 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "이 학교는 어린이가 직접 면책 동의서에 서명하는 것을 허용하지 않습니다.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "이 어린이는 아직 이 학교의 면책 동의서에 직접 서명할 수 있는 나이가 아닙니다.",
+  "Add the child's date of birth before they sign a waiver themselves.": "어린이가 직접 면책 동의서에 서명하기 전에 생년월일을 추가하세요.",
+  "Only a parent signing for their child can choose that the child signs.": "자녀를 대신해 서명하는 보호자만 자녀가 직접 서명하도록 선택할 수 있습니다.",
   "Guests can only be added by a parent, not in Kid Mode.": "게스트는 보호자만 추가할 수 있으며, 키즈 모드에서는 추가할 수 없습니다.",
   "Your current passcode is not right.": "현재 패스코드가 올바르지 않습니다.",
   "Choose a new passcode that is different from your current one.": "현재 패스코드와 다른 새 패스코드를 선택하세요.",

@@ -1009,6 +1009,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "คุณกำลังลงนามแทน {name} ในฐานะผู้ปกครอง",
+      whoSigns: "ใครเป็นผู้ลงนาม",
+      parentSigns: "ฉันลงนามในฐานะผู้ปกครอง",
+      childSigns: "{name} ลงนาม",
+      childSigning: "{name} จะลงนามเอกสารสละสิทธิ์นี้เองบนโทรศัพท์ของคุณ ส่งโทรศัพท์ให้เด็กพิมพ์ชื่อและลงนาม",
       cancel: "ยกเลิก",
       showLess: "แสดงน้อยลง",
       readFull: "อ่านเอกสารสละสิทธิ์ทั้งหมด",

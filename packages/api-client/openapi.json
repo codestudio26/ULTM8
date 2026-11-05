@@ -35792,6 +35792,11 @@
             "nullable": true,
             "description": "The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf. Null until this row is actually signed."
           },
+          "signedViaGuardianId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 318 item 8: the child signed this themselves in their parent's app; the parent's account. Null otherwise."
+          },
           "schoolId": {
             "type": "string"
           },
@@ -35973,6 +35978,11 @@
             "type": "number",
             "nullable": true,
             "description": "Remind members who have not signed every this many days. Null (the default): no repeat reminders."
+          },
+          "waiverChildSignsFromAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 318 item 8: children from this age sign their own waivers (in their own app, or in their parent's app). A parent can still sign for them. Null (the default): off, a parent or guardian signs."
           }
         },
         "required": [
@@ -35981,7 +35991,8 @@
           "waiverMinorsSignAgainAt18",
           "waiverPaperSignaturesAllowed",
           "waiverNoticeOnJoin",
-          "waiverReminderDays"
+          "waiverReminderDays",
+          "waiverChildSignsFromAge"
         ]
       },
       "UpdateWaiverSettingsDto": {
@@ -36008,6 +36019,11 @@
             "type": "number",
             "nullable": true,
             "description": "1 to 90 days, or null for off."
+          },
+          "waiverChildSignsFromAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "1 to 17 years, or null for off."
           }
         }
       },
@@ -36158,6 +36174,10 @@
             "type": "string",
             "nullable": true,
             "description": "When the child's current signature was signed. Null when not signed."
+          },
+          "childMaySign": {
+            "type": "boolean",
+            "description": "Decision 318 item 8: this School lets children sign their own waivers from an age the child has reached, so the child may sign it in the parent's app (SignWaiverDto.signedByChild)."
           }
         },
         "required": [
@@ -36169,7 +36189,8 @@
           "createdAt",
           "updatedAt",
           "schoolName",
-          "signedDate"
+          "signedDate",
+          "childMaySign"
         ]
       },
       "MinorWaiverListDto": {
@@ -36223,6 +36244,10 @@
           "waiverVersion": {
             "type": "number",
             "description": "The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again."
+          },
+          "signedByChild": {
+            "type": "boolean",
+            "description": "Decision 318 item 8, with studentId: the child signs this themselves in their parent's app, at a School that lets children sign from an age they have reached. The child is recorded as the signer (signedById) and the parent's account as signedViaGuardianId."
           }
         },
         "required": [

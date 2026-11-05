@@ -1295,6 +1295,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   a member account or waiver that still has a signature. All 15 languages.
   Not legal advice: a privacy lawyer is to confirm it per country. **Needs a
   database migration** (`20270214000000_waiver_signature_retention`).
+- **Children sign their own waivers from an age the School sets** (Decision
+  318 item 8) — a new Waivers → Settings switch, off by default (a parent or
+  guardian signs). When on, a child from that age (1 to 17) signs their own
+  waivers: with their own login, or in their parent's app, where "Who is
+  signing?" lets the parent hand the phone over. A parent can still sign for
+  the child as before. The child is recorded as the signer, with the parent's
+  account kept beside it, and the Signatures list says "signed by the child,
+  in their parent's app". All 15 languages. **Needs a database migration**
+  (`20270213000001_waiver_child_signs`).
 - **School Owners can close their own School** (Decision 364) — from the
   School page, after typing its name and their passcode: the same 90-day close
   a Platform Admin does. Closing a School, by anyone, now also ends every

@@ -1035,6 +1035,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Vous signez pour {name}, en tant que parent.",
+      whoSigns: "Qui signe ?",
+      parentSigns: "Moi, en tant que parent",
+      childSigns: "{name} signe",
+      childSigning: "{name} signe cette décharge sur votre téléphone. Donnez-le-lui pour qu’il saisisse son nom et signe.",
       cancel: "Annuler",
       showLess: "Afficher moins",
       readFull: "Lire la décharge en entier",

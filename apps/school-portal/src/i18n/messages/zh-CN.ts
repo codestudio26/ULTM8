@@ -3613,6 +3613,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "签名:{name}",
       signedName: "输入的姓名",
       byGuardian: "由监护人签署",
+      byChildOnParentsAccount: "由儿童本人在家长的应用中签署",
       signature: "签名",
       drawnAlt: "手写签名",
       signedOn: "签署日期",
@@ -3668,6 +3669,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "提醒间隔天数",
         invalid: "请输入 1 到 90 之间的整数天数。",
         advice: "大多数学校保持关闭，使用“提醒”按钮。如果开启，通常每 7 天一次。",
+      },
+      childSigns: {
+        label: "儿童从设定年龄起自行签署免责声明",
+        on: "达到下方年龄的儿童可以在应用中自行签署免责声明。家长或监护人仍可代为签署。",
+        off: "每个儿童都由家长或监护人代为签署。",
+        age: "起始年龄",
+        invalid: "请输入 1 到 17 之间的整数岁数。",
+        advice: "大多数学校保持关闭，由家长或监护人为每个儿童签署。",
       },
     },
     resign: {

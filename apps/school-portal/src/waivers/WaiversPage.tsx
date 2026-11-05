@@ -433,6 +433,8 @@ function SignatureDetailModal({ schoolId, signature, waiver, onClose }: { school
   const detail = useWaiverSignature(schoolId, waiver.id, signature.id);
   const signedBody = detail.data?.signedWaiverBody;
   const byGuardian = signature.signedById !== null && signature.signedById !== signature.studentId;
+  // Decision 318 item 8: a child signed themselves, in their parent's app.
+  const byChildOnParentsAccount = signature.signedViaGuardianId != null;
   const onPaper = signature.method === 'PAPER';
   const recordedByName = detail.data?.recordedByName;
   // Only signatures with a kept copy can tell; updatedAt also moves on
@@ -443,7 +445,9 @@ function SignatureDetailModal({ schoolId, signature, waiver, onClose }: { school
   return (
     <Modal title={t('waivers.signatureDetail.title', { name: signatureName(signature, t) })} onClose={onClose} wide>
       <p style={label}>{t('waivers.signatureDetail.signedName')}</p>
-      <p style={value}>{signature.signerFullName ?? '—'}{byGuardian ? ` · ${t('waivers.signatureDetail.byGuardian')}` : ''}</p>
+      <p style={value}>{signature.signerFullName ?? '—'}{byGuardian ? ` · ${t('waivers.signatureDetail.byGuardian')}` : ''}
+        {byChildOnParentsAccount ? ` · ${t('waivers.signatureDetail.byChildOnParentsAccount')}` : ''}
+      </p>
       {onPaper ? (
         <p style={value}>{recordedByName ? t('waivers.paper.recordedBy', { name: recordedByName }) : t('waivers.paper.recorded')}</p>
       ) : (

@@ -120,6 +120,7 @@ export function useSignWaiver() {
       signatureImage,
       waiverVersion,
       studentId,
+      signedByChild,
     }: {
       waiverId: string;
       signerFullName: string;
@@ -130,12 +131,22 @@ export function useSignWaiver() {
       waiverVersion?: number;
       /** A parent signing for their child. */
       studentId?: string;
+      /** With studentId: the child signs themselves on the parent's phone,
+       * at a School that lets children sign from an age (Decision 318 item 8). */
+      signedByChild?: boolean;
     }) => {
       const signatureImageKey = signatureImage ? await uploadDrawnSignature(waiverId, signatureImage, studentId) : undefined;
       return unwrap(
         apiClient.POST('/v1/waivers/{id}/sign', {
           params: { path: { id: waiverId } },
-          body: { signerFullName, signatureText, signatureImageKey, waiverVersion, ...(studentId ? { studentId } : {}) },
+          body: {
+            signerFullName,
+            signatureText,
+            signatureImageKey,
+            waiverVersion,
+            ...(studentId ? { studentId } : {}),
+            ...(studentId && signedByChild ? { signedByChild: true } : {}),
+          },
         }),
       );
     },

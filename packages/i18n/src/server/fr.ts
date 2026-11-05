@@ -1,5 +1,9 @@
 /** French — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Cette école ne permet pas aux enfants de signer eux-mêmes leurs décharges.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Cet enfant n’a pas encore l’âge de signer lui-même les décharges de cette école.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Ajoutez la date de naissance de l’enfant avant qu’il signe lui-même une décharge.",
+  "Only a parent signing for their child can choose that the child signs.": "Seul un parent qui signe pour son enfant peut choisir que l’enfant signe.",
   "Guests can only be added by a parent, not in Kid Mode.": "Seul un parent peut ajouter des invités, pas en Mode Enfant.",
   "Your current passcode is not right.": "Votre code d’accès actuel est incorrect.",
   "Choose a new passcode that is different from your current one.": "Choisissez un nouveau code d’accès différent de l’actuel.",

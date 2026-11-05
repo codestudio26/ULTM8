@@ -3656,6 +3656,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Signature : {name}",
       signedName: "Nom saisi",
       byGuardian: "signé par un tuteur",
+      byChildOnParentsAccount: "signée par l’enfant lui-même, dans l’application d’un parent",
       signature: "Signature",
       drawnAlt: "Signature dessinée",
       signedOn: "Signé le",
@@ -3711,6 +3712,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "Jours entre deux rappels",
         invalid: "Saisissez un nombre entier de jours entre 1 et 90.",
         advice: "La plupart des écoles laissent cette option désactivée et utilisent le bouton Relancer. Si vous l’activez, 7 jours est courant.",
+      },
+      childSigns: {
+        label: "Les enfants signent eux-mêmes leurs décharges à partir d’un âge fixé",
+        on: "Les enfants à partir de l’âge ci-dessous peuvent signer eux-mêmes leurs décharges dans l’application. Un parent ou tuteur peut toujours signer pour eux.",
+        off: "Un parent ou tuteur signe pour chaque enfant.",
+        age: "À partir de l’âge de",
+        invalid: "Saisissez un nombre entier d’années entre 1 et 17.",
+        advice: "La plupart des écoles laissent cette option désactivée : un parent ou tuteur signe pour chaque enfant.",
       },
     },
     resign: {

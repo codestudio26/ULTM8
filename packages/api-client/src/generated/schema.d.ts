@@ -11474,6 +11474,8 @@ export interface components {
             studentId: string;
             /** @description The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf. Null until this row is actually signed. */
             signedById?: string | null;
+            /** @description Decision 318 item 8: the child signed this themselves in their parent's app; the parent's account. Null otherwise. */
+            signedViaGuardianId?: string | null;
             schoolId: string;
             /** @description Null until this row is actually signed. */
             signerFullName?: string | null;
@@ -11540,6 +11542,8 @@ export interface components {
             waiverNoticeOnJoin: boolean;
             /** @description Remind members who have not signed every this many days. Null (the default): no repeat reminders. */
             waiverReminderDays: number | null;
+            /** @description Decision 318 item 8: children from this age sign their own waivers (in their own app, or in their parent's app). A parent can still sign for them. Null (the default): off, a parent or guardian signs. */
+            waiverChildSignsFromAge: number | null;
         };
         UpdateWaiverSettingsDto: {
             waiverArchivedSignaturesCount?: boolean;
@@ -11550,6 +11554,8 @@ export interface components {
             waiverNoticeOnJoin?: boolean;
             /** @description 1 to 90 days, or null for off. */
             waiverReminderDays?: number | null;
+            /** @description 1 to 17 years, or null for off. */
+            waiverChildSignsFromAge?: number | null;
         };
         RemindResponseDto: {
             /** @description How many members were reminded. */
@@ -11602,6 +11608,8 @@ export interface components {
             schoolName: string;
             /** @description When the child's current signature was signed. Null when not signed. */
             signedDate: string | null;
+            /** @description Decision 318 item 8: this School lets children sign their own waivers from an age the child has reached, so the child may sign it in the parent's app (SignWaiverDto.signedByChild). */
+            childMaySign: boolean;
         };
         MinorWaiverListDto: {
             items: components["schemas"]["MinorWaiverDto"][];
@@ -11623,6 +11631,8 @@ export interface components {
             signatureImageKey?: string;
             /** @description The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again. */
             waiverVersion?: number;
+            /** @description Decision 318 item 8, with studentId: the child signs this themselves in their parent's app, at a School that lets children sign from an age they have reached. The child is recorded as the signer (signedById) and the parent's account as signedViaGuardianId. */
+            signedByChild?: boolean;
         };
         RequestSignatureUploadUrlDto: {
             /** @description Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller. */

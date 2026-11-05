@@ -1035,6 +1035,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Firmi per {name}, come genitore.",
+      whoSigns: "Chi firma?",
+      parentSigns: "Io, come genitore",
+      childSigns: "Firma {name}",
+      childSigning: "{name} firma questa liberatoria sul tuo telefono. Passaglielo perché scriva il suo nome e firmi.",
       cancel: "Annulla",
       showLess: "Mostra meno",
       readFull: "Leggi la liberatoria completa",

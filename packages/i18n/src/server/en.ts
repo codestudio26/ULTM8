@@ -6,6 +6,10 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "This School doesn't let children sign their own waivers.",
+ "This child isn't old enough yet to sign this School's waivers themselves.",
+ "Add the child's date of birth before they sign a waiver themselves.",
+ "Only a parent signing for their child can choose that the child signs.",
  "Guests can only be added by a parent, not in Kid Mode.",
  "Your current passcode is not right.",
  "Choose a new passcode that is different from your current one.",
