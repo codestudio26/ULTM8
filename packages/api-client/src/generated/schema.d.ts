@@ -2020,6 +2020,22 @@ export interface paths {
         patch: operations["PaymentsController_cancelTransaction"];
         trace?: never;
     };
+    "/v1/transactions/{id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PaymentsController_refundDeskSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/timetable": {
         parameters: {
             query?: never;
@@ -7667,6 +7683,20 @@ export interface components {
             taxInclusive?: boolean;
             /** @description Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it. */
             taxId?: string | null;
+            /**
+             * @description Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".
+             * @example GST
+             */
+            taxName?: string | null;
+            /**
+             * @description Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0).
+             * @example PST
+             */
+            tax2Name?: string | null;
+            /** @description Decision 430 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%. */
+            tax2RateBasisPoints?: number;
+            /** @description Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it. */
+            tax2Id?: string | null;
             /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
             chargeCancelReasonRequired?: boolean;
             /** @description Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only. */
@@ -7799,6 +7829,14 @@ export interface components {
             taxInclusive: boolean;
             /** @description Decision 338 item 6: the School's tax ID for its invoices. */
             taxId?: string | null;
+            /** @description Decision 430 (MON-6): the first tax line's name. */
+            taxName?: string | null;
+            /** @description Decision 430 (MON-6): the second tax line's name. */
+            tax2Name?: string | null;
+            /** @description Decision 430 (MON-6): the second tax line's rate (0 = none). */
+            tax2RateBasisPoints: number;
+            /** @description Decision 430 (MON-6): the second tax line's registration number. */
+            tax2Id?: string | null;
             /** @description Decision 338 item 1: a reason is required when cancelling a charge (default on). */
             chargeCancelReasonRequired: boolean;
             /** @description Decision 338 item 3: notes are required when refunding (default on). */
@@ -7943,6 +7981,20 @@ export interface components {
             taxInclusive?: boolean;
             /** @description Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it. */
             taxId?: string | null;
+            /**
+             * @description Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".
+             * @example GST
+             */
+            taxName?: string | null;
+            /**
+             * @description Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0).
+             * @example PST
+             */
+            tax2Name?: string | null;
+            /** @description Decision 430 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%. */
+            tax2RateBasisPoints?: number;
+            /** @description Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it. */
+            tax2Id?: string | null;
             /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
             chargeCancelReasonRequired?: boolean;
             /** @description Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only. */
@@ -8346,6 +8398,14 @@ export interface components {
             schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
             defaultRefundCutoffHours?: number | null;
             noShowFee?: number | null;
+            /** @description Decision 430 (MON-6): this Branch's own tax lines replace the School's. */
+            taxOverride: boolean;
+            taxName?: string | null;
+            taxRateBasisPoints: number;
+            taxId?: string | null;
+            tax2Name?: string | null;
+            tax2RateBasisPoints: number;
+            tax2Id?: string | null;
             /** @description Decision 226 — set when this Branch has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried). */
@@ -8390,6 +8450,14 @@ export interface components {
             schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
             defaultRefundCutoffHours?: number | null;
             noShowFee?: number | null;
+            /** @description Decision 430 (MON-6): this Branch's own tax lines replace the School's. */
+            taxOverride: boolean;
+            taxName?: string | null;
+            taxRateBasisPoints: number;
+            taxId?: string | null;
+            tax2Name?: string | null;
+            tax2RateBasisPoints: number;
+            tax2Id?: string | null;
             /** @description Decision 226 — set when this Branch has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried). */
@@ -8436,6 +8504,20 @@ export interface components {
             defaultRefundCutoffHours?: number | null;
             /** @description Minor-unit amount. null = off. */
             noShowFee?: number | null;
+            /** @description Decision 430 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec). */
+            taxOverride?: boolean;
+            /** @description The first tax line's name, e.g. GST. */
+            taxName?: string | null;
+            /** @description The first tax line's rate, in hundredths of a percent. */
+            taxRateBasisPoints?: number;
+            /** @description The first tax line's registration number. */
+            taxId?: string | null;
+            /** @description The second tax line's name, e.g. QST (required when its rate is above 0). */
+            tax2Name?: string | null;
+            /** @description The second tax line's rate (0 = no second line). Both lines together at most 100%. */
+            tax2RateBasisPoints?: number;
+            /** @description The second tax line's registration number. */
+            tax2Id?: string | null;
         };
         BranchClosePreviewDto: {
             /** @description Classes that have not ended yet, not counting archived ones. */
@@ -9517,6 +9599,40 @@ export interface components {
             /** @description For staff only; never sent to the member. Required unless the School's owner made it optional. */
             reason?: string;
         };
+        RefundDeskSaleDto: {
+            /** @description Minor units (hundredths of the major unit), at most what is left to refund on the payment. */
+            amount: number;
+            /** @description Required: why, and how the money was given back. For staff only; never sent to the member. */
+            notes: string;
+            /**
+             * @description End the membership now (its future bookings it pays for are cancelled). Off: the membership carries on.
+             * @default false
+             */
+            endMembership: boolean;
+        };
+        DeskSaleRefundDto: {
+            id: string;
+            transactionId: string;
+            /** @description Minor units. */
+            amount: number;
+            currency: string;
+            notes: string;
+            endedMembership: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        RefundDeskSaleResponseDto: {
+            refund: components["schemas"]["DeskSaleRefundDto"];
+            /** @description The payment's refunded total after this refund, minor units. */
+            refundedAmount: number;
+            /**
+             * @description Refunded once all of it is back.
+             * @enum {string}
+             */
+            status: "SUCCESSFUL" | "REFUNDED";
+            /** @description Whether this refund ended the membership. */
+            membershipEnded: boolean;
+        };
         CreateTimetableSlotDto: {
             /** @description Branch to scope this slot to. Omit for a School-wide slot. */
             branchId?: string;
@@ -10454,9 +10570,16 @@ export interface components {
             membership: components["schemas"]["MembershipResponseDto"];
             /** @description The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass. */
             transactionId?: string | null;
+            /** @description Decision 430 (MON-15): a Friend Pass gift only: every pass given (membership is the first). */
+            memberships?: components["schemas"]["MembershipResponseDto"][];
         };
         GiftFriendPassDto: {
             membershipPlanId: string;
+            /**
+             * @description Decision 430 (MON-15): how many Friend Passes to give at once (1-5).
+             * @default 1
+             */
+            quantity: number;
         };
         RecordDeskPaymentDto: {
             studentId: string;
@@ -10721,6 +10844,21 @@ export interface components {
         IncomeCategoryNameDto: {
             name: string;
         };
+        TaxLineAmountDto: {
+            /** @example GST */
+            name?: string | null;
+            /** @description Hundredths of a percent (500 = 5%). */
+            rateBasisPoints: number;
+            /** @description The line's registration number, for invoices and receipts. */
+            taxId?: string | null;
+            /** @description Minor units. */
+            amount: number;
+        };
+        IncludedTaxDto: {
+            /** @description The tax included, minor units (the lines added up). */
+            amount: number;
+            lines: components["schemas"]["TaxLineAmountDto"][];
+        };
         TransactionResponseDto: {
             id: string;
             schoolId: string;
@@ -10744,6 +10882,8 @@ export interface components {
             amount: number;
             /** @description Card surcharge paid on top of amount, in the same minor units. 0 when none. */
             surchargeAmount: number;
+            /** @description Decision 430 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded. */
+            includedTax?: components["schemas"]["IncludedTaxDto"] | null;
             currency?: string | null;
             status: string;
             paymentMethod: string;
@@ -14025,6 +14165,8 @@ export interface components {
             taxInclusive: boolean;
             /** @description "No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax". */
             taxExempt: boolean;
+            /** @description Decision 430 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before. */
+            taxLines?: components["schemas"]["TaxLineAmountDto"][] | null;
             /** @description The charge's income category (Decision 316 item 10). Staff only; null for the member. */
             incomeCategoryName?: string | null;
             /** @description The price excluding tax. */
@@ -14171,11 +14313,21 @@ export interface components {
             /** @description Resend a charge's invoice notice: whoever may create charges (Decision 338 item 5). */
             resendInvoice: boolean;
         };
+        TaxLineDto: {
+            /** @example GST */
+            name?: string | null;
+            /** @description Hundredths of a percent (500 = 5%). */
+            rateBasisPoints: number;
+            /** @description The line's registration number, for invoices and receipts. */
+            taxId?: string | null;
+        };
         ChargeSettingsDto: {
             currency?: string | null;
             taxCountry?: string | null;
             taxRateBasisPoints: number;
             taxInclusive: boolean;
+            /** @description Decision 430 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax. */
+            taxLines: components["schemas"]["TaxLineDto"][];
             cancelReasonRequired: boolean;
             /** @description A desk payment can be recorded: the School has its payments set up. */
             paymentsSetUp: boolean;
@@ -18058,6 +18210,31 @@ export interface operations {
             };
         };
     };
+    PaymentsController_refundDeskSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundDeskSaleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDeskSaleResponseDto"];
+                };
+            };
+        };
+    };
     TimetableController_findAll: {
         parameters: {
             query?: {
@@ -20079,9 +20256,9 @@ export interface operations {
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
-                /** @description First day included, YYYY-MM-DD (UTC). */
+                /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7). */
                 from?: string;
-                /** @description Last day included, YYYY-MM-DD (UTC). */
+                /** @description Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7). */
                 to?: string;
             };
             header?: never;
@@ -20109,9 +20286,9 @@ export interface operations {
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
-                /** @description First day included, YYYY-MM-DD (UTC). */
+                /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7). */
                 from?: string;
-                /** @description Last day included, YYYY-MM-DD (UTC). */
+                /** @description Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7). */
                 to?: string;
             };
             header?: never;

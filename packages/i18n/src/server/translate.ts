@@ -225,6 +225,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Cash payment waiting': 'cashWaitingTitle',
   'Payment confirmed': 'paymentConfirmedTitle',
   'Payment cancelled': 'paymentCancelledTitle',
+  // Decision 430 (MON-9) — MembershipPlanPriceMigrationProcessor.
+  'Membership price going up': 'priceIncreaseTitle',
   // Decision 404 — apps/api/src/memberships/freeze/membership-freezes.service.ts.
   'Freeze approved': 'freezeApprovedTitle',
   'Freeze declined': 'freezeDeclinedTitle',
@@ -435,6 +437,15 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^The School cancelled (.+?)'s cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
     (m, { t, locale }) => n(t, 'childPaymentCancelledBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
+  // Decision 430 (MON-9) — PaymentsService.notifyPriceIncrease. The day is YYYY-MM-DD.
+  [
+    /^The price of your (.+) membership is going up to ([\d.]+) ([A-Z]{3})\. The new price applies from (\d{4}-\d{2}-\d{2})\.$/s,
+    (m, { t, locale }) => n(t, 'priceIncreaseBody', { plan: m[1], amount: formatAmount(m[2], m[3], locale), day: formatDay(m[4], locale) }),
+  ],
+  [
+    /^The price of your (.+) membership is going up to ([\d.]+) ([A-Z]{3}), from your next payment\.$/s,
+    (m, { t, locale }) => n(t, 'priceIncreaseNextBody', { plan: m[1], amount: formatAmount(m[2], m[3], locale) }),
   ],
   // Decision 404 — MembershipFreezesService.notifyDecision. Dates are YYYY-MM-DD.
   [

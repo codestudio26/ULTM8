@@ -5760,6 +5760,51 @@
         ]
       }
     },
+    "/v1/transactions/{id}/refund": {
+      "post": {
+        "operationId": "PaymentsController_refundDeskSale",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundDeskSaleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDeskSaleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/timetable": {
       "post": {
         "operationId": "TimetableController_create",
@@ -9484,7 +9529,7 @@
             "name": "from",
             "required": false,
             "in": "query",
-            "description": "First day included, YYYY-MM-DD (UTC).",
+            "description": "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9493,7 +9538,7 @@
             "name": "to",
             "required": false,
             "in": "query",
-            "description": "Last day included, YYYY-MM-DD (UTC).",
+            "description": "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9591,7 +9636,7 @@
             "name": "from",
             "required": false,
             "in": "query",
-            "description": "First day included, YYYY-MM-DD (UTC).",
+            "description": "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9600,7 +9645,7 @@
             "name": "to",
             "required": false,
             "in": "query",
-            "description": "Last day included, YYYY-MM-DD (UTC).",
+            "description": "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 430 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -23576,6 +23621,32 @@
             "maxLength": 50,
             "description": "Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it."
           },
+          "taxName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "example": "GST",
+            "description": "Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: \"Tax\"."
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "example": "PST",
+            "description": "Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0)."
+          },
+          "tax2RateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Decision 430 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%."
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it."
+          },
           "chargeCancelReasonRequired": {
             "type": "boolean",
             "description": "Decision 338 item 1: staff must type a reason when cancelling a charge (default on)."
@@ -23926,6 +23997,25 @@
             "nullable": true,
             "description": "Decision 338 item 6: the School's tax ID for its invoices."
           },
+          "taxName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 430 (MON-6): the first tax line's name."
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 430 (MON-6): the second tax line's name."
+          },
+          "tax2RateBasisPoints": {
+            "type": "number",
+            "description": "Decision 430 (MON-6): the second tax line's rate (0 = none)."
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 430 (MON-6): the second tax line's registration number."
+          },
           "chargeCancelReasonRequired": {
             "type": "boolean",
             "description": "Decision 338 item 1: a reason is required when cancelling a charge (default on)."
@@ -24120,6 +24210,7 @@
           "freezeMaxDaysPer12Months",
           "taxRateBasisPoints",
           "taxInclusive",
+          "tax2RateBasisPoints",
           "chargeCancelReasonRequired",
           "chargeRefundNotesRequired",
           "chargeNoticeReceipt",
@@ -24325,6 +24416,32 @@
             "nullable": true,
             "maxLength": 50,
             "description": "Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it."
+          },
+          "taxName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "example": "GST",
+            "description": "Decision 430 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: \"Tax\"."
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "example": "PST",
+            "description": "Decision 430 (MON-6): the name of a second tax line (required when its rate is above 0)."
+          },
+          "tax2RateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Decision 430 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%."
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Decision 430 (MON-6): the second tax line's registration number. Empty or null clears it."
           },
           "chargeCancelReasonRequired": {
             "type": "boolean",
@@ -25570,6 +25687,32 @@
             "type": "number",
             "nullable": true
           },
+          "taxOverride": {
+            "type": "boolean",
+            "description": "Decision 430 (MON-6): this Branch's own tax lines replace the School's."
+          },
+          "taxName": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxRateBasisPoints": {
+            "type": "number"
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true
+          },
+          "tax2RateBasisPoints": {
+            "type": "number"
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -25603,6 +25746,9 @@
           "classCancellationPolicyWindow",
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
+          "taxOverride",
+          "taxRateBasisPoints",
+          "tax2RateBasisPoints",
           "createdAt",
           "updatedAt"
         ]
@@ -25732,6 +25878,32 @@
             "type": "number",
             "nullable": true
           },
+          "taxOverride": {
+            "type": "boolean",
+            "description": "Decision 430 (MON-6): this Branch's own tax lines replace the School's."
+          },
+          "taxName": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxRateBasisPoints": {
+            "type": "number"
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true
+          },
+          "tax2RateBasisPoints": {
+            "type": "number"
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -25773,6 +25945,9 @@
           "classCancellationPolicyWindow",
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
+          "taxOverride",
+          "taxRateBasisPoints",
+          "tax2RateBasisPoints",
           "createdAt",
           "updatedAt",
           "studentCount",
@@ -25900,6 +26075,46 @@
             "type": "number",
             "nullable": true,
             "description": "Minor-unit amount. null = off."
+          },
+          "taxOverride": {
+            "type": "boolean",
+            "description": "Decision 430 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec)."
+          },
+          "taxName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "description": "The first tax line's name, e.g. GST."
+          },
+          "taxRateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "The first tax line's rate, in hundredths of a percent."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "The first tax line's registration number."
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "description": "The second tax line's name, e.g. QST (required when its rate is above 0)."
+          },
+          "tax2RateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "The second tax line's rate (0 = no second line). Both lines together at most 100%."
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "The second tax line's registration number."
           }
         }
       },
@@ -29437,6 +29652,97 @@
           }
         }
       },
+      "RefundDeskSaleDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Minor units (hundredths of the major unit), at most what is left to refund on the payment."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Required: why, and how the money was given back. For staff only; never sent to the member."
+          },
+          "endMembership": {
+            "type": "boolean",
+            "default": false,
+            "description": "End the membership now (its future bookings it pays for are cancelled). Off: the membership carries on."
+          }
+        },
+        "required": [
+          "amount",
+          "notes"
+        ]
+      },
+      "DeskSaleRefundDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "transactionId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Minor units."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "endedMembership": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "transactionId",
+          "amount",
+          "currency",
+          "notes",
+          "endedMembership",
+          "createdAt"
+        ]
+      },
+      "RefundDeskSaleResponseDto": {
+        "type": "object",
+        "properties": {
+          "refund": {
+            "$ref": "#/components/schemas/DeskSaleRefundDto"
+          },
+          "refundedAmount": {
+            "type": "number",
+            "description": "The payment's refunded total after this refund, minor units."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUCCESSFUL",
+              "REFUNDED"
+            ],
+            "description": "Refunded once all of it is back."
+          },
+          "membershipEnded": {
+            "type": "boolean",
+            "description": "Whether this refund ended the membership."
+          }
+        },
+        "required": [
+          "refund",
+          "refundedAmount",
+          "status",
+          "membershipEnded"
+        ]
+      },
       "CreateTimetableSlotDto": {
         "type": "object",
         "properties": {
@@ -32493,6 +32799,13 @@
             "type": "string",
             "nullable": true,
             "description": "The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass."
+          },
+          "memberships": {
+            "description": "Decision 430 (MON-15): a Friend Pass gift only: every pass given (membership is the first).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipResponseDto"
+            }
           }
         },
         "required": [
@@ -32504,6 +32817,13 @@
         "properties": {
           "membershipPlanId": {
             "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 1,
+            "description": "Decision 430 (MON-15): how many Friend Passes to give at once (1-5)."
           }
         },
         "required": [
@@ -33426,6 +33746,52 @@
           "name"
         ]
       },
+      "TaxLineAmountDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "GST"
+          },
+          "rateBasisPoints": {
+            "type": "number",
+            "description": "Hundredths of a percent (500 = 5%)."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The line's registration number, for invoices and receipts."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Minor units."
+          }
+        },
+        "required": [
+          "rateBasisPoints",
+          "amount"
+        ]
+      },
+      "IncludedTaxDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "The tax included, minor units (the lines added up)."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaxLineAmountDto"
+            }
+          }
+        },
+        "required": [
+          "amount",
+          "lines"
+        ]
+      },
       "TransactionResponseDto": {
         "type": "object",
         "properties": {
@@ -33503,6 +33869,15 @@
           "surchargeAmount": {
             "type": "number",
             "description": "Card surcharge paid on top of amount, in the same minor units. 0 when none."
+          },
+          "includedTax": {
+            "nullable": true,
+            "description": "Decision 430 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IncludedTaxDto"
+              }
+            ]
           },
           "currency": {
             "type": "string",
@@ -44035,6 +44410,14 @@
             "type": "boolean",
             "description": "\"No tax on this item (0% or exempt)\" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show \"No tax\"."
           },
+          "taxLines": {
+            "nullable": true,
+            "description": "Decision 430 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaxLineAmountDto"
+            }
+          },
           "incomeCategoryName": {
             "type": "string",
             "nullable": true,
@@ -44496,6 +44879,28 @@
           "resendInvoice"
         ]
       },
+      "TaxLineDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "GST"
+          },
+          "rateBasisPoints": {
+            "type": "number",
+            "description": "Hundredths of a percent (500 = 5%)."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The line's registration number, for invoices and receipts."
+          }
+        },
+        "required": [
+          "rateBasisPoints"
+        ]
+      },
       "ChargeSettingsDto": {
         "type": "object",
         "properties": {
@@ -44512,6 +44917,13 @@
           },
           "taxInclusive": {
             "type": "boolean"
+          },
+          "taxLines": {
+            "description": "Decision 430 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaxLineDto"
+            }
           },
           "cancelReasonRequired": {
             "type": "boolean"
@@ -44532,6 +44944,7 @@
         "required": [
           "taxRateBasisPoints",
           "taxInclusive",
+          "taxLines",
           "cancelReasonRequired",
           "paymentsSetUp",
           "refundNotesRequired",
