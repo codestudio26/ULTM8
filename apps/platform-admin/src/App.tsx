@@ -9,6 +9,7 @@ import { ImpersonationPage } from './impersonation/ImpersonationPage';
 import { TranslationsPage } from './translations/TranslationsPage';
 import { SubscriptionPlansPage } from './subscriptionPlans/SubscriptionPlansPage';
 import { CardSurchargePage } from './cardSurcharge/CardSurchargePage';
+import { WhatsNewPage } from './whatsNew/WhatsNewPage';
 import { Shell } from './layout/Shell';
 
 export function App() {
@@ -85,6 +86,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <CardSurchargePage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/whats-new"
+        element={
+          <RequireAuth>
+            <Shell>
+              <WhatsNewPage />
             </Shell>
           </RequireAuth>
         }

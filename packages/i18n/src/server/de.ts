@@ -1,5 +1,9 @@
 /** German — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Neuigkeiten sind für Schulinhaber und Mitarbeiter.",
+  "Give each language once.": "Gib jede Sprache nur einmal an.",
+  "Post not found": "Beitrag nicht gefunden",
+  "Only a Full Platform Admin may write What's new posts.": "Nur ein vollständiger Plattform-Admin darf Neuigkeiten schreiben.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate muss ein Datum sein (JJJJ-MM-TT)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "Deine Schule hält dein Profil aktuell. Bitte die Schule, deine Angaben zu ändern.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "Diese Schule kündigt Mitgliedschaften selbst. Bitte die Schule, sie für dich zu kündigen.",

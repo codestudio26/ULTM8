@@ -1,5 +1,9 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "새 소식은 학교 운영자와 직원용입니다.",
+  "Give each language once.": "각 언어는 한 번만 입력하세요.",
+  "Post not found": "게시물을 찾을 수 없습니다",
+  "Only a Full Platform Admin may write What's new posts.": "새 소식은 전체 권한 플랫폼 관리자만 작성할 수 있습니다.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate는 날짜(YYYY-MM-DD)여야 합니다",
   "Your School keeps your profile up to date. Ask the School to change your details.": "학교에서 프로필을 관리합니다. 정보 변경은 학교에 요청하세요.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "이 학교는 회원권 해지를 직접 처리합니다. 학교에 해지를 요청하세요.",

@@ -1,5 +1,9 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "قسم الجديد مخصص لأصحاب المدارس وموظفيها.",
+  "Give each language once.": "أدخل كل لغة مرة واحدة.",
+  "Post not found": "المنشور غير موجود",
+  "Only a Full Platform Admin may write What's new posts.": "يمكن لمسؤول المنصة الكامل فقط كتابة منشورات الجديد.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "يجب أن يكون nextGradingDate تاريخًا (YYYY-MM-DD)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "مدرستك تحدّث ملفك الشخصي. اطلب من المدرسة تغيير بياناتك.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "هذه المدرسة تلغي الاشتراكات بنفسها. اطلب من المدرسة إلغاءه نيابةً عنك.",

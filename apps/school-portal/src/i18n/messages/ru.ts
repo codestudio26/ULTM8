@@ -4927,4 +4927,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Сотрудников пока нет",
     emptyRatesDescription: "Здесь появятся сотрудники, добавленные на странице «Сотрудники».",
   },
+  whatsNew: {
+    title: "Что нового",
+    subtitle: "Новости ULTM8 от команды ULTM8.",
+    empty: "Пока ничего нового.",
+    loadFailed: "Не удалось загрузить новости. Попробуйте ещё раз.",
+    loadMore: "Показать более ранние",
+    postedOn: "Опубликовано {date}",
+    inEnglish: "Пока не переведено на ваш язык, поэтому показано на английском.",
+  },
 };

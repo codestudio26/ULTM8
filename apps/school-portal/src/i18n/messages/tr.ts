@@ -4815,4 +4815,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Henüz personel yok",
     emptyRatesDescription: "Personel sayfasında eklediğiniz personel burada görünür.",
   },
+  whatsNew: {
+    title: "Yenilikler",
+    subtitle: "ULTM8 ekibinden ULTM8 haberleri.",
+    empty: "Henüz yenilik yok.",
+    loadFailed: "Yenilikler yüklenemedi. Tekrar deneyin.",
+    loadMore: "Eskileri göster",
+    postedOn: "{date} tarihinde yayınlandı",
+    inEnglish: "Henüz sizin dilinizde değil, bu yüzden İngilizce gösteriliyor.",
+  },
 };

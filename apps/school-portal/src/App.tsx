@@ -63,6 +63,7 @@ import { FranchisesPage } from './franchises/FranchisesPage';
 import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
 import { StripeConnectReturnPage } from './franchises/StripeConnectReturnPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
+import { WhatsNewPage } from './whatsNew/WhatsNewPage';
 import { Shell } from './layout/Shell';
 
 /** Owners land on the Dashboard (Bookings This Week + KPIs); coaches on their own
@@ -617,6 +618,17 @@ export function App() {
           <RequireAuth>
             <Shell>
               <NotificationsPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* Decision 318 item 3: news from ULTM8 HQ for owners and staff. */}
+      <Route
+        path="/whats-new"
+        element={
+          <RequireAuth>
+            <Shell>
+              <WhatsNewPage />
             </Shell>
           </RequireAuth>
         }

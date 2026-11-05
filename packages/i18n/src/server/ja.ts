@@ -1,5 +1,9 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "お知らせはスクールのオーナーとスタッフ向けです。",
+  "Give each language once.": "各言語は1回だけ指定してください。",
+  "Post not found": "投稿が見つかりません",
+  "Only a Full Platform Admin may write What's new posts.": "お知らせを書けるのはフル権限のプラットフォーム管理者だけです。",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate は日付（YYYY-MM-DD）で指定してください",
   "Your School keeps your profile up to date. Ask the School to change your details.": "プロフィールはスクールが管理しています。情報の変更はスクールに依頼してください。",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "このスクールでは会員資格の解約をスクールが行います。解約はスクールに依頼してください。",

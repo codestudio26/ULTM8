@@ -6,6 +6,10 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "What's new is for School owners and staff.",
+ "Give each language once.",
+ "Post not found",
+ "Only a Full Platform Admin may write What's new posts.",
  "nextGradingDate must be a date (YYYY-MM-DD)",
  "Your School keeps your profile up to date. Ask the School to change your details.",
  "This School cancels memberships itself. Ask the School to cancel it for you.",

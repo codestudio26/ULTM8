@@ -4769,4 +4769,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "아직 직원이 없습니다",
     emptyRatesDescription: "직원 페이지에서 추가한 직원이 여기에 표시됩니다.",
   },
+  whatsNew: {
+    title: "새 소식",
+    subtitle: "ULTM8 팀이 전하는 ULTM8 소식입니다.",
+    empty: "아직 새 소식이 없습니다.",
+    loadFailed: "소식을 불러오지 못했습니다. 다시 시도하세요.",
+    loadMore: "이전 소식 보기",
+    postedOn: "{date}에 게시됨",
+    inEnglish: "아직 사용 중인 언어로 번역되지 않아 영어로 표시됩니다.",
+  },
 };

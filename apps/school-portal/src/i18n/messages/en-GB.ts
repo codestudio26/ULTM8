@@ -32,6 +32,7 @@ import { charges } from './en/charges';
 import { imports } from './en/imports';
 import { adTracking } from './en/adTracking';
 import { payroll } from './en/payroll';
+import { whatsNew } from './en/whatsNew';
 
 /**
  * English (UK) — the source catalogue every other locale translates, and the
@@ -77,6 +78,7 @@ export const messages = {
   imports,
   adTracking,
   payroll,
+  whatsNew,
 };
 
 export type EnglishMessages = typeof messages;

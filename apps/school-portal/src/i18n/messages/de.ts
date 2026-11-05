@@ -4815,4 +4815,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Noch kein Personal",
     emptyRatesDescription: "Personal, das du auf der Seite „Personal“ hinzufügst, erscheint hier.",
   },
+  whatsNew: {
+    title: "Neuigkeiten",
+    subtitle: "Neues über ULTM8 vom ULTM8-Team.",
+    empty: "Noch keine Neuigkeiten.",
+    loadFailed: "Die Neuigkeiten konnten nicht geladen werden. Versuche es erneut.",
+    loadMore: "Ältere anzeigen",
+    postedOn: "Veröffentlicht am {date}",
+    inEnglish: "Noch nicht in deiner Sprache, daher auf Englisch.",
+  },
 };

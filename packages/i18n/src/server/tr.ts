@@ -1,5 +1,9 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Yenilikler okul sahipleri ve personel içindir.",
+  "Give each language once.": "Her dili bir kez girin.",
+  "Post not found": "Gönderi bulunamadı",
+  "Only a Full Platform Admin may write What's new posts.": "Yenilik gönderilerini yalnızca tam yetkili platform yöneticisi yazabilir.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate bir tarih olmalıdır (YYYY-AA-GG)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "Okulunuz profilinizi güncel tutuyor. Bilgilerinizi değiştirmesi için okula başvurun.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "Bu okul üyelikleri kendisi iptal ediyor. Sizin için iptal etmesini okuldan isteyin.",

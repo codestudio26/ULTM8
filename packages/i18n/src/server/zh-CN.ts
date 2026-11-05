@@ -1,5 +1,9 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "新功能动态仅供学校负责人和员工查看。",
+  "Give each language once.": "每种语言只能填写一次。",
+  "Post not found": "未找到该帖子",
+  "Only a Full Platform Admin may write What's new posts.": "只有完全权限的平台管理员可以撰写新功能动态。",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate 必须是日期（YYYY-MM-DD）",
   "Your School keeps your profile up to date. Ask the School to change your details.": "你的学校负责更新你的资料。请让学校修改你的信息。",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "此学校自行取消会员资格。请让学校为你取消。",

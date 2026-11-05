@@ -1,5 +1,9 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "Nieuws is voor schooleigenaren en personeel.",
+  "Give each language once.": "Geef elke taal één keer op.",
+  "Post not found": "Bericht niet gevonden",
+  "Only a Full Platform Admin may write What's new posts.": "Alleen een volledige platformbeheerder mag nieuwsberichten schrijven.",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate moet een datum zijn (JJJJ-MM-DD)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "Je school houdt je profiel bij. Vraag de school om je gegevens te wijzigen.",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "Deze school zegt lidmaatschappen zelf op. Vraag de school om het voor je op te zeggen.",

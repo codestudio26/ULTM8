@@ -4769,4 +4769,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "还没有员工",
     emptyRatesDescription: "您在“员工”页面添加的员工会显示在这里。",
   },
+  whatsNew: {
+    title: "新功能动态",
+    subtitle: "来自 ULTM8 团队的 ULTM8 动态。",
+    empty: "暂无新动态。",
+    loadFailed: "无法加载动态，请重试。",
+    loadMore: "查看更早的",
+    postedOn: "发布于 {date}",
+    inEnglish: "尚未翻译成你的语言，因此以英文显示。",
+  },
 };

@@ -4815,4 +4815,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Ainda não há equipe",
     emptyRatesDescription: "A equipe que você adicionar na página Equipe aparece aqui.",
   },
+  whatsNew: {
+    title: "Novidades",
+    subtitle: "Notícias do ULTM8 pela equipe ULTM8.",
+    empty: "Nenhuma novidade ainda.",
+    loadFailed: "Não foi possível carregar as novidades. Tente novamente.",
+    loadMore: "Ver anteriores",
+    postedOn: "Publicado em {date}",
+    inEnglish: "Ainda não está no seu idioma, então aparece em inglês.",
+  },
 };

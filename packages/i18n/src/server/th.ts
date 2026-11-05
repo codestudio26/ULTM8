@@ -1,5 +1,9 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "What's new is for School owners and staff.": "ข่าวสารใหม่สำหรับเจ้าของโรงเรียนและพนักงานเท่านั้น",
+  "Give each language once.": "ระบุแต่ละภาษาเพียงครั้งเดียว",
+  "Post not found": "ไม่พบโพสต์",
+  "Only a Full Platform Admin may write What's new posts.": "เฉพาะผู้ดูแลแพลตฟอร์มแบบเต็มเท่านั้นที่เขียนโพสต์ข่าวสารใหม่ได้",
   "nextGradingDate must be a date (YYYY-MM-DD)": "nextGradingDate ต้องเป็นวันที่ (YYYY-MM-DD)",
   "Your School keeps your profile up to date. Ask the School to change your details.": "โรงเรียนของคุณดูแลโปรไฟล์ของคุณให้เป็นปัจจุบัน โปรดขอให้โรงเรียนเปลี่ยนข้อมูลของคุณ",
   "This School cancels memberships itself. Ask the School to cancel it for you.": "โรงเรียนนี้ยกเลิกสมาชิกภาพเอง โปรดขอให้โรงเรียนยกเลิกให้คุณ",

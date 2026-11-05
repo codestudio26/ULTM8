@@ -50,6 +50,11 @@ export const AuditAction = {
   // allowed. Platform-wide, so no schoolId/franchiseId.
   ADD_CARD_SURCHARGE_COUNTRY: 'ADD_CARD_SURCHARGE_COUNTRY',
   REMOVE_CARD_SURCHARGE_COUNTRY: 'REMOVE_CARD_SURCHARGE_COUNTRY',
+  // Decision 318 item 3 — "What's new" posts. Platform-wide, so no
+  // schoolId/franchiseId.
+  CREATE_PRODUCT_UPDATE: 'CREATE_PRODUCT_UPDATE',
+  UPDATE_PRODUCT_UPDATE: 'UPDATE_PRODUCT_UPDATE',
+  DELETE_PRODUCT_UPDATE: 'DELETE_PRODUCT_UPDATE',
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 

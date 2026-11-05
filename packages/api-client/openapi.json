@@ -18862,6 +18862,209 @@
         ]
       }
     },
+    "/v1/whats-new": {
+      "get": {
+        "operationId": "WhatsNewController_list",
+        "parameters": [
+          {
+            "name": "locale",
+            "required": false,
+            "in": "query",
+            "description": "The reader's language. English when missing or when a post has no translation in it.",
+            "schema": {
+              "enum": [
+                "en-GB",
+                "pt-BR",
+                "es",
+                "ar",
+                "fr",
+                "de",
+                "it",
+                "nl",
+                "pl",
+                "ru",
+                "tr",
+                "ja",
+                "ko",
+                "zh-CN",
+                "th"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "nextCursor from the previous page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WhatsNewListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "whats-new"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/whats-new": {
+      "get": {
+        "operationId": "PlatformAdminWhatsNewController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductUpdateAdminListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-whats-new"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "PlatformAdminWhatsNewController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteProductUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductUpdateAdminDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-whats-new"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/whats-new/{id}": {
+      "patch": {
+        "operationId": "PlatformAdminWhatsNewController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WriteProductUpdateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductUpdateAdminDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-whats-new"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PlatformAdminWhatsNewController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "platform-admin-whats-new"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/member-app/me": {
       "get": {
         "operationId": "MemberAppController_mySettings",
@@ -41081,6 +41284,168 @@
             "description": "A new tag, added to the School's list. Send this or tagId."
           }
         }
+      },
+      "WhatsNewItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string",
+            "description": "The language shown: the one asked for, or en-GB when the post has no translation in it."
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string",
+            "description": "When HQ posted it."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "locale",
+          "createdAt"
+        ]
+      },
+      "WhatsNewListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WhatsNewItemDto"
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cursor for older posts, or null."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ProductUpdateTranslationDto": {
+        "type": "object",
+        "properties": {
+          "locale": {
+            "type": "string",
+            "enum": [
+              "pt-BR",
+              "es",
+              "ar",
+              "fr",
+              "de",
+              "it",
+              "nl",
+              "pl",
+              "ru",
+              "tr",
+              "ja",
+              "ko",
+              "zh-CN",
+              "th"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "locale",
+          "title",
+          "body"
+        ]
+      },
+      "ProductUpdateAdminDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "translations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductUpdateTranslationDto"
+            }
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "body",
+          "translations",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "ProductUpdateAdminListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductUpdateAdminDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "WriteProductUpdateDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "English title."
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 5000,
+            "description": "English text (plain text; line breaks kept)."
+          },
+          "translations": {
+            "description": "Translations, at most one per language. On an edit, the list replaces the old one.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductUpdateTranslationDto"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "body"
+        ]
       },
       "MemberAppSchoolSwitchesDto": {
         "type": "object",
