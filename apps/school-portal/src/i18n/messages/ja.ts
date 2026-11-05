@@ -571,6 +571,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "このスクールを閉鎖",
       explanation: "閉鎖すると、このスクールの ULTM8 サブスクリプションと各生徒の会員サブスクリプションは支払い済み期間の終了時に終了し、フランチャイズ料金も停止します。スクールは読み取り専用になり、90日後に完全に削除されます。それまでは ULTM8 サポートのみが再開できます。返金は自動では行われません。閉鎖前に「取引」から返金してください。",
+      exportReminder: "90 日以内に取引をエクスポートしてください。その後はスクールに誰もサインインできなくなり、メンバーのデータは削除されます。保持されるのは支払い記録と署名済みの免責同意書のみです。",
       button: "スクールを閉鎖",
       confirmTitle: "このスクールを閉鎖しますか？",
       confirmBody: "ご自身で元に戻すことはできません。確認のため、スクール名とパスコードを入力してください。",
@@ -578,6 +579,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "6桁のパスコード",
       closedTitle: "このスクールは閉鎖されています",
       closedBody: "{date} に完全に削除されます。それまでは ULTM8 サポートのみが再開できます。",
+      closedExportReminder: "それまでに取引ページから取引をエクスポートしてください。その後はスクールに誰もサインインできなくなり、メンバーのデータは削除されます。",
     },
   },
   branches: {
@@ -806,9 +808,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "このクラスを読み込めませんでした。",
       bookingsLoadFailed: "予約を読み込めませんでした。",
       waitlistLoadFailed: "キャンセル待ちリストを読み込めませんでした。",
+      rosterHidden: "スクールオーナーは、このクラスの予約とキャンセル待ちリストの閲覧を許可していません。",
       bookingsHeading: "予約",
       bookingsEmptyTitle: "まだ予約はありません",
-      rosterHidden: "スクールオーナーは、このクラスの予約とキャンセル待ちリストの閲覧を許可していません。",
       bookingsEmptyDescription: "生徒がこのクラスを予約すると、ここに表示されます。",
       waitlistHeading: "キャンセル待ち",
       waitlistEmptyTitle: "キャンセル待ちはいません",

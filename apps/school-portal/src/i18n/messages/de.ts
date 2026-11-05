@@ -574,6 +574,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "Diese Schule schließen",
       explanation: "Das Schließen beendet das ULTM8-Abo dieser Schule und das Mitgliedschafts-Abo jedes Schülers zum Ende des bereits bezahlten Zeitraums und stoppt die Franchise-Gebühren. Die Schule wird schreibgeschützt und nach 90 Tagen endgültig gelöscht; bis dahin kann nur der ULTM8-Support sie wieder öffnen. Erstattungen erfolgen nicht automatisch: Erstatte vor dem Schließen über Transaktionen.",
+      exportReminder: "Exportiere deine Transaktionen innerhalb der 90 Tage. Danach kann sich niemand mehr bei der Schule anmelden, und die Daten ihrer Mitglieder werden gelöscht; nur Zahlungsbelege und unterschriebene Verzichtserklärungen bleiben erhalten.",
       button: "Schule schließen",
       confirmTitle: "Diese Schule schließen?",
       confirmBody: "Du kannst das nicht selbst rückgängig machen. Gib zur Bestätigung den Namen der Schule und deinen Passcode ein.",
@@ -581,6 +582,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "Dein 6-stelliger Passcode",
       closedTitle: "Diese Schule ist geschlossen",
       closedBody: "Sie wird am {date} endgültig gelöscht. Bis dahin kann nur der ULTM8-Support sie wieder öffnen.",
+      closedExportReminder: "Exportiere vorher deine Transaktionen auf der Seite Transaktionen. Danach kann sich niemand mehr bei der Schule anmelden, und die Daten ihrer Mitglieder werden gelöscht.",
     },
   },
   branches: {
@@ -809,9 +811,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Dieser Kurs konnte nicht geladen werden.",
       bookingsLoadFailed: "Buchungen konnten nicht geladen werden.",
       waitlistLoadFailed: "Die Warteliste konnte nicht geladen werden.",
+      rosterHidden: "Der Schulinhaber hat dir nicht erlaubt, die Buchungen und die Warteliste dieses Kurses zu sehen.",
       bookingsHeading: "Buchungen",
       bookingsEmptyTitle: "Noch keine Buchungen",
-      rosterHidden: "Der Schulinhaber hat dir nicht erlaubt, die Buchungen und die Warteliste dieses Kurses zu sehen.",
       bookingsEmptyDescription: "Buchungen erscheinen hier, sobald Schüler diesen Kurs buchen.",
       waitlistHeading: "Warteliste",
       waitlistEmptyTitle: "Niemand auf der Warteliste",

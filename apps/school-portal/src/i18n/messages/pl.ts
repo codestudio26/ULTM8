@@ -580,6 +580,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "Zamknij tę szkołę",
       explanation: "Zamknięcie kończy subskrypcję ULTM8 tej szkoły i subskrypcję członkowską każdego ucznia z końcem już opłaconego okresu oraz wstrzymuje opłaty franczyzowe. Szkoła staje się tylko do odczytu i zostanie trwale usunięta po 90 dniach; do tego czasu tylko pomoc techniczna ULTM8 może ją ponownie otworzyć. Zwroty nie są automatyczne: wykonaj je w Transakcjach przed zamknięciem.",
+      exportReminder: "Wyeksportuj swoje transakcje w ciągu 90 dni. Potem nikt nie będzie mógł zalogować się do szkoły, a dane jej członków zostaną usunięte; zostaną tylko zapisy płatności i podpisane oświadczenia.",
       button: "Zamknij szkołę",
       confirmTitle: "Zamknąć tę szkołę?",
       confirmBody: "Nie możesz tego cofnąć samodzielnie. Wpisz nazwę szkoły i swój kod dostępu, aby potwierdzić.",
@@ -587,6 +588,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "Twój 6-cyfrowy kod dostępu",
       closedTitle: "Ta szkoła jest zamknięta",
       closedBody: "Zostanie trwale usunięta {date}. Do tego czasu tylko pomoc techniczna ULTM8 może ją ponownie otworzyć.",
+      closedExportReminder: "Przed tym terminem wyeksportuj transakcje na stronie Transakcje. Potem nikt nie będzie mógł zalogować się do szkoły, a dane jej członków zostaną usunięte.",
     },
   },
   branches: {
@@ -815,9 +817,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Nie udało się wczytać tych zajęć.",
       bookingsLoadFailed: "Nie udało się wczytać rezerwacji.",
       waitlistLoadFailed: "Nie udało się wczytać listy oczekujących.",
+      rosterHidden: "Właściciel szkoły nie pozwolił ci zobaczyć rezerwacji i listy oczekujących na te zajęcia.",
       bookingsHeading: "Rezerwacje",
       bookingsEmptyTitle: "Brak rezerwacji",
-      rosterHidden: "Właściciel szkoły nie pozwolił ci zobaczyć rezerwacji i listy oczekujących na te zajęcia.",
       bookingsEmptyDescription: "Rezerwacje pojawią się tutaj, gdy uczniowie zaczną zapisywać się na te zajęcia.",
       waitlistHeading: "Lista oczekujących",
       waitlistEmptyTitle: "Nikt nie czeka na liście",

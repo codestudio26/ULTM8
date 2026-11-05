@@ -574,6 +574,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "Fermer cette école",
       explanation: "La fermeture met fin à l'abonnement ULTM8 de cette école et à l'abonnement de chaque élève à la fin de la période déjà payée, et arrête les frais de franchise. L'école passe en lecture seule et est supprimée définitivement après 90 jours ; d'ici là, seul le support ULTM8 peut la rouvrir. Les remboursements ne sont pas automatiques : effectuez-les depuis Transactions avant de fermer.",
+      exportReminder: "Exportez vos transactions dans les 90 jours. Ensuite, plus personne ne pourra se connecter à l’école et les données de ses membres seront supprimées ; seuls les justificatifs de paiement et les décharges signées sont conservés.",
       button: "Fermer l'école",
       confirmTitle: "Fermer cette école ?",
       confirmBody: "Vous ne pourrez pas l'annuler vous-même. Saisissez le nom de l'école et votre code d'accès pour confirmer.",
@@ -581,6 +582,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "Votre code d'accès à 6 chiffres",
       closedTitle: "Cette école est fermée",
       closedBody: "Elle sera supprimée définitivement le {date}. D'ici là, seul le support ULTM8 peut la rouvrir.",
+      closedExportReminder: "Exportez vos transactions depuis la page Transactions avant cette date. Ensuite, plus personne ne pourra se connecter à l’école et les données de ses membres seront supprimées.",
     },
   },
   branches: {
@@ -809,9 +811,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Impossible de charger ce cours.",
       bookingsLoadFailed: "Impossible de charger les réservations.",
       waitlistLoadFailed: "Impossible de charger la liste d'attente.",
+      rosterHidden: "Le propriétaire de l’école ne vous a pas autorisé à voir les réservations et la liste d'attente de ce cours.",
       bookingsHeading: "Réservations",
       bookingsEmptyTitle: "Aucune réservation pour le moment",
-      rosterHidden: "Le propriétaire de l’école ne vous a pas autorisé à voir les réservations et la liste d'attente de ce cours.",
       bookingsEmptyDescription: "Les réservations apparaissent ici dès que des élèves s’inscrivent à ce cours.",
       waitlistHeading: "Liste d'attente",
       waitlistEmptyTitle: "Personne sur la liste d'attente",

@@ -574,6 +574,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "Deze school sluiten",
       explanation: "Sluiten beëindigt het ULTM8-abonnement van deze school en het lidmaatschapsabonnement van elke leerling aan het eind van de al betaalde periode, en stopt de franchisekosten. De school wordt alleen-lezen en wordt na 90 dagen definitief verwijderd; tot die tijd kan alleen ULTM8-support haar heropenen. Terugbetalingen gaan niet automatisch: doe ze vóór het sluiten via Transacties.",
+      exportReminder: "Exporteer je transacties binnen de 90 dagen. Daarna kan niemand meer inloggen bij de school en worden de gegevens van de leden verwijderd; alleen betalingsgegevens en ondertekende vrijwaringen blijven bewaard.",
       button: "School sluiten",
       confirmTitle: "Deze school sluiten?",
       confirmBody: "Je kunt dit niet zelf ongedaan maken. Typ de naam van de school en je toegangscode om te bevestigen.",
@@ -581,6 +582,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "Je 6-cijferige toegangscode",
       closedTitle: "Deze school is gesloten",
       closedBody: "Ze wordt op {date} definitief verwijderd. Tot die tijd kan alleen ULTM8-support haar heropenen.",
+      closedExportReminder: "Exporteer vóór die datum je transacties via de pagina Transacties. Daarna kan niemand meer inloggen bij de school en worden de gegevens van de leden verwijderd.",
     },
   },
   branches: {
@@ -809,9 +811,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Deze les kan niet worden geladen.",
       bookingsLoadFailed: "Boekingen kunnen niet worden geladen.",
       waitlistLoadFailed: "De wachtlijst kan niet worden geladen.",
+      rosterHidden: "De schooleigenaar heeft je niet toegestaan de boekingen en de wachtlijst van deze les te zien.",
       bookingsHeading: "Boekingen",
       bookingsEmptyTitle: "Nog geen boekingen",
-      rosterHidden: "De schooleigenaar heeft je niet toegestaan de boekingen en de wachtlijst van deze les te zien.",
       bookingsEmptyDescription: "Boekingen verschijnen hier zodra leerlingen deze les boeken.",
       waitlistHeading: "Wachtlijst",
       waitlistEmptyTitle: "Niemand op de wachtlijst",

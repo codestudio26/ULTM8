@@ -1378,6 +1378,10 @@ model School {
   archivedAt DateTime?
   purgeAt    DateTime?
   purgedAt   DateTime?
+  /// Decision 432 (PRIV-1): when the purge ended every role here and deleted
+  /// the members' non-financial data of this anonymized School. Null on a
+  /// purged School means that is still to do (the daily sweep does it).
+  memberDataPurgedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

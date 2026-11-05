@@ -294,6 +294,7 @@ export const schools = {
   close: {
     title: 'Close this School',
     explanation: "Closing ends this School's ULTM8 subscription and every student's membership subscription at the end of the period already paid for, and stops franchise fees. The School becomes read-only and is deleted for good after 90 days; until then only ULTM8 support can reopen it. Refunds aren't automatic: give any from Transactions before closing.",
+    exportReminder: "Export your Transactions within the 90 days. After that nobody can sign in to the School any more, and its members' data is deleted; only payment records and signed waivers are kept.",
     button: 'Close School',
     confirmTitle: 'Close this School?',
     confirmBody: "You can't undo this yourself. Type the School's name and your passcode to confirm.",
@@ -301,5 +302,6 @@ export const schools = {
     passcodeLabel: 'Your 6-digit passcode',
     closedTitle: 'This School is closed',
     closedBody: 'It will be deleted for good on {date}. Until then only ULTM8 support can reopen it.',
+    closedExportReminder: "Export your Transactions from the Transactions page before then. After that nobody can sign in to the School, and its members' data is deleted.",
   },
 };

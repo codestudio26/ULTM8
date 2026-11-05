@@ -574,6 +574,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "Chiudi questa scuola",
       explanation: "La chiusura termina l'abbonamento ULTM8 di questa scuola e l'abbonamento di ogni allievo alla fine del periodo già pagato, e interrompe le quote di franchising. La scuola diventa di sola lettura e viene eliminata definitivamente dopo 90 giorni; fino ad allora solo l'assistenza ULTM8 può riaprirla. I rimborsi non sono automatici: effettuali da Transazioni prima di chiudere.",
+      exportReminder: "Esporta le tue transazioni entro i 90 giorni. Dopo, nessuno potrà più accedere alla scuola e i dati dei suoi iscritti verranno eliminati; restano solo le registrazioni dei pagamenti e le liberatorie firmate.",
       button: "Chiudi scuola",
       confirmTitle: "Chiudere questa scuola?",
       confirmBody: "Non potrai annullarlo da solo. Digita il nome della scuola e il tuo codice di accesso per confermare.",
@@ -581,6 +582,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "Il tuo codice di accesso di 6 cifre",
       closedTitle: "Questa scuola è chiusa",
       closedBody: "Sarà eliminata definitivamente il {date}. Fino ad allora solo l'assistenza ULTM8 può riaprirla.",
+      closedExportReminder: "Esporta le tue transazioni dalla pagina Transazioni prima di allora. Dopo, nessuno potrà più accedere alla scuola e i dati dei suoi iscritti verranno eliminati.",
     },
   },
   branches: {
@@ -809,9 +811,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Impossibile caricare questo corso.",
       bookingsLoadFailed: "Impossibile caricare le prenotazioni.",
       waitlistLoadFailed: "Impossibile caricare la lista d'attesa.",
+      rosterHidden: "Il titolare della scuola non ti ha permesso di vedere le prenotazioni e la lista d'attesa di questo corso.",
       bookingsHeading: "Prenotazioni",
       bookingsEmptyTitle: "Ancora nessuna prenotazione",
-      rosterHidden: "Il titolare della scuola non ti ha permesso di vedere le prenotazioni e la lista d'attesa di questo corso.",
       bookingsEmptyDescription: "Le prenotazioni compaiono qui quando gli allievi iniziano a prenotare questo corso.",
       waitlistHeading: "Lista d'attesa",
       waitlistEmptyTitle: "Nessuno in lista d'attesa",

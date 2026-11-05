@@ -571,6 +571,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "关闭此学校",
       explanation: "关闭后，此学校的 ULTM8 订阅和每位学员的会员订阅将在已付费周期结束时终止，加盟费也会停止。学校将变为只读，并在 90 天后被永久删除；在此之前只有 ULTM8 支持团队可以重新开启。退款不会自动进行：请在关闭前通过“交易”办理。",
+      exportReminder: "请在 90 天内导出你的交易记录。之后任何人都无法再登录该学校，其成员数据将被删除；只保留付款记录和已签署的免责声明。",
       button: "关闭学校",
       confirmTitle: "关闭此学校？",
       confirmBody: "您无法自行撤销此操作。请输入学校名称和您的密码以确认。",
@@ -578,6 +579,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "您的 6 位数密码",
       closedTitle: "此学校已关闭",
       closedBody: "它将于 {date} 被永久删除。在此之前只有 ULTM8 支持团队可以重新开启。",
+      closedExportReminder: "请在此之前从“交易”页面导出你的交易记录。之后任何人都无法登录该学校，其成员数据将被删除。",
     },
   },
   branches: {
@@ -806,9 +808,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "无法加载此课程。",
       bookingsLoadFailed: "无法加载预约。",
       waitlistLoadFailed: "无法加载候补名单。",
+      rosterHidden: "学校所有者未允许你查看此课程的预订和候补名单。",
       bookingsHeading: "预约",
       bookingsEmptyTitle: "还没有预约",
-      rosterHidden: "学校所有者未允许你查看此课程的预订和候补名单。",
       bookingsEmptyDescription: "学员开始预约此课程后，预约会显示在这里。",
       waitlistHeading: "候补名单",
       waitlistEmptyTitle: "候补名单中没有人",

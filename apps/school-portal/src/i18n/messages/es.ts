@@ -574,6 +574,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "Cerrar esta escuela",
       explanation: "Cerrar termina la suscripción de ULTM8 de esta escuela y la suscripción de membresía de cada alumno al final del periodo ya pagado, y detiene las cuotas de franquicia. La escuela pasa a solo lectura y se elimina definitivamente a los 90 días; hasta entonces solo el soporte de ULTM8 puede reabrirla. Los reembolsos no son automáticos: hazlos desde Transacciones antes de cerrar.",
+      exportReminder: "Exporta tus transacciones dentro de los 90 días. Después nadie podrá iniciar sesión en la escuela y se eliminarán los datos de sus miembros; solo se conservan los registros de pago y las exenciones firmadas.",
       button: "Cerrar escuela",
       confirmTitle: "¿Cerrar esta escuela?",
       confirmBody: "No puedes deshacerlo tú mismo. Escribe el nombre de la escuela y tu código de acceso para confirmar.",
@@ -581,6 +582,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "Tu código de acceso de 6 dígitos",
       closedTitle: "Esta escuela está cerrada",
       closedBody: "Se eliminará definitivamente el {date}. Hasta entonces solo el soporte de ULTM8 puede reabrirla.",
+      closedExportReminder: "Exporta tus transacciones desde la página Transacciones antes de esa fecha. Después nadie podrá iniciar sesión en la escuela y se eliminarán los datos de sus miembros.",
     },
   },
   branches: {
@@ -809,9 +811,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "No se pudo cargar esta clase.",
       bookingsLoadFailed: "No se pudieron cargar las reservas.",
       waitlistLoadFailed: "No se pudo cargar la lista de espera.",
+      rosterHidden: "El propietario de la escuela no te ha permitido ver las reservas y la lista de espera de esta clase.",
       bookingsHeading: "Reservas",
       bookingsEmptyTitle: "Aún no hay reservas",
-      rosterHidden: "El propietario de la escuela no te ha permitido ver las reservas y la lista de espera de esta clase.",
       bookingsEmptyDescription: "Las reservas aparecen aquí cuando los alumnos empiezan a reservar esta clase.",
       waitlistHeading: "Lista de espera",
       waitlistEmptyTitle: "Nadie en la lista de espera",

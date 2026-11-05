@@ -571,6 +571,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "이 학교 폐쇄",
       explanation: "폐쇄하면 이 학교의 ULTM8 구독과 모든 수련생의 회원권 구독이 이미 결제한 기간이 끝날 때 종료되고, 프랜차이즈 수수료도 중단됩니다. 학교는 읽기 전용이 되며 90일 후 영구 삭제되고, 그 전까지는 ULTM8 지원팀만 다시 열 수 있습니다. 환불은 자동으로 되지 않으니 폐쇄 전에 거래 내역에서 처리하세요.",
+      exportReminder: "90일 이내에 거래 내역을 내보내세요. 그 후에는 아무도 학교에 로그인할 수 없으며 회원 데이터가 삭제됩니다. 결제 기록과 서명된 면책 동의서만 보관됩니다.",
       button: "학교 폐쇄",
       confirmTitle: "이 학교를 폐쇄할까요?",
       confirmBody: "직접 되돌릴 수 없습니다. 확인하려면 학교 이름과 패스코드를 입력하세요.",
@@ -578,6 +579,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "6자리 패스코드",
       closedTitle: "이 학교는 폐쇄되었습니다",
       closedBody: "{date}에 영구 삭제됩니다. 그 전까지는 ULTM8 지원팀만 다시 열 수 있습니다.",
+      closedExportReminder: "그 전에 거래 페이지에서 거래 내역을 내보내세요. 그 후에는 아무도 학교에 로그인할 수 없으며 회원 데이터가 삭제됩니다.",
     },
   },
   branches: {
@@ -806,9 +808,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "이 수업을 불러올 수 없습니다.",
       bookingsLoadFailed: "예약을 불러올 수 없습니다.",
       waitlistLoadFailed: "대기자 명단을 불러올 수 없습니다.",
+      rosterHidden: "학교 소유자가 이 수업의 예약과 대기자 명단을 볼 수 있도록 허용하지 않았습니다.",
       bookingsHeading: "예약",
       bookingsEmptyTitle: "아직 예약이 없습니다",
-      rosterHidden: "학교 소유자가 이 수업의 예약과 대기자 명단을 볼 수 있도록 허용하지 않았습니다.",
       bookingsEmptyDescription: "수련생이 이 수업을 예약하기 시작하면 여기에 표시됩니다.",
       waitlistHeading: "대기자 명단",
       waitlistEmptyTitle: "대기자가 없습니다",

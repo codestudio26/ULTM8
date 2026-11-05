@@ -574,6 +574,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     close: {
       title: "Bu okulu kapat",
       explanation: "Kapatmak, bu okulun ULTM8 aboneliğini ve her öğrencinin üyelik aboneliğini zaten ödenmiş dönemin sonunda bitirir ve franchise ücretlerini durdurur. Okul salt okunur olur ve 90 gün sonra kalıcı olarak silinir; o zamana kadar yalnızca ULTM8 desteği yeniden açabilir. İadeler otomatik değildir: kapatmadan önce İşlemler'den yapın.",
+      exportReminder: "İşlemlerinizi 90 gün içinde dışa aktarın. Bundan sonra kimse okula giriş yapamaz ve üyelerinin verileri silinir; yalnızca ödeme kayıtları ve imzalı feragatnameler saklanır.",
       button: "Okulu kapat",
       confirmTitle: "Bu okul kapatılsın mı?",
       confirmBody: "Bunu kendiniz geri alamazsınız. Onaylamak için okulun adını ve şifrenizi yazın.",
@@ -581,6 +582,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       passcodeLabel: "6 haneli şifreniz",
       closedTitle: "Bu okul kapalı",
       closedBody: "{date} tarihinde kalıcı olarak silinecek. O zamana kadar yalnızca ULTM8 desteği yeniden açabilir.",
+      closedExportReminder: "O tarihten önce İşlemler sayfasından işlemlerinizi dışa aktarın. Bundan sonra kimse okula giriş yapamaz ve üyelerinin verileri silinir.",
     },
   },
   branches: {
@@ -809,9 +811,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadFailed: "Bu ders yüklenemedi.",
       bookingsLoadFailed: "Rezervasyonlar yüklenemedi.",
       waitlistLoadFailed: "Bekleme listesi yüklenemedi.",
+      rosterHidden: "Okul sahibi bu dersin rezervasyonlarını ve bekleme listesini görmenize izin vermedi.",
       bookingsHeading: "Rezervasyonlar",
       bookingsEmptyTitle: "Henüz rezervasyon yok",
-      rosterHidden: "Okul sahibi bu dersin rezervasyonlarını ve bekleme listesini görmenize izin vermedi.",
       bookingsEmptyDescription: "Öğrenciler bu derse rezervasyon yapmaya başladığında rezervasyonlar burada görünür.",
       waitlistHeading: "Bekleme listesi",
       waitlistEmptyTitle: "Bekleme listesinde kimse yok",

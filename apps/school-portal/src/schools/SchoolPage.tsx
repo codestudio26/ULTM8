@@ -475,6 +475,8 @@ function ClosedSchoolNotice({ school }: { school: SchoolResponse }) {
       <p data-testid="school-closed-notice">
         {t('schools.close.closedBody', { date: school.purgeAt ? new Date(school.purgeAt).toLocaleDateString(formatLocale()) : '—' })}
       </p>
+      {/* Decision 432 (PRIV-1): after the 90 days nobody can sign in to it. */}
+      <p>{t('schools.close.closedExportReminder')}</p>
     </Card>
   );
 }
@@ -573,6 +575,7 @@ function CloseSchoolCard({ schoolId, school }: { schoolId: string; school: Schoo
         {t('schools.close.title')}
       </h2>
       <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.close.explanation')}</p>
+      <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.close.exportReminder')}</p>
       <Button variant="danger" onClick={() => setOpen(true)}>
         {t('schools.close.button')}
       </Button>
