@@ -796,4 +796,7 @@ export const serverMessages: Record<string, string> = {
   "This School already has 100 income categories. Delete one before adding another.": "Bu okulda zaten 100 gelir kategorisi var. Yenisini eklemeden önce birini silin.",
   "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Bu gelir kategorisi bir plan veya ücret tarafından kullanılıyor, bu yüzden silinemez. Bunun yerine adını değiştirin.",
   "Choose an income category from this School's list.": "Bu okulun listesinden bir gelir kategorisi seçin.",
+  "Calendar not found": "Takvim bulunamadı",
+  "Schedule not found": "Program bulunamadı",
+  "Your School hasn't switched on calendar links.": "Okulunuz takvim bağlantılarını açmadı.",
 };

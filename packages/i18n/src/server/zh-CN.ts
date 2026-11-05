@@ -796,4 +796,7 @@ export const serverMessages: Record<string, string> = {
   "This School already has 100 income categories. Delete one before adding another.": "本学校已有 100 个收入类别。请先删除一个再添加。",
   "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "该收入类别正被某个套餐或收费项目使用，因此无法删除。请改为重命名。",
   "Choose an income category from this School's list.": "请从本学校的列表中选择收入类别。",
+  "Calendar not found": "未找到日历",
+  "Schedule not found": "未找到课程表",
+  "Your School hasn't switched on calendar links.": "你的学校尚未开启日历链接。",
 };

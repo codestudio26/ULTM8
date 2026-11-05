@@ -4644,6 +4644,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/schedule-sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ScheduleSharingController_get"];
+        put: operations["ScheduleSharingController_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/calendar-feed/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ScheduleSharingController_myFeed"];
+        put?: never;
+        post: operations["ScheduleSharingController_createFeed"];
+        delete: operations["ScheduleSharingController_deleteFeed"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/calendar-feeds/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CalendarFeedsController_feed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schedule-embeds/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ScheduleEmbedsController_json"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schedule-embeds/{key}/page": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ScheduleEmbedsController_page"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/attendance/scan": {
         parameters: {
             query?: never;
@@ -11955,6 +12035,49 @@ export interface components {
         };
         SignGuestWaiversResponseDto: {
             signed: number;
+        };
+        ScheduleSharingSettingsDto: {
+            staffCalendarFeedsEnabled: boolean;
+            /** @description The embed link key, null when the embed is off. Page: GET /schedule-embeds/{key}/page. */
+            scheduleEmbedKey: string | null;
+        };
+        UpdateScheduleSharingDto: {
+            /** @description Staff may add their classes to Google Calendar with a private calendar link. */
+            staffCalendarFeedsEnabled?: boolean;
+            /** @description Show the School's schedule on its own website. Off removes the link. */
+            scheduleEmbedEnabled?: boolean;
+            /** @description Replace the embed link; the old one stops working. */
+            newEmbedKey?: boolean;
+        };
+        MyCalendarFeedLinkDto: {
+            /** @description The private link token. The calendar is at GET /calendar-feeds/{token}.ics. */
+            token: string;
+            createdAt: string;
+        };
+        MyCalendarFeedDto: {
+            /** @description Whether the School has calendar links switched on. */
+            enabled: boolean;
+            feed?: components["schemas"]["MyCalendarFeedLinkDto"] | null;
+        };
+        DeletedDto: {
+            deleted: boolean;
+        };
+        ScheduleEmbedClassDto: {
+            title: string;
+            startDate: string;
+            endDate: string;
+            cancelled: boolean;
+            branchName?: string | null;
+            /** @description The Branch's IANA time zone; else the School's. */
+            branchTimezone?: string | null;
+        };
+        ScheduleEmbedDto: {
+            schoolName: string;
+            timezone?: string | null;
+            /** @enum {string} */
+            weekStartsOn: "MONDAY" | "SUNDAY";
+            /** @description The next 28 days, at most 500. */
+            classes: components["schemas"]["ScheduleEmbedClassDto"][];
         };
         ScanAttendanceDto: {
             classId: string;
@@ -22069,6 +22192,174 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SignGuestWaiversResponseDto"];
                 };
+            };
+        };
+    };
+    ScheduleSharingController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleSharingSettingsDto"];
+                };
+            };
+        };
+    };
+    ScheduleSharingController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateScheduleSharingDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleSharingSettingsDto"];
+                };
+            };
+        };
+    };
+    ScheduleSharingController_myFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCalendarFeedDto"];
+                };
+            };
+        };
+    };
+    ScheduleSharingController_createFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyCalendarFeedDto"];
+                };
+            };
+        };
+    };
+    ScheduleSharingController_deleteFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeletedDto"];
+                };
+            };
+        };
+    };
+    CalendarFeedsController_feed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ScheduleEmbedsController_json: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleEmbedDto"];
+                };
+            };
+        };
+    };
+    ScheduleEmbedsController_page: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

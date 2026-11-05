@@ -796,4 +796,7 @@ export const serverMessages: Record<string, string> = {
   "This School already has 100 income categories. Delete one before adding another.": "โรงเรียนนี้มีหมวดรายได้ครบ 100 หมวดแล้ว ลบหนึ่งหมวดก่อนเพิ่มหมวดใหม่",
   "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "หมวดรายได้นี้ถูกใช้โดยแพ็กเกจหรือรายการเรียกเก็บ จึงลบไม่ได้ ให้เปลี่ยนชื่อแทน",
   "Choose an income category from this School's list.": "เลือกหมวดรายได้จากรายการของโรงเรียนนี้",
+  "Calendar not found": "ไม่พบปฏิทิน",
+  "Schedule not found": "ไม่พบตาราง",
+  "Your School hasn't switched on calendar links.": "โรงเรียนของคุณยังไม่ได้เปิดลิงก์ปฏิทิน",
 };

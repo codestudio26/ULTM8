@@ -796,4 +796,7 @@ export const serverMessages: Record<string, string> = {
   "This School already has 100 income categories. Delete one before adding another.": "لدى هذه المدرسة 100 فئة دخل بالفعل. احذف واحدة قبل إضافة أخرى.",
   "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "فئة الدخل هذه مستخدمة في خطة أو رسوم، لذا لا يمكن حذفها. أعد تسميتها بدلًا من ذلك.",
   "Choose an income category from this School's list.": "اختر فئة دخل من قائمة هذه المدرسة.",
+  "Calendar not found": "لم يتم العثور على التقويم",
+  "Schedule not found": "لم يتم العثور على الجدول",
+  "Your School hasn't switched on calendar links.": "لم تفعّل مدرستك روابط التقويم.",
 };

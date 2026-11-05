@@ -557,6 +557,7 @@ model User {
   trainingLogs                      TrainingLog[]               @relation("TrainingLogStudent")
   instructorBeltsVerified           InstructorBelt[]            @relation("InstructorBeltVerifiedBy")
   waiverSignatures                  WaiverSignature[]           @relation("WaiverSignatureStudent")
+  staffCalendarFeeds                StaffCalendarFeed[]
   waiverSignaturesSigned            WaiverSignature[]           @relation("WaiverSignatureSignedBy")
   favorites                         Favorite[]                  @relation("FavoriteStudent")
   watchHistories                    WatchHistory[]              @relation("WatchHistoryStudent")
@@ -1300,6 +1301,13 @@ model School {
   /// layout it opens in. Monday and list are what it always did.
   weekStartsOn                   WeekStartDay                    @default(MONDAY)
   timetableDefaultLayout         TimetableLayout                 @default(LIST)
+  /// Decision 319 item 4: staff may add their classes to Google Calendar (a
+  /// private calendar link each, StaffCalendarFeed). Off by default.
+  staffCalendarFeedsEnabled      Boolean                         @default(false)
+  /// Decision 319 item 4: the key in the School's schedule embed link for its
+  /// own website. Null = no embed. Public by nature (it sits in the School's
+  /// web page); a new key turns the old link off.
+  scheduleEmbedKey               String?                         @unique
   franchiseFeeSubscriptionStatus FranchiseFeeSubscriptionStatus?
 
   /// Phase 16b-ii — the standing Stripe Subscription id backing this School's own
@@ -1363,6 +1371,7 @@ model School {
   classes               Class[]
   timetableSlots        TimetableSlot[]
   closures              Closure[]
+  staffCalendarFeeds    StaffCalendarFeed[]
   instructors           Instructor[]
   paymentAccount        PaymentAccount?
   studentPaymentMethods StudentPaymentMethod[]
@@ -6463,4 +6472,28 @@ model SignedDocumentExport {
 
   @@index([schoolId, createdAt])
   @@index([status, expiresAt])
+}
+
+/// Decision 319 item 4: a staff member's private calendar link (an iCal
+/// feed of the classes they teach at one School), which they add to Google
+/// Calendar. The link's token is derived from this row's id (HMAC with the
+/// API's secret, as guest waiver links are), so it can be shown again; only
+/// its SHA-256 is stored. A new link replaces the row; deleting it turns the
+/// link off. The feed answers only while the School has the setting on and
+/// the person still holds a staff role there.
+model StaffCalendarFeed {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tokenHash String @unique
+
+  createdAt DateTime @default(now())
+
+  @@unique([schoolId, userId])
+  @@index([userId])
 }

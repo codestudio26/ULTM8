@@ -796,4 +796,7 @@ export const serverMessages: Record<string, string> = {
   "This School already has 100 income categories. Delete one before adding another.": "В этой школе уже 100 категорий дохода. Удалите одну, прежде чем добавлять новую.",
   "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Эта категория дохода используется в тарифе или начислении, поэтому её нельзя удалить. Вместо этого переименуйте её.",
   "Choose an income category from this School's list.": "Выберите категорию дохода из списка этой школы.",
+  "Calendar not found": "Календарь не найден",
+  "Schedule not found": "Расписание не найдено",
+  "Your School hasn't switched on calendar links.": "Ваша школа не включила ссылки на календарь.",
 };

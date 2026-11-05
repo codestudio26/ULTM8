@@ -796,4 +796,7 @@ export const serverMessages: Record<string, string> = {
   "This School already has 100 income categories. Delete one before adding another.": "このスクールにはすでに収入カテゴリが100件あります。追加する前に1件削除してください。",
   "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "この収入カテゴリはプランまたは請求で使われているため削除できません。代わりに名前を変更してください。",
   "Choose an income category from this School's list.": "このスクールのリストから収入カテゴリを選んでください。",
+  "Calendar not found": "カレンダーが見つかりません",
+  "Schedule not found": "スケジュールが見つかりません",
+  "Your School hasn't switched on calendar links.": "スクールがカレンダーリンクを有効にしていません。",
 };

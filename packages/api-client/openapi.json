@@ -14012,6 +14012,261 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/schedule-sharing": {
+      "get": {
+        "operationId": "ScheduleSharingController_get",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleSharingSettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schedule-sharing"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "ScheduleSharingController_update",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateScheduleSharingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleSharingSettingsDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schedule-sharing"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/calendar-feed/me": {
+      "get": {
+        "operationId": "ScheduleSharingController_myFeed",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyCalendarFeedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schedule-sharing"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "ScheduleSharingController_createFeed",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyCalendarFeedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schedule-sharing"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "ScheduleSharingController_deleteFeed",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeletedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schedule-sharing"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/calendar-feeds/{token}": {
+      "get": {
+        "operationId": "CalendarFeedsController_feed",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "schedule-sharing"
+        ]
+      }
+    },
+    "/v1/schedule-embeds/{key}": {
+      "get": {
+        "operationId": "ScheduleEmbedsController_json",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleEmbedDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schedule-sharing"
+        ]
+      }
+    },
+    "/v1/schedule-embeds/{key}/page": {
+      "get": {
+        "operationId": "ScheduleEmbedsController_page",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "schedule-sharing"
+        ]
+      }
+    },
     "/v1/attendance/scan": {
       "post": {
         "operationId": "AttendanceController_scan",
@@ -37228,6 +37483,150 @@
         },
         "required": [
           "signed"
+        ]
+      },
+      "ScheduleSharingSettingsDto": {
+        "type": "object",
+        "properties": {
+          "staffCalendarFeedsEnabled": {
+            "type": "boolean"
+          },
+          "scheduleEmbedKey": {
+            "type": "string",
+            "nullable": true,
+            "description": "The embed link key, null when the embed is off. Page: GET /schedule-embeds/{key}/page."
+          }
+        },
+        "required": [
+          "staffCalendarFeedsEnabled",
+          "scheduleEmbedKey"
+        ]
+      },
+      "UpdateScheduleSharingDto": {
+        "type": "object",
+        "properties": {
+          "staffCalendarFeedsEnabled": {
+            "type": "boolean",
+            "description": "Staff may add their classes to Google Calendar with a private calendar link."
+          },
+          "scheduleEmbedEnabled": {
+            "type": "boolean",
+            "description": "Show the School's schedule on its own website. Off removes the link."
+          },
+          "newEmbedKey": {
+            "type": "boolean",
+            "description": "Replace the embed link; the old one stops working."
+          }
+        }
+      },
+      "MyCalendarFeedLinkDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The private link token. The calendar is at GET /calendar-feeds/{token}.ics."
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "createdAt"
+        ]
+      },
+      "MyCalendarFeedDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the School has calendar links switched on."
+          },
+          "feed": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MyCalendarFeedLinkDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "DeletedDto": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ]
+      },
+      "ScheduleEmbedClassDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          },
+          "cancelled": {
+            "type": "boolean"
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "branchTimezone": {
+            "type": "string",
+            "nullable": true,
+            "description": "The Branch's IANA time zone; else the School's."
+          }
+        },
+        "required": [
+          "title",
+          "startDate",
+          "endDate",
+          "cancelled"
+        ]
+      },
+      "ScheduleEmbedDto": {
+        "type": "object",
+        "properties": {
+          "schoolName": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string",
+            "nullable": true
+          },
+          "weekStartsOn": {
+            "type": "string",
+            "enum": [
+              "MONDAY",
+              "SUNDAY"
+            ]
+          },
+          "classes": {
+            "description": "The next 28 days, at most 500.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleEmbedClassDto"
+            }
+          }
+        },
+        "required": [
+          "schoolName",
+          "weekStartsOn",
+          "classes"
         ]
       },
       "ScanAttendanceDto": {

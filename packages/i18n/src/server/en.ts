@@ -814,4 +814,7 @@ export const SERVER_PATTERNS: string[] = [
  "This School already has 100 income categories. Delete one before adding another.",
  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.",
  "Choose an income category from this School's list.",
+ "Calendar not found",
+ "Schedule not found",
+ "Your School hasn't switched on calendar links.",
 ];

@@ -796,4 +796,7 @@ export const serverMessages: Record<string, string> = {
   "This School already has 100 income categories. Delete one before adding another.": "Deze school heeft al 100 inkomstencategorieën. Verwijder er een voordat je een nieuwe toevoegt.",
   "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Deze inkomstencategorie wordt gebruikt door een abonnement of een kostenpost en kan dus niet worden verwijderd. Wijzig in plaats daarvan de naam.",
   "Choose an income category from this School's list.": "Kies een inkomstencategorie uit de lijst van deze school.",
+  "Calendar not found": "Agenda niet gevonden",
+  "Schedule not found": "Rooster niet gevonden",
+  "Your School hasn't switched on calendar links.": "Je school heeft agendalinks niet aangezet.",
 };
