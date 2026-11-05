@@ -120,7 +120,7 @@ export class PackRechargesService {
       include: {
         school: { select: { name: true, defaultCurrency: true } },
         student: { select: { firstName: true } },
-        membershipPlan: { select: { id: true, schoolId: true, type: true, title: true, price: true, currency: true, expiryDurationDays: true, classesIncluded: true, visible: true, contractVersion: true, archivedAt: true } },
+        membershipPlan: { select: { id: true, schoolId: true, type: true, title: true, price: true, currency: true, expiryDurationDays: true, classesIncluded: true, visible: true, contractVersion: true, startsOnFirstCheckIn: true, fixedStartDate: true, fixedEndDate: true, switchToPlanId: true, archivedAt: true } },
       },
     });
     const items: MyPackRechargeDto[] = [];
@@ -135,7 +135,7 @@ export class PackRechargesService {
         schoolName: r.school.name,
         studentId: r.studentId,
         childFirstName: r.studentId === callerId ? null : r.student.firstName,
-        plan: { ...plan, cardSurchargeAmount },
+        plan: { ...plan, cardSurchargeAmount, fixedStartDate: plan.fixedStartDate?.toISOString() ?? null, fixedEndDate: plan.fixedEndDate?.toISOString() ?? null },
         expiresAt: r.expiresAt,
       });
     }

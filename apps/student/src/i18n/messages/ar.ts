@@ -934,6 +934,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "تتبقّى {count} حصة",
       },
       expires: "تنتهي في {date}",
+      awaitingFirstCheckIn: "تبدأ عند أول تسجيل حضور لك",
       empty: "لا توجد عضويات بعد.",
       loadError: "تعذّر تحميل العضويات، يُرجى المحاولة مرة أخرى.",
       cancelSubscription: "إلغاء الاشتراك",
@@ -966,6 +967,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "انضم إلى هذه المدرسة للشراء.",
+      startsOnFirstCheckIn: "تبدأ عند أول تسجيل حضور لك",
+      fixedDates: "من {from} إلى {to}",
+      agreeToSwitch: "عند انتهائها، انقلني إلى {plan} ({price}) مع الخصم من بطاقتي المحفوظة. سأُبلَّغ مسبقاً؛ بدون بطاقة محفوظة تنتهي ببساطة.",
       cardSurcharge: "+ {amount} رسوم إضافية عند الدفع بالبطاقة",
       classesIncluded: {
         zero: "{count} حصة",

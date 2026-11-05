@@ -84,11 +84,21 @@ export async function selectAndConsumeMembership(
       AND: [
         ticketOnly ? { scopedClassId: classId } : { OR: [{ scopedClassId: null }, { scopedClassId: classId }] },
         { OR: [{ expiryDate: null }, { expiryDate: { gt: now } }] },
+        // Decision 435 item 8: a plan on fixed dates pays for nothing before
+        // its first day.
+        { startDate: { lte: now } },
       ],
     },
     orderBy: [{ expiryDate: { sort: 'asc', nulls: 'last' } }, { createdAt: 'asc' }],
     include: { membershipPlan: { select: { type: true } } },
   });
+  if (found.length === 0) {
+    const notStarted = await tx.membership.findFirst({
+      where: { studentId, schoolId, status: 'ACTIVE', startDate: { gt: now }, membershipPlan: { type: { not: 'FRIEND_PASS' } } },
+      select: { id: true },
+    });
+    if (notStarted) throw new BadRequestException(PLAN_NOT_STARTED);
+  }
   const frozen = frozenAmong && found.length > 0 ? await frozenAmong(found.map((m) => m.id)) : new Set<string>();
   const candidates = found.filter((m) => !frozen.has(m.id));
   if (candidates.length === 0 && found.length > 0) {
@@ -130,8 +140,13 @@ export async function selectAndConsumeMembership(
   throw new ConflictException('This Membership\'s remaining credit changed concurrently — please retry.');
 }
 
+/** Decision 435 item 8: the only membership is a fixed-date plan that hasn't
+ * started yet. */
+export const PLAN_NOT_STARTED = { code: 'PLAN_NOT_STARTED', message: "This plan hasn't started yet. Its classes can be booked from its first day." };
+
 /** Decision 393: no other membership pays for the seat and a Class Pack has
  * no classes left. */
+
 export const PACK_USED_UP = { code: 'PACK_USED_UP', message: 'This Class Pack has no classes left. Buy the same pack to check in.' };
 
 /** The Class fields that tell a one-off Class from a Timetable one. */

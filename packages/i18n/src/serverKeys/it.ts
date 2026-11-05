@@ -272,6 +272,12 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "Abbonamento in scadenza",
     membershipExpiryBody: "Il tuo abbonamento {plan} termina il {date}.",
+    planSwitchNoticeTitle: "Il tuo piano sta per cambiare",
+    planSwitchNoticeBody: "Il tuo {plan} termina il {date}. Poi inizia {next} e {amount} viene addebitato sulla carta salvata. Senza carta salvata, termina e basta.",
+    planSwitchedTitle: "Il tuo piano è cambiato",
+    planSwitchedBody: "Il tuo {plan} è terminato e {next} è iniziato. {amount} è stato addebitato sulla carta salvata.",
+    planSwitchEndedTitle: "Abbonamento terminato",
+    planSwitchEndedBody: "Il tuo {plan} è terminato. {next} non è potuto iniziare, quindi non è stato addebitato nulla.",
     absenceAlertTitle: "Iscritto assente",
     absenceAlertBody: "{name} non fa il check-in dal {date}.",
     absenceAlertNeverBody: "{name} non ha ancora fatto il check-in.",

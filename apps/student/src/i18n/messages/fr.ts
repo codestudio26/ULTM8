@@ -894,6 +894,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "{count} cours restants",
       },
       expires: "Expire le {date}",
+      awaitingFirstCheckIn: "Commence à votre premier check-in",
       empty: "Aucune adhésion pour le moment.",
       loadError: "Impossible de charger les adhésions — veuillez réessayer.",
       cancelSubscription: "Résilier l'abonnement",
@@ -926,6 +927,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Rejoignez cette école pour acheter.",
+      startsOnFirstCheckIn: "Commence à votre premier check-in",
+      fixedDates: "Du {from} au {to}",
+      agreeToSwitch: "À la fin, me passer à {plan} ({price}), débité de ma carte enregistrée. Je serai prévenu avant ; sans carte enregistrée, elle se termine simplement.",
       cardSurcharge: "+ {amount} de frais si vous payez par carte",
       classesIncluded: { one: "{count} cours", many: "{count} cours", other: "{count} cours" },
       durationDays: { one: "{count} jour", many: "{count} jours", other: "{count} jours" },

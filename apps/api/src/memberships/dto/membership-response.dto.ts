@@ -42,8 +42,15 @@ export class MembershipResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   cancelledById!: string | null;
 
+  @ApiProperty({ description: 'Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then.' })
+  awaitingFirstCheckIn!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends.' })
+  switchToPlanId!: string | null;
+
   @ApiProperty()
   createdAt!: string;
+
 
   @ApiProperty()
   updatedAt!: string;

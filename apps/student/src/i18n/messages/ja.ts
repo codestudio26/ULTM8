@@ -868,6 +868,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "1回のみ",
       classesRemaining: { other: "残り{count}クラス" },
       expires: "{date}に期限切れ",
+      awaitingFirstCheckIn: "初回チェックインで開始",
       empty: "会員プランはまだありません。",
       loadError: "会員プランを読み込めませんでした。もう一度お試しください。",
       cancelSubscription: "サブスクリプションを解約",
@@ -900,6 +901,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "購入するにはこのスクールに入会してください。",
+      startsOnFirstCheckIn: "初回チェックインで開始",
+      fixedDates: "{from}〜{to}",
+      agreeToSwitch: "終了時に{plan}（{price}）へ切り替え、保存済みのカードに請求する。事前に通知があります。保存済みのカードがない場合はそのまま終了します。",
       cardSurcharge: "カード払いの場合 + 手数料 {amount}",
       classesIncluded: { other: "{count}クラス" },
       durationDays: { other: "{count}日間" },

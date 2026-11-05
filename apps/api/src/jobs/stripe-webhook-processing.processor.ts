@@ -8,7 +8,8 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
-import { passExpiryDate, schoolZoneFor } from '../memberships/pass-expiry';
+import { schoolZoneFor } from '../memberships/pass-expiry';
+import { membershipTerm } from '../memberships/plan-term';
 import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
@@ -612,6 +613,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // retries exhaust, which is what happened here before that method existed.
     // Decision 432 item 8: an N-day pass ends on calendar days in the School's zone.
     const schoolZone = await schoolZoneFor(tx, transaction.schoolId);
+    // Decision 435 items 7-8: the plan's own start and end.
+    const term = membershipTerm(plan, schoolZone);
     try {
       const membership = await tx.membership.create({
         data: {
@@ -621,11 +624,16 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           schoolId: transaction.schoolId,
           frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
           classesRemaining: plan.classesIncluded ?? undefined,
-          expiryDate: passExpiryDate(plan.expiryDurationDays, schoolZone),
+          startDate: term.startDate,
+          expiryDate: term.expiryDate,
+          awaitingFirstCheckIn: term.awaitingFirstCheckIn,
           scopedClassId: plan.scopedClassId,
           stripeSubscriptionId: transaction.stripeSubscriptionId ?? undefined,
+          // Decision 435 item 9: the switch the member agreed to when buying.
+          ...(transaction.planSwitchToPlanId ? { switchToPlanId: transaction.planSwitchToPlanId, switchAgreedAt: transaction.createdAt } : {}),
         },
       });
+
       await tx.transaction.update({ where: { id: transaction.id }, data: { membershipId: membership.id } });
     } catch (err) {
       // Deliberately NOT `err.meta?.target` column-name inspection here, unlike

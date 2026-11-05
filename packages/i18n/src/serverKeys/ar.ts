@@ -314,6 +314,12 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "عضويتك تنتهي قريبًا",
     membershipExpiryBody: "تنتهي عضويتك {plan} في {date}.",
+    planSwitchNoticeTitle: "خطتك على وشك أن تتغير",
+    planSwitchNoticeBody: "تنتهي {plan} في {date}. بعدها تبدأ {next} ويُخصم {amount} من بطاقتك المحفوظة. بدون بطاقة محفوظة، تنتهي ببساطة.",
+    planSwitchedTitle: "تغيرت خطتك",
+    planSwitchedBody: "انتهت {plan} وبدأت {next}. خُصم {amount} من بطاقتك المحفوظة.",
+    planSwitchEndedTitle: "انتهت العضوية",
+    planSwitchEndedBody: "انتهت {plan}. تعذر بدء {next}، لذلك لم يُخصم أي مبلغ.",
     absenceAlertTitle: "عضو غائب",
     absenceAlertBody: "لم يسجّل {name} حضوره منذ {date}.",
     absenceAlertNeverBody: "لم يسجّل {name} حضوره بعد.",

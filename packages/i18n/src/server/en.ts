@@ -6,6 +6,20 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.",
+ "A plan on fixed dates starts on its first day, not on the first check-in.",
+ "A plan that starts on the first check-in needs the number of days it lasts.",
+ "Only a Class Pack, a Weekly Pass or a Trial can run on fixed dates.",
+ "Give both the first and the last day.",
+ "The last day must be on or after the first day.",
+ "A plan on fixed dates runs between them, so it has no number of days. Leave the number of days empty.",
+ "Give real days for the first and the last day.",
+ "This plan's dates are over, so it can't be bought any more.",
+ "Only a Class Pack, Weekly Pass or Trial with an end date can switch to another plan when it ends.",
+ "A plan can't switch to itself.",
+ "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.",
+ "This plan doesn't switch to another one when it ends.",
+ "This plan hasn't started yet. Its classes can be booked from its first day.",
  "What's new is for School owners and staff.",
  "Give each language once.",
  "Post not found",

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Switch, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatMoney } from '../lib/formatMoney';
+import { formatDateOnly } from '../lib/formatDate';
 import { StepUpPrompt } from '../auth/StepUpPrompt';
 import { usePaymentMethod } from '../payments/paymentMethodQueries';
 import { useInvalidateMyMemberships, usePurchaseMembership } from './membershipQueries';
@@ -63,16 +64,20 @@ type PurchaseOutcome = { outcome: string; checkoutUrl?: string };
 /** `canBuy` false (Decision 427, SP10): a School the person hasn't joined.
  * Buying there always failed with "Not found", so the plan shows a
  * "join first" note instead of Purchase. */
+/** `switchTo` (Decision 435 item 9): the plan this one can switch to when it
+ * ends, from the same list; the member agrees to it before buying, or not. */
 export function MembershipPlanRow({
   plan,
   schoolId,
   forStudentId,
   canBuy = true,
+  switchTo,
 }: {
   plan: MembershipPlan;
   schoolId: string;
   forStudentId?: string;
   canBuy?: boolean;
+  switchTo?: Pick<MembershipPlan, 'title' | 'price' | 'currency'>;
 }) {
   const t = useT();
   const purchase = usePurchaseMembership();
@@ -84,6 +89,9 @@ export function MembershipPlanRow({
   const hasContract = plan.contractVersion != null;
   const [signing, setSigning] = useState<'checkout' | 'savedCard' | null>(null);
   const [contractSignatureId, setContractSignatureId] = useState<string | undefined>(undefined);
+  // Decision 435 item 9: off until the member (a parent for a child) agrees.
+  const [agreeToSwitch, setAgreeToSwitch] = useState(false);
+  const switchTerms = plan.switchToPlanId && switchTo ? { agreeToPlanSwitch: agreeToSwitch } : {};
   const isFriendPass = plan.type === 'FRIEND_PASS';
   const outcome = purchase.isSuccess ? purchase.data.outcome : null;
   const canPayWithSavedCard = !forStudentId && !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
@@ -105,7 +113,7 @@ export function MembershipPlanRow({
   function handlePurchase() {
     if (purchase.isPending) return;
     if (hasContract) return setSigning('checkout');
-    purchase.mutate({ planId: plan.id, useHostedCheckout: true, studentId: forStudentId }, { onSuccess: handlePurchaseSuccess });
+    purchase.mutate({ planId: plan.id, useHostedCheckout: true, studentId: forStudentId, ...switchTerms }, { onSuccess: handlePurchaseSuccess });
   }
 
   function openPayWithSavedCard() {
@@ -123,7 +131,7 @@ export function MembershipPlanRow({
       return;
     }
     purchase.mutate(
-      { planId: plan.id, useHostedCheckout: true, studentId: forStudentId, contractSignatureId: signatureId },
+      { planId: plan.id, useHostedCheckout: true, studentId: forStudentId, contractSignatureId: signatureId, ...switchTerms },
       { onSuccess: handlePurchaseSuccess },
     );
   }
@@ -134,7 +142,7 @@ export function MembershipPlanRow({
 
   function handleStepUpVerified(stepUpToken: string) {
     setSteppingUp(false);
-    purchase.mutate({ planId: plan.id, payWithSavedCard: true, stepUpToken, ...(contractSignatureId ? { contractSignatureId } : {}) });
+    purchase.mutate({ planId: plan.id, payWithSavedCard: true, stepUpToken, ...switchTerms, ...(contractSignatureId ? { contractSignatureId } : {}) });
   }
 
   return (
@@ -149,6 +157,15 @@ export function MembershipPlanRow({
           .filter(Boolean)
           .join(' · ')}
       </Text>
+      {/* Decision 435 items 7-8: when its days start, or the days it runs. */}
+      {plan.startsOnFirstCheckIn ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{t('memberships.planRow.startsOnFirstCheckIn')}</Text>
+      ) : null}
+      {plan.fixedStartDate && plan.fixedEndDate ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
+          {t('memberships.planRow.fixedDates', { from: formatDateOnly(plan.fixedStartDate), to: formatDateOnly(plan.fixedEndDate) })}
+        </Text>
+      ) : null}
       {/* Decision 406: the School's card surcharge, shown before paying. */}
       {plan.cardSurchargeAmount > 0 ? (
         <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
@@ -172,13 +189,29 @@ export function MembershipPlanRow({
       ) : outcome === null && steppingUp ? (
         <StepUpPrompt onVerified={handleStepUpVerified} onCancel={cancelStepUp} />
       ) : outcome === null ? (
+        <View>
+        {/* Decision 435 item 9: the member agrees to the switch when buying, or it simply ends. */}
+        {plan.switchToPlanId && switchTo ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <Switch
+              value={agreeToSwitch}
+              onValueChange={setAgreeToSwitch}
+              accessibilityLabel={t('memberships.planRow.agreeToSwitch', { plan: switchTo.title, price: formatMoney(switchTo.price, switchTo.currency) })}
+            />
+            <Text style={{ flex: 1, fontSize: 12, color: '#3C4043' }}>
+              {t('memberships.planRow.agreeToSwitch', { plan: switchTo.title, price: formatMoney(switchTo.price, switchTo.currency) })}
+            </Text>
+          </View>
+        ) : null}
         <View style={{ flexDirection: 'row', marginTop: 4, gap: 8 }}>
           <Button title={hasContract ? t('memberships.contract.readAndSign') : t('memberships.planRow.purchase')} onPress={handlePurchase} loading={purchase.isPending} />
           {canPayWithSavedCard ? (
             <Button title={t('memberships.planRow.payWithSavedCard')} variant="secondary" onPress={openPayWithSavedCard} loading={purchase.isPending} />
           ) : null}
         </View>
+        </View>
       ) : null}
+
 
       {outcome === 'active' ? <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>{t('memberships.planRow.enrolled')}</Text> : null}
 

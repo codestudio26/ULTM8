@@ -893,6 +893,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Pago único",
       classesRemaining: { one: "Queda {count} clase", other: "Quedan {count} clases" },
       expires: "Caduca el {date}",
+      awaitingFirstCheckIn: "Empieza en tu primer check-in",
       empty: "Aún no hay membresías.",
       loadError: "No se pudieron cargar las membresías — inténtalo de nuevo.",
       cancelSubscription: "Cancelar suscripción",
@@ -925,6 +926,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Únete a esta escuela para comprar.",
+      startsOnFirstCheckIn: "Empieza en tu primer check-in",
+      fixedDates: "Del {from} al {to}",
+      agreeToSwitch: "Al terminar, cámbiame a {plan} ({price}), con cargo a mi tarjeta guardada. Me avisarán antes; sin tarjeta guardada, simplemente termina.",
       cardSurcharge: "+ {amount} de recargo si pagas con tarjeta",
       classesIncluded: { one: "{count} clase", other: "{count} clases" },
       durationDays: { one: "{count} día", other: "{count} días" },

@@ -910,6 +910,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "Pozostało zajęć: {count}",
       },
       expires: "Wygasa {date}",
+      awaitingFirstCheckIn: "Zaczyna się przy twoim pierwszym wejściu",
       empty: "Brak członkostw.",
       loadError: "Nie udało się wczytać członkostw — spróbuj ponownie.",
       cancelSubscription: "Anuluj subskrypcję",
@@ -942,6 +943,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Dołącz do tej szkoły, aby kupić.",
+      startsOnFirstCheckIn: "Zaczyna się przy twoim pierwszym wejściu",
+      fixedDates: "Od {from} do {to}",
+      agreeToSwitch: "Po zakończeniu przenieś mnie na {plan} ({price}), płatny zapisaną kartą. Dostanę informację wcześniej; bez zapisanej karty po prostu się kończy.",
       cardSurcharge: "+ {amount} dopłaty przy płatności kartą",
       classesIncluded: {
         one: "{count} zajęcia",

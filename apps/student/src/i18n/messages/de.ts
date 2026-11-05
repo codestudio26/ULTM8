@@ -877,6 +877,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Einmalig",
       classesRemaining: { one: "{count} Kurs übrig", other: "{count} Kurse übrig" },
       expires: "Läuft ab am {date}",
+      awaitingFirstCheckIn: "Beginnt bei deinem ersten Check-in",
       empty: "Noch keine Mitgliedschaften.",
       loadError: "Mitgliedschaften konnten nicht geladen werden — bitte versuche es erneut.",
       cancelSubscription: "Abo kündigen",
@@ -909,6 +910,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Tritt dieser Schule bei, um zu kaufen.",
+      startsOnFirstCheckIn: "Beginnt bei deinem ersten Check-in",
+      fixedDates: "Läuft vom {from} bis {to}",
+      agreeToSwitch: "Am Ende zu {plan} ({price}) wechseln, abgebucht von meiner gespeicherten Karte. Ich werde vorher informiert; ohne gespeicherte Karte endet er einfach.",
       cardSurcharge: "+ {amount} Kartenzuschlag bei Kartenzahlung",
       classesIncluded: { one: "{count} Kurs", other: "{count} Kurse" },
       durationDays: { one: "{count} Tag", other: "{count} Tage" },

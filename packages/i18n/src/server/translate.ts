@@ -276,6 +276,10 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Payment due soon': 'chargeDueReminderTitle',
   // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
   'Membership ending soon': 'membershipExpiryTitle',
+  // Decision 435 item 9 — plan-switch job.
+  'Your plan is about to change': 'planSwitchNoticeTitle',
+  'Your plan has changed': 'planSwitchedTitle',
+  'Membership ended': 'planSwitchEndedTitle',
   'Member absent': 'absenceAlertTitle',
   'Memberships ending soon': 'membershipEndingReportTitle',
   'Payment dispute': 'chargeDisputeTitle',
@@ -529,6 +533,17 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   ],
   // Decision 317 item 7 — the membership expiry reminder and the absence alert. Days are YYYY-MM-DD.
   [/^Your (.+) membership ends on (\d{4}-\d{2}-\d{2})\.$/s, (m, { t, locale }) => n(t, 'membershipExpiryBody', { plan: m[1], date: formatDay(m[2], locale) })],
+  // Decision 435 item 9 — the plan-switch job's notices.
+  [
+    /^Your (.+) ends on (\d{4}-\d{2}-\d{2})\. Then (.+) starts and ([\d.]+) ([A-Z]{3}) is charged to your saved card\. Without a saved card, it simply ends\.$/s,
+    (m, { t, locale }) => n(t, 'planSwitchNoticeBody', { plan: m[1], date: formatDay(m[2], locale), next: m[3], amount: formatAmount(m[4], m[5], locale) }),
+  ],
+  [
+    /^Your (.+) has ended and (.+) has started\. ([\d.]+) ([A-Z]{3}) was charged to your saved card\.$/s,
+    (m, { t, locale }) => n(t, 'planSwitchedBody', { plan: m[1], next: m[2], amount: formatAmount(m[3], m[4], locale) }),
+  ],
+  [/^Your (.+) has ended\. (.+) couldn't be started, so nothing was charged\.$/s, (m, { t }) => n(t, 'planSwitchEndedBody', { plan: m[1], next: m[2] })],
+
   [/^(.+) hasn't checked in since (\d{4}-\d{2}-\d{2})\.$/s, (m, { t, locale }) => n(t, 'absenceAlertBody', { name: m[1], date: formatDay(m[2], locale) })],
   [/^(.+) hasn't checked in yet\.$/s, (m, { t }) => n(t, 'absenceAlertNeverBody', { name: m[1] })],
   // The weekly report: "Name: Plan (YYYY-MM-DD)" joined with "; ", maybe ending "; +N"; only the dates are translated.

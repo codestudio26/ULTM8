@@ -53,6 +53,8 @@ type MembershipRow = Pick<StudentMembershipResponse, 'id' | 'planTitle' | 'planT
   cancelAt?: string | null;
   classesRemaining?: number | null;
   giftedById?: string | null;
+  awaitingFirstCheckIn?: boolean;
+  switchToPlanId?: string | null;
 };
 
 /**
@@ -126,6 +128,10 @@ export function StudentMembershipsCard({
     const parts: string[] = [];
     if (m.classesRemaining !== null && m.classesRemaining !== undefined) parts.push(t('membershipPlans.studentCard.classesLeft', { count: m.classesRemaining }));
     if (m.expiryDate) parts.push(t('membershipPlans.studentCard.expires', { date: formatDay(m.expiryDate) }));
+    // Decision 435 items 7 and 9: not started yet, and the plan it switches to.
+    if (m.awaitingFirstCheckIn) parts.push(t('membershipPlans.studentCard.awaitingFirstCheckIn'));
+    const next = m.switchToPlanId ? plans.data?.items.find((p) => p.id === m.switchToPlanId) : undefined;
+    if (next) parts.push(t('membershipPlans.studentCard.switchesTo', { plan: next.title }));
     if (m.giftedById) parts.push(t('membershipPlans.studentCard.given'));
     if (m.frozen && m.planType === 'SUBSCRIPTION') parts.push(t('membershipPlans.studentCard.freeze.billingPaused'));
     return parts.join(' · ') || t('common.none');

@@ -61,7 +61,15 @@ export function ChildPlansScreen({ route }: Props) {
         {academy.data && plans.length === 0 ? (
           <Text style={{ color: '#5F6368', fontSize: 13 }}>{t('guardians.childPlans.empty')}</Text>
         ) : null}
-        {schoolId ? plans.map((plan) => <MembershipPlanRow key={`${schoolId}-${plan.id}`} plan={plan} schoolId={schoolId} forStudentId={studentId} />) : null}
+        {schoolId ? plans.map((plan) => (
+              <MembershipPlanRow
+                key={`${schoolId}-${plan.id}`}
+                plan={plan}
+                schoolId={schoolId}
+                forStudentId={studentId}
+                switchTo={plans.find((p) => p.id === plan.switchToPlanId)}
+              />
+            )) : null}
       </Screen>
     </ScrollView>
   );

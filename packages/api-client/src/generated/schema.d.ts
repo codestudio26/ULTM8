@@ -10660,6 +10660,14 @@ export interface components {
             cancellationCharge?: number;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
+            /** @description Decision 435 item 7: Class Pack, Weekly Pass or Trial only. The membership's days start on the member's first check-in with it, not when it is bought (needs expiryDurationDays). Defaults to false. */
+            startsOnFirstCheckIn?: boolean;
+            /** @description Decision 435 item 8: Class Pack, Weekly Pass or Trial only. The first day of a plan that runs on fixed dates (YYYY-MM-DD, in the School's time zone), with fixedEndDate, in place of expiryDurationDays. It can be bought before it starts, and after at full price, until its last day. */
+            fixedStartDate?: string;
+            /** @description Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD), on or after fixedStartDate. */
+            fixedEndDate?: string;
+            /** @description Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one it simply ends. */
+            switchToPlanId?: string;
             /** @description One of the School's income categories (Decision 316 item 10), shown in the Transactions export. */
             incomeCategoryId?: string;
             /** @description The School's styles this plan covers (Decision 195). */
@@ -10708,6 +10716,14 @@ export interface components {
             contractEarlyExitFee?: number | null;
             /** @description Goes up by one each time the contract changes; null = no contract. */
             contractVersion?: number | null;
+            /** @description Decision 435 item 7: the membership's days start on the member's first check-in with it. */
+            startsOnFirstCheckIn: boolean;
+            /** @description Decision 435 item 8: the first day of a plan on fixed dates (the day at UTC midnight); null when it has none. */
+            fixedStartDate?: string | null;
+            /** @description Decision 435 item 8: the last day of a plan on fixed dates. */
+            fixedEndDate?: string | null;
+            /** @description Decision 435 item 9: the plan a member can agree, when buying, to switch to when this one ends. */
+            switchToPlanId?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -10727,6 +10743,8 @@ export interface components {
             visible?: boolean;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
+            /** @description Decision 435 item 7: Class Pack, Weekly Pass or Trial only. The membership's days start on the member's first check-in with it, not when it is bought (needs expiryDurationDays). Defaults to false. */
+            startsOnFirstCheckIn?: boolean;
             /** @description The School's styles this plan covers (Decision 195). */
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
@@ -10755,6 +10773,12 @@ export interface components {
             priceChangeStrategy?: "MIGRATE" | "GRANDFATHER";
             /** @description One of the School's income categories (Decision 316 item 10). Pass null to clear. */
             incomeCategoryId?: string | null;
+            /** @description Decision 435 item 8: the first day of a plan on fixed dates (YYYY-MM-DD). Pass null (with fixedEndDate null) to remove the dates. */
+            fixedStartDate?: string | null;
+            /** @description Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD). Pass null to remove. */
+            fixedEndDate?: string | null;
+            /** @description Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to. */
+            switchToPlanId?: string | null;
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
@@ -10807,6 +10831,8 @@ export interface components {
             useHostedCheckout?: boolean;
             /** @description Decision 316 item 6: required for a plan with a contract — the id from POST /membership-plans/{id}/contract/sign (signed within the last day, not used yet). */
             contractSignatureId?: string;
+            /** @description Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. Omit or false: it simply ends. */
+            agreeToPlanSwitch?: boolean;
         };
         MembershipResponseDto: {
             id: string;
@@ -10823,6 +10849,10 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
+            awaitingFirstCheckIn: boolean;
+            /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */
+            switchToPlanId?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -10866,6 +10896,10 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
+            awaitingFirstCheckIn: boolean;
+            /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */
+            switchToPlanId?: string | null;
             createdAt: string;
             updatedAt: string;
             planTitle: string;
@@ -10954,6 +10988,10 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
+            awaitingFirstCheckIn: boolean;
+            /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */
+            switchToPlanId?: string | null;
             createdAt: string;
             updatedAt: string;
             /** @description Decision 316 item 6: the signed contract's minimum term and early-exit fee, when it has one. */
@@ -13003,6 +13041,14 @@ export interface components {
             visible: boolean;
             /** @description Goes up by one each time the contract changes; null = no contract. */
             contractVersion?: number | null;
+            /** @description Decision 435 item 7: the membership's days start on the member's first check-in with it. */
+            startsOnFirstCheckIn: boolean;
+            /** @description Decision 435 item 8: the first day of a plan on fixed dates (the day at UTC midnight); null when it has none. */
+            fixedStartDate?: string | null;
+            /** @description Decision 435 item 8: the last day of a plan on fixed dates. */
+            fixedEndDate?: string | null;
+            /** @description Decision 435 item 9: the plan a member can agree, when buying, to switch to when this one ends. */
+            switchToPlanId?: string | null;
             /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment. */
             cardSurchargeAmount: number;
         };

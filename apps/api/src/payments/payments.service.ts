@@ -13,7 +13,8 @@ import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
-import { passExpiryDate, schoolZoneFor } from '../memberships/pass-expiry';
+import { schoolZoneFor } from '../memberships/pass-expiry';
+import { membershipTerm } from '../memberships/plan-term';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { fromStripeAmount, toStripeAmount } from './stripe-amount';
@@ -1334,6 +1335,9 @@ export class PaymentsService {
         }
         throw err;
       }
+      // Decision 432 item 8: calendar days in the School's zone; Decision 435
+      // items 7-8: or the first check-in, or the plan's fixed dates.
+      const term = membershipTerm(plan, await schoolZoneFor(tx, transaction.schoolId));
       const membership = await tx.membership.create({
         data: {
           id: randomUUID(),
@@ -1342,11 +1346,15 @@ export class PaymentsService {
           schoolId: transaction.schoolId,
           frequency: 'ONE_TIME', // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1)
           classesRemaining: plan.classesIncluded ?? undefined,
-          // Decision 432 item 8: calendar days in the School's zone.
-          expiryDate: passExpiryDate(plan.expiryDurationDays, await schoolZoneFor(tx, transaction.schoolId)),
+          startDate: term.startDate,
+          expiryDate: term.expiryDate,
+          awaitingFirstCheckIn: term.awaitingFirstCheckIn,
           scopedClassId: plan.scopedClassId,
+          // Decision 435 item 9: the switch the member agreed to when buying.
+          ...(transaction.planSwitchToPlanId ? { switchToPlanId: transaction.planSwitchToPlanId, switchAgreedAt: transaction.createdAt } : {}),
         },
       });
+
       await tx.transaction.update({ where: { id: transactionId }, data: { membershipId: membership.id } });
 
       return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membership, membershipCreated: true };

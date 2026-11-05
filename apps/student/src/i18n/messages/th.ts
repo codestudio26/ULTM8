@@ -867,6 +867,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "ครั้งเดียว",
       classesRemaining: { other: "เหลือ {count} คลาส" },
       expires: "หมดอายุ {date}",
+      awaitingFirstCheckIn: "เริ่มเมื่อคุณเช็กอินครั้งแรก",
       empty: "ยังไม่มีสมาชิกภาพ",
       loadError: "ไม่สามารถโหลดสมาชิกภาพได้ โปรดลองอีกครั้ง",
       cancelSubscription: "ยกเลิกการสมัคร",
@@ -899,6 +900,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "เข้าร่วมโรงเรียนนี้เพื่อซื้อ",
+      startsOnFirstCheckIn: "เริ่มเมื่อคุณเช็กอินครั้งแรก",
+      fixedDates: "{from} – {to}",
+      agreeToSwitch: "เมื่อหมด ให้เปลี่ยนเป็น {plan} ({price}) โดยเรียกเก็บจากบัตรที่บันทึกไว้ ฉันจะได้รับแจ้งก่อน หากไม่มีบัตรที่บันทึกไว้ ก็จะสิ้นสุดไปเลย",
       cardSurcharge: "+ ค่าธรรมเนียม {amount} เมื่อจ่ายด้วยบัตร",
       classesIncluded: { other: "{count} คลาส" },
       durationDays: { other: "{count} วัน" },

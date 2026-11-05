@@ -298,6 +298,18 @@ enum MembershipPlanType {
   VISIT_PASS
 }
 
+/// Decision 316 item 4 / Decision 435 item 9: what happened when a membership
+/// the member agreed to switch reached its end (plan-switch.processor.ts).
+/// SWITCHED: the next plan was charged to the saved card and started.
+/// NO_CARD, DECLINED, NOT_SOLD: it simply ended (no saved card or card
+/// payments; the card was declined; the next plan couldn't be sold).
+enum PlanSwitchOutcome {
+  SWITCHED
+  NO_CARD
+  DECLINED
+  NOT_SOLD
+}
+
 /// Decision 259 — see MembershipPlan.newMemberBillingStrategy's own comment.
 enum NewMemberBillingStrategy {
   FRESH_CYCLE
@@ -2355,9 +2367,25 @@ model MembershipPlan {
   incomeCategoryId String?
   incomeCategory   IncomeCategory? @relation(fields: [incomeCategoryId], references: [id], onDelete: NoAction)
 
+  /// Decision 316 item 4, as answered by Decision 435 items 7-9 (plan-term.ts).
+  /// startsOnFirstCheckIn: a Class Pack, Weekly Pass or Trial whose days start
+  /// on the member's first check-in with it, not when it is bought.
+  /// fixedStartDate/fixedEndDate: a one-off plan that runs on fixed days (a
+  /// 6-week camp), in place of a number of days; bought before or after it
+  /// starts at full price, never once it is over.
+  /// switchToPlanId: the plan a member can agree, when buying, to switch to
+  /// when this one ends; charged to their saved card, else it simply ends.
+  startsOnFirstCheckIn Boolean         @default(false)
+  fixedStartDate       DateTime?       @db.Date
+  fixedEndDate         DateTime?       @db.Date
+  switchToPlanId       String?
+  switchToPlan         MembershipPlan? @relation("PlanSwitchTo", fields: [switchToPlanId], references: [id], onDelete: SetNull)
+  switchedFromPlans    MembershipPlan[] @relation("PlanSwitchTo")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  membershipsSwitchingTo Membership[] @relation("MembershipSwitchToPlan")
   memberships        Membership[]
   transactions       Transaction[]
   priceChanges       MembershipPlanPriceChange[]
@@ -2494,6 +2522,23 @@ model Membership {
   // Class this Membership can book. Set once at creation from membershipPlan.scopedClassId.
   scopedClassId String?
   scopedClass   Class?  @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
+
+  /// Decision 435 item 7: bought on a plan that starts on the first check-in
+  /// and not used yet: no expiryDate until that check-in starts its days
+  /// (AttendanceService.completeInTx).
+  awaitingFirstCheckIn Boolean @default(false)
+
+  /// Decision 435 item 9: the plan the member agreed, when buying, to switch
+  /// to when this membership ends (null: it simply ends), and when they
+  /// agreed. plan-switch.processor.ts tells them before (switchNoticeSentAt),
+  /// then claims the switch (switchedAt) and records what happened.
+  switchToPlanId         String?
+  switchToPlan           MembershipPlan?    @relation("MembershipSwitchToPlan", fields: [switchToPlanId], references: [id], onDelete: SetNull)
+  switchAgreedAt         DateTime?
+  switchNoticeSentAt     DateTime?
+  switchedAt             DateTime?
+  switchOutcome          PlanSwitchOutcome?
+  switchedToMembershipId String?
 
   // Friend Pass only — distinguishes a School comp from a paid purchase.
   giftedById String?
@@ -2642,6 +2687,12 @@ model Transaction {
   /// `amount` (and refundedAmount, revenue) stays the plan's own price, so
   /// reports aren't changed by the surcharge.
   surchargeAmount Int @default(0)
+
+  /// Decision 435 item 9: a purchase whose member agreed to switch to this
+  /// plan when the bought one ends. Copied onto the Membership the payment
+  /// creates (card webhook, cash confirmation). A snapshot, not a link.
+  planSwitchToPlanId String?
+
 
   /// Decision 431 (MON-6 step 1): MEMBERSHIP and RENEWAL only, the tax settings
   /// that applied when the row was written ({ inclusive, branchId, lines }),
