@@ -24,11 +24,14 @@ type Form = {
   renewalMonths: string;
   remindersOn: boolean;
   reminderDays: string;
+  childSignsOn: boolean;
+  childSignsAge: string;
 };
 
 /** Suggested numbers when a School turns a timed setting on. */
 const DEFAULT_RENEWAL_MONTHS = 12;
 const DEFAULT_REMINDER_DAYS = 7;
+const DEFAULT_CHILD_SIGNS_AGE = 16;
 
 function toForm(s: WaiverSettings): Form {
   return {
@@ -40,8 +43,13 @@ function toForm(s: WaiverSettings): Form {
     renewalMonths: String(s.waiverRenewalMonths ?? DEFAULT_RENEWAL_MONTHS),
     remindersOn: s.waiverReminderDays != null,
     reminderDays: String(s.waiverReminderDays ?? DEFAULT_REMINDER_DAYS),
+    childSignsOn: s.waiverChildSignsFromAge != null,
+    childSignsAge: String(s.waiverChildSignsFromAge ?? DEFAULT_CHILD_SIGNS_AGE),
   };
 }
+
+/** The largest number each timed setting takes (the API's limits). */
+const NUMBER_MAX = { months: 120, days: 90, age: 17 } as const;
 
 const wholeIn = (value: string, min: number, max: number) => /^\d+$/.test(value) && Number(value) >= min && Number(value) <= max;
 
@@ -73,6 +81,7 @@ export function WaiverSettingsPage() {
   const dirty = (Object.keys(form) as Array<keyof Form>).some((k) => form[k] !== current[k]);
   const monthsBad = form.renewalOn && !wholeIn(form.renewalMonths, 1, 120);
   const daysBad = form.remindersOn && !wholeIn(form.reminderDays, 1, 90);
+  const ageBad = form.childSignsOn && !wholeIn(form.childSignsAge, 1, 17);
 
   async function save() {
     if (!form) return;
@@ -86,6 +95,7 @@ export function WaiverSettingsPage() {
         waiverNoticeOnJoin: form.waiverNoticeOnJoin,
         waiverRenewalMonths: form.renewalOn ? Number(form.renewalMonths) : null,
         waiverReminderDays: form.remindersOn ? Number(form.reminderDays) : null,
+        waiverChildSignsFromAge: form.childSignsOn ? Number(form.childSignsAge) : null,
       });
       setSaved(true);
     } catch (err) {
@@ -115,7 +125,13 @@ export function WaiverSettingsPage() {
     );
   };
 
-  const timed = (key: 'renewal' | 'reminders', onField: 'renewalOn' | 'remindersOn', numberField: 'renewalMonths' | 'reminderDays', unit: 'months' | 'days', bad: boolean) => (
+  const timed = (
+    key: 'renewal' | 'reminders' | 'childSigns',
+    onField: 'renewalOn' | 'remindersOn' | 'childSignsOn',
+    numberField: 'renewalMonths' | 'reminderDays' | 'childSignsAge',
+    unit: 'months' | 'days' | 'age',
+    bad: boolean,
+  ) => (
     <div>
       <Switch
         id={`waiver-setting-${key}`}
@@ -130,7 +146,7 @@ export function WaiverSettingsPage() {
           <TextField
             type="number"
             min={1}
-            max={unit === 'months' ? 120 : 90}
+            max={NUMBER_MAX[unit]}
             value={form[numberField]}
             aria-label={t(`waivers.settings.${key}.${unit}` as TranslationKey)}
             onChange={(e) => setForm((f) => (f ? { ...f, [numberField]: e.target.value } : f))}
@@ -160,12 +176,13 @@ export function WaiverSettingsPage() {
           {toggle('archivedCount')}
           {timed('renewal', 'renewalOn', 'renewalMonths', 'months', monthsBad)}
           {toggle('adult')}
+          {timed('childSigns', 'childSignsOn', 'childSignsAge', 'age', ageBad)}
           {toggle('paper')}
           {toggle('joinNotice')}
           {timed('reminders', 'remindersOn', 'reminderDays', 'days', daysBad)}
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-          <Button onClick={save} loading={update.isPending} disabled={!dirty || monthsBad || daysBad}>
+          <Button onClick={save} loading={update.isPending} disabled={!dirty || monthsBad || daysBad || ageBad}>
             {t('waivers.settings.saveChanges')}
           </Button>
           <Button variant="secondary" disabled={!dirty} onClick={() => setForm(current)}>

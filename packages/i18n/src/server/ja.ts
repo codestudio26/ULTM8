@@ -1,5 +1,9 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "このスクールでは、子どもが自分で免責同意書に署名することはできません。",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "この子どもはまだ、このスクールの免責同意書に自分で署名できる年齢ではありません。",
+  "Add the child's date of birth before they sign a waiver themselves.": "子どもが自分で免責同意書に署名する前に、生年月日を追加してください。",
+  "Only a parent signing for their child can choose that the child signs.": "子ども本人の署名を選べるのは、子どもの代わりに署名する保護者だけです。",
   "Guests can only be added by a parent, not in Kid Mode.": "ゲストを追加できるのは保護者だけです。キッズモードでは追加できません。",
   "Your current passcode is not right.": "現在のパスコードが正しくありません。",
   "Choose a new passcode that is different from your current one.": "現在のパスコードとは異なる新しいパスコードを選んでください。",
@@ -778,4 +782,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "インポートが見つかりません",
   "Each row number can only be sent once.": "各行番号は一度だけ送信できます。",
   "Tick the consent box to upload a certification.": "資格証明書をアップロードするには、同意のチェックボックスをオンにしてください。",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "収入カテゴリが見つかりません",
+  "This School already has an income category with that name.": "このスクールには同じ名前の収入カテゴリがすでにあります。",
+  "This School already has 100 income categories. Delete one before adding another.": "このスクールにはすでに収入カテゴリが100件あります。追加する前に1件削除してください。",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "この収入カテゴリはプランまたは請求で使われているため削除できません。代わりに名前を変更してください。",
+  "Choose an income category from this School's list.": "このスクールのリストから収入カテゴリを選んでください。",
 };

@@ -13,6 +13,7 @@ import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
 import { WithdrawWaitlistQueryDto } from './dto/withdraw-waitlist-query.dto';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
+import { bookingUsesCredit } from './open-mat-credit';
 import { classTimeZones } from '../classes/class-time-zone';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
@@ -304,9 +305,17 @@ export class WaitlistService {
         locked = await lockClassShared(tx, cls.id);
       }
 
+      // Decision 304 item 3: an open mat takes no credit when the School says so.
+      const creditUsed = await bookingUsesCredit(tx, cls.id, cls.schoolId);
       // Decision 404: a frozen membership (today or on the Class's day) can't pay.
-      const sourceMembership = await selectAndConsumeMembership(tx, studentId, cls.schoolId, cls, new Date(), (ids) =>
-        frozenMembershipIds(this.prismaJobs, cls.schoolId, ids, [new Date(), cls.startDate]),
+      const sourceMembership = await selectAndConsumeMembership(
+        tx,
+        studentId,
+        cls.schoolId,
+        cls,
+        new Date(),
+        (ids) => frozenMembershipIds(this.prismaJobs, cls.schoolId, ids, [new Date(), cls.startDate]),
+        creditUsed,
       );
 
       const bookingId = randomUUID();
@@ -319,6 +328,7 @@ export class WaitlistService {
             schoolId: cls.schoolId,
             branchId: locked ? locked.branchId : cls.branchId,
             sourceMembershipId: sourceMembership.id,
+            creditUsed,
           },
         });
       } catch (err) {

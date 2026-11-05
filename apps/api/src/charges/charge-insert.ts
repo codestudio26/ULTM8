@@ -34,6 +34,10 @@ export interface NewCharge {
   >;
   /** An accepted promotion fee (Decision 303 item 5): the request it is for. */
   promotionFeeRequestId?: string;
+  /** Decision 316 item 10: one of this School's income categories (the
+   * caller checked it), or none. Staff-created charges and recurring
+   * occurrences only. */
+  incomeCategoryId?: string | null;
 }
 
 /**
@@ -89,6 +93,7 @@ export async function insertCharge(tx: Tx, c: NewCharge): Promise<{ id: string; 
       occurrenceDate: c.recurring?.occurrenceDate ?? null,
       ...c.lateFee,
       promotionFeeRequestId: c.promotionFeeRequestId ?? null,
+      incomeCategoryId: c.incomeCategoryId ?? null,
     },
   });
   await tx.balanceEntry.create({ data: { id: randomUUID(), schoolId: c.schoolId, studentId: c.studentId, kind: 'CHARGE', amount: c.totals.grossAmount, currency: c.currency, chargeId: id } });

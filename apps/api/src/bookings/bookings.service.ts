@@ -14,7 +14,7 @@ import { SubscriptionGateService } from '../subscription-plans/subscription-gate
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
-import { CancellationService, ownSeat, SeatRef, StripeRefundPlan } from './cancellation.service';
+import { CancellationService, creditSeats, SeatRef, StripeRefundPlan } from './cancellation.service';
 import { lateCancellationFee } from './late-cancellation-fee';
 import { BookClassDto } from './dto/book-class.dto';
 import { CancelBookingDto } from './dto/cancel-booking.dto';
@@ -24,6 +24,7 @@ import { daysInRange, defaultWeekRange, localDateRangeToInstants, MAX_SUMMARY_RA
 import { styleIdsOf } from '../classes/class-styles';
 import { localDay } from '../ranks/engine';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
+import { bookingUsesCredit } from './open-mat-credit';
 import { classTimeZones } from '../classes/class-time-zone';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
@@ -250,9 +251,17 @@ export class BookingsService {
       locked = await lockClassShared(tx, classId);
     }
 
+    // Decision 304 item 3: an open mat takes no credit when the School says so.
+    const creditUsed = await bookingUsesCredit(tx, classId, resolvedClass.schoolId);
     // Decision 404: a frozen membership (today or on the Class's day) can't pay.
-    const sourceMembership = await selectAndConsumeMembership(tx, studentId, resolvedClass.schoolId, resolvedClass, new Date(), (ids) =>
-      frozenMembershipIds(this.prismaJobs, resolvedClass.schoolId, ids, [new Date(), resolvedClass.startDate]),
+    const sourceMembership = await selectAndConsumeMembership(
+      tx,
+      studentId,
+      resolvedClass.schoolId,
+      resolvedClass,
+      new Date(),
+      (ids) => frozenMembershipIds(this.prismaJobs, resolvedClass.schoolId, ids, [new Date(), resolvedClass.startDate]),
+      creditUsed,
     );
 
     const bookingId = randomUUID();
@@ -265,6 +274,7 @@ export class BookingsService {
           schoolId: resolvedClass.schoolId,
           branchId: locked ? locked.branchId : resolvedClass.branchId,
           sourceMembershipId: sourceMembership.id,
+          creditUsed,
           overriddenById: dto.overrideReason ? callerId : null,
           overrideReason: dto.overrideReason ?? null,
           bookedViaKidMode: viaKidMode,
@@ -291,7 +301,7 @@ export class BookingsService {
     // their OWN Membership) would need a real cross-account consent mechanism
     // nothing in this codebase or spec confirms, so it's deferred, not guessed at.
     for (const membershipId of attendeeMembershipIds) {
-      const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId);
+      const guestMembership = await this.consumeGuestMembership(tx, membershipId, studentId, resolvedClass.schoolId, classId, creditUsed);
       // Waivers Q9: each guest seat gets its own waiver signing link.
       const attendeeId = randomUUID();
       await tx.bookingAttendee.create({
@@ -300,6 +310,7 @@ export class BookingsService {
           bookingId,
           schoolId: resolvedClass.schoolId,
           membershipId: guestMembership.id,
+          creditUsed,
           guestTokenHash: hashGuestWaiverToken(guestWaiverToken(attendeeId)),
         },
       });
@@ -466,10 +477,7 @@ export class BookingsService {
       // Decision 291 — each seat (the Student's own, then each guest's) is
       // resolved by the School's policy: credit back, nothing back, money back,
       // or left for staff. See CancellationService.resolveSeat.
-      const seats: SeatRef[] = [
-        ...ownSeat(bookingId, resolvedBooking.sourceMembershipId),
-        ...resolvedBooking.attendees.map((a) => ({ bookingId, attendeeId: a.id, membershipId: a.membershipId })),
-      ];
+      const seats: SeatRef[] = creditSeats(resolvedBooking);
       for (const seat of seats) {
         const seatResult = await this.cancellation.resolveSeat(tx, seat, base, mayRefund);
         await this.cancellation.writeSeat(tx, seat, seatResult, callerId);
@@ -1036,6 +1044,7 @@ export class BookingsService {
     organizerId: string,
     schoolId: string,
     classId: string,
+    spendCredit = true,
   ): Promise<{ id: string }> {
     const membership = await tx.membership.findUnique({ where: { id: membershipId } });
     if (!membership || membership.studentId !== organizerId || membership.schoolId !== schoolId || membership.status !== 'ACTIVE' || (membership.expiryDate !== null && membership.expiryDate <= new Date())) {
@@ -1049,6 +1058,11 @@ export class BookingsService {
       throw new BadRequestException({ code: 'GUEST_NEEDS_FRIEND_PASS', message: 'A guest can only be booked with a Friend Pass. Your own membership covers you, not your guests.' });
     }
     if (membership.classesRemaining === null) {
+      return membership;
+    }
+    // Decision 304 item 3: an open mat that takes no credit still needs a pass with one left.
+    if (!spendCredit) {
+      if (membership.classesRemaining <= 0) throw new ConflictException(`Membership ${membershipId} has no remaining credit.`);
       return membership;
     }
     const result = await tx.membership.updateMany({

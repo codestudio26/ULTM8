@@ -1080,6 +1080,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "أنت توقّع عن {name} بصفتك وليّ الأمر.",
+      whoSigns: "من يوقّع؟",
+      parentSigns: "أنا، بصفتي وليّ الأمر",
+      childSigns: "يوقّع {name}",
+      childSigning: "سيوقّع {name} هذا الإقرار بنفسه على هاتفك. سلّمه الهاتف ليكتب اسمه ويوقّع.",
       cancel: "إلغاء",
       showLess: "عرض أقل",
       readFull: "قراءة الإقرار كاملًا",

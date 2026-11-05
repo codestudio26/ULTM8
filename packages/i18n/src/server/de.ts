@@ -1,5 +1,9 @@
 /** German — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Diese Schule lässt Kinder ihre Haftungsausschlüsse nicht selbst unterschreiben.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Dieses Kind ist noch nicht alt genug, um die Haftungsausschlüsse dieser Schule selbst zu unterschreiben.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Füge das Geburtsdatum des Kindes hinzu, bevor es einen Haftungsausschluss selbst unterschreibt.",
+  "Only a parent signing for their child can choose that the child signs.": "Nur ein Elternteil, der für sein Kind unterschreibt, kann wählen, dass das Kind selbst unterschreibt.",
   "Guests can only be added by a parent, not in Kid Mode.": "Gäste kann nur ein Elternteil hinzufügen, nicht im Kindermodus.",
   "Your current passcode is not right.": "Dein aktueller Zugangscode ist nicht richtig.",
   "Choose a new passcode that is different from your current one.": "Wähle einen neuen Zugangscode, der sich von deinem aktuellen unterscheidet.",
@@ -778,4 +782,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Import nicht gefunden",
   "Each row number can only be sent once.": "Jede Zeilennummer kann nur einmal gesendet werden.",
   "Tick the consent box to upload a certification.": "Setze das Häkchen bei der Einwilligung, um ein Zertifikat hochzuladen.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Einnahmekategorie nicht gefunden",
+  "This School already has an income category with that name.": "Diese Schule hat schon eine Einnahmekategorie mit diesem Namen.",
+  "This School already has 100 income categories. Delete one before adding another.": "Diese Schule hat schon 100 Einnahmekategorien. Lösch eine, bevor du eine neue hinzufügst.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Diese Einnahmekategorie wird von einem Tarif oder einer Forderung verwendet und kann daher nicht gelöscht werden. Benenne sie stattdessen um.",
+  "Choose an income category from this School's list.": "Wähle eine Einnahmekategorie aus der Liste dieser Schule.",
 };

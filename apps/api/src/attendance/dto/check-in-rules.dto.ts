@@ -71,6 +71,14 @@ export class CheckInRulesDto {
   @IsBoolean()
   requireBooking?: boolean;
 
+  @ApiPropertyOptional({
+    description:
+      'Decision 304 item 3: "Open mat uses a class credit" (default on). On: booking an open mat (a class whose every style has the class type "Open mat") takes a Class Pack or Friend Pass credit like any class. Off: it still needs a membership or pass that covers it, but takes no credit, and cancelling it gives nothing back. Always in the response; leave it out of a save to keep it as it is.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  openMatUsesCredit?: boolean;
+
   @ApiProperty({ enum: [4, 6], description: "Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced." })
   @IsIn([4, 6])
   codeDigits!: number;

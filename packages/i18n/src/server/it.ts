@@ -1,5 +1,9 @@
 /** Italian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Questa scuola non permette ai bambini di firmare da soli le liberatorie.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Questo bambino non ha ancora l’età per firmare da solo le liberatorie di questa scuola.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Aggiungi la data di nascita del bambino prima che firmi da solo una liberatoria.",
+  "Only a parent signing for their child can choose that the child signs.": "Solo un genitore che firma per il proprio figlio può scegliere che firmi il bambino.",
   "Guests can only be added by a parent, not in Kid Mode.": "Solo un genitore può aggiungere ospiti, non in Modalità Bambino.",
   "Your current passcode is not right.": "Il tuo codice di accesso attuale non è corretto.",
   "Choose a new passcode that is different from your current one.": "Scegli un nuovo codice di accesso diverso da quello attuale.",
@@ -778,4 +782,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Importazione non trovata",
   "Each row number can only be sent once.": "Ogni numero di riga può essere inviato una sola volta.",
   "Tick the consent box to upload a certification.": "Spunta la casella del consenso per caricare una certificazione.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Categoria di entrata non trovata",
+  "This School already has an income category with that name.": "Questa scuola ha già una categoria di entrata con questo nome.",
+  "This School already has 100 income categories. Delete one before adding another.": "Questa scuola ha già 100 categorie di entrata. Eliminane una prima di aggiungerne un'altra.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Questa categoria di entrata è usata da un piano o da un addebito, quindi non si può eliminare. Rinominala invece.",
+  "Choose an income category from this School's list.": "Scegli una categoria di entrata dall'elenco di questa scuola.",
 };

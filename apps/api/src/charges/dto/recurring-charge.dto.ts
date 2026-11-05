@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 import { MAX_CHARGE_MINOR } from '../charge-maths';
 import { MAX_RECURRING_OCCURRENCES, RECURRING_FREQUENCIES, type RecurringFrequency } from '../recurring-schedule';
 
@@ -64,6 +64,11 @@ export class CreateRecurringChargeDto {
   @IsOptional()
   @IsBoolean()
   taxExempt?: boolean;
+
+  @ApiPropertyOptional({ description: "One of the School's income categories (Decision 316 item 10); every charge of the series carries it." })
+  @IsOptional()
+  @IsUUID()
+  incomeCategoryId?: string;
 }
 
 export class RecurringChargeEstimateDto {
@@ -107,6 +112,9 @@ export class RecurringChargeResponseDto {
 
   @ApiProperty({ description: '"No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax.' })
   taxExempt!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "The series' income category (Decision 316 item 10). Staff only; null for the member." })
+  incomeCategoryName!: string | null;
 
   @ApiProperty({ enum: RECURRING_FREQUENCIES, enumName: 'RecurringChargeFrequency' })
   frequency!: RecurringFrequency;

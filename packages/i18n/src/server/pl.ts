@@ -1,5 +1,9 @@
 /** Polish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Ta szkoła nie pozwala dzieciom samodzielnie podpisywać oświadczeń.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "To dziecko nie jest jeszcze wystarczająco duże, by samodzielnie podpisywać oświadczenia tej szkoły.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Dodaj datę urodzenia dziecka, zanim samo podpisze oświadczenie.",
+  "Only a parent signing for their child can choose that the child signs.": "Tylko rodzic podpisujący za swoje dziecko może wybrać, że podpisze dziecko.",
   "Guests can only be added by a parent, not in Kid Mode.": "Gości może dodać tylko rodzic, nie w Trybie dziecka.",
   "Your current passcode is not right.": "Twój obecny kod dostępu jest nieprawidłowy.",
   "Choose a new passcode that is different from your current one.": "Wybierz nowy kod dostępu, inny niż obecny.",
@@ -778,4 +782,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Nie znaleziono importu",
   "Each row number can only be sent once.": "Każdy numer wiersza można wysłać tylko raz.",
   "Tick the consent box to upload a certification.": "Zaznacz pole zgody, aby przesłać certyfikat.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Nie znaleziono kategorii przychodu",
+  "This School already has an income category with that name.": "Ta szkoła ma już kategorię przychodu o tej nazwie.",
+  "This School already has 100 income categories. Delete one before adding another.": "Ta szkoła ma już 100 kategorii przychodu. Usuń jedną, zanim dodasz kolejną.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Ta kategoria przychodu jest używana przez plan lub opłatę, więc nie można jej usunąć. Zamiast tego zmień jej nazwę.",
+  "Choose an income category from this School's list.": "Wybierz kategorię przychodu z listy tej szkoły.",
 };

@@ -37,6 +37,24 @@ export function ownSeat(bookingId: string, sourceMembershipId: string | null): S
   return sourceMembershipId ? [{ bookingId, attendeeId: null, membershipId: sourceMembershipId }] : [];
 }
 
+/**
+ * The seats on a Booking that took a credit, the Student's own then each
+ * guest's: the ones a cancellation resolves (credit back, money back, or
+ * kept). Decision 304 item 3: a seat that took no credit (an open mat while
+ * "Open mat uses a class credit" was off) has nothing to give back.
+ */
+export function creditSeats(booking: {
+  id: string;
+  sourceMembershipId: string | null;
+  creditUsed: boolean;
+  attendees: Array<{ id: string; membershipId: string; creditUsed: boolean }>;
+}): SeatRef[] {
+  return [
+    ...(booking.creditUsed ? ownSeat(booking.id, booking.sourceMembershipId) : []),
+    ...booking.attendees.filter((a) => a.creditUsed).map((a) => ({ bookingId: booking.id, attendeeId: a.id, membershipId: a.membershipId })),
+  ];
+}
+
 /** A Stripe refund decided inside a transaction, sent once it commits. */
 export interface StripeRefundPlan {
   seat: SeatRef;
@@ -453,7 +471,7 @@ export class CancellationService {
 
     const bookings = await this.prismaJobs.booking.findMany({
       where: { classId, status: 'UPCOMING' },
-      select: { id: true, studentId: true, sourceMembershipId: true, attendees: { select: { id: true, membershipId: true } } },
+      select: { id: true, studentId: true, sourceMembershipId: true, creditUsed: true, attendees: { select: { id: true, membershipId: true, creditUsed: true } } },
     });
 
     // Resuming: bookings an earlier, unfinished call already cancelled. Their
@@ -476,10 +494,7 @@ export class CancellationService {
       const results = await this.prismaApp.withTenantContext(booking.studentId, async (tx) => {
         const updated = await tx.booking.updateMany({ where: { id: booking.id, status: 'UPCOMING' }, data: { status: 'CANCELLED' } });
         if (updated.count === 0) return [];
-        const seats: SeatRef[] = [
-          ...ownSeat(booking.id, booking.sourceMembershipId),
-          ...booking.attendees.map((a) => ({ bookingId: booking.id, attendeeId: a.id, membershipId: a.membershipId })),
-        ];
+        const seats: SeatRef[] = creditSeats(booking);
         const out: Array<{ seat: SeatRef; result: SeatResult }> = [];
         for (const seat of seats) {
           const result = await this.resolveSeat(tx, seat, base, isOwner);

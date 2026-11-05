@@ -1056,6 +1056,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Вы подписываете за {name} как родитель.",
+      whoSigns: "Кто подписывает?",
+      parentSigns: "Я, как родитель",
+      childSigns: "Подписывает {name}",
+      childSigning: "{name} сам(а) подписывает этот отказ на вашем телефоне. Передайте телефон ребёнку, чтобы он ввёл имя и подписал.",
       cancel: "Отмена",
       showLess: "Свернуть",
       readFull: "Прочитать отказ полностью",

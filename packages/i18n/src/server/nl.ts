@@ -1,5 +1,9 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Deze school laat kinderen hun vrijwaringen niet zelf ondertekenen.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Dit kind is nog niet oud genoeg om de vrijwaringen van deze school zelf te ondertekenen.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Voeg de geboortedatum van het kind toe voordat het zelf een vrijwaring ondertekent.",
+  "Only a parent signing for their child can choose that the child signs.": "Alleen een ouder die voor zijn of haar kind tekent, kan kiezen dat het kind tekent.",
   "Guests can only be added by a parent, not in Kid Mode.": "Alleen een ouder kan gasten toevoegen, niet in de Kindermodus.",
   "Your current passcode is not right.": "Je huidige toegangscode klopt niet.",
   "Choose a new passcode that is different from your current one.": "Kies een nieuwe toegangscode die anders is dan je huidige.",
@@ -778,4 +782,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Import niet gevonden",
   "Each row number can only be sent once.": "Elk rijnummer kan maar één keer worden verstuurd.",
   "Tick the consent box to upload a certification.": "Vink het toestemmingsvakje aan om een certificaat te uploaden.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Inkomstencategorie niet gevonden",
+  "This School already has an income category with that name.": "Deze school heeft al een inkomstencategorie met die naam.",
+  "This School already has 100 income categories. Delete one before adding another.": "Deze school heeft al 100 inkomstencategorieën. Verwijder er een voordat je een nieuwe toevoegt.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Deze inkomstencategorie wordt gebruikt door een abonnement of een kostenpost en kan dus niet worden verwijderd. Wijzig in plaats daarvan de naam.",
+  "Choose an income category from this School's list.": "Kies een inkomstencategorie uit de lijst van deze school.",
 };

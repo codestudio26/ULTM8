@@ -34,17 +34,21 @@ const SIGNATURE_PAD_WEB_STYLE = `.m-signature-pad--footer { display: none; margi
  * box" package, not a custom native module the way `@stripe/stripe-react-
  * native` is. */
 /** `forStudentId`/`forName` (Decision 428, Student portal review M1): a
- * parent signs this waiver for their child. */
+ * parent signs this waiver for their child. `childMaySign` (Decision 318
+ * item 8): the child's School lets children of their age sign themselves, so
+ * the parent can hand the phone over and the child signs instead. */
 export function WaiverRow({
   waiver,
   signature,
   forStudentId,
   forName,
+  childMaySign = false,
 }: {
   waiver: Waiver;
   signature: Pick<WaiverSignature, 'signedDate'> | undefined;
   forStudentId?: string;
   forName?: string;
+  childMaySign?: boolean;
 }) {
   const t = useT();
   const [signing, setSigning] = useState(false);
@@ -53,6 +57,8 @@ export function WaiverRow({
   const [signerFullName, setSignerFullName] = useState('');
   const [signatureText, setSignatureText] = useState('');
   const [drawnSignature, setDrawnSignature] = useState<string | null>(null);
+  const [byChild, setByChild] = useState(false);
+  const childCanSign = !!forStudentId && childMaySign;
   const padRef = useRef<SignatureViewRef>(null);
   const signWaiver = useSignWaiver();
 
@@ -64,7 +70,7 @@ export function WaiverRow({
       signatureText,
       signatureImage: drawnSignature,
       waiverVersion: waiver.version,
-      ...(forStudentId ? { studentId: forStudentId } : {}),
+      ...(forStudentId ? { studentId: forStudentId, signedByChild: childCanSign && byChild } : {}),
     });
   }
 
@@ -109,8 +115,17 @@ export function WaiverRow({
         </Text>
       ) : signing ? (
         <View style={{ marginTop: 8 }}>
+          {childCanSign ? (
+            <View style={{ marginBottom: 6 }}>
+              <Text style={{ fontWeight: '600', marginBottom: 4 }}>{t('waivers.row.whoSigns')}</Text>
+              <Button title={t('waivers.row.parentSigns')} variant={byChild ? 'secondary' : 'primary'} onPress={() => setByChild(false)} />
+              <Button title={t('waivers.row.childSigns', { name: forName ?? '' })} variant={byChild ? 'primary' : 'secondary'} onPress={() => setByChild(true)} />
+            </View>
+          ) : null}
           {forName ? (
-            <Text style={{ color: '#5F6368', fontSize: 13, marginBottom: 6 }}>{t('waivers.row.signingFor', { name: forName })}</Text>
+            <Text style={{ color: '#5F6368', fontSize: 13, marginBottom: 6 }}>
+              {childCanSign && byChild ? t('waivers.row.childSigning', { name: forName }) : t('waivers.row.signingFor', { name: forName })}
+            </Text>
           ) : null}
           <Field label={t('waivers.row.fullName')}>
             <TextField value={signerFullName} onChangeText={setSignerFullName} placeholder={t('waivers.row.fullNamePlaceholder')} />

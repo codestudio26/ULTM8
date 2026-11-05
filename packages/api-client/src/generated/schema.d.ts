@@ -3124,6 +3124,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/income-categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["IncomeCategoriesController_list"];
+        put?: never;
+        post: operations["IncomeCategoriesController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/income-categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["IncomeCategoriesController_remove"];
+        options?: never;
+        head?: never;
+        patch: operations["IncomeCategoriesController_rename"];
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/transactions": {
         parameters: {
             query?: never;
@@ -9915,6 +9947,8 @@ export interface components {
             cancellationCharge?: number;
             /** @description Defaults to false when omitted. */
             termsWaiverRequired?: boolean;
+            /** @description One of the School's income categories (Decision 316 item 10), shown in the Transactions export. */
+            incomeCategoryId?: string;
             /** @description The School's styles this plan covers (Decision 195). */
             disciplineIds?: string[];
             /** @description A live membership on this plan can watch the lessons of its styles (Decision 195). Defaults to on for a priced plan, off for a free one. */
@@ -9943,6 +9977,8 @@ export interface components {
             refundFeeDate?: string | null;
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
+            /** @description The plan's income category (Decision 316 item 10), from GET /schools/{id}/income-categories. */
+            incomeCategoryId?: string | null;
             /** @description The styles this plan covers (Decision 195). */
             disciplineIds: string[];
             /** @description Whether a live membership on this plan can watch its styles' lessons (Decision 195). */
@@ -9996,6 +10032,8 @@ export interface components {
              * @enum {string}
              */
             priceChangeStrategy?: "MIGRATE" | "GRANDFATHER";
+            /** @description One of the School's income categories (Decision 316 item 10). Pass null to clear. */
+            incomeCategoryId?: string | null;
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
@@ -10308,6 +10346,18 @@ export interface components {
         MyFreezableMembershipListResponseDto: {
             items: components["schemas"]["MyFreezableMembershipDto"][];
         };
+        IncomeCategoryDto: {
+            id: string;
+            name: string;
+            /** @description How many membership plans, charges and recurring charges carry it. One in use cannot be deleted, only renamed. */
+            useCount: number;
+        };
+        IncomeCategoryListDto: {
+            items: components["schemas"]["IncomeCategoryDto"][];
+        };
+        IncomeCategoryNameDto: {
+            name: string;
+        };
         TransactionResponseDto: {
             id: string;
             schoolId: string;
@@ -10344,6 +10394,8 @@ export interface components {
             cancelledByName?: string | null;
             /** @description Why it was cancelled. Staff only; never sent to the member. */
             cancelReason?: string | null;
+            /** @description Decision 316 item 10: the income category of the plan (a plan purchase or renewal) or of the charge (a payment toward a charge) this payment is for, as it is now. Staff only; null in the member's own list, and for fees that belong to neither. */
+            incomeCategoryName?: string | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -11470,6 +11522,8 @@ export interface components {
             studentId: string;
             /** @description The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf. Null until this row is actually signed. */
             signedById?: string | null;
+            /** @description Decision 318 item 8: the child signed this themselves in their parent's app; the parent's account. Null otherwise. */
+            signedViaGuardianId?: string | null;
             schoolId: string;
             /** @description Null until this row is actually signed. */
             signerFullName?: string | null;
@@ -11536,6 +11590,8 @@ export interface components {
             waiverNoticeOnJoin: boolean;
             /** @description Remind members who have not signed every this many days. Null (the default): no repeat reminders. */
             waiverReminderDays: number | null;
+            /** @description Decision 318 item 8: children from this age sign their own waivers (in their own app, or in their parent's app). A parent can still sign for them. Null (the default): off, a parent or guardian signs. */
+            waiverChildSignsFromAge: number | null;
         };
         UpdateWaiverSettingsDto: {
             waiverArchivedSignaturesCount?: boolean;
@@ -11546,6 +11602,8 @@ export interface components {
             waiverNoticeOnJoin?: boolean;
             /** @description 1 to 90 days, or null for off. */
             waiverReminderDays?: number | null;
+            /** @description 1 to 17 years, or null for off. */
+            waiverChildSignsFromAge?: number | null;
         };
         RemindResponseDto: {
             /** @description How many members were reminded. */
@@ -11598,6 +11656,8 @@ export interface components {
             schoolName: string;
             /** @description When the child's current signature was signed. Null when not signed. */
             signedDate: string | null;
+            /** @description Decision 318 item 8: this School lets children sign their own waivers from an age the child has reached, so the child may sign it in the parent's app (SignWaiverDto.signedByChild). */
+            childMaySign: boolean;
         };
         MinorWaiverListDto: {
             items: components["schemas"]["MinorWaiverDto"][];
@@ -11619,6 +11679,8 @@ export interface components {
             signatureImageKey?: string;
             /** @description The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again. */
             waiverVersion?: number;
+            /** @description Decision 318 item 8, with studentId: the child signs this themselves in their parent's app, at a School that lets children sign from an age they have reached. The child is recorded as the signer (signedById) and the parent's account as signedViaGuardianId. */
+            signedByChild?: boolean;
         };
         RequestSignatureUploadUrlDto: {
             /** @description Guardian-only: request an upload URL on behalf of this linked minor Student instead of the caller. */
@@ -11844,6 +11906,8 @@ export interface components {
             blockOverdueDays?: 7 | 14 | null;
             /** @description Decision 422 item 2: a booking is needed to check in (default on, as before). Off (the owner's "Check in without a booking"): a member may check in to a Class they haven't booked, at every way in; the check-in first books a place by the booking's own rules (a full Class is refused with CLASS_FULL; membership, credits, waivers and the other check-in rules still apply). Always in the response; leave it out of a save to keep it as it is. */
             requireBooking?: boolean;
+            /** @description Decision 304 item 3: "Open mat uses a class credit" (default on). On: booking an open mat (a class whose every style has the class type "Open mat") takes a Class Pack or Friend Pass credit like any class. Off: it still needs a membership or pass that covers it, but takes no credit, and cancelling it gives nothing back. Always in the response; leave it out of a save to keep it as it is. */
+            openMatUsesCredit?: boolean;
             /**
              * @description Length of the check-in codes ULTM8 generates here: staff kiosk codes and members' personal codes (default 4). Codes already issued keep their length. Decision 417: a School with more than 500 current Students has 6 and can't choose 4; its shorter codes are replaced.
              * @enum {number}
@@ -13363,6 +13427,8 @@ export interface components {
             taxInclusive: boolean;
             /** @description "No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax". */
             taxExempt: boolean;
+            /** @description The charge's income category (Decision 316 item 10). Staff only; null for the member. */
+            incomeCategoryName?: string | null;
             /** @description The price excluding tax. */
             netAmount: number;
             taxAmount: number;
@@ -13554,6 +13620,8 @@ export interface components {
              * @default false
              */
             taxExempt: boolean;
+            /** @description One of the School's income categories (Decision 316 item 10), shown in the Transactions export. */
+            incomeCategoryId?: string;
         };
         CancelChargeDto: {
             /** @description For staff only. Required unless the School's owner made it optional. */
@@ -13768,6 +13836,8 @@ export interface components {
             currency: string;
             /** @description "No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax. */
             taxExempt: boolean;
+            /** @description The series' income category (Decision 316 item 10). Staff only; null for the member. */
+            incomeCategoryName?: string | null;
             frequency: components["schemas"]["RecurringChargeFrequency"];
             /** @example 2026-11-15 */
             firstDate: string;
@@ -13828,6 +13898,8 @@ export interface components {
              * @default false
              */
             taxExempt: boolean;
+            /** @description One of the School's income categories (Decision 316 item 10); every charge of the series carries it. */
+            incomeCategoryId?: string;
         };
         MemberRecurringChargeDto: {
             id: string;
@@ -13842,6 +13914,8 @@ export interface components {
             currency: string;
             /** @description "No tax on this item (0% or exempt)" (Decision 414 item 5): each charge is made with no tax. */
             taxExempt: boolean;
+            /** @description The series' income category (Decision 316 item 10). Staff only; null for the member. */
+            incomeCategoryName?: string | null;
             frequency: components["schemas"]["RecurringChargeFrequency"];
             /** @example 2026-11-15 */
             firstDate: string;
@@ -19180,6 +19254,98 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    IncomeCategoriesController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeCategoryListDto"];
+                };
+            };
+        };
+    };
+    IncomeCategoriesController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncomeCategoryNameDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeCategoryDto"];
+                };
+            };
+        };
+    };
+    IncomeCategoriesController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    IncomeCategoriesController_rename: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                categoryId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncomeCategoryNameDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IncomeCategoryDto"];
                 };
             };
         };

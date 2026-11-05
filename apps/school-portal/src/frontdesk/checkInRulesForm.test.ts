@@ -12,6 +12,7 @@ const DEFAULTS: CheckInRules = {
   showBeltProgress: true,
   blockOverdueDays: null,
   requireBooking: true,
+  openMatUsesCredit: true,
   codeDigits: 4,
 };
 
@@ -34,5 +35,18 @@ describe('"Check in without a booking" on the check-in rules card', () => {
     const form = toCheckInRulesForm(DEFAULTS);
     expect(checkInRulesBody(form)).toEqual(DEFAULTS);
     expect(checkInRulesBody({ ...form, withoutBooking: true })).toEqual({ ...DEFAULTS, requireBooking: false });
+  });
+});
+
+/** Decision 304 item 3: "Open mat uses a class credit", on by default. */
+describe('"Open mat uses a class credit" on the check-in rules card', () => {
+  it('saves what the switch says', () => {
+    const form = toCheckInRulesForm({ ...DEFAULTS, openMatUsesCredit: false });
+    expect(checkInRulesBody(form).openMatUsesCredit).toBe(false);
+  });
+
+  it('is on when an older response leaves the setting out', () => {
+    const { openMatUsesCredit: _omitted, ...older } = DEFAULTS;
+    expect(checkInRulesBody(toCheckInRulesForm(older)).openMatUsesCredit).toBe(true);
   });
 });

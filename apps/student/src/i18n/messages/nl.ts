@@ -1017,6 +1017,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Je ondertekent voor {name}, als ouder.",
+      whoSigns: "Wie ondertekent?",
+      parentSigns: "Ik, als ouder",
+      childSigns: "{name} ondertekent",
+      childSigning: "{name} ondertekent deze vrijwaring zelf op je telefoon. Geef de telefoon aan je kind om de naam te typen en te tekenen.",
       cancel: "Annuleren",
       showLess: "Minder tonen",
       readFull: "Volledige verklaring lezen",

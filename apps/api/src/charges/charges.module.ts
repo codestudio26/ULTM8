@@ -6,6 +6,7 @@ import { QueueModule } from '../jobs/queue.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { AuthModule } from '../auth/auth.module';
 import { RanksModule } from '../ranks/ranks.module';
+import { IncomeCategoriesModule } from '../income-categories/income-categories.module';
 import { ChargesController } from './charges.controller';
 import { ChargesService } from './charges.service';
 import { ChargeReportsController } from './charge-reports.controller';
@@ -18,7 +19,7 @@ import { RecurringChargesService } from './recurring-charges.service';
 @Module({
   // RanksModule: PromotionFeeService, to settle a promotion fee once its charge
   // is fully paid (backlog §3.6 step 6).
-  imports: [TenantsModule, SubscriptionPlansModule, GuardiansModule, QueueModule, PaymentsModule, AuthModule, RanksModule],
+  imports: [TenantsModule, SubscriptionPlansModule, GuardiansModule, QueueModule, PaymentsModule, AuthModule, RanksModule, IncomeCategoriesModule],
   controllers: [ChargesController, ChargeReportsController, RecurringChargesController],
   providers: [ChargesService, ChargeReportsService, RecurringChargesService],
   exports: [ChargesService],

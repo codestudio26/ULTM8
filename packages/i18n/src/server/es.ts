@@ -1,5 +1,9 @@
 /** Spanish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Esta escuela no permite que los niños firmen sus propias exenciones.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Este niño aún no tiene edad para firmar él mismo las exenciones de esta escuela.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Añade la fecha de nacimiento del niño antes de que firme él mismo una exención.",
+  "Only a parent signing for their child can choose that the child signs.": "Solo un padre o madre que firma por su hijo puede elegir que firme el niño.",
   "Guests can only be added by a parent, not in Kid Mode.": "Solo un padre o madre puede añadir invitados, no en el Modo Niños.",
   "Your current passcode is not right.": "Tu código de acceso actual no es correcto.",
   "Choose a new passcode that is different from your current one.": "Elige un nuevo código de acceso distinto del actual.",
@@ -778,4 +782,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Importación no encontrada",
   "Each row number can only be sent once.": "Cada número de fila solo se puede enviar una vez.",
   "Tick the consent box to upload a certification.": "Marca la casilla de consentimiento para subir una certificación.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Categoría de ingresos no encontrada",
+  "This School already has an income category with that name.": "Esta escuela ya tiene una categoría de ingresos con ese nombre.",
+  "This School already has 100 income categories. Delete one before adding another.": "Esta escuela ya tiene 100 categorías de ingresos. Elimina una antes de añadir otra.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Esta categoría de ingresos la usa un plan o un cargo, así que no se puede eliminar. Cámbiale el nombre.",
+  "Choose an income category from this School's list.": "Elige una categoría de ingresos de la lista de esta escuela.",
 };

@@ -1033,6 +1033,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Firmas por {name}, como su padre o madre.",
+      whoSigns: "¿Quién firma?",
+      parentSigns: "Yo, como su padre o madre",
+      childSigns: "Firma {name}",
+      childSigning: "{name} firma esta exención en tu teléfono. Dáselo para que escriba su nombre y firme.",
       cancel: "Cancelar",
       showLess: "Mostrar menos",
       readFull: "Leer la exención completa",

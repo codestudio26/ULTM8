@@ -348,6 +348,7 @@ export function TransactionsPage() {
           t('transactions.columnCancelledAt'),
           t('transactions.columnCancelledBy'),
           t('transactions.columnCancelReason'),
+          t('transactions.columnIncomeCategory'),
         ],
         item: itemLabel,
         student: studentName,

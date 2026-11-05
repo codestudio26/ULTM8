@@ -1,5 +1,9 @@
 /** Portuguese (Brazil) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Esta escola não permite que crianças assinem os próprios termos.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Esta criança ainda não tem idade para assinar sozinha os termos desta escola.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Adicione a data de nascimento da criança antes que ela assine um termo sozinha.",
+  "Only a parent signing for their child can choose that the child signs.": "Somente um responsável assinando pela criança pode escolher que a criança assine.",
   "Guests can only be added by a parent, not in Kid Mode.": "Somente um responsável pode adicionar convidados, não no Modo Criança.",
   "Your current passcode is not right.": "Seu código de acesso atual não está correto.",
   "Choose a new passcode that is different from your current one.": "Escolha um novo código de acesso diferente do atual.",
@@ -778,4 +782,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Importação não encontrada",
   "Each row number can only be sent once.": "Cada número de linha só pode ser enviado uma vez.",
   "Tick the consent box to upload a certification.": "Marque a caixa de consentimento para enviar uma certificação.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Categoria de receita não encontrada",
+  "This School already has an income category with that name.": "Esta escola já tem uma categoria de receita com esse nome.",
+  "This School already has 100 income categories. Delete one before adding another.": "Esta escola já tem 100 categorias de receita. Exclua uma antes de adicionar outra.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Esta categoria de receita é usada por um plano ou uma cobrança, então não pode ser excluída. Renomeie-a em vez disso.",
+  "Choose an income category from this School's list.": "Escolha uma categoria de receita da lista desta escola.",
 };

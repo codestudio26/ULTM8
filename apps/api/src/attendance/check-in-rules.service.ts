@@ -38,6 +38,7 @@ export class CheckInRulesService {
         checkInShowBeltProgress: dto.showBeltProgress,
         checkInBlockOverdueDays: dto.blockOverdueDays,
         checkInRequireBooking: dto.requireBooking,
+        openMatUsesClassCredit: dto.openMatUsesCredit,
         checkInCodeDigits: dto.codeDigits,
       },
       select: { ...CHECK_IN_RULES_SELECT, checkInCodeDigits: true },

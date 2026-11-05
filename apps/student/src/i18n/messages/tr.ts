@@ -1017,6 +1017,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "{name} adına, ebeveyni olarak imzalıyorsunuz.",
+      whoSigns: "Kim imzalıyor?",
+      parentSigns: "Ben, ebeveyni olarak",
+      childSigns: "{name} imzalıyor",
+      childSigning: "{name} bu feragatnameyi telefonunuzda kendisi imzalıyor. Adını yazıp imzalaması için telefonu çocuğa verin.",
       cancel: "İptal",
       showLess: "Daha az göster",
       readFull: "Feragatnamenin tamamını oku",

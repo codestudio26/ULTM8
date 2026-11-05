@@ -6,6 +6,10 @@
  * generic message for its HTTP status, so a non-English screen never shows it.
  */
 export const SERVER_MESSAGES: string[] = [
+ "This School doesn't let children sign their own waivers.",
+ "This child isn't old enough yet to sign this School's waivers themselves.",
+ "Add the child's date of birth before they sign a waiver themselves.",
+ "Only a parent signing for their child can choose that the child signs.",
  "Guests can only be added by a parent, not in Kid Mode.",
  "Your current passcode is not right.",
  "Choose a new passcode that is different from your current one.",
@@ -796,4 +800,10 @@ export const SERVER_PATTERNS: string[] = [
  "A child's contact details are changed by their Guardian or the School.",
  "Attendance can only be logged from {v1} to {v2}.",
  "Tick the consent box to upload a certification.",
+ // Income categories (Decision 316 item 10).
+ "Income category not found",
+ "This School already has an income category with that name.",
+ "This School already has 100 income categories. Delete one before adding another.",
+ "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.",
+ "Choose an income category from this School's list.",
 ];

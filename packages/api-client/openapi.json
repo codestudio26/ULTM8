@@ -9009,6 +9009,171 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/income-categories": {
+      "get": {
+        "operationId": "IncomeCategoriesController_list",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomeCategoryListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "income-categories"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "IncomeCategoriesController_create",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncomeCategoryNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomeCategoryDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "income-categories"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/income-categories/{categoryId}": {
+      "patch": {
+        "operationId": "IncomeCategoriesController_rename",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IncomeCategoryNameDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IncomeCategoryDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "income-categories"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "IncomeCategoriesController_remove",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "income-categories"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/transactions": {
       "get": {
         "operationId": "TransactionsController_findAllForSchool",
@@ -30702,6 +30867,10 @@
             "type": "boolean",
             "description": "Defaults to false when omitted."
           },
+          "incomeCategoryId": {
+            "type": "string",
+            "description": "One of the School's income categories (Decision 316 item 10), shown in the Transactions export."
+          },
           "disciplineIds": {
             "description": "The School's styles this plan covers (Decision 195).",
             "type": "array",
@@ -30784,6 +30953,11 @@
           },
           "termsWaiverRequired": {
             "type": "boolean"
+          },
+          "incomeCategoryId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The plan's income category (Decision 316 item 10), from GET /schools/{id}/income-categories."
           },
           "disciplineIds": {
             "description": "The styles this plan covers (Decision 195).",
@@ -30933,6 +31107,11 @@
               "GRANDFATHER"
             ],
             "description": "Required only when editing a SUBSCRIPTION plan whose price is actually changing AND it already has at least one active Stripe-backed subscriber. MIGRATE moves every existing subscriber to the new price (no proration, applied at their next billing cycle); GRANDFATHER leaves existing subscribers on their original price and applies the new price to new signups only. Rejected (400) if required and omitted."
+          },
+          "incomeCategoryId": {
+            "type": "string",
+            "nullable": true,
+            "description": "One of the School's income categories (Decision 316 item 10). Pass null to clear."
           }
         }
       },
@@ -32043,6 +32222,52 @@
           "items"
         ]
       },
+      "IncomeCategoryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "useCount": {
+            "type": "number",
+            "description": "How many membership plans, charges and recurring charges carry it. One in use cannot be deleted, only renamed."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "useCount"
+        ]
+      },
+      "IncomeCategoryListDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncomeCategoryDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "IncomeCategoryNameDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "TransactionResponseDto": {
         "type": "object",
         "properties": {
@@ -32158,6 +32383,11 @@
             "type": "string",
             "nullable": true,
             "description": "Why it was cancelled. Staff only; never sent to the member."
+          },
+          "incomeCategoryName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 316 item 10: the income category of the plan (a plan purchase or renewal) or of the charge (a payment toward a charge) this payment is for, as it is now. Staff only; null in the member's own list, and for fees that belong to neither."
           },
           "createdAt": {
             "type": "string"
@@ -35721,6 +35951,11 @@
             "nullable": true,
             "description": "The actual signer — equals studentId unless a Guardian signed on a linked minor's behalf. Null until this row is actually signed."
           },
+          "signedViaGuardianId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 318 item 8: the child signed this themselves in their parent's app; the parent's account. Null otherwise."
+          },
           "schoolId": {
             "type": "string"
           },
@@ -35902,6 +36137,11 @@
             "type": "number",
             "nullable": true,
             "description": "Remind members who have not signed every this many days. Null (the default): no repeat reminders."
+          },
+          "waiverChildSignsFromAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 318 item 8: children from this age sign their own waivers (in their own app, or in their parent's app). A parent can still sign for them. Null (the default): off, a parent or guardian signs."
           }
         },
         "required": [
@@ -35910,7 +36150,8 @@
           "waiverMinorsSignAgainAt18",
           "waiverPaperSignaturesAllowed",
           "waiverNoticeOnJoin",
-          "waiverReminderDays"
+          "waiverReminderDays",
+          "waiverChildSignsFromAge"
         ]
       },
       "UpdateWaiverSettingsDto": {
@@ -35937,6 +36178,11 @@
             "type": "number",
             "nullable": true,
             "description": "1 to 90 days, or null for off."
+          },
+          "waiverChildSignsFromAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "1 to 17 years, or null for off."
           }
         }
       },
@@ -36087,6 +36333,10 @@
             "type": "string",
             "nullable": true,
             "description": "When the child's current signature was signed. Null when not signed."
+          },
+          "childMaySign": {
+            "type": "boolean",
+            "description": "Decision 318 item 8: this School lets children sign their own waivers from an age the child has reached, so the child may sign it in the parent's app (SignWaiverDto.signedByChild)."
           }
         },
         "required": [
@@ -36098,7 +36348,8 @@
           "createdAt",
           "updatedAt",
           "schoolName",
-          "signedDate"
+          "signedDate",
+          "childMaySign"
         ]
       },
       "MinorWaiverListDto": {
@@ -36152,6 +36403,10 @@
           "waiverVersion": {
             "type": "number",
             "description": "The Waiver version the signer read (WaiverResponseDto.version). If the Waiver has changed since, signing is refused (409) so they read it again."
+          },
+          "signedByChild": {
+            "type": "boolean",
+            "description": "Decision 318 item 8, with studentId: the child signs this themselves in their parent's app, at a School that lets children sign from an age they have reached. The child is recorded as the signer (signedById) and the parent's account as signedViaGuardianId."
           }
         },
         "required": [
@@ -36854,6 +37109,10 @@
           "requireBooking": {
             "type": "boolean",
             "description": "Decision 422 item 2: a booking is needed to check in (default on, as before). Off (the owner's \"Check in without a booking\"): a member may check in to a Class they haven't booked, at every way in; the check-in first books a place by the booking's own rules (a full Class is refused with CLASS_FULL; membership, credits, waivers and the other check-in rules still apply). Always in the response; leave it out of a save to keep it as it is."
+          },
+          "openMatUsesCredit": {
+            "type": "boolean",
+            "description": "Decision 304 item 3: \"Open mat uses a class credit\" (default on). On: booking an open mat (a class whose every style has the class type \"Open mat\") takes a Class Pack or Friend Pass credit like any class. Off: it still needs a membership or pass that covers it, but takes no credit, and cancelling it gives nothing back. Always in the response; leave it out of a save to keep it as it is."
           },
           "codeDigits": {
             "type": "number",
@@ -41916,6 +42175,11 @@
             "type": "boolean",
             "description": "\"No tax on this item (0% or exempt)\" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show \"No tax\"."
           },
+          "incomeCategoryName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The charge's income category (Decision 316 item 10). Staff only; null for the member."
+          },
           "netAmount": {
             "type": "number",
             "description": "The price excluding tax."
@@ -42510,6 +42774,10 @@
             "type": "boolean",
             "default": false,
             "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): no tax on this charge, so the price ex. tax and inc. tax are both the price after any discount. Off by default: the School's tax settings apply."
+          },
+          "incomeCategoryId": {
+            "type": "string",
+            "description": "One of the School's income categories (Decision 316 item 10), shown in the Transactions export."
           }
         },
         "required": [
@@ -43180,6 +43448,11 @@
             "type": "boolean",
             "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): each charge is made with no tax."
           },
+          "incomeCategoryName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The series' income category (Decision 316 item 10). Staff only; null for the member."
+          },
           "frequency": {
             "$ref": "#/components/schemas/RecurringChargeFrequency"
           },
@@ -43342,6 +43615,10 @@
             "type": "boolean",
             "default": false,
             "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): every charge of the series is made with no tax. Off by default."
+          },
+          "incomeCategoryId": {
+            "type": "string",
+            "description": "One of the School's income categories (Decision 316 item 10); every charge of the series carries it."
           }
         },
         "required": [
@@ -43388,6 +43665,11 @@
           "taxExempt": {
             "type": "boolean",
             "description": "\"No tax on this item (0% or exempt)\" (Decision 414 item 5): each charge is made with no tax."
+          },
+          "incomeCategoryName": {
+            "type": "string",
+            "nullable": true,
+            "description": "The series' income category (Decision 316 item 10). Staff only; null for the member."
           },
           "frequency": {
             "$ref": "#/components/schemas/RecurringChargeFrequency"

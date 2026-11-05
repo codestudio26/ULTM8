@@ -32,6 +32,7 @@ import { FreezeSettingsCard } from './FreezeSettingsCard';
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
 import { LateFeesCard } from '../charges/LateFeesCard';
+import { IncomeCategoriesCard } from '../charges/IncomeCategoriesCard';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
@@ -95,6 +96,8 @@ export function SchoolPage() {
         <CardSurchargeCard key={`surcharge-${schoolId}`} schoolId={schoolId} />
         {/* Decision 413: late fees, off by default, the School's choice. */}
         <LateFeesCard key={`late-fees-${schoolId}`} schoolId={schoolId} />
+        {/* Decision 316 item 10: the School's income categories for plans and charges. */}
+        <IncomeCategoriesCard key={`income-categories-${schoolId}`} schoolId={schoolId} />
         {/* Decision 392: the tablet sign-up's "How did you hear about us?" list. */}
         <HeardFromCard key={`heard-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Backlog 5.4: the School's own student tags. */}

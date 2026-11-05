@@ -1,5 +1,9 @@
 /** Russian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "Эта школа не разрешает детям самим подписывать отказы.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "Этот ребёнок ещё недостаточно взрослый, чтобы сам подписывать отказы этой школы.",
+  "Add the child's date of birth before they sign a waiver themselves.": "Добавьте дату рождения ребёнка, прежде чем он сам подпишет отказ.",
+  "Only a parent signing for their child can choose that the child signs.": "Только родитель, подписывающий за своего ребёнка, может выбрать, чтобы подписал ребёнок.",
   "Guests can only be added by a parent, not in Kid Mode.": "Гостей может добавить только родитель, не в Детском режиме.",
   "Your current passcode is not right.": "Текущий код доступа неверен.",
   "Choose a new passcode that is different from your current one.": "Выберите новый код доступа, отличный от текущего.",
@@ -778,4 +782,10 @@ export const serverMessages: Record<string, string> = {
   "Import not found": "Импорт не найден",
   "Each row number can only be sent once.": "Каждый номер строки можно отправить только один раз.",
   "Tick the consent box to upload a certification.": "Отметьте согласие, чтобы загрузить сертификат.",
+  // Income categories (Decision 316 item 10).
+  "Income category not found": "Категория дохода не найдена",
+  "This School already has an income category with that name.": "В этой школе уже есть категория дохода с таким названием.",
+  "This School already has 100 income categories. Delete one before adding another.": "В этой школе уже 100 категорий дохода. Удалите одну, прежде чем добавлять новую.",
+  "This income category is used by a plan or a charge, so it can't be deleted. Rename it instead.": "Эта категория дохода используется в тарифе или начислении, поэтому её нельзя удалить. Вместо этого переименуйте её.",
+  "Choose an income category from this School's list.": "Выберите категорию дохода из списка этой школы.",
 };

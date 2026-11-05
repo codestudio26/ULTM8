@@ -273,6 +273,8 @@ export const frontDesk = {
     visitorsHint: 'When off, nobody checks in on a visit pass.',
     frozenMembers: "Allow frozen members to check in",
     frozenMembersHint: "When off, a member whose membership is frozen can't check in.",
+    openMatUsesCredit: "Open mat uses a class credit",
+    openMatUsesCreditHint: "On: booking an open mat uses a Class Pack or Friend Pass credit, like any class. Off: it uses no credit, but a membership or pass is still needed.",
     withoutBooking: "Check in without a booking",
     withoutBookingHint: "When on, members can check in to a class they haven't booked. Check-in takes a place if the class has one and uses their membership or a class credit, as booking does. When off, they need to book first.",
     overdue: "Block check-in for overdue payments",

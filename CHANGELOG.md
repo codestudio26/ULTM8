@@ -689,6 +689,18 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   staff with "Can cancel charges" can **Waive** it; the student app labels it
   "Late fee" too. **Needs a database migration**
   (`20270116000000_late_fees`).
+- **Income categories** (Decision 316 item 10; Gymdesk P17/BL18) — a new
+  **Income categories** card on the School page (owner only) lets a School
+  name its own categories (e.g. "Kids programme", "Merchandise"): add, rename,
+  and delete one nothing uses (one in use can only be renamed). A membership
+  plan (Policies step of the plan form), a staff-created charge and a
+  recurring charge can each carry one; every charge a recurring charge makes
+  carries its category. The student's **Payments** card shows a charge's
+  category to staff, and the **Transactions** CSV export has a new last
+  column, **Income category**: the category of the plan (a purchase or a
+  renewal) or of the charge (a payment toward it), as it is now. Members never
+  see categories. No accounting codes and no accounting integration. **Needs
+  a database migration** (`20270212000001_income_categories`).
 - **Medical information at sign-up** (Decision 315 item 10; Gymdesk SF6) — a
   new **Medical information at sign-up** card on the School page (owner only)
   lets a School ask for medical information. It is **off by default**, so
@@ -978,6 +990,13 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   length), and students who train that style at that branch are told in the
   app. The owner, and staff given "Can start open mat sessions" on the
   Staff page. Needs migration `20261221000000_open_mat_permission`.
+- **"Open mat uses a class credit"** (Decision 304 item 3) — a new switch in
+  Settings → Check-in rules, on by default (as today: an open mat takes a
+  Class Pack or Friend Pass credit like any class). Off: booking an open mat
+  still needs a membership or pass that covers it, but takes no credit, and
+  cancelling it gives nothing back. A class counts as open mat when every
+  style on it has the class type "Open mat". **Needs a database migration**
+  (`20270214000002_open_mat_class_credit`).
 - **Visitors and visit passes** (Decision 391) — each School sets how long a
   free visit pass lasts (School settings; no default). The owner, or Branch
   Staff with the Students switch, gives a pass from the student's page; while it
@@ -1297,6 +1316,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   a member account or waiver that still has a signature. All 15 languages.
   Not legal advice: a privacy lawyer is to confirm it per country. **Needs a
   database migration** (`20270214000000_waiver_signature_retention`).
+- **Children sign their own waivers from an age the School sets** (Decision
+  318 item 8) — a new Waivers → Settings switch, off by default (a parent or
+  guardian signs). When on, a child from that age (1 to 17) signs their own
+  waivers: with their own login, or in their parent's app, where "Who is
+  signing?" lets the parent hand the phone over. A parent can still sign for
+  the child as before. The child is recorded as the signer, with the parent's
+  account kept beside it, and the Signatures list says "signed by the child,
+  in their parent's app". All 15 languages. **Needs a database migration**
+  (`20270213000001_waiver_child_signs`).
 - **School Owners can close their own School** (Decision 364) — from the
   School page, after typing its name and their passcode: the same 90-day close
   a Platform Admin does. Closing a School, by anyone, now also ends every

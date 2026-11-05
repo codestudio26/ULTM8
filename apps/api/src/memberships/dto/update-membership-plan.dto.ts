@@ -4,7 +4,7 @@ import { CreateMembershipPlanDto } from './create-membership-plan.dto';
 
 // billingCycleAnchorDay is nullable on update (switching back to FRESH_CYCLE
 // clears it) — same list, same reasoning as every other field here.
-const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate', 'billingCycleAnchorDay'] as const;
+const NULLABLE_ON_UPDATE = ['currency', 'expiryDurationDays', 'scopedClassId', 'cancellationCharge', 'refundFeeDate', 'billingCycleAnchorDay', 'incomeCategoryId'] as const;
 
 /** v1.2 backend backlog — Subscription price-change migrate-vs-grandfather
  * prompt. MembershipsService.updatePlan() requires exactly one of these
@@ -93,4 +93,9 @@ export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembersh
   @IsOptional()
   @IsEnum(MembershipPlanPriceChangeStrategyDto)
   priceChangeStrategy?: MembershipPlanPriceChangeStrategyDto;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "One of the School's income categories (Decision 316 item 10). Pass null to clear." })
+  @IsOptional()
+  @IsUUID()
+  incomeCategoryId?: string | null;
 }
