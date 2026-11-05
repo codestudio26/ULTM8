@@ -294,6 +294,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "{school}, \"{waiver}\" feragatnamesini güncelledi. Lütfen okuyup yeniden imzalayın.",
     waiverRenewalBody: "{school} için \"{waiver}\" feragatnamesindeki imzanızın süresi doldu. Lütfen yeniden imzalayın.",
     waiverAdultBody: "Artık 18 yaşındasınız, bu yüzden {school} \"{waiver}\" feragatnamesini kendiniz imzalamanızı istiyor.",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "Çocuğunuz feragatnameyi imzaladı",
+    waiverSignedByChildBody: "{child}, {school} okulunda \"{waiver}\" feragatnamesini imzaladı.",
     classMovedBody: "{class} {when} tarihine taşındı. Rezervasyonlar da taşındı.",
     classMovedWaitlistBody: "{class} {when} tarihine taşındı. Bekleme listesindeki yeriniz de taşındı.",
     classCancelledBody: "{when} tarihli {class} okulunuz tarafından iptal edildi. Kullandığınız ders kredisi iade edildi.",

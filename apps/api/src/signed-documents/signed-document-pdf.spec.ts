@@ -19,6 +19,7 @@ const doc = (over: Partial<SignedDocument> = {}): SignedDocument => ({
   signerName: 'Ana Lima',
   signatureText: 'Ana',
   byGuardian: false,
+  byChildInParentApp: false,
   onPaper: false,
   recordedByName: null,
   expired: false,
@@ -110,6 +111,11 @@ describe('signed document PDF (Decision 422 item 10)', () => {
     // The drawn signature is in it, as an image.
     expect(pdf.toString('latin1')).toMatch(/\/Subtype \/Image/);
     expect(pdf.toString('latin1')).toMatch(/\/Title \d+ 0 R/);
+  });
+
+  it("Decision 435 item 32: a waiver the child signed in their parent's app says so", async () => {
+    const child = lines(readPdfText(await signedDocumentPdf(doc({ memberName: 'Kid Lima', signerName: 'Kid Lima', byChildInParentApp: true }), 'S', labels)).blocks).map(lineText);
+    expect(child).toContain("Kid Lima (Signed by the child in their parent's app)");
   });
 
   it('a paper signature shows who recorded it; a missing or unreadable image and unkept wording say so', async () => {

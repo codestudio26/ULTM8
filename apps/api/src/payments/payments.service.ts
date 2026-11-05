@@ -29,6 +29,9 @@ import { dayIn } from '../memberships/freeze/membership-freeze';
  * page and its Stripe receipt, beside the plan's own title (also untranslated,
  * as Stripe shows our line names as given). */
 export const CARD_SURCHARGE_LINE_NAME = 'Card surcharge';
+/** Decision 435 item 3: the joining fee's own line on a hosted Checkout page
+ * and on a Subscription's first Stripe invoice. */
+export const JOINING_FEE_LINE_NAME = 'Joining fee';
 
 /** Thrown by PaymentsService.chargeOffSession() when the Student has no saved
  * payment method (or their Customer has no default one set) at this School —
@@ -613,6 +616,12 @@ export class PaymentsService {
     // the first payment and every renewal carry it as their own line.
     // `undefined` or an amount of 0 leaves the Subscription as before.
     surcharge?: { amount: number; bps: number },
+    // Decision 435 items 2-4: the joining fee on a member's first plan, a
+    // one-off line on the first invoice only (never a renewal), with its own
+    // card surcharge beside it on the same surcharge Product, so the first
+    // payment's surcharge (worked out from the invoice's lines below) covers
+    // both. `undefined` leaves the Subscription as before.
+    joiningFee?: { amount: number; surcharge: number },
   ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string; surchargeAmount: number }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
@@ -632,8 +641,22 @@ export class PaymentsService {
             product: (await withIdempotencyRetry(() => stripe.products.create({ name: productName }, key('product')))).id,
           },
         };
+    const joiningFeeProductId =
+      joiningFee && joiningFee.amount > 0
+        ? (await withIdempotencyRetry(() => stripe.products.create({ name: JOINING_FEE_LINE_NAME }, key('joining-fee-product')))).id
+        : undefined;
+    const joiningFeeSurcharge = joiningFeeProductId && surchargeProductId ? joiningFee!.surcharge : 0;
+    const addInvoiceItems = joiningFeeProductId
+      ? [
+          { price_data: { currency: currency.toLowerCase(), unit_amount: toStripeAmount(joiningFee!.amount, currency), product: joiningFeeProductId } },
+          ...(joiningFeeSurcharge > 0
+            ? [{ price_data: { currency: currency.toLowerCase(), unit_amount: toStripeAmount(joiningFeeSurcharge, currency), product: surchargeProductId! } }]
+            : []),
+        ]
+      : undefined;
     const subscription = await withIdempotencyRetry(() => stripe.subscriptions.create({
       customer: customer.id,
+      ...(addInvoiceItems ? { add_invoice_items: addInvoiceItems } : {}),
       items: surchargeProductId
         ? [
             item,
@@ -680,7 +703,7 @@ export class PaymentsService {
       ? 0
       : firstInvoice?.lines?.data
         ? invoiceSurchargeAmount(firstInvoice, surchargeProductId)
-        : surcharge!.amount;
+        : surcharge!.amount + joiningFeeSurcharge;
     return { subscriptionId: subscription.id, paymentIntentId, clientSecret, surchargeAmount };
   }
 
@@ -1082,6 +1105,9 @@ export class PaymentsService {
     // Where the browser returns in the app: the membership purchase, or paying
     // charges (backlog §3.6 step 2), which reuses this same Checkout.
     returnPath: 'membership-purchase' | 'charge-payment' = 'membership-purchase',
+    // Decision 435 item 3: the joining fee on a member's first plan, its own
+    // line beside the plan's (0 = none). `surchargeAmount` already covers it.
+    joiningFeeAmount = 0,
   ): Promise<{ checkoutUrl: string }> {
     const account = await this.resolveStripePaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
@@ -1104,7 +1130,11 @@ export class PaymentsService {
           },
           quantity: 1,
         },
+        ...(joiningFeeAmount > 0
+          ? [{ price_data: { currency: currency.toLowerCase(), unit_amount: toStripeAmount(joiningFeeAmount, currency), product_data: { name: JOINING_FEE_LINE_NAME } }, quantity: 1 }]
+          : []),
         ...(surchargeAmount > 0
+
           ? [{ price_data: { currency: currency.toLowerCase(), unit_amount: toStripeAmount(surchargeAmount, currency), product_data: { name: CARD_SURCHARGE_LINE_NAME } }, quantity: 1 }]
           : []),
       ],

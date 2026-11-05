@@ -1,12 +1,21 @@
+import { escapeHtml, PUBLIC_PAGE_LOCALES, publicPageLocale, type PublicPageLocale } from '../public-pages/public-page-locale';
+import type { TrackingConsent } from '../public-pages/tracking-consent';
+
 /**
  * Decision 319 item 4: the schedule embed's page, for an <iframe> on the
- * School's own website. Plain HTML and inline CSS, no script, no cookies,
- * nothing from another site; every text from the School is escaped. In the
- * 15 languages of the apps (`?lang=`), English when none or another is asked.
+ * School's own website. Plain HTML and inline CSS, no cookies, nothing from
+ * another site; every text from the School is escaped. In the 15 languages
+ * of the apps (`?lang=`), English when none or another is asked.
+ *
+ * The one exception (Decision 318 item 10; Decision 435 items 24–27): when
+ * the School has saved a Meta Pixel or Google Analytics ID, the page carries
+ * the cookie-consent banner and its one inline script from
+ * `public-pages/tracking-consent.ts`; the tags load only after Accept.
  */
 
-export const EMBED_LOCALES = ['en', 'ar', 'de', 'es', 'fr', 'it', 'ja', 'ko', 'nl', 'pl', 'pt-BR', 'ru', 'th', 'tr', 'zh-CN'] as const;
-export type EmbedLocale = (typeof EMBED_LOCALES)[number];
+export const EMBED_LOCALES = PUBLIC_PAGE_LOCALES;
+export type EmbedLocale = PublicPageLocale;
+export { escapeHtml };
 
 export interface EmbedTexts {
   title: string;
@@ -35,12 +44,7 @@ export const EMBED_TEXTS: Record<EmbedLocale, EmbedTexts> = {
 };
 
 export function embedLocale(lang: string | undefined): EmbedLocale {
-  const found = EMBED_LOCALES.find((l) => l.toLowerCase() === (lang ?? '').toLowerCase());
-  return found ?? 'en';
-}
-
-export function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  return publicPageLocale(lang);
 }
 
 export interface EmbedClass {
@@ -75,9 +79,10 @@ li{display:flex;gap:12px;padding:6px 0;border-bottom:1px solid #f0f2f4}
 .note{color:#57606a;font-size:12px;margin:4px 0 0}
 @media (prefers-color-scheme:dark){body{background:#0d1117;color:#e6edf3}h2{border-color:#30363d}li{border-color:#21262d}.time,.where,.note,.cancelled .what{color:#8b949e}}`;
 
-function page(locale: EmbedLocale, title: string, body: string): string {
+function page(locale: EmbedLocale, title: string, body: string, tracking: TrackingConsent | null = null): string {
   const dir = locale === 'ar' ? 'rtl' : 'ltr';
-  return `<!doctype html><html lang="${locale}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${escapeHtml(title)}</title><style>${STYLE}</style></head><body><main>${body}</main></body></html>`;
+  const style = tracking ? `${STYLE}\n${tracking.style}` : STYLE;
+  return `<!doctype html><html lang="${locale}" dir="${dir}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${escapeHtml(title)}</title><style>${style}</style></head><body>${tracking ? tracking.html : ''}<main>${body}</main></body></html>`;
 }
 
 /** The page for an unknown, turned-off or closed School's link. */
@@ -87,8 +92,14 @@ export function unavailablePage(locale: EmbedLocale): string {
 }
 
 /** The School's classes grouped by day, each on its Branch's clock (else the
- * School's). */
-export function schedulePage(locale: EmbedLocale, school: { schoolName: string; timezone: string | null }, classes: EmbedClass[]): string {
+ * School's). `tracking`: the consent banner and its script, only when the
+ * School has ad tracking IDs. */
+export function schedulePage(
+  locale: EmbedLocale,
+  school: { schoolName: string; timezone: string | null },
+  classes: EmbedClass[],
+  tracking: TrackingConsent | null = null,
+): string {
   const t = EMBED_TEXTS[locale];
   const schoolZone = validZone(school.timezone) ?? 'UTC';
   const groups = new Map<string, { label: string; items: string[] }>();
@@ -117,5 +128,5 @@ export function schedulePage(locale: EmbedLocale, school: { schoolName: string; 
     `<h1>${escapeHtml(school.schoolName)}</h1><p class="note">${escapeHtml(t.title)}</p>` +
     (classes.length === 0 ? `<p>${escapeHtml(t.empty)}</p>` : days) +
     (zones.size > 0 ? `<p class="note">${escapeHtml(t.timesIn.replace('{tz}', [...zones].join(', ')))}</p>` : '');
-  return page(locale, `${school.schoolName} · ${t.title}`, body);
+  return page(locale, `${school.schoolName} · ${t.title}`, body, tracking);
 }

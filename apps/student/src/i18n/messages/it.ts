@@ -926,6 +926,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Iscriviti a questa scuola per acquistare.",
+      joiningFee: "+ {amount} di quota di iscrizione sul tuo primo piano in questa scuola",
       cardSurcharge: "+ {amount} di sovrapprezzo se paghi con carta",
       classesIncluded: { one: "{count} corso", many: "{count} corsi", other: "{count} corsi" },
       durationDays: { one: "{count} giorno", many: "{count} giorni", other: "{count} giorni" },

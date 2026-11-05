@@ -286,6 +286,9 @@ export const server = {
     waiverUpdatedBody: "{school} has updated the waiver \"{waiver}\". Please read it and sign it again.",
     waiverRenewalBody: "Your signature on the waiver \"{waiver}\" at {school} has run out. Please sign it again.",
     waiverAdultBody: "You're now 18, so {school} asks you to sign the waiver \"{waiver}\" yourself.",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "Waiver signed by your child",
+    waiverSignedByChildBody: "{child} signed the waiver \"{waiver}\" at {school}.",
     classMovedBody: '{class} has moved to {when}. Bookings moved with it.',
     classMovedWaitlistBody: '{class} has moved to {when}. Your waitlist place moved with it.',
     classCancelledBody: '{class} on {when} was cancelled by your school. Any class credit you used has been given back.',

@@ -1,5 +1,7 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "Alleen een betaald abonnement kan inschrijfgeld hebben.",
+  "The price and the joining fee together are too big.": "De prijs en het inschrijfgeld samen zijn te hoog.",
   "What's new is for School owners and staff.": "Nieuws is voor schooleigenaren en personeel.",
   "Give each language once.": "Geef elke taal één keer op.",
   "Post not found": "Bericht niet gevonden",

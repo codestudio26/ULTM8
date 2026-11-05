@@ -167,6 +167,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: "Decision 404: the freeze fee in minor units of the School's currency; null = no fee." })
   freezeFeeAmount!: number | null;
 
+  @ApiProperty({ description: "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged." })
+  joiningFeesEnabled!: boolean;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 411: the country the School is in, for its tax.' })
   taxCountry!: string | null;
 

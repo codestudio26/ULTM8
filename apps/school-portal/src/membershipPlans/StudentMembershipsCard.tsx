@@ -28,6 +28,7 @@ import {
 } from './freezeQueries';
 import { useSchool } from '../schools/schoolQueries';
 import { useDeskMethods } from '../lib/deskMethods';
+import { JoiningFeeNotice } from './JoiningFeeNotice';
 
 const TYPE_LABELS: Record<string, TranslationKey> = {
   SUBSCRIPTION: 'membershipPlans.types.subscription',
@@ -380,6 +381,9 @@ function DeskModal({
                 options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))}
               />
             </Field>
+          ) : null}
+          {kind === 'sell' && plan && plan.price > 0 ? (
+            <JoiningFeeNotice planId={plan.id} studentId={studentId} price={plan.price} currency={plan.currency ?? null} />
           ) : null}
           {kind === 'sell' && plan && plan.price > 0 ? (
             <Field label={t('membershipPlans.studentCard.paidByLabel')} htmlFor="desk-paid-by">

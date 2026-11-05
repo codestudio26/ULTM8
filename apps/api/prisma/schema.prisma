@@ -1236,6 +1236,10 @@ model School {
   /// School's currency, charged when a freeze is approved.
   freezeMaxDaysPer12Months       Int                             @default(90)
   freezeFeeAmount                Int?
+  /// Decision 316 item 3 / Decision 435 item 6: joining fees on or off for
+  /// the whole School (off by default). Off, the amounts stay saved on the
+  /// plans but nothing is charged.
+  joiningFeesEnabled             Boolean                         @default(false)
   /// Decision 411: tax on staff-created charges, set by the School. The country
   /// the School is in (ISO 3166-1 alpha-2; picking it pre-fills the rate from
   /// ULTM8's list, which the School can change), the one rate in hundredths of
@@ -2355,6 +2359,14 @@ model MembershipPlan {
   incomeCategoryId String?
   incomeCategory   IncomeCategory? @relation(fields: [incomeCategoryId], references: [id], onDelete: NoAction)
 
+  /// Decision 316 item 3 / Decision 435 items 1-6: a one-off joining fee on a
+  /// paid plan, in the plan's currency (minor units), added to a member's
+  /// first-ever plan at the School only (never a rejoin or a renewal). Null =
+  /// none. Charged only while School.joiningFeesEnabled is on. The owner sets
+  /// whether it is refunded with the membership payment.
+  joiningFee           Int?
+  joiningFeeRefundable Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -2642,6 +2654,13 @@ model Transaction {
   /// `amount` (and refundedAmount, revenue) stays the plan's own price, so
   /// reports aren't changed by the surcharge.
   surchargeAmount Int @default(0)
+
+  /// Decision 435 items 2-5: the joining fee this first payment included, as
+  /// part of `amount` (so tax, receipts and reports count it with the plan),
+  /// and whether it is refunded with the payment (copied from the plan when
+  /// sold). A non-refundable fee is always left out of refunds. 0 = none.
+  joiningFeeAmount     Int     @default(0)
+  joiningFeeRefundable Boolean @default(false)
 
   /// Decision 431 (MON-6 step 1): MEMBERSHIP and RENEWAL only, the tax settings
   /// that applied when the row was written ({ inclusive, branchId, lines }),

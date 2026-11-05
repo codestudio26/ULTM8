@@ -308,6 +308,9 @@ export const server: PartialMessages<ServerKeys> = {
     waiverUpdatedBody: "{school} ha aggiornato la liberatoria \"{waiver}\". Leggila e firmala di nuovo.",
     waiverRenewalBody: "La tua firma della liberatoria \"{waiver}\" presso {school} è scaduta. Firmala di nuovo.",
     waiverAdultBody: "Ora hai 18 anni, quindi {school} ti chiede di firmare personalmente la liberatoria \"{waiver}\".",
+    // Decision 435 item 30.
+    waiverSignedByChildTitle: "Liberatoria firmata da tuo figlio o tua figlia",
+    waiverSignedByChildBody: "{child} ha firmato la liberatoria \"{waiver}\" presso {school}.",
     classMovedBody: "{class} è stata spostata a {when}. Le prenotazioni sono state spostate con essa.",
     classMovedWaitlistBody: "{class} è stata spostata a {when}. Il tuo posto in lista d’attesa è stato spostato con essa.",
     classCancelledBody: "{class} del {when} è stata annullata dalla tua scuola. Ogni credito lezione usato ti è stato restituito.",

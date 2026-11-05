@@ -1,5 +1,7 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "เฉพาะแพ็กเกจแบบชำระเงินเท่านั้นที่มีค่าแรกเข้าได้",
+  "The price and the joining fee together are too big.": "ราคาและค่าแรกเข้ารวมกันสูงเกินไป",
   "What's new is for School owners and staff.": "ข่าวสารใหม่สำหรับเจ้าของโรงเรียนและพนักงานเท่านั้น",
   "Give each language once.": "ระบุแต่ละภาษาเพียงครั้งเดียว",
   "Post not found": "ไม่พบโพสต์",

@@ -102,6 +102,12 @@ export class TransactionResponseDto {
   @ApiProperty({ description: 'Card surcharge paid on top of amount, in the same minor units. 0 when none.' })
   surchargeAmount!: number;
 
+  @ApiProperty({ description: 'Decision 435: the joining fee this first payment included, as part of amount (same minor units). 0 when none.' })
+  joiningFeeAmount!: number;
+
+  @ApiProperty({ description: 'Decision 435 item 5: whether that joining fee is refunded with the payment. A non-refundable one is always left out of refunds.' })
+  joiningFeeRefundable!: boolean;
+
   @ApiPropertyOptional({
     type: () => IncludedTaxDto,
     nullable: true,

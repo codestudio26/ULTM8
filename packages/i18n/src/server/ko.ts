@@ -1,5 +1,7 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "유료 플랜만 가입비를 가질 수 있습니다.",
+  "The price and the joining fee together are too big.": "가격과 가입비를 합한 금액이 너무 큽니다.",
   "What's new is for School owners and staff.": "새 소식은 학교 운영자와 직원용입니다.",
   "Give each language once.": "각 언어는 한 번만 입력하세요.",
   "Post not found": "게시물을 찾을 수 없습니다",

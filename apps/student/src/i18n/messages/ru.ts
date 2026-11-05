@@ -942,6 +942,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Вступите в эту школу, чтобы купить.",
+      joiningFee: "+ {amount} вступительный взнос при первом тарифе в этой школе",
       cardSurcharge: "+ {amount} надбавка при оплате картой",
       classesIncluded: {
         one: "{count} занятие",

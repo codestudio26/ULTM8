@@ -1,5 +1,7 @@
 /** Russian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "Only a paid plan can have a joining fee.": "Вступительный взнос может быть только у платного тарифа.",
+  "The price and the joining fee together are too big.": "Цена и вступительный взнос вместе слишком велики.",
   "What's new is for School owners and staff.": "Новости предназначены для владельцев и сотрудников школ.",
   "Give each language once.": "Укажите каждый язык один раз.",
   "Post not found": "Публикация не найдена",
