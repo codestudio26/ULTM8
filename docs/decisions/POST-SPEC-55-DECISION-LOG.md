@@ -7554,3 +7554,65 @@ The four missing pieces the Student portal review found, built in the app:
 ### Recorded by
 
 User (Code), 4 Nov 2026: "go, all recommended", on the Student portal review's Q4 (build M1–M4 in a second PR).
+
+## Decision 430 — Answers to the build questions from 5 Nov 2026: plan options, contract follow-ups, payroll, ad tracking, waivers and the as-built choices
+
+**Date:** 5 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 316 (items 3, 4, 5, 6), 318 (items 3, 7, 8, 10), 319 item 4, 320 item 4, 321, 304 item 3, 425 Q4, 427 SP6, 398 · **Built so far in:** #466–#479, #481, #482
+
+### Decision
+
+**Joining fee (Decision 316 item 3)**
+1. Any paid plan can have a joining fee.
+2. It is charged only on a member's first-ever plan at that School (not on a rejoin after a gap, not on renewals).
+3. It is added to that first payment, by card or cash at the desk; it is not put on the balance separately.
+4. Tax (Decision 411) and the card surcharge (Decision 406) apply to it as to the plan.
+5. The owner sets refundable or not on each plan. A refundable fee is refunded together with the membership payment; a non-refundable one is always left out of refunds.
+6. If the School switches joining fees off, the amounts stay saved on the plans but are not charged.
+
+**Plan start and end dates (Decision 316 item 4)**
+7. "Starts on first check-in" is offered for class packs, weekly passes and trials only, not Subscriptions.
+8. Fixed-date plans (e.g. a 6-week camp) are a one-off payment, can be bought before they start, and can still be bought after they start, at full price.
+9. "Switch to another plan when it ends": the member agrees when buying and is told before the switch; the next plan is charged to their saved card; with no saved card the membership simply ends (nothing goes on their balance).
+
+**Member limit and waiting list (Decision 316 item 5)**
+10. Active and frozen members, and pending cash payments, count toward the limit.
+11. When a place frees up, the first person waiting gets the place held for 24 hours (like class waitlists), then it passes to the next.
+12. The owner and staff can sell over the limit at the desk; members can't buy over it.
+13. The limit is a number on each plan's form; blank means no limit.
+14. A parent can join the waiting list for their child.
+15. Lowering the limit below the current count keeps current members; the plan is closed to new buyers until there is room.
+
+**Contracts on plans (Decision 316 item 6; built in #478)**
+16. Add an "ends after the minimum term" option: the Subscription stops on that date instead of renewing.
+17. A freeze pushes the end of the minimum term back by the freeze length, as it already does for the membership end date.
+18. Signed contracts are kept by the waiver rule (Decision 426: while a member plus 7 years; for a child, to age 25 if later), subject to the lawyer's answer.
+19. The early-exit fee shows on invoices with an "Early-exit fee" label, like the late-fee badge.
+20. Selling a plan with a contract at the desk stays unavailable for now; a paper-signature option like waivers have comes later.
+21. Kept as built: cancelling early means the membership actually ends before the term; no fee when the owner cancels or removes a member; the fee takes the School's tax; existing members owe nothing; signers keep their signed version; minimum term and fee are for Subscriptions only; a child can't sign a contract themselves; plan switching is decided with item 9's switching.
+
+**Payroll (Decision 320 item 4; built in #473)**
+22. Add a "Payroll" access switch for Branch Staff, off by default and in no preset, covering the whole School. Owners keep access.
+23. Kept as built: a class counts its full length (no break deduction); classes nobody attended still count; open mats pay nobody; current rates apply to past reports (no rate history); the coach on each single class is paid.
+
+**Ad tracking (Decision 318 item 10; built in #474)**
+24. Tags load only on the School's own public pages: the website sign-up form and its thank-you page once they exist, and the schedule embed. Never the portal, sign-in, waivers, payments or the member app.
+25. A cookie-consent banner is shown first; nothing loads until the visitor clicks Accept.
+26. Track page views plus one "sign-up" event; never any member's personal details.
+27. Google Ads (AW-) IDs are not offered for now; Tag Manager stays refused.
+
+**Children's waivers and photos (Decision 318 item 8; built in #472 and #468)**
+28. The Grading Board keeps the parent's camera-consent check for a child's photo, and the Students list is changed to match it.
+29. Either the parent's or the child's signature counts on its own (as built).
+30. The parent is notified when their child signs a waiver.
+31. A teen with their own login signs alone (as built); the age box defaults to 16.
+32. The signed-documents PDF export says when a waiver was signed by the child in the parent's app.
+
+**Kept as built**
+33. Automatic grading (#475): an automatic promotion with a fee waits for payment; no automatic promotion after a declined or cancelled fee, for inactive students, unverified belts, empty steps, or Kids into Adult; undo restarts progress from today; the first belt on check-in sends no notice and doesn't count toward the next rank; days attended count check-ins only.
+34. Member-app switches (#476): a member's profile is locked if any of their Schools turns editing off; language and currency stay editable; "Payment history" hides the list and receipts but not invoices; only the owner sets the grading date.
+35. "What's new" (#477): Full Admins write; posts show on save; no drafts, unread badge or targeting; plain text; optional hand-typed translations; nobody is notified.
+36. Calendar and schedule embed (#479), open mat credit (#471), time zones (#469), coach dashboard (#467, #482) and the parent's view of a child's card (#466): as built.
+
+### Recorded by
+
+User (Code), 5 Nov 2026: "go with the recommendations", on the recommendations given in chat for each of the questions above.
