@@ -7554,3 +7554,24 @@ The four missing pieces the Student portal review found, built in the app:
 ### Recorded by
 
 User (Code), 4 Nov 2026: "go, all recommended", on the Student portal review's Q4 (build M1–M4 in a second PR).
+
+## Decision 429 — Income categories on plans and charges: the six build choices
+
+**Date:** 5 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 316 item 10 (income categories on plans and charges) · **Built in:** #470
+
+### Decision
+
+Decision 316 item 10 named income categories on plans and charges in one line. The build (#470) had to settle six points the decision left open; the product owner approved all six as built:
+
+1. **A named list, not free text.** Each School keeps its own list of income categories. Only the owner adds, renames or deletes them; any staff member who may create a charge picks one from the list.
+2. **The export shows a category as it is now.** Renaming a category, or moving a plan to another one, changes how older payments show in the Transactions export.
+3. **Fees ULTM8 creates itself get no category:** late fees, promotion fees, freeze fees and late-cancellation fees.
+4. **Limits:** at most 100 categories per School; names up to 60 characters.
+5. **Where it shows:** only in the Transactions CSV export and on the staff Payments card. There is no on-screen Transactions column, no filter by category, and nothing in the member-balances export. Members never see categories.
+6. **Editing:** a charge's category can't be changed after it is created (charges have no edit); a plan's category can be changed or cleared at any time.
+
+A category in use can be renamed but not deleted. A row can only carry its own School's category.
+
+### Recorded by
+
+User (Code), 5 Nov 2026: "ok go with those, merge when green", on the six choices listed on #470.
