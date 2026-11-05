@@ -9,6 +9,7 @@ import { cancelFutureBookingsFundedByExpiredMembership } from '../jobs/membershi
 import { paymentRefundNotice } from '../charges/charge-ledger';
 import { assertWholeMinorUnits } from './stripe-amount';
 import { PaymentsService } from './payments.service';
+import { nonRefundableJoiningFee } from '../memberships/joining-fee';
 import { RefundDeskSaleDto } from './dto/refund-desk-sale.dto';
 
 /** A second identical refund this soon after the first is a double tap (as
@@ -86,12 +87,17 @@ export class DeskSaleRefundsService {
         throw new ConflictException({ code: 'DESK_REPEAT', message: 'This was just recorded. Check before adding another.' });
       }
       const already = t.refundedAmount ?? 0;
-      const left = t.amount + t.surchargeAmount - already;
+      // Decision 435 item 5: a non-refundable joining fee is always left out:
+      // the most that can go back is the rest of the payment. Once that is
+      // back, the payment is Refunded.
+      const refundable = t.amount + t.surchargeAmount - nonRefundableJoiningFee(t);
+      const left = refundable - already;
       if (dto.amount > left) {
         throw new BadRequestException({ code: 'REFUND_MORE_THAN_LEFT', message: 'That is more than is left to refund on this payment.' });
       }
       const refundedAmount = already + dto.amount;
-      const status = refundedAmount >= t.amount + t.surchargeAmount ? ('REFUNDED' as const) : ('SUCCESSFUL' as const);
+      const status = refundedAmount >= refundable ? ('REFUNDED' as const) : ('SUCCESSFUL' as const);
+
       let membershipEnded = false;
       let freedClassIds: string[] = [];
       if (dto.endMembership && t.membershipId) {

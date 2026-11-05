@@ -904,6 +904,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       startsOnFirstCheckIn: "첫 체크인에 시작됩니다",
       fixedDates: "{from} ~ {to}",
       agreeToSwitch: "끝나면 {plan}({price})(으)로 전환하고 저장된 카드로 결제합니다. 미리 안내받으며, 저장된 카드가 없으면 그대로 끝납니다.",
+      joiningFee: "이 학교의 첫 플랜에는 가입비 {amount}가 추가됩니다",
       cardSurcharge: "카드로 결제하면 + 수수료 {amount}",
       classesIncluded: { other: "수업 {count}회" },
       durationDays: { other: "{count}일" },

@@ -67,6 +67,8 @@ export class AcademyMembershipPlanDto extends PickType(MembershipPlanResponseDto
   'fixedStartDate',
   'fixedEndDate',
   'switchToPlanId',
+  'joiningFee',
+  'joiningFeeRefundable',
 ] as const) {
 
   /** Decision 406: shown before the member pays. */

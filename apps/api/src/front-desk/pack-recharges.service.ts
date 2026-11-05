@@ -135,7 +135,8 @@ export class PackRechargesService {
         schoolName: r.school.name,
         studentId: r.studentId,
         childFirstName: r.studentId === callerId ? null : r.student.firstName,
-        plan: { ...plan, cardSurchargeAmount, fixedStartDate: plan.fixedStartDate?.toISOString() ?? null, fixedEndDate: plan.fixedEndDate?.toISOString() ?? null },
+        // Decision 435 item 2: a recharge is never a first plan, so no joining fee.
+        plan: { ...plan, cardSurchargeAmount, fixedStartDate: plan.fixedStartDate?.toISOString() ?? null, fixedEndDate: plan.fixedEndDate?.toISOString() ?? null, joiningFee: null, joiningFeeRefundable: false },
         expiresAt: r.expiresAt,
       });
     }

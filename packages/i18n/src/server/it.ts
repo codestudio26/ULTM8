@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "Il piano successivo deve essere un carnet, pass settimanale o prova a pagamento, non archiviato e senza contratto.",
   "This plan doesn't switch to another one when it ends.": "Questo piano non passa a un altro alla scadenza.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "Questo piano non è ancora iniziato. Le sue lezioni si prenotano dal primo giorno.",
+  "Only a paid plan can have a joining fee.": "Solo un piano a pagamento può avere una quota di iscrizione.",
+  "The price and the joining fee together are too big.": "Il prezzo e la quota di iscrizione insieme sono troppo alti.",
   "What's new is for School owners and staff.": "Le novità sono per i titolari e lo staff delle scuole.",
   "Give each language once.": "Indica ogni lingua una sola volta.",
   "Post not found": "Post non trovato",

@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "다음 플랜은 보관되지 않고 계약이 없는 유료 수업권, 주간 패스 또는 체험이어야 합니다.",
   "This plan doesn't switch to another one when it ends.": "이 플랜은 끝날 때 다른 플랜으로 전환되지 않습니다.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "이 플랜은 아직 시작되지 않았습니다. 수업은 첫날부터 예약할 수 있습니다.",
+  "Only a paid plan can have a joining fee.": "유료 플랜만 가입비를 가질 수 있습니다.",
+  "The price and the joining fee together are too big.": "가격과 가입비를 합한 금액이 너무 큽니다.",
   "What's new is for School owners and staff.": "새 소식은 학교 운영자와 직원용입니다.",
   "Give each language once.": "각 언어는 한 번만 입력하세요.",
   "Post not found": "게시물을 찾을 수 없습니다",

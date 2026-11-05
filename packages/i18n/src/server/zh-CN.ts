@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "下一个方案必须是未归档、无合同的付费课时包、周卡或体验课。",
   "This plan doesn't switch to another one when it ends.": "此方案结束时不会转为其他方案。",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "此方案尚未开始，可从第一天起预约其课程。",
+  "Only a paid plan can have a joining fee.": "只有付费方案才能设置入会费。",
+  "The price and the joining fee together are too big.": "价格与入会费合计过高。",
   "What's new is for School owners and staff.": "新功能动态仅供学校负责人和员工查看。",
   "Give each language once.": "每种语言只能填写一次。",
   "Post not found": "未找到该帖子",

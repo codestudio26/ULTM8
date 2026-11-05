@@ -929,6 +929,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       startsOnFirstCheckIn: "Começa no seu primeiro check-in",
       fixedDates: "De {from} a {to}",
       agreeToSwitch: "Ao terminar, mude-me para {plan} ({price}), cobrado no meu cartão salvo. Serei avisado antes; sem cartão salvo, ele simplesmente termina.",
+      joiningFee: "+ {amount} de taxa de matrícula no seu primeiro plano nesta escola",
       cardSurcharge: "+ {amount} de acréscimo ao pagar com cartão",
       classesIncluded: { one: "{count} aula", other: "{count} aulas" },
       durationDays: { one: "{count} dia", other: "{count} dias" },

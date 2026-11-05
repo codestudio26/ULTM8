@@ -5,6 +5,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { calendarFeedToken, hashCalendarFeedToken, isLinkToken, newScheduleEmbedKey } from './calendar-feed-token';
 import { buildCalendar, FeedClass } from './ical';
 import { EmbedClass } from './embed-page';
+import { TrackingIds, validTrackingIds } from '../public-pages/tracking-consent';
 import { UpdateScheduleSharingDto } from './schedule-sharing.dto';
 
 /**
@@ -129,5 +130,14 @@ export class ScheduleSharingService {
     if (!school) return null;
     const classes = await this.prismaApp.$queryRaw<EmbedClass[]>`SELECT * FROM schedule_embed_classes(${key})`;
     return { school, classes };
+  }
+
+  /** Decision 318 item 10 (Decision 435 items 24–27): the School's ad
+   * tracking IDs for the embed page, re-checked against the saved formats;
+   * none for an unknown or turned-off link. */
+  async embedTrackingFor(key: string): Promise<TrackingIds> {
+    if (!isLinkToken(key)) return validTrackingIds(null);
+    const [row] = await this.prismaApp.$queryRaw<Array<{ metaPixelId: string | null; googleAnalyticsId: string | null }>>`SELECT * FROM schedule_embed_tracking(${key})`;
+    return validTrackingIds(row);
   }
 }

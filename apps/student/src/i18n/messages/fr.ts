@@ -930,6 +930,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       startsOnFirstCheckIn: "Commence à votre premier check-in",
       fixedDates: "Du {from} au {to}",
       agreeToSwitch: "À la fin, me passer à {plan} ({price}), débité de ma carte enregistrée. Je serai prévenu avant ; sans carte enregistrée, elle se termine simplement.",
+      joiningFee: "+ {amount} de frais d'inscription sur votre première formule dans cette école",
       cardSurcharge: "+ {amount} de frais si vous payez par carte",
       classesIncluded: { one: "{count} cours", many: "{count} cours", other: "{count} cours" },
       durationDays: { one: "{count} jour", many: "{count} jours", other: "{count} jours" },

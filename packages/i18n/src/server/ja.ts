@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "次のプランは、アーカイブされておらず契約のない、有料の回数券、週間パス、体験にしてください。",
   "This plan doesn't switch to another one when it ends.": "このプランは終了時に別のプランへ切り替わりません。",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "このプランはまだ始まっていません。クラスは初日から予約できます。",
+  "Only a paid plan can have a joining fee.": "入会金を設定できるのは有料プランだけです。",
+  "The price and the joining fee together are too big.": "料金と入会金の合計が大きすぎます。",
   "What's new is for School owners and staff.": "お知らせはスクールのオーナーとスタッフ向けです。",
   "Give each language once.": "各言語は1回だけ指定してください。",
   "Post not found": "投稿が見つかりません",

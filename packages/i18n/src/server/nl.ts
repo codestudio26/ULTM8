@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "Het volgende abonnement moet een betaalde rittenkaart, weekpas of proefles zijn, niet gearchiveerd en zonder contract.",
   "This plan doesn't switch to another one when it ends.": "Dit abonnement stapt aan het eind niet over op een ander.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "Dit abonnement is nog niet begonnen. De lessen zijn te boeken vanaf de eerste dag.",
+  "Only a paid plan can have a joining fee.": "Alleen een betaald abonnement kan inschrijfgeld hebben.",
+  "The price and the joining fee together are too big.": "De prijs en het inschrijfgeld samen zijn te hoog.",
   "What's new is for School owners and staff.": "Nieuws is voor schooleigenaren en personeel.",
   "Give each language once.": "Geef elke taal één keer op.",
   "Post not found": "Bericht niet gevonden",

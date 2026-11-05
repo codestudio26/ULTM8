@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "Следующий тариф должен быть платным абонементом, недельным пропуском или пробным занятием, не в архиве и без договора.",
   "This plan doesn't switch to another one when it ends.": "Этот тариф не переходит на другой по окончании.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "Этот тариф ещё не начался. Его занятия можно бронировать с первого дня.",
+  "Only a paid plan can have a joining fee.": "Вступительный взнос может быть только у платного тарифа.",
+  "The price and the joining fee together are too big.": "Цена и вступительный взнос вместе слишком велики.",
   "What's new is for School owners and staff.": "Новости предназначены для владельцев и сотрудников школ.",
   "Give each language once.": "Укажите каждый язык один раз.",
   "Post not found": "Публикация не найдена",

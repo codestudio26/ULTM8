@@ -903,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       startsOnFirstCheckIn: "从你首次签到开始",
       fixedDates: "{from} 至 {to}",
       agreeToSwitch: "结束时将我转为{plan}（{price}），从我保存的卡中扣款。我会提前收到通知；没有保存的卡则直接结束。",
+      joiningFee: "在本学校的第一个方案需加收入会费 {amount}",
       cardSurcharge: "刷卡支付另加 {amount} 附加费",
       classesIncluded: { other: "{count} 节课" },
       durationDays: { other: "{count} 天" },

@@ -212,6 +212,56 @@ describeIfDb('Staff calendar links and the schedule embed (Decision 319 item 4)'
       expect(page.text).toContain('Alpha Kids &lt;b&gt;');
     });
 
+    it("ad tracking (Decision 435 items 24–27): the banner first, no Meta/Google host before Accept, only this School's IDs", async () => {
+      const keyA = (await http().get(`/v1/schools/${a.school.id}/schedule-sharing`).set(auth(a.ownerToken))).body.scheduleEmbedKey as string;
+      const third = /googletagmanager|google-analytics|analytics\.google|facebook/;
+
+      // No IDs saved: the page is exactly as before, with no script at all.
+      const plain = await http().get(`/v1/schedule-embeds/${keyA}/page?tracking=on`);
+      expect(plain.status).toBe(200);
+      expect(plain.text).not.toContain('<script');
+      expect(plain.headers['content-security-policy']).toBe("default-src 'none'; style-src 'unsafe-inline'; frame-ancestors *; base-uri 'none'; form-action 'none'");
+
+      // Bravo's IDs never reach Alpha's page; Alpha's own do.
+      await superuser.school.update({ where: { id: b.school.id }, data: { metaPixelId: '999999999999999', googleAnalyticsId: 'G-BRAVO999' } });
+      expect((await http().get(`/v1/schedule-embeds/${keyA}/page`)).text).not.toContain('999999999999999');
+      await superuser.school.update({ where: { id: a.school.id }, data: { metaPixelId: '123456789012345', googleAnalyticsId: 'G-ALPHA123' } });
+
+      const before = await http().get(`/v1/schedule-embeds/${keyA}/page?lang=fr`);
+      expect(before.status).toBe(200);
+      const csp = before.headers['content-security-policy'] as string;
+      expect(csp).toMatch(/script-src 'sha256-[A-Za-z0-9+/=]+'(;|$)/);
+      expect(csp).not.toMatch(third);
+      expect(before.text).toContain('Accepter');
+      expect(before.text).toContain('Refuser');
+      expect(before.text).toContain('"ga":"G-ALPHA123"');
+      expect(before.text).toContain('"meta":"123456789012345"');
+      expect(before.text).not.toContain('G-BRAVO999');
+      expect(before.text).not.toMatch(/<script[^>]+src=/);
+      expect(before.headers['set-cookie']).toBeUndefined();
+
+      const after = await http().get(`/v1/schedule-embeds/${keyA}/page?lang=fr&tracking=on`);
+      const afterCsp = after.headers['content-security-policy'] as string;
+      expect(afterCsp).toContain('https://www.googletagmanager.com');
+      expect(afterCsp).toContain('https://connect.facebook.net');
+      expect(afterCsp).toContain("default-src 'none'");
+      expect(after.text).not.toMatch(/<script[^>]+src=/);
+
+      // The JSON answer is unchanged: no IDs in it.
+      const json = await http().get(`/v1/schedule-embeds/${keyA}`);
+      expect(Object.keys(json.body).sort()).toEqual(['classes', 'schoolName', 'timezone', 'weekStartsOn']);
+      expect(JSON.stringify(json.body)).not.toContain('G-ALPHA123');
+
+      // The app's own connection reads the IDs only through the link.
+      const app2 = new PrismaClient({ datasourceUrl: DATABASE_URL_APP });
+      try {
+        expect(await app2.$queryRaw`SELECT * FROM schedule_embed_tracking(${'not-a-key'})`).toEqual([]);
+        expect(await app2.$queryRaw`SELECT * FROM schedule_embed_tracking(${keyA})`).toEqual([{ metaPixelId: '123456789012345', googleAnalyticsId: 'G-ALPHA123' }]);
+      } finally {
+        await app2.$disconnect();
+      }
+    });
+
     it('a new link turns the old one off; off turns it off', async () => {
       const old = (await http().get(`/v1/schools/${a.school.id}/schedule-sharing`).set(auth(a.ownerToken))).body.scheduleEmbedKey as string;
       const fresh = (await http().put(`/v1/schools/${a.school.id}/schedule-sharing`).set(auth(a.ownerToken)).send({ newEmbedKey: true })).body.scheduleEmbedKey as string;

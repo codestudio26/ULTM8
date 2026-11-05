@@ -903,6 +903,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       startsOnFirstCheckIn: "เริ่มเมื่อคุณเช็กอินครั้งแรก",
       fixedDates: "{from} – {to}",
       agreeToSwitch: "เมื่อหมด ให้เปลี่ยนเป็น {plan} ({price}) โดยเรียกเก็บจากบัตรที่บันทึกไว้ ฉันจะได้รับแจ้งก่อน หากไม่มีบัตรที่บันทึกไว้ ก็จะสิ้นสุดไปเลย",
+      joiningFee: "+ {amount} ค่าแรกเข้าสำหรับแพ็กเกจแรกของคุณที่โรงเรียนนี้",
       cardSurcharge: "+ ค่าธรรมเนียม {amount} เมื่อจ่ายด้วยบัตร",
       classesIncluded: { other: "{count} คลาส" },
       durationDays: { other: "{count} วัน" },

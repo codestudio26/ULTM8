@@ -166,6 +166,12 @@ export function MembershipPlanRow({
           {t('memberships.planRow.fixedDates', { from: formatDateOnly(plan.fixedStartDate), to: formatDateOnly(plan.fixedEndDate) })}
         </Text>
       ) : null}
+      {/* Decision 435: the joining fee on a first plan (null while the School's joining fees are off). */}
+      {plan.joiningFee != null && plan.joiningFee > 0 ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
+          {t('memberships.planRow.joiningFee', { amount: formatMoney(plan.joiningFee, plan.currency) })}
+        </Text>
+      ) : null}
       {/* Decision 406: the School's card surcharge, shown before paying. */}
       {plan.cardSurchargeAmount > 0 ? (
         <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>

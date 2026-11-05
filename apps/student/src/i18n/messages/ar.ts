@@ -970,6 +970,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       startsOnFirstCheckIn: "تبدأ عند أول تسجيل حضور لك",
       fixedDates: "من {from} إلى {to}",
       agreeToSwitch: "عند انتهائها، انقلني إلى {plan} ({price}) مع الخصم من بطاقتي المحفوظة. سأُبلَّغ مسبقاً؛ بدون بطاقة محفوظة تنتهي ببساطة.",
+      joiningFee: "+ {amount} رسوم انضمام على أول خطة لك في هذه المدرسة",
       cardSurcharge: "+ {amount} رسوم إضافية عند الدفع بالبطاقة",
       classesIncluded: {
         zero: "{count} حصة",

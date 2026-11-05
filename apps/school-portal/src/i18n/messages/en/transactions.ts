@@ -39,6 +39,7 @@ export const transactions = {
     notesRequired: "Add a note about this refund.",
     endMembership: "End the membership now",
     endMembershipHint: "The bookings this membership pays for are cancelled. Leave it off to let the membership carry on.",
+    joiningFeeKept: "The joining fee of {fee} isn't refundable, so it stays out of this refund.",
     confirm: "Record refund",
     failed: "Could not record the refund.",
   },

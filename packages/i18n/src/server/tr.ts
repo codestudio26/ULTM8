@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "Sonraki plan, arşivlenmemiş ve sözleşmesi olmayan ücretli bir ders paketi, haftalık geçiş veya deneme olmalı.",
   "This plan doesn't switch to another one when it ends.": "Bu plan bitince başka bir plana geçmez.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "Bu plan henüz başlamadı. Dersleri ilk gününden itibaren rezerve edilebilir.",
+  "Only a paid plan can have a joining fee.": "Yalnızca ücretli bir planın katılım ücreti olabilir.",
+  "The price and the joining fee together are too big.": "Fiyat ve katılım ücreti birlikte çok yüksek.",
   "What's new is for School owners and staff.": "Yenilikler okul sahipleri ve personel içindir.",
   "Give each language once.": "Her dili bir kez girin.",
   "Post not found": "Gönderi bulunamadı",

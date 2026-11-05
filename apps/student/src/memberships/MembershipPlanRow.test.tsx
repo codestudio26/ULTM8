@@ -91,6 +91,15 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
     expect(text(/^Runs /)).toBeTruthy();
   });
 
+  it('shows the joining fee on a first plan, and nothing when the plan has none (Decision 435)', async () => {
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
+    const { getByText, unmount } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0, joiningFee: 2500 } as never} schoolId="school-1" />);
+    expect(getByText('+ £25.00 joining fee on your first plan at this School')).toBeTruthy();
+    await unmount();
+    const { queryByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0, joiningFee: null } as never} schoolId="school-1" />);
+    expect(queryByText(/joining fee/)).toBeNull();
+  });
+
   it('shows no card surcharge line when there is none (Decision 406)', async () => {
     mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
     const { queryByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" />);

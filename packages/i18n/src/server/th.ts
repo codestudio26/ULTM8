@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "แพ็กเกจถัดไปต้องเป็นแพ็กคลาส บัตรรายสัปดาห์ หรือทดลองเรียนแบบชำระเงิน ที่ไม่ได้เก็บถาวรและไม่มีสัญญา",
   "This plan doesn't switch to another one when it ends.": "แพ็กเกจนี้ไม่เปลี่ยนเป็นแพ็กเกจอื่นเมื่อหมด",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "แพ็กเกจนี้ยังไม่เริ่ม จองคลาสได้ตั้งแต่วันแรก",
+  "Only a paid plan can have a joining fee.": "เฉพาะแพ็กเกจแบบชำระเงินเท่านั้นที่มีค่าแรกเข้าได้",
+  "The price and the joining fee together are too big.": "ราคาและค่าแรกเข้ารวมกันสูงเกินไป",
   "What's new is for School owners and staff.": "ข่าวสารใหม่สำหรับเจ้าของโรงเรียนและพนักงานเท่านั้น",
   "Give each language once.": "ระบุแต่ละภาษาเพียงครั้งเดียว",
   "Post not found": "ไม่พบโพสต์",

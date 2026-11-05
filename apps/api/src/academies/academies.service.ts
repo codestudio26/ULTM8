@@ -45,6 +45,10 @@ const MEMBERSHIP_PLAN_DISCOVERY_SELECT = {
   fixedStartDate: true,
   fixedEndDate: true,
   switchToPlanId: true,
+  // Decision 435: the joining fee on a member's first plan (shown only while
+  // the School has joining fees on: withCardSurcharge below).
+  joiningFee: true,
+  joiningFeeRefundable: true,
 } as const;
 
 const CLASS_DISCOVERY_SELECT = {
@@ -239,13 +243,23 @@ export class AcademiesService {
 
   /** Decision 406: each plan's card surcharge, so the member sees it before
    * paying. One rule with the purchase (card_surcharge_bps()). */
-  private async withCardSurcharge<T extends { id: string; defaultCurrency: string | null; membershipPlans: Array<{ type: string; price: number; currency: string | null }> }>(school: T) {
+  private async withCardSurcharge<
+    T extends { id: string; defaultCurrency: string | null; membershipPlans: Array<{ type: string; price: number; currency: string | null; joiningFee: number | null }> },
+  >(school: T) {
     const bps = await readCardSurchargeBps(this.prismaDiscovery, school.id);
+    // Decision 435 item 6: with the School's joining fees off, the amounts
+    // stay on the plans but aren't charged, so they aren't shown either.
+    const fees = await this.prismaDiscovery.school.findUnique({ where: { id: school.id }, select: { joiningFeesEnabled: true } });
     return {
       ...school,
-      membershipPlans: school.membershipPlans.map((p) => ({ ...p, cardSurchargeAmount: planCardSurcharge(p, bps, chargeCurrency(p.currency, school.defaultCurrency)) })),
+      membershipPlans: school.membershipPlans.map((p) => ({
+        ...p,
+        joiningFee: fees?.joiningFeesEnabled && p.price > 0 ? p.joiningFee : null,
+        cardSurchargeAmount: planCardSurcharge(p, bps, chargeCurrency(p.currency, school.defaultCurrency)),
+      })),
     };
   }
+
 
   /** One nested query, not three sequential ones — membershipPlans/classes are fetched
    * as relations on the same School read rather than as separate round trips (an

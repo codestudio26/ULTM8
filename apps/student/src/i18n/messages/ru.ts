@@ -946,6 +946,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       startsOnFirstCheckIn: "Начнётся с вашей первой отметки",
       fixedDates: "С {from} по {to}",
       agreeToSwitch: "По окончании перевести меня на {plan} ({price}) с оплатой сохранённой картой. Меня предупредят заранее; без сохранённой карты он просто закончится.",
+      joiningFee: "+ {amount} вступительный взнос при первом тарифе в этой школе",
       cardSurcharge: "+ {amount} надбавка при оплате картой",
       classesIncluded: {
         one: "{count} занятие",

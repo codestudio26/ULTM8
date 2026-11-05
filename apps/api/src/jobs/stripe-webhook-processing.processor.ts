@@ -19,6 +19,7 @@ import { ChargeRefundError, chargeNoticeSwitches, lockBalance, noticeMoney, paym
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 import { fromStripeAmount } from '../payments/stripe-amount';
 import { invoiceSurchargeAmount } from '../payments/stripe-subscription-surcharge';
+import { nonRefundableJoiningFee } from '../memberships/joining-fee';
 
 /** `transactionId`: the ULTM8 Transaction id from the event object's metadata,
  * set on a hosted Checkout payment's PaymentIntent and Session
@@ -1493,9 +1494,13 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // Refunded once the refund covers the amount.
     const paidByCard = transaction.kind === 'CHARGE_PAYMENT' ? transaction.amount : transaction.amount + transaction.surchargeAmount;
     const refunded = Math.min(fromStripeAmount(charge.amount_refunded, charge.currency), paidByCard);
+    // Decision 435 item 5: a non-refundable joining fee is never part of a
+    // refund, so the payment is Refunded once the rest of it is back.
+    const refundable = transaction.amount - nonRefundableJoiningFee(transaction);
     let status = transaction.status;
-    if (status === 'SUCCESSFUL' && refunded >= transaction.amount) status = 'REFUNDED';
-    else if (status === 'REFUNDED' && refunded < transaction.amount) status = 'SUCCESSFUL';
+    if (status === 'SUCCESSFUL' && refunded >= refundable) status = 'REFUNDED';
+    else if (status === 'REFUNDED' && refunded < refundable) status = 'SUCCESSFUL';
+
     const refundedAmount = refunded > 0 ? refunded : null;
     if (refundedAmount === transaction.refundedAmount && status === transaction.status) return withNotices;
     await tx.transaction.update({ where: { id: transaction.id }, data: { refundedAmount, status } });

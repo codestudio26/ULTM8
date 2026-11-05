@@ -20,6 +20,8 @@ export const SERVER_MESSAGES: string[] = [
  "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.",
  "This plan doesn't switch to another one when it ends.",
  "This plan hasn't started yet. Its classes can be booked from its first day.",
+ "Only a paid plan can have a joining fee.",
+ "The price and the joining fee together are too big.",
  "What's new is for School owners and staff.",
  "Give each language once.",
  "Post not found",

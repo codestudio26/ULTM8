@@ -41,6 +41,7 @@ import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
 import { PlanContractsService } from './contracts/plan-contracts.service';
 import { assertPlanTermValid, fixedPlanOver, membershipTerm, planDay, PLAN_OVER, TERM_PLAN_TYPES } from './plan-term';
+import { assertJoiningFeeAllowed, joiningFeeDue, NO_JOINING_FEE, type JoiningFeeDue } from './joining-fee';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -126,12 +127,15 @@ export class MembershipsService {
     const price = dto.type === 'FRIEND_PASS' ? 0 : dto.price;
     // Decision 414 item 6: no price is saved before the School's currency is
     // set, even on a plan given its own currency. A free plan needs none.
+    // Decision 435 item 1: a joining fee only on a paid plan.
+    assertJoiningFeeAllowed(dto.type, price, dto.joiningFee);
     if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) {
       const schoolCurrency = await this.assertSchoolCurrencySet(callerId, schoolId);
       // Decision 431 (MON-3): no decimals a currency doesn't have (¥999.50).
       const planCurrency = this.normalizeCurrency(dto.currency) ?? schoolCurrency;
       assertWholeMinorUnits(price, planCurrency);
       assertWholeMinorUnits(dto.cancellationCharge, planCurrency);
+      assertWholeMinorUnits(dto.joiningFee, planCurrency);
     }
     // Decision 316 item 10: one of this School's own income categories.
     const incomeCategoryId = await this.incomeCategories.resolveForSchool(schoolId, dto.incomeCategoryId);
@@ -165,6 +169,8 @@ export class MembershipsService {
           fixedStartDate: term.fixedStartDate,
           fixedEndDate: term.fixedEndDate,
           switchToPlanId,
+          joiningFee: dto.joiningFee ?? null,
+          joiningFeeRefundable: dto.joiningFeeRefundable ?? false,
         },
       }),
     );
@@ -330,10 +336,17 @@ export class MembershipsService {
     // currency) must be whole units of the plan's currency (no ¥999.50).
     const newPrice = setsNewPrice(nextPrice, existing.price) || currencyChanged;
     const newCancellationCharge = dto.cancellationCharge !== undefined || currencyChanged;
-    if (newPrice || newCancellationCharge) {
+    // Decision 435 item 1: a joining fee only on a paid plan, checked against
+    // the plan as this edit leaves it (making a plan free with a fee on it is
+    // refused: remove the fee first).
+    const nextJoiningFee = dto.joiningFee !== undefined ? dto.joiningFee : existing.joiningFee;
+    assertJoiningFeeAllowed(nextType, nextPrice, nextJoiningFee);
+    const newJoiningFee = (dto.joiningFee !== undefined && dto.joiningFee !== null) || (currencyChanged && nextJoiningFee != null);
+    if (newPrice || newCancellationCharge || newJoiningFee) {
       const planCurrency = await this.prismaApp.withTenantContext(callerId, (tx) => resolveChargeCurrency(tx, existing.schoolId, nextCurrency));
       if (newPrice) assertWholeMinorUnits(nextPrice, planCurrency);
       if (newCancellationCharge) assertWholeMinorUnits(dto.cancellationCharge !== undefined ? dto.cancellationCharge : existing.cancellationCharge, planCurrency);
+      if (newJoiningFee) assertWholeMinorUnits(nextJoiningFee, planCurrency);
     }
     // Decision 334 (Memberships review M2/M4): a type change clears the fields
     // the new type doesn't use (Class Pack -> Subscription used to keep its 10
@@ -490,6 +503,8 @@ export class MembershipsService {
           fixedStartDate: dto.fixedStartDate === undefined ? undefined : nextTerm.fixedStartDate,
           fixedEndDate: dto.fixedEndDate === undefined ? undefined : nextTerm.fixedEndDate,
           switchToPlanId: nextSwitchToPlanId,
+          joiningFee: dto.joiningFee,
+          joiningFeeRefundable: dto.joiningFeeRefundable,
         },
       });
       if (saved.count === 0) {
@@ -1032,6 +1047,13 @@ export class MembershipsService {
       tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { email: true, paymentRestrictedAt: true } }),
     );
     const currency = await this.resolveChargeCurrency(studentId, plan.schoolId, plan.currency);
+    // Decision 435 items 2-3: a member's first-ever plan at this School
+    // carries the plan's joining fee, added to this payment (never put on the
+    // balance). Its tax is the plan's: it is part of the payment's amount,
+    // which the payment's tax snapshot covers.
+    const joiningFee = await this.prismaApp.withTenantContext(studentId, (tx) => joiningFeeDue(tx, studentId, plan));
+    const amount = plan.price + joiningFee.amount;
+    const feeColumns = { joiningFeeAmount: joiningFee.amount, joiningFeeRefundable: joiningFee.refundable };
 
     if (paymentAccount.provider === 'STRIPE') {
       // Decision 68/112 — "restricted to Cash/Bank Transfer payment methods only"
@@ -1050,7 +1072,11 @@ export class MembershipsService {
       // subscribe()). Never cash or a bank transfer. The member saw the same
       // amount on the plan before paying (AcademiesService).
       const surchargeBps = await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, plan.schoolId));
-      const surcharge = planCardSurcharge(plan, surchargeBps, currency);
+      // Decision 435 item 4: the surcharge applies to the joining fee as to
+      // the plan. A Subscription's own surcharge is its monthly one (the fee's
+      // goes on the first invoice beside the fee); a one-off payment's is on
+      // the price and the fee together.
+      const surcharge = planCardSurcharge(plan.type === 'SUBSCRIPTION' ? plan : { type: plan.type, price: amount }, surchargeBps, currency);
       if (plan.type === 'SUBSCRIPTION') {
         // Payment is still collected fresh, client-side, via Stripe Elements
         // against the returned clientSecret (PaymentsService.subscribe()'s own
@@ -1083,8 +1109,14 @@ export class MembershipsService {
             plan.billingCycleAnchorDay,
             surcharge,
             surchargeBps,
+            joiningFee.amount,
           ]),
           surcharge > 0 ? { amount: surcharge, bps: surchargeBps } : undefined,
+          // Decision 435 items 2-4: a one-off line on the first invoice only,
+          // with its own surcharge; renewals never carry it.
+          joiningFee.amount > 0
+            ? { amount: joiningFee.amount, surcharge: planCardSurcharge({ type: plan.type, price: joiningFee.amount }, surchargeBps, currency) }
+            : undefined,
         );
         const orderId = await this.createStripeOrder(studentId, { stripePaymentIntentId: paymentIntentId }, transactionId, (tx) =>
           tx.transaction.create({
@@ -1094,7 +1126,8 @@ export class MembershipsService {
               studentId,
               paymentAccountId: paymentAccount.id,
               membershipPlanId: plan.id,
-              amount: plan.price,
+              amount,
+              ...feeColumns,
               // What the first invoice charges on top, as its own line.
               surchargeAmount,
               currency: currency.toUpperCase(),
@@ -1116,7 +1149,7 @@ export class MembershipsService {
       // SUBSCRIPTION already took its own branch above and never reaches
       // here; CLASS_PACK/WEEKLY_PASS/TRIAL_MEMBERSHIP only.
       if (dto?.payWithSavedCard) {
-        return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, surcharge, stepUpToken, planSwitchToPlanId);
+        return this.purchaseWithSavedCard(studentId, callerId, plan, paymentAccount.id, currency, surcharge, stepUpToken, joiningFee, planSwitchToPlanId);
       }
 
       // Decision 243 (Track B Slice 4b) — hosted Stripe Checkout, the fresh-
@@ -1124,16 +1157,16 @@ export class MembershipsService {
       // took its own branch above and never reaches here; CLASS_PACK/
       // WEEKLY_PASS/TRIAL_MEMBERSHIP only, same scope as payWithSavedCard.
       if (dto?.useHostedCheckout) {
-        return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency, surcharge, planSwitchToPlanId);
+        return this.purchaseViaHostedCheckout(studentId, plan, paymentAccount.id, currency, surcharge, joiningFee, planSwitchToPlanId);
       }
 
       const { paymentIntentId, clientSecret } = await this.paymentsService.charge(
         studentId,
         plan.schoolId,
-        plan.price,
+        amount,
         currency,
         plan.title,
-        stripePurchaseKey(studentId, plan.id, 'card', [plan.price, currency, plan.title, surcharge]),
+        stripePurchaseKey(studentId, plan.id, 'card', [plan.price, currency, plan.title, surcharge, joiningFee.amount]),
         surcharge,
       );
       const orderId = await this.createStripeOrder(studentId, { stripePaymentIntentId: paymentIntentId }, transactionId, (tx) =>
@@ -1144,7 +1177,8 @@ export class MembershipsService {
             studentId,
             paymentAccountId: paymentAccount.id,
             membershipPlanId: plan.id,
-            amount: plan.price,
+            amount,
+            ...feeColumns,
             surchargeAmount: surcharge,
             currency: currency.toUpperCase(),
             status: 'PENDING',
@@ -1181,7 +1215,8 @@ export class MembershipsService {
           studentId,
           paymentAccountId: paymentAccount.id,
           membershipPlanId: plan.id,
-          amount: plan.price,
+          amount,
+          ...feeColumns,
           currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: paymentAccount.provider,
@@ -1192,7 +1227,7 @@ export class MembershipsService {
     });
     if (created) {
       await this.paymentsService.notifyCashPayment(
-        { id: transactionId, schoolId: plan.schoolId, studentId, membershipPlanId: plan.id, amount: plan.price, currency },
+        { id: transactionId, schoolId: plan.schoolId, studentId, membershipPlanId: plan.id, amount, currency },
         'waiting',
       );
     }
@@ -1216,14 +1251,18 @@ export class MembershipsService {
     currency: string,
     surcharge: number,
     stepUpToken: string | undefined,
+    joiningFee: JoiningFeeDue = NO_JOINING_FEE,
     planSwitchToPlanId: string | null = null,
   ) {
     this.stepUpService.assertVerified(callerId, stepUpToken);
+    // Decision 435 item 3: the joining fee is part of this one payment.
+    const amount = plan.price + joiningFee.amount;
+    const feeColumns = { joiningFeeAmount: joiningFee.amount, joiningFeeRefundable: joiningFee.refundable };
 
     let chargeResult: { succeeded: boolean; paymentIntentId: string };
     try {
       // Decision 406: the saved card is charged the price plus the surcharge.
-      chargeResult = await this.paymentsService.chargeOffSession(studentId, plan.schoolId, plan.price + surcharge, currency, plan.title, undefined, surcharge);
+      chargeResult = await this.paymentsService.chargeOffSession(studentId, plan.schoolId, amount + surcharge, currency, plan.title, undefined, surcharge);
     } catch (err) {
       if (err instanceof NoSavedPaymentMethodError) {
         throw new BadRequestException('You have no saved payment method at this School — add a card first, or pay with a new card.');
@@ -1247,7 +1286,8 @@ export class MembershipsService {
             studentId,
             paymentAccountId,
             membershipPlanId: plan.id,
-            amount: plan.price,
+            amount,
+            ...feeColumns,
             surchargeAmount: surcharge,
             currency: currency.toUpperCase(),
             status: 'FAILED',
@@ -1267,7 +1307,8 @@ export class MembershipsService {
           studentId,
           paymentAccountId,
           membershipPlanId: plan.id,
-          amount: plan.price,
+          amount,
+          ...feeColumns,
           surchargeAmount: surcharge,
           currency: currency.toUpperCase(),
           status: 'SUCCESSFUL',
@@ -1303,13 +1344,13 @@ export class MembershipsService {
         // the whole card payment: the price and the surcharge, as Stripe shows
         // it (and as the webhook's own sync of this refund records it).
         const marked = await this.prismaApp.withTenantContext(studentId, (tx) =>
-          tx.transaction.updateMany({ where: { id: transactionId, status: 'SUCCESSFUL' }, data: { status: 'REFUNDED', refundedAmount: plan.price + surcharge } }),
+          tx.transaction.updateMany({ where: { id: transactionId, status: 'SUCCESSFUL' }, data: { status: 'REFUNDED', refundedAmount: amount + surcharge } }),
         );
         // Decision 415 item 4: the whole payment went back to the card, with
         // any surcharge (the PaymentIntent is refunded in full).
         if (marked.count > 0) {
           await this.paymentsService.sendRefundNotice(
-            refusedPurchaseRefundNotice(`refund-refused-${transactionId}`, plan.price + surcharge, currency, plan.title),
+            refusedPurchaseRefundNotice(`refund-refused-${transactionId}`, amount + surcharge, currency, plan.title),
             studentId,
             plan.schoolId,
           );
@@ -1348,9 +1389,10 @@ export class MembershipsService {
     paymentAccountId: string,
     currency: string,
     surcharge: number,
+    joiningFee: JoiningFeeDue = NO_JOINING_FEE,
     planSwitchToPlanId: string | null = null,
   ) {
-    const key = stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title, surcharge]);
+    const key = stripePurchaseKey(studentId, plan.id, 'checkout', [plan.price, currency, plan.title, surcharge, joiningFee.amount]);
     const newId = checkoutTransactionId(key);
     const { checkoutUrl } = await this.paymentsService.createPurchaseCheckoutSession(
       studentId,
@@ -1361,6 +1403,9 @@ export class MembershipsService {
       plan.title,
       key,
       surcharge,
+      'membership-purchase',
+      // Decision 435 item 3: its own line on the hosted page, in the same payment.
+      joiningFee.amount,
     );
     const transactionId = await this.createStripeOrder(studentId, { id: newId }, newId, (tx) =>
       tx.transaction.create({
@@ -1370,13 +1415,16 @@ export class MembershipsService {
           studentId,
           paymentAccountId,
           membershipPlanId: plan.id,
-          amount: plan.price,
+          amount: plan.price + joiningFee.amount,
+          joiningFeeAmount: joiningFee.amount,
+          joiningFeeRefundable: joiningFee.refundable,
           surchargeAmount: surcharge,
           currency: currency.toUpperCase(),
           status: 'PENDING',
           paymentMethod: 'STRIPE',
           planSwitchToPlanId,
         },
+
       }),
     );
     return { outcome: 'requires_checkout' as const, checkoutUrl, transactionId };
@@ -1552,6 +1600,10 @@ export class MembershipsService {
         await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'SALE');
+        // Decision 435 items 2-3: worked out before this sale's Membership
+        // exists, so a first plan sold at the desk carries the joining fee in
+        // the money taken now. Staff collect price + fee.
+        const joiningFee = plan.price > 0 ? await joiningFeeDue(tx, studentId, plan) : NO_JOINING_FEE;
         const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan, schoolZone) });
         if (plan.price === 0) {
           // Spec 55 §6.1: a £0 plan has no Transaction, as in purchase().
@@ -1565,7 +1617,9 @@ export class MembershipsService {
             paymentAccountId: paymentAccount!.id,
             membershipPlanId: plan.id,
             membershipId: membership.id,
-            amount: plan.price,
+            amount: plan.price + joiningFee.amount,
+            joiningFeeAmount: joiningFee.amount,
+            joiningFeeRefundable: joiningFee.refundable,
             currency,
             status: 'SUCCESSFUL',
             paymentMethod: dto.paymentMethod,
@@ -1573,7 +1627,8 @@ export class MembershipsService {
           },
           select: { id: true },
         });
-        return { membership, transactionId: transaction.id, amount: plan.price };
+        return { membership, transactionId: transaction.id, amount: plan.price + joiningFee.amount };
+
       });
     } catch (err) {
       throw this.toCreationConflict(err);
@@ -2089,7 +2144,46 @@ export class MembershipsService {
    * status flag alone" reasoning, just counted across every Membership
    * against this Plan instead of one Student's own.
    */
+  /**
+   * GET /membership-plans/:id/joining-fee — Decision 435 items 1-6: the
+   * joining fee a payment for this plan would carry now, by the same rule the
+   * payment itself uses (joiningFeeDue), so the member, a parent buying for a
+   * child, or staff at the desk see it before the money is taken. Who may ask:
+   * the member, an active Guardian of the child (as buying for them), or
+   * whoever may record a desk payment for that member (the owner; Branch Staff
+   * when the School allows it, for the students of their branches).
+   */
+  async previewJoiningFee(callerId: string, planId: string, studentId?: string) {
+    const forId = studentId ?? callerId;
+    if (forId !== callerId) {
+      if (await this.guardiansService.isActiveGuardianOf(callerId, forId)) {
+        await this.guardiansService.assertGuardianOfStudent(callerId, forId, { purpose: 'pay' });
+      } else {
+        const staffPlan = await this.findOnePlan(callerId, planId);
+        const school = await this.schoolsService.findOne(callerId, staffPlan.schoolId);
+        const as = await this.assertMayRecordDeskPayment(callerId, staffPlan.schoolId, school.branchStaffCanRecordPayments);
+        const payable = (await this.deskPayableStudents(callerId, staffPlan.schoolId, as)).some((st) => st.id === forId);
+        if (!payable) throw new NotFoundException('Student not found');
+      }
+    }
+    const plan = await this.findOnePlan(forId, planId);
+    const fee = await this.prismaApp.withTenantContext(forId, (tx) => joiningFeeDue(tx, forId, plan));
+    if (fee.amount === 0) return { joiningFee: 0, refundable: false, cardSurchargeAmount: 0 };
+    // The surcharge the fee adds to a card payment in the app, by the
+    // purchase's own rule (purchaseChecked).
+    const { bps, currency } = await this.prismaApp.withTenantContext(forId, async (tx) => ({
+      bps: await readCardSurchargeBps(tx, plan.schoolId),
+      currency: await resolveChargeCurrency(tx, plan.schoolId, plan.currency),
+    }));
+    const cardSurcharge =
+      plan.type === 'SUBSCRIPTION'
+        ? planCardSurcharge({ type: plan.type, price: fee.amount }, bps, currency)
+        : planCardSurcharge({ type: plan.type, price: plan.price + fee.amount }, bps, currency) - planCardSurcharge(plan, bps, currency);
+    return { joiningFee: fee.amount, refundable: fee.refundable, cardSurchargeAmount: cardSurcharge };
+  }
+
   async getActiveMemberCount(callerId: string, planId: string): Promise<{ activeCount: number; subscriberCount: number }> {
+
     const plan = await this.findOnePlan(callerId, planId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, plan.schoolId);
 

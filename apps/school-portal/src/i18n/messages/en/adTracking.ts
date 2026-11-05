@@ -2,7 +2,7 @@
 export const adTracking = {
   title: 'Ad tracking',
   subtitle: 'Connect your Meta Pixel or Google Analytics by entering its ID. Only these ready-made connections are offered: ULTM8 never adds your own code to its pages.',
-  notUsedYet: "Saved for your School's public pages. No page uses them yet.",
+  whereUsed: "Used only on your School's public schedule page (the website embed), after the visitor accepts cookies. Never in the portal, sign-in, waivers, payments or the member app.",
   metaPixelLabel: 'Meta Pixel ID',
   metaPixelHint: 'Numbers only, as shown in Meta Events Manager, e.g. 123456789012345.',
   metaPixelInvalid: 'A Meta Pixel ID is 10 to 20 digits, with nothing else.',

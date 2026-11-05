@@ -23,6 +23,7 @@ import {
 import { ClassTicketPlansDto, ClassTicketPlansQueryDto } from './dto/class-ticket-plans.dto';
 import { MembershipPlanActiveCountResponseDto } from './dto/membership-plan-active-count-response.dto';
 import { MembershipPlanPriceChangeListResponseDto } from './dto/membership-plan-price-change-response.dto';
+import { JoiningFeeQueryDto, JoiningFeeResponseDto } from './dto/joining-fee.dto';
 
 // MembershipPlan CRUD + purchase (self-service, or Guardian-on-behalf-of a linked
 // minor as of Phase 39) + Student/Staff reads — no refund, no credit-restore, no
@@ -75,7 +76,16 @@ export class MembershipsController {
     return this.membershipsService.getActiveMemberCount(user.sub, id);
   }
 
+  /** Decision 435: the joining fee a payment for this plan would carry now,
+   * for the caller, their child, or a member at the desk. */
+  @ApiOkResponse({ type: JoiningFeeResponseDto })
+  @Get('membership-plans/:id/joining-fee')
+  previewJoiningFee(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Query() query: JoiningFeeQueryDto) {
+    return this.membershipsService.previewJoiningFee(user.sub, id, query.studentId);
+  }
+
   /** Decision 348: who holds this plan now, by name. School Owner only. */
+
   @ApiOkResponse({ type: PlanMemberListResponseDto })
   @Get('membership-plans/:id/members')
   findPlanMembers(@CurrentUser() user: JwtPayload, @Param('id') id: string) {

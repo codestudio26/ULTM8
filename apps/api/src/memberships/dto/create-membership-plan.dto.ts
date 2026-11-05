@@ -126,6 +126,18 @@ export class CreateMembershipPlanDto {
   @IsUUID()
   switchToPlanId?: string;
 
+  @ApiPropertyOptional({ description: "Decision 435 items 1-6: a one-off joining fee, in the plan's currency (minor units), added to a member's first-ever plan at this School (never a rejoin or a renewal), with the plan's tax and card surcharge. Paid plans only. Charged only while the School has joining fees on (School.joiningFeesEnabled). Omit for none." })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(MAX_MINOR_UNITS)
+  joiningFee?: number;
+
+  @ApiPropertyOptional({ description: 'Decision 435 item 5: whether the joining fee is refunded together with the membership payment. Defaults to false (never refunded).' })
+  @IsOptional()
+  @IsBoolean()
+  joiningFeeRefundable?: boolean;
+
   @ApiPropertyOptional({ description: "One of the School's income categories (Decision 316 item 10), shown in the Transactions export." })
 
   @IsOptional()

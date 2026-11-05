@@ -14,6 +14,8 @@ export const serverMessages: Record<string, string> = {
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "Der nächste Tarif muss eine bezahlte Kurskarte, ein Wochenpass oder ein Probetraining sein, nicht archiviert und ohne Vertrag.",
   "This plan doesn't switch to another one when it ends.": "Dieser Tarif wechselt am Ende nicht zu einem anderen.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "Dieser Tarif hat noch nicht begonnen. Seine Kurse können ab dem ersten Tag gebucht werden.",
+  "Only a paid plan can have a joining fee.": "Nur ein bezahlter Tarif kann eine Aufnahmegebühr haben.",
+  "The price and the joining fee together are too big.": "Preis und Aufnahmegebühr zusammen sind zu hoch.",
   "What's new is for School owners and staff.": "Neuigkeiten sind für Schulinhaber und Mitarbeiter.",
   "Give each language once.": "Gib jede Sprache nur einmal an.",
   "Post not found": "Beitrag nicht gefunden",
