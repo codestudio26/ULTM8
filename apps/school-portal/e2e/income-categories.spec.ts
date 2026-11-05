@@ -79,7 +79,9 @@ test('a plan and a charge take a category; one in use has no Delete button', asy
   await create.getByLabel('Price').fill('15');
   await create.getByLabel('Income category').selectOption({ label: 'Kids programme' });
   await create.getByRole('button', { name: 'Create charge' }).click();
-  await expect(card.getByText('Income category: Kids programme')).toBeVisible();
+  await expect(create).toHaveCount(0);
+  await expect(page.getByRole('row', { name: /Kids T-shirt/ })).toContainText('Income category: Kids programme');
+  expect((await db.charge.findFirstOrThrow({ where: { schoolId: s.schoolId, description: 'Kids T-shirt' } })).incomeCategoryId).toBe(category.id);
 
   await page.goto('/school');
   const settings = page.locator('.ultm8-card').filter({ has: page.getByRole('heading', { name: 'Income categories' }) });
