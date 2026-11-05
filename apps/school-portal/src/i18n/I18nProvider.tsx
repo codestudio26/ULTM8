@@ -8,9 +8,9 @@ import { useCurrentUser } from '../auth/currentUserQueries';
 import { messages as english, type EnglishMessages } from './messages/en-GB';
 import { DEFAULT_LOCALE, LOCALE_LOADERS, directionFor, resolveLocale } from './locales';
 import { setFormatLocale } from './format';
-import { SERVER_MESSAGE_LOADERS, createServerTextTranslator, type ServerTextTranslator } from './server/translate';
+import { SERVER_MESSAGE_LOADERS, createEnglishServerTextTranslator, createServerTextTranslator, type ServerTextTranslator } from './server/translate';
 import { translateByCode } from './server/codes';
-import { formatMessage as format, lookup } from '@ultm8/i18n';
+import { formatMessage as format, lookup, messageLocaleFor } from '@ultm8/i18n';
 import type { MessageKey, MessageTree, MessageVars } from './types';
 
 /**
@@ -43,11 +43,6 @@ interface I18nContextValue {
    * locale; English passes it through unchanged. */
   serverText: ServerTextTranslator;
 }
-
-const PASS_THROUGH: ServerTextTranslator = {
-  error: (_status, _code, message) => message,
-  notification: ({ title, body }) => ({ title, body }),
-};
 
 const STORAGE_KEY = 'ultm8.language';
 
@@ -88,18 +83,20 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const { data: me } = useCurrentUser({ enabled: !!claims });
   const [storedLocale, setStoredLocale] = useState(readStoredLocale);
   const locale = resolveLocale((claims ? me?.language : null) ?? storedLocale);
+  // "English (US)" reads the English (UK) text; only its dates differ (Decision 433).
+  const textLocale = messageLocaleFor(locale);
   const dir = directionFor(locale);
   setFormatLocale(locale === DEFAULT_LOCALE ? undefined : locale);
 
   const catalogue = useQuery({
-    queryKey: ['i18n', 'catalogue', locale],
-    queryFn: () => LOCALE_LOADERS[locale]!(),
-    enabled: locale !== DEFAULT_LOCALE,
+    queryKey: ['i18n', 'catalogue', textLocale],
+    queryFn: () => LOCALE_LOADERS[textLocale]!(),
+    enabled: textLocale !== DEFAULT_LOCALE,
     staleTime: Infinity,
   });
   const overrides = useQuery({
-    queryKey: ['i18n', 'overrides', locale],
-    queryFn: () => fetchOverrides(locale),
+    queryKey: ['i18n', 'overrides', textLocale],
+    queryFn: () => fetchOverrides(textLocale),
     staleTime: 10 * 60_000,
     retry: false,
   });
@@ -129,10 +126,12 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const serverText = useMemo(
     () =>
-      locale === DEFAULT_LOCALE
-        ? PASS_THROUGH
+      // English passes the API's text through, with a class's date and time in
+      // a notice formatted (Decision 433, TXT-3).
+      textLocale === DEFAULT_LOCALE
+        ? createEnglishServerTextTranslator(locale)
         : createServerTextTranslator(t as (key: string, vars?: MessageVars) => string, locale, SERVER_MESSAGE_LOADERS[locale]),
-    [t, locale],
+    [t, locale, textLocale],
   );
   // Error messages are rewritten where every request's error is built
   // (@ultm8/api-client's unwrap), so each page's own error display needs no change.

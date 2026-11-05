@@ -1,4 +1,4 @@
-import { SERVER_KEY_LOADERS, directionFor as sharedDirectionFor, resolveLocale as sharedResolveLocale } from '@ultm8/i18n';
+import { FORMAT_VARIANTS, SERVER_KEY_LOADERS, directionFor as sharedDirectionFor, resolveLocale as sharedResolveLocale } from '@ultm8/i18n';
 import type { PartialMessages } from './types';
 import type { EnglishMessages } from './messages/en-GB';
 
@@ -34,8 +34,9 @@ export const LOCALE_LOADERS: Record<string, () => Promise<PartialMessages<Englis
 
 export const directionFor = sharedDirectionFor;
 
-/** Picks the catalogue for a stored preference: an exact match first, then the
- * same language with any region (`pt` → `pt-BR`), else English. */
+/** Picks the locale for a stored preference: an exact match first, then the
+ * same language with any region (`pt` → `pt-BR`), else English. "English (US)"
+ * (Decision 433) is a formatting variant: English text, US dates. */
 export function resolveLocale(preferred: string | null | undefined): string {
-  return sharedResolveLocale(preferred, [DEFAULT_LOCALE, ...Object.keys(LOCALE_LOADERS)]);
+  return sharedResolveLocale(preferred, [DEFAULT_LOCALE, ...Object.keys(FORMAT_VARIANTS), ...Object.keys(LOCALE_LOADERS)]);
 }

@@ -26,6 +26,7 @@ export const auth = {
     passcodeMismatch: 'Passcode and confirmation must match.',
     firstName: 'First name',
     surname: 'Surname',
+    hasOnlyOneName: 'I have only one name',
     username: 'Username',
     optional: 'Optional',
     passcodeHint: '6 digits — this is your entire login credential',

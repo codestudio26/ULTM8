@@ -508,6 +508,8 @@ export const serverMessages: Record<string, string> = {
   "Enter a real date of birth: not in the future and not more than 120 years ago.": "실제 생년월일을 입력하세요. 미래 날짜나 120년보다 이전 날짜는 안 됩니다.",
   "First name can't be blank.": "이름은 비워 둘 수 없습니다.",
   "Surname can't be blank.": "성은 비워 둘 수 없습니다.",
+  "Leave the surname empty for someone who has only one name.": "이름이 하나뿐인 사람은 성을 비워 두세요.",
+  "Text can't contain a hidden NUL character. Remove it and try again.": "텍스트에 숨겨진 NUL 문자를 포함할 수 없습니다. 삭제한 후 다시 시도하세요.",
   "Username can't be blank. Leave it empty to remove it.": "사용자 이름은 공백만으로 만들 수 없습니다. 삭제하려면 비워 두세요.",
   "Choose a language from the list.": "목록에서 언어를 선택하세요.",
   "Choose a currency from the list.": "목록에서 통화를 선택하세요.",

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, Card, Checkbox, ErrorBanner, Field, PageHeader, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -20,6 +20,9 @@ type Form = MemberContacts & {
   guardianFirstName: string;
   guardianSurname: string;
   guardianEmail: string;
+  /** Decision 433 (TXT-8): "Has only one name" — the surname is sent empty. */
+  oneName: boolean;
+  guardianOneName: boolean;
 };
 const NO_CONTACTS: MemberContacts = { secondaryPhone: '', secondaryEmail: '', emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelationship: '' };
 /** A new form; the join date starts as today (Decision 315 item 4). */
@@ -32,6 +35,8 @@ const emptyForm = (): Form => ({
   guardianFirstName: '',
   guardianSurname: '',
   guardianEmail: '',
+  oneName: false,
+  guardianOneName: false,
   joinedOn: dayFromToday(0),
   ...NO_CONTACTS,
 });
@@ -77,13 +82,17 @@ export function AddStudentManuallyPage() {
   const branches = branchData?.items ?? [];
   const needsBranch = branches.some((b) => !b.archivedAt);
   const child = !!form.dateOfBirth && isChild(form.dateOfBirth);
-  const set = (key: keyof Form, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const set = (key: Exclude<keyof Form, 'oneName' | 'guardianOneName'>, value: string) => setForm((f) => ({ ...f, [key]: value }));
+  const tick = (key: 'oneName' | 'guardianOneName', value: boolean) => setForm((f) => ({ ...f, [key]: value }));
+  /** The surname as sent: empty, with the tick, for someone with only one name (Decision 433, TXT-8). */
+  const surnameOf = (surname: string, oneName: boolean) => (oneName ? { surname: '', hasOnlyOneName: true as const } : { surname });
+  const fullName = (first: string, surname: string, oneName: boolean) => [first.trim(), oneName ? '' : surname.trim()].filter(Boolean).join(' ');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const missingChild = child && (!form.guardianFirstName.trim() || !form.guardianSurname.trim() || !form.guardianEmail.trim());
-    if (!form.firstName.trim() || !form.surname.trim() || !form.dateOfBirth || (!child && !form.email.trim()) || missingChild) {
+    const missingChild = child && (!form.guardianFirstName.trim() || (!form.guardianOneName && !form.guardianSurname.trim()) || !form.guardianEmail.trim());
+    if (!form.firstName.trim() || (!form.oneName && !form.surname.trim()) || !form.dateOfBirth || (!child && !form.email.trim()) || missingChild) {
       setError(child ? t('students.addManually.fillAllChild') : t('students.addManually.fillAll'));
       return;
     }
@@ -101,18 +110,18 @@ export function AddStudentManuallyPage() {
     try {
       if (child) {
         const res = await addChild.mutateAsync({
-          child: { firstName: form.firstName, surname: form.surname, dateOfBirth: form.dateOfBirth },
-          guardian: { firstName: form.guardianFirstName, surname: form.guardianSurname, email: form.guardianEmail },
+          child: { firstName: form.firstName, ...surnameOf(form.surname, form.oneName), dateOfBirth: form.dateOfBirth },
+          guardian: { firstName: form.guardianFirstName, ...surnameOf(form.guardianSurname, form.guardianOneName), email: form.guardianEmail },
           branchId,
           joinedOn,
         });
-        const childName = `${form.firstName.trim()} ${form.surname.trim()}`;
+        const childName = fullName(form.firstName, form.surname, form.oneName);
         setAdded(
           res.outcome === 'GUARDIAN_CREATED'
             ? {
                 kind: 'GUARDIAN_CREATED',
                 child: childName,
-                guardian: `${form.guardianFirstName.trim()} ${form.guardianSurname.trim()}`,
+                guardian: fullName(form.guardianFirstName, form.guardianSurname, form.guardianOneName),
                 email: res.guardianEmail,
                 temporaryPasscode: res.temporaryPasscode ?? '',
                 emailSent: res.emailSent,
@@ -125,8 +134,8 @@ export function AddStudentManuallyPage() {
         for (const key of Object.keys(NO_CONTACTS) as Array<keyof MemberContacts>) {
           if (form[key].trim()) contacts[key] = form[key].trim();
         }
-        const res = await addStudent.mutateAsync({ firstName: form.firstName, surname: form.surname, email: form.email, dateOfBirth: form.dateOfBirth, branchId, joinedOn, ...contacts });
-        setAdded({ kind: 'ADULT', name: `${res.firstName} ${res.surname}`.trim(), email: res.email, temporaryPasscode: res.temporaryPasscode, emailSent: res.emailSent });
+        const res = await addStudent.mutateAsync({ firstName: form.firstName, ...surnameOf(form.surname, form.oneName), email: form.email, dateOfBirth: form.dateOfBirth, branchId, joinedOn, ...contacts });
+        setAdded({ kind: 'ADULT', name: [res.firstName, res.surname].filter(Boolean).join(' '), email: res.email, temporaryPasscode: res.temporaryPasscode, emailSent: res.emailSent });
       }
       setForm(emptyForm());
     } catch (err) {
@@ -171,8 +180,9 @@ export function AddStudentManuallyPage() {
               <TextField id="add-student-first-name" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
             </Field>
             <Field label={t('students.update.surname')} htmlFor="add-student-surname">
-              <TextField id="add-student-surname" value={form.surname} onChange={(e) => set('surname', e.target.value)} />
+              <TextField id="add-student-surname" value={form.oneName ? '' : form.surname} disabled={form.oneName} onChange={(e) => set('surname', e.target.value)} />
             </Field>
+            <Checkbox label={t('students.update.hasOnlyOneName')} checked={form.oneName} onChange={(e) => tick('oneName', e.target.checked)} />
             <Field label={t('students.update.dateOfBirth')} htmlFor="add-student-dob" hint={child ? t('students.addManually.childNote') : undefined}>
               <TextField id="add-student-dob" type="date" value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
             </Field>
@@ -185,8 +195,9 @@ export function AddStudentManuallyPage() {
                   <TextField id="add-guardian-first-name" value={form.guardianFirstName} onChange={(e) => set('guardianFirstName', e.target.value)} />
                 </Field>
                 <Field label={t('students.update.surname')} htmlFor="add-guardian-surname">
-                  <TextField id="add-guardian-surname" value={form.guardianSurname} onChange={(e) => set('guardianSurname', e.target.value)} />
+                  <TextField id="add-guardian-surname" value={form.guardianOneName ? '' : form.guardianSurname} disabled={form.guardianOneName} onChange={(e) => set('guardianSurname', e.target.value)} />
                 </Field>
+                <Checkbox label={t('students.update.hasOnlyOneName')} checked={form.guardianOneName} onChange={(e) => tick('guardianOneName', e.target.checked)} />
                 <Field label={t('students.invite.email')} htmlFor="add-guardian-email" hint={t('students.addManually.guardianEmailHint')}>
                   <TextField id="add-guardian-email" type="email" value={form.guardianEmail} onChange={(e) => set('guardianEmail', e.target.value)} />
                 </Field>

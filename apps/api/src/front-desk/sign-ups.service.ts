@@ -41,6 +41,17 @@ type Coverage = { all: true } | { all: false; branchIds: Set<string> };
  * Sign-ups are read and written on the jobs connection only (no request
  * context may read the table), after the checks here.
  */
+/** A walk-in's tablet contacts, as a new account's contact fields (Decision
+ * 433, TXT-10). Only what was typed: a blank stays empty. */
+export function walkInContacts(signUp: { phone: string | null; emergencyName: string | null; emergencyPhone: string | null; emergencyRelationship: string | null }) {
+  const contacts: { secondaryPhone?: string; emergencyContactName?: string; emergencyContactPhone?: string; emergencyContactRelationship?: string } = {};
+  if (signUp.phone?.trim()) contacts.secondaryPhone = signUp.phone.trim();
+  if (signUp.emergencyName?.trim()) contacts.emergencyContactName = signUp.emergencyName.trim();
+  if (signUp.emergencyPhone?.trim()) contacts.emergencyContactPhone = signUp.emergencyPhone.trim();
+  if (signUp.emergencyRelationship?.trim()) contacts.emergencyContactRelationship = signUp.emergencyRelationship.trim();
+  return contacts;
+}
+
 @Injectable()
 export class SignUpsService {
   private readonly logger = new Logger(SignUpsService.name);
@@ -89,6 +100,8 @@ export class SignUpsService {
     if (waiting) {
       throw new ConflictException({ code: 'SIGN_UP_WAITING', message: 'This email has already signed up here. A member of staff will be in touch.' });
     }
+    // Two sends at the same moment both pass the check above; the database's
+    // one-waiting-per-email index (Decision 433, TXT-9) stops the second.
     const created = await this.prismaJobs.signUp.create({
       data: {
         schoolId: session.schoolId,
@@ -108,6 +121,11 @@ export class SignUpsService {
         medicalConsentAt: medicalText ? new Date() : null,
       },
       select: { id: true },
+    }).catch((err: unknown) => {
+      if ((err as { code?: string }).code === 'P2002') {
+        throw new ConflictException({ code: 'SIGN_UP_WAITING', message: 'This email has already signed up here. A member of staff will be in touch.' });
+      }
+      throw err;
     });
     return created;
   }
@@ -172,6 +190,12 @@ export class SignUpsService {
         dateOfBirth: signUp.dateOfBirth,
         gender: signUp.gender,
         schoolId,
+        // Decision 433 (TXT-10, replacing Decision 392 item 8): what the walk-in
+        // typed on the tablet reaches their new profile: the phone as the second
+        // phone (not a login, which needs a verified number) and the emergency
+        // contact. Only on this path, a new account, whose fields are all empty;
+        // an invited existing account is never changed.
+        contacts: walkInContacts(signUp),
       }));
       await this.roleGrants.enrolNewAccount(userId, () => this.schools.join(userId, schoolId, { branchId: branchId ?? undefined }, { notify: false }));
     } catch (err) {

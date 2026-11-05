@@ -508,6 +508,8 @@ export const serverMessages: Record<string, string> = {
   "Enter a real date of birth: not in the future and not more than 120 years ago.": "Podaj prawdziwą datę urodzenia: nie w przyszłości i nie więcej niż 120 lat temu.",
   "First name can't be blank.": "Imię nie może być puste.",
   "Surname can't be blank.": "Nazwisko nie może być puste.",
+  "Leave the surname empty for someone who has only one name.": "Zostaw nazwisko puste dla osoby, która ma tylko jedno imię.",
+  "Text can't contain a hidden NUL character. Remove it and try again.": "Tekst nie może zawierać ukrytego znaku NUL. Usuń go i spróbuj ponownie.",
   "Username can't be blank. Leave it empty to remove it.": "Nazwa użytkownika nie może składać się z samych spacji. Zostaw ją pustą, aby ją usunąć.",
   "Choose a language from the list.": "Wybierz język z listy.",
   "Choose a currency from the list.": "Wybierz walutę z listy.",

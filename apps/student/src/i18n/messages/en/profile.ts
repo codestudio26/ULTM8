@@ -17,6 +17,7 @@ export const profile = {
     lockedNote: "Your School keeps your details up to date. Ask the School to change them. You can still change the app's language and currency.",
     firstName: 'First name',
     surname: 'Surname',
+    hasOnlyOneName: 'I have only one name',
     username: 'Username',
     usernameHint: 'Mobile only',
     dateOfBirth: 'Date of birth',

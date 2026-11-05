@@ -508,6 +508,8 @@ export const serverMessages: Record<string, string> = {
   "Enter a real date of birth: not in the future and not more than 120 years ago.": "请输入真实的出生日期：不能是将来的日期，也不能早于 120 年前。",
   "First name can't be blank.": "名字不能为空。",
   "Surname can't be blank.": "姓氏不能为空。",
+  "Leave the surname empty for someone who has only one name.": "只有一个名字的人，请将姓氏留空。",
+  "Text can't contain a hidden NUL character. Remove it and try again.": "文本不能包含隐藏的 NUL 字符。请删除后重试。",
   "Username can't be blank. Leave it empty to remove it.": "用户名不能只有空格。要删除它，请留空。",
   "Choose a language from the list.": "请从列表中选择语言。",
   "Choose a currency from the list.": "请从列表中选择货币。",

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, Table, TextField, ViewToggle, formatTimezone, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { foldForSearch } from '@ultm8/i18n';
 import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useBranches, useCreateBranch, useUnarchiveBranch, type BranchListItem } from './branchQueries';
@@ -13,8 +14,9 @@ import { countryDisplayName, formatLocale } from '../i18n/format';
 /** English shows the stored zone as it always has; another language leads with its own name for it. */
 const timezoneLabel = (zone: string) => (formatLocale() ? formatTimezone(zone, formatLocale()) : zone);
 
-/** Case and accents ignored, so "São Paulo" and "Sao Paulo" are one city. */
-const cityKey = (city: string) => city.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim();
+/** Case, accents and spelling variants ignored, so "São Paulo" and "Sao Paulo"
+ * are one city: the API's own search fold (Decision 433, TXT-1). */
+const cityKey = (city: string) => foldForSearch(city);
 
 /** Decision 294 — the City dropdown's choices, built from the School's own
  * Branches (structured address city only) with how many Branches each has,

@@ -9,6 +9,7 @@ import {
 import { Response } from 'express';
 import { Prisma } from '@prisma/client';
 import Stripe from 'stripe';
+import { NUL_CHARACTER_MESSAGE } from '../pipes/no-nul-characters.pipe';
 
 /**
  * Standardized {error:{code,message}} envelope on every non-2xx response.
@@ -72,6 +73,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
     // 2. Prisma errors — mapped to a safe status/message per error class. Never pass
     // exception.message through: Prisma embeds query snippets, file paths, and
     // connection details directly in it.
+    //
+    // Decision 433 (TXT-4): Postgres refusing a NUL character in text (SQLSTATE
+    // 22021) is the caller's input, not a server fault. NoNulCharactersPipe
+    // refuses it up front; this is the backstop for text that reaches a write
+    // another way (a job, a value built from stored text).
+    if (isNulCharacterError(exception)) {
+      return { status: HttpStatus.BAD_REQUEST, code: 'INVALID_CHARACTER', message: NUL_CHARACTER_MESSAGE, logLevel: 'warn' };
+    }
     if (exception instanceof Prisma.PrismaClientInitializationError) {
       return {
         status: HttpStatus.SERVICE_UNAVAILABLE,
@@ -195,6 +204,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
         };
     }
   }
+}
+
+/** A Prisma or driver error for Postgres's 22021 on a NUL byte in text. */
+export function isNulCharacterError(exception: unknown): boolean {
+  if (!(exception instanceof Error)) return false;
+  const meta = (exception as { meta?: { code?: unknown } }).meta;
+  // Prisma's query engine quotes Postgres's error in Rust debug form, so the quotes may be escaped.
+  return meta?.code === '22021' || /invalid byte sequence for encoding \\?"UTF8\\?": 0x00|code: \\?"22021\\?"|Code: `22021`/.test(exception.message);
 }
 
 function extractMessage(body: unknown): string | undefined {

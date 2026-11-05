@@ -18,6 +18,7 @@ import { CreateTimetableSlotDto } from './dto/create-timetable-slot.dto';
 import { UpdateTimetableSlotDto } from './dto/update-timetable-slot.dto';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
+import { noticeWallTime } from '../common/notice-time';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -652,7 +653,7 @@ export class TimetableService {
       if (booked && 'startDate' in data && cls.startDate.getTime() !== fields.startDate.getTime()) {
         // Waiting Students are told too (Decision 332, T18).
         await this.tell([...bookings.map((b) => b.studentId), ...waitingStudentIds], `class-moved-${cls.id}-${fields.startDate.getTime()}`, 'Class moved',
-          `${slot.title} has moved to ${DateTime.fromJSDate(fields.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")}. ${bookings.length > 0 ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`, 'CLASS_MOVED',
+          `${slot.title} has moved to ${noticeWallTime(fields.startDate, zone)}. ${bookings.length > 0 ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`, 'CLASS_MOVED',
           { schoolId: slot.schoolId, classId: cls.id });
       }
     }
@@ -844,7 +845,7 @@ export class TimetableService {
     );
     // The date in the slot's own zone, not UTC (Decision 332, T16).
     await this.tell([...bookings.map((b) => b.studentId), ...waiting], `class-cancelled-${cls.id}`, 'Class cancelled',
-      `${cls.title} on ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")} was cancelled by your School. Any class credit you used has been given back.`, 'CLASS_CANCELLED',
+      `${cls.title} on ${noticeWallTime(cls.startDate, zone)} was cancelled by your School. Any class credit you used has been given back.`, 'CLASS_CANCELLED',
       { schoolId: cls.schoolId, classId: cls.id });
   }
 

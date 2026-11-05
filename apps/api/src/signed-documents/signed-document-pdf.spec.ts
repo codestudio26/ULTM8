@@ -147,7 +147,7 @@ describe('signed document PDF (Decision 422 item 10)', () => {
   });
 
   it('writes Arabic right to left, joined, with numbers and Latin words the right way round', async () => {
-    const ar = labelsFrom({ member: 'العضو', signedAt: 'تاريخ التوقيع', textSigned: 'النص الموقّع', guardian: 'وليّ الأمر' });
+    const ar = labelsFrom({ member: 'العضو', signedAt: 'تاريخ التوقيع', textSigned: 'النص الموق\u0651ع', guardian: 'ولي\u0651 الأمر' });
     const pdf = await signedDocumentPdf(
       doc({ memberName: 'أحمد علي', signerName: 'ليلى علي', byGuardian: true, title: 'إقرار المسؤولية', body: 'أوافق على القاعدة 123 في Dojo Lima (التوقيع)' }),
       'مدرسة الكاراتيه',
@@ -156,7 +156,7 @@ describe('signed document PDF (Decision 422 item 10)', () => {
     const { blocks } = readPdfText(pdf);
     // The letters copy as they read, even where Arabic shares one shape
     // between letters (ت and ي in التوقيع).
-    expect(words(blocks)).toEqual(expect.arrayContaining(['مدرسة', 'الكاراتيه', 'إقرار', 'المسؤولية', 'العضو', 'أحمد', 'علي', 'تاريخ', 'التوقيع', 'وليّ', 'الأمر']));
+    expect(words(blocks)).toEqual(expect.arrayContaining(['مدرسة', 'الكاراتيه', 'إقرار', 'المسؤولية', 'العضو', 'أحمد', 'علي', 'تاريخ', 'التوقيع', 'ولي\u0651', 'الأمر']));
     const body = lines(blocks).find((l) => l.some((b) => b.text === 'Dojo'))!;
     // Right to left: the first word is furthest right, and the line ends at
     // the right margin.
@@ -168,13 +168,36 @@ describe('signed document PDF (Decision 422 item 10)', () => {
     expect(body[0].text).toBe('(');
   });
 
+  it('lines one-line values up with the document, not with their own letters (Decision 433, TXT-5)', async () => {
+    const ar = labelsFrom({ member: 'العضو', signedAt: 'تاريخ التوقيع', textSigned: 'النص الموق\u0651ع', version: 'الإصدار' });
+    const pdf = await signedDocumentPdf(doc({ memberName: 'Ana Lima', sha256: 'abc123', body: 'I agree.' }), 'Dojo', ar);
+    const { blocks } = readPdfText(pdf);
+    const sha = blocks.find((b) => b.text === 'abc123')!;
+    const agree = blocks.find((b) => b.text.startsWith('I'))!;
+    // In an Arabic document the Latin SHA-256 sits on the right, under its
+    // label; the wording signed keeps its own (left to right) direction.
+    expect(sha.x).toBeGreaterThan(300);
+    expect(agree.x).toBeLessThan(100);
+
+    // An English document keeps an Arabic name on the left.
+    const en = readPdfText(await signedDocumentPdf(doc({ memberName: 'أحمد' }), 'Dojo', labels)).blocks;
+    expect(en.find((b) => ARABIC.test(b.text))!.x).toBeLessThan(100);
+  });
+
+  it('writes the Dirham sign, which no font has, as د.إ (Decision 433, TXT-5)', async () => {
+    const pdf = await signedDocumentPdf(doc({ body: 'Fee 500 \u20C3 a month.' }), 'Dojo', labels);
+    const text = words(readPdfText(pdf).blocks).join(' ');
+    expect(text).not.toContain('\u20C3');
+    expect(text).toMatch(/د ?\. ?إ|إ ?\. ?د/);
+  });
+
   it('writes Japanese, Chinese, Korean, Thai and Cyrillic in fonts that have them, breaking lines between words', async () => {
     const sentence = '私はこのスクールの規則に同意し、安全に練習します。';
-    const body = `${sentence.repeat(12)}\n中文：我同意学校的规定。\n한국어: 학교 규칙에 동의합니다.\nฉันยอมรับกฎของโรงเรียน\nЯ согласен с правилами.`;
+    const body = `${sentence.repeat(12)}\n中文：我同意学校的规定。\n한국어: 학교 규칙에 동의합니다.\nฉ\u0E31นยอมร\u0E31บกฎของโรงเร\u0E35ยน\nЯ согласен с правилами.`;
     const pdf = await signedDocumentPdf(doc({ memberName: '山田太郎', title: '免責同意書', body }), '東京道場', labels);
     const { blocks } = readPdfText(pdf);
     const all = lines(blocks).map(lineText);
-    expect(all).toEqual(expect.arrayContaining(['東京道場', '免責同意書', '山田太郎', '中文：我同意学校的规定。', '한국어: 학교 규칙에 동의합니다.', 'ฉันยอมรับกฎของโรงเรียน', 'Я согласен с правилами.']));
+    expect(all).toEqual(expect.arrayContaining(['東京道場', '免責同意書', '山田太郎', '中文：我同意学校的规定。', '한국어: 학교 규칙에 동의합니다.', 'ฉ\u0E31นยอมร\u0E31บกฎของโรงเร\u0E35ยน', 'Я согласен с правилами.']));
     // The long Japanese paragraph wraps onto several lines, all of it there.
     const japanese = all.filter((l) => l.includes('スクール') || l.includes('練習') || l.includes('規則'));
     expect(japanese.length).toBeGreaterThan(2);
@@ -189,7 +212,7 @@ describe('signed document PDF (Decision 422 item 10)', () => {
     expect(breakLines('one two three four', 20).length).toBe(1);
     const narrow = breakLines('one two three four', 4);
     expect(narrow.map(([s, e]) => 'one two three four'.slice(s, e))).toEqual(['one two', 'three', 'four']);
-    const thai = 'ฉันยอมรับกฎของโรงเรียน';
+    const thai = 'ฉ\u0E31นยอมร\u0E31บกฎของโรงเร\u0E35ยน';
     const thaiLines = breakLines(thai, 3).map(([s, e]) => thai.slice(s, e));
     expect(thaiLines.length).toBeGreaterThan(1);
     expect(thaiLines.join('')).toBe(thai);

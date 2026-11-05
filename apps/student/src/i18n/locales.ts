@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, SERVER_KEY_LOADERS, resolveLocale as sharedResolveLocale, type PartialMessages } from '@ultm8/i18n';
+import { DEFAULT_LOCALE, FORMAT_VARIANTS, SERVER_KEY_LOADERS, resolveLocale as sharedResolveLocale, type PartialMessages } from '@ultm8/i18n';
 import type { EnglishMessages } from './messages/en';
 
 export { DEFAULT_LOCALE };
@@ -27,8 +27,9 @@ export const LOCALE_LOADERS: Record<string, () => Promise<PartialMessages<Englis
   th: () => withServerText('th', import('./messages/th')),
 };
 
+/** "English (US)" (Decision 433) is a formatting variant: English text, US dates. */
 export function resolveLocale(preferred: string | null | undefined): string {
-  return sharedResolveLocale(preferred, [DEFAULT_LOCALE, ...Object.keys(LOCALE_LOADERS)]);
+  return sharedResolveLocale(preferred, [DEFAULT_LOCALE, ...Object.keys(FORMAT_VARIANTS), ...Object.keys(LOCALE_LOADERS)]);
 }
 
 /** The phone's language (Decision 323 item 2). Hermes' `Intl` reports the

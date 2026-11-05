@@ -459,6 +459,7 @@ export const students = {
     saved: 'Profile saved.',
     firstName: 'First name',
     surname: 'Surname',
+    hasOnlyOneName: 'Has only one name',
     username: 'Username',
     dateOfBirth: 'Date of birth',
     gender: 'Gender',

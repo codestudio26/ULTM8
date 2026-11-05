@@ -187,6 +187,8 @@ export const SERVER_MESSAGES: string[] = [
  "Style not found",
  "SubscriptionPlan not found",
  "Surname can't be blank.",
+ "Leave the surname empty for someone who has only one name.",
+ "Text can't contain a hidden NUL character. Remove it and try again.",
  "That Branch isn't an open Branch of this School. Pick another one.",
  "That is already the student's rank date.",
  "The Franchise School roster is not available during an impersonation session.",

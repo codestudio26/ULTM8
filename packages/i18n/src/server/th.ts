@@ -508,6 +508,8 @@ export const serverMessages: Record<string, string> = {
   "Enter a real date of birth: not in the future and not more than 120 years ago.": "กรอกวันเกิดจริง: ต้องไม่เป็นวันในอนาคตและไม่เกิน 120 ปีที่แล้ว",
   "First name can't be blank.": "ชื่อเว้นว่างไม่ได้",
   "Surname can't be blank.": "นามสกุลเว้นว่างไม่ได้",
+  "Leave the surname empty for someone who has only one name.": "เว้นนามสกุลว่างไว้สำหรับคนที่มีชื่อเดียว",
+  "Text can't contain a hidden NUL character. Remove it and try again.": "ข้อความต้องไม่มีอักขระ NUL ที่ซ่อนอยู่ ลบออกแล้วลองอีกครั้ง",
   "Username can't be blank. Leave it empty to remove it.": "ชื่อผู้ใช้เป็นช่องว่างอย่างเดียวไม่ได้ เว้นว่างไว้เพื่อลบออก",
   "Choose a language from the list.": "เลือกภาษาจากรายการ",
   "Choose a currency from the list.": "เลือกสกุลเงินจากรายการ",

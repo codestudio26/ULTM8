@@ -4,7 +4,6 @@ import { Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { NOTIFICATION_FANOUT_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
-import { DateTime } from 'luxon';
 import { randomUUID } from 'crypto';
 import { resolveClassStyles, styleIdsOf } from './class-styles';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
@@ -17,6 +16,7 @@ import { escapeLike } from '../common/search/name-search';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
+import { noticeWallTime } from '../common/notice-time';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -351,7 +351,7 @@ export class ClassesService {
       return branch?.timezone ?? school?.timezone ?? 'UTC';
     });
     const key = `class-moved-${cls.id}-${cls.startDate.getTime()}`;
-    const body = `${cls.title} has moved to ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")}. ${anyBooked ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`;
+    const body = `${cls.title} has moved to ${noticeWallTime(cls.startDate, zone)}. ${anyBooked ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`;
     for (const userId of new Set(studentIds)) {
       try {
         const data: NotificationFanoutJobData = {

@@ -15,6 +15,7 @@ import { PostalAddressDto } from '../../common/address/postal-address.dto';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
 import { GenderField, type Gender } from '../../common/decorators/gender-field.decorator';
+import { HasOnlyOneNameField, SurnameField } from '../../common/decorators/surname-field.decorator';
 
 /** Names and username are trimmed before validation, so one made only of
  * spaces is refused as blank (sign-in review A7, as Decision 341 does for
@@ -39,12 +40,11 @@ export class RegisterDto {
   @MaxLength(100)
   firstName!: string;
 
-  @ApiProperty()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1, { message: "Surname can't be blank." })
-  @MaxLength(100)
+  @SurnameField()
   surname!: string;
+
+  @HasOnlyOneNameField()
+  hasOnlyOneName?: boolean;
 
   @ApiProperty({ required: false, description: 'Mobile-only per confirmed field list' })
   @IsOptional()

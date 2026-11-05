@@ -5,6 +5,7 @@ import { NormalizeEmail } from '../../../common/decorators/normalize-email.decor
 import { IsBirthDate } from '../../../common/decorators/is-birth-date.decorator';
 import { CONTACT_FIELDS, UpdateUserDto } from '../../../users/dto/update-user.dto';
 import { JOIN_DATE_FORMAT } from '../../schools/student-join-dates';
+import { HasOnlyOneNameField, SurnameField } from '../../../common/decorators/surname-field.decorator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -23,12 +24,11 @@ export class CreateStudentManuallyDto extends PickType(UpdateUserDto, CONTACT_FI
   @MaxLength(100)
   firstName!: string;
 
-  @ApiProperty()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1, { message: "Surname can't be blank." })
-  @MaxLength(100)
+  @SurnameField()
   surname!: string;
+
+  @HasOnlyOneNameField()
+  hasOnlyOneName?: boolean;
 
   @ApiProperty()
   @NormalizeEmail()

@@ -4,6 +4,7 @@ import { Transform, Type } from 'class-transformer';
 import { PostalAddressDto } from '../../common/address/postal-address.dto';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
 import { GenderField, type Gender } from '../../common/decorators/gender-field.decorator';
+import { HasOnlyOneNameField, SurnameField } from '../../common/decorators/surname-field.decorator';
 
 /** Names and username are trimmed before validation, so one made only of
  * spaces is refused as blank (Decision 341, S7). */
@@ -60,13 +61,11 @@ export class UpdateUserDto {
   @MaxLength(100)
   firstName?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1, { message: "Surname can't be blank." })
-  @MaxLength(100)
+  @SurnameField({ optional: true })
   surname?: string;
+
+  @HasOnlyOneNameField()
+  hasOnlyOneName?: boolean;
 
   @ApiPropertyOptional({ description: 'Mobile-only per confirmed field list. Null clears it.', type: String, nullable: true })
   @IsOptional()
