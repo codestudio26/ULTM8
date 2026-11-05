@@ -7575,3 +7575,126 @@ A category in use can be renamed but not deleted. A row can only carry its own S
 ### Recorded by
 
 User (Code), 5 Nov 2026: "ok go with those, merge when green", on the six choices listed on #470.
+
+## Decision 430 — Stress test round 5: families, consent and Guardians
+
+**Date:** 5 Nov 2026 · **Status:** Product-owner decision · **Source:** stress test round 5, families review FAM-1 to FAM-12 and privacy review PRIV-2 (`docs/handover/STRESS-TEST-ROUND5.md`) · **Narrows:** Decision 341 item 1 · **Migration:** `20270220000000_guardian_links_consent_and_removal`
+
+### Decision
+
+1. **A parent acts as the parent.** A request for a child is decided by the Guardian link first. A parent who also trains, coaches or owns at the School books, cancels, joins the waitlist, claims a spot and uses Kid Mode for their child as the parent. An override reason stays staff-only.
+2. **A Guardian must be 18 or over.** A known date of birth under 18 is refused when adding a child and on every parent action. A Guardian with no date of birth on record is still allowed (owners create Guardians without one).
+3. **The child form is checked:** names are trimmed and 1 to 100 characters; the date of birth is real, not in the future and under 18 (`NOT_A_MINOR`).
+4. **The same child sent twice is added once.** The same parent adding a child with the same name and date of birth gets the existing child back (`alreadyAdded: true`).
+5. **A member under 18 can't buy a plan for themselves;** a parent buys it from their Guardian account. Desk sales are unchanged.
+6. **One child, more than one parent.** A child already at the School with a parent can't be added again by hand (`CHILD_ALREADY_HERE`). The owner uses "Add another Guardian", which invites another adult as a parent of that child; the child's parents are told. Merging two people stays blocked.
+7. **At 18 the child acts for themselves.** A parent can no longer book, sign waivers, give or withdraw consent, use Kid Mode or enrol for the child. They keep paying and reading for 30 days. Guardian copies of notices stop at 18. The parent is told the child can now make their own account.
+8. **Removing a parent.** A parent can remove themselves from a child, and the owner can remove a parent. Neither works on the last parent of an enrolled child. Both are logged; no account is closed. One link covers every School, so a removal applies everywhere.
+9. **Consent before booking.** BASELINE consent is recorded when a parent adds a child, accepts a child invite, or gives it in the app. A child without it can't book, join or claim from the waitlist, or check in; staff can still enrol them. Re-enrolling after a withdrawal needs fresh consent. Other parents are told of a withdrawal, and each parent sees the others' consent status read-only. Children linked before this decision keep booking until any parent withdraws consent; a link made again never regains that status.
+10. **Ages are counted on the School's own date** (the Branch's time zone, else the School's).
+11. **Interim:** a School's student export leaves out the email of a parent who is known only through the child's other School.
+12. **A shared family email** is refused with a clear message pointing to Invite and Secondary phone.
+13. **Shared identity is locked.** Staff can't change a person's first name, surname, date of birth or gender once that person holds a role at another School, or has signed in themselves, or is a child whose parent has signed in (`IDENTITY_SHARED`).
+
+Left for v1.3 (backlog §3.27): a restricted-parent flag (needs legal advice), a per-School Guardian list, per-School name fields for staff, an app idempotency key for "Add a minor", one-off data reports, and whether a child may pay a charge in the app.
+
+### Recorded by
+
+User (Code), 5 Nov 2026: "all recommended and fix all the bugs with best solutions and make sure we left with no conflict", on the stress test round 5 report.
+
+## Decision 431 — Stress test round 5: money, tax and refunds
+
+**Date:** 5 Nov 2026 · **Status:** Product-owner decision · **Source:** stress test round 5, money review MON-1 to MON-16 and text review TXT-6 · **Migrations:** `20270221000000_tax_lines`, `20270221000001_desk_sale_refunds`
+
+### Decision
+
+1. **Each currency's own smallest unit.** Money is rounded to whole yen, won and krónur through one shared rule. An amount with a fraction in a zero-decimal currency is refused (400 `AMOUNT_NOT_WHOLE_UNIT`) and never rounded again on the way to Stripe.
+2. **Each currency's own decimals** are used to show and type money everywhere: portal, app, CSV and server text (dinars have three).
+3. **A repeated desk refund** of the same amount within a minute is refused (`DESK_REPEAT`).
+4. **Fee currency.** Late-cancel and no-show fees use the plan's currency, else the School's, never US dollars by default. With neither, nothing is charged.
+5. **Named tax lines.** A School can name up to two tax lines with registration numbers, and a Branch can override them. Charges keep their lines, and membership receipts show the tax their price included. Tax added on top of membership prices is v1.3.
+6. **The Transactions date filter uses the School's own days,** and the CSV adds a School-time date column.
+7. **Desk sale refunds.** The owner can record money given back by hand for a membership paid at the desk: part or full, with a required note, optionally ending the membership and cancelling the bookings it paid for. The refund log can only be added to. A payment already taken can no longer be cancelled, only refunded (`PAYMENT_ALREADY_TAKEN`).
+8. **Price increase notice.** An increase applied to existing members tells each of them, and their Guardians, the new price and the first day it applies. A delayed-swap setting is v1.3.
+9. **The charge cap** answers `CHARGE_AMOUNT_TOO_BIG`.
+10. **A price change saves only if nobody changed the price meanwhile** (`PLAN_PRICE_JUST_CHANGED`), and Stripe Products and Prices are created with idempotency keys.
+11. **Pix at the desk** is offered only to Schools in Brazil or pricing in reais.
+12. **A desk sale sends the "Payment confirmed" notice.**
+13. **Staff can give up to 5 Friend Passes at once.** A per-action Idempotency-Key is v1.3.
+14. **The queue connection reads the Redis URL correctly.**
+
+Left for v1.3 (backlog §3.28): tax on top of membership prices, the delayed price swap, the Friend Pass Idempotency-Key, and Québec's QST rate (9.975%), which whole basis points can't hold [UNRESOLVED].
+
+### Recorded by
+
+User (Code), 5 Nov 2026: "all recommended and fix all the bugs with best solutions and make sure we left with no conflict", on the stress test round 5 report.
+
+## Decision 432 — Stress test round 5: time zones, timetable and closures
+
+**Date:** 5 Nov 2026 · **Status:** Product-owner decision · **Source:** stress test round 5, time review TIME-1 to TIME-14 · **Amends:** Decision 332 item 6 · **Migrations:** `20270222000000_class_who_can_book`, `20270222000001_closure_change_dates`
+
+### Decision
+
+1. **Time zones must be real (IANA) names** on Schools and Branches. The class generator skips a slot with an unusable zone and carries on with the others; such a slot is refused.
+2. **Changing a zone re-times upcoming classes.** Upcoming weekly-slot classes keep their clock time in the new zone, and booked students are told. One-off classes are unchanged.
+3. **Classes past midnight** (amends Decision 332 item 6). A weekly class may end the next day, up to 12 hours long; an end at or before the start means the next day, and an end equal to the start is refused. The class belongs to its start date. Portal and app show "ends next day".
+4. **Across a clock change,** class and break ends keep their printed clock time; if that would fall at or before the start, the end is the start plus the class's minutes.
+5. **The portal shows class times on the class's own clock** (Branch, else School, else UTC) on class detail, roll call and the booking dialog.
+6. **The app's waitlist claim deadline** is shown on the class's clock.
+7. **The Dashboard and weekly booking summary** start the week on the School's week-start day; grading weeks stay Monday.
+8. **Cut-offs stay in hours;** an N-day pass ends after N calendar days in the School's zone.
+9. **A leaving student's bookings** use the School's (or Branch's) default refund cut-off (Decision 343 item 1).
+10. **Changing a closure.** The owner can change a closure's dates and reason. Newly covered days are cancelled; released days get their weekly classes back where none exist; a cancelled class can be recreated as a one-off copy. Removing a closure warns that cancelled classes stay cancelled.
+11. **A one-off class on a closed day** asks the owner to confirm first (`CLASS_ON_CLOSED_DAY`), then is allowed.
+12. **"Who can book".** A class or weekly slot can be limited to women, to men, or to an age range. It is enforced at booking, waitlist, Kid Mode and the desk; a staff override reason still applies.
+
+Left for v1.3 (backlog §3.25): seasonal weekly slots, membership freezes made by a closure (the owner decides the exemptions), and part-day closures.
+
+### Recorded by
+
+User (Code), 5 Nov 2026: "all recommended and fix all the bugs with best solutions and make sure we left with no conflict", on the stress test round 5 report.
+
+## Decision 433 — Stress test round 5: privacy, staff and races
+
+**Date:** 5 Nov 2026 · **Status:** Product-owner decision · **Source:** stress test round 5, privacy review PRIV-1 and PRIV-4 to PRIV-11 · **Amends:** Decision 417 item 4 and Decision 423 item 10 · **Migrations:** `20270223000000_tenant_bootstrap_window`, `20270223000100_closed_school_member_data_purge`, `20270223000200_member_data_export`
+
+### Decision
+
+1. **Closed Schools lose their members' data.** 90 days after a School closes, every role there ends (dated at the close), and non-financial member data is deleted: tags, custom fields and statuses, rosters, notes, check-in codes, join dates, home Branches, sign-ups, export logs, child invites, absence alerts, favourites, watch history, broadcasts, Staff activity, coach invites, front-desk sessions, training logs, and bookings no money row refers to. Schools already purged are cleaned on the next run. The Close School card tells the owner to export Transactions within the 90 days.
+2. **Branch Staff need "Bookings and check-in"** to see a class's roll call and waitlist.
+3. **Coaches** refused a Branch Staff action are told `NOT_FOR_COACHES`: "Coaches can't do this. Ask the School owner."
+4. **Cancelling a booking and leaving the waitlist** take the same per-Student-and-Class lock as booking, and deadlocks are retried, so a burst of bookings and cancels no longer errors.
+5. **A School or Franchise with no roles** is readable only in its first minute (while it is being created).
+6. **Stepping down** (amends Decision 423 item 10). A co-owner, coach or Branch Staff member can give up their own role from My profile; the main owner can't. A coach with upcoming classes or slots hands them over first. It is logged as stepping down. ULTM8 support (Full Platform Admin) can pause a coach or Branch Staff member in an emergency, audit-logged and shown as "ULTM8 support"; only the main owner unpauses. Owners are never paused, and co-owners can't be paused.
+7. **Tablet lock** (amends Decision 417 item 4). The front-desk tablet locks after 20 wrong member codes in 30 minutes, whatever right codes come between. The 10-in-a-row lock stays.
+8. **"Download this member's data"**: owner-only, one file with this School's data on the member, each download logged.
+9. **Interim:** the "Active and former" student export leaves former members' phone and date of birth blank. The retention period itself goes to the GDPR programme.
+10. **Check-in uses the Class the staff member loaded** (hardening); the same change in grading reads is v1.3.
+
+Left for v1.3 (backlog §3.26): the retention period, erasure (Decision 245), the grading check-in reads, and a review of what closed Schools keep.
+
+### Recorded by
+
+User (Code), 5 Nov 2026: "all recommended and fix all the bugs with best solutions and make sure we left with no conflict", on the stress test round 5 report.
+
+## Decision 434 — Stress test round 5: names, search and text
+
+**Date:** 5 Nov 2026 · **Status:** Product-owner decision · **Source:** stress test round 5, text review TXT-1 to TXT-10 · **Extends:** Decision 278 · **Supersedes:** Decision 392 item 8 · **Migration:** `20270224000000_sign_up_one_waiting_per_email`
+
+### Decision
+
+1. **One search fold** (extends Decision 278). Name search ignores case, Latin and Greek accents, Arabic spelling variants, full-width forms and invisible marks. Hindi, Tamil, Japanese and Thai marks are kept, because they change the name. Japanese names are found family name first, with or without a space. The tablet uses the same fold.
+2. **Notice dates.** Class-moved, class-cancelled and open-mat notices store the date in machine form, and each reader sees it in their own language's format. Notices already stored are unchanged.
+3. **"English (US)"**: a language setting with the English wording and US date formats.
+4. **NUL characters** are refused before anything is saved or sent (400 `INVALID_CHARACTER`); the database's own refusal gives the same answer.
+5. **Right-to-left documents.** PDF values follow the document's direction, printouts carry their language and direction, and the Dirham sign falls back to د.إ in PDFs.
+6. **Initials** use the whole first letter, in every script.
+7. **One name.** A "Has only one name" tick saves an empty surname; without the tick a surname is required. A one-off owner report lists surnames typed as ".", "-" or "_" (`apps/api/scripts/report-placeholder-surnames.ts`).
+8. **One waiting sign-up per email per School.** A second one sent at the same moment gets 409 `SIGN_UP_WAITING`. Existing duplicates are removed, keeping the invited one, else the oldest.
+9. **Walk-in contacts** (supersedes Decision 392 item 8). Approving a walk-in as a NEW account copies the phone they gave to the secondary phone and their emergency contact into empty fields. An existing account that is invited is never changed.
+
+Left for v1.3 (backlog §3.24): Japanese name readings (furigana) and 五十音 sorting.
+
+### Recorded by
+
+User (Code), 5 Nov 2026: "all recommended and fix all the bugs with best solutions and make sure we left with no conflict", on the stress test round 5 report.
