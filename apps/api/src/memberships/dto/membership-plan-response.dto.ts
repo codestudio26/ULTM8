@@ -60,6 +60,18 @@ export class MembershipPlanResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Day of month (1-28) — set only when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE.' })
   billingCycleAnchorDay!: number | null;
 
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 316 item 6: the contract the member signs when buying this plan; null when the plan has none. Set with PUT /membership-plans/{id}/contract.' })
+  contractBody!: string | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Subscription only: the minimum term in months.' })
+  contractMinimumTermMonths!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: "Subscription only: the early-exit fee, minor units, before the School's tax." })
+  contractEarlyExitFee!: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Goes up by one each time the contract changes; null = no contract.' })
+  contractVersion!: number | null;
+
   @ApiProperty()
   createdAt!: string;
 

@@ -3124,6 +3124,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/membership-plans/{id}/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanContractsController_getForSigning"];
+        put: operations["PlanContractsController_setContract"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/contract/signature-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlanContractsController_uploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/membership-plans/{id}/contract/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlanContractsController_sign"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/plan-contracts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanContractsController_listForStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/income-categories": {
         parameters: {
             query?: never;
@@ -10121,6 +10185,14 @@ export interface components {
             newMemberBillingStrategy: string;
             /** @description Day of month (1-28) — set only when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE. */
             billingCycleAnchorDay?: number | null;
+            /** @description Decision 316 item 6: the contract the member signs when buying this plan; null when the plan has none. Set with PUT /membership-plans/{id}/contract. */
+            contractBody?: string | null;
+            /** @description Subscription only: the minimum term in months. */
+            contractMinimumTermMonths?: number | null;
+            /** @description Subscription only: the early-exit fee, minor units, before the School's tax. */
+            contractEarlyExitFee?: number | null;
+            /** @description Goes up by one each time the contract changes; null = no contract. */
+            contractVersion?: number | null;
             createdAt: string;
             updatedAt: string;
         };
@@ -10218,6 +10290,8 @@ export interface components {
             payWithSavedCard?: boolean;
             /** @description Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard. */
             useHostedCheckout?: boolean;
+            /** @description Decision 316 item 6: required for a plan with a contract — the id from POST /membership-plans/{id}/contract/sign (signed within the last day, not used yet). */
+            contractSignatureId?: string;
         };
         MembershipResponseDto: {
             id: string;
@@ -10336,6 +10410,13 @@ export interface components {
         ClassTicketPlansDto: {
             planIds: string[];
         };
+        MembershipContractTermsDto: {
+            /** @description When the signed minimum term ends. */
+            minimumTermEndsAt: string;
+            /** @description The early-exit fee put on the balance if the membership ends before then; minor units, before the School's tax. 0 = none. */
+            earlyExitFee: number;
+            currency?: string | null;
+        };
         MyMembershipResponseDto: {
             id: string;
             studentId: string;
@@ -10353,6 +10434,8 @@ export interface components {
             cancelledById?: string | null;
             createdAt: string;
             updatedAt: string;
+            /** @description Decision 316 item 6: the signed contract's minimum term and early-exit fee, when it has one. */
+            contract?: components["schemas"]["MembershipContractTermsDto"] | null;
             /** @description Decision 391: a Visitor's free visit pass (its plan is hidden from the School's plan list). */
             visitPass: boolean;
             /** @description Decision 404: an approved freeze covers today. */
@@ -10479,6 +10562,72 @@ export interface components {
         };
         MyFreezableMembershipListResponseDto: {
             items: components["schemas"]["MyFreezableMembershipDto"][];
+        };
+        SetPlanContractDto: {
+            /** @description The contract text the member signs. null or blank removes the contract from the plan. */
+            body?: string | null;
+            /** @description Subscription only: the minimum term in whole months (1–120), counted from the membership start. */
+            minimumTermMonths?: number | null;
+            /** @description Subscription only, with a minimum term: the School's fee, in the plan's currency's minor units, put on the member's balance when they cancel and the membership ends before the minimum term does. The School's tax settings apply. */
+            earlyExitFee?: number | null;
+        };
+        PlanContractDto: {
+            planId: string;
+            planTitle: string;
+            planType: string;
+            body: string;
+            minimumTermMonths: number | null;
+            /** @description Minor units, before the School's tax. */
+            earlyExitFee: number | null;
+            currency: string | null;
+            version: number;
+        };
+        PlanContractUploadUrlDto: {
+            /** @description A Guardian signing for their linked child. */
+            studentId?: string;
+        };
+        PlanContractUploadUrlResponseDto: {
+            uploadUrl: string;
+            objectKey: string;
+        };
+        SignPlanContractDto: {
+            signerFullName: string;
+            /** @description The typed signature. */
+            signatureText: string;
+            /** @description The drawn signature uploaded with signature-upload-url, if any. */
+            signatureImageKey?: string;
+            /** @description The version of the contract the member read. A newer version is refused (409): read it again. */
+            contractVersion: number;
+            /** @description A Guardian signing for their linked child. */
+            studentId?: string;
+        };
+        PlanContractSignatureDto: {
+            id: string;
+            schoolId: string;
+            membershipPlanId: string;
+            studentId: string;
+            /** @description Who signed: the member, or their Guardian. */
+            signedById: string;
+            signerFullName: string;
+            signatureText: string;
+            /** @description A short-lived link to the drawn signature. */
+            signatureImageUrl: string | null;
+            signedAt: string;
+            /** @description The plan as it was named when signed. */
+            planTitle: string;
+            /** @description The exact text signed. */
+            contractBody: string;
+            minimumTermMonths: number | null;
+            earlyExitFee: number | null;
+            currency: string | null;
+            contractVersion: number;
+            /** @description SHA-256 of the signed text. */
+            contractSha256: string;
+            /** @description Whether a purchase used this signature. */
+            used: boolean;
+        };
+        PlanContractSignatureListDto: {
+            data: components["schemas"]["PlanContractSignatureDto"][];
         };
         IncomeCategoryDto: {
             id: string;
@@ -12270,6 +12419,8 @@ export interface components {
             expiryDurationDays?: number | null;
             classesIncluded?: number | null;
             visible: boolean;
+            /** @description Goes up by one each time the contract changes; null = no contract. */
+            contractVersion?: number | null;
             /** @description The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment. */
             cardSurchargeAmount: number;
         };
@@ -13359,6 +13510,7 @@ export interface components {
         MergeRecordCountsDto: {
             Membership: number;
             MembershipFreeze: number;
+            PlanContractSignature: number;
             PackRecharge: number;
             Transaction: number;
             Booking: number;
@@ -19577,6 +19729,127 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MembershipFreezeResponseDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_getForSigning: {
+        parameters: {
+            query?: {
+                /** @description A Guardian reading the contract for their linked child. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanContractDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_setContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPlanContractDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipPlanResponseDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_uploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanContractUploadUrlDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanContractUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_sign: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignPlanContractDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanContractSignatureDto"];
+                };
+            };
+        };
+    };
+    PlanContractsController_listForStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanContractSignatureListDto"];
                 };
             };
         };

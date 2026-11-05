@@ -823,6 +823,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "Contract lezen en ondertekenen",
+      title: "Contract",
+      intro: "Lees het contract van dit abonnement en onderteken het om het te kopen.",
+      guardianSigns: "Als ouder of voogd onderteken je dit contract voor je kind.",
+      termsLine: "Minimale looptijd {months} maanden · opzegkosten {amount}",
+      taxNote: "Er kan btw bij de kosten komen, zoals bij de andere kosten van de school.",
+      signAndContinue: "Ondertekenen en doorgaan",
+      signError: "Het contract kon niet worden ondertekend.",
+      loadError: "Het contract kon niet worden geladen.",
+      cancelFee: "De minimale looptijd van je contract loopt tot {date}. Eindigt je lidmaatschap eerder, dan komen de opzegkosten van {amount} op je saldo.",
+    },
     recharge: {
       title: "Je lessenkaart is op",
       titleChild: "De lessenkaart van {name} is op",

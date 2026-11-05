@@ -1,5 +1,17 @@
 /** English text: memberships (Decision 323). */
 export const memberships = {
+  contract: {
+    readAndSign: "Read and sign the contract",
+    title: "Contract",
+    intro: "Read this plan's contract and sign it to buy the plan.",
+    guardianSigns: "As their parent or guardian, you sign this contract for your child.",
+    termsLine: "Minimum term {months} months · early-exit fee {amount}",
+    taxNote: "Tax may be added to the fee, as on the School's other charges.",
+    signAndContinue: "Sign and continue",
+    signError: "The contract could not be signed.",
+    loadError: "The contract could not be loaded.",
+    cancelFee: "Your contract's minimum term runs until {date}. If your membership ends before then, the early-exit fee of {amount} is added to your balance.",
+  },
   recharge: {
     title: 'Your Class Pack has run out',
     titleChild: "{name}'s Class Pack has run out",

@@ -823,6 +823,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "Vertrag lesen und unterschreiben",
+      title: "Vertrag",
+      intro: "Lies den Vertrag dieses Tarifs und unterschreibe ihn, um den Tarif zu kaufen.",
+      guardianSigns: "Als Elternteil oder Erziehungsberechtigter unterschreibst du diesen Vertrag für dein Kind.",
+      termsLine: "Mindestlaufzeit {months} Monate · Gebühr für vorzeitige Kündigung {amount}",
+      taxNote: "Auf die Gebühr kann Steuer kommen, wie bei den anderen Forderungen der Schule.",
+      signAndContinue: "Unterschreiben und weiter",
+      signError: "Der Vertrag konnte nicht unterschrieben werden.",
+      loadError: "Der Vertrag konnte nicht geladen werden.",
+      cancelFee: "Die Mindestlaufzeit deines Vertrags läuft bis {date}. Endet deine Mitgliedschaft vorher, wird die Gebühr für vorzeitige Kündigung von {amount} deinem Guthaben belastet.",
+    },
     recharge: {
       title: "Dein Kurspaket ist aufgebraucht",
       titleChild: "Das Kurspaket von {name} ist aufgebraucht",

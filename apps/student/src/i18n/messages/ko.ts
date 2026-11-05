@@ -814,6 +814,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "계약 읽고 서명하기",
+      title: "계약",
+      intro: "플랜을 구매하려면 이 플랜의 계약을 읽고 서명하세요.",
+      guardianSigns: "부모 또는 보호자로서 자녀를 대신해 이 계약에 서명합니다.",
+      termsLine: "최소 약정 {months}개월 · 중도 해지 수수료 {amount}",
+      taxNote: "학교의 다른 청구처럼 수수료에 세금이 더해질 수 있습니다.",
+      signAndContinue: "서명하고 계속",
+      signError: "계약에 서명할 수 없습니다.",
+      loadError: "계약을 불러올 수 없습니다.",
+      cancelFee: "계약의 최소 약정 기간은 {date}까지입니다. 그 전에 멤버십이 끝나면 중도 해지 수수료 {amount}가 잔액에 추가됩니다.",
+    },
     recharge: {
       title: "수업 패키지가 모두 소진되었습니다",
       titleChild: "{name}님의 수업 패키지가 모두 소진되었습니다",

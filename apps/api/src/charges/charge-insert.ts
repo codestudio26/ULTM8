@@ -38,6 +38,8 @@ export interface NewCharge {
    * caller checked it), or none. Staff-created charges and recurring
    * occurrences only. */
   incomeCategoryId?: string | null;
+  /** Decision 316 item 6: the signed plan contract whose early-exit fee this is. */
+  contractSignatureId?: string;
 }
 
 /**
@@ -94,6 +96,7 @@ export async function insertCharge(tx: Tx, c: NewCharge): Promise<{ id: string; 
       ...c.lateFee,
       promotionFeeRequestId: c.promotionFeeRequestId ?? null,
       incomeCategoryId: c.incomeCategoryId ?? null,
+      contractSignatureId: c.contractSignatureId ?? null,
     },
   });
   await tx.balanceEntry.create({ data: { id: randomUUID(), schoolId: c.schoolId, studentId: c.studentId, kind: 'CHARGE', amount: c.totals.grossAmount, currency: c.currency, chargeId: id } });

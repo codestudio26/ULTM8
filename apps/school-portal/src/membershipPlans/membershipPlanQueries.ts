@@ -233,3 +233,27 @@ export function useCancelMembership(schoolId: string, studentId: string) {
     onSuccess: () => invalidateMembershipViews(queryClient, schoolId, studentId),
   });
 }
+
+export type PlanContractSignature = components['schemas']['PlanContractSignatureDto'];
+export type SetPlanContractInput = components['schemas']['SetPlanContractDto'];
+
+/** Decision 316 item 6: set, change or remove a plan's contract. */
+export function useSetPlanContract(schoolId: string, planId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SetPlanContractInput) => unwrap(apiClient.PUT('/v1/membership-plans/{id}/contract', { params: { path: { id: planId } }, body })),
+    onSuccess: (plan) => {
+      queryClient.setQueryData(['membershipPlan', planId], plan);
+      return queryClient.invalidateQueries({ queryKey: ['membershipPlans', schoolId] });
+    },
+  });
+}
+
+/** Decision 316 item 6: a Student's signed plan contracts (owner only). */
+export function useStudentPlanContracts(schoolId: string, studentId: string) {
+  return useQuery({
+    queryKey: ['planContracts', schoolId, studentId],
+    queryFn: () =>
+      unwrap(apiClient.GET('/v1/schools/{schoolId}/students/{studentId}/plan-contracts', { params: { path: { schoolId, studentId } } })),
+  });
+}

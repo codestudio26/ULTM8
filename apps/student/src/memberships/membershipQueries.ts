@@ -51,8 +51,11 @@ export function usePurchaseMembership() {
       useHostedCheckout,
       stepUpToken,
       studentId,
+      contractSignatureId,
     }: {
       planId: string;
+      /** Decision 316 item 6: the signed contract, for a plan that has one. */
+      contractSignatureId?: string;
       payWithSavedCard?: boolean;
       useHostedCheckout?: boolean;
       stepUpToken?: string;
@@ -65,6 +68,7 @@ export function usePurchaseMembership() {
           body: {
             ...(payWithSavedCard ? { payWithSavedCard: true } : useHostedCheckout ? { useHostedCheckout: true } : {}),
             ...(studentId ? { studentId } : {}),
+            ...(contractSignatureId ? { contractSignatureId } : {}),
           },
           headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
         }),

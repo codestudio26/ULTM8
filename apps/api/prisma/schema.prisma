@@ -558,6 +558,8 @@ model User {
   instructorBeltsVerified           InstructorBelt[]            @relation("InstructorBeltVerifiedBy")
   waiverSignatures                  WaiverSignature[]           @relation("WaiverSignatureStudent")
   waiverSignaturesSigned            WaiverSignature[]           @relation("WaiverSignatureSignedBy")
+  planContractSignatures            PlanContractSignature[]     @relation("PlanContractSignatureStudent")
+  planContractSignaturesSigned      PlanContractSignature[]     @relation("PlanContractSignatureSignedBy")
   favorites                         Favorite[]                  @relation("FavoriteStudent")
   watchHistories                    WatchHistory[]              @relation("WatchHistoryStudent")
   playlists                         Playlist[]                  @relation("PlaylistStudent")
@@ -2279,6 +2281,18 @@ model MembershipPlan {
   cancellationCharge  Int?
   termsWaiverRequired Boolean   @default(false)
 
+  /// Decision 316 item 6: the School's own contract on this plan, signed by
+  /// the member (a Guardian for a child) when buying it, like a waiver.
+  /// `contractVersion` null means the plan has no contract; it goes up by
+  /// one each time the text or terms change, so a signature records which
+  /// wording it was given. Minimum term and early-exit fee are Subscription
+  /// only (the only plan type that can be cancelled). The fee is in the
+  /// plan's currency, minor units, before the School's tax.
+  contractBody              String?
+  contractMinimumTermMonths Int?
+  contractEarlyExitFee      Int?
+  contractVersion           Int?
+
   /// Decision 316 item 10: the School's income category for this plan, shown
   /// in the Transactions export. Optional; one from the School's own list.
   incomeCategoryId String?
@@ -2291,6 +2305,7 @@ model MembershipPlan {
   transactions  Transaction[]
   priceChanges  MembershipPlanPriceChange[]
   packRecharges PackRecharge[]
+  contractSignatures PlanContractSignature[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -6139,6 +6154,10 @@ model Charge {
   /// waived or cancelled from grading (PromotionFeeService).
   promotionFeeRequestId String?              @unique
   promotionFeeRequest   PromotionFeeRequest? @relation(fields: [promotionFeeRequestId], references: [id], onDelete: Restrict)
+  /// Decision 316 item 6: the early-exit fee of this signed plan contract.
+  /// One per contract.
+  contractSignatureId String?                @unique
+  contractSignature   PlanContractSignature? @relation(fields: [contractSignatureId], references: [id], onDelete: Restrict)
 
   /// Backlog §3.6 step 3 (Decision 412): the recurring charge this charge is
   /// one occurrence of, and that occurrence's date (also its due date). One
@@ -6508,4 +6527,57 @@ model SignedDocumentExport {
 
   @@index([schoolId, createdAt])
   @@index([status, expiresAt])
+}
+
+/// Decision 316 item 6: a member's signed copy of a plan's contract, made
+/// just before buying the plan (like a waiver signature: typed name and
+/// signature, an optional drawn signature in R2, and a copy of exactly what
+/// was signed with its SHA-256). `studentId` is whose contract it is;
+/// `signedById` who signed (a Guardian for their child). One signature buys
+/// once: purchase() marks it used and links the order (`transactionId`) or,
+/// for a free plan, the Membership. The early-exit fee is worked out from
+/// this copy, never from the plan's current terms. Never deleted by any job:
+/// how long a signed contract is kept is not decided yet.
+/// RLS: the School's Owner/Manager, or the row's own Student (a Guardian
+/// writes under the child's context, as for waivers).
+model PlanContractSignature {
+  id String @id @default(uuid())
+
+  schoolId String
+
+  membershipPlanId String
+  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id], onDelete: Restrict)
+
+  studentId String
+  student   User   @relation("PlanContractSignatureStudent", fields: [studentId], references: [id], onDelete: Restrict)
+
+  signedById String
+  signedBy   User   @relation("PlanContractSignatureSignedBy", fields: [signedById], references: [id], onDelete: Restrict)
+
+  signerFullName    String
+  signatureText     String
+  signatureImageKey String?
+  signedAt          DateTime @default(now())
+
+  // The copy of what was signed.
+  planTitle         String
+  planType          MembershipPlanType
+  contractBody      String
+  minimumTermMonths Int?
+  earlyExitFee      Int?
+  currency          String?
+  contractVersion   Int
+  contractSha256    String
+
+  usedAt        DateTime?
+  transactionId String?   @unique
+  membershipId  String?   @unique
+
+  createdAt DateTime @default(now())
+
+  charge Charge?
+
+  @@index([schoolId])
+  @@index([studentId])
+  @@index([membershipPlanId])
 }

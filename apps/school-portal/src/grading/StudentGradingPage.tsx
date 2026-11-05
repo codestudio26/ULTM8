@@ -57,6 +57,7 @@ import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
 import { DecideDialog } from './BoardPanels';
 import { feeRankName, feeStyleOf } from './feeRank';
+import { StudentPlanContractsCard } from '../membershipPlans/StudentPlanContractsCard';
 import { StudentMembershipsCard } from '../membershipPlans/StudentMembershipsCard';
 import { StudentChargesCard } from '../charges/StudentChargesCard';
 import { formatHours } from './hours';
@@ -294,7 +295,11 @@ export function StudentGradingPage() {
           Branch Staff with "Can freeze memberships" see the ones that can
           be frozen, with the freeze actions only. */}
       {my.isOwner ? (
-        <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} />
+        <>
+          <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} />
+          {/* Decision 316 item 6: the plan contracts they signed. */}
+          <StudentPlanContractsCard schoolId={schoolId} studentId={studentId} />
+        </>
       ) : mayFreeze && !inactive ? (
         <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} freezeOnly />
       ) : null}

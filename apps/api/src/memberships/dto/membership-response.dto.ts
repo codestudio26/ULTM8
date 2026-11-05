@@ -49,8 +49,23 @@ export class MembershipResponseDto {
   updatedAt!: string;
 }
 
+/** Decision 316 item 6: the signed contract's terms, shown before cancelling. */
+export class MembershipContractTermsDto {
+  @ApiProperty({ description: 'When the signed minimum term ends.' })
+  minimumTermEndsAt!: string;
+
+  @ApiProperty({ description: "The early-exit fee put on the balance if the membership ends before then; minor units, before the School's tax. 0 = none." })
+  earlyExitFee!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  currency!: string | null;
+}
+
 /** GET /memberships/me: a row of the caller's own memberships. */
 export class MyMembershipResponseDto extends MembershipResponseDto {
+  @ApiPropertyOptional({ type: MembershipContractTermsDto, nullable: true, description: "Decision 316 item 6: the signed contract's minimum term and early-exit fee, when it has one." })
+  contract!: MembershipContractTermsDto | null;
+
   @ApiProperty({ description: 'Decision 391: a Visitor\'s free visit pass (its plan is hidden from the School\'s plan list).' })
   visitPass!: boolean;
 

@@ -9009,6 +9009,226 @@
         ]
       }
     },
+    "/v1/membership-plans/{id}/contract": {
+      "put": {
+        "operationId": "PlanContractsController_setContract",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetPlanContractDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MembershipPlanResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PlanContractsController_getForSigning",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "A Guardian reading the contract for their linked child.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanContractDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/contract/signature-upload-url": {
+      "post": {
+        "operationId": "PlanContractsController_uploadUrl",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanContractUploadUrlDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanContractUploadUrlResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/membership-plans/{id}/contract/sign": {
+      "post": {
+        "operationId": "PlanContractsController_sign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignPlanContractDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanContractSignatureDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/plan-contracts": {
+      "get": {
+        "operationId": "PlanContractsController_listForStudent",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanContractSignatureListDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/income-categories": {
       "get": {
         "operationId": "IncomeCategoriesController_list",
@@ -31393,6 +31613,26 @@
             "nullable": true,
             "description": "Day of month (1-28) — set only when newMemberBillingStrategy is PRORATED_TO_SHARED_CYCLE."
           },
+          "contractBody": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 316 item 6: the contract the member signs when buying this plan; null when the plan has none. Set with PUT /membership-plans/{id}/contract."
+          },
+          "contractMinimumTermMonths": {
+            "type": "number",
+            "nullable": true,
+            "description": "Subscription only: the minimum term in months."
+          },
+          "contractEarlyExitFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Subscription only: the early-exit fee, minor units, before the School's tax."
+          },
+          "contractVersion": {
+            "type": "number",
+            "nullable": true,
+            "description": "Goes up by one each time the contract changes; null = no contract."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -31708,6 +31948,10 @@
           "useHostedCheckout": {
             "type": "boolean",
             "description": "Collect a fresh card via a hosted Stripe Checkout Session (Decision 243) instead of returning a bare PaymentIntent clientSecret — the outcome apps/student can actually act on, having no Stripe Elements/PaymentSheet SDK. Mutually exclusive with payWithSavedCard."
+          },
+          "contractSignatureId": {
+            "type": "string",
+            "description": "Decision 316 item 6: required for a plan with a contract — the id from POST /membership-plans/{id}/contract/sign (signed within the last day, not used yet)."
           }
         }
       },
@@ -32141,6 +32385,27 @@
           "planIds"
         ]
       },
+      "MembershipContractTermsDto": {
+        "type": "object",
+        "properties": {
+          "minimumTermEndsAt": {
+            "type": "string",
+            "description": "When the signed minimum term ends."
+          },
+          "earlyExitFee": {
+            "type": "number",
+            "description": "The early-exit fee put on the balance if the membership ends before then; minor units, before the School's tax. 0 = none."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "minimumTermEndsAt",
+          "earlyExitFee"
+        ]
+      },
       "MyMembershipResponseDto": {
         "type": "object",
         "properties": {
@@ -32195,6 +32460,15 @@
           },
           "updatedAt": {
             "type": "string"
+          },
+          "contract": {
+            "nullable": true,
+            "description": "Decision 316 item 6: the signed contract's minimum term and early-exit fee, when it has one.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MembershipContractTermsDto"
+              }
+            ]
           },
           "visitPass": {
             "type": "boolean",
@@ -32634,6 +32908,221 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "SetPlanContractDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "nullable": true,
+            "description": "The contract text the member signs. null or blank removes the contract from the plan."
+          },
+          "minimumTermMonths": {
+            "type": "number",
+            "nullable": true,
+            "description": "Subscription only: the minimum term in whole months (1–120), counted from the membership start."
+          },
+          "earlyExitFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Subscription only, with a minimum term: the School's fee, in the plan's currency's minor units, put on the member's balance when they cancel and the membership ends before the minimum term does. The School's tax settings apply."
+          }
+        }
+      },
+      "PlanContractDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string"
+          },
+          "planType": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "minimumTermMonths": {
+            "type": "number",
+            "nullable": true
+          },
+          "earlyExitFee": {
+            "type": "number",
+            "nullable": true,
+            "description": "Minor units, before the School's tax."
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "version": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "planId",
+          "planTitle",
+          "planType",
+          "body",
+          "minimumTermMonths",
+          "earlyExitFee",
+          "currency",
+          "version"
+        ]
+      },
+      "PlanContractUploadUrlDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "A Guardian signing for their linked child."
+          }
+        }
+      },
+      "PlanContractUploadUrlResponseDto": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string"
+          },
+          "objectKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "objectKey"
+        ]
+      },
+      "SignPlanContractDto": {
+        "type": "object",
+        "properties": {
+          "signerFullName": {
+            "type": "string"
+          },
+          "signatureText": {
+            "type": "string",
+            "description": "The typed signature."
+          },
+          "signatureImageKey": {
+            "type": "string",
+            "description": "The drawn signature uploaded with signature-upload-url, if any."
+          },
+          "contractVersion": {
+            "type": "number",
+            "description": "The version of the contract the member read. A newer version is refused (409): read it again."
+          },
+          "studentId": {
+            "type": "string",
+            "description": "A Guardian signing for their linked child."
+          }
+        },
+        "required": [
+          "signerFullName",
+          "signatureText",
+          "contractVersion"
+        ]
+      },
+      "PlanContractSignatureDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "membershipPlanId": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "signedById": {
+            "type": "string",
+            "description": "Who signed: the member, or their Guardian."
+          },
+          "signerFullName": {
+            "type": "string"
+          },
+          "signatureText": {
+            "type": "string"
+          },
+          "signatureImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "A short-lived link to the drawn signature."
+          },
+          "signedAt": {
+            "type": "string"
+          },
+          "planTitle": {
+            "type": "string",
+            "description": "The plan as it was named when signed."
+          },
+          "contractBody": {
+            "type": "string",
+            "description": "The exact text signed."
+          },
+          "minimumTermMonths": {
+            "type": "number",
+            "nullable": true
+          },
+          "earlyExitFee": {
+            "type": "number",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "nullable": true
+          },
+          "contractVersion": {
+            "type": "number"
+          },
+          "contractSha256": {
+            "type": "string",
+            "description": "SHA-256 of the signed text."
+          },
+          "used": {
+            "type": "boolean",
+            "description": "Whether a purchase used this signature."
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "membershipPlanId",
+          "studentId",
+          "signedById",
+          "signerFullName",
+          "signatureText",
+          "signatureImageUrl",
+          "signedAt",
+          "planTitle",
+          "contractBody",
+          "minimumTermMonths",
+          "earlyExitFee",
+          "currency",
+          "contractVersion",
+          "contractSha256",
+          "used"
+        ]
+      },
+      "PlanContractSignatureListDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanContractSignatureDto"
+            }
+          }
+        },
+        "required": [
+          "data"
         ]
       },
       "IncomeCategoryDto": {
@@ -38192,6 +38681,11 @@
           "visible": {
             "type": "boolean"
           },
+          "contractVersion": {
+            "type": "number",
+            "nullable": true,
+            "description": "Goes up by one each time the contract changes; null = no contract."
+          },
           "cardSurchargeAmount": {
             "type": "number",
             "description": "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment."
@@ -41941,6 +42435,9 @@
           "MembershipFreeze": {
             "type": "number"
           },
+          "PlanContractSignature": {
+            "type": "number"
+          },
           "PackRecharge": {
             "type": "number"
           },
@@ -42044,6 +42541,7 @@
         "required": [
           "Membership",
           "MembershipFreeze",
+          "PlanContractSignature",
           "PackRecharge",
           "Transaction",
           "Booking",

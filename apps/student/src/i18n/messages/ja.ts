@@ -814,6 +814,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   memberships: {
+    contract: {
+      readAndSign: "契約を読んで署名する",
+      title: "契約",
+      intro: "このプランを購入するには、契約を読んで署名してください。",
+      guardianSigns: "保護者として、お子さまの代わりにこの契約に署名します。",
+      termsLine: "最低契約期間 {months} か月 · 途中解約料 {amount}",
+      taxNote: "スクールの他の請求と同様に、解約料に税が加算される場合があります。",
+      signAndContinue: "署名して続ける",
+      signError: "契約に署名できませんでした。",
+      loadError: "契約を読み込めませんでした。",
+      cancelFee: "契約の最低契約期間は {date} までです。それより前にメンバーシップが終わると、途中解約料 {amount} が残高に計上されます。",
+    },
     recharge: {
       title: "回数券を使い切りました",
       titleChild: "{name}さんの回数券を使い切りました",
