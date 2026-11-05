@@ -79,12 +79,12 @@ export class DashboardService {
   async getBirthdays(callerId: string, schoolId: string): Promise<BirthdaysResponseDto> {
     await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
     const { school, rows } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
-      school: await tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }),
+      school: await tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true, weekStartsOn: true } }),
       rows: await tx.$queryRaw<Array<{ id: string; firstName: string; surname: string; birthMonth: number; birthDay: number }>>`
         SELECT * FROM school_student_birthdays(${schoolId})`,
     }));
     const zone = safeZone(school?.timezone);
-    const { from, to } = defaultWeekRange(zone);
+    const { from, to } = defaultWeekRange(zone, school?.weekStartsOn);
     const week = daysInRange(from, to);
 
     const items: BirthdaysResponseDto['items'] = [];

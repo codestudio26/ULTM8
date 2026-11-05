@@ -30,6 +30,7 @@ import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { VISIT_PASS_TITLE } from './visitors';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { passExpiryDate, schoolZoneFor } from './pass-expiry';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
@@ -1282,6 +1283,8 @@ export class MembershipsService {
    * under an advisory lock — see that function's own comment for why.
    */
   async createMembershipAndReturn(studentId: string, plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null }, stripeSubscriptionId: string | null) {
+    // Decision 431 item 8: an N-day pass ends on calendar days in the School's zone.
+    const schoolZone = await schoolZoneFor(this.prismaJobs, plan.schoolId);
     try {
       const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await assertCanCreateMembership(tx, studentId, plan.schoolId, plan);
@@ -1293,7 +1296,7 @@ export class MembershipsService {
             schoolId: plan.schoolId,
             frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
             classesRemaining: plan.classesIncluded ?? undefined,
-            expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000) : undefined,
+            expiryDate: passExpiryDate(plan.expiryDurationDays, schoolZone),
             scopedClassId: plan.scopedClassId,
             stripeSubscriptionId: stripeSubscriptionId ?? undefined,
           },
@@ -1380,12 +1383,13 @@ export class MembershipsService {
     }
     const currency = plan.price > 0 ? await this.resolveChargeCurrency(studentId, schoolId, plan.currency) : null;
 
+    const schoolZone = await schoolZoneFor(this.prismaJobs, schoolId);
     try {
       return await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'SALE');
-        const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan) });
+        const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan, schoolZone) });
         if (plan.price === 0) {
           // Spec 55 §6.1: a £0 plan has no Transaction, as in purchase().
           return { membership, transactionId: null };
@@ -1494,12 +1498,13 @@ export class MembershipsService {
     if (plan.type !== 'FRIEND_PASS') {
       throw new BadRequestException('Only a Friend Pass plan can be given. Use Sell a plan for the others.');
     }
+    const schoolZone = await schoolZoneFor(this.prismaJobs, schoolId);
     try {
       const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'GIFT');
-        return tx.membership.create({ data: { ...this.newMembershipData(studentId, plan), giftedById: callerId } });
+        return tx.membership.create({ data: { ...this.newMembershipData(studentId, plan, schoolZone), giftedById: callerId } });
       });
       return { membership, transactionId: null };
     } catch (err) {
@@ -1564,6 +1569,7 @@ export class MembershipsService {
   private newMembershipData(
     studentId: string,
     plan: { id: string; schoolId: string; type: string; classesIncluded: number | null; expiryDurationDays: number | null; scopedClassId: string | null },
+    schoolZone: string | null,
   ) {
     return {
       id: randomUUID(),
@@ -1572,7 +1578,7 @@ export class MembershipsService {
       schoolId: plan.schoolId,
       frequency: 'ONE_TIME' as const,
       classesRemaining: plan.classesIncluded ?? undefined,
-      expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000) : undefined,
+      expiryDate: passExpiryDate(plan.expiryDurationDays, schoolZone),
       scopedClassId: plan.scopedClassId,
     };
   }

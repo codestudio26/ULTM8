@@ -48,7 +48,6 @@ import {
 } from './import-rows';
 import type { DataImportResponseDto, ImportLimitsDto, ImportPreviewResponseDto, ImportRowDto, ImportRowsResponseDto, StartImportDto } from './dto/data-imports.dto';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 /** GradingService's own words when a caller has no grading permission for a style. */
 const NO_GRADING_PERMISSION = 'You do not have grading permission for this style. The School owner grants it.';
 
@@ -606,7 +605,7 @@ export class DataImportsService {
           const expiryDate = end
             ? DateTime.fromISO(end, { zone: ctx.zone }).plus({ days: 1 }).startOf('day').toJSDate()
             : plan.expiryDurationDays
-              ? new Date(startDate.getTime() + plan.expiryDurationDays * DAY_MS)
+              ? DateTime.fromISO(start, { zone: ctx.zone }).startOf('day').plus({ days: plan.expiryDurationDays }).toJSDate()
               : null;
           const classesRemaining = plan.type === 'CLASS_PACK' ? (classesLeft ?? plan.classesIncluded ?? null) : null;
 

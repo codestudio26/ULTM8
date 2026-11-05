@@ -13,6 +13,7 @@ import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { passExpiryDate, schoolZoneFor } from '../memberships/pass-expiry';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { fromStripeAmount, toStripeAmount } from './stripe-amount';
@@ -1284,9 +1285,8 @@ export class PaymentsService {
           schoolId: transaction.schoolId,
           frequency: 'ONE_TIME', // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1)
           classesRemaining: plan.classesIncluded ?? undefined,
-          expiryDate: plan.expiryDurationDays
-            ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000)
-            : undefined,
+          // Decision 431 item 8: calendar days in the School's zone.
+          expiryDate: passExpiryDate(plan.expiryDurationDays, await schoolZoneFor(tx, transaction.schoolId)),
           scopedClassId: plan.scopedClassId,
         },
       });

@@ -846,13 +846,13 @@ export class BookingsService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }),
+      tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true, weekStartsOn: true } }),
     );
     const schoolZone = safeZone(school?.timezone);
 
     let range: { from: string; to: string };
     if (from === undefined && to === undefined) {
-      range = defaultWeekRange(schoolZone);
+      range = defaultWeekRange(schoolZone, school?.weekStartsOn);
     } else if (from === undefined || to === undefined) {
       throw new BadRequestException('from and to must both be supplied, or both omitted for the current week.');
     } else {
