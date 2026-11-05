@@ -234,7 +234,10 @@ Read this before starting. Each task says what it must do, where the code is tod
 
 ---
 
-### B12. Requirement tick boxes, automatic promotion, first belt on first class — Decision 321
+### B12. Requirement tick boxes, automatic promotion, first belt on first class — Decision 321 — ✅ built (feature/automatic-grading, 5 Nov 2026)
+
+> **Built.** `Discipline.require*` tick boxes, `promotionMode` and `autoAssignFirstRank` (`PUT /v1/disciplines/:id/grading-requirements`, owner only); `RankStripeTier.hoursRequired` / `daysAttendedRequired` / `minimumAge`; the averaged `progressPercent` and `waitingForAge` in the engine (`engine/requirement.ts`, `engine/eligibility.ts`); `GradingService.autoPromote()` run by the grading job after each check-in and in its daily sweep; `PromotionEvent.automatic` and `POST /v1/students/:id/rank-history/:eventId/undo-automatic`; `autoAssignFirstRanks()` on check-in. Migration `20270211000001_automatic_grading`. Days attended are read from `TrainingLog` check-in rows; a board drag now uses `boardMoveAveraged()`.
+> **Choices still to confirm** are listed in the PR (fees, undo, first belt, drags, days attended source). The original brief follows for reference.
 
 From the Gymdesk Programs study (25 Oct 2026).
 

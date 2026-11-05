@@ -195,9 +195,9 @@ ULTM8's grading (Styles & Belts, Skills, Board) already goes further than Gymdes
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
 | PG1 | Program list by type (Martial Arts …), Edit, "Show ranks", member count per rank | ✅ | Styles & Belts |
-| PG2 | **Promotion requirements** tick boxes per program: Sessions, Hours, Days in rank, Days attended, Skill requirements, Minimum age; the rank rows show only the ticked fields | ❌ | Wanted (Decision 321). Hours, Days attended and Minimum age are new requirements |
-| PG3 | **Auto assign initial rank** switch | ❌ | Wanted: first rung on the first check-in to the style (Decision 321) |
-| PG4 | **Promotion setting**: Manual / Automatically award stripes / Automatically award all ranks | ❌ | Wanted, per style, owner sets it; waits for a fee; coach can undo (Decision 321) |
+| PG2 | **Promotion requirements** tick boxes per program: Sessions, Hours, Days in rank, Days attended, Skill requirements, Minimum age; the rank rows show only the ticked fields | ✅ | Built (Decision 321, feature/automatic-grading). Hours, Days attended and Minimum age are new requirements |
+| PG3 | **Auto assign initial rank** switch | ✅ | Built: first rung on the first check-in to the style (Decision 321) |
+| PG4 | **Promotion setting**: Manual / Automatically award stripes / Automatically award all ranks | ✅ | Built, per style, owner sets it; waits for a fee; coach can undo (Decision 321) |
 | PG5 | **Add promotion fee** per program | ✅ | ULTM8 has a price per rung (Decisions 300, 307) |
 | PG6 | **Use template** (Fitness, Gymnastics, Martial Arts: Boxing, BJJ, BJJ Kids, Judo, Kyokushin, Shotokan, Taekwondo …) | ⏭ | Next version. For now only Brazilian Jiu-Jitsu (product owner, 25 Oct 2026) |
 | PG7 | Rank rows: name, stripes, colour, per-rank requirements, + skills | ✅ | Belt editor |
