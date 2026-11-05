@@ -3941,6 +3941,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       visitorsHint: "Se disattivato, nessuno fa il check-in con un pass visita.",
       frozenMembers: "Consenti il check-in ai membri sospesi",
       frozenMembersHint: "Se disattivato, un membro con l'abbonamento sospeso non può fare check-in.",
+      openMatUsesCredit: "L'open mat usa un credito lezione",
+      openMatUsesCreditHint: "Attivo: prenotare un open mat usa un credito di un pacchetto lezioni o di un pass amico, come ogni lezione. Disattivo: non usa crediti, ma serve comunque un abbonamento o un pass.",
       withoutBooking: "Check-in senza prenotazione",
       withoutBookingHint: "Se attivo, i membri possono fare check-in a una lezione che non hanno prenotato. Il check-in occupa un posto se la lezione ne ha uno e usa il loro abbonamento o un credito lezione, come una prenotazione. Se disattivato, devono prima prenotare.",
       overdue: "Blocca il check-in per pagamenti in ritardo",

@@ -156,6 +156,14 @@ export function CheckInRulesPage() {
               checked={form.frozenMembers ?? false}
               onChange={(on) => set('frozenMembers', on)}
             />
+            {/* Decision 304 item 3: on by default, so open mat uses a credit like any class. */}
+            <Switch
+              id="rules-open-mat-credit"
+              label={t('frontDesk.rules.openMatUsesCredit')}
+              description={t('frontDesk.rules.openMatUsesCreditHint')}
+              checked={form.openMatUsesCredit ?? true}
+              onChange={(on) => set('openMatUsesCredit', on)}
+            />
             {/* Backlog §3.5: No by default (an overdue payment never stopped a check-in). */}
             <Field label={t('frontDesk.rules.overdue')} htmlFor="rules-overdue" hint={t('frontDesk.rules.overdueHint')}>
               <SelectField

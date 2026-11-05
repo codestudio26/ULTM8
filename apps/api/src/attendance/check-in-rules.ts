@@ -44,6 +44,8 @@ export interface CheckInRules {
    * Off: a member may check in to a Class they haven't booked, and the
    * check-in books a place first, by the booking's own rules. */
   requireBooking: boolean;
+  /** "Open mat uses a class credit" (Decision 304 item 3; on by default). */
+  openMatUsesCredit: boolean;
 }
 
 export const CHECK_IN_RULES_SELECT = {
@@ -57,6 +59,7 @@ export const CHECK_IN_RULES_SELECT = {
   checkInShowBeltProgress: true,
   checkInBlockOverdueDays: true,
   checkInRequireBooking: true,
+  openMatUsesClassCredit: true,
 } as const;
 
 type RuleColumns = {
@@ -70,6 +73,7 @@ type RuleColumns = {
   checkInShowBeltProgress: boolean;
   checkInBlockOverdueDays: number | null;
   checkInRequireBooking: boolean;
+  openMatUsesClassCredit: boolean;
 };
 
 /** What check-in did before the rules: the column defaults. */
@@ -84,6 +88,7 @@ export const DEFAULT_CHECK_IN_RULES: CheckInRules = {
   showBeltProgress: true,
   blockOverdueDays: null,
   requireBooking: true,
+  openMatUsesCredit: true,
 };
 
 function overdueDaysFrom(value: number | null): OverdueDays | null {
@@ -103,6 +108,7 @@ export function checkInRulesFrom(row: RuleColumns | null | undefined): CheckInRu
     showBeltProgress: row.checkInShowBeltProgress,
     blockOverdueDays: overdueDaysFrom(row.checkInBlockOverdueDays),
     requireBooking: row.checkInRequireBooking,
+    openMatUsesCredit: row.openMatUsesClassCredit,
   };
 }
 

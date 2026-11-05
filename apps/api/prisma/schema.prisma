@@ -1205,6 +1205,11 @@ model School {
   /// off: a member may then check in to a Class they haven't booked, and the
   /// check-in books a place first, by the same rules as a booking.
   checkInRequireBooking          Boolean                         @default(true)
+  /// "Open mat uses a class credit" (Decision 304 item 3; Settings → Check-in
+  /// rules), on by default: an open mat takes a Class Pack or Friend Pass
+  /// credit like any class. Off: booking an open mat still needs a membership
+  /// or pass that covers it, but takes no credit (Booking.creditUsed false).
+  openMatUsesClassCredit         Boolean                         @default(true)
   /// Decision 404: the most days a membership can be frozen in any 12 months
   /// (1-365, default 90), and an optional one-off fee in minor units of the
   /// School's currency, charged when a freeze is approved.
@@ -4063,6 +4068,10 @@ model Booking {
   // item 6): it was paid for elsewhere, so no Membership's credit funds it.
   sourceMembershipId String?
   sourceMembership   Membership? @relation("BookingSourceMembership", fields: [sourceMembershipId], references: [id])
+  // Decision 304 item 3: false when sourceMembership took no credit for this
+  // seat (an open mat while the School's "Open mat uses a class credit" is
+  // off). A cancellation then gives nothing back, neither credit nor money.
+  creditUsed         Boolean     @default(true)
 
   // Rank-gate override (§9) — Instructor/Staff-only, always recorded together.
   overriddenById String?
@@ -4170,6 +4179,9 @@ model BookingAttendee {
 
   membershipId String
   membership   Membership @relation("BookingAttendeeMembership", fields: [membershipId], references: [id])
+  // Decision 304 item 3: false when the guest's Friend Pass took no credit
+  // (an open mat while "Open mat uses a class credit" is off).
+  creditUsed   Boolean    @default(true)
 
   refundResolution RefundResolution?
   resolvedById     String?

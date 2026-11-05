@@ -57,10 +57,11 @@ export async function cancelPlacesOfLeavingStudent(
     if (result.count === 0) continue;
     bookingsCancelled += 1;
     freed.add(booking.classId);
-    if (resolution === 'REFUNDED' && booking.sourceMembershipId) await restoreCredit(tx, booking.sourceMembershipId, logger);
+    // Decision 304 item 3: a seat that took no credit gets none back.
+    if (resolution === 'REFUNDED' && booking.sourceMembershipId && booking.creditUsed) await restoreCredit(tx, booking.sourceMembershipId, logger);
     for (const attendee of booking.attendees) {
       await tx.bookingAttendee.update({ where: { id: attendee.id }, data: { refundResolution: resolution, resolvedById: callerId } });
-      if (resolution === 'REFUNDED') await restoreCredit(tx, attendee.membershipId, logger);
+      if (resolution === 'REFUNDED' && attendee.creditUsed) await restoreCredit(tx, attendee.membershipId, logger);
     }
   }
 
