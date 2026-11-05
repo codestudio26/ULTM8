@@ -319,6 +319,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     classRow: {
       dateRange: "{start} – {end}",
       breakLine: "Mola {start} – {end}",
+      endsNextDay: "ertesi gün biter",
+      womenOnly: "Yalnızca kadınlar",
+      menOnly: "Yalnızca erkekler",
+      agesRange: "Yaş {min}–{max}",
+      agesFrom: "{min} yaş ve üzeri",
+      agesTo: "{max} yaşa kadar",
       bookError: "Bu ders rezerve edilemedi — lütfen tekrar deneyin.",
       joinWaitlistError: "Bekleme listesine katılınamadı — lütfen tekrar deneyin.",
       leaveWaitlistError: "Bekleme listesinden çıkılamadı — lütfen tekrar deneyin.",

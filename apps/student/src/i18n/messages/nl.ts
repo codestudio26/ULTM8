@@ -319,6 +319,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     classRow: {
       dateRange: "{start} – {end}",
       breakLine: "Pauze {start} – {end}",
+      endsNextDay: "eindigt de volgende dag",
+      womenOnly: "Alleen vrouwen",
+      menOnly: "Alleen mannen",
+      agesRange: "Leeftijd {min}–{max}",
+      agesFrom: "Vanaf {min} jaar",
+      agesTo: "Tot {max} jaar",
       bookError: "Deze les kon niet worden geboekt — probeer het opnieuw.",
       joinWaitlistError: "Je kon niet op de wachtlijst worden gezet — probeer het opnieuw.",
       leaveWaitlistError: "Je kon de wachtlijst niet verlaten — probeer het opnieuw.",

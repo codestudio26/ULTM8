@@ -318,6 +318,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     classRow: {
       dateRange: "{start} – {end}",
       breakLine: "휴식 {start} – {end}",
+      endsNextDay: "다음 날 종료",
+      womenOnly: "여성 전용",
+      menOnly: "남성 전용",
+      agesRange: "{min}–{max}세",
+      agesFrom: "{min}세 이상",
+      agesTo: "{max}세까지",
       bookError: "이 수업을 예약하지 못했습니다. 다시 시도해 주세요.",
       joinWaitlistError: "대기자 명단에 등록하지 못했습니다. 다시 시도해 주세요.",
       leaveWaitlistError: "대기자 명단에서 나가지 못했습니다. 다시 시도해 주세요.",

@@ -4,7 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
 import { formatClassTimes, formatTime } from '../lib/formatDate';
-import { classZone } from '../lib/classTime';
+import { classZone, endsNextDayInZone } from '../lib/classTime';
 import { useBookClass, useMyBookings, useMyFriendPasses } from './bookingQueries';
 import { BookingGuests } from './BookingGuests';
 import { ClassTicketOffer } from './ClassTicketOffer';
@@ -21,6 +21,10 @@ interface ClassSummary {
   breakEndAt?: string | null;
   /** Decision 427 (SP6): the clock the class runs on (its Branch's zone, else the School's). */
   timezone?: string | null;
+  /** Decision 431 item 14: who can book; shown only, the API enforces it. */
+  audience?: 'EVERYONE' | 'WOMEN' | 'MEN';
+  minAge?: number | null;
+  maxAge?: number | null;
 }
 
 /** Substantive progress only — kept separate from `actionError` (below) so a failed
@@ -55,6 +59,15 @@ export function ClassBookingRow({
   const t = useT();
   // Decision 427 (SP6): the class's own clock (its Branch's zone, else the School's, else UTC).
   const zone = classZone(classItem.timezone, null);
+  const who: string[] = [];
+  if (classItem.audience === 'WOMEN') who.push(t('bookings.classRow.womenOnly'));
+  if (classItem.audience === 'MEN') who.push(t('bookings.classRow.menOnly'));
+  const minAge = classItem.minAge ?? null;
+  const maxAge = classItem.maxAge ?? null;
+  if (minAge !== null && maxAge !== null) who.push(t('bookings.classRow.agesRange', { min: minAge, max: maxAge }));
+  else if (minAge !== null) who.push(t('bookings.classRow.agesFrom', { min: minAge }));
+  else if (maxAge !== null) who.push(t('bookings.classRow.agesTo', { max: maxAge }));
+  const whoCanBook = who.join(' · ');
   const [localState, setState] = useState<RowState>({ kind: 'idle' });
   // Decision 427 (Student portal review SP9): a class already booked or
   // waited for shows that, not "Book" again, after leaving and coming back.
@@ -145,7 +158,10 @@ export function ClassBookingRow({
       <Text style={{ fontWeight: '600' }}>{classItem.title}</Text>
       <Text style={{ color: '#5F6368', fontSize: 12 }}>
         {formatClassTimes(classItem.startDate, classItem.endDate, zone)}
+        {/* Decision 431 item 3: a class past midnight says so. */}
+        {endsNextDayInZone(classItem.startDate, classItem.endDate, zone) ? ` (${t('bookings.classRow.endsNextDay')})` : ''}
       </Text>
+      {whoCanBook ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{whoCanBook}</Text> : null}
       {classItem.breakStartAt && classItem.breakEndAt ? (
         <Text style={{ color: '#5F6368', fontSize: 12 }}>
           {t('bookings.classRow.breakLine', { start: formatTime(classItem.breakStartAt, zone), end: formatTime(classItem.breakEndAt, zone) })}

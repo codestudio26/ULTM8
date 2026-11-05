@@ -118,6 +118,21 @@ describe('ClassBookingRow — break', () => {
     const screen = await render(<ClassBookingRow classItem={classItem} />);
     expect(screen.queryByText(/^Break /)).toBeNull();
   });
+
+  it('says when a class ends the next day on its own clock (Decision 431 item 3)', async () => {
+    // 23:00–00:30 in Tokyo.
+    const screen = await render(
+      <ClassBookingRow classItem={{ ...classItem, timezone: 'Asia/Tokyo', startDate: '2026-11-02T14:00:00.000Z', endDate: '2026-11-02T15:30:00.000Z' }} />,
+    );
+    expect(screen.getByText(/\(ends next day\)$/)).toBeTruthy();
+  });
+
+  it('shows who can book (Decision 431 item 14), and nothing for everyone', async () => {
+    const screen = await render(<ClassBookingRow classItem={{ ...classItem, audience: 'WOMEN', minAge: 16, maxAge: null }} />);
+    expect(screen.getByText('Women only · Ages 16+')).toBeTruthy();
+    const plain = await render(<ClassBookingRow classItem={{ ...classItem, audience: 'EVERYONE' }} />);
+    expect(plain.queryByText(/only|Ages/)).toBeNull();
+  });
 });
 
 /** Waivers Q9 — guests paid for with the member's own Friend Passes. */
