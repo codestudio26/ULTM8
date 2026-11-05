@@ -8,7 +8,7 @@ import { dayIn, dayNumber, dayString, dayToDate } from '../memberships/freeze/me
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { chargeRemaining, lockBalance } from '../charges/charge-ledger';
 import { insertCharge, lockInvoiceNumbers } from '../charges/charge-insert';
-import { computeCharge, formatInvoiceNumber } from '../charges/charge-maths';
+import { computeCharge, formatInvoiceNumber, taxLinesForCharge } from '../charges/charge-maths';
 import { LateFeeSetting, isLateFeeDue, lateFeeAmount } from '../late-fees/late-fee-maths';
 import {
   lateFeeDescriptionForCharge,
@@ -18,6 +18,7 @@ import {
 } from '../late-fees/late-fee-notices';
 import { LATE_FEE_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
+import { loadEffectiveTax } from '../charges/tax-lines';
 
 type Tx = Prisma.TransactionClient;
 
@@ -251,11 +252,14 @@ export class LateFeeProcessor extends WorkerHost {
         await lockInvoiceNumbers(tx, school.id);
         const overdue = 'chargeId' in item ? await this.overdueCharge(tx, school, item.chargeId) : await this.overdueRenewal(tx, school, item.transactionId);
         if (!overdue) return null;
-        const fee = lateFeeAmount(setting, overdue.owed);
         // A fixed fee is in the School's currency; a % is of the payment, in its currency.
         const currency = setting.type === 'FIXED' ? school.defaultCurrency?.toUpperCase() : overdue.currency;
-        if (fee <= 0 || !currency) return null;
-        const totals = computeCharge({ unitAmount: fee, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive });
+        if (!currency) return null;
+        const fee = lateFeeAmount(setting, overdue.owed, currency);
+        if (fee <= 0) return null;
+        // Decision 431 (MON-6): the member's tax lines (their home Branch's when it overrides).
+        const tax = taxLinesForCharge(await loadEffectiveTax(tx, school.id, overdue.studentId), false);
+        const totals = computeCharge({ unitAmount: fee, ...tax, currency });
         // Invoice number, balance and any credit, as for every charge.
         const { id } = await insertCharge(tx, {
           schoolId: school.id,

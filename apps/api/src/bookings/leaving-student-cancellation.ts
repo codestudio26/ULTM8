@@ -9,6 +9,14 @@ export function leavingStudentBookingsWhere(schoolId: string, studentId: string,
 
 export const LIVE_WAITLIST_STATUSES = ['WAITING', 'NOTIFIED'] as const;
 
+/** A class's refund cut-off: its own refundFeeDate, else `defaultHours` before
+ * it starts, else none. The rule CancellationService.effectiveCutoff applies. */
+export function effectiveRefundCutoff(cls: { refundFeeDate: Date | null; startDate: Date }, defaultHours: number | null): Date | null {
+  if (cls.refundFeeDate) return cls.refundFeeDate;
+  if (defaultHours === null) return null;
+  return new Date(cls.startDate.getTime() - defaultHours * 3_600_000);
+}
+
 /**
  * Decision 343 (Students S2): a student whose enrolment is revoked gives up
  * their places at that School. Their upcoming bookings are cancelled and
@@ -36,17 +44,26 @@ export async function cancelPlacesOfLeavingStudent(
   logger: Logger,
   now: Date = new Date(),
 ): Promise<{ bookingsCancelled: number; waitlistRemoved: number; freedClassIds: string[] }> {
-  const school = await tx.school.findUnique({ where: { id: schoolId }, select: { lateCancelRefundPolicy: true } });
+  const school = await tx.school.findUnique({ where: { id: schoolId }, select: { lateCancelRefundPolicy: true, defaultRefundCutoffHours: true } });
   const policy = school?.lateCancelRefundPolicy ?? 'NO_REFUND_ONCE_STARTED';
 
   const bookings = await tx.booking.findMany({
     where: leavingStudentBookingsWhere(schoolId, studentId, now),
-    include: { attendees: true, class: { select: { startDate: true, refundFeeDate: true } } },
+    include: {
+      attendees: true,
+      class: { select: { startDate: true, refundFeeDate: true, branch: { select: { cancellationSettingsOverride: true, defaultRefundCutoffHours: true } } } },
+    },
   });
   const freed = new Set<string>();
   let bookingsCancelled = 0;
   for (const booking of bookings) {
-    const pastCutoff = booking.class.refundFeeDate !== null && now >= booking.class.refundFeeDate;
+    // The same cut-off a staff cancel uses (Decision 432 item 9): the class's
+    // own, else its Branch's default when the Branch overrides the School's
+    // settings, else the School's default (CancellationService.effectiveCutoff).
+    const branch = booking.class.branch;
+    const defaultHours = branch?.cancellationSettingsOverride ? branch.defaultRefundCutoffHours : (school?.defaultRefundCutoffHours ?? null);
+    const cutoff = effectiveRefundCutoff(booking.class, defaultHours);
+    const pastCutoff = cutoff !== null && now >= cutoff;
     const startedNoRefund = now >= booking.class.startDate && policy === 'NO_REFUND_ONCE_STARTED';
     const resolution: 'REFUNDED' | 'WITHHELD' = pastCutoff || startedNoRefund ? 'WITHHELD' : 'REFUNDED';
     // Re-filters on UPCOMING so a booking that just left it is not resolved twice.

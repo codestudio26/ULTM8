@@ -111,6 +111,9 @@ test('a branch coach can open and edit a student of their own branch', async ({ 
   await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: north.id } });
   const coach = await addPerson('Bo', 'Branch', [{ role: 'INSTRUCTOR', schoolId: s.schoolId, branchId: north.id }]);
   await signIn(page, coach.token);
+  // Decision 430 item 13: gender is locked once the member has signed in, so
+  // this member is one the School added who hasn't yet.
+  await db.user.update({ where: { id: s.student.id }, data: { mustChangePasscode: true } });
   await page.goto(`/students/${s.student.id}`);
   await expect(page.getByRole('heading', { level: 1, name: s.student.name })).toBeVisible();
   await page.getByRole('button', { name: 'Edit profile' }).click();
@@ -119,6 +122,7 @@ test('a branch coach can open and edit a student of their own branch', async ({ 
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Profile saved.')).toBeVisible();
   expect((await db.user.findUniqueOrThrow({ where: { id: s.student.id } })).gender).toBe('MALE');
+  await db.user.update({ where: { id: s.student.id }, data: { mustChangePasscode: false } });
 });
 
 test('Invite needs no home branch when every branch is archived', async ({ page }) => {
@@ -234,7 +238,8 @@ test('the owner re-enrols a former student from their page, and a child\'s page 
   await db.guardianLink.create({ data: { guardianId: guardian.id, studentId: s.newStudent.id } });
   try {
     await page.goto(`/students/${s.newStudent.id}`);
-    await expect(page.getByTestId('student-guardians')).toHaveText('Guardian: Gail Guard');
+    // Decision 430 item 6: the Guardians card also offers "Add another Guardian".
+    await expect(page.getByTestId('student-guardians').getByText('Guardian: Gail Guard', { exact: true })).toBeVisible();
   } finally {
     await db.guardianLink.deleteMany({ where: { studentId: s.newStudent.id } });
   }

@@ -96,6 +96,8 @@ describeIfDb('History notes: edit, hide, change log (Decision 192)', () => {
     await superuser.gradingPermission.create({
       data: { id: randomUUID(), schoolId: school.id, userId: id.voider, disciplineId: bjj.id, canPromote: false, canDowngrade: false, canVoidHistory: true },
     });
+    // Decision 430 item 7: a parent acts for a child under 18, so the child is one.
+    await superuser.user.update({ where: { id: id.student }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: id.guardian, studentId: id.student } });
     await superuser.studentRank.create({
       data: { id: randomUUID(), studentId: id.student, disciplineId: bjj.id, schoolId: school.id, currentRankId: rungs[0].rankId, currentStripeId: rungs[0].id },

@@ -216,6 +216,8 @@ describeIfDb('Reminders (Decision 317 item 7)', () => {
     it("a child's Guardian gets the reminder as \"For {name}: …\"", async () => {
       const kid = await mkStudent('kid');
       const parent = await mkUser('parent');
+      // Decision 430 item 7: a parent acts for a child under 18, so the child is one.
+      await su.user.update({ where: { id: kid.id }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
       await su.guardianLink.create({ data: { id: randomUUID(), guardianId: parent.id, studentId: kid.id } });
       await mkMembership(kid.id, 'TRIAL_MEMBERSHIP', { expiryDate: at(6) });
       await expiryJob.run(NOW);

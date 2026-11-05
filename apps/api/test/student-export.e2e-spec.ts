@@ -80,6 +80,8 @@ describeIfDb('Student list export', () => {
       await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId, studentId: users[s].id, branchId } });
     }
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: users.parent.id, studentId: users.kid.id } });
+    // Decision 430 item 11: the parent enrolled the child here, so this School exports their email.
+    await superuser.roleGrant.updateMany({ where: { userId: users.kid.id, schoolId, role: 'STUDENT' }, data: { grantedById: users.parent.id } });
 
     // Ana: a live membership and an expired one, a belt, and a class she attended.
     const plan = (type: 'SUBSCRIPTION' | 'VISIT_PASS', title: string) =>

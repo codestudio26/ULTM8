@@ -285,7 +285,7 @@ describeIfDb('AttendanceModule — HTTP-level QR check-in + Instructor roll-call
       const createRes = await request(app.getHttpServer())
         .post('/v1/guardians/me/minors')
         .set('Authorization', `Bearer ${tokenStudentA}`)
-        .send({ firstName: 'Minor', surname: 'Child', dateOfBirth: '2015-06-01' });
+        .send({ firstName: 'Minor', surname: 'Child', dateOfBirth: '2015-06-01', consentPolicyVersion: '2026-09-v1' });
       expect(createRes.status).toBe(201);
       const minorId = createRes.body.studentId;
       userIds.push(minorId);

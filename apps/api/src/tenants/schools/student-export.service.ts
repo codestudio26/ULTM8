@@ -58,7 +58,7 @@ export class StudentExportService {
           this.prismaJobs.guardianLink.findMany({
             where: { studentId: { in: ids }, revokedAt: null },
             orderBy: { createdAt: 'asc' },
-            select: { studentId: true, guardian: { select: { firstName: true, surname: true, email: true } } },
+            select: { studentId: true, guardianId: true, guardian: { select: { firstName: true, surname: true, email: true } } },
           }),
           this.prismaJobs.$queryRaw<Array<{ studentId: string; lastVisitAt: Date }>>`
             SELECT b."studentId", max(c."startDate") AS "lastVisitAt"
@@ -68,6 +68,7 @@ export class StudentExportService {
         ])
       : [[], [], [], [], []];
 
+    const knownHere = await this.guardiansKnownHere(schoolId, guardianLinks);
     const user = new Map(users.map((u) => [u.id, u]));
     const lastVisit = new Map(visits.map((v) => [v.studentId, v.lastVisitAt]));
     const now = new Date();
@@ -75,14 +76,19 @@ export class StudentExportService {
       const u = user.get(r.id);
       const mine = memberships.filter((m) => m.studentId === r.id);
       const live = mine.filter((m) => isMembershipLive(m, now));
+      // Decision 433 item 11 (PRIV-11, interim until the GDPR programme sets a
+      // retention period): a former member's phone and birth date are read
+      // live from their account, so the School would keep getting them for
+      // ever; the ALL export leaves both blank for them.
+      const former = r.status === StudentStatusDto.INACTIVE;
       return {
         id: r.id,
         firstName: r.firstName,
         surname: r.surname,
         email: r.email,
         // A child's account carries a made-up phone number; leave it out.
-        phone: r.guardianManaged ? null : u?.phone ?? null,
-        dateOfBirth: u?.dateOfBirth ? u.dateOfBirth.toISOString().slice(0, 10) : null,
+        phone: r.guardianManaged || former ? null : u?.phone ?? null,
+        dateOfBirth: u?.dateOfBirth && !former ? u.dateOfBirth.toISOString().slice(0, 10) : null,
         status: r.status as StudentStatusDto,
         enrolledAt: new Date(r.enrolledAt).toISOString(),
         joinedOn: r.joinedOn ?? null,
@@ -96,7 +102,10 @@ export class StudentExportService {
         lastVisitAt: lastVisit.get(r.id)?.toISOString() ?? null,
         guardians: guardianLinks
           .filter((g) => g.studentId === r.id)
-          .map((g) => ({ name: `${g.guardian.firstName} ${g.guardian.surname}`.trim(), email: g.guardian.email })),
+          // Decision 430 item 11 (FAM-11/PRIV-3, interim): a parent this School
+          // never dealt with (known only through the child's other School) is
+          // listed by name, without their email.
+          .map((g) => ({ name: `${g.guardian.firstName} ${g.guardian.surname}`.trim(), email: knownHere.has(`${g.guardianId}:${g.studentId}`) ? g.guardian.email : null })),
       };
     });
 
@@ -104,5 +113,28 @@ export class StudentExportService {
       data: { id: randomUUID(), schoolId, exportedById: callerId, filter, rowCount: items.length },
     });
     return { items };
+  }
+
+  /**
+   * Decision 430 item 11: the (parent, child) pairs where the parent has
+   * acted at this School: holds or held any role here, enrolled the child
+   * here, signed a waiver here, or was named by this School (a child invite
+   * from it). Keys are "guardianId:studentId".
+   */
+  private async guardiansKnownHere(schoolId: string, links: Array<{ guardianId: string; studentId: string }>): Promise<Set<string>> {
+    const guardianIds = [...new Set(links.map((l) => l.guardianId))];
+    if (guardianIds.length === 0) return new Set();
+    const [ownRoles, enrolled, signed, invited] = await Promise.all([
+      this.prismaJobs.roleGrant.findMany({ where: { schoolId, userId: { in: guardianIds } }, select: { userId: true }, distinct: ['userId'] }),
+      this.prismaJobs.roleGrant.findMany({
+        where: { schoolId, role: 'STUDENT', grantedById: { in: guardianIds }, userId: { in: links.map((l) => l.studentId) } },
+        select: { userId: true, grantedById: true },
+      }),
+      this.prismaJobs.waiverSignature.findMany({ where: { schoolId, signedById: { in: guardianIds } }, select: { signedById: true, studentId: true }, distinct: ['signedById', 'studentId'] }),
+      this.prismaJobs.childInvite.findMany({ where: { schoolId, guardianId: { in: guardianIds } }, select: { guardianId: true }, distinct: ['guardianId'] }),
+    ]);
+    const anyChild = new Set([...ownRoles.map((r) => r.userId), ...invited.map((i) => i.guardianId)]);
+    const pairs = new Set([...enrolled.map((r) => `${r.grantedById}:${r.userId}`), ...signed.map((w) => `${w.signedById}:${w.studentId}`)]);
+    return new Set(links.filter((l) => anyChild.has(l.guardianId) || pairs.has(`${l.guardianId}:${l.studentId}`)).map((l) => `${l.guardianId}:${l.studentId}`));
   }
 }

@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { divideRoundHalfUpToStep, minorUnitStep } from './stripe-amount';
 
 /** Decision 406: a School's card surcharge is at most 3%, kept in basis points. */
 export const CARD_SURCHARGE_MAX_BPS = 300;
@@ -11,17 +12,20 @@ export const CARD_SURCHARGE_PLAN_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'TRIAL_ME
 
 /**
  * The surcharge on `price` (minor units) at `bps` basis points, in the same
- * minor units, rounded half up once. Integer arithmetic only, so no
- * floating-point drift: 2.5% of 1999 is 49.975, charged as 50.
+ * minor units, rounded half up once to the currency's real minor unit
+ * (MON-2: whole yen for JPY). Integer arithmetic only, so no floating-point
+ * drift: 2.5% of 1999 is 49.975, charged as 50.
  */
-export function cardSurchargeAmount(price: number, bps: number): number {
+export function cardSurchargeAmount(price: number, bps: number, currency: string | null | undefined): number {
   if (!Number.isInteger(price) || !Number.isInteger(bps) || price <= 0 || bps <= 0) return 0;
-  return Math.floor((price * bps + 5000) / 10000);
+  return divideRoundHalfUpToStep(price * bps, 10000, minorUnitStep(currency));
 }
 
-/** The surcharge for one plan, or 0 where it never applies (see CARD_SURCHARGE_PLAN_TYPES). */
-export function planCardSurcharge(plan: { type: string; price: number }, bps: number): number {
-  return (CARD_SURCHARGE_PLAN_TYPES as readonly string[]).includes(plan.type) ? cardSurchargeAmount(plan.price, bps) : 0;
+/** The surcharge for one plan, or 0 where it never applies (see
+ * CARD_SURCHARGE_PLAN_TYPES). `currency` is the one the plan is paid in (its
+ * own, else the School's). */
+export function planCardSurcharge(plan: { type: string; price: number }, bps: number, currency: string | null | undefined): number {
+  return (CARD_SURCHARGE_PLAN_TYPES as readonly string[]).includes(plan.type) ? cardSurchargeAmount(plan.price, bps, currency) : 0;
 }
 
 /**

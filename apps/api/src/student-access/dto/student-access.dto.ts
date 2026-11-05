@@ -5,6 +5,7 @@ import { NormalizeEmail } from '../../common/decorators/normalize-email.decorato
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
 import { GenderField } from '../../common/decorators/gender-field.decorator';
 import { JOIN_DATE_FORMAT } from '../../tenants/schools/student-join-dates';
+import { HasOnlyOneNameField, SurnameField } from '../../common/decorators/surname-field.decorator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 
@@ -16,12 +17,11 @@ export class ChildDetailsDto {
   @MaxLength(100)
   firstName!: string;
 
-  @ApiProperty()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1, { message: "Surname can't be blank." })
-  @MaxLength(100)
+  @SurnameField()
   surname!: string;
+
+  @HasOnlyOneNameField()
+  hasOnlyOneName?: boolean;
 
   @ApiProperty({ description: 'YYYY-MM-DD. The child must be under 18.' })
   @IsDateString()
@@ -41,12 +41,11 @@ export class GuardianDetailsDto {
   @MaxLength(100)
   firstName!: string;
 
-  @ApiProperty()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1, { message: "Surname can't be blank." })
-  @MaxLength(100)
+  @SurnameField()
   surname!: string;
+
+  @HasOnlyOneNameField()
+  hasOnlyOneName?: boolean;
 
   @ApiProperty()
   @NormalizeEmail()
@@ -154,6 +153,9 @@ export class ChildInviteDto {
   @ApiProperty()
   childDateOfBirth!: string;
 
+  @ApiProperty({ description: 'Decision 430 item 6: an invite to be another parent or guardian of a child already at the School ("Add another Guardian"), not to add a new child.' })
+  addsGuardian!: boolean;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'For the School\'s list: the Guardian\'s name.' })
   guardianName!: string | null;
 
@@ -176,3 +178,18 @@ export class AcceptChildInviteResponseDto {
   @ApiProperty()
   studentId!: string;
 }
+
+/** Decision 430 item 9: accepting a child invite can record the parent's
+ * BASELINE consent, ticked in the app. */
+export class AcceptChildInviteDto {
+  @ApiPropertyOptional({ description: 'The version of the privacy notice the parent agreed to. Without it the child is "consent pending" until a parent gives consent.' })
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MinLength(1)
+  @MaxLength(200)
+  consentPolicyVersion?: string;
+}
+
+/** Decision 430 item 6: "Add another Guardian" for a child already here. */
+export class AddGuardianDto extends GuardianDetailsDto {}

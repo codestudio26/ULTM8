@@ -37,3 +37,26 @@ export async function assertSchoolCurrencySet(db: Pick<Prisma.TransactionClient,
   const school = await db.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } });
   return requireSchoolCurrency(school?.defaultCurrency);
 }
+
+/**
+ * The one currency rule for money a member is charged (Decision 431, MON-5;
+ * Decision 334 M6, Decision 389 item 2): the plan's own currency, else the
+ * School's. Null when neither is set: the caller refuses or skips the charge,
+ * and never falls back to US dollars.
+ */
+export function chargeCurrency(planCurrency: string | null | undefined, schoolCurrency: string | null | undefined): string | null {
+  const code = planCurrency?.trim() || schoolCurrency?.trim();
+  return code ? code.toUpperCase() : null;
+}
+
+/** chargeCurrency(), reading the School's currency when the plan has none, on
+ * a connection the caller is already allowed to use for this School. */
+export async function resolveChargeCurrency(
+  db: Pick<Prisma.TransactionClient, 'school'>,
+  schoolId: string,
+  planCurrency: string | null | undefined,
+): Promise<string | null> {
+  if (planCurrency?.trim()) return planCurrency.trim().toUpperCase();
+  const school = await db.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } });
+  return chargeCurrency(null, school?.defaultCurrency);
+}

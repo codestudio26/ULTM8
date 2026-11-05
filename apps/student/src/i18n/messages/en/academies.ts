@@ -36,6 +36,9 @@ export const academies = {
     failed: "Couldn't answer the invite. Try again.",
   },
   childInvites: {
+    guardianTitle: "Be a parent or guardian of {child} at {school}?",
+    guardianBody: "{school} would like to add you as another parent or guardian of {child}. Accept to see {child} on your account. Their other parents are told.",
+    consent: "I give consent for {child} under the ULTM8 privacy notice.",
     title: "Add {child} to {school}?",
     body: "{school} would like to add {child} as a student, with you as their Guardian. Accept to add {child} to your account and enrol them.",
   },

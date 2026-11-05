@@ -1,6 +1,8 @@
 import type { components } from '@ultm8/api-client';
 import type { TranslateFn } from '../i18n/I18nProvider';
+import { firstGrapheme } from '@ultm8/i18n';
 import { formatLocale } from '../i18n/format';
+import { printHtmlOpening } from '../lib/printHtml';
 
 export type MembershipCard = components['schemas']['MembershipCardDto'];
 
@@ -30,14 +32,15 @@ export function membershipLines(t: TranslateFn, card: MembershipCard): string[] 
  * copy could check anyone in. The app shows the live QR instead.
  */
 export function membershipCardHtml(t: TranslateFn, card: MembershipCard): string {
-  const name = `${card.firstName} ${card.surname}`.trim();
+  const name = [card.firstName, card.surname].filter(Boolean).join(' ');
   const logo = safeUrl(card.schoolLogoUrl);
   const photo = safeUrl(card.photoUrl);
-  const initials = `${card.firstName.charAt(0)}${card.surname.charAt(0)}`.toUpperCase();
+  // Whole letters (Decision 434, TXT-7).
+  const initials = `${firstGrapheme(card.firstName)}${firstGrapheme(card.surname)}`;
   return (
-    '<!doctype html><html><head><meta charset="utf-8">' +
+    printHtmlOpening() +
     `<title>${esc(t('frontDesk.card.pageTitle', { name }))}</title>` +
-    '<style>body{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;margin:40px;color:#151719}' +
+    '<style>body{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;margin:40px;color:#151719;text-align:start}' +
     '.card{width:85.6mm;height:54mm;box-sizing:border-box;border:1px solid #c9ced3;border-radius:3.2mm;padding:4mm;display:flex;flex-direction:column;gap:2.5mm;overflow:hidden}' +
     '.school{display:flex;align-items:center;gap:2mm;font-weight:700;font-size:11pt}.school img{height:7mm;max-width:20mm;object-fit:contain}' +
     '.who{display:flex;gap:3mm;align-items:center}.photo{width:16mm;height:16mm;border-radius:50%;object-fit:cover;background:#e8ebee;display:flex;align-items:center;justify-content:center;font-weight:700;color:#50575e;flex:none}' +

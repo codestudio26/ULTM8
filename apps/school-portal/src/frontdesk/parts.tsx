@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { Spinner } from '@ultm8/ui';
+import { firstGrapheme } from '@ultm8/i18n';
 import { Avatar } from '../lib/Avatar';
 import { QrScanModal } from '../attendance/QrScanModal';
 import type { ClassResponse } from '../classes/classQueries';
@@ -30,6 +31,7 @@ import {
 } from './frontDeskQueries';
 import { useStudentNotes } from '../students/studentNotesQueries';
 import { formatMoney } from '../lib/money';
+import { deskMethodsFor } from '../lib/deskMethods';
 
 export type CheckInMethod = 'scan' | 'code' | 'name';
 
@@ -54,8 +56,9 @@ export interface DeskClass {
 
 /** "Lucas M." — how the shared tablet names people (Decision 351). */
 export function shortName(p: { firstName: string; surname: string }): string {
-  const initial = p.surname.trim()[0];
-  return initial ? `${p.firstName} ${initial.toUpperCase()}.` : p.firstName;
+  // The surname's first whole letter (Decision 434, TXT-7); just the first name for someone with one name.
+  const initial = firstGrapheme(p.surname);
+  return initial ? `${p.firstName} ${initial}.` : p.firstName;
 }
 
 export function timeOf(iso: string): string {
@@ -815,7 +818,8 @@ function PackUsedUp({
               {t('frontDesk.packUsedUp.paidBy')}
             </label>
             <select id="fd-pack-method" value={method} onChange={(e) => setMethod(e.target.value as DeskPaymentMethod)}>
-              {DESK_PAYMENT_METHODS.map((m) => (
+              {/* Decision 431 (MON-13): Pix only when the pack is priced in reais. */}
+              {deskMethodsFor(DESK_PAYMENT_METHODS, { defaultCurrency: offer?.currency }).map((m) => (
                 <option key={m} value={m}>
                   {t(PAYMENT_METHOD_LABELS[m])}
                 </option>

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -7,8 +7,10 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { jwtSubTracker } from '../common/throttle/identity-trackers';
 import { StudentAccessService } from './student-access.service';
 import {
+  AcceptChildInviteDto,
   AcceptChildInviteResponseDto,
   AddChildManuallyDto,
+  AddGuardianDto,
   AddChildManuallyResponseDto,
   ChildInviteListDto,
   NewTemporaryPasscodeResponseDto,
@@ -57,8 +59,34 @@ export class StudentAccessController {
 
   @ApiCreatedResponse({ type: AcceptChildInviteResponseDto })
   @Post('child-invites/:id/accept')
-  acceptChildInvite(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
-    return this.access.acceptChildInvite(user.sub, id);
+  acceptChildInvite(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: AcceptChildInviteDto) {
+    return this.access.acceptChildInvite(user.sub, id, dto ?? {});
+  }
+
+  /** Decision 430 item 6: "Add another Guardian" for a child already here. Owner only. */
+  @ApiCreatedResponse({ type: AddChildManuallyResponseDto })
+  @Throttle(ADD_MANUALLY_THROTTLE)
+  @Post('schools/:schoolId/students/:studentId/guardians')
+  addGuardian(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Body() dto: AddGuardianDto,
+  ) {
+    return this.access.addGuardian(user.sub, schoolId, studentId, dto);
+  }
+
+  /** Decision 430 item 8: "Remove Guardian". Owner only; never the last parent of an enrolled child. */
+  @ApiNoContentResponse()
+  @HttpCode(204)
+  @Delete('schools/:schoolId/students/:studentId/guardians/:guardianId')
+  async removeGuardian(
+    @CurrentUser() user: JwtPayload,
+    @Param('schoolId', ParseUUIDPipe) schoolId: string,
+    @Param('studentId', ParseUUIDPipe) studentId: string,
+    @Param('guardianId', ParseUUIDPipe) guardianId: string,
+  ) {
+    await this.access.removeGuardian(user.sub, schoolId, studentId, guardianId);
   }
 
   @ApiNoContentResponse()

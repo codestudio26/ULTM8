@@ -4,8 +4,8 @@ import { Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
 import { NOTIFICATION_FANOUT_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
-import { DateTime } from 'luxon';
 import { randomUUID } from 'crypto';
+import { DateTime } from 'luxon';
 import { resolveClassStyles, styleIdsOf } from './class-styles';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
@@ -17,6 +17,11 @@ import { escapeLike } from '../common/search/name-search';
 import { CreateClassDto } from './dto/create-class.dto';
 import { UpdateClassDto } from './dto/update-class.dto';
 import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
+import { noticeWallTime } from '../common/notice-time';
+import { assertAgeRange } from './who-can-book';
+import { isClosedOn } from '../timetable/slot-occurrences';
+import { classTimeZone } from './class-time-zone';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -59,6 +64,7 @@ export class ClassesService {
     const startDate = new Date(dto.startDate);
     const endDate = new Date(dto.endDate);
     this.assertValidDateRange(startDate, endDate);
+    assertAgeRange(dto.minAge, dto.maxAge);
     // A Class that has already ended can't be booked or checked into, so it
     // would only add clutter (product owner, 26 Oct 2026, Decision 345). A past
     // session can still be credited with "Log a class" on the Student page.
@@ -72,7 +78,11 @@ export class ClassesService {
     });
 
     // Decision 414 item 6: no price before the School's currency is set.
-    if (setsNewPrice(dto.cancellationCharge)) await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
+    // Decision 431 (MON-3): and in whole units of that currency.
+    if (setsNewPrice(dto.cancellationCharge)) assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId)));
+    // Decision 432 item 13: a one-off class on a closed day is allowed (a
+    // special event during a holiday), once the owner has seen the warning.
+    if (!dto.confirmClosedDay) await this.assertNotOnClosedDay(callerId, schoolId, dto.branchId ?? null, startDate);
 
     const classId = randomUUID();
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -97,6 +107,10 @@ export class ClassesService {
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired ?? false,
           membershipInclusion: dto.membershipInclusion ?? false,
+          // Decision 432 item 14: who can book.
+          audience: dto.audience,
+          minAge: dto.minAge,
+          maxAge: dto.maxAge,
         },
       });
     });
@@ -240,6 +254,9 @@ export class ClassesService {
       await this.tenantAuth.assertValidInstructor(callerId, nextInstructorId, existing.schoolId, nextBranchId);
     }
 
+    // Decision 432 item 14: the age range as it will be after this edit.
+    assertAgeRange(dto.minAge !== undefined ? dto.minAge : existing.minAge, dto.maxAge !== undefined ? dto.maxAge : existing.maxAge);
+
     const nextStartDate = dto.startDate ? new Date(dto.startDate) : existing.startDate;
     const nextEndDate = dto.endDate ? new Date(dto.endDate) : existing.endDate;
     if (dto.startDate || dto.endDate) {
@@ -265,7 +282,8 @@ export class ClassesService {
 
     // Decision 414 item 6: no price before the School's currency is set.
     if (setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
-      await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId));
+      // Decision 431 (MON-3): and in whole units of that currency.
+      assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId)));
     }
 
     const branchChanges = dto.branchId !== undefined && dto.branchId !== existing.branchId;
@@ -327,6 +345,9 @@ export class ClassesService {
           cancellationCharge: dto.cancellationCharge,
           termsWaiverRequired: dto.termsWaiverRequired,
           membershipInclusion: dto.membershipInclusion,
+          audience: dto.audience,
+          minAge: dto.minAge,
+          maxAge: dto.maxAge,
         },
       });
     });
@@ -351,7 +372,7 @@ export class ClassesService {
       return branch?.timezone ?? school?.timezone ?? 'UTC';
     });
     const key = `class-moved-${cls.id}-${cls.startDate.getTime()}`;
-    const body = `${cls.title} has moved to ${DateTime.fromJSDate(cls.startDate).setZone(zone).toFormat("cccc d LLL 'at' HH:mm")}. ${anyBooked ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`;
+    const body = `${cls.title} has moved to ${noticeWallTime(cls.startDate, zone)}. ${anyBooked ? 'Bookings moved with it.' : 'Your waitlist place moved with it.'}`;
     for (const userId of new Set(studentIds)) {
       try {
         const data: NotificationFanoutJobData = {
@@ -416,6 +437,67 @@ export class ClassesService {
     return this.findOne(callerId, classId);
   }
 
+  /**
+   * POST /classes/:id/recreate (Decision 432 item 11): the one-tap "Recreate
+   * class" for a class a closure cancelled on a day it no longer covers. A
+   * cancelled class is never un-cancelled (its students were told and their
+   * credit went back), so this makes a new copy with no bookings: the same
+   * times, place, coach and rules. It stays covered by membership the same way
+   * as the original (a timetable class keeps its occurrence date, with no slot
+   * link, so the timetable doesn't make it a second time). Who may: the same
+   * as creating a class there. Only for a class that hasn't started; a second
+   * tap finds the copy already made.
+   */
+  async recreate(callerId: string, classId: string) {
+    const existing = await this.findOne(callerId, classId);
+    await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [existing.branchId]);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);
+    await this.subscriptionGate.assertNotDegraded(callerId, existing.schoolId);
+    if (!existing.cancelledAt) {
+      throw new ConflictException({ code: 'CLASS_NOT_CANCELLED', message: 'Only a cancelled class can be recreated.' });
+    }
+    if (existing.startDate <= new Date()) {
+      throw new BadRequestException({ code: 'CLASS_ALREADY_STARTED', message: 'This class has already started, so it can\'t be recreated.' });
+    }
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      // Serializes two taps on the same cancelled class.
+      await tx.$queryRaw`SELECT id FROM "Class" WHERE id = ${classId} FOR UPDATE`;
+      const copy = await tx.class.findFirst({
+        where: { schoolId: existing.schoolId, branchId: existing.branchId, title: existing.title, startDate: existing.startDate, cancelledAt: null, archivedAt: null },
+      });
+      if (copy) return copy;
+      return tx.class.create({
+        data: {
+          id: randomUUID(),
+          schoolId: existing.schoolId,
+          branchId: existing.branchId,
+          instructorId: existing.instructorId,
+          // Kept (without the slot) so membership covers it like the original.
+          occurrenceDate: existing.occurrenceDate,
+          title: existing.title,
+          activities: existing.activities,
+          styles: existing.styles ?? [],
+          bannerUrl: existing.bannerUrl,
+          description: existing.description,
+          startDate: existing.startDate,
+          endDate: existing.endDate,
+          breakStartAt: existing.breakStartAt,
+          breakEndAt: existing.breakEndAt,
+          capacity: existing.capacity,
+          bookingEndAt: existing.bookingEndAt,
+          qrAttendanceEndAt: existing.qrAttendanceEndAt,
+          refundFeeDate: existing.refundFeeDate,
+          cancellationCharge: existing.cancellationCharge,
+          termsWaiverRequired: existing.termsWaiverRequired,
+          membershipInclusion: existing.membershipInclusion,
+          audience: existing.audience,
+          minAge: existing.minAge,
+          maxAge: existing.maxAge,
+        },
+      });
+    });
+  }
+
   async unarchive(callerId: string, classId: string) {
     const existing = await this.findOne(callerId, classId);
     await this.tenantAuth.assertMayManageClasses(callerId, existing.schoolId, [existing.branchId]);
@@ -451,6 +533,32 @@ export class ClassesService {
   private assertValidDateRange(startDate: Date, endDate: Date) {
     if (endDate <= startDate) {
       throw new BadRequestException('endDate must be after startDate');
+    }
+  }
+
+  /** Decision 432 item 13: a one-off class whose start date (in its Branch's
+   * zone, else the School's) a closure covers needs the owner's confirmation.
+   * A Branch closure covers that Branch's classes; a School-wide one, all. */
+  private async assertNotOnClosedDay(callerId: string, schoolId: string, branchId: string | null, startDate: Date): Promise<void> {
+    const { zone, closures } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const branch = branchId ? await tx.branch.findUnique({ where: { id: branchId }, select: { timezone: true } }) : null;
+      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } });
+      const rows = await tx.closure.findMany({
+        // A day either side covers every zone; the local date is checked below.
+        where: { schoolId, startDate: { lte: new Date(startDate.getTime() + 86_400_000) }, endDate: { gte: new Date(startDate.getTime() - 86_400_000) } },
+        select: { branchId: true, startDate: true, endDate: true, reason: true },
+        orderBy: [{ startDate: 'asc' }, { id: 'asc' }],
+      });
+      return { zone: classTimeZone(branch?.timezone, school?.timezone), closures: rows };
+    });
+    const z = zone && DateTime.local().setZone(zone).isValid ? zone : 'UTC';
+    const date = DateTime.fromJSDate(startDate).setZone(z).toISODate()!;
+    const closure = closures.find((c) => isClosedOn([c], branchId, date));
+    if (closure) {
+      throw new ConflictException({
+        code: 'CLASS_ON_CLOSED_DAY',
+        message: `${date} is closed (${closure.reason}). Send confirmClosedDay: true to create the class anyway.`,
+      });
     }
   }
 

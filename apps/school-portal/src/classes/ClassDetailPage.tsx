@@ -13,6 +13,9 @@ import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useCancelClass } from '../cancellations/cancellationQueries';
 import { useClassGuestWaivers, type BookingGuests } from '../waivers/guestWaiverQueries';
+import { useClassZone } from './useClassZone';
+import { endsNextDayInZone, formatInZone, formatTimeInZone } from '../lib/datetime';
+import { whoCanBookLabel } from './WhoCanBookFields';
 
 /** Decision 291 — the School cancels this whole class: every booking is
  * resolved by the School's "When the school cancels a whole class" setting,
@@ -271,22 +274,31 @@ export function ClassDetailPage() {
   const { id } = useParams<{ id: string }>();
   const classId = id ?? null;
   const { data: cls, isLoading: classLoading, error: classError } = useClass(classId);
-  const { data: bookingData, isLoading: bookingsLoading, error: bookingsError } = useClassBookings(classId);
-  const { data: waitlistData, isLoading: waitlistLoading, error: waitlistError } = useClassWaitlist(classId);
-  const guestWaivers = useClassGuestWaivers(classId ?? undefined);
   const ownedSchoolId = useOwnedSchoolId();
   const coachSchoolId = useCoachSchoolId();
   // Decision 387: staff book and cancel seats with the bookings switch (a
   // coach by role), and cancel the whole class with the cancel-classes one.
-  const access = useMyStaffAccess(ownedSchoolId ? null : coachSchoolId).data?.access;
+  const accessQuery = useMyStaffAccess(ownedSchoolId ? null : coachSchoolId);
+  const access = accessQuery.data?.access;
+  // Decision 425 Q1 (PRIV-4): Branch Staff see the roll call and waitlist
+  // only with the bookings switch on; the API refuses them otherwise.
+  const mayReadRoster = !!ownedSchoolId || !coachSchoolId || (access?.bookings ?? false);
+  const accessLoading = !ownedSchoolId && !!coachSchoolId && accessQuery.isLoading;
+  const rosterClassId = mayReadRoster ? classId : null;
+  const { data: bookingData, isLoading: bookingsLoading, error: bookingsError } = useClassBookings(rosterClassId);
+  const { data: waitlistData, isLoading: waitlistLoading, error: waitlistError } = useClassWaitlist(rosterClassId);
+  const guestWaivers = useClassGuestWaivers(rosterClassId ?? undefined);
   const mayCancel = !!ownedSchoolId || (!!coachSchoolId && (access?.bookings ?? false));
   const mayCancelClass = !!ownedSchoolId || (!!coachSchoolId && (access?.cancelClasses ?? false));
   const [adding, setAdding] = useState(false);
   const [cancelling, setCancelling] = useState<BookingResponse | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  // Times on the class's own clock, not the browser's (Decision 432 item 5).
+  const zone = useClassZone(cls);
+  const at = (iso: string) => formatInZone(iso, zone, formatLocale());
 
   if (!classId) return null;
-  if (classLoading || bookingsLoading || waitlistLoading) return <Spinner />;
+  if (classLoading || accessLoading || (mayReadRoster && (bookingsLoading || waitlistLoading))) return <Spinner />;
   if (classError) {
     return <ErrorBanner message={classError instanceof ApiError ? classError.message : t('classes.detail.loadFailed')} />;
   }
@@ -319,14 +331,17 @@ export function ClassDetailPage() {
         title={cls?.title ?? t('classes.detail.fallbackTitle')}
         subtitle={
           cls
-            ? `${new Date(cls.startDate).toLocaleString(formatLocale())} – ${new Date(cls.endDate).toLocaleString(formatLocale())}` +
+            ? `${at(cls.startDate)} – ${at(cls.endDate)}` +
+              (endsNextDayInZone(cls.startDate, cls.endDate, zone) ? ` (${t('timetable.endsNextDayShort')})` : '') +
               // Decision 353 (Q6): the slot's break, shown on the class details only.
               (cls.breakStartAt && cls.breakEndAt
                 ? ` · ${t('timetable.booking.breakLine', {
-                    start: new Date(cls.breakStartAt).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' }),
-                    end: new Date(cls.breakEndAt).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' }),
+                    start: formatTimeInZone(cls.breakStartAt, zone, formatLocale()),
+                    end: formatTimeInZone(cls.breakEndAt, zone, formatLocale()),
                   })}`
-                : '')
+                : '') +
+              // Decision 432 item 14: who can book.
+              (whoCanBookLabel(cls, t) ? ` · ${whoCanBookLabel(cls, t)}` : '')
             : undefined
         }
         actions={cls && mayCancelClass && !cls.cancelledAt && new Date(cls.endDate) > new Date() ? <CancelClassButton classId={cls.id} /> : undefined}
@@ -339,6 +354,13 @@ export function ClassDetailPage() {
         </div>
       ) : null}
 
+      {!mayReadRoster ? (
+        <Card>
+          <p style={{ margin: 0 }}>{t('classes.detail.rosterHidden')}</p>
+        </Card>
+      ) : null}
+
+      {mayReadRoster ? (
       <div style={{ marginBottom: 24 }}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
@@ -371,7 +393,7 @@ export function ClassDetailPage() {
                 { key: 'status', header: t('classes.detail.columnStatus'), render: (b) => bookingStatusBadge(b.status, t) },
                 { key: 'attendees', header: t('classes.detail.columnAttendees'), render: (b) => <GuestsCell count={b.attendees.length} guests={guestsByBooking.get(b.id)} /> },
                 { key: 'override', header: t('classes.detail.columnOverrideReason'), render: (b) => b.overrideReason ?? '—' },
-                { key: 'createdAt', header: t('classes.detail.columnBooked'), render: (b) => new Date(b.createdAt).toLocaleString(formatLocale()) },
+                { key: 'createdAt', header: t('classes.detail.columnBooked'), render: (b) => at(b.createdAt) },
                 ...(open
                   ? [
                       {
@@ -398,7 +420,9 @@ export function ClassDetailPage() {
           )}
         </Card>
       </div>
+      ) : null}
 
+      {mayReadRoster ? (
       <Card>
         <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
           {t('classes.detail.waitlistHeading')}
@@ -412,12 +436,13 @@ export function ClassDetailPage() {
               { key: 'position', header: '#', render: (e) => e.position },
               { key: 'student', header: t('classes.detail.columnStudent'), render: (e) => (e.studentFirstName || e.studentSurname ? `${e.studentFirstName} ${e.studentSurname}`.trim() : e.studentId.slice(0, 8)) },
               { key: 'status', header: t('classes.detail.columnStatus'), render: (e) => waitlistStatusBadge(e.status, t) },
-              { key: 'joinedAt', header: t('classes.detail.columnJoined'), render: (e) => new Date(e.joinedAt).toLocaleString(formatLocale()) },
-              { key: 'claimBy', header: t('classes.detail.columnClaimBy'), render: (e) => (e.claimByDeadline ? new Date(e.claimByDeadline).toLocaleString(formatLocale()) : '—') },
+              { key: 'joinedAt', header: t('classes.detail.columnJoined'), render: (e) => at(e.joinedAt) },
+              { key: 'claimBy', header: t('classes.detail.columnClaimBy'), render: (e) => (e.claimByDeadline ? at(e.claimByDeadline) : '—') },
             ]}
           />
         )}
       </Card>
+      ) : null}
 
       {adding && cls ? (
         <AddStudentDialog classId={cls.id} schoolId={cls.schoolId} bookedIds={booked} onClose={() => setAdding(false)} onDone={finish} />

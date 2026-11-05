@@ -1,0 +1,9 @@
+{
+ "nowInfo": {
+  "utc": "2026-11-04T21:18:48.559Z",
+  "ist": "2026-11-05T02:48:48.559+05:30 (IST wall clock)",
+  "dob": "2008-11-05"
+ },
+ "addAsAdult": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Add manually is for adults (18 or over). A child joins through their Guardian's app.\"}}",
+ "addAsChild": "201 {\"outcome\":\"GUARDIAN_CREATED\",\"guardianEmail\":\"r5-in-128559-18g@stress.test\",\"emailSent\":false,\"studentId\":\"51987b8c-657a-4a7a-972c-e37adfdaa947\",\"inviteId\":null,\"temporaryPasscode\":\"136321\",\"temporar"
+}

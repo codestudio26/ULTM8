@@ -87,6 +87,8 @@ describeIfDb('A parent books a class with guests for their child (Decision 379)'
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: child.id, schoolId: school.id } });
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: child.id, schoolId: otherSchool.id } });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: parent.id, studentId: child.id } });
+    // Decision 430 item 9: booking needs the parent's BASELINE consent.
+    await superuser.consentRecord.create({ data: { id: randomUUID(), guardianId: parent.id, studentId: child.id, tier: 'BASELINE', policyVersion: '2026-09-v1' } });
 
     const subscription = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'SUBSCRIPTION', title: 'Kids Unlimited', price: 5000 } });
     friendPassPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'FRIEND_PASS', title: 'Bring a friend', price: 0, classesIncluded: 1 } })).id;
@@ -115,6 +117,7 @@ describeIfDb('A parent books a class with guests for their child (Decision 379)'
       await superuser.roleGrant.deleteMany({ where: { schoolId: id } });
     }
     await superuser.bookingDelegation.deleteMany({ where: { guardianId: { in: userIds } } });
+    await superuser.consentRecord.deleteMany({ where: { guardianId: { in: userIds } } });
     await superuser.guardianLink.deleteMany({ where: { guardianId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: [school.id, otherSchool.id] } } });

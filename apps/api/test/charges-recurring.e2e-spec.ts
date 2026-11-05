@@ -443,6 +443,8 @@ describeIfDb('Recurring charges (backlog 3.6 step 3, Decision 412)', () => {
         expect.objectContaining({ id: s.id, schoolName: 'Recurring School', description: 'Private lesson', frequency: 'MONTHLY', status: 'ACTIVE', createdByName: null }),
       ]);
       const parent = await mkUser('tenantParent');
+      // Decision 430 item 7: a parent acts for a child under 18 (30 days after, then no more).
+      await su.user.update({ where: { id: student.id }, data: { dateOfBirth: new Date(Date.now() - 10 * 365 * 86_400_000) } });
       await su.guardianLink.create({ data: { id: randomUUID(), guardianId: parent.id, studentId: student.id } });
       expect((await as(sign(parent, null, null)).get(`/v1/students/${student.id}/recurring-charges`)).body.items).toHaveLength(1);
       await mkStudent('stranger');

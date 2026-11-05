@@ -5,6 +5,8 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
+import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
+import { schoolZone } from '../common/school-zone';
 import { decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
@@ -35,14 +37,6 @@ const TOKEN_SHAPE = /^[A-Za-z0-9_-]{43}$/;
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 
-/** Whole years between a date of birth and `at` (UTC calendar dates). */
-function ageOn(dob: Date, at: Date): number {
-  let age = at.getUTCFullYear() - dob.getUTCFullYear();
-  const beforeBirthday =
-    at.getUTCMonth() < dob.getUTCMonth() || (at.getUTCMonth() === dob.getUTCMonth() && at.getUTCDate() < dob.getUTCDate());
-  if (beforeBirthday) age -= 1;
-  return age;
-}
 
 /**
  * Guests on a booking (Waivers Q9). A guest is a seat on someone's booking,
@@ -107,7 +101,8 @@ export class GuestWaiversService {
     if (Number.isNaN(dob.getTime()) || isoDate(dob) !== dto.guestDateOfBirth || dob > now || dob.getUTCFullYear() < 1900) {
       throw new BadRequestException('Enter a real date of birth.');
     }
-    const byGuardian = ageOn(dob, now) < 18;
+    // Decision 430 item 10: the 18th birthday on the School's (or Branch's) own date.
+    const byGuardian = !isAdultOn(dob, now, await schoolZone(this.prismaJobs, link.schoolId, link.branchId));
     if (byGuardian && dto.signerFullName.trim().toLowerCase() === dto.guestFullName.trim().toLowerCase()) {
       throw new BadRequestException("A guest under 18 needs a parent or guardian to sign for them. Enter the parent or guardian's name.");
     }

@@ -10,6 +10,7 @@ import { AuditLogService } from './audit-log.service';
 import { PlatformAdminSchoolsController } from './platform-admin-schools.controller';
 import { PlatformAdminSchoolsService } from './platform-admin-schools.service';
 import { PlatformAdminSchoolOwnersService } from './platform-admin-school-owners.service';
+import { PlatformAdminSchoolStaffService } from './platform-admin-school-staff.service';
 import { PlatformAdminSchoolTrialService } from './platform-admin-school-trial.service';
 import { PlatformAdminFranchisesController } from './platform-admin-franchises.controller';
 import { PlatformAdminFranchisesService } from './platform-admin-franchises.service';
@@ -197,6 +198,7 @@ import { QueueModule } from '../jobs/queue.module';
     PlatformAdminImpersonationService,
     TenantLifecycleService,
     PlatformAdminSchoolOwnersService,
+    PlatformAdminSchoolStaffService,
     PlatformAdminSchoolTrialService,
   ],
   // Phase 49 — first-ever export from this module. PlatformAdminJwtAuthGuard is

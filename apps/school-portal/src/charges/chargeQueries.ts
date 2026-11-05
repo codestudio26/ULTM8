@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { currencyFractionDigits } from '@ultm8/i18n';
 
 /** Staff-created charges and the member balance (Decisions 303, 338, 411). */
 export type Charge = components['schemas']['ChargeResponseDto'];
@@ -223,18 +224,8 @@ export function useSetChargePermission(schoolId: string | null) {
 }
 
 /** A rate in hundredths of a percent as the text a rate box shows: 2000 → "20", 810 → "8.1". */
-export function rateText(basisPoints: number): string {
-  return String(basisPoints / 100);
-}
-
-/** "20" / "8.10" / "0" → 2000 / 810 / 0; null when it isn't a rate from 0 to 100 with at most 2 decimals. */
-export function parseRate(text: string): number | null {
-  const t = text.trim().replace(',', '.');
-  if (!/^\d{1,3}(\.\d{1,2})?$/.test(t)) return null;
-  const [whole, frac = ''] = t.split('.');
-  const bp = Number(whole) * 100 + Number(frac.padEnd(2, '0'));
-  return bp <= 10000 ? bp : null;
-}
+// rateText and parseRate live in taxLines.ts (pure, so they can be unit tested).
+export { parseRate, rateText } from './taxLines';
 
 /** The same sums the API makes (apps/api/src/charges/charge-maths.ts), for
  * the Create charge preview. The API's answer is the one kept. */
@@ -244,8 +235,11 @@ export function previewCharge(input: {
   discountValue: number | null;
   taxRateBasisPoints: number;
   taxInclusive: boolean;
+  /** Decision 431 (MON-2): rounds to the currency's own unit (whole yen). */
+  currency?: string | null;
 }): { discount: number; net: number; tax: number; gross: number } | null {
-  const round = (n: number, d: number) => Math.floor((2 * n + d) / (2 * d));
+  const step = currencyFractionDigits(input.currency) === 0 ? 100 : 1;
+  const round = (n: number, d: number) => Math.floor((2 * n + d * step) / (2 * d * step)) * step;
   if (!(input.amount > 0)) return null;
   let discount = 0;
   if (input.discountType && input.discountValue) {

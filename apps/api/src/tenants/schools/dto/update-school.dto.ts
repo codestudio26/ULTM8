@@ -1,5 +1,5 @@
 import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsString, IsOptional, IsUrl, Matches, MaxLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsString, IsOptional, IsTimeZone, IsUrl, Matches, MaxLength } from 'class-validator';
 import { CreateSchoolDto, FOOTER_EMAIL_MESSAGE, FOOTER_URL_MESSAGE, FOOTER_URL_OPTIONS } from './create-school.dto';
 
 /** Decision 318 item 10: the only ad tracking IDs a School can save. ASCII
@@ -82,6 +82,7 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @ApiPropertyOptional({ description: 'IANA timezone name. Same field as Branch.timezone (Decisions 76, 172).', type: String, nullable: true })
   @IsOptional()
   @IsString()
+  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 432).' })
   @MaxLength(100)
   timezone?: string | null;
 

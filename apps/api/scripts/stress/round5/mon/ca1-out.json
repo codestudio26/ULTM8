@@ -1,0 +1,14 @@
+{
+ "book": 201,
+ "cancel": 200,
+ "outcome": "CHARGED",
+ "tx": {
+  "amount": 1500,
+  "currency": "USD",
+  "status": "SUCCESSFUL"
+ },
+ "stripePI": {
+  "amount": 1500,
+  "currency": "usd"
+ }
+}

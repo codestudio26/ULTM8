@@ -10,6 +10,8 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
+import { assertBaselineConsentGiven } from '../guardians/baseline-consent';
+import { schoolZone } from '../common/school-zone';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
@@ -26,11 +28,13 @@ import { localDay } from '../ranks/engine';
 import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClassShared, lockStudentClass, selectAndConsumeMembership, withSeatLockRetry, BOOKING_TX_OPTIONS, LockedClass } from './booking-gates';
 import { bookingUsesCredit } from './open-mat-credit';
 import { classTimeZones } from '../classes/class-time-zone';
+import { assertWhoCanBook } from '../classes/who-can-book';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
+import { resolveChargeCurrency } from '../common/school-currency';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -111,8 +115,15 @@ export class BookingsService {
     const studentId = dto.studentId ?? callerId;
     const isOnBehalfOf = dto.studentId !== undefined && dto.studentId !== callerId;
 
-    let cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
-    let isGuardianAction = false;
+    // Decision 430 item 1 (FAM-1): the relationship decides, not visibility.
+    // A parent who also trains, coaches or owns at the School sees the Class
+    // under their own context, which used to send their child's booking down
+    // the staff path (403 for a member; a staff booking that skipped the
+    // waitlist for a coach). Without an override reason (staff-only), an
+    // active Guardian of the student books as the Guardian, reading the Class
+    // as the student.
+    let isGuardianAction = isOnBehalfOf && dto.overrideReason === undefined && (await this.guardiansService.isActiveGuardianOf(callerId, studentId));
+    let cls = isGuardianAction ? null : await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findUnique({ where: { id: classId } }));
     if (!cls && isOnBehalfOf) {
       cls = await this.prismaApp.withTenantContext(studentId, (tx) => tx.class.findUnique({ where: { id: classId } }));
       isGuardianAction = cls !== null;
@@ -145,7 +156,7 @@ export class BookingsService {
       if (dto.overrideReason !== undefined) {
         throw new ForbiddenException('A Guardian may not supply overrideReason — only Instructor/Staff may override the rank-eligibility gate.');
       }
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'act', schoolId: resolvedClass.schoolId, branchId: resolvedClass.branchId });
     } else if (isStaffAction) {
       // A Student may never self-override or book on someone else's behalf — SKILL.md
       // §9: "An Instructor/Staff member can override", never the Student themselves.
@@ -165,6 +176,9 @@ export class BookingsService {
     // Decision 110: a closed School accepts no new Bookings, same as every other
     // write there (Classes review C16: a Student could still book after closing).
     await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
+    // Decision 430 item 9 (FAM-9): a child whose parent hasn't given BASELINE
+    // consent can't be booked, by anyone.
+    await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
     // SKILL.md §10: each guest needs a Friend Pass; the organizer's own
     // Subscription or Class Pack never covers a guest, and one pass covers one
     // guest (Classes review C13: one Subscription sent three times booked three
@@ -210,6 +224,9 @@ export class BookingsService {
 
     if (!dto.overrideReason) {
       await this.assertRankEligible(tx, studentId, resolvedClass);
+      // Decision 432 item 14: "Who can book" (women or men only, ages). Staff
+      // skip it with the same override reason as the rank gate.
+      await assertWhoCanBook(tx, studentId, resolvedClass);
     }
 
     const attendeeMembershipIds = dto.attendeeMembershipIds ?? [];
@@ -373,6 +390,11 @@ export class BookingsService {
     if (!existing) {
       throw new NotFoundException('Booking not found');
     }
+    // Decision 430 item 1 (FAM-1): a parent who is also staff here cancels
+    // their own child's booking as the parent, not as staff.
+    if (!isGuardianAction && !frozenStudentId && existing.studentId !== callerId && (await this.guardiansService.isActiveGuardianOf(callerId, existing.studentId))) {
+      isGuardianAction = true;
+    }
     // Hoisted to a local const — same "narrowing doesn't cross a closure boundary
     // for a `let`" fix bookClass() already applies to its own `cls`/`resolvedClass`.
     const resolvedBooking = existing;
@@ -380,7 +402,7 @@ export class BookingsService {
     if (frozenStudentId) {
       // Already allowed by MembershipFreezesService (Decision 409).
     } else if (isGuardianAction) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, resolvedBooking.studentId, { purpose: 'act', schoolId: resolvedBooking.schoolId, branchId: resolvedBooking.branchId });
     } else if (resolvedBooking.studentId !== callerId) {
       await this.tenantAuth.assertStaffAtSchool(callerId, resolvedBooking.schoolId);
       // A School cancellation was already allowed by its caller (Decision 387).
@@ -399,10 +421,19 @@ export class BookingsService {
         : await this.cancellation.isSchoolOwner(callerId, resolvedBooking.schoolId);
 
     let cancellationChargeAmount: number | null = null;
-    let cancellationChargeCurrency = 'usd';
+    let cancellationChargeCurrency: string | null = null;
     const refunds: StripeRefundPlan[] = [];
     let needsStaff = 0;
-    const booking = await this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
+    const booking = await withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
+      // First, before any row lock (see lockStudentClass): a booking of the
+      // same Student into the same Class waits here instead of deadlocking
+      // with this cancel at the one-upcoming-booking index and the
+      // Membership row (stress test round 5, PRIV-7). A retry starts afresh.
+      await lockStudentClass(tx, resolvedBooking.studentId, resolvedBooking.classId);
+      cancellationChargeAmount = null;
+      cancellationChargeCurrency = 'usd';
+      refunds.length = 0;
+      needsStaff = 0;
       // Read past RLS: the Booking above already proved the caller may act on it,
       // and a Student can lose sight of their Class (moved to another Branch
       // before Decision 345 blocked that, C14), which left the Booking stuck.
@@ -445,10 +476,9 @@ export class BookingsService {
       // first; a Class with none falls back to the charge on the plan the
       // Booking used. One fee per Booking, never both.
       if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee) {
-        // No currency field on Class itself — reuses the Booking's own
-        // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
-        // fallback MembershipsService.purchase() already applies when charging
-        // this exact Membership's own Stripe payments.
+        // No currency field on Class itself: the plan the Booking used, else
+        // the School's (the one shared rule, common/school-currency.ts;
+        // Decision 431 MON-5). Never US dollars by default.
         const sourceMembership = resolvedBooking.sourceMembershipId
           ? await tx.membership.findUnique({
               where: { id: resolvedBooking.sourceMembershipId },
@@ -458,7 +488,7 @@ export class BookingsService {
         const fee = lateCancellationFee(cls.cancellationCharge, sourceMembership?.membershipPlan.cancellationCharge ?? null);
         if (fee !== null) {
           cancellationChargeAmount = fee;
-          cancellationChargeCurrency = sourceMembership?.membershipPlan.currency ?? 'usd';
+          cancellationChargeCurrency = await resolveChargeCurrency(this.prismaJobs, cls.schoolId, sourceMembership?.membershipPlan.currency);
         }
       }
 
@@ -486,7 +516,7 @@ export class BookingsService {
       }
 
       return tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { attendees: true } });
-    });
+    }));
 
     const { failed } = await this.cancellation.sendStripeRefunds(refunds);
     if (needsStaff + failed > 0) {
@@ -521,14 +551,14 @@ export class BookingsService {
       const feeAmount = cancellationChargeAmount;
       let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
       let paymentIntentId: string | null = null;
+      const feeCurrency = cancellationChargeCurrency as string | null;
       try {
-        const charge = await this.paymentsService.chargeOffSession(
-          resolvedBooking.studentId,
-          resolvedBooking.schoolId,
-          cancellationChargeAmount,
-          cancellationChargeCurrency,
-          'Late-cancellation fee',
-        );
+        if (!feeCurrency) {
+          // Neither the plan nor the School has a currency: nothing is
+          // charged, and staff can see why in the log (MON-5).
+          throw new Error('no currency on the plan or the School');
+        }
+        const charge = await this.paymentsService.chargeOffSession(resolvedBooking.studentId, resolvedBooking.schoolId, cancellationChargeAmount, feeCurrency, 'Late-cancellation fee');
         outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
         paymentIntentId = charge.paymentIntentId || null;
       } catch (err) {
@@ -543,7 +573,7 @@ export class BookingsService {
         // Decision 346 (G5) — a fee that was charged, or tried and declined, is
         // also a row on the School's Transactions ledger. No saved card means
         // nothing was charged, so no row.
-        if (outcome !== 'NO_SAVED_PAYMENT_METHOD') {
+        if (outcome !== 'NO_SAVED_PAYMENT_METHOD' && feeCurrency) {
           const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: resolvedBooking.schoolId }, select: { id: true } });
           if (paymentAccount) {
             await tx.transaction.create({
@@ -555,7 +585,7 @@ export class BookingsService {
                 kind: 'LATE_CANCEL_FEE',
                 bookingId,
                 amount: feeAmount,
-                currency: cancellationChargeCurrency.toUpperCase(),
+                currency: feeCurrency.toUpperCase(),
                 status: outcome === 'CHARGED' ? 'SUCCESSFUL' : 'FAILED',
                 paymentMethod: 'STRIPE',
                 stripePaymentIntentId: paymentIntentId,
@@ -719,6 +749,9 @@ export class BookingsService {
     // common single-grant wrong-Branch case is already a 404 via RLS alone,
     // before this line is ever reached).
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    // Decision 425 Q1 (stress test round 5, PRIV-4): the roll call is Branch
+    // Staff's only while the owner leaves "Bookings and check-in" on.
+    await this.tenantAuth.assertStaffMay(callerId, cls.schoolId, 'bookings', cls.branchId);
     const page = await this.prismaApp.withTenantContext(callerId, (tx) =>
       cursorPaginate(
         (args) => tx.booking.findMany({ ...args, where: { classId }, include: { attendees: true } }),
@@ -846,13 +879,13 @@ export class BookingsService {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     const school = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }),
+      tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true, weekStartsOn: true } }),
     );
     const schoolZone = safeZone(school?.timezone);
 
     let range: { from: string; to: string };
     if (from === undefined && to === undefined) {
-      range = defaultWeekRange(schoolZone);
+      range = defaultWeekRange(schoolZone, school?.weekStartsOn);
     } else if (from === undefined || to === undefined) {
       throw new BadRequestException('from and to must both be supplied, or both omitted for the current week.');
     } else {

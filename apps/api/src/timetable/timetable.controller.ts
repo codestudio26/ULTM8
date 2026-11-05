@@ -12,7 +12,7 @@ import { TimetableQueryDto } from './dto/timetable-query.dto';
 import { UpcomingImpactResponseDto } from './dto/upcoming-impact-response.dto';
 import { TimetableCalendarQueryDto, TimetableCalendarResponseDto } from './dto/timetable-calendar.dto';
 import { ClassResponseDto } from '../classes/dto/class-response.dto';
-import { ClosureCreatedResponseDto, ClosureListResponseDto, CreateClosureDto } from './dto/closure.dto';
+import { ClosureCreatedResponseDto, ClosureListResponseDto, ClosureUpdatedResponseDto, CreateClosureDto, UpdateClosureDto } from './dto/closure.dto';
 
 // TimetableSlot CRUD only — no delete, same reasoning as School/Branch/Class (general
 // tenant offboarding is [UNRESOLVED]). The class-occurrence-generation job that
@@ -66,6 +66,13 @@ export class TimetableController {
   @Post('schools/:schoolId/closures')
   createClosure(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string, @Body() dto: CreateClosureDto) {
     return this.timetableService.createClosure(user.sub, schoolId, dto);
+  }
+
+  /** Decision 432 item 11: change a closure's dates or reason (owner only). */
+  @ApiOkResponse({ type: ClosureUpdatedResponseDto })
+  @Patch('closures/:id')
+  updateClosure(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateClosureDto) {
+    return this.timetableService.updateClosure(user.sub, id, dto);
   }
 
   @ApiNoContentResponse()

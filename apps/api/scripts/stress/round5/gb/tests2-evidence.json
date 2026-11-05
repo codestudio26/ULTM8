@@ -1,0 +1,231 @@
+{
+ "res": [
+  {
+   "id": "P1 a 10-year-old cannot buy a plan himself (Decision 67)",
+   "pass": false,
+   "detail": "503 {\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P1 a 10-year-old cannot buy (PaymentIntent)",
+   "pass": false,
+   "detail": "503 {\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P2 parent buys for an adult (18 yesterday) is refused",
+   "pass": true,
+   "detail": "503 {\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P3 parent buys child plan (Decision 428)",
+   "pass": false,
+   "detail": "503 {\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P3 saved card refused for a child",
+   "pass": true,
+   "detail": "400"
+  },
+  {
+   "id": "P3 non-parent cannot buy for a child",
+   "pass": true,
+   "detail": "403"
+  },
+  {
+   "id": "P3 Guardian-who-trains buys child plan",
+   "pass": false,
+   "detail": "503 {\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "R Kid Mode 8 parallel bookings → one, one credit",
+   "pass": true,
+   "detail": "201,409,409,409,409,409,409,409 credits 8→7"
+  },
+  {
+   "id": "R Did staff roster excludes Levenshulme children",
+   "pass": true,
+   "detail": "200 {\"items\":[{\"id\":\"227e7eaa-2598-4a7a-bb38-b8a80f3e998d\",\"firstName\":\"Harry\",\"surname\":\"Smith-Jones\",\"email\":\"\",\"profilePhotoUrl\":null,\"enrolledAt\":\"202"
+  },
+  {
+   "id": "K Kid Mode refused for an 18-year-old",
+   "pass": false,
+   "detail": "201"
+  },
+  {
+   "id": "N an 18-year-old's notices stop going to the parent",
+   "pass": false,
+   "detail": "[\"For Ronan: Bring your gi.\"]"
+  }
+ ],
+ "ev": [
+  {
+   "id": "setup acct",
+   "req": "POST /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/payment-accounts",
+   "body": {
+    "provider": "STRIPE",
+    "accountTitle": "Red Rose",
+    "country": "GB"
+   },
+   "status": 409,
+   "resp": "{\"error\":{\"code\":\"CONFLICT\",\"message\":\"This School already has a PaymentAccount.\"}}"
+  },
+  {
+   "id": "setup plan",
+   "req": "POST /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/membership-plans",
+   "body": {
+    "type": "CLASS_PACK",
+    "title": "Juniors 5-class 87567",
+    "price": 4500,
+    "currency": "GBP",
+    "classesIncluded": 5
+   },
+   "status": 201,
+   "resp": "{\"id\":\"59ba945f-7cf5-4b4a-8619-8dc2b0c255ce\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"type\":\"CLASS_PACK\",\"title\":\"Juniors 5-class 87567\",\"price\":4500,\"currency\":\"GBP\",\"expiryDurationDays\":null,\"newMemberBillingStrategy\":\"FRESH_CYCLE\",\"billingCycleAnchorDay\":null,\"classesIncluded\":5,\"scopedClassId\":null,\"visible\":true,\"archivedAt\":null,\"stripeProductId\":null,\"stripePriceId\":null,\"discipli…"
+  },
+  {
+   "id": "P1 Liam hosted checkout",
+   "req": "POST /membership-plans/59ba945f-7cf5-4b4a-8619-8dc2b0c255ce/purchase",
+   "body": {
+    "useHostedCheckout": true
+   },
+   "status": 503,
+   "resp": "{\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P1 Liam PaymentIntent",
+   "req": "POST /membership-plans/59ba945f-7cf5-4b4a-8619-8dc2b0c255ce/purchase",
+   "body": {},
+   "status": 503,
+   "resp": "{\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P2 Ann buys for Ronan",
+   "req": "POST /membership-plans/59ba945f-7cf5-4b4a-8619-8dc2b0c255ce/purchase",
+   "body": {
+    "studentId": "ea9f3014-b295-499e-ab20-10fd5b730d8c",
+    "useHostedCheckout": true
+   },
+   "status": 503,
+   "resp": "{\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P3 Máire buys for Cian",
+   "req": "POST /membership-plans/59ba945f-7cf5-4b4a-8619-8dc2b0c255ce/purchase",
+   "body": {
+    "studentId": "d7fbaa88-9c3b-4e52-be90-3273380723e0",
+    "useHostedCheckout": true
+   },
+   "status": 503,
+   "resp": "{\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P3 Máire saved card for Cian",
+   "req": "POST /membership-plans/59ba945f-7cf5-4b4a-8619-8dc2b0c255ce/purchase",
+   "body": {
+    "studentId": "d7fbaa88-9c3b-4e52-be90-3273380723e0",
+    "payWithSavedCard": true
+   },
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"Paying with a saved card is not supported for a Guardian-driven purchase — pay with a new card instead.\"}}"
+  },
+  {
+   "id": "P3 Patrick buys for Cian",
+   "req": "POST /membership-plans/59ba945f-7cf5-4b4a-8619-8dc2b0c255ce/purchase",
+   "body": {
+    "studentId": "d7fbaa88-9c3b-4e52-be90-3273380723e0",
+    "useHostedCheckout": true
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "P3 Patrick buys for Oisín",
+   "req": "POST /membership-plans/59ba945f-7cf5-4b4a-8619-8dc2b0c255ce/purchase",
+   "body": {
+    "studentId": "186f0a46-665e-4988-bae9-c8e86b778a1d",
+    "useHostedCheckout": true
+   },
+   "status": 503,
+   "resp": "{\"error\":{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"A required service is temporarily unavailable. Please try again shortly.\"}}"
+  },
+  {
+   "id": "P transactions",
+   "db": []
+  },
+  {
+   "id": "R class",
+   "req": "POST /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/classes",
+   "body": {
+    "branchId": "9da4a47b-0101-4de3-aae8-d77bcf157f52",
+    "instructorId": "b8bef7e4-b11a-4404-96e7-f807d8dcb017",
+    "title": "Race class",
+    "styles": [
+     {
+      "disciplineId": "5b6ed791-7ac7-419c-8794-f2a790c56e51",
+      "classType": null
+     }
+    ],
+    "startDate": "2026-11-12T21:14:49.493Z",
+    "endDate": "2026-11-12T22:14:49.493Z",
+    "membershipInclusion": true,
+    "capacity": 20
+   },
+   "status": 201,
+   "resp": "{\"id\":\"6e4d09b1-2df1-49a6-a4a6-1d373cbdf041\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"instructorId\":\"b8bef7e4-b11a-4404-96e7-f807d8dcb017\",\"timetableSlotId\":null,\"occurrenceDate\":null,\"title\":\"Race class\",\"activities\":[\"Karate\"],\"styles\":[{\"classType\":null,\"disciplineId\":\"5b6ed791-7ac7-419c-8794-f2a790c56e51\"}],\"bannerUrl\":null,\"descripti…"
+  },
+  {
+   "id": "R delegation Cian",
+   "req": "POST /guardians/me/minors/d7fbaa88-9c3b-4e52-be90-3273380723e0/booking-delegation",
+   "status": 201,
+   "resp": "{\"id\":\"3900d7b8-531b-418d-847e-ca681d703f66\",\"guardianId\":\"0ec72784-6463-4d9b-bbf0-4316c54a3db1\",\"studentId\":\"d7fbaa88-9c3b-4e52-be90-3273380723e0\",\"status\":\"ACTIVE\",\"grantedAt\":\"2026-11-04T21:14:49.579Z\",\"withdrawnAt\":null}"
+  },
+  {
+   "id": "R mint Cian",
+   "req": "POST /guardians/me/minors/d7fbaa88-9c3b-4e52-be90-3273380723e0/kid-mode-token",
+   "status": 201,
+   "resp": "{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwZWM3Mjc4NC02NDYzLTRkOWItYmJmMC00MzE2YzU0YTNkYjEiLCJlbWFpbCI6InI1LWdiLW13Mm0xcmRqLTIzN0BzdHJlc3MudGVzdCIsImdyYW50cyI6W10sImtpZE1vZGUiOnsic3R1ZGVudElkIjoiZDdmYmFhODgtOWMzYi00ZTUyLWJlOTAtMzI3MzM4MDcyM2UwIn0sImlhdCI6MTc5MzgyNjg4OSwiZXhwIjoxNzkzODI3MTg5fQ.6d16x6IoFK59Frd3BPjHCfKTC7RazmRPuRvo1h2fO50\",\"expiresAt\":\"2026-11-04T21:19:49.606Z\"}"
+  },
+  {
+   "id": "R Did staff roster",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students",
+   "status": 200,
+   "resp": "{\"items\":[{\"id\":\"227e7eaa-2598-4a7a-bb38-b8a80f3e998d\",\"firstName\":\"Harry\",\"surname\":\"Smith-Jones\",\"email\":\"\",\"profilePhotoUrl\":null,\"enrolledAt\":\"2026-11-04T21:10:18.049Z\",\"status\":\"ACTIVE\",\"joinedOn\":\"2026-11-04\",\"homeBranchId\":\"087a0a2b-3e1b-4662-96ac-728424a7fd3e\",\"homeBranchName\":\"Didsbury\",\"visitor\":false,\"visitPassEndsAt\":null,\"frozen\":false,\"frozenUntil\":null,\"guardianManaged\":true},{\"id\":…"
+  },
+  {
+   "id": "K Ann delegation Ronan",
+   "req": "POST /guardians/me/minors/ea9f3014-b295-499e-ab20-10fd5b730d8c/booking-delegation",
+   "status": 201,
+   "resp": "{\"id\":\"5f6a69b7-f884-4c78-a8d0-2a3fdbe8efa0\",\"guardianId\":\"c885ea30-d9ef-4bca-895f-6a523298bf66\",\"studentId\":\"ea9f3014-b295-499e-ab20-10fd5b730d8c\",\"status\":\"ACTIVE\",\"grantedAt\":\"2026-11-04T21:14:50.221Z\",\"withdrawnAt\":null}"
+  },
+  {
+   "id": "K Ann mint for Ronan",
+   "req": "POST /guardians/me/minors/ea9f3014-b295-499e-ab20-10fd5b730d8c/kid-mode-token",
+   "status": 201,
+   "resp": "{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJjODg1ZWEzMC1kOWVmLTRiY2EtODk1Zi02YTUyMzI5OGJmNjYiLCJlbWFpbCI6InI1LWdiLW13Mm0xcmRqLTI0MUBzdHJlc3MudGVzdCIsImdyYW50cyI6W10sImtpZE1vZGUiOnsic3R1ZGVudElkIjoiZWE5ZjMwMTQtYjI5NS00OTllLWFiMjAtMTBmZDViNzMwZDhjIn0sImlhdCI6MTc5MzgyNjg5MCwiZXhwIjoxNzkzODI3MTkwfQ.nt_UfA9YLvQkCYGLTV9xq8xcYsaoQfexmY8a7YBXmhc\",\"expiresAt\":\"2026-11-04T21:19:50.245Z\"}"
+  },
+  {
+   "id": "N broadcast open1",
+   "req": "POST /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/notifications/broadcast",
+   "body": {
+    "title": "Squad news 11b1e1",
+    "body": "Bring your gi.",
+    "audience": "CLASS",
+    "classId": "411809f7-c5ca-403e-83af-408ddaf3890c",
+    "classAudience": [
+     "BOOKED"
+    ]
+   },
+   "status": 201,
+   "resp": "{\"broadcastId\":\"15d2cbf1-0a10-4782-ba78-0e46482ecdab\",\"audience\":\"CLASS\",\"recipientCount\":3}"
+  },
+  {
+   "id": "N rows",
+   "total": 6,
+   "ann": [
+    "For Ronan: Bring your gi."
+   ],
+   "kieran": [
+    "For Ruairí: Bring your gi."
+   ]
+  }
+ ]
+}

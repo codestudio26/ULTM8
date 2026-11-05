@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TenantsModule } from '../tenants/tenants.module';
 import { QueueModule } from '../jobs/queue.module';
+import { DeskSaleRefundsService } from './desk-sale-refunds.service';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { StripeClientService } from './stripe-client.service';
@@ -33,7 +34,7 @@ import { StripeClientService } from './stripe-client.service';
 @Module({
   imports: [TenantsModule, QueueModule],
   controllers: [PaymentsController],
-  providers: [PaymentsService, StripeClientService],
+  providers: [PaymentsService, StripeClientService, DeskSaleRefundsService],
   exports: [PaymentsService, StripeClientService],
 })
 export class PaymentsModule {}

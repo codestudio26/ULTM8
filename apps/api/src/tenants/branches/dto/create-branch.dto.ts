@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsOptional, IsString, IsUrl, MaxLength, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, IsArray, IsOptional, IsString, IsTimeZone, IsUrl, MaxLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PostalAddressDto } from '../../../common/address/postal-address.dto';
 
@@ -59,6 +59,7 @@ export class CreateBranchDto {
   @ApiPropertyOptional({ description: 'IANA timezone name.' })
   @IsOptional()
   @IsString()
+  @IsTimeZone({ message: 'timezone must be an IANA time zone name, e.g. America/Denver (Decision 432).' })
   @MaxLength(100)
   timezone?: string;
 

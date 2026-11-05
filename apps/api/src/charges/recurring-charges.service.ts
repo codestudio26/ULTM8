@@ -16,11 +16,14 @@ import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { ChargesService } from './charges.service';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
-import { ChargeMathsError, ChargeTotals, computeCharge, taxForCharge } from './charge-maths';
+import { ChargeMathsError, ChargeTotals, computeCharge, taxLinesForCharge } from './charge-maths';
 import { InvoiceNotice, runSeries, seriesState } from './recurring-occurrences';
 import { dayOf, dayValue, firstIndexOnOrAfter, nextDay, schoolToday, type RecurringFrequency } from './recurring-schedule';
 import { CreateRecurringChargeDto, RecurringChargeStatus } from './dto/recurring-charge.dto';
 import { schoolCurrencyRequired } from '../common/school-currency';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
+import { assertWithinChargeCap } from './charge-cap';
+import { loadEffectiveTax, type TaxLineSetting } from './tax-lines';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The same repeat guard as a charge or desk sale (DESK_REPEAT). */
@@ -29,7 +32,8 @@ const DESK_REPEAT_WINDOW_MS = 60_000;
 const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency.toUpperCase()}`;
 const EVERY: Record<RecurringFrequency, string> = { WEEKLY: 'week', MONTHLY: 'month', YEARLY: 'year' };
 
-type SchoolTax = { taxRateBasisPoints: number; taxInclusive: boolean };
+/** The tax that applies to the series' member (Decision 431: the School's lines, or their home Branch's). */
+type SchoolTax = { taxInclusive: boolean; lines: TaxLineSetting[] };
 
 const STATUS_ORDER: Record<RecurringChargeStatus, number> = { ACTIVE: 0, STOPPED: 1, ENDED: 2 };
 
@@ -99,7 +103,7 @@ export class RecurringChargesService {
   async listForStaff(callerId: string, schoolId: string, studentId: string) {
     const can = await this.assertMay(callerId, schoolId, studentId, 'read');
     const rows = await this.prismaApp.withTenantContext(callerId, (tx) => tx.recurringCharge.findMany({ where: { schoolId, studentId } }));
-    const tax = await this.loadTax(schoolId);
+    const tax = await this.loadTax(schoolId, studentId);
     const items = await this.shape(rows, new Map([[schoolId, tax]]), true);
     return { items, can: { create: can.create, stop: can.stop, restart: can.restart } };
   }
@@ -112,7 +116,7 @@ export class RecurringChargesService {
     await this.assertCurrentStudent(schoolId, studentId);
     const school = await this.prismaJobs.school.findUnique({
       where: { id: schoolId },
-      select: { defaultCurrency: true, timezone: true, taxRateBasisPoints: true, taxInclusive: true },
+      select: { defaultCurrency: true, timezone: true },
     });
     if (!school) throw new NotFoundException('School not found');
     const currency = school.defaultCurrency?.toUpperCase();
@@ -122,10 +126,15 @@ export class RecurringChargesService {
     if (!!dto.discountType !== (dto.discountValue !== null && dto.discountValue !== undefined)) {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });
     }
+    // Decision 431 (MON-3): whole units of the currency, as a single charge.
+    assertWholeMinorUnits(dto.amount, currency);
+    if (dto.discountType === 'FIXED') assertWholeMinorUnits(dto.discountValue, currency);
+    assertWithinChargeCap(dto.amount);
+    if (dto.discountType === 'FIXED') assertWithinChargeCap(dto.discountValue);
     // The same checks as a single charge: the discount must leave something to pay.
     // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
     const taxExempt = dto.taxExempt === true;
-    const estimate = this.estimate({ unitAmount: dto.amount, discountType: dto.discountType ?? null, discountValue: dto.discountValue ?? null, taxExempt }, school);
+    const estimate = this.estimate({ unitAmount: dto.amount, discountType: dto.discountType ?? null, discountValue: dto.discountValue ?? null, taxExempt, currency }, await this.loadTax(schoolId, studentId));
 
     const today = schoolToday(new Date(), school.timezone);
     if (dto.firstDate < today) {
@@ -272,10 +281,12 @@ export class RecurringChargesService {
     );
     const schools = await this.prismaJobs.school.findMany({
       where: { id: { in: [...new Set(rows.map((r) => r.schoolId))] } },
-      select: { id: true, name: true, taxRateBasisPoints: true, taxInclusive: true },
+      select: { id: true, name: true },
     });
     const byId = new Map(schools.map((s) => [s.id, s]));
-    const items = await this.shape(rows, new Map(schools.map((s) => [s.id, s])), false);
+    const taxes = new Map<string, SchoolTax>();
+    for (const s of schools) taxes.set(s.id, await this.loadTax(s.id, studentId));
+    const items = await this.shape(rows, taxes, false);
     return {
       items: items
         .map((i) => ({ ...i, schoolName: byId.get(i.schoolId)?.name ?? '' }))
@@ -303,7 +314,7 @@ export class RecurringChargesService {
 
   private async readOne(callerId: string, schoolId: string, id: string) {
     const row = await this.prismaJobs.recurringCharge.findUniqueOrThrow({ where: { id } });
-    const [item] = await this.shape([row], new Map([[schoolId, await this.loadTax(schoolId)]]), true);
+    const [item] = await this.shape([row], new Map([[schoolId, await this.loadTax(schoolId, row.studentId)]]), true);
     return item;
   }
 
@@ -325,22 +336,23 @@ export class RecurringChargesService {
     return new ConflictException({ code: 'RECURRING_CHARGE_ENDED', message: 'This recurring charge has ended: its end date has passed or all its payments were made.' });
   }
 
-  private async loadTax(schoolId: string): Promise<SchoolTax> {
-    return this.prismaJobs.school.findUniqueOrThrow({ where: { id: schoolId }, select: { taxRateBasisPoints: true, taxInclusive: true } });
+  private async loadTax(schoolId: string, studentId: string): Promise<SchoolTax> {
+    return loadEffectiveTax(this.prismaJobs, schoolId, studentId);
   }
 
   /** What each charge would be at the School's tax today (each charge uses the
    * rate on its own day), or with no tax for a no-tax series (Decision 414 item 5). */
   private estimate(
-    r: { unitAmount: number; discountType: 'PERCENT' | 'FIXED' | null; discountValue: number | null; taxExempt: boolean },
+    r: { unitAmount: number; discountType: 'PERCENT' | 'FIXED' | null; discountValue: number | null; taxExempt: boolean; currency: string },
     school: SchoolTax,
   ): ChargeTotals & { taxRateBasisPoints: number } {
-    const tax = taxForCharge(school, r.taxExempt);
+    const tax = taxLinesForCharge(school, r.taxExempt);
     try {
       const totals = computeCharge({
         unitAmount: r.unitAmount,
         discount: r.discountType ? { type: r.discountType, value: r.discountValue! } : null,
         ...tax,
+        currency: r.currency,
       });
       return { ...totals, taxRateBasisPoints: tax.taxRateBasisPoints };
     } catch (err) {
@@ -367,7 +379,7 @@ export class RecurringChargesService {
     }
     const items = rows.map((r) => {
       const status: RecurringChargeStatus = r.stoppedAt ? 'STOPPED' : r.nextDate ? 'ACTIVE' : 'ENDED';
-      const e = this.estimate(r, taxes.get(r.schoolId) ?? { taxRateBasisPoints: 0, taxInclusive: true });
+      const e = this.estimate(r, taxes.get(r.schoolId) ?? { taxInclusive: true, lines: [] });
       return {
         id: r.id,
         schoolId: r.schoolId,

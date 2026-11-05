@@ -84,15 +84,29 @@ export class MembershipPlanPriceMigrationProcessor extends WorkerHost {
 
     const memberships = await this.prismaJobs.membership.findMany({
       where: { membershipPlanId: plan.id, status: 'ACTIVE', stripeSubscriptionId: { not: null } },
-      select: { id: true, stripeSubscriptionId: true },
+      select: { id: true, studentId: true, stripeSubscriptionId: true },
     });
+    // Decision 431 (MON-9): members moved to a higher price are told.
+    const increase = priceChange.newPrice > priceChange.oldPrice;
+    const currency = priceChange.newCurrency ?? plan.currency ?? plan.school.defaultCurrency;
 
     let migrated = 0;
     let failed = 0;
     for (const membership of memberships) {
       try {
-        await this.paymentsService.migrateSubscriptionToNewPrice(connectedAccountId, membership.stripeSubscriptionId!, newPriceId);
+        const from = await this.paymentsService.migrateSubscriptionToNewPrice(connectedAccountId, membership.stripeSubscriptionId!, newPriceId);
         migrated++;
+        if (increase && currency) {
+          await this.paymentsService.notifyPriceIncrease({
+            priceChangeId,
+            schoolId: plan.schoolId,
+            studentId: membership.studentId,
+            planTitle: plan.title,
+            amount: priceChange.newPrice,
+            currency,
+            from,
+          });
+        }
       } catch (err) {
         failed++;
         this.logger.error(`Failed to migrate Membership ${membership.id} (Subscription ${membership.stripeSubscriptionId}) to Price ${newPriceId}`, err as Error);

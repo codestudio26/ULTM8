@@ -6,6 +6,19 @@ export const DEFAULT_LOCALE = 'en-GB';
 /** The 15 languages (Decision 273 item 2), as BCP-47 codes from GET /settings/languages. */
 export const SUPPORTED_LOCALES = ['en-GB', 'pt-BR', 'es', 'ar', 'fr', 'de', 'it', 'nl', 'pl', 'ru', 'tr', 'ja', 'ko', 'zh-CN', 'th'] as const;
 
+/**
+ * Formatting variants (Decision 434, TXT-3): a locale with its own date and
+ * number formats but another locale's text. "English (US)" reads the English
+ * (UK) text, with US dates ("Nov 12, 2026, 8:00 PM"). A variant has no
+ * catalogue of its own.
+ */
+export const FORMAT_VARIANTS: Readonly<Record<string, string>> = { 'en-US': 'en-GB' };
+
+/** The locale whose text `locale` reads: its own, or a variant's base. */
+export function messageLocaleFor(locale: string): string {
+  return FORMAT_VARIANTS[locale] ?? locale;
+}
+
 /** Scripts written right to left. Matched on the language subtag, so `ar-EG`
  * is RTL too. */
 const RTL_LANGUAGES = new Set(['ar', 'he', 'fa', 'ur']);

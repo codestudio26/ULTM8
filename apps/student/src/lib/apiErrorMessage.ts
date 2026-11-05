@@ -22,6 +22,15 @@ function codedMessage(err: ApiError): string | null {
       return translate('lib.apiError.waitlistFirst');
     case 'BOOKING_CLOSED':
       return translate('lib.apiError.bookingClosed');
+    // "Who can book" (Decision 432): the shared wording in @ultm8/i18n.
+    case 'WHO_CAN_BOOK_GENDER':
+      return translate(/for women only/.test(err.message) ? 'server.codes.whoCanBookWomenOnly' : 'server.codes.whoCanBookMenOnly');
+    case 'WHO_CAN_BOOK_GENDER_MISSING':
+      return translate('server.codes.whoCanBookGenderMissing');
+    case 'WHO_CAN_BOOK_AGE':
+      return translate('server.codes.whoCanBookAge');
+    case 'WHO_CAN_BOOK_AGE_MISSING':
+      return translate('server.codes.whoCanBookAgeMissing');
     case 'CLASS_BUSY':
       return translate('lib.apiError.classBusy');
     case 'TICKET_REQUIRED':
@@ -81,6 +90,37 @@ function codedMessage(err: ApiError): string | null {
     // The School's free trial of ULTM8 ended (backlog 3.14).
     case 'TRIAL_ENDED':
       return translate('lib.apiError.trialEnded');
+    // Families (Decision 430).
+    case 'CONSENT_PENDING':
+      return translate('server.codes.consentPending');
+    case 'CONSENT_WITHDRAWN':
+      return translate('server.codes.consentWithdrawn');
+    case 'CHILD_IS_ADULT':
+      return translate('server.codes.childIsAdult');
+    case 'CHILD_ADULT_ACCESS_ENDED':
+      return translate('server.codes.childAdultAccessEnded');
+    case 'GUARDIAN_UNDER_18':
+      return translate('server.codes.guardianUnder18');
+    case 'NOT_A_MINOR':
+      return translate('server.codes.notAMinor');
+    case 'CHILD_ALREADY_HERE':
+      return translate('server.codes.childAlreadyHere');
+    case 'ALREADY_GUARDIAN':
+      return translate('server.codes.alreadyGuardian');
+    case 'NOT_GUARDIAN_MANAGED':
+      return translate('server.codes.notGuardianManaged');
+    case 'GUARDIAN_IS_CHILD':
+      return translate('server.codes.guardianIsChild');
+    case 'LAST_GUARDIAN':
+      return translate('server.codes.lastGuardian');
+    case 'IDENTITY_SHARED':
+      return translate('server.codes.identityShared');
+    case 'EMAIL_IN_USE':
+      return translate('server.codes.emailInUse');
+    case 'UNDER_18_SELF':
+      return translate('server.codes.under18Self');
+    case 'BIRTH_DATE_NEEDED':
+      return translate('server.codes.birthDateNeeded');
     // Belt correction requests (backlog 3.13).
     case 'CORRECTION_NOT_VERIFIED':
       return translate('lib.apiError.correctionNotVerified');

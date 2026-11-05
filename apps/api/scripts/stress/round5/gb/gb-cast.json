@@ -1,0 +1,216 @@
+{
+ "run": "mw2m1rdj",
+ "pass": "246810",
+ "schoolA": "116a2883-7134-426d-aa01-eff1cd9e8bf9",
+ "schoolB": "bb05dc56-9131-445e-bff3-50c13d17605b",
+ "branches": {
+  "lev": "9da4a47b-0101-4de3-aae8-d77bcf157f52",
+  "did": "087a0a2b-3e1b-4662-96ac-728424a7fd3e",
+  "bMain": "01d65a7e-e405-4a69-92bd-eab2c79e6003"
+ },
+ "waiverId": "b3eb960d-517e-4d47-b3b5-95f5a446e956",
+ "disciplineId": "5b6ed791-7ac7-419c-8794-f2a790c56e51",
+ "plans": {
+  "Little Dragons monthly": "5c18ccad-4f8e-4b49-b123-cba9b475d917",
+  "Juniors monthly": "dfc3c5c9-b25d-499a-94aa-6569d4862070",
+  "Adults monthly": "be692272-2ec5-4e02-a52a-df8ea4002d3d",
+  "10-class pack": "24cfff08-0040-405e-ace4-8d2edb69117b",
+  "Holiday week pass": "0c79c562-ba50-48be-8a55-11207b4d7eec",
+  "Free taster fortnight": "1f336319-eb9d-4098-9d32-7a508560510d",
+  "Single class £9.99": "2058fbde-351b-4331-9d7d-8943a4d33acd"
+ },
+ "classes": {
+  "open1": "411809f7-c5ca-403e-83af-408ddaf3890c",
+  "open2": "674be249-dce7-4bae-93d3-1fc88b037a09",
+  "open3": "40404c8a-3846-4f76-ae6c-d04489482368",
+  "waiverReq": "2e5eb7aa-ee92-430d-8486-f6d01e392fc2",
+  "didsbury": "574a639e-ed75-4203-a36c-abcd70b06ade",
+  "tiny": "ef1c49a3-d14f-486d-b104-3d56f76db8e0"
+ },
+ "slots": [
+  "d20daeb8-e7b5-4c0f-9343-6088be577bf0",
+  "2251d171-7276-4f97-b955-5d81f5d56162",
+  "4e88ecc7-ee4d-4079-a43b-c376f9972536",
+  "9c2b4672-b5ff-4bae-b88d-ac8813f7a677",
+  "c55afaa3-ad2b-4da6-a6fa-4a7a55be2319",
+  "e968c64a-afc4-40d6-965e-315b09c2e1bf",
+  "f8c44135-8c2b-45f2-b1d7-1b2dedb37bfd",
+  "a6228059-a5cb-4778-910e-1f295c729625",
+  "7e660957-bc77-4d49-8024-ba4de77db294",
+  "a0957c45-5717-4445-98ec-89c3a8cf7278",
+  "6c9e619c-67f1-4d8b-81a6-eb046a637a91",
+  "bd3fa95e-746c-4bad-88a1-e7b167d747b6",
+  "43d798e0-f8fe-4894-9046-d3baee08c1d2",
+  "bb3aecd4-4146-419e-8096-1abda9781e67",
+  "8f0c1949-1466-4d6b-9706-bd96440ee05a",
+  "98bfb8e8-0005-4e5c-baff-bb09c9148824",
+  "de447918-8663-4dda-a9d5-0ec8f75405ea",
+  "6b8eb325-be63-4e37-9f2f-49763a03f96e",
+  "da4f9a6c-33da-4582-8999-a1435cf5f24b",
+  "e2b0c787-21a7-414c-b020-d62b04c59a11",
+  "2583c54a-261e-4472-8e6e-c7d5866c702a",
+  "e40d3522-9809-4097-8a95-578470ed3888",
+  "bbfdb07c-4f79-43be-87c1-6dd24425aad1",
+  "b8bc36a7-66f9-4c32-ab9b-47945794fcbf",
+  "65968078-3dff-48a7-8558-b2be1a596372",
+  "b9324e30-c4f8-4488-a795-6d526d77eac0",
+  "7ed1daa8-966a-4588-8ff8-5e552050c669",
+  "cdd2ab8e-7cbe-43a1-8f2a-55fd43977626",
+  "9c079ad5-9c9c-44f8-92ca-c9fe0e0053c2",
+  "b1956685-76ea-44d9-beef-31d2da80778b",
+  "fa01f389-dc4a-45a4-9da3-241a16ab31a0",
+  "221226b8-a02c-48f4-b95b-2f45e6e23a8b"
+ ],
+ "users": {
+  "owner": {
+   "id": "8e84c807-8268-43a1-ac01-dcc35e1faa57",
+   "email": "r5-gb-mw2m1rdj-0@stress.test",
+   "firstName": "Siobhán",
+   "surname": "O'Brien"
+  },
+  "instrLev": {
+   "id": "b8bef7e4-b11a-4404-96e7-f807d8dcb017",
+   "email": "r5-gb-mw2m1rdj-1@stress.test",
+   "firstName": "Kenji",
+   "surname": "Hartley-Morris"
+  },
+  "instrDid": {
+   "id": "d925e09d-6507-44b7-b49c-0352b8bbc4d0",
+   "email": "r5-gb-mw2m1rdj-2@stress.test",
+   "firstName": "Kieran",
+   "surname": "Ó Súilleabháin"
+  },
+  "staffLev": {
+   "id": "86432e98-5b6d-47e0-953e-f91b1b8bd5a2",
+   "email": "r5-gb-mw2m1rdj-3@stress.test",
+   "firstName": "Bríd",
+   "surname": "MacNamara"
+  },
+  "staffDid": {
+   "id": "71115748-f79d-4cb7-b4f3-9963ca9e693b",
+   "email": "r5-gb-mw2m1rdj-4@stress.test",
+   "firstName": "Tom",
+   "surname": "Ashworth"
+  },
+  "ownerB": {
+   "id": "1c673d01-99b0-4b45-9ca5-9400b5c399fe",
+   "email": "r5-gb-mw2m1rdj-243@stress.test",
+   "firstName": "Gareth",
+   "surname": "Pryce"
+  },
+  "staffB": {
+   "id": "208fa5d0-7611-427e-a17c-5a0cd6dbb420",
+   "email": "r5-gb-mw2m1rdj-244@stress.test",
+   "firstName": "Joanne",
+   "surname": "Lees"
+  },
+  "maire": {
+   "id": "0ec72784-6463-4d9b-bbf0-4316c54a3db1",
+   "email": "r5-gb-mw2m1rdj-237@stress.test",
+   "firstName": "Máire",
+   "surname": "Ní Dhomhnaill"
+  },
+  "aoife": {
+   "id": "40349233-9a17-4bf9-a87b-d85def0c7fbb",
+   "firstName": "Aoife",
+   "surname": "Ní Dhomhnaill"
+  },
+  "cian": {
+   "id": "d7fbaa88-9c3b-4e52-be90-3273380723e0",
+   "firstName": "Cian",
+   "surname": "Ó Dhomhnaill"
+  },
+  "saoirse": {
+   "id": "299cf985-2fc4-4a06-9802-852e9defcd3e",
+   "firstName": "Saoirse",
+   "surname": "Ní Dhomhnaill"
+  },
+  "mum": {
+   "id": "1e80c734-3408-40d0-b420-53e954f412e0",
+   "email": "r5-gb-mw2m1rdj-238@stress.test",
+   "firstName": "Sinéad",
+   "surname": "Kelly"
+  },
+  "dad": {
+   "id": "9dd99829-378f-456c-bf24-83c3e69c63f2",
+   "email": "r5-gb-mw2m1rdj-239@stress.test",
+   "firstName": "Declan",
+   "surname": "Kelly"
+  },
+  "niamh": {
+   "id": "04bc263c-3961-4edd-b613-a345118821d0",
+   "firstName": "Niamh",
+   "surname": "Kelly"
+  },
+  "patrick": {
+   "id": "97f158cc-7feb-4d73-ae03-f025a2839680",
+   "email": "r5-gb-mw2m1rdj-240@stress.test",
+   "firstName": "Patrick",
+   "surname": "Byrne"
+  },
+  "oisin": {
+   "id": "186f0a46-665e-4988-bae9-c8e86b778a1d",
+   "firstName": "Oisín",
+   "surname": "Byrne"
+  },
+  "ruairi": {
+   "id": "f7dc4f2f-d1e2-4888-964b-4d85c85847c7",
+   "firstName": "Ruairí",
+   "surname": "Ó Súilleabháin"
+  },
+  "ann": {
+   "id": "c885ea30-d9ef-4bca-895f-6a523298bf66",
+   "email": "r5-gb-mw2m1rdj-241@stress.test",
+   "firstName": "Ann",
+   "surname": "Murphy"
+  },
+  "ciara": {
+   "id": "34faa22b-5389-4014-9fdf-3835a0bf3107",
+   "firstName": "Ciara",
+   "surname": "Murphy"
+  },
+  "ronan": {
+   "id": "ea9f3014-b295-499e-ab20-10fd5b730d8c",
+   "firstName": "Ronan",
+   "surname": "Murphy"
+  },
+  "liam": {
+   "id": "93f738a5-ec1d-4c32-b7df-2bfbe1ec9e33",
+   "email": "r5-gb-mw2m1rdj-242@stress.test",
+   "firstName": "Liam",
+   "surname": "Walsh"
+  },
+  "long": {
+   "id": "464820a5-29f8-415f-8d3b-726809c67f13",
+   "firstName": "Llŷr",
+   "surname": "ap Gwyn-Wynne-Fitzgerald-ap Gwyn-Wynne-Fitzgerald-ap Gwyn-Wynne-Fitzgerald-ap Gwyn-Wynne-Fitzgerald-ap Gwyn-Wynne-Fitzgerald-Jones"
+  },
+  "mono": {
+   "id": "9ec5d283-3070-4f95-847e-b9eecd8d3585",
+   "firstName": "Bodhi",
+   "surname": "🥋"
+  }
+ },
+ "counts": {
+  "bulkKids": 237,
+  "bulkGuardians": 160,
+  "bulkAdults": 72,
+  "specials": 16,
+  "slots": 32
+ },
+ "sampleBulkKid": {
+  "id": "9478db28-0689-4ade-8f35-37b29c258c11",
+  "email": "minor+9478db28-0689-4ade-8f35-37b29c258c11@guardian-managed.ultm8.internal",
+  "phone": "+000384863955885",
+  "firstName": "Aoife",
+  "surname": "O'Brien",
+  "passcodeHash": "x",
+  "dateOfBirth": "2023-11-04T00:00:00.000Z",
+  "guardian": "67d2ec14-7f70-479e-8c16-f7f67bb63275",
+  "branch": "9da4a47b-0101-4de3-aae8-d77bcf157f52"
+ },
+ "sampleBulkGuardian": {
+  "id": "67d2ec14-7f70-479e-8c16-f7f67bb63275",
+  "email": "r5-gb-mw2m1rdj-5@stress.test"
+ }
+}

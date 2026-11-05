@@ -134,6 +134,8 @@ export type KioskSignUpInput = {
   kind: 'VISITOR' | 'MEMBER';
   firstName: string;
   surname: string;
+  /** Decision 434 (TXT-8): "I have only one name"; the surname is sent empty. */
+  hasOnlyOneName: boolean;
   dateOfBirth: string;
   gender: '' | 'FEMALE' | 'MALE';
   phone: string;
@@ -153,7 +155,13 @@ export function useKioskSignUp() {
     mutationFn: (input: KioskSignUpInput) =>
       unwrap(
         kioskClient.POST('/v1/front-desk/kiosk/sign-ups', {
-          body: { ...input, gender: input.gender || null, medicalInfo: input.medicalInfo.trim() || null, medicalConsent: input.medicalConsent },
+          body: {
+            ...input,
+            ...(input.hasOnlyOneName ? { surname: '' } : {}),
+            gender: input.gender || null,
+            medicalInfo: input.medicalInfo.trim() || null,
+            medicalConsent: input.medicalConsent,
+          },
         }),
       ),
   });

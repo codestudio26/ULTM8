@@ -6,9 +6,9 @@ import { Prisma } from '@prisma/client';
  */
 export const STAFF_ACTIONS = [
   'ROLE_GIVEN', // { role, branchName, manual? }
-  'ROLE_REMOVED', // { role, branchName }
+  'ROLE_REMOVED', // { role, branchName, self? } (self: they stepped down, Decision 433 item 6)
   'REMOVED_FROM_SCHOOL', // { removedRoles }
-  'PAUSED', // { pausedRoles }
+  'PAUSED', // { pausedRoles, byUltm8Support? } (support's pause has no actor, Decision 433 item 6)
   'UNPAUSED', // { restoredRoles, closedBranches }
   'ACCESS_CHANGED', // { changes: [{ switch, on }] }
   'DETAILS_CHANGED', // { displayName?, workPhone? } (only what changed; null = cleared)
@@ -22,12 +22,21 @@ export const STAFF_ACTIONS = [
   // Decision 315 item 13: a duplicate member merged into the kept one
   // (targetUserId). { keptName, duplicateId, duplicateName, moved, waiverSignaturesLeft }
   'MEMBERS_MERGED',
+  // Decision 430 item 8: a parent's link to a child ended (targetUserId = the
+  // parent). { studentId, studentName, guardianName }. GUARDIAN_REMOVED is the
+  // owner's "Remove Guardian"; GUARDIAN_LEFT is the parent's own "Remove me".
+  'GUARDIAN_REMOVED',
+  'GUARDIAN_LEFT',
+  // Decision 430 item 6: the owner invited another adult to be a child's
+  // parent. { studentId, studentName, email }
+  'GUARDIAN_INVITED',
 ] as const;
 export type StaffAction = (typeof STAFF_ACTIONS)[number];
 
 export interface StaffActivityEntry {
   schoolId: string;
-  actorId: string;
+  /** Null only for ULTM8 support's pause (Decision 433 item 6). */
+  actorId: string | null;
   targetUserId?: string | null;
   action: StaffAction;
   details?: Prisma.InputJsonValue;

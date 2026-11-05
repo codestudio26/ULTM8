@@ -1,0 +1,18 @@
+{
+ "pix": {
+  "status": 201,
+  "body": {
+   "transactionId": "fee7d3b1-df4a-4bde-8883-8e62fc45fcc1",
+   "membershipId": "7f73e11a-2219-4f3a-9c66-1b1e54a8dd91"
+  },
+  "bytes": 110
+ },
+ "bt": {
+  "status": 201,
+  "body": {
+   "transactionId": "0e783100-0bb1-46a2-83d3-7735c7a97213",
+   "membershipId": "d513841d-2625-4e61-939f-368b8247af45"
+  },
+  "bytes": 110
+ }
+}

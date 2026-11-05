@@ -1,0 +1,54 @@
+{
+ "F0_before": 4,
+ "F0_old4digitLookupBeforeSweep": "200 {\"lookupToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkZXNrU3R1ZGVudElkIjoiZTVmNTYwZDItZjBiNi00MzdkLTliMDEtYTVjMTJiMmQyNzkxIiwic2Nob29sSWQiOiIyNGFiODM3Ni1hOTQwLTQ3ZjMtYmNmYy1jNDA0ZmU4ODBlY2EiLCJzdGF",
+ "F1": {
+  "n": 500,
+  "codes": {
+   "200": 500
+  },
+  "secs": 10.22,
+  "lens": [
+   4,
+   6
+  ],
+  "digits": 6
+ },
+ "F1_old4digitAfter": "404 {\"error\":{\"code\":\"CHECK_IN_CODE_NOT_FOUND\",\"message\":\"That check-in code isn't right.\"}}",
+ "F1_short": 0,
+ "F1_set4": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"property checkInCodeDigits should not exist\"}}",
+ "F1_staffCodes": [
+  "816415",
+  "393597"
+ ],
+ "F2_tenWrong": "404,404,404,404,404,404,404,404,404,423",
+ "F2_whileLocked": {
+  "session": true,
+  "rightCode": 429,
+  "today": 423,
+  "search": 423,
+  "card": 423,
+  "findMe": 423,
+  "signUp": 423,
+  "checkIn": 423,
+  "qr": 423
+ },
+ "F2_resumeOtherBranchStaff": "403 {\"error\":{\"code\":\"WRONG_STAFF_CODE\",\"message\":\"That staff code isn't right.\"}}",
+ "F2_resumeOwnStaff": "200 {\"resumedBy\":\"Siddharth\"}",
+ "F2_afterResume": 429,
+ "F3_burst15": {
+  "codes": {
+   "404": 9,
+   "423": 1,
+   "429": 5
+  },
+  "row": {
+   "wrongMemberCodeCount": 10,
+   "lockedAt": "2026-11-04T21:12:44.779Z"
+  }
+ },
+ "F4_interleave": {
+  "statuses": "404,404,404,404,404,404,404,404,404,423,423,423,423,423,423,423,423,423,423,423",
+  "locked": true
+ },
+ "F5_otherBranchCode": "200 {\"lookupToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJkZXNrU3R1ZGVudElkIjoiOWM2YTgyMGMtZGEyNS00MjM2LTg4YTgtZTY4MmMwMDc5MWZjIiwic2Nob29sSWQiOiIyNGFiODM3Ni1hOTQwLTQ3ZjMtYmNmYy1jNDA0ZmU4ODBlY2EiLCJzdGF"
+}

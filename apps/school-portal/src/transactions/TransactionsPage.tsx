@@ -21,9 +21,11 @@ import {
 } from './transactionQueries';
 import { downloadCsv, transactionsCsv } from './transactionsCsv';
 import { CancelPaymentModal } from './CancelPaymentModal';
+import { RefundDeskSaleModal } from './RefundDeskSaleModal';
 import { useT } from '../i18n/I18nProvider';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
+import { useDeskMethods } from '../lib/deskMethods';
 
 /** How a desk payment was taken (Decision 348's desk methods). */
 type DeskMethod = 'CASH' | 'BANK_TRANSFER' | 'PIX' | 'CARD_TERMINAL';
@@ -135,6 +137,12 @@ function cancelledLine(t: ReturnType<typeof useT>, row: TransactionResponse): st
   return row.cancelReason ? t('charges.card.cancelledLine', { date, name, reason: row.cancelReason }) : t('charges.card.cancelledNoReason', { date, name });
 }
 
+/** Decision 431 (MON-8): a membership paid at the desk (not by card in the
+ * app), taken, with something left to give back. */
+function isRefundableDeskSale(row: TransactionResponse): boolean {
+  return row.kind === 'MEMBERSHIP' && row.paymentMethod !== 'STRIPE' && row.status === 'SUCCESSFUL' && (row.refundedAmount ?? 0) < row.amount;
+}
+
 function studentName(row: TransactionResponse): string {
   // studentFirstName/studentSurname are joined server-side (TransactionsService.findAllForSchool).
   return row.studentFirstName || row.studentSurname ? `${row.studentFirstName} ${row.studentSurname}`.trim() : row.studentId.slice(0, 8);
@@ -184,6 +192,8 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
   const students = options?.students ?? [];
   const plans = options?.plans ?? [];
   const plan = plans.find((p) => p.id === planId);
+  // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  const methods = useDeskMethods(schoolId, ['CASH', 'BANK_TRANSFER', 'PIX', 'CARD_TERMINAL'] as const);
 
   async function handleSave() {
     setError(null);
@@ -225,12 +235,7 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
             id="record-method"
             value={method}
             onChange={(e) => setMethod(e.target.value as DeskMethod)}
-            options={[
-              { value: 'CASH', label: t('lib.paymentMethod.cash') },
-              { value: 'BANK_TRANSFER', label: t('lib.paymentMethod.bankTransfer') },
-              { value: 'PIX', label: t('lib.paymentMethod.pix') },
-              { value: 'CARD_TERMINAL', label: t('lib.paymentMethod.cardTerminal') },
-            ]}
+            options={methods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
           />
         </Field>
       </div>
@@ -294,7 +299,7 @@ export function TransactionsPage() {
   const { data, isLoading, error } = useTransactions(schoolId, cursorStack[pageIndex], filters);
   const { data: summary } = useTransactionSummary(schoolId, filters);
   const { data: planData } = useAllMembershipPlans(schoolId);
-  const [settling, setSettling] = useState<{ row: TransactionResponse; action: 'confirm' | 'cancel' } | null>(null);
+  const [settling, setSettling] = useState<{ row: TransactionResponse; action: 'confirm' | 'cancel' | 'refund' } | null>(null);
   // The School's "reason required" setting for cancelling (Decision 338 item 1).
   const { data: school } = useSchool(schoolId);
   const [recording, setRecording] = useState(false);
@@ -334,6 +339,7 @@ export function TransactionsPage() {
       const csv = transactionsCsv(rows, {
         headers: [
           t('transactions.columnDate'),
+          t('transactions.columnDateSchoolTime'),
           t('transactions.columnStudent'),
           t('transactions.columnPlan'),
           t('transactions.columnKind'),
@@ -355,6 +361,7 @@ export function TransactionsPage() {
         kind: (row) => t(KIND_LABELS[row.kind]),
         status: statusLabel,
         method: methodLabel,
+        timeZone: school?.timezone ?? null,
       });
       downloadCsv(`transactions-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     } catch (err) {
@@ -529,6 +536,11 @@ export function TransactionsPage() {
                         {t('transactions.cancelPayment')}
                       </Button>
                     </div>
+                  ) : isRefundableDeskSale(row) ? (
+                    // Decision 431 (MON-8): a membership paid at the desk can be refunded by hand.
+                    <Button variant="secondary" onClick={() => setSettling({ row, action: 'refund' })}>
+                      {t('transactions.refund.action')}
+                    </Button>
                   ) : (
                     '—'
                   ),
@@ -557,6 +569,20 @@ export function TransactionsPage() {
           payment={{ id: settling.row.id, amount: settling.row.amount, currency: settling.row.currency ?? null, planTitle: settling.row.membershipPlanTitle ?? '' }}
           studentName={studentName(settling.row)}
           reasonRequired={school?.chargeCancelReasonRequired ?? true}
+          onClose={() => setSettling(null)}
+        />
+      ) : null}
+      {settling?.action === 'refund' ? (
+        <RefundDeskSaleModal
+          schoolId={schoolId}
+          payment={{
+            id: settling.row.id,
+            amount: settling.row.amount,
+            refundedAmount: settling.row.refundedAmount ?? null,
+            currency: settling.row.currency ?? null,
+            planTitle: settling.row.membershipPlanTitle ?? '',
+          }}
+          studentName={studentName(settling.row)}
           onClose={() => setSettling(null)}
         />
       ) : null}

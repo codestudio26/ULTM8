@@ -125,6 +125,8 @@ describeIfDb('CurriculumModule — HTTP-level Lesson CRUD, skillIds validation, 
         { id: randomUUID(), role: 'STUDENT', userId: minor.id, schoolId: schoolB.id },
       ],
     });
+    // Decision 430 item 7: a parent acts for a child under 18, so the minor is one.
+    await superuser.user.update({ where: { id: minor.id }, data: { dateOfBirth: new Date(Date.now() - 10 * 365 * 86_400_000) } });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
 
     tokenOwnerA = signAccessToken(ownerA, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolA.id, branchId: null }]);

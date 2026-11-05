@@ -12,6 +12,9 @@ import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '..
 import { TransactionFilterDto, TransactionListQueryDto } from './dto/transaction-filter-query.dto';
 import { formatInvoiceNumber } from '../charges/charge-maths';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
+import { includedTax, type IncludedTax } from '../charges/tax-lines';
+import { DateTime } from 'luxon';
+import { freezeZone } from '../memberships/freeze/membership-freeze';
 
 /**
  * Phase 9 scope only: GET /schools/{id}/transactions — School Owner/Manager only
@@ -35,6 +38,15 @@ import { IncomeCategoriesService } from '../income-categories/income-categories.
  * explicitly-deferred half of this module) — see its own method comment
  * below for why this needed no PDF-generation infra after all.
  */
+/** A Transaction row as the API shows it (taxSnapshot is internal: Decision 431). */
+type WithPlanTitle<T> = Omit<T, 'membershipPlan' | 'booking' | 'membership' | 'charge' | 'taxSnapshot'> & {
+  includedTax: IncludedTax | null;
+  membershipPlanTitle: string | null;
+  bookingClassTitle: string | null;
+  chargeDescription: string | null;
+  chargeInvoiceLabel: string | null;
+};
+
 @Injectable()
 export class TransactionsService {
   constructor(
@@ -61,33 +73,35 @@ export class TransactionsService {
     },
   >(
     t: T,
-  ): Omit<T, 'membershipPlan' | 'booking' | 'membership' | 'charge'> & {
-    membershipPlanTitle: string | null;
-    bookingClassTitle: string | null;
-    chargeDescription: string | null;
-    chargeInvoiceLabel: string | null;
-  } {
-    const { membershipPlan, booking, membership, charge, ...rest } = t;
+  ): WithPlanTitle<T> {
+    const { membershipPlan, booking, membership, charge, ...withSnapshot } = t;
+    const { taxSnapshot, ...rest } = withSnapshot as typeof withSnapshot & { taxSnapshot?: unknown };
     // Currency codes in capitals (Decision 339, T3) — belt and braces on top of
     // the write paths and the clean-up migration.
     const currency = (rest as { currency?: string | null }).currency;
     return {
       ...rest,
       ...(currency ? { currency: currency.toUpperCase() } : {}),
+      // Decision 431 (MON-6 step 1): the tax a membership price included.
+      includedTax: includedTax((rest as { amount?: number }).amount ?? 0, currency ?? null, taxSnapshot),
       membershipPlanTitle: membershipPlan?.title ?? membership?.membershipPlan.title ?? null,
       // A late-cancellation fee (Decision 346) names the class it was for.
       bookingClassTitle: booking?.class.title ?? null,
       // A desk payment toward a staff-created charge (Decision 338 item 9).
       chargeDescription: charge?.description ?? null,
       chargeInvoiceLabel: charge ? formatInvoiceNumber(charge.invoiceNumber) : null,
-    };
+    } as unknown as WithPlanTitle<T>;
   }
 
   /** The Transactions page's filters (Decision 346, G3) as a Prisma filter. */
-  private filterWhere(schoolId: string, f: TransactionFilterDto): Prisma.TransactionWhereInput {
+  private filterWhere(schoolId: string, f: TransactionFilterDto, timezone: string | null | undefined): Prisma.TransactionWhereInput {
+    // Decision 431 (MON-7): from/to are days in the School's time zone (as the
+    // billing reports count them), not UTC days: a Tokyo payment at 08:00 on
+    // the 1st is on the 1st.
+    const zone = freezeZone(timezone);
     const billingDate: Prisma.DateTimeFilter = {};
-    if (f.from) billingDate.gte = new Date(`${f.from}T00:00:00.000Z`);
-    if (f.to) billingDate.lt = new Date(new Date(`${f.to}T00:00:00.000Z`).getTime() + 86_400_000);
+    if (f.from) billingDate.gte = DateTime.fromISO(f.from, { zone }).startOf('day').toJSDate();
+    if (f.to) billingDate.lt = DateTime.fromISO(f.to, { zone }).startOf('day').plus({ days: 1 }).toJSDate();
     return {
       schoolId,
       // Decisions 338 item 1, 414 item 7: a cancelled payment is stored FAILED but is not a
@@ -153,10 +167,10 @@ export class TransactionsService {
   // literal shape — the DTO layer (TransactionResponseDto) is authoritative
   // for callers.
   async findAllForSchool(callerId: string, schoolId: string, query: TransactionListQueryDto = {}): Promise<CursorPage<{ id: string }>> {
-    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     this.assertDateRange(query);
-    const where = this.filterWhere(schoolId, query);
+    const where = this.filterWhere(schoolId, query, school.timezone);
     const page = await this.prismaApp.withTenantContext(callerId, (tx) => this.pageNewestFirst(tx, where, query.cursor, query.limit));
     // Resolved via PrismaAuthService (Decision 117), not a Prisma `include` on
     // Transaction.student — an RLS-scoped include can silently fail to resolve the
@@ -217,10 +231,10 @@ export class TransactionsService {
    * compared in capitals: rows written before Decision 339 may be lower-case).
    */
   async summaryForSchool(callerId: string, schoolId: string, filter: TransactionFilterDto = {}) {
-    await this.schoolsService.findOne(callerId, schoolId);
+    const school = await this.schoolsService.findOne(callerId, schoolId);
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     this.assertDateRange(filter);
-    const where = this.filterWhere(schoolId, filter);
+    const where = this.filterWhere(schoolId, filter, school.timezone);
     const groups = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.transaction.groupBy({ by: ['status', 'currency'], where, _count: { _all: true }, _sum: { amount: true } }),
     );

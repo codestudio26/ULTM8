@@ -23,7 +23,7 @@ export class CreateRecurringChargeDto {
   @ApiProperty({ description: "The price of each charge in minor units of the School's currency, as the School prices (with or without tax).", minimum: 1, maximum: MAX_CHARGE_MINOR })
   @IsInt()
   @Min(1)
-  @Max(MAX_CHARGE_MINOR)
+  // The cap (MAX_CHARGE_MINOR) is checked in the service, with its own code (MON-11).
   amount!: number;
 
   @ApiPropertyOptional({ enum: ['PERCENT', 'FIXED'], nullable: true })
@@ -35,7 +35,7 @@ export class CreateRecurringChargeDto {
   @ValidateIf((o: CreateRecurringChargeDto) => !!o.discountType)
   @IsInt()
   @Min(1)
-  @Max(MAX_CHARGE_MINOR)
+  // The cap (MAX_CHARGE_MINOR) is checked in the service, with its own code (MON-11).
   discountValue?: number | null;
 
   @ApiProperty({ enum: RECURRING_FREQUENCIES, enumName: 'RecurringChargeFrequency' })

@@ -1,0 +1,98 @@
+[
+ {
+  "status": 200,
+  "body": {
+   "id": "fe3574c6-dedd-4f16-9878-bdbc5bb16e6e",
+   "name": "R5 BR Franquia Norte mw2lzfw4",
+   "mobileNumber": null,
+   "address": null,
+   "addressLine1": null,
+   "addressLine2": null,
+   "addressCity": null,
+   "addressRegion": null,
+   "addressPostalCode": null,
+   "addressCountry": "BR",
+   "type": null,
+   "activities": [],
+   "facilities": [],
+   "defaultLanguage": null,
+   "defaultCurrency": null,
+   "description": null,
+   "logoUrl": null,
+   "bannerUrl": null,
+   "feeModel": "FLAT",
+   "flatFeeAmount": null,
+   "perHeadcountRate": null,
+   "shareBrandingWithMembers": false,
+   "createdAt": "2026-11-04T21:08:22.799Z",
+   "updatedAt": "2026-11-04T21:08:22.799Z",
+   "archivedAt": null,
+   "purgeAt": null,
+   "purgedAt": null
+  }
+ },
+ {
+  "status": 200,
+  "body": {
+   "items": [
+    {
+     "id": "c75f8f6c-ac25-405f-9674-6ee4cd957c94",
+     "name": "R5 BR Academia Conceição Jiu-Jitsu mw2lzfw4",
+     "businessType": null,
+     "logoUrl": null,
+     "franchiseFeeSubscriptionStatus": null,
+     "archivedAt": null,
+     "createdAt": "2026-11-04T21:08:22.808Z"
+    },
+    {
+     "id": "03823a34-29c5-4e98-a7b5-927623fde046",
+     "name": "R5 BR Academia Lisboa mw2lzfw4",
+     "businessType": null,
+     "logoUrl": null,
+     "franchiseFeeSubscriptionStatus": null,
+     "archivedAt": null,
+     "createdAt": "2026-11-04T21:08:22.828Z"
+    }
+   ],
+   "nextCursor": null
+  }
+ },
+ {
+  "status": 200,
+  "body": {
+   "items": [],
+   "nextCursor": null
+  }
+ },
+ {
+  "status": 200,
+  "body": {
+   "schoolsAlreadyBillingCount": 0
+  }
+ },
+ {
+  "status": 404,
+  "body": {
+   "error": {
+    "code": "NOT_FOUND",
+    "message": "Franchise not found"
+   }
+  }
+ },
+ {
+  "status": 404,
+  "body": {
+   "error": {
+    "code": "NOT_FOUND",
+    "message": "Franchise not found"
+   }
+  }
+ },
+ {
+  "status": 200,
+  "body": {
+   "items": [],
+   "nextCursor": null
+  }
+ }
+]

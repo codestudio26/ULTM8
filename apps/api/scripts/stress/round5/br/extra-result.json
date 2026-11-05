@@ -1,0 +1,12 @@
+[
+ {
+  "id": "K1 Kid Mode booking works for a plain parent and for a parent who trains",
+  "pass": false,
+  "detail": "{\"plain parent\":{\"delegation\":201,\"token\":201,\"book\":{\"status\":201,\"body\":\"UPCOMING\"}},\"parent who trains\":{\"delegation\":201,\"token\":201,\"book\":{\"status\":403,\"body\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}}}"
+ },
+ {
+  "id": "D1 parent told of a Pix desk sale for their child on both owner paths",
+  "pass": false,
+  "detail": "sell: 0 notices; desk-payments: 1"
+ }
+]

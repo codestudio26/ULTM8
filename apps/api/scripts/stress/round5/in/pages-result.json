@@ -1,0 +1,371 @@
+{
+ "out": {
+  "zone": {
+   "istToday": "2026-11-05",
+   "utcToday": "2026-11-04",
+   "statsTo": "2026-11-05",
+   "statsFrom": "2026-10-07",
+   "birthdaysToday": "2026-11-05",
+   "logTitles": []
+  },
+  "cross": [
+   {
+    "school": "R5 BR Academia Lisboa mw2lzfw4",
+    "codes": "404,403,404,404,403,400"
+   },
+   {
+    "school": "R5 GB Red Rose Family Karate mw2m1rdj",
+    "codes": "404,403,404,404,403,400"
+   },
+   {
+    "school": "R5 JP 佐藤柔道場 6479927",
+    "codes": "404,403,404,404,403,400"
+   },
+   {
+    "school": "R5 CA orphan (seed retry)",
+    "codes": "403,403,-,-,-,400"
+   },
+   {
+    "school": "R5 CA orphan (seed retry)",
+    "codes": "403,403,-,-,-,400"
+   },
+   {
+    "school": "f1dc7d42",
+    "codes": "404,403,404,404,403,400"
+   }
+  ],
+  "kioskTokenElsewhere": 401
+ },
+ "latency": [
+  {
+   "label": "owner:dashboard",
+   "n": 8,
+   "p50": 629,
+   "p95": 649,
+   "p99": 649,
+   "max": 649,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:students",
+   "n": 8,
+   "p50": 2264,
+   "p95": 2493,
+   "p99": 2493,
+   "max": 2493,
+   "kbMax": 1639,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:export",
+   "n": 8,
+   "p50": 4710,
+   "p95": 6642,
+   "p99": 6642,
+   "max": 6642,
+   "kbMax": 1694,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:staff",
+   "n": 8,
+   "p50": 2322,
+   "p95": 2402,
+   "p99": 2402,
+   "max": 2402,
+   "kbMax": 13,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:transactions",
+   "n": 8,
+   "p50": 370,
+   "p95": 395,
+   "p99": 395,
+   "max": 395,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:calendar-month",
+   "n": 8,
+   "p50": 684,
+   "p95": 1016,
+   "p99": 1016,
+   "max": 1016,
+   "kbMax": 336,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:timetable",
+   "n": 8,
+   "p50": 307,
+   "p95": 788,
+   "p99": 788,
+   "max": 788,
+   "kbMax": 16,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:classes",
+   "n": 8,
+   "p50": 57,
+   "p95": 90,
+   "p99": 90,
+   "max": 90,
+   "kbMax": 18,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:plan-members",
+   "n": 8,
+   "p50": 875,
+   "p95": 1681,
+   "p99": 1681,
+   "max": 1681,
+   "kbMax": 777,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:waivers",
+   "n": 8,
+   "p50": 130,
+   "p95": 308,
+   "p99": 308,
+   "max": 308,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:cancellations",
+   "n": 8,
+   "p50": 75,
+   "p95": 94,
+   "p99": 94,
+   "max": 94,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:birthdays",
+   "n": 8,
+   "p50": 132,
+   "p95": 324,
+   "p99": 324,
+   "max": 324,
+   "kbMax": 10,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:att-stats",
+   "n": 8,
+   "p50": 77,
+   "p95": 532,
+   "p99": 532,
+   "max": 532,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:att-log",
+   "n": 8,
+   "p50": 91,
+   "p95": 100,
+   "p99": 100,
+   "max": 100,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "owner:freezes",
+   "n": 8,
+   "p50": 19,
+   "p95": 44,
+   "p99": 44,
+   "max": 44,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:dashboard",
+   "n": 8,
+   "p50": 41,
+   "p95": 42,
+   "p99": 42,
+   "max": 42,
+   "kbMax": 0,
+   "codes": "{\"403\":8}"
+  },
+  {
+   "label": "staff:students",
+   "n": 8,
+   "p50": 1111,
+   "p95": 1203,
+   "p99": 1203,
+   "max": 1203,
+   "kbMax": 206,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:export",
+   "n": 8,
+   "p50": 56,
+   "p95": 93,
+   "p99": 93,
+   "max": 93,
+   "kbMax": 0,
+   "codes": "{\"403\":8}"
+  },
+  {
+   "label": "staff:staff",
+   "n": 8,
+   "p50": 77,
+   "p95": 131,
+   "p99": 131,
+   "max": 131,
+   "kbMax": 0,
+   "codes": "{\"403\":8}"
+  },
+  {
+   "label": "staff:transactions",
+   "n": 8,
+   "p50": 94,
+   "p95": 128,
+   "p99": 128,
+   "max": 128,
+   "kbMax": 0,
+   "codes": "{\"403\":8}"
+  },
+  {
+   "label": "staff:calendar-month",
+   "n": 8,
+   "p50": 177,
+   "p95": 262,
+   "p99": 262,
+   "max": 262,
+   "kbMax": 42,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:timetable",
+   "n": 8,
+   "p50": 79,
+   "p95": 132,
+   "p99": 132,
+   "max": 132,
+   "kbMax": 14,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:classes",
+   "n": 8,
+   "p50": 91,
+   "p95": 99,
+   "p99": 99,
+   "max": 99,
+   "kbMax": 18,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:plan-members",
+   "n": 8,
+   "p50": 45,
+   "p95": 74,
+   "p99": 74,
+   "max": 74,
+   "kbMax": 0,
+   "codes": "{\"403\":8}"
+  },
+  {
+   "label": "staff:waivers",
+   "n": 8,
+   "p50": 56,
+   "p95": 120,
+   "p99": 120,
+   "max": 120,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:cancellations",
+   "n": 8,
+   "p50": 67,
+   "p95": 111,
+   "p99": 111,
+   "max": 111,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:birthdays",
+   "n": 8,
+   "p50": 67,
+   "p95": 77,
+   "p99": 77,
+   "max": 77,
+   "kbMax": 2,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:att-stats",
+   "n": 8,
+   "p50": 26,
+   "p95": 34,
+   "p99": 34,
+   "max": 34,
+   "kbMax": 0,
+   "codes": "{\"403\":8}"
+  },
+  {
+   "label": "staff:att-log",
+   "n": 8,
+   "p50": 62,
+   "p95": 67,
+   "p99": 67,
+   "max": 67,
+   "kbMax": 0,
+   "codes": "{\"200\":8}"
+  },
+  {
+   "label": "staff:freezes",
+   "n": 8,
+   "p50": 22,
+   "p95": 29,
+   "p99": 29,
+   "max": 29,
+   "kbMax": 0,
+   "codes": "{\"403\":8}"
+  },
+  {
+   "label": "x",
+   "n": 3,
+   "p50": 21,
+   "p95": 69,
+   "p99": 69,
+   "max": 69,
+   "kbMax": 10,
+   "codes": "{\"200\":3}"
+  },
+  {
+   "label": "xt",
+   "n": 31,
+   "p50": 22,
+   "p95": 49,
+   "p99": 50,
+   "max": 50,
+   "kbMax": 0,
+   "codes": "{\"400\":6,\"401\":1,\"403\":12,\"404\":12}"
+  },
+  {
+   "label": "s",
+   "n": 1,
+   "p50": 24,
+   "p95": 24,
+   "p99": 24,
+   "max": 24,
+   "kbMax": 0,
+   "codes": "{\"201\":1}"
+  }
+ ]
+}

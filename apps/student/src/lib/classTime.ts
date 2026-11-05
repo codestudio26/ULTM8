@@ -20,6 +20,13 @@ export function formatTimeInZone(iso: string, zone: string): string {
   return new Date(iso).toLocaleTimeString(formatLocale(), { timeZone: safeZone(zone), timeStyle: 'short' });
 }
 
+/** Whether a class ends on a later local date than it starts, on `zone`'s
+ * clock: a class past midnight (Decision 432 item 3). */
+export function endsNextDayInZone(startIso: string, endIso: string, zone: string): boolean {
+  const day = (iso: string) => new Intl.DateTimeFormat('en-CA', { timeZone: safeZone(zone), year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+  return day(endIso) > day(startIso);
+}
+
 /** A zone name the device's Intl data knows, else UTC (a mistyped or unknown
  * zone must never crash the screen). */
 function safeZone(zone: string): string {

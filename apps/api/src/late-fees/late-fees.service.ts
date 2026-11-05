@@ -3,6 +3,8 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { LateFeeSettingsDto, UpdateLateFeeSettingsDto } from './dto/late-fee.dto';
 import { schoolCurrencyRequired, setsNewPrice } from '../common/school-currency';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
+import { assertWithinChargeCap } from '../charges/charge-cap';
 
 /**
  * Late fees, the School's choice (v1.3 backlog §3.7; Decision 413, which
@@ -41,6 +43,9 @@ export class LateFeesService {
     // Decision 414 item 6: a new fixed amount is a price, so it needs the
     // School's currency even while late fees stay off (the amount is kept).
     if (!current.currency && setsNewPrice(dto.fixedAmount, current.fixedAmount)) throw schoolCurrencyRequired();
+    // Decision 431 (MON-3): a fixed fee in whole units of the School's currency.
+    if (setsNewPrice(dto.fixedAmount, current.fixedAmount)) assertWholeMinorUnits(dto.fixedAmount, current.currency);
+    assertWithinChargeCap(dto.fixedAmount);
     if (dto.enabled) {
       if (dto.type === 'FIXED' && !dto.fixedAmount) {
         throw new BadRequestException({ code: 'LATE_FEE_AMOUNT_REQUIRED', message: 'Set a late fee amount above 0.' });

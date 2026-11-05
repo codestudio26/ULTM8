@@ -15,6 +15,7 @@ const EMPTY_SIGN_UP: SignUpInput = {
   kind: 'MEMBER',
   firstName: '',
   surname: '',
+  hasOnlyOneName: false,
   dateOfBirth: '',
   gender: '',
   phone: '',
@@ -173,11 +174,11 @@ export function SignUpScreen({
   const send = useKioskSignUp();
   const choices = useHeardFromChoices(heardFromOptions);
   const medicalNeedsConsent = medicalInfoOn && !!form.medicalInfo.trim() && !form.medicalConsent;
-  const stepDone = step === 1 ? !!(form.firstName.trim() && form.surname.trim() && form.dateOfBirth) : step === 2 ? /\S+@\S+\.\S+/.test(form.email.trim()) : true;
-  const field = (key: Exclude<keyof SignUpInput, 'medicalConsent'>, label: string, type = 'text', required = false) => (
+  const stepDone = step === 1 ? !!(form.firstName.trim() && (form.hasOnlyOneName || form.surname.trim()) && form.dateOfBirth) : step === 2 ? /\S+@\S+\.\S+/.test(form.email.trim()) : true;
+  const field = (key: Exclude<keyof SignUpInput, 'medicalConsent' | 'hasOnlyOneName'>, label: string, type = 'text', required = false, disabled = false) => (
     <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
       {required ? `${label} *` : label}
-      <input className="ultm8-input" type={type} value={form[key]} onChange={set(key)} required={required} style={{ minHeight: 52, fontSize: 16 }} />
+      <input className="ultm8-input" type={type} value={disabled ? '' : form[key]} onChange={set(key)} required={required} disabled={disabled} style={{ minHeight: 52, fontSize: 16 }} />
     </label>
   );
   const steps = [t('frontDesk.signUp.step1'), t('frontDesk.signUp.step2'), t('frontDesk.signUp.step3')];
@@ -207,7 +208,19 @@ export function SignUpScreen({
           </div>
           <div className="fd-grid2">
             {field('firstName', t('frontDesk.signUp.firstName'), 'text', true)}
-            {field('surname', t('frontDesk.signUp.surname'), 'text', true)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {field('surname', t('frontDesk.signUp.surname'), 'text', !form.hasOnlyOneName, form.hasOnlyOneName)}
+              {/* Decision 434 (TXT-8): someone with one name doesn't type a "." as a surname. */}
+              <label className="fd-class__meta" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <input
+                  type="checkbox"
+                  checked={form.hasOnlyOneName}
+                  onChange={(e) => setForm((f) => ({ ...f, hasOnlyOneName: e.target.checked }))}
+                  style={{ width: 24, height: 24, flex: 'none' }}
+                />
+                <span>{t('frontDesk.signUp.hasOnlyOneName')}</span>
+              </label>
+            </div>
             {field('dateOfBirth', t('frontDesk.signUp.dateOfBirth'), 'date', true)}
             <label className="fd-class__meta" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {t('frontDesk.signUp.gender')}

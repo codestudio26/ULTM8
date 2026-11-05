@@ -1,0 +1,47 @@
+[
+ {
+  "id": "W0 waiver + \"sign again at 18\" setting",
+  "pass": true,
+  "detail": "201 200 {\"waiverArchivedSignaturesCount\":true,\"waiverRenewalMonths\":null,\"waiverMinorsSignAgainAt18\":true,\"waiverPaperSignaturesAllowed\":true,\"waiverNoticeOnJ"
+ },
+ {
+  "id": "W1 a parent can no longer sign a waiver on behalf of an 18-year-old",
+  "pass": false,
+  "detail": "sign 201"
+ },
+ {
+  "id": "W2 parent signs for child 201; child and 17-year-old (3 days to 18) refused self-sign",
+  "pass": true,
+  "detail": "201 403 403"
+ },
+ {
+  "id": "W3 29-Feb child: majority date 2030-03-01",
+  "pass": true,
+  "detail": "201 2030-03-01T00:00:00.000Z {\"id\":\"457cc1a7-f78f-4f7d-8780-eee87339a1de\",\"waiverId\":\"42e7ef3f-b053-4357-87a2-b6124e743966\",\"studentId\":\"72f30880-e9e"
+ },
+ {
+  "id": "P1 PT owner, Franchise owner, Manaus staff refused on SP student data/export; co-owner allowed",
+  "pass": true,
+  "detail": "[404,404,404,403,403,403,403,403,404,200]"
+ },
+ {
+  "id": "P2 a Lisbon student cannot book a São Paulo class",
+  "pass": true,
+  "detail": "404"
+ },
+ {
+  "id": "E1 owner export 200 with UTF-8 names and formula-safe cells",
+  "pass": true,
+  "detail": "200 639765 bytes"
+ },
+ {
+  "id": "A1 add student: pt-BR name ok; 101-char/29-Feb-2003/minor/no-branch refused",
+  "pass": true,
+  "detail": "[201,201,400,400,400,201,400]"
+ },
+ {
+  "id": "A2 add-manually clicked 6 times → one person",
+  "pass": true,
+  "detail": "{\"201\":1,\"409\":5} users=1"
+ }
+]

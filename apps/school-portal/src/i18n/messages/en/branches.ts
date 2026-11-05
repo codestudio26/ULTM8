@@ -1,4 +1,11 @@
 export const branches = {
+  tax: {
+    title: "Taxes",
+    subtitle: "For members whose home branch this is. Whether prices include tax, and the tax country, stay the School's.",
+    sourceLabel: "Tax lines",
+    sameAsSchool: "Same as the School",
+    own: "This branch's own",
+  },
   cancellations: {
     subtitle: "What students get back when a booking for one of this branch's classes is cancelled.",
     sourceLabel: 'Settings for this branch',

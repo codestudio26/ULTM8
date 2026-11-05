@@ -3,6 +3,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { CLASS_OCCURRENCE_GENERATION_QUEUE } from './queue.constants';
+import { DateTime } from 'luxon';
 import { buildSlotOccurrences, withoutClosedDates } from '../timetable/slot-occurrences';
 
 /** How far ahead the job generates occurrences, and how often it runs — Spec 55 says
@@ -135,17 +136,23 @@ export class ClassOccurrenceGenerationProcessor extends WorkerHost {
     let skippedExisting = 0;
 
     for (const slot of activeSlots) {
-      // The slot's own Branch timezone wins, then its School's, else UTC.
-      const timezone = slot.branch?.timezone ?? slot.school.timezone ?? 'UTC';
-      // Shared with slot edits (Decision 322): timetable/slot-occurrences.ts.
-      const { branch: _branch, school: _school, ...slotRow } = slot;
-      const occurrences = withoutClosedDates(
-        buildSlotOccurrences(slotRow, timezone),
-        closures.filter((c) => c.schoolId === slot.schoolId),
-        slot.branchId,
-      );
-
       try {
+        // The slot's own Branch timezone wins, then its School's, else UTC.
+        const timezone = slot.branch?.timezone ?? slot.school.timezone ?? 'UTC';
+        // A zone Luxon doesn't know (typed before the API checked it) skips this
+        // slot only. It used to throw outside this try and stop the whole run,
+        // so every School after it got no new classes (Decision 432 item 1).
+        if (!DateTime.local().setZone(timezone).isValid) {
+          this.logger.error(`Skipped TimetableSlot ${slot.id}: its time zone "${timezone}" is not a valid IANA zone. Fix the Branch's or School's time zone.`);
+          continue;
+        }
+        // Shared with slot edits (Decision 322): timetable/slot-occurrences.ts.
+        const { branch: _branch, school: _school, ...slotRow } = slot;
+        const occurrences = withoutClosedDates(
+          buildSlotOccurrences(slotRow, timezone),
+          closures.filter((c) => c.schoolId === slot.schoolId),
+          slot.branchId,
+        );
         const result = await this.prismaJobs.class.createMany({ data: occurrences, skipDuplicates: true });
         created += result.count;
         skippedExisting += occurrences.length - result.count;

@@ -329,6 +329,14 @@ function ChargeRow({ charge: c, payInApp, paying, busy, onPay }: { charge: Charg
       {/* Decision 414 item 5: a charge made with "No tax on this item". */}
       {c.taxExempt ? (
         <Line label={t('charges.noTax')} value={formatMoney(0, c.currency)} />
+      ) : c.taxLines && c.taxLines.length > 0 ? (
+        // Decision 431 (MON-6): each named tax line, with its registration number.
+        c.taxLines.map((l, i) => (
+          <React.Fragment key={i}>
+            <Line label={t('charges.taxNamed', { name: l.name || t('charges.taxUnnamed'), rate: rate(l.rateBasisPoints) })} value={formatMoney(l.amount, c.currency)} />
+            {l.taxId ? <Muted>{t('charges.taxLineId', { name: l.name || t('charges.taxUnnamed'), taxId: l.taxId })}</Muted> : null}
+          </React.Fragment>
+        ))
       ) : (
         <Line label={t('charges.tax', { rate: rate(c.taxRateBasisPoints) })} value={formatMoney(c.taxAmount, c.currency)} />
       )}

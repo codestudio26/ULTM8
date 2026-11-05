@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AddressFields, Button, Card, CurrencyField, ErrorBanner, Field, PageHeader, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -15,6 +15,8 @@ import { MemberContactFields } from './MemberDetails';
 type Form = {
   firstName: string;
   surname: string;
+  /** Decision 434 (TXT-8): "Has only one name"; an empty surname is what records it. */
+  oneName: boolean;
   username: string;
   dateOfBirth: string;
   gender: string;
@@ -54,6 +56,7 @@ function formFrom(p: StudentProfileResponse): Form {
   return {
     firstName: p.firstName,
     surname: p.surname,
+    oneName: p.surname === '',
     username: p.username ?? '',
     dateOfBirth: p.dateOfBirth ? p.dateOfBirth.slice(0, 10) : '',
     gender: p.gender ?? '',
@@ -125,7 +128,7 @@ export function StudentUpdatePage() {
     return <ErrorBanner message={profile.error instanceof ApiError ? profile.error.message : t('students.update.loadFailed')} />;
   }
   if (!profile.data || !form || !initial) return null;
-  const studentName = `${profile.data.firstName} ${profile.data.surname}`.trim() || t('students.update.studentFallback');
+  const studentName = [profile.data.firstName, profile.data.surname].filter(Boolean).join(' ') || t('students.update.studentFallback');
   // Narrowed to stable, non-null locals for the closure below.
   const safeStudentId = studentId;
   const safeForm = form;
@@ -144,7 +147,11 @@ export function StudentUpdatePage() {
     setAddressErrors({});
     const body: UpdateStudentProfileInput = {};
     if (safeForm.firstName !== safeInitial.firstName) body.firstName = safeForm.firstName;
-    if (safeForm.surname !== safeInitial.surname) body.surname = safeForm.surname;
+    if (safeForm.oneName) {
+      if (!safeInitial.oneName) Object.assign(body, { surname: '', hasOnlyOneName: true });
+    } else if (safeForm.surname !== safeInitial.surname || safeInitial.oneName) {
+      body.surname = safeForm.surname;
+    }
     if (safeForm.dateOfBirth && safeForm.dateOfBirth !== safeInitial.dateOfBirth) body.dateOfBirth = safeForm.dateOfBirth;
     // Decision 315 item 4: a join date can be changed, not cleared.
     if (safeForm.joinedOn && safeForm.joinedOn !== safeInitial.joinedOn) body.joinedOn = safeForm.joinedOn;
@@ -191,11 +198,13 @@ export function StudentUpdatePage() {
           </Field>
           <Field label={t('students.update.surname')} htmlFor="student-update-surname">
             <TextField
-              required
-              value={form.surname}
+              required={!form.oneName}
+              disabled={form.oneName}
+              value={form.oneName ? '' : form.surname}
               onChange={(e) => set('surname', e.target.value)}
             />
           </Field>
+          <Checkbox label={t('students.update.hasOnlyOneName')} checked={form.oneName} onChange={(e) => set('oneName', e.target.checked)} />
           <Field label={t('students.update.username')} htmlFor="student-update-username" hint={t('auth.register.usernameHint')}>
             <TextField value={form.username} onChange={(e) => set('username', e.target.value)} />
           </Field>

@@ -598,11 +598,12 @@ test('a used-up Class Pack can be sold at the desk, and the card then checks the
   await note.getByRole('button', { name: 'Sell at the desk' }).click();
   await expect(note).toContainText('Five classes');
   await expect(note).toContainText('Take the payment, then record it here.');
-  await note.getByLabel('Paid by').selectOption('PIX');
+  // Decision 431 item 11: Pix is offered only to a School in Brazil or pricing in reais.
+  await note.getByLabel('Paid by').selectOption('CARD_TERMINAL');
   await note.getByRole('button', { name: 'Record payment' }).click();
 
   await expect(page.getByText('Checked in ✓')).toBeVisible({ timeout: 15_000 });
   expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } })).status).toBe('COMPLETED');
   const sale = await db.transaction.findFirstOrThrow({ where: { studentId: s.student.id, membershipPlanId: plan.id } });
-  expect(sale.paymentMethod).toBe('PIX');
+  expect(sale.paymentMethod).toBe('CARD_TERMINAL');
 });

@@ -43,6 +43,10 @@ export const AuditAction = {
   // Decision 370 — a School's owners, and support moving its main owner role.
   VIEW_SCHOOL_OWNERS: 'VIEW_SCHOOL_OWNERS',
   CHANGE_SCHOOL_MAIN_OWNER: 'CHANGE_SCHOOL_MAIN_OWNER',
+  // Decision 433 item 6 — a School's coaches and Branch Staff, and support's
+  // emergency "pause staff".
+  VIEW_SCHOOL_STAFF: 'VIEW_SCHOOL_STAFF',
+  PAUSE_SCHOOL_STAFF: 'PAUSE_SCHOOL_STAFF',
   // Backlog 3.14 — a free trial of ULTM8 for a School.
   START_SCHOOL_TRIAL: 'START_SCHOOL_TRIAL',
   EXTEND_SCHOOL_TRIAL: 'EXTEND_SCHOOL_TRIAL',

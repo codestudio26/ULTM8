@@ -219,6 +219,9 @@ test('the owner revokes a student\'s enrollment', async ({ page }) => {
 // ---------------------------------------------------------------------------
 
 test('the owner edits a student\'s profile on their behalf, on the dedicated Update page', async ({ page }) => {
+  // Decision 430 item 13: staff change a name only for a member who hasn't
+  // signed in yet (one the School added, still on its temporary passcode).
+  await db.user.update({ where: { id: s.newStudent.id }, data: { mustChangePasscode: true } });
   await page.goto(`/students/${s.newStudent.id}`);
   await page.getByRole('button', { name: 'Edit profile' }).click();
   await expect(page).toHaveURL(new RegExp(`/students/${s.newStudent.id}/edit$`));
@@ -251,7 +254,7 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
   expect(user.surname).toBe('Park-Smith');
   expect(user.address).toBe('221B Dojo Lane, London, NW1 6XE, United Kingdom');
   expect(user.addressCountry).toBe('GB');
-  expect(user.addressPostalCode).toBe('NW1 6XE');
+  expect(user.addressPostalCode).toBe('NW1 6XE');  await db.user.update({ where: { id: s.newStudent.id }, data: { mustChangePasscode: false } });
 });
 
 test('a coach (non-Owner Staff) can also edit a student\'s profile', async ({ page }) => {
@@ -260,6 +263,9 @@ test('a coach (non-Owner Staff) can also edit a student\'s profile', async ({ pa
   // per-discipline grading permissions, so it must still show.
   const coach = await addPerson('Cora', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, coach.token);
+  // Decision 430 item 13: gender is locked once the member has signed in, so
+  // this member is one the School added who hasn't yet.
+  await db.user.update({ where: { id: s.student.id }, data: { mustChangePasscode: true } });
   await page.goto(`/students/${s.student.id}`);
   await page.getByRole('button', { name: 'Edit profile' }).click();
   await expect(page).toHaveURL(new RegExp(`/students/${s.student.id}/edit$`));
@@ -269,4 +275,5 @@ test('a coach (non-Owner Staff) can also edit a student\'s profile', async ({ pa
 
   const user = await db.user.findUniqueOrThrow({ where: { id: s.student.id } });
   expect(user.gender).toBe('FEMALE');
+  await db.user.update({ where: { id: s.student.id }, data: { mustChangePasscode: false } });
 });

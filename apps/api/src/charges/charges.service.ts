@@ -16,7 +16,7 @@ import { recordStaffActivity } from '../tenants/staff-activity/staff-activity';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
-import { ChargeMathsError, computeCharge, formatInvoiceNumber, taxForCharge } from './charge-maths';
+import { ChargeMathsError, computeCharge, formatInvoiceNumber, taxLinesForCharge } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
 import { chargeAbilities, type ChargeAbilities } from './charge-abilities';
 import {
@@ -38,6 +38,8 @@ import { cancelChargeInTx, chargeCancelledNotice } from './charge-cancel';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 import { PaymentsService, checkoutTransactionId } from '../payments/payments.service';
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
+import { assertWithinChargeCap } from './charge-cap';
 import { StepUpService } from '../auth/step-up.service';
 import {
   CancelChargeDto,
@@ -58,6 +60,7 @@ import {
 } from './dto/charge.dto';
 import { schoolCurrencyRequired } from '../common/school-currency';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
+import { loadEffectiveTax, readChargeTaxLines } from './tax-lines';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** The same repeat guard as a desk sale (DESK_REPEAT, memberships.service.ts). */
@@ -189,6 +192,7 @@ export class ChargesService {
         taxCountry: school.taxCountry,
         taxRateBasisPoints: school.taxRateBasisPoints,
         taxInclusive: school.taxInclusive,
+        taxLines: (await loadEffectiveTax(this.prismaJobs, schoolId, studentId)).lines,
         cancelReasonRequired: school.chargeCancelReasonRequired,
         paymentsSetUp: !!(await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true } })),
         refundNotesRequired: school.chargeRefundNotesRequired,
@@ -214,15 +218,24 @@ export class ChargesService {
     if (!!dto.discountType !== (dto.discountValue !== null && dto.discountValue !== undefined)) {
       throw new BadRequestException({ code: 'CHARGE_DISCOUNT_INVALID', message: 'A discount must be more than 0.' });
     }
+    // Decision 431 (MON-3): whole units of the currency (no ¥0.50 charge).
+    assertWholeMinorUnits(dto.amount, currency);
+    if (dto.discountType === 'FIXED') assertWholeMinorUnits(dto.discountValue, currency);
+    // MON-11: the cap, with its own code.
+    assertWithinChargeCap(dto.amount);
+    if (dto.discountType === 'FIXED') assertWithinChargeCap(dto.discountValue);
     // Decision 414 item 5: "No tax on this item (0% or exempt)", off by default.
     const taxExempt = dto.taxExempt === true;
-    const tax = taxForCharge(school, taxExempt);
+    // Decision 431 (MON-6): the School's named lines, or the member's home
+    // Branch's when it overrides them.
+    const tax = taxLinesForCharge(await loadEffectiveTax(this.prismaJobs, schoolId, studentId), taxExempt);
     let totals;
     try {
       totals = computeCharge({
         unitAmount: dto.amount,
         discount: dto.discountType ? { type: dto.discountType, value: dto.discountValue! } : null,
         ...tax,
+        currency,
       });
     } catch (err) {
       if (err instanceof ChargeMathsError) throw new BadRequestException({ code: `CHARGE_${err.code}`, message: err.message });
@@ -353,6 +366,9 @@ export class ChargesService {
     if (!currency) {
       throw schoolCurrencyRequired();
     }
+    // Decision 431 (MON-3, MON-11): whole units of the currency, within the cap.
+    assertWholeMinorUnits(dto.amount, currency);
+    assertWithinChargeCap(dto.amount);
 
     const transactionId = randomUUID();
     await this.prismaJobs.$transaction(async (tx) => {
@@ -463,6 +479,10 @@ export class ChargesService {
     }
     const payment = await this.prismaJobs.transaction.findFirst({ where: { id: transactionId, schoolId, kind: 'CHARGE_PAYMENT' } });
     if (!payment) throw new NotFoundException({ code: 'CHARGE_PAYMENT_NOT_FOUND', message: 'Payment not found' });
+    // Decision 431 (MON-3): whole units of the payment's currency (a ¥0.49
+    // refund reached Stripe as 0).
+    assertWholeMinorUnits(dto.amount, payment.currency);
+    assertWithinChargeCap(dto.amount);
     const card = payment.paymentMethod === 'STRIPE';
     if (dto.destination === 'CARD' && (!card || !payment.stripePaymentIntentId)) {
       throw new BadRequestException({
@@ -486,6 +506,17 @@ export class ChargesService {
           if (fresh.status !== 'SUCCESSFUL') {
             throw new ConflictException({ code: 'CHARGE_REFUND_NOT_PAID', message: 'Only a successful payment can be refunded. A disputed, pending, failed or fully refunded one cannot.' });
           }
+          // Decision 431 (stress test round 5 MON-4): the same repeat guard as
+          // the other money actions (Decision 372 item 3). The same refund of
+          // this payment (same amount, same destination) within the minute is
+          // a resend or a double tap, whoever sent it (the owner and a co-owner
+          // tapping at once count too), so it is refused rather than refunded
+          // again. Checked under the row lock above, so ten at once make one.
+          const repeat = await tx.chargeRefund.findFirst({
+            where: { transactionId: fresh.id, amount: dto.amount, kind: dto.destination, createdAt: { gt: new Date(Date.now() - DESK_REPEAT_WINDOW_MS) } },
+            select: { id: true },
+          });
+          if (repeat) throw new ConflictException({ code: 'DESK_REPEAT', message: 'This was just recorded. Check before adding another.' });
           // Checked before Stripe is called; recordChargeRefund checks again.
           const state = await paymentRefundable(tx, fresh);
           if (dto.amount > state.left) throw new ChargeRefundError('CHARGE_REFUND_TOO_MUCH', 'This is more than is left to refund on this payment.');
@@ -498,7 +529,11 @@ export class ChargesService {
           let stripeRefundId: string | null = null;
           if (dto.destination === 'CARD') {
             // One key per state refunded from, as a franchise-fee refund does:
-            // a retry of this same refund reaches Stripe as the same request.
+            // a retry of this same refund reaches Stripe as the same request
+            // (kept on purpose, MON-4: if the process dies after Stripe refunded
+            // but before the row was written, the replay gets Stripe's answer
+            // back instead of a second refund). A resend after the row was
+            // written is stopped by the repeat guard above.
             const before = await tx.chargeRefund.aggregate({ where: { transactionId: fresh.id }, _sum: { amount: true } });
             stripeRefundId = await this.paymentsService.refundPayment(
               callerId,
@@ -544,6 +579,9 @@ export class ChargesService {
     if (!currency) {
       throw schoolCurrencyRequired();
     }
+    // Decision 431 (MON-3, MON-11): whole units of the currency, within the cap.
+    assertWholeMinorUnits(dto.amount, currency);
+    assertWithinChargeCap(dto.amount);
     const note = dto.note.trim();
     if (!note) throw new BadRequestException({ code: 'CHARGE_CREDIT_NOTE_REQUIRED', message: 'Add a note saying why this credit is given.' });
     await this.prismaJobs.$transaction(async (tx) => {
@@ -623,8 +661,8 @@ export class ChargesService {
         receiptAddress: school.receiptAddress,
         receiptPaymentInstructions: school.receiptPaymentInstructions,
         payInApp,
-        balances: view.balances.map((b) => ({ ...b, cardSurchargeAmount: cardSurchargeAmount(b.payableAmount, bps) })),
-        charges: view.charges.map((c) => ({ ...c, cardSurchargeAmount: cardSurchargeAmount(c.owedAmount, bps) })),
+        balances: view.balances.map((b) => ({ ...b, cardSurchargeAmount: cardSurchargeAmount(b.payableAmount, bps, b.currency) })),
+        charges: view.charges.map((c) => ({ ...c, cardSurchargeAmount: cardSurchargeAmount(c.owedAmount, bps, c.currency) })),
         payments: view.payments,
         credits: view.credits,
       });
@@ -691,7 +729,7 @@ export class ChargesService {
       return { amount: row._sum.amount ?? 0, currency: row.currency, description: 'Balance payment' };
     });
 
-    const surcharge = cardSurchargeAmount(target.amount, await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, schoolId)));
+    const surcharge = cardSurchargeAmount(target.amount, await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, schoolId)), target.currency);
     // The same request while a Checkout is still open gets that session back
     // (a double tap). Once one has ended (paid, or failed or abandoned), the
     // next request is a new session, even for the same amount.
@@ -1117,6 +1155,7 @@ export class ChargesService {
         taxRateBasisPoints: c.taxRateBasisPoints,
         taxInclusive: c.taxInclusive,
         taxExempt: c.taxExempt,
+        taxLines: readChargeTaxLines(c.taxLines),
         incomeCategoryName: forStaff && c.incomeCategoryId ? (categoryNames.get(c.incomeCategoryId) ?? null) : null,
         netAmount: c.netAmount,
         taxAmount: c.taxAmount,

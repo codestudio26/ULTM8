@@ -530,6 +530,8 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       await mkStudent('kid', 'white-1');
       await mkUser('parent');
       await mkUser('stranger');
+      // Decision 430 item 7: a parent acts for a child under 18, so the child is one.
+      await superuser.user.update({ where: { id: user.kid.id }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
       await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: user.parent.id, studentId: user.kid.id } });
       sign('parent', []);
       sign('stranger', []);

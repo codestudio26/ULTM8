@@ -12,6 +12,8 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { ResolveCancellationAction } from './dto/resolve-cancellation.dto';
+import { noticeWallTime } from '../common/notice-time';
+import { minorUnitStep, roundToStep } from '../payments/stripe-amount';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -89,16 +91,6 @@ const SETTINGS_SELECT = {
 
 const OPEN_RESOLUTIONS: RefundResolution[] = ['PENDING', 'REFUND_OWED'];
 
-/** "Sat 24 Oct 2026, 18:00" in the class's own timezone (its branch's, else the
- * School's), for the class-cancelled notification. */
-function formatClassTime(date: Date, timeZone: string): string {
-  const opts: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' };
-  try {
-    return new Intl.DateTimeFormat('en-GB', { ...opts, timeZone }).format(date);
-  } catch {
-    return `${new Intl.DateTimeFormat('en-GB', { ...opts, timeZone: 'UTC' }).format(date)} UTC`;
-  }
-}
 const MONEY_RESOLUTIONS: RefundResolution[] = ['MONEY_REFUNDED', 'REFUND_OWED'];
 
 /**
@@ -254,7 +246,7 @@ export class CancellationService {
       await this.restoreCredit(tx, seat.membershipId);
       return { resolution: 'REFUNDED', refundAmount: null, stripeRefund: false };
     }
-    const refundAmount = await this.perClassShare(tx, seat, payment.amount, payment.refundedAmount ?? 0, membership.membershipPlan.classesIncluded);
+    const refundAmount = await this.perClassShare(tx, seat, payment.amount, payment.refundedAmount ?? 0, membership.membershipPlan.classesIncluded, payment.currency);
     // Disputed (Decision 55: refunds frozen), nothing left to refund, or a caller
     // who may not send money: a staff decision.
     if (payment.status !== 'SUCCESSFUL' || refundAmount <= 0 || !mayRefund) {
@@ -285,7 +277,10 @@ export class CancellationService {
   /**
    * One class's share of a Class Pack's price: the cumulative entitlement after
    * this refund minus the cumulative entitlement before it, each rounded once to
-   * the minor unit (domain rules §7). Capped at what's left unrefunded.
+   * the currency's real minor unit (domain rules §7; Decision 431 MON-1: whole
+   * yen for JPY, so a ¥1,000 3-pack refunds ¥333 + ¥333 + ¥334, never ¥333.33
+   * that Stripe then rounds again). Capped at what's left unrefunded, itself
+   * rounded down to the step (a fraction kept from before MON-3 can't be sent).
    *
    * "Before it" counts every other seat on this Membership already refunded,
    * owed, or waiting with an amount (a Stripe refund in flight, or one waiting
@@ -293,7 +288,7 @@ export class CancellationService {
    * still get consecutive shares. A waiting seat that ends up credited or kept
    * has its amount cleared and drops out.
    */
-  private async perClassShare(tx: TenantTx, seat: SeatRef, paid: number, alreadyRefunded: number, classesIncluded: number | null): Promise<number> {
+  private async perClassShare(tx: TenantTx, seat: SeatRef, paid: number, alreadyRefunded: number, classesIncluded: number | null, currency: string | null): Promise<number> {
     if (!classesIncluded || classesIncluded <= 0) return 0;
     const counted = { OR: [{ refundResolution: { in: MONEY_RESOLUTIONS } }, { refundResolution: 'PENDING' as const, refundAmount: { not: null } }] };
     const [bookings, attendees] = await Promise.all([
@@ -302,8 +297,7 @@ export class CancellationService {
     ]);
     const prior = bookings + attendees;
     if (prior >= classesIncluded) return 0;
-    const share = Math.round(((prior + 1) * paid) / classesIncluded) - Math.round((prior * paid) / classesIncluded);
-    return Math.min(share, paid - alreadyRefunded);
+    return classShare(paid, alreadyRefunded, classesIncluded, prior, minorUnitStep(currency));
   }
 
   /**
@@ -521,7 +515,9 @@ export class CancellationService {
     });
 
     const branch = cls.branchId ? await this.prismaJobs.branch.findUnique({ where: { id: cls.branchId }, select: { timezone: true } }) : null;
-    const when = formatClassTime(cls.startDate, branch?.timezone ?? school.timezone ?? 'UTC');
+    // The class's own zone (its Branch's, else the School's), in machine form:
+    // each reader's app formats it in their language (Decision 434, TXT-3).
+    const when = noticeWallTime(cls.startDate, branch?.timezone ?? school.timezone ?? 'UTC');
     // The portal translates these exact shapes (i18n/server/translate.ts) — keep them in step.
     const body = `${cls.title} on ${when} has been cancelled by the school.${trimmedReason ? ` Reason: ${trimmedReason}` : ''}`;
     const recipients = new Set([...bookings.map((b) => b.studentId), ...earlier.map((b) => b.studentId), ...waiting.map((w) => w.studentId)]);
@@ -720,4 +716,18 @@ export class CancellationService {
  * goes back once, to the card or by hand, never both. */
 function seatRefundKey(seat: SeatRef): string {
   return seat.attendeeId ? `refund-booking-guest-${seat.attendeeId}` : `refund-booking-${seat.bookingId}`;
+}
+
+/**
+ * The pure sum behind perClassShare(): seat number `prior + 1` of a
+ * `classesIncluded`-class pack paid `paid` (hundredths), with `alreadyRefunded`
+ * gone. Each cumulative entitlement is rounded once to `step` (100 for a
+ * zero-decimal currency, else 1), so the shares add up to exactly what was
+ * paid and each one is a whole number of the currency's smallest unit.
+ */
+export function classShare(paid: number, alreadyRefunded: number, classesIncluded: number, prior: number, step: number): number {
+  if (classesIncluded <= 0 || prior >= classesIncluded) return 0;
+  const share = roundToStep(((prior + 1) * paid) / classesIncluded, step) - roundToStep((prior * paid) / classesIncluded, step);
+  const left = Math.floor(Math.max(0, paid - alreadyRefunded) / step) * step;
+  return Math.max(0, Math.min(share, left));
 }

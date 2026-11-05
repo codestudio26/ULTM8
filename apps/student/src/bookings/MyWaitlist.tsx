@@ -3,8 +3,8 @@ import { Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
-import { formatClassTimes, formatDateTime } from '../lib/formatDate';
-import { classZone } from '../lib/classTime';
+import { formatClassTimes } from '../lib/formatDate';
+import { classZone, formatInZone } from '../lib/classTime';
 import { useT } from '../i18n/I18nProvider';
 import { useClaimWaitlist, useMyWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 
@@ -54,7 +54,7 @@ function WaitlistRow({ entry }: { entry: Entry }) {
       {entry.schoolName ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{entry.schoolName}</Text> : null}
       {offered ? (
         <Text style={{ color: '#188038', fontSize: 13, marginTop: 4 }}>
-          {entry.claimByDeadline ? t('bookings.waitlist.spotFreeUntil', { date: formatDateTime(entry.claimByDeadline) }) : t('bookings.waitlist.spotFree')}
+          {entry.claimByDeadline ? t('bookings.waitlist.spotFreeUntil', { date: formatInZone(entry.claimByDeadline, classZone(entry.classTimezone, null)) }) : t('bookings.waitlist.spotFree')}
         </Text>
       ) : (
         <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{t('bookings.classRow.waitlistPosition', { position: entry.position })}</Text>

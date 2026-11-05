@@ -483,7 +483,7 @@ function MembershipPlanForm({
               id="plan-price"
               disabled={priceLocked || schoolCurrencyMissing}
               value={form.price}
-              currency={form.currency || null}
+              currency={form.currency || normalizedDefaultCurrency || null}
               onChange={(price, priceValid) => setForm((f) => ({ ...f, price, priceValid }))}
             />
           </Field>
@@ -660,7 +660,7 @@ function MembershipPlanForm({
               id="plan-cancellationCharge"
               disabled={schoolCurrencyMissing}
               value={form.cancellationCharge}
-              currency={form.currency || null}
+              currency={form.currency || normalizedDefaultCurrency || null}
               onChange={(cancellationCharge, cancellationValid) => setForm((f) => ({ ...f, cancellationCharge, cancellationValid }))}
             />
           </Field>

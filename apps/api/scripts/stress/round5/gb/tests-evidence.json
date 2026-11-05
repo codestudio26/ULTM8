@@ -1,0 +1,1201 @@
+{
+ "res": [
+  {
+   "id": "T1 createMinor refuses future DOB",
+   "pass": false,
+   "detail": "got 201 {\"linkId\":\"29ec8bd9-6218-417e-bc8f-8fb5b1fd0937\",\"studentId\":\"4edb17a9-3404-433b-9a07-eda18d03c2c7\",\"firstName\":\"Fut\",\"surname\":\"Ure\",\"dateOfBirth\":\"2099-01-01T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T1 createMinor refuses DOB 1900",
+   "pass": false,
+   "detail": "got 201 {\"linkId\":\"4dde97b8-0d91-4ee6-9490-1f39d9705571\",\"studentId\":\"7e3ac4b6-7290-416e-944f-f9c6fb31d8b0\",\"firstName\":\"Old\",\"surname\":\"Child\",\"dateOfBirth\":\"1900-01-01T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T1 createMinor refuses adult DOB (40y)",
+   "pass": false,
+   "detail": "got 201 {\"linkId\":\"a81d8e21-20b1-481c-9c9c-4966917a4fdd\",\"studentId\":\"a7a0546f-a9f7-4d31-b9a3-38462e6048ba\",\"firstName\":\"Grown\",\"surname\":\"Up\",\"dateOfBirth\":\"1986-11-04T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T1 createMinor refuses spaces-only name",
+   "pass": false,
+   "detail": "got 201 {\"linkId\":\"e5149150-a588-4c37-996e-be596bd3d214\",\"studentId\":\"26cefeea-230d-4ccb-824c-f99957a5af90\",\"firstName\":\"   \",\"surname\":\"   \",\"dateOfBirth\":\"2018-11-04T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T1 createMinor refuses impossible date 2017-02-30",
+   "pass": false,
+   "detail": "got 201 {\"linkId\":\"4a168768-9e79-4fd1-99d7-1100d864aaec\",\"studentId\":\"3b8b3646-261e-474e-85b9-5308a89d0935\",\"firstName\":\"Feb\",\"surname\":\"Thirty\",\"dateOfBirth\":\"2017-03-02T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T2 control: plain Guardian books child",
+   "pass": true,
+   "detail": "201 {\"id\":\"f90f1c79-d707-460f-903e-270be9d672b0\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"classId\":\"411809f7-c5ca-403e-83af-408ddaf3890c\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"7dc73c4d-27ad-4a95-bf67-fbf5a53010b2\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T2 Guardian-who-trains books child (token with STUDENT grant)",
+   "pass": false,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T2 Guardian-who-trains books child (token without grants)",
+   "pass": false,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T2 Guardian-who-trains signs child waiver",
+   "pass": true,
+   "detail": "201 {\"id\":\"a3f2c81c-c2c0-46ed-9f43-79c3690abb52\",\"waiverId\":\"b3eb960d-517e-4d47-b3b5-95f5a446e956\",\"studentId\":\"186f0a46-665e-4988-bae9-c8e86b778a1d\",\"signedById\":\"97f158cc-7feb-4d73-ae03-f025a2839680\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"signerFullName\":\"Patrick Byrne\",\"signatureText\":\"Patrick Byrne\",\"signedDate\":\"2026-11-04T21:12:34.997Z\",\"status\":\"SIGNED\",\"signedWaiverTitle\":\"Red Rose…"
+  },
+  {
+   "id": "T2 Guardian-who-trains waitlist path reaches business rule (not 403)",
+   "pass": false,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T2 Guardian-who-trains buys child plan",
+   "pass": false,
+   "detail": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This School has no configured PaymentAccount — nothing can be purchased here yet.\"}}"
+  },
+  {
+   "id": "T2 Instructor-parent books own child at another branch",
+   "pass": true,
+   "detail": "201 {\"id\":\"6cb94865-1e03-48d0-93b6-bcba4a513146\",\"studentId\":\"f7dc4f2f-d1e2-4888-964b-4d85c85847c7\",\"classId\":\"411809f7-c5ca-403e-83af-408ddaf3890c\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"2f21c048-3f12-4fb8-92e6-0ff98e929906\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T2 Instructor-parent signs own child waiver",
+   "pass": true,
+   "detail": "201 {\"id\":\"6a1c3e71-29ab-4676-9a28-9f79b832aaa2\",\"waiverId\":\"b3eb960d-517e-4d47-b3b5-95f5a446e956\",\"studentId\":\"f7dc4f2f-d1e2-4888-964b-4d85c85847c7\",\"signedById\":\"d925e09d-6507-44b7-b49c-0352b8bbc4d0\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"signerFullName\":\"Kieran Ó Súilleabháin\",\"signatureText\":\"Kieran Ó Súilleabháin\",\"signedDate\":\"2026-11-04T21:12:35.349Z\",\"status\":\"SIGNED\",\"signedWaiver…"
+  },
+  {
+   "id": "T3 mint for delegated child only",
+   "pass": true,
+   "detail": "201/403"
+  },
+  {
+   "id": "T3 Kid Mode books own credit",
+   "pass": true,
+   "detail": "201 {\"id\":\"d4fa957e-0de0-41e5-8024-d8a161cfd2df\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"classId\":\"674be249-dce7-4bae-93d3-1fc88b037a09\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"7dc73c4d-27ad-4a95-bf67-fbf5a53010b2\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T3 Kid Mode token refused: book sibling",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: book with override",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: list minors",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: purchase",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: waitlist",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: cancel",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: sign waiver",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: mint another token",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: notifications",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: book trailing slash",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode token refused: book with query",
+   "pass": false,
+   "detail": "201 {\"id\":\"8280d8c5-ec1b-46a4-bd8d-7818f53aa8e5\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"classId\":\"40404c8a-3846-4f76-ae6c-d04489482368\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"7dc73c4d-27ad-4a95-bf67-fbf5a53010b2\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T3 no guests in Kid Mode",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"NO_GUESTS_IN_KID_MODE\",\"message\":\"Guests can only be added by a parent, not in Kid Mode.\"}}"
+  },
+  {
+   "id": "T3 Kid Mode 8 parallel bookings → one",
+   "pass": false,
+   "detail": "409,409,409,409,409,409,409,409"
+  },
+  {
+   "id": "T3 withdraw → token dead, bookings to review",
+   "pass": true,
+   "detail": "200/403/2"
+  },
+  {
+   "id": "T3 other parent cannot confirm review",
+   "pass": true,
+   "detail": "403"
+  },
+  {
+   "id": "T3 Kid Mode works for a Guardian who also trains",
+   "pass": false,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T4 Branch Staff sees own branch child",
+   "pass": true,
+   "detail": "200"
+  },
+  {
+   "id": "T4 other-branch staff/instructor cannot read child",
+   "pass": true,
+   "detail": "403/403"
+  },
+  {
+   "id": "T4 other School owner cannot read child at A",
+   "pass": true,
+   "detail": "404"
+  },
+  {
+   "id": "T4 other-branch staff cannot read child guardians",
+   "pass": true,
+   "detail": "403"
+  },
+  {
+   "id": "T4 another parent cannot read child bookings",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T4 another parent cannot read child waivers",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T4 another parent cannot read child schools",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T4 another parent cannot read child friend-passes",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T4 another parent cannot read child medical presence",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only the member, or the Guardian for a child, can see or withdraw this.\"}}"
+  },
+  {
+   "id": "T4 medical: owner reads",
+   "pass": true,
+   "detail": "200"
+  },
+  {
+   "id": "T4 medical: staff without switch, instructor, other branch, other School, parent (staff view) refused",
+   "pass": true,
+   "detail": "403/403/403/403/403"
+  },
+  {
+   "id": "T4 medical presence for Guardian",
+   "pass": true,
+   "detail": "200 {\"items\":[{\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"schoolName\":\"R5 GB Red Rose Family Karate mw2m1rdj\",\"consentedAt\":\"2026-11-04T21:10:19.708Z\",\"consentedByGuardian\":true,\"awaitingAcceptance\":false}]}"
+  },
+  {
+   "id": "T4 School B cannot read A waiver status",
+   "pass": true,
+   "detail": "403"
+  },
+  {
+   "id": "T4 School B list shows only its own (no Cian/Saoirse siblings)",
+   "pass": false,
+   "detail": "400"
+  },
+  {
+   "id": "T4 School B sees Aoife guardian (she is enrolled there)",
+   "pass": true,
+   "detail": "200 {\"items\":[{\"id\":\"0ec72784-6463-4d9b-bbf0-4316c54a3db1\",\"firstName\":\"Máire\",\"surname\":\"Ní Dhomhnaill\"}]}"
+  },
+  {
+   "id": "T4 Did staff roster excludes Levenshulme children",
+   "pass": false,
+   "detail": "400"
+  },
+  {
+   "id": "T5 parent cannot sign for an adult (18 yesterday)",
+   "pass": false,
+   "detail": "201 {\"id\":\"45b85f93-a347-45b2-9598-9cfd62b523ab\",\"waiverId\":\"b3eb960d-517e-4d47-b3b5-95f5a446e956\",\"studentId\":\"ea9f3014-b295-499e-ab20-10fd5b730d8c\",\"signedById\":\"c885ea30-d9ef-4bca-895f-6a523298bf66\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"signerFullName\":\"Ann Murphy\",\"signatureText\":\"Ann Murphy\",\"signedDate\":\"2026-11-04T21:12:39.206Z\",\"status\":\"SIGNED\",\"signedWaiverTitle\":\"Red Rose liabi…"
+  },
+  {
+   "id": "T5 parent signs for 17-year-old",
+   "pass": true,
+   "detail": "201"
+  },
+  {
+   "id": "T5 parent cannot buy for an adult",
+   "pass": true,
+   "detail": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This School has no configured PaymentAccount — nothing can be purchased here yet.\"}}"
+  },
+  {
+   "id": "T5 parent cannot book for an adult",
+   "pass": false,
+   "detail": "201"
+  },
+  {
+   "id": "T5 parent cannot manage adult medical consent",
+   "pass": false,
+   "detail": "200"
+  },
+  {
+   "id": "T5 staff cannot cross 18 (Decision 342)",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only the School owner can change a birth date that makes someone an adult or a child.\"}}"
+  },
+  {
+   "id": "T5 staff can correct same side",
+   "pass": true,
+   "detail": "200 {\"id\":\"34faa22b-5389-4014-9fdf-3835a0bf3107\",\"email\":\"minor+34faa22b-5389-4014-9fdf-3835a0bf3107@guardian-managed.ultm8.internal\",\"phone\":\"+000046235563341\",\"phoneVerifiedAt\":null,\"firstName\":\"Ciara\",\"surname\":\"Murphy\",\"username\":null,\"dateOfBirth\":\"2008-11-06T00:00:00.000Z\",\"gender\":\"FEMALE\",\"nationality\":null,\"language\":null,\"currency\":null,\"address\":null,\"addressLine1\":null,\"addressLine2\":null,…"
+  },
+  {
+   "id": "T5 createMinor refuses an 18-year-old",
+   "pass": false,
+   "detail": "201"
+  },
+  {
+   "id": "T6 10-year-old cannot self-sign",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.\"}}"
+  },
+  {
+   "id": "T6 10-year-old cannot self-purchase (Decision 67)",
+   "pass": true,
+   "detail": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This School has no configured PaymentAccount — nothing can be purchased here yet.\"}}"
+  },
+  {
+   "id": "T6 10-year-old cannot self-purchase pack (PaymentIntent path)",
+   "pass": true,
+   "detail": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This School has no configured PaymentAccount — nothing can be purchased here yet.\"}}"
+  },
+  {
+   "id": "T6 child cannot self-consent medical",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"A child's medical information is given by their Guardian.\"}}"
+  },
+  {
+   "id": "T6 a 10-year-old cannot be named Guardian",
+   "pass": true,
+   "detail": "400 {\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"A Guardian must be 18 or over.\"}}"
+  },
+  {
+   "id": "T6 a 10-year-old cannot become a Guardian via the app",
+   "pass": false,
+   "detail": "201 {\"linkId\":\"fdb86884-a129-460f-9a4e-cfc310e0808b\",\"studentId\":\"6f1dfba7-2c91-4845-84a6-7b68ba3b1418\",\"firstName\":\"Tiny\",\"surname\":\"Walsh\",\"dateOfBirth\":\"2024-11-04T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T7 second Guardian links to the same child (no duplicate)",
+   "pass": false,
+   "detail": "accept 201; Niamh rows=2 [{\"id\":\"04bc263c-3961-4edd-b613-a345118821d0\",\"firstName\":\"Niamh\",\"surname\":\"Kelly\",\"dob\":\"2016-02-29T00:00:00.000Z\",\"guardians\":1},{\"id\":\"d6a34afd-be0c-460d-82a2-f6edce5182e3\",\"firstName\":\"Niamh\",\"surname\":\"Kelly\",\"dob\":\"2016-02-29T00:00:00.000Z\",\"guardians\":1}]"
+  },
+  {
+   "id": "T8 broadcast accepted",
+   "pass": true,
+   "detail": "201 {\"broadcastId\":\"1ae8476e-d2f3-40cc-ab35-ebb54293f666\",\"audience\":\"CLASS\",\"recipientCount\":3}"
+  },
+  {
+   "id": "T8 parents of booked children get a copy; others none",
+   "pass": true,
+   "detail": "{\"maire\":2,\"mum\":1,\"dad\":0,\"patrick\":0,\"ann\":0,\"instrDid\":0,\"liam\":0}"
+  },
+  {
+   "id": "T9 non-parent cannot consent",
+   "pass": true,
+   "detail": "400"
+  },
+  {
+   "id": "T9 CAMERA withdraw without step-up",
+   "pass": true,
+   "detail": "200"
+  },
+  {
+   "id": "T9 BASELINE needs step-up",
+   "pass": true,
+   "detail": "403 {\"error\":{\"code\":\"STEP_UP_REQUIRED\",\"message\":\"Re-enter your passcode to confirm this action.\"}}"
+  },
+  {
+   "id": "T9 another user's step-up token refused",
+   "pass": true,
+   "detail": "403"
+  },
+  {
+   "id": "T9 BASELINE withdraw cascades (grants revoked, medical erased)",
+   "pass": true,
+   "detail": "200 grants 1→0 medical=0"
+  },
+  {
+   "id": "T9 after BASELINE withdrawal, re-enrolment without new consent is refused",
+   "pass": false,
+   "detail": "201 {\"id\":\"730594e8-3eb5-4893-a8b2-2d4ba64830a0\",\"role\":\"STUDENT\",\"userId\":\"04bc263c-3961-4edd-b613-a345118821d0\",\"franchiseId\":null,\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":null,\"grantedById\":\"1e80c734-3408-40d0-b420-53e954f412e0\",\"grantedAt\":\"2026-11-04T21:12:48.295Z\",\"revokedAt\":null,\"isMainOwner\":false,\"pausedAt\":null,\"pausedById\":null,\"createdAt\":\"2026-11-04T21:12:48.295Z\",\"up…"
+  }
+ ],
+ "ev": [
+  {
+   "id": "T1 future DOB",
+   "req": "POST /guardians/me/minors",
+   "body": {
+    "firstName": "Fut",
+    "surname": "Ure",
+    "dateOfBirth": "2099-01-01"
+   },
+   "status": 201,
+   "resp": "{\"linkId\":\"29ec8bd9-6218-417e-bc8f-8fb5b1fd0937\",\"studentId\":\"4edb17a9-3404-433b-9a07-eda18d03c2c7\",\"firstName\":\"Fut\",\"surname\":\"Ure\",\"dateOfBirth\":\"2099-01-01T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T1 DOB 1900",
+   "req": "POST /guardians/me/minors",
+   "body": {
+    "firstName": "Old",
+    "surname": "Child",
+    "dateOfBirth": "1900-01-01"
+   },
+   "status": 201,
+   "resp": "{\"linkId\":\"4dde97b8-0d91-4ee6-9490-1f39d9705571\",\"studentId\":\"7e3ac4b6-7290-416e-944f-f9c6fb31d8b0\",\"firstName\":\"Old\",\"surname\":\"Child\",\"dateOfBirth\":\"1900-01-01T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T1 adult DOB (40y)",
+   "req": "POST /guardians/me/minors",
+   "body": {
+    "firstName": "Grown",
+    "surname": "Up",
+    "dateOfBirth": "1986-11-04"
+   },
+   "status": 201,
+   "resp": "{\"linkId\":\"a81d8e21-20b1-481c-9c9c-4966917a4fdd\",\"studentId\":\"a7a0546f-a9f7-4d31-b9a3-38462e6048ba\",\"firstName\":\"Grown\",\"surname\":\"Up\",\"dateOfBirth\":\"1986-11-04T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T1 spaces-only name",
+   "req": "POST /guardians/me/minors",
+   "body": {
+    "firstName": "   ",
+    "surname": "   ",
+    "dateOfBirth": "2018-11-04"
+   },
+   "status": 201,
+   "resp": "{\"linkId\":\"e5149150-a588-4c37-996e-be596bd3d214\",\"studentId\":\"26cefeea-230d-4ccb-824c-f99957a5af90\",\"firstName\":\"   \",\"surname\":\"   \",\"dateOfBirth\":\"2018-11-04T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T1 impossible date 2017-02-30",
+   "req": "POST /guardians/me/minors",
+   "body": {
+    "firstName": "Feb",
+    "surname": "Thirty",
+    "dateOfBirth": "2017-02-30"
+   },
+   "status": 201,
+   "resp": "{\"linkId\":\"4a168768-9e79-4fd1-99d7-1100d864aaec\",\"studentId\":\"3b8b3646-261e-474e-85b9-5308a89d0935\",\"firstName\":\"Feb\",\"surname\":\"Thirty\",\"dateOfBirth\":\"2017-03-02T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T2 control Máire books Aoife",
+   "req": "POST /classes/411809f7-c5ca-403e-83af-408ddaf3890c/book",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"f90f1c79-d707-460f-903e-270be9d672b0\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"classId\":\"411809f7-c5ca-403e-83af-408ddaf3890c\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"7dc73c4d-27ad-4a95-bf67-fbf5a53010b2\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T2 Patrick books Oisín (student token)",
+   "req": "POST /classes/411809f7-c5ca-403e-83af-408ddaf3890c/book",
+   "body": {
+    "studentId": "186f0a46-665e-4988-bae9-c8e86b778a1d"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T2 Patrick books Oisín (no-grant token)",
+   "req": "POST /classes/674be249-dce7-4bae-93d3-1fc88b037a09/book",
+   "body": {
+    "studentId": "186f0a46-665e-4988-bae9-c8e86b778a1d"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T2 Patrick signs waiver for Oisín",
+   "req": "POST /waivers/b3eb960d-517e-4d47-b3b5-95f5a446e956/sign",
+   "body": {
+    "studentId": "186f0a46-665e-4988-bae9-c8e86b778a1d",
+    "signerFullName": "Patrick Byrne",
+    "signatureText": "Patrick Byrne"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"a3f2c81c-c2c0-46ed-9f43-79c3690abb52\",\"waiverId\":\"b3eb960d-517e-4d47-b3b5-95f5a446e956\",\"studentId\":\"186f0a46-665e-4988-bae9-c8e86b778a1d\",\"signedById\":\"97f158cc-7feb-4d73-ae03-f025a2839680\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"signerFullName\":\"Patrick Byrne\",\"signatureText\":\"Patrick Byrne\",\"signedDate\":\"2026-11-04T21:12:34.997Z\",\"status\":\"SIGNED\",\"signedWaiverTitle\":\"Red Rose…"
+  },
+  {
+   "id": "T2 Patrick waitlists Oisín",
+   "req": "POST /classes/40404c8a-3846-4f76-ae6c-d04489482368/waitlist",
+   "body": {
+    "studentId": "186f0a46-665e-4988-bae9-c8e86b778a1d"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T2 Patrick buys plan for Oisín",
+   "req": "POST /membership-plans/24cfff08-0040-405e-ace4-8d2edb69117b/purchase",
+   "body": {
+    "studentId": "186f0a46-665e-4988-bae9-c8e86b778a1d",
+    "useHostedCheckout": true
+   },
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This School has no configured PaymentAccount — nothing can be purchased here yet.\"}}"
+  },
+  {
+   "id": "T2 Instructor-parent books son",
+   "req": "POST /classes/411809f7-c5ca-403e-83af-408ddaf3890c/book",
+   "body": {
+    "studentId": "f7dc4f2f-d1e2-4888-964b-4d85c85847c7"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"6cb94865-1e03-48d0-93b6-bcba4a513146\",\"studentId\":\"f7dc4f2f-d1e2-4888-964b-4d85c85847c7\",\"classId\":\"411809f7-c5ca-403e-83af-408ddaf3890c\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"2f21c048-3f12-4fb8-92e6-0ff98e929906\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T2 Instructor-parent signs son waiver",
+   "req": "POST /waivers/b3eb960d-517e-4d47-b3b5-95f5a446e956/sign",
+   "body": {
+    "studentId": "f7dc4f2f-d1e2-4888-964b-4d85c85847c7",
+    "signerFullName": "Kieran Ó Súilleabháin",
+    "signatureText": "Kieran Ó Súilleabháin"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"6a1c3e71-29ab-4676-9a28-9f79b832aaa2\",\"waiverId\":\"b3eb960d-517e-4d47-b3b5-95f5a446e956\",\"studentId\":\"f7dc4f2f-d1e2-4888-964b-4d85c85847c7\",\"signedById\":\"d925e09d-6507-44b7-b49c-0352b8bbc4d0\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"signerFullName\":\"Kieran Ó Súilleabháin\",\"signatureText\":\"Kieran Ó Súilleabháin\",\"signedDate\":\"2026-11-04T21:12:35.349Z\",\"status\":\"SIGNED\",\"signedWaiver…"
+  },
+  {
+   "id": "T3 grant delegation Aoife",
+   "req": "POST /guardians/me/minors/40349233-9a17-4bf9-a87b-d85def0c7fbb/booking-delegation",
+   "status": 201,
+   "resp": "{\"id\":\"b36b6290-4416-499e-8a21-23c5a7c83fc8\",\"guardianId\":\"0ec72784-6463-4d9b-bbf0-4316c54a3db1\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"status\":\"ACTIVE\",\"grantedAt\":\"2026-11-04T21:12:35.400Z\",\"withdrawnAt\":null}"
+  },
+  {
+   "id": "T3 mint token Aoife",
+   "req": "POST /guardians/me/minors/40349233-9a17-4bf9-a87b-d85def0c7fbb/kid-mode-token",
+   "status": 201,
+   "resp": "{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwZWM3Mjc4NC02NDYzLTRkOWItYmJmMC00MzE2YzU0YTNkYjEiLCJlbWFpbCI6InI1LWdiLW13Mm0xcmRqLTIzN0BzdHJlc3MudGVzdCIsImdyYW50cyI6W10sImtpZE1vZGUiOnsic3R1ZGVudElkIjoiNDAzNDkyMzMtOWExNy00YmY5LWE4N2ItZDg1ZGVmMGM3ZmJiIn0sImlhdCI6MTc5MzgyNjc1NSwiZXhwIjoxNzkzODI3MDU1fQ.FRwxlY7kb7W_j5flWfTc1f8LZEZ1dO-JKCaGfjRnTYQ\",\"expiresAt\":\"2026-11-04T21:17:35.469Z\"}"
+  },
+  {
+   "id": "T3 mint token Cian (no delegation)",
+   "req": "POST /guardians/me/minors/d7fbaa88-9c3b-4e52-be90-3273380723e0/kid-mode-token",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This Guardian has no active booking delegation for this Student.\"}}"
+  },
+  {
+   "id": "T3 kid books Aoife",
+   "req": "POST /classes/674be249-dce7-4bae-93d3-1fc88b037a09/book",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"d4fa957e-0de0-41e5-8024-d8a161cfd2df\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"classId\":\"674be249-dce7-4bae-93d3-1fc88b037a09\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"7dc73c4d-27ad-4a95-bf67-fbf5a53010b2\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T3 kid token: book sibling",
+   "req": "POST /classes/674be249-dce7-4bae-93d3-1fc88b037a09/book",
+   "body": {
+    "studentId": "d7fbaa88-9c3b-4e52-be90-3273380723e0"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: book with override",
+   "req": "POST /classes/40404c8a-3846-4f76-ae6c-d04489482368/book",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb",
+    "overrideReason": "x"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: list minors",
+   "req": "GET /guardians/me/minors",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: purchase",
+   "req": "POST /membership-plans/24cfff08-0040-405e-ace4-8d2edb69117b/purchase",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb",
+    "useHostedCheckout": true
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: waitlist",
+   "req": "POST /classes/40404c8a-3846-4f76-ae6c-d04489482368/waitlist",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: cancel",
+   "req": "PATCH /bookings/d4fa957e-0de0-41e5-8024-d8a161cfd2df/cancel",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: sign waiver",
+   "req": "POST /waivers/b3eb960d-517e-4d47-b3b5-95f5a446e956/sign",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb",
+    "signerFullName": "Aoife",
+    "signatureText": "Aoife"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: mint another token",
+   "req": "POST /guardians/me/minors/40349233-9a17-4bf9-a87b-d85def0c7fbb/kid-mode-token",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: notifications",
+   "req": "GET /notifications/me",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: book trailing slash",
+   "req": "POST /classes/40404c8a-3846-4f76-ae6c-d04489482368/book/",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This is a Kid-Mode session — it may only book a Class for the one linked minor it was issued for.\"}}"
+  },
+  {
+   "id": "T3 kid token: book with query",
+   "req": "POST /classes/40404c8a-3846-4f76-ae6c-d04489482368/book?x=1",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"8280d8c5-ec1b-46a4-bd8d-7818f53aa8e5\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"classId\":\"40404c8a-3846-4f76-ae6c-d04489482368\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"7dc73c4d-27ad-4a95-bf67-fbf5a53010b2\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T3 kid books with guest",
+   "req": "POST /classes/40404c8a-3846-4f76-ae6c-d04489482368/book",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb",
+    "attendeeMembershipIds": [
+     "ba349390-6e8c-48d6-bdc6-2131e6894753"
+    ]
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"NO_GUESTS_IN_KID_MODE\",\"message\":\"Guests can only be added by a parent, not in Kid Mode.\"}}"
+  },
+  {
+   "id": "T3 withdraw delegation",
+   "req": "PATCH /guardians/me/booking-delegation/b36b6290-4416-499e-8a21-23c5a7c83fc8/withdraw",
+   "status": 200,
+   "resp": "{\"id\":\"b36b6290-4416-499e-8a21-23c5a7c83fc8\",\"guardianId\":\"0ec72784-6463-4d9b-bbf0-4316c54a3db1\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"status\":\"WITHDRAWN\",\"grantedAt\":\"2026-11-04T21:12:35.400Z\",\"withdrawnAt\":\"2026-11-04T21:12:37.110Z\"}"
+  },
+  {
+   "id": "T3 kid token after withdraw",
+   "req": "POST /classes/ef1c49a3-d14f-486d-b104-3d56f76db8e0/book",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This Guardian has no active booking delegation for this Student.\"}}"
+  },
+  {
+   "id": "T3 pending review",
+   "req": "GET /guardians/me/bookings-pending-review",
+   "status": 200,
+   "resp": "{\"items\":[{\"id\":\"d4fa957e-0de0-41e5-8024-d8a161cfd2df\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"classId\":\"674be249-dce7-4bae-93d3-1fc88b037a09\",\"status\":\"UPCOMING\"},{\"id\":\"8280d8c5-ec1b-46a4-bd8d-7818f53aa8e5\",\"studentId\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"classId\":\"40404c8a-3846-4f76-ae6c-d04489482368\",\"status\":\"UPCOMING\"}]}"
+  },
+  {
+   "id": "T3 Patrick confirms Máire review",
+   "req": "PATCH /guardians/me/bookings-pending-review/d4fa957e-0de0-41e5-8024-d8a161cfd2df/confirm",
+   "body": {
+    "studentId": "40349233-9a17-4bf9-a87b-d85def0c7fbb"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T3 Patrick delegation",
+   "req": "POST /guardians/me/minors/186f0a46-665e-4988-bae9-c8e86b778a1d/booking-delegation",
+   "status": 201,
+   "resp": "{\"id\":\"5d4aedc5-e421-4edd-adee-cd992cdd498c\",\"guardianId\":\"97f158cc-7feb-4d73-ae03-f025a2839680\",\"studentId\":\"186f0a46-665e-4988-bae9-c8e86b778a1d\",\"status\":\"ACTIVE\",\"grantedAt\":\"2026-11-04T21:12:37.348Z\",\"withdrawnAt\":null}"
+  },
+  {
+   "id": "T3 Patrick mint",
+   "req": "POST /guardians/me/minors/186f0a46-665e-4988-bae9-c8e86b778a1d/kid-mode-token",
+   "status": 201,
+   "resp": "{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5N2YxNThjYy03ZmViLTRkNzMtYWUwMy1mMDI1YTI4Mzk2ODAiLCJlbWFpbCI6InI1LWdiLW13Mm0xcmRqLTI0MEBzdHJlc3MudGVzdCIsImdyYW50cyI6W10sImtpZE1vZGUiOnsic3R1ZGVudElkIjoiMTg2ZjBhNDYtNjY1ZS00OTg4LWJhZTktYzhlODZiNzc4YTFkIn0sImlhdCI6MTc5MzgyNjc1NywiZXhwIjoxNzkzODI3MDU3fQ.RKLW8DYyGZ6dSZ8oKG1c7rTwBF8YTGmgoVJ4DfmXqTo\",\"expiresAt\":\"2026-11-04T21:17:37.545Z\"}"
+  },
+  {
+   "id": "T3 Oisín Kid Mode books",
+   "req": "POST /classes/40404c8a-3846-4f76-ae6c-d04489482368/book",
+   "body": {
+    "studentId": "186f0a46-665e-4988-bae9-c8e86b778a1d"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T4 Lev staff reads Aoife",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/40349233-9a17-4bf9-a87b-d85def0c7fbb/profile",
+   "status": 200,
+   "resp": "{\"id\":\"40349233-9a17-4bf9-a87b-d85def0c7fbb\",\"email\":\"minor+40349233-9a17-4bf9-a87b-d85def0c7fbb@guardian-managed.ultm8.internal\",\"phone\":\"+000443121900442\",\"phoneVerifiedAt\":null,\"firstName\":\"Aoife\",\"surname\":\"Ní Dhomhnaill\",\"username\":null,\"dateOfBirth\":\"2018-11-04T00:00:00.000Z\",\"gender\":\"FEMALE\",\"nationality\":null,\"language\":null,\"currency\":null,\"address\":null,\"addressLine1\":null,\"addressLine2…"
+  },
+  {
+   "id": "T4 Did staff reads Aoife",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/40349233-9a17-4bf9-a87b-d85def0c7fbb/profile",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This student belongs to a branch you are not assigned to.\"}}"
+  },
+  {
+   "id": "T4 Did instructor reads Aoife",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/40349233-9a17-4bf9-a87b-d85def0c7fbb/profile",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This student belongs to a branch you are not assigned to.\"}}"
+  },
+  {
+   "id": "T4 School B owner reads Aoife at A",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/40349233-9a17-4bf9-a87b-d85def0c7fbb/profile",
+   "status": 404,
+   "resp": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"School not found\"}}"
+  },
+  {
+   "id": "T4 Did staff reads Aoife guardians",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/40349233-9a17-4bf9-a87b-d85def0c7fbb/guardians",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"This student belongs to a branch you are not assigned to.\"}}"
+  },
+  {
+   "id": "T4 Patrick reads Aoife bookings",
+   "req": "GET /guardians/me/minors/40349233-9a17-4bf9-a87b-d85def0c7fbb/bookings",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T4 Patrick reads Aoife waivers",
+   "req": "GET /guardians/me/minors/40349233-9a17-4bf9-a87b-d85def0c7fbb/waivers",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T4 Patrick reads Aoife schools",
+   "req": "GET /guardians/me/minors/40349233-9a17-4bf9-a87b-d85def0c7fbb/schools",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T4 Patrick reads Aoife friend-passes",
+   "req": "GET /guardians/me/minors/40349233-9a17-4bf9-a87b-d85def0c7fbb/friend-passes?schoolId=116a2883-7134-426d-aa01-eff1cd9e8bf9",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You are not an active Guardian for this Student.\"}}"
+  },
+  {
+   "id": "T4 Patrick reads Aoife medical presence",
+   "req": "GET /students/40349233-9a17-4bf9-a87b-d85def0c7fbb/medical-info",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only the member, or the Guardian for a child, can see or withdraw this.\"}}"
+  },
+  {
+   "id": "T4 medical owner",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/medical-info",
+   "status": 200,
+   "resp": "{\"medicalInfo\":{\"body\":\"Asthma — blue inhaler in bag. Mild nut allergy.\",\"consentedByName\":\"Sinéad Kelly\",\"consentedByGuardian\":true,\"consentedAt\":\"2026-11-04T21:10:19.708Z\",\"updatedAt\":\"2026-11-04T21:10:19.709Z\"}}"
+  },
+  {
+   "id": "T4 medical Lev staff (no switch)",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/medical-info",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"STAFF_ACCESS_OFF\",\"message\":\"The School owner hasn't let you see medical information.\"}}"
+  },
+  {
+   "id": "T4 medical Lev instructor",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/medical-info",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"STAFF_ACCESS_OFF\",\"message\":\"The School owner hasn't let you see medical information.\"}}"
+  },
+  {
+   "id": "T4 medical Did staff",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/medical-info",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"STAFF_ACCESS_OFF\",\"message\":\"The School owner hasn't let you see medical information.\"}}"
+  },
+  {
+   "id": "T4 medical School B owner",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/medical-info",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"STAFF_ACCESS_OFF\",\"message\":\"The School owner hasn't let you see medical information.\"}}"
+  },
+  {
+   "id": "T4 medical mum",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/medical-info",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"STAFF_ACCESS_OFF\",\"message\":\"The School owner hasn't let you see medical information.\"}}"
+  },
+  {
+   "id": "T4 Mum medical presence",
+   "req": "GET /students/04bc263c-3961-4edd-b613-a345118821d0/medical-info",
+   "status": 200,
+   "resp": "{\"items\":[{\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"schoolName\":\"R5 GB Red Rose Family Karate mw2m1rdj\",\"consentedAt\":\"2026-11-04T21:10:19.708Z\",\"consentedByGuardian\":true,\"awaitingAcceptance\":false}]}"
+  },
+  {
+   "id": "T4 School B owner reads Aoife waiver-status at A",
+   "req": "GET /students/40349233-9a17-4bf9-a87b-d85def0c7fbb/waiver-status?schoolId=116a2883-7134-426d-aa01-eff1cd9e8bf9",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action.\"}}"
+  },
+  {
+   "id": "T4 School B student list",
+   "req": "GET /schools/bb05dc56-9131-445e-bff3-50c13d17605b/students?limit=100",
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"property limit should not exist\"}}"
+  },
+  {
+   "id": "T4 School B reads Aoife guardians",
+   "req": "GET /schools/bb05dc56-9131-445e-bff3-50c13d17605b/students/40349233-9a17-4bf9-a87b-d85def0c7fbb/guardians",
+   "status": 200,
+   "resp": "{\"items\":[{\"id\":\"0ec72784-6463-4d9b-bbf0-4316c54a3db1\",\"firstName\":\"Máire\",\"surname\":\"Ní Dhomhnaill\"}]}"
+  },
+  {
+   "id": "T4 Did staff roster",
+   "req": "GET /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students?limit=500",
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"property limit should not exist\"}}"
+  },
+  {
+   "id": "T5 Ann signs waiver for Ronan (18 yesterday)",
+   "req": "POST /waivers/b3eb960d-517e-4d47-b3b5-95f5a446e956/sign",
+   "body": {
+    "studentId": "ea9f3014-b295-499e-ab20-10fd5b730d8c",
+    "signerFullName": "Ann Murphy",
+    "signatureText": "Ann Murphy"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"45b85f93-a347-45b2-9598-9cfd62b523ab\",\"waiverId\":\"b3eb960d-517e-4d47-b3b5-95f5a446e956\",\"studentId\":\"ea9f3014-b295-499e-ab20-10fd5b730d8c\",\"signedById\":\"c885ea30-d9ef-4bca-895f-6a523298bf66\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"signerFullName\":\"Ann Murphy\",\"signatureText\":\"Ann Murphy\",\"signedDate\":\"2026-11-04T21:12:39.206Z\",\"status\":\"SIGNED\",\"signedWaiverTitle\":\"Red Rose liabi…"
+  },
+  {
+   "id": "T5 Ann signs waiver for Ciara (18 tomorrow)",
+   "req": "POST /waivers/b3eb960d-517e-4d47-b3b5-95f5a446e956/sign",
+   "body": {
+    "studentId": "34faa22b-5389-4014-9fdf-3835a0bf3107",
+    "signerFullName": "Ann Murphy",
+    "signatureText": "Ann Murphy"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"9be5f298-b439-4e03-8cd5-4281c145357a\",\"waiverId\":\"b3eb960d-517e-4d47-b3b5-95f5a446e956\",\"studentId\":\"34faa22b-5389-4014-9fdf-3835a0bf3107\",\"signedById\":\"c885ea30-d9ef-4bca-895f-6a523298bf66\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"signerFullName\":\"Ann Murphy\",\"signatureText\":\"Ann Murphy\",\"signedDate\":\"2026-11-04T21:12:39.355Z\",\"status\":\"SIGNED\",\"signedWaiverTitle\":\"Red Rose liabi…"
+  },
+  {
+   "id": "T5 Ann buys plan for Ronan",
+   "req": "POST /membership-plans/2058fbde-351b-4331-9d7d-8943a4d33acd/purchase",
+   "body": {
+    "studentId": "ea9f3014-b295-499e-ab20-10fd5b730d8c",
+    "useHostedCheckout": true
+   },
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This School has no configured PaymentAccount — nothing can be purchased here yet.\"}}"
+  },
+  {
+   "id": "T5 Ann books Ronan",
+   "req": "POST /classes/411809f7-c5ca-403e-83af-408ddaf3890c/book",
+   "body": {
+    "studentId": "ea9f3014-b295-499e-ab20-10fd5b730d8c"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"53f5964b-ebb0-447b-9f17-10854aada143\",\"studentId\":\"ea9f3014-b295-499e-ab20-10fd5b730d8c\",\"classId\":\"411809f7-c5ca-403e-83af-408ddaf3890c\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"e63b72f5-31a7-403b-9d75-a69d592bf685\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T5 Ann reads Ronan medical presence",
+   "req": "GET /students/ea9f3014-b295-499e-ab20-10fd5b730d8c/medical-info",
+   "status": 200,
+   "resp": "{\"items\":[]}"
+  },
+  {
+   "id": "T5 Ciara signature row",
+   "db": {
+    "err": "\nInvalid `prisma.waiverSignature.findFirst()` invocation:\n\n{\n  where: {\n    studentId: \"34faa22b-5389-4014-9fdf-3835a0bf3107\",\n    status: \"SIGNED\"\n  },\n  select: {\n    studentMajorityDate: true,\n    signedDate: true,\n    signedByGuardianId: true,\n    ~~~~~~~~~~~~~~~~~~\n?   id?: true,\n?   waiverId?: true,\n?   studentId?: true,\n?   signedById?: true,\n?   schoolId?: true,\n?   signerFullName?: true,\n?   signatureText?: true,\n?   signatureImageKey?: true,\n?   status?: true,\n?   signedWaiverTitle?: true,\n?   signedWaiverBody?: true,\n?   signedWaiverSha256?: true,\n?   signedWaiverVersion?: true,\n?   method?: true,\n?   recordedById?: true,\n?   lastRemindedAt?: true,\n?   mergedIntoStudentId?: true,\n?   createdAt?: true,\n?   updatedAt?: true,\n?   waiver?: true,\n?   student?: true,\n?   signedBy?: true\n  }\n}\n\nUnknown field `signedByGuardianId` for select statement on model `WaiverSignature`. Available options are marked with ?."
+   }
+  },
+  {
+   "id": "T5 Did staff makes Ciara adult",
+   "req": "PATCH /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/34faa22b-5389-4014-9fdf-3835a0bf3107/profile",
+   "body": {
+    "dateOfBirth": "2008-11-02"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"Only the School owner can change a birth date that makes someone an adult or a child.\"}}"
+  },
+  {
+   "id": "T5 Did staff corrects Ciara same side",
+   "req": "PATCH /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/34faa22b-5389-4014-9fdf-3835a0bf3107/profile",
+   "body": {
+    "dateOfBirth": "2008-11-06"
+   },
+   "status": 200,
+   "resp": "{\"id\":\"34faa22b-5389-4014-9fdf-3835a0bf3107\",\"email\":\"minor+34faa22b-5389-4014-9fdf-3835a0bf3107@guardian-managed.ultm8.internal\",\"phone\":\"+000046235563341\",\"phoneVerifiedAt\":null,\"firstName\":\"Ciara\",\"surname\":\"Murphy\",\"username\":null,\"dateOfBirth\":\"2008-11-06T00:00:00.000Z\",\"gender\":\"FEMALE\",\"nationality\":null,\"language\":null,\"currency\":null,\"address\":null,\"addressLine1\":null,\"addressLine2\":null,…"
+  },
+  {
+   "id": "T5 createMinor 18 today",
+   "req": "POST /guardians/me/minors",
+   "body": {
+    "firstName": "Eighteen",
+    "surname": "Today",
+    "dateOfBirth": "2008-11-04"
+   },
+   "status": 201,
+   "resp": "{\"linkId\":\"355dd2b5-baf0-4c18-aeb0-d3c8b941b8a9\",\"studentId\":\"118902c8-a608-4ba4-9a52-2605ee5e49a9\",\"firstName\":\"Eighteen\",\"surname\":\"Today\",\"dateOfBirth\":\"2008-11-04T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T6 Liam signs waiver",
+   "req": "POST /waivers/b3eb960d-517e-4d47-b3b5-95f5a446e956/sign",
+   "body": {
+    "signerFullName": "Liam Walsh",
+    "signatureText": "Liam Walsh"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.\"}}"
+  },
+  {
+   "id": "T6 Liam buys plan",
+   "req": "POST /membership-plans/dfc3c5c9-b25d-499a-94aa-6569d4862070/purchase",
+   "body": {
+    "useHostedCheckout": true
+   },
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This School has no configured PaymentAccount — nothing can be purchased here yet.\"}}"
+  },
+  {
+   "id": "T6 Liam buys pack",
+   "req": "POST /membership-plans/24cfff08-0040-405e-ace4-8d2edb69117b/purchase",
+   "body": {},
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This School has no configured PaymentAccount — nothing can be purchased here yet.\"}}"
+  },
+  {
+   "id": "T6 Liam joins School B with medical",
+   "req": "POST /schools/bb05dc56-9131-445e-bff3-50c13d17605b/join",
+   "body": {
+    "branchId": "01d65a7e-e405-4a69-92bd-eab2c79e6003",
+    "medicalInfo": "ADHD",
+    "medicalConsent": true
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"FORBIDDEN\",\"message\":\"A child's medical information is given by their Guardian.\"}}"
+  },
+  {
+   "id": "T6 owner adds child with Liam as Guardian",
+   "req": "POST /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/add-child-manually",
+   "body": {
+    "child": {
+     "firstName": "Baby",
+     "surname": "Walsh",
+     "dateOfBirth": "2023-11-04"
+    },
+    "guardian": {
+     "email": "r5-gb-mw2m1rdj-242@stress.test",
+     "firstName": "Liam",
+     "surname": "Walsh"
+    },
+    "branchId": "9da4a47b-0101-4de3-aae8-d77bcf157f52"
+   },
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"A Guardian must be 18 or over.\"}}"
+  },
+  {
+   "id": "T6 Liam creates a minor",
+   "req": "POST /guardians/me/minors",
+   "body": {
+    "firstName": "Tiny",
+    "surname": "Walsh",
+    "dateOfBirth": "2024-11-04"
+   },
+   "status": 201,
+   "resp": "{\"linkId\":\"fdb86884-a129-460f-9a4e-cfc310e0808b\",\"studentId\":\"6f1dfba7-2c91-4845-84a6-7b68ba3b1418\",\"firstName\":\"Tiny\",\"surname\":\"Walsh\",\"dateOfBirth\":\"2024-11-04T00:00:00.000Z\",\"gender\":null}"
+  },
+  {
+   "id": "T7 owner adds Niamh with Dad email",
+   "req": "POST /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/add-child-manually",
+   "body": {
+    "child": {
+     "firstName": "Niamh",
+     "surname": "Kelly",
+     "dateOfBirth": "2016-02-29"
+    },
+    "guardian": {
+     "email": "r5-gb-mw2m1rdj-239@stress.test",
+     "firstName": "Declan",
+     "surname": "Kelly"
+    },
+    "branchId": "9da4a47b-0101-4de3-aae8-d77bcf157f52"
+   },
+   "status": 201,
+   "resp": "{\"outcome\":\"GUARDIAN_INVITED\",\"guardianEmail\":\"r5-gb-mw2m1rdj-239@stress.test\",\"emailSent\":false,\"studentId\":null,\"inviteId\":\"eb71d56b-a880-468d-9e7f-90f5b70d154c\",\"temporaryPasscode\":null,\"temporaryPasscodeExpiresAt\":null}"
+  },
+  {
+   "id": "T7 invite",
+   "status": 201
+  },
+  {
+   "id": "T7 Dad lists invites",
+   "req": "GET /child-invites/me",
+   "status": 200,
+   "resp": "{\"items\":[{\"id\":\"eb71d56b-a880-468d-9e7f-90f5b70d154c\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"schoolName\":\"R5 GB Red Rose Family Karate mw2m1rdj\",\"childFirstName\":\"Niamh\",\"childSurname\":\"Kelly\",\"childDateOfBirth\":\"2016-02-29\",\"createdAt\":\"2026-11-04T21:12:43.138Z\",\"guardianName\":null,\"guardianEmail\":null}]}"
+  },
+  {
+   "id": "T7 Dad accepts",
+   "req": "POST /child-invites/eb71d56b-a880-468d-9e7f-90f5b70d154c/accept",
+   "status": 201,
+   "resp": "{\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"studentId\":\"d6a34afd-be0c-460d-82a2-f6edce5182e3\"}"
+  },
+  {
+   "id": "T7 Niamh rows at School A",
+   "db": [
+    {
+     "id": "04bc263c-3961-4edd-b613-a345118821d0",
+     "firstName": "Niamh",
+     "surname": "Kelly",
+     "dob": "2016-02-29T00:00:00.000Z",
+     "guardians": 1
+    },
+    {
+     "id": "d6a34afd-be0c-460d-82a2-f6edce5182e3",
+     "firstName": "Niamh",
+     "surname": "Kelly",
+     "dob": "2016-02-29T00:00:00.000Z",
+     "guardians": 1
+    }
+   ]
+  },
+  {
+   "id": "T7 Dad minors",
+   "req": "GET /guardians/me/minors",
+   "status": 200,
+   "resp": "{\"items\":[{\"linkId\":\"e79693f9-4567-4579-bd70-71031a01d1f8\",\"studentId\":\"d6a34afd-be0c-460d-82a2-f6edce5182e3\",\"firstName\":\"Niamh\",\"surname\":\"Kelly\",\"dateOfBirth\":\"2016-02-29T00:00:00.000Z\",\"gender\":null}]}"
+  },
+  {
+   "id": "T7 Dad minors",
+   "resp": "{\"items\":[{\"linkId\":\"e79693f9-4567-4579-bd70-71031a01d1f8\",\"studentId\":\"d6a34afd-be0c-460d-82a2-f6edce5182e3\",\"firstName\":\"Niamh\",\"surname\":\"Kelly\",\"dateOfBirth\":\"2016-02-29T00:00:00.000Z\",\"gender\":null}]}"
+  },
+  {
+   "id": "T7 remove link DELETE /guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0",
+   "req": "DELETE /guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0",
+   "status": 404,
+   "resp": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Cannot DELETE /v1/guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0\"}}"
+  },
+  {
+   "id": "T7 unlink probe",
+   "status": 404
+  },
+  {
+   "id": "T7 remove link POST /guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0/unlink",
+   "req": "POST /guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0/unlink",
+   "status": 404,
+   "resp": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Cannot POST /v1/guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0/unlink\"}}"
+  },
+  {
+   "id": "T7 unlink probe",
+   "status": 404
+  },
+  {
+   "id": "T7 remove link DELETE /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/guardians/1e80c734-3408-40d0-b420-53e954f412e0",
+   "req": "DELETE /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/guardians/1e80c734-3408-40d0-b420-53e954f412e0",
+   "status": 404,
+   "resp": "{\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Cannot DELETE /v1/schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/students/04bc263c-3961-4edd-b613-a345118821d0/guardians/1e80c734-3408-40d0-b420-53e954f412e0\"}}"
+  },
+  {
+   "id": "T7 unlink probe",
+   "status": 404
+  },
+  {
+   "id": "T8 Mum books Niamh",
+   "req": "POST /classes/674be249-dce7-4bae-93d3-1fc88b037a09/book",
+   "body": {
+    "studentId": "04bc263c-3961-4edd-b613-a345118821d0"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"07537ad2-6444-4656-ae15-34a79afcaa5b\",\"studentId\":\"04bc263c-3961-4edd-b613-a345118821d0\",\"classId\":\"674be249-dce7-4bae-93d3-1fc88b037a09\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"ca76d4e5-aa4b-49fe-9373-c4d290169505\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T8 Máire books Cian",
+   "req": "POST /classes/674be249-dce7-4bae-93d3-1fc88b037a09/book",
+   "body": {
+    "studentId": "d7fbaa88-9c3b-4e52-be90-3273380723e0"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"e8c58c4f-3321-4b56-8c0d-caecfee9d7c7\",\"studentId\":\"d7fbaa88-9c3b-4e52-be90-3273380723e0\",\"classId\":\"674be249-dce7-4bae-93d3-1fc88b037a09\",\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":\"9da4a47b-0101-4de3-aae8-d77bcf157f52\",\"status\":\"UPCOMING\",\"sourceMembershipId\":\"4da53c11-ad57-451f-94a4-28cd159dbc1e\",\"overriddenById\":null,\"overrideReason\":null,\"checkInMethod\":null,\"checkedIn…"
+  },
+  {
+   "id": "T8 class broadcast",
+   "req": "POST /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/notifications/broadcast",
+   "body": {
+    "title": "Kata moved 3f4c14",
+    "body": "Family kata moves to the big hall.",
+    "audience": "CLASS",
+    "classId": "674be249-dce7-4bae-93d3-1fc88b037a09",
+    "classAudience": [
+     "BOOKED"
+    ]
+   },
+   "status": 201,
+   "resp": "{\"broadcastId\":\"1ae8476e-d2f3-40cc-ab35-ebb54293f666\",\"audience\":\"CLASS\",\"recipientCount\":3}"
+  },
+  {
+   "id": "T8 notification rows",
+   "total": 6,
+   "who": {
+    "maire": [
+     "For Cian: Family kata moves to the big hall.",
+     "For Aoife: Family kata moves to the big hall."
+    ],
+    "mum": [
+     "For Niamh: Family kata moves to the big hall."
+    ],
+    "dad": [],
+    "patrick": [],
+    "ann": [],
+    "instrDid": [],
+    "liam": []
+   }
+  },
+  {
+   "id": "T9 Mum BASELINE",
+   "req": "POST /guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0/consent",
+   "body": {
+    "tier": "BASELINE",
+    "policyVersion": "uk-2026-10"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"c9a7efa9-e1d6-47cb-9680-6e1031dad6c2\",\"guardianId\":\"1e80c734-3408-40d0-b420-53e954f412e0\",\"studentId\":\"04bc263c-3961-4edd-b613-a345118821d0\",\"tier\":\"BASELINE\",\"policyVersion\":\"uk-2026-10\",\"status\":\"ACTIVE\",\"consentedAt\":\"2026-11-04T21:12:48.059Z\",\"withdrawnAt\":null}"
+  },
+  {
+   "id": "T9 Mum CAMERA",
+   "req": "POST /guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0/consent",
+   "body": {
+    "tier": "CAMERA",
+    "policyVersion": "uk-2026-10"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"043a877b-3286-4bc8-8f76-8922af83023d\",\"guardianId\":\"1e80c734-3408-40d0-b420-53e954f412e0\",\"studentId\":\"04bc263c-3961-4edd-b613-a345118821d0\",\"tier\":\"CAMERA\",\"policyVersion\":\"uk-2026-10\",\"status\":\"ACTIVE\",\"consentedAt\":\"2026-11-04T21:12:48.084Z\",\"withdrawnAt\":null}"
+  },
+  {
+   "id": "T9 Patrick grants consent for Niamh",
+   "req": "POST /guardians/me/minors/04bc263c-3961-4edd-b613-a345118821d0/consent",
+   "body": {
+    "tier": "BASELINE",
+    "policyVersion": "x"
+   },
+   "status": 400,
+   "resp": "{\"error\":{\"code\":\"BAD_REQUEST\",\"message\":\"This Guardian has no active link to this Student.\"}}"
+  },
+  {
+   "id": "T9 withdraw CAMERA no step-up",
+   "req": "PATCH /guardians/me/consent/043a877b-3286-4bc8-8f76-8922af83023d/withdraw",
+   "status": 200,
+   "resp": "{\"id\":\"043a877b-3286-4bc8-8f76-8922af83023d\",\"guardianId\":\"1e80c734-3408-40d0-b420-53e954f412e0\",\"studentId\":\"04bc263c-3961-4edd-b613-a345118821d0\",\"tier\":\"CAMERA\",\"policyVersion\":\"uk-2026-10\",\"status\":\"WITHDRAWN\",\"consentedAt\":\"2026-11-04T21:12:48.084Z\",\"withdrawnAt\":\"2026-11-04T21:12:48.170Z\"}"
+  },
+  {
+   "id": "T9 withdraw BASELINE no step-up",
+   "req": "PATCH /guardians/me/consent/c9a7efa9-e1d6-47cb-9680-6e1031dad6c2/withdraw",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"STEP_UP_REQUIRED\",\"message\":\"Re-enter your passcode to confirm this action.\"}}"
+  },
+  {
+   "id": "T9 step-up wrong passcode",
+   "req": "POST /auth/step-up/verify",
+   "body": {
+    "passcode": "000000"
+   },
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"INVALID_PASSCODE\",\"message\":\"Incorrect passcode.\"}}"
+  },
+  {
+   "id": "T9 step-up",
+   "req": "POST /auth/step-up/verify",
+   "body": {
+    "passcode": "246810"
+   },
+   "status": 201,
+   "resp": "{\"stepUpToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxZTgwYzczNC0zNDA4LTQwZDAtYjQyMC01M2U5NTRmNDEyZTAiLCJzY29wZSI6IkdVQVJESUFOX1NFTlNJVElWRV9BQ1RJT04iLCJpYXQiOjE3OTM4MjY3NjgsImV4cCI6MTc5MzgyNzA2OH0.G4x3XsJDeq3izC0dXJYpOGTMc_qxTZ_cjvhNosmTdhM\",\"expiresAt\":\"2026-11-04T21:17:48.230Z\"}"
+  },
+  {
+   "id": "T9 Patrick step-up",
+   "req": "POST /auth/step-up/verify",
+   "body": {
+    "passcode": "246810"
+   },
+   "status": 201,
+   "resp": "{\"stepUpToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5N2YxNThjYy03ZmViLTRkNzMtYWUwMy1mMDI1YTI4Mzk2ODAiLCJzY29wZSI6IkdVQVJESUFOX1NFTlNJVElWRV9BQ1RJT04iLCJpYXQiOjE3OTM4MjY3NjgsImV4cCI6MTc5MzgyNzA2OH0.1adMID6j0iYQKjMeUdx7KdSfw8Yedq8ufxSCRC7VhiQ\",\"expiresAt\":\"2026-11-04T21:17:48.239Z\"}"
+  },
+  {
+   "id": "T9 Mum withdraw with Patrick step-up",
+   "req": "PATCH /guardians/me/consent/c9a7efa9-e1d6-47cb-9680-6e1031dad6c2/withdraw",
+   "status": 403,
+   "resp": "{\"error\":{\"code\":\"STEP_UP_REQUIRED\",\"message\":\"Re-enter your passcode to confirm this action.\"}}"
+  },
+  {
+   "id": "T9 withdraw BASELINE with step-up",
+   "req": "PATCH /guardians/me/consent/c9a7efa9-e1d6-47cb-9680-6e1031dad6c2/withdraw",
+   "status": 200,
+   "resp": "{\"id\":\"c9a7efa9-e1d6-47cb-9680-6e1031dad6c2\",\"guardianId\":\"1e80c734-3408-40d0-b420-53e954f412e0\",\"studentId\":\"04bc263c-3961-4edd-b613-a345118821d0\",\"tier\":\"BASELINE\",\"policyVersion\":\"uk-2026-10\",\"status\":\"WITHDRAWN\",\"consentedAt\":\"2026-11-04T21:12:48.059Z\",\"withdrawnAt\":\"2026-11-04T21:12:48.270Z\"}"
+  },
+  {
+   "id": "T9 cascade",
+   "wrong": 403,
+   "stepUp": 201,
+   "withdraw": 200,
+   "grantsBefore": 1,
+   "grantsAfter": 0,
+   "medicalRows": 0
+  },
+  {
+   "id": "T9 links after withdraw",
+   "db": [
+    {
+     "guardianId": "1e80c734-3408-40d0-b420-53e954f412e0",
+     "revokedAt": null
+    }
+   ]
+  },
+  {
+   "id": "T9 Mum re-enrols Niamh after withdrawing",
+   "req": "POST /schools/116a2883-7134-426d-aa01-eff1cd9e8bf9/join",
+   "body": {
+    "studentId": "04bc263c-3961-4edd-b613-a345118821d0",
+    "branchId": "9da4a47b-0101-4de3-aae8-d77bcf157f52"
+   },
+   "status": 201,
+   "resp": "{\"id\":\"730594e8-3eb5-4893-a8b2-2d4ba64830a0\",\"role\":\"STUDENT\",\"userId\":\"04bc263c-3961-4edd-b613-a345118821d0\",\"franchiseId\":null,\"schoolId\":\"116a2883-7134-426d-aa01-eff1cd9e8bf9\",\"branchId\":null,\"grantedById\":\"1e80c734-3408-40d0-b420-53e954f412e0\",\"grantedAt\":\"2026-11-04T21:12:48.295Z\",\"revokedAt\":null,\"isMainOwner\":false,\"pausedAt\":null,\"pausedById\":null,\"createdAt\":\"2026-11-04T21:12:48.295Z\",\"up…"
+  }
+ ]
+}

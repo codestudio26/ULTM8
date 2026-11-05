@@ -4,6 +4,7 @@ import { TimetableController } from './timetable.controller';
 import { TimetableService } from './timetable.service';
 import { BookingsModule } from '../bookings/bookings.module';
 import { QueueModule } from '../jobs/queue.module';
+import { TimeZoneChangeModule } from '../common/time-zone-change/time-zone-change.module';
 
 /**
  * Phase 5 scope: TimetableSlot CRUD only (no delete) — see the Phase 5 kickoff prompt
@@ -25,7 +26,7 @@ import { QueueModule } from '../jobs/queue.module';
  * been removed rather than left to mislead the next reader.
  */
 @Module({
-  imports: [TenantsModule, BookingsModule, QueueModule],
+  imports: [TenantsModule, BookingsModule, QueueModule, TimeZoneChangeModule],
   controllers: [TimetableController],
   providers: [TimetableService],
   exports: [TimetableService],

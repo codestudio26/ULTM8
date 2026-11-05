@@ -1,0 +1,11 @@
+import { C, call, db, webhook, waitFor, note } from './lib-ca.mjs';
+const st = C.adults[0];
+const r = await call('buy', 'POST', `/membership-plans/${C.plans.monthly}/purchase`, st.tok, {});
+note('purchase', r.status, r.body);
+const tx = await db.transaction.findFirst({ where: { studentId: st.id }, orderBy: { createdAt: 'desc' } });
+note('tx', tx);
+const w = await webhook('payment_intent.succeeded', tx.stripePaymentIntentId);
+note('wh', w.status);
+const m = await waitFor(() => db.membership.findFirst({ where: { studentId: st.id, membershipPlanId: C.plans.monthly } }));
+note('membership', m);
+await db.$disconnect();

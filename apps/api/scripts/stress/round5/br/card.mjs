@@ -1,0 +1,23 @@
+// Round 5 BR: card in BRL through the fake Stripe (after the lead's proxy fix), decline (…13), Guardian buys for 3–4 kids.
+import fs from 'fs';
+import { db, call, checks } from '../../round4/common.mjs';
+const C = JSON.parse(fs.readFileSync(new URL('./cast-br.json', import.meta.url)));
+const FAKE = 'http://localhost:12111';
+const { ok, save } = checks('card');
+const S = C.S, T = C.tok;
+const piOf = async (r) => { const sid = r.body?.checkoutUrl?.split('/').pop(); const s = sid ? await (await fetch(`${FAKE}/v1/checkout/sessions/${sid}`)).json() : null; return s?.payment_intent ? await (await fetch(`${FAKE}/v1/payment_intents/${s.payment_intent}`)).json() : null; };
+const nones = C.students.filter((s) => s.kind === 'none' && s.branch === C.branches.RIO).slice(20);
+const e = nones[0];
+const buy = await call('c', 'POST', `/membership-plans/${C.plans.pack10}/purchase`, e.tok, { useHostedCheckout: true });
+const pi = await piOf(buy);
+ok('C1 card pack R$ 450,00 → Stripe 45000 brl', buy.status < 300 && pi?.amount === 45000 && pi?.currency === 'brl', `${buy.status} ${JSON.stringify(buy.body).slice(0, 160)} pi ${pi?.amount} ${pi?.currency}`);
+const p13 = await db.membershipPlan.findFirst({ where: { schoolId: S, title: 'Pacote recusado' } });
+const d = await call('c', 'POST', `/membership-plans/${p13.id}/purchase`, nones[1].tok, { useHostedCheckout: true });
+const pi13 = await piOf(d);
+console.log('decline plan purchase', d.status, JSON.stringify(d.body).slice(0, 200), pi13?.amount, pi13?.status);
+const fam4 = C.families.find((f) => f.kids.length === 4 && f.kids.every((k) => C.students.find((s) => s.id === k).branch === C.students.find((s) => s.id === f.kids[0]).branch)) ?? C.families.find((f) => f.kids.length >= 3);
+const gb = await Promise.all(fam4.kids.map((k) => call('c', 'POST', `/membership-plans/${C.plans.pack5}/purchase`, fam4.tok, { studentId: k, useHostedCheckout: true })));
+const pis = await Promise.all(gb.map(piOf));
+console.log('guardian buys', gb.map((r, i) => [r.status, r.body?.error?.message?.slice(0, 90), pis[i]?.amount]));
+ok('C2 Guardian buys a Kids pack for each child by card (or is told the child already has one)', gb.every((r) => r.status < 300 || r.status === 409 || r.status === 400), JSON.stringify(gb.map((r) => r.status)));
+save(); await db.$disconnect();

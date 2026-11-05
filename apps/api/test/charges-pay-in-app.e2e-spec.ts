@@ -347,6 +347,8 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
     it('a Guardian pays for their child; a stranger and another School cannot', async () => {
       const child = await mkStudent('child');
       const guardian = await mkUser('guardian');
+      // Decision 430 item 7: a parent acts for a child under 18 (30 days after, then no more).
+      await su.user.update({ where: { id: child.id }, data: { dateOfBirth: new Date(Date.now() - 10 * 365 * 86_400_000) } });
       await su.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: child.id } });
       tokens.guardian = sign(guardian, null, null);
       const c = await createCharge(child.id, 1500);
@@ -445,6 +447,8 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
 
       const kid = await mkStudent('kid');
       const parent = await mkUser('parent');
+      // Decision 430 item 7: a parent acts for a child under 18 (30 days after, then no more).
+      await su.user.update({ where: { id: kid.id }, data: { dateOfBirth: new Date(Date.now() - 10 * 365 * 86_400_000) } });
       await su.guardianLink.create({ data: { id: randomUUID(), guardianId: parent.id, studentId: kid.id } });
       const byParent = await as(sign(parent, null, null)).put(`/v1/students/${kid.id}/charge-auto-pay`, { schoolId: card.id, enabled: true }, stepUp(parent.id));
       expect(byParent.body.error.code).toBe('CHARGE_AUTO_PAY_SELF_ONLY');

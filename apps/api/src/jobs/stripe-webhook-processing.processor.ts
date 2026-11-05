@@ -8,6 +8,7 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE, CHARGEBACK_PATTERN_RESTRICTION_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
+import { passExpiryDate, schoolZoneFor } from '../memberships/pass-expiry';
 import { ChargebackPatternRestrictionJobData } from './chargeback-pattern-restriction.types';
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
@@ -609,6 +610,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // Stripe Refund API call, and for a Subscription, cancelling it too) — instead
     // of only logging the collision permanently via `onFailed` once BullMQ's
     // retries exhaust, which is what happened here before that method existed.
+    // Decision 432 item 8: an N-day pass ends on calendar days in the School's zone.
+    const schoolZone = await schoolZoneFor(tx, transaction.schoolId);
     try {
       const membership = await tx.membership.create({
         data: {
@@ -618,7 +621,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
           schoolId: transaction.schoolId,
           frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
           classesRemaining: plan.classesIncluded ?? undefined,
-          expiryDate: plan.expiryDurationDays ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000) : undefined,
+          expiryDate: passExpiryDate(plan.expiryDurationDays, schoolZone),
           scopedClassId: plan.scopedClassId,
           stripeSubscriptionId: transaction.stripeSubscriptionId ?? undefined,
         },

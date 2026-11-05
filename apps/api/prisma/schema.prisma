@@ -608,6 +608,7 @@ model User {
   balanceEntriesRecorded            BalanceEntry[]              @relation("BalanceEntryRecordedBy")
   chargeRefunds                     ChargeRefund[]              @relation("ChargeRefundStudent")
   chargeRefundsMade                 ChargeRefund[]              @relation("ChargeRefundBy")
+  deskSaleRefundsMade               DeskSaleRefund[]            @relation("DeskSaleRefundBy")
   rankCorrectionRequests            RankCorrectionRequest[]     @relation("RankCorrectionStudent")
   rankCorrectionsReviewed           RankCorrectionRequest[]     @relation("RankCorrectionReviewer")
   studentNotes                      StudentNote[]               @relation("StudentNoteStudent")
@@ -1245,6 +1246,14 @@ model School {
   taxInclusive                   Boolean                         @default(true)
   /// Decision 338 item 6: the School's tax ID, shown on its invoices and receipts.
   taxId                          String?
+  /// Decision 431 (MON-6): named tax lines. Line 1 is taxRateBasisPoints and
+  /// taxId above, with an optional name (e.g. "GST"); line 2 is its own name,
+  /// rate and registration number (e.g. "PST", 7%). A line-2 rate of 0 means
+  /// no second line. A Branch may override both (Branch.taxOverride).
+  taxName                        String?
+  tax2Name                       String?
+  tax2RateBasisPoints            Int                             @default(0)
+  tax2Id                         String?
   /// Decision 338 item 1: a reason must be typed when cancelling a charge (default on).
   chargeCancelReasonRequired     Boolean                         @default(true)
   /// Decision 338 item 3: notes must be typed when refunding a payment
@@ -1378,6 +1387,10 @@ model School {
   archivedAt DateTime?
   purgeAt    DateTime?
   purgedAt   DateTime?
+  /// Decision 433 (PRIV-1): when the purge ended every role here and deleted
+  /// the members' non-financial data of this anonymized School. Null on a
+  /// purged School means that is still to do (the daily sweep does it).
+  memberDataPurgedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1435,6 +1448,7 @@ model School {
   chargeAllocations       ChargeAllocation[]
   balanceEntries          BalanceEntry[]
   chargeRefunds           ChargeRefund[]
+  deskSaleRefunds         DeskSaleRefund[]
   recurringCharges        RecurringCharge[]
   rosters                 Roster[]
   absenceAlerts           StudentAbsenceAlert[]
@@ -1499,6 +1513,17 @@ model Branch {
   schoolCancelledClassResolution SchoolCancelledClassResolution @default(CREDIT_ALL)
   defaultRefundCutoffHours       Int?
   noShowFee                      Int?
+  /// Decision 431 (MON-6): this Branch's own tax lines instead of the
+  /// School's (a Montréal Branch with GST + QST in a Vancouver School). Off by
+  /// default; when on, these replace the School's lines for the members whose
+  /// home Branch this is. Whether prices include tax stays School-wide.
+  taxOverride                    Boolean                        @default(false)
+  taxName                        String?
+  taxRateBasisPoints             Int                            @default(0)
+  taxId                          String?
+  tax2Name                       String?
+  tax2RateBasisPoints            Int                            @default(0)
+  tax2Id                         String?
 
   /// Decision 226 (POST-SPEC-55-DECISION-LOG.md) — entity-level tenant
   /// offboarding. Same full archivedAt/purgeAt/purgedAt trio and 90-day
@@ -1553,6 +1578,13 @@ model Branch {
 /// branch relationship; nullable mirrors RoleGrant.branchId's already-established
 /// "School-wide by default, narrowable to one Branch" shape. Inferred, not confirmed —
 /// flagged for Architect review.
+/// Decision 432 item 14 (AE-6): who a Class or weekly slot is for.
+enum ClassAudience {
+  EVERYONE
+  WOMEN
+  MEN
+}
+
 model Class {
   id String @id @default(uuid())
 
@@ -1612,6 +1644,14 @@ model Class {
 
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false) // default is opt-out (confirmed §6)
+
+  /// Decision 432 item 14 (AE-6): who can book. EVERYONE (default), WOMEN or
+  /// MEN (User.gender), and an optional age range in whole years on the
+  /// Class's date. Checked at booking, waitlist, Kid Mode and the desk; staff
+  /// can book anyway with an override reason.
+  audience ClassAudience @default(EVERYONE)
+  minAge   Int?
+  maxAge   Int?
 
   // Decision 291 — set when the School cancels this class outright. A cancelled
   // class can't be booked or waitlisted again; its bookings were resolved by
@@ -1760,6 +1800,14 @@ model TimetableSlot {
 
   termsWaiverRequired Boolean @default(false)
   membershipInclusion Boolean @default(false)
+
+  /// Decision 432 item 14 (AE-6): who can book. EVERYONE (default), WOMEN or
+  /// MEN (User.gender), and an optional age range in whole years on the
+  /// Class's date. Checked at booking, waitlist, Kid Mode and the desk; staff
+  /// can book anyway with an override reason.
+  audience ClassAudience @default(EVERYONE)
+  minAge   Int?
+  maxAge   Int?
 
   // Durations, not absolute dates — resolved per-occurrence by the job. See the model
   // header comment above.
@@ -2594,6 +2642,15 @@ model Transaction {
   /// `amount` (and refundedAmount, revenue) stays the plan's own price, so
   /// reports aren't changed by the surcharge.
   surchargeAmount Int @default(0)
+
+  /// Decision 431 (MON-6 step 1): MEMBERSHIP and RENEWAL only, the tax settings
+  /// that applied when the row was written ({ inclusive, branchId, lines }),
+  /// filled by a database trigger on insert (migration 20270221000000). The
+  /// receipt shows the tax a price included from it.
+  taxSnapshot Json?
+
+  /// Decision 431 (MON-8): refunds of a membership sold at the desk.
+  deskSaleRefunds DeskSaleRefund[]
 
   /// CHARGE_PAYMENT only: the charge the desk recorded it against; null when
   /// it was paid toward the balance as a whole (Decision 338 item 9).
@@ -4464,6 +4521,12 @@ model GuardianLink {
   createdAt DateTime  @default(now())
   revokedAt DateTime?
 
+  /// Decision 430 item 9: the link existed before BASELINE consent became a
+  /// condition of booking and check-in, so the child is not "consent pending"
+  /// on its account. Never set on a new link; cleared on every link to the
+  /// child once a parent withdraws BASELINE consent.
+  consentGrandfathered Boolean @default(false)
+
   @@unique([guardianId, studentId])
   @@index([studentId])
 }
@@ -5428,6 +5491,9 @@ model SignUp {
 
   @@index([schoolId, status])
   @@index([userId])
+  // Decision 434 (TXT-9): also a partial unique index, "SignUp_one_waiting_per_email",
+  // on (schoolId, email) WHERE status IN ('PENDING', 'INVITED'), made in SQL
+  // (migration 20270224000000_sign_up_one_waiting_per_email): Prisma can't declare one.
 }
 
 /// Decision 393 (Decision 316 item 7, handover F8): a Class Pack ran out at
@@ -5827,9 +5893,14 @@ model StudentExportLog {
   exportedById String
   exportedBy   User   @relation("StudentExportLogExportedBy", fields: [exportedById], references: [id], onDelete: Cascade)
 
-  /// ALL, ACTIVE, MEMBERS or VISITORS.
+  /// ALL, ACTIVE, MEMBERS or VISITORS; MEMBER_DATA for one member's data
+  /// (Decision 433 item 10).
   filter   String
   rowCount Int
+
+  /// The member a MEMBER_DATA export was about; null for a student-list
+  /// export. No foreign key: the log outlives what it records.
+  studentId String?
 
   createdAt DateTime @default(now())
 
@@ -6100,6 +6171,10 @@ model Charge {
   /// netAmount = grossAmount = the price after any discount. Never on a late
   /// fee or a promotion fee (they always take the School's tax settings).
   taxExempt          Boolean @default(false)
+  /// Decision 431 (MON-6): each tax line as worked out, [{ name, rateBasisPoints,
+  /// taxId, amount }]; taxRateBasisPoints is their combined rate and taxAmount
+  /// their sum. Null for a charge made before named lines (one rate).
+  taxLines           Json?
 
   /// Price excluding tax, the tax, and the price including tax (what is owed).
   netAmount   Int
@@ -6302,6 +6377,37 @@ model ChargeRefund {
   createdAt DateTime @default(now())
 
   @@index([schoolId, studentId])
+  @@index([transactionId])
+}
+
+/// Decision 431 (stress test round 5, MON-8): one refund of a membership sold
+/// at the desk (cash, Pix, bank transfer, card terminal). Owner only, part or
+/// full, notes required; the money is given back by hand, so only the records
+/// change (Transaction.refundedAmount goes up; Refunded once all is back).
+/// endedMembership: the owner chose to end the membership with it. The member
+/// is the Transaction's (no studentId here, so a member merge moves it).
+/// Append-only, written on the jobs connection (migration 20270221000001).
+model DeskSaleRefund {
+  id String @id @default(uuid())
+
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Restrict)
+
+  amount          Int
+  currency        String
+  /// Staff only, never sent to the member.
+  notes           String
+  endedMembership Boolean @default(false)
+
+  refundedById String?
+  refundedBy   User?   @relation("DeskSaleRefundBy", fields: [refundedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([schoolId])
   @@index([transactionId])
 }
 

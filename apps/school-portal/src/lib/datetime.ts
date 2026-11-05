@@ -61,6 +61,18 @@ export function formatInZone(iso: string, zone: string, locale?: string): string
   return new Date(iso).toLocaleString(locale, { timeZone: safeZone(zone), dateStyle: 'medium', timeStyle: 'short' });
 }
 
+/** Time of day only, on `zone`'s clock (Decision 432 item 5). */
+export function formatTimeInZone(iso: string, zone: string, locale?: string): string {
+  return new Date(iso).toLocaleTimeString(locale, { timeZone: safeZone(zone), hour: 'numeric', minute: '2-digit' });
+}
+
+/** Whether a class ends on a later local date than it starts, on `zone`'s
+ * clock (a class past midnight, Decision 432 item 3). */
+export function endsNextDayInZone(startIso: string, endIso: string, zone: string): boolean {
+  const z = safeZone(zone);
+  return DateTime.fromISO(endIso, { zone: z }).toISODate()! > DateTime.fromISO(startIso, { zone: z }).toISODate()!;
+}
+
 /** The zone a Class runs on: its Branch's, else the School's, else UTC. */
 export function classZone(branchTimezone: string | null | undefined, schoolTimezone: string | null | undefined): string {
   return safeZone(branchTimezone || schoolTimezone || 'UTC');

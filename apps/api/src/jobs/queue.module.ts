@@ -53,12 +53,24 @@ const logger = new Logger('QueueModule');
  * underlying ioredis client specifically — without it, ioredis attempts to connect
  * immediately on construction regardless of whether anything has enqueued a job yet.
  */
+/**
+ * The ioredis options for REDIS_URL. The whole URL goes to ioredis, which reads
+ * the host, port, username, password, database number (redis://host:6379/5)
+ * and TLS (rediss://) from it. Decision 431 (stress test round 5 MON-16): this
+ * used to keep only the host, port and password, so two environments sharing
+ * one Redis on different database numbers took each other's jobs, and a
+ * rediss:// URL connected without TLS.
+ */
+export function redisConnectionArgs(url: string | undefined): [string, { lazyConnect: true; maxRetriesPerRequest: null }] {
+  return [url ?? 'redis://localhost:6379', { lazyConnect: true, maxRetriesPerRequest: null }];
+}
+
 function redisConnection(): IORedis {
   const url = process.env.REDIS_URL;
   if (!url) {
     logger.warn('REDIS_URL is not set — job enqueue/processing will fail until it is.');
   }
-  const parsed = new URL(url ?? 'redis://localhost:6379');
+  const [connectionUrl, options] = redisConnectionArgs(url);
   // ONE shared ioredis client for every Queue and Worker, instead of BullMQ's
   // default of a fresh connection per Queue plus two per Worker. With 17 queues
   // and 17 workers that default came to 52 connections from a single API
@@ -66,17 +78,12 @@ function redisConnection(): IORedis {
   // crashed with "Connection is closed" on every redeploy. Sharing leaves only
   // each Worker's own blocking connection (BullMQ duplicates the client for
   // that), so the API now uses about 18.
-  const client = new IORedis({
-    host: parsed.hostname,
-    port: Number(parsed.port || 6379),
-    password: parsed.password || undefined,
-    lazyConnect: true,
-    // BullMQ's own documented requirement for a Worker's blocking connection — without
-    // this, ioredis's default retry cap can make a Worker throw instead of retrying
-    // indefinitely, which is the actually-correct behavior for something meant to keep
-    // trying to reconnect rather than give up.
-    maxRetriesPerRequest: null,
-  });
+  // maxRetriesPerRequest: null is BullMQ's own documented requirement for a
+  // Worker's blocking connection — without it, ioredis's default retry cap can
+  // make a Worker throw instead of retrying indefinitely, which is the
+  // actually-correct behavior for something meant to keep trying to reconnect
+  // rather than give up.
+  const client = new IORedis(connectionUrl, options);
   // Without a listener, ioredis reports connection errors as unhandled 'error'
   // events; log them instead (ioredis keeps reconnecting on its own).
   client.on('error', (err) => logger.warn(`Redis connection error: ${err.message}`));

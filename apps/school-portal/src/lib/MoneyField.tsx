@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { TextField } from '@ultm8/ui';
+import { typeableFractionDigits } from '@ultm8/i18n';
 
 /**
  * An amount typed in normal units ("12.50") and handed back in hundredths
@@ -9,8 +10,12 @@ import { TextField } from '@ultm8/ui';
  * conversion by hand (BeltEditorModal).
  *
  * `value`/`onChange` are in hundredths; `null` is an empty field. Text that
- * isn't an amount (letters, a minus sign, more than two decimals) reports
- * `valid: false`, so the form can say so rather than round silently.
+ * isn't an amount (letters, a minus sign, more decimals than the currency has)
+ * reports `valid: false`, so the form can say so rather than round silently.
+ * Decision 431 (MON-3): the decimals follow the currency: none for yen or won
+ * ("12,000" is twelve thousand yen, its comma a thousands separator), two
+ * for most, and two for the three-decimal dinars too (the most that can be
+ * stored).
  */
 export function MoneyField({
   id,
@@ -33,7 +38,7 @@ export function MoneyField({
 
   // Follow an outside reset (a different row opened) without fighting typing.
   useEffect(() => {
-    if (parseMoney(text).minorUnits !== value) setText(toText(value));
+    if (parseMoney(text, currency).minorUnits !== value) setText(toText(value));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
@@ -41,13 +46,13 @@ export function MoneyField({
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <TextField
         id={id}
-        inputMode="decimal"
+        inputMode={typeableFractionDigits(currency) === 0 ? 'numeric' : 'decimal'}
         value={text}
         disabled={disabled}
         aria-describedby={describedBy}
         onChange={(e) => {
           setText(e.target.value);
-          const parsed = parseMoney(e.target.value);
+          const parsed = parseMoney(e.target.value, currency);
           onChange(parsed.minorUnits, parsed.valid);
         }}
       />
@@ -63,8 +68,16 @@ export function toText(minorUnits: number | null): string {
 }
 
 /** "12.5" → 1250; "" → null (valid); "abc", "-1", "1.234" → invalid. A comma
- * decimal separator ("12,50") is accepted too. */
-export function parseMoney(text: string): { minorUnits: number | null; valid: boolean } {
+ * decimal separator ("12,50") is accepted too. With a currency that has no
+ * decimals (yen, won), only whole amounts are valid and commas group
+ * thousands: "12,000" → 1200000, "999.50" → invalid. No currency: two decimals. */
+export function parseMoney(text: string, currency?: string | null): { minorUnits: number | null; valid: boolean } {
+  if (typeableFractionDigits(currency ?? null) === 0) {
+    const whole = text.trim().replace(/[,\s]/g, '');
+    if (whole === '') return { minorUnits: null, valid: true };
+    if (!/^\d+$/.test(whole)) return { minorUnits: null, valid: false };
+    return { minorUnits: Number(whole) * 100, valid: true };
+  }
   const trimmed = text.trim().replace(',', '.');
   if (trimmed === '') return { minorUnits: null, valid: true };
   if (!/^\d+(\.\d{1,2})?$/.test(trimmed)) return { minorUnits: null, valid: false };

@@ -23,6 +23,27 @@ export class CreateClosureDto {
   branchId?: string;
 }
 
+/** PATCH /closures/:id (Decision 432 item 11): any of the dates and the
+ * reason. The Branch a closure covers doesn't change. */
+export class UpdateClosureDto {
+  @ApiPropertyOptional({ description: 'First closed date, YYYY-MM-DD (local).' })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'startDate must be in YYYY-MM-DD format.' })
+  startDate?: string;
+
+  @ApiPropertyOptional({ description: 'Last closed date, YYYY-MM-DD (local).' })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'endDate must be in YYYY-MM-DD format.' })
+  endDate?: string;
+
+  @ApiPropertyOptional({ description: 'Shown on the calendar. Changing it tells nobody.' })
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(120)
+  reason?: string;
+}
+
 export class ClosureResponseDto {
   @ApiProperty() id!: string;
   @ApiProperty() schoolId!: string;
@@ -35,6 +56,24 @@ export class ClosureResponseDto {
 
 export class ClosureCreatedResponseDto extends ClosureResponseDto {
   @ApiProperty({ description: 'How many classes the closure cancelled.' }) cancelledClasses!: number;
+}
+
+export class RecreatableClassDto {
+  @ApiProperty() id!: string;
+  @ApiProperty() title!: string;
+  @ApiProperty({ type: String, nullable: true }) branchId!: string | null;
+  @ApiProperty({ description: 'The class\'s local date, YYYY-MM-DD.' }) date!: string;
+  @ApiProperty() startDate!: string;
+  @ApiProperty() endDate!: string;
+}
+
+export class ClosureUpdatedResponseDto extends ClosureResponseDto {
+  @ApiProperty({ description: 'How many classes on newly closed days were cancelled.' }) cancelledClasses!: number;
+  @ApiProperty({
+    type: [RecreatableClassDto],
+    description: 'Classes this closure cancelled on days it no longer covers. They stay cancelled (students were told); POST /classes/{id}/recreate makes a one-off copy.',
+  })
+  recreatable!: RecreatableClassDto[];
 }
 
 export class ClosureListResponseDto {

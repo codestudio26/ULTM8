@@ -1910,6 +1910,8 @@ describeIfDb('RanksModule — HTTP-level CRUD, grading flow, and RLS', () => {
     it('a guardian declares for their linked minor (Decision 137)', async () => {
       const minor = await mkStudent('minor');
       const guardian = await mkExtraUser('declared-guardian');
+      // Decision 430 item 7: a parent acts for a child under 18, so the child is one.
+      await superuser.user.update({ where: { id: minor.user.id }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
       await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.user.id } });
       const res = await declare(minor.user.id, signAccessToken(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]), rungs[2]);
       expect(res.status).toBe(201);

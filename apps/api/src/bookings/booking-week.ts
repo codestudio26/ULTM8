@@ -1,16 +1,14 @@
 import { BadRequestException } from '@nestjs/common';
 import { DateTime } from 'luxon';
-import { dayNumber, localDay, weekStart } from '../ranks/engine';
+import { dayNumber, localDay } from '../ranks/engine';
 
 /**
  * v1.2 backend backlog — Dashboard "Bookings This Week" drill-down (GET
  * /schools/:schoolId/bookings/summary). Date-range math for that endpoint, kept
  * separate from BookingsService so it can be unit-reasoned about on its own.
  *
- * Week boundary: reuses the grading engine's own already-established Mon–Sun
- * convention (Decision 171, `../ranks/engine/days.ts`'s `weekStart`) rather than
- * inventing a second one — this was the only existing "week" convention found in
- * this codebase (see this feature's own PR description for the search). "Today" is
+ * Week boundary: the School's own week-start day (School.weekStartsOn, Decision
+ * 432 item 7); it used to reuse the grading engine's Monday week. "Today" is
  * anchored to the School's own `timezone` (falls back to UTC when the School hasn't
  * set one — School.timezone is nullable), the same local-day reasoning the grading
  * engine already applies per-Branch/School.
@@ -23,12 +21,25 @@ function dayString(dayNum: number): string {
   return new Date(dayNum * DAY_MS).toISOString().slice(0, 10);
 }
 
-/** The current Mon–Sun week (Decision 171), as a `{ from, to }` inclusive YYYY-MM-DD
- * pair, anchored to "today" in `timeZone` (null/undefined -> UTC). */
-export function defaultWeekRange(timeZone: string | null | undefined): { from: string; to: string } {
-  const today = localDay(new Date(), timeZone ?? 'UTC');
-  const monday = weekStart(dayNumber(today) as number);
-  return { from: dayString(monday), to: dayString(monday + 6) };
+/** The first day of the School's week containing `today` (YYYY-MM-DD), for a
+ * week that starts on Monday or on Sunday (School.weekStartsOn, Decision 319).
+ * Shared by the Dashboard, the bookings summary and the weekly
+ * membership-ending report. */
+export function weekStartOf(today: string, weekStartsOn: 'MONDAY' | 'SUNDAY'): string {
+  const weekday = DateTime.fromISO(today, { zone: 'UTC' }).weekday; // 1 = Monday … 7 = Sunday
+  const back = weekStartsOn === 'SUNDAY' ? weekday % 7 : weekday - 1;
+  return dayString((dayNumber(today) as number) - back);
+}
+
+/** The current week as a `{ from, to }` inclusive YYYY-MM-DD pair, anchored to
+ * "today" in `timeZone` (null/undefined -> UTC). It starts on the School's
+ * week-start day (Decision 432 item 7: a Sunday-start School used to get
+ * Monday–Sunday). The grading engine's weekly cap keeps its own Monday week
+ * (Decision 171) and doesn't use this. */
+export function defaultWeekRange(timeZone: string | null | undefined, weekStartsOn: 'MONDAY' | 'SUNDAY' = 'MONDAY', now: Date = new Date()): { from: string; to: string } {
+  const start = weekStartOf(localDay(now, timeZone ?? 'UTC'), weekStartsOn);
+  const first = dayNumber(start) as number;
+  return { from: start, to: dayString(first + 6) };
 }
 
 /**

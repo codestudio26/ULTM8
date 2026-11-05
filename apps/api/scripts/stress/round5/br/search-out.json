@@ -1,0 +1,77 @@
+{
+ "Conceição": {
+  "status": 200,
+  "n": 167,
+  "nfdJoaoFound": false
+ },
+ "Conceicao": {
+  "status": 200,
+  "n": 0,
+  "nfdJoaoFound": false
+ },
+ "conceição dos santos": {
+  "status": 200,
+  "n": 100,
+  "nfdJoaoFound": false
+ },
+ "João": {
+  "status": 200,
+  "n": 71,
+  "nfdJoaoFound": false
+ },
+ "Joao": {
+  "status": 200,
+  "n": 0,
+  "nfdJoaoFound": false
+ },
+ "Ênio": {
+  "status": 200,
+  "n": 59,
+  "nfdJoaoFound": false
+ },
+ "Enio": {
+  "status": 200,
+  "n": 0,
+  "nfdJoaoFound": false
+ },
+ "D'Ávila": {
+  "status": 200,
+  "n": 103,
+  "nfdJoaoFound": false
+ },
+ "Davila": {
+  "status": 200,
+  "n": 0,
+  "nfdJoaoFound": false
+ },
+ "محمد": {
+  "status": 200,
+  "n": 1,
+  "nfdJoaoFound": false
+ },
+ "🥋": {
+  "status": 200,
+  "n": 1,
+  "nfdJoaoFound": false
+ },
+ "%": {
+  "status": 200,
+  "n": 0,
+  "nfdJoaoFound": false
+ },
+ "'; DROP": {
+  "status": 200,
+  "n": 0,
+  "nfdJoaoFound": false
+ },
+ "Maria da Gloria": {
+  "status": 200,
+  "n": 0,
+  "nfdJoaoFound": false
+ },
+ "Maria da Glória": {
+  "status": 200,
+  "n": 75,
+  "nfdJoaoFound": false
+ }
+}

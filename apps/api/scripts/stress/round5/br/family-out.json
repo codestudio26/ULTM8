@@ -1,0 +1,165 @@
+{
+ "parentTrains": {
+  "classId": "aa928779-4ddf-4acc-a09a-96c5f1418a9a",
+  "results": [
+   {
+    "status": 403,
+    "body": {
+     "code": "FORBIDDEN",
+     "message": "Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action."
+    }
+   },
+   {
+    "status": 403,
+    "body": {
+     "code": "FORBIDDEN",
+     "message": "Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action."
+    }
+   },
+   {
+    "status": 403,
+    "body": {
+     "code": "FORBIDDEN",
+     "message": "Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action."
+    }
+   },
+   {
+    "status": 403,
+    "body": {
+     "code": "FORBIDDEN",
+     "message": "Only School staff (Owner/Manager, Branch Staff, or Instructor) may perform this action."
+    }
+   }
+  ]
+ },
+ "f4": [
+  {
+   "userId": "3790eb93-1c54-4f15-abe3-1f3ce384d5db",
+   "title": "Class cancelled",
+   "body": "For Isabela: Kids 8-13 anos on Mon, 9 Nov 2026, 18:00 has been cancelled by the school. Reason: Tatame em reforma — desculpem!"
+  },
+  {
+   "userId": "542ea907-d49c-4e29-8743-a639500de166",
+   "title": "Class cancelled",
+   "body": "For Isabela: Kids 8-13 anos on Mon, 9 Nov 2026, 18:00 has been cancelled by the school. Reason: Tatame em reforma — desculpem!"
+  }
+ ],
+ "consent": {
+  "c1": {
+   "id": "668ff3de-cf20-4515-bf27-3e20664e8b39",
+   "guardianId": "3790eb93-1c54-4f15-abe3-1f3ce384d5db",
+   "studentId": "c09b71d1-5fe4-4613-96ef-4de99e55a22c",
+   "tier": "BASELINE",
+   "policyVersion": "LGPD-2026-11 pt-BR",
+   "status": "ACTIVE",
+   "consentedAt": "2026-11-04T21:16:11.053Z",
+   "withdrawnAt": null
+  },
+  "c2": {
+   "id": "ec02b432-3c98-4b2d-85b1-358adc8c7681",
+   "guardianId": "542ea907-d49c-4e29-8743-a639500de166",
+   "studentId": "c09b71d1-5fe4-4613-96ef-4de99e55a22c",
+   "tier": "CAMERA",
+   "policyVersion": "LGPD-2026-11 pt-BR",
+   "status": "ACTIVE",
+   "consentedAt": "2026-11-04T21:16:11.069Z",
+   "withdrawnAt": null
+  },
+  "cl1": {
+   "items": [
+    {
+     "id": "668ff3de-cf20-4515-bf27-3e20664e8b39",
+     "guardianId": "3790eb93-1c54-4f15-abe3-1f3ce384d5db",
+     "studentId": "c09b71d1-5fe4-4613-96ef-4de99e55a22c",
+     "tier": "BASELINE",
+     "policyVersion": "LGPD-2026-11 pt-BR",
+     "status": "ACTIVE",
+     "consentedAt": "2026-11-04T21:16:11.053Z",
+     "withdrawnAt": null
+    }
+   ]
+  },
+  "cl2": {
+   "items": [
+    {
+     "id": "ec02b432-3c98-4b2d-85b1-358adc8c7681",
+     "guardianId": "542ea907-d49c-4e29-8743-a639500de166",
+     "studentId": "c09b71d1-5fe4-4613-96ef-4de99e55a22c",
+     "tier": "CAMERA",
+     "policyVersion": "LGPD-2026-11 pt-BR",
+     "status": "ACTIVE",
+     "consentedAt": "2026-11-04T21:16:11.069Z",
+     "withdrawnAt": null
+    }
+   ]
+  }
+ },
+ "withdrawOther": {
+  "status": 404,
+  "body": {
+   "error": {
+    "code": "NOT_FOUND",
+    "message": "Consent record not found"
+   }
+  },
+  "bytes": 67
+ },
+ "feb8": {
+  "status": 201,
+  "body": {
+   "id": "79da5784-cb78-4f5c-9bc3-1a815dde7c3c",
+   "schoolId": "c75f8f6c-ac25-405f-9674-6ee4cd957c94",
+   "branchId": "1dd1c2af-8895-4fcc-8477-275b7c3183d6",
+   "instructorId": "4e0224b5-7b7c-41d7-971f-9f28ff7fa27d",
+   "timetableSlotId": null,
+   "occurrenceDate": null,
+   "title": "Treino de Carnaval",
+   "activities": [
+    "Jiu-Jitsu"
+   ],
+   "styles": [
+    {
+     "classType": "Kids Fundamentals",
+     "disciplineId": "b68336e1-d8ee-47d3-9af5-54b2b9cd5630"
+    }
+   ],
+   "bannerUrl": null,
+   "description": null,
+   "startDate": "2027-02-08T13:00:00.000Z",
+   "endDate": "2027-02-08T14:00:00.000Z",
+   "breakStartAt": null,
+   "breakEndAt": null,
+   "capacity": 20,
+   "bookingEndAt": null,
+   "qrAttendanceEndAt": null,
+   "refundFeeDate": null,
+   "cancellationCharge": null,
+   "termsWaiverRequired": false,
+   "membershipInclusion": true,
+   "cancelledAt": null,
+   "cancelledById": null,
+   "cancellationReason": null,
+   "archivedAt": null,
+   "purgeAt": null,
+   "purgedAt": null,
+   "createdAt": "2026-11-04T21:16:18.194Z",
+   "updatedAt": "2026-11-04T21:16:18.194Z"
+  }
+ },
+ "week": {
+  "weekStartsOn": "SUNDAY",
+  "summary": {
+   "from": "2026-11-02",
+   "to": "2026-11-08",
+   "days": [
+    "2026-11-02",
+    "2026-11-03",
+    "2026-11-04",
+    "2026-11-05",
+    "2026-11-06",
+    "2026-11-07",
+    "2026-11-08"
+   ]
+  }
+ }
+}

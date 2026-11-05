@@ -1,4 +1,5 @@
 import React from 'react';
+import { firstGrapheme } from '@ultm8/i18n';
 
 /**
  * Shared "no photo yet" placeholder — a colored initials monogram derived from
@@ -28,7 +29,8 @@ export function Avatar({
       />
     );
   }
-  const initials = `${firstName[0] ?? ''}${surname[0] ?? ''}`.toUpperCase() || '?';
+  // Whole letters, never half a character (Decision 434, TXT-7).
+  const initials = `${firstGrapheme(firstName)}${firstGrapheme(surname)}` || '?';
   return (
     <span
       aria-hidden="true"

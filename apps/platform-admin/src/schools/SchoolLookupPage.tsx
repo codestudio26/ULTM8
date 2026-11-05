@@ -6,6 +6,7 @@ import { useRotateCredential } from '../paymentAccounts/paymentAccountQueries';
 import { PaymentAccountDetails } from '../paymentAccounts/PaymentAccountDetails';
 import { TenantLifecycleControls } from '../tenantLifecycle/TenantLifecycleControls';
 import { SchoolOwnersCard } from './SchoolOwnersCard';
+import { SchoolStaffCard } from './SchoolStaffCard';
 import { SchoolTrialCard } from './SchoolTrialCard';
 
 /** Look-up-by-id — see schoolQueries.ts's own header comment for why there's no
@@ -81,6 +82,7 @@ export function SchoolLookupPage() {
           ) : null}
 
           {school.data ? <SchoolOwnersCard schoolId={school.data.id} /> : null}
+          {school.data ? <SchoolStaffCard schoolId={school.data.id} /> : null}
 
           {school.data && !school.data.archivedAt ? <SchoolTrialCard school={school.data} /> : null}
 

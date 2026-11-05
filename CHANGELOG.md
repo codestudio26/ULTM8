@@ -15,6 +15,58 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Stress test round 5 fixes** (Track A and Track B; Decisions 430–434;
+  `docs/handover/STRESS-TEST-ROUND5.md`). **Needs database migrations**
+  (`20270220000000` to `20270224000000`, nine in all).
+  - *Families (430):* a parent who also trains or coaches at the School books,
+    wait-lists, cancels and uses Kid Mode for their child as the parent. A
+    child needs a parent's consent before booking or check-in; parents give it
+    when adding the child or in the app, and see each other's status. At 18 a
+    child signs for themselves; the parent keeps read and payment access for
+    30 days. Parents can remove themselves and owners can remove a parent,
+    never the last one. "Add another Guardian" on a child's page; adding the
+    same child twice is refused. Under-18s can't be Guardians or buy plans for
+    themselves. Ages are counted on the School's own date. Another School's
+    export leaves out parents' emails it never had. A clearer message when an
+    email is already in use. Staff can no longer change a shared member's
+    name, date of birth or gender.
+  - *Money (431):* money is rounded, shown and typed in each currency's own
+    unit and decimals (yen, won and krónur have none; dinars have three).
+    Late-cancel and no-show fees use the plan's or School's currency, never US
+    dollars by default. Up to two named tax lines with registration numbers
+    (School, with a Branch override) on invoices and receipts. Owners can
+    record a refund given by hand for a desk sale; a taken payment can no
+    longer be cancelled. The Transactions filter uses the School's own days,
+    and the CSV adds a School-time column. Members and their Guardians are told
+    when a price increase reaches them. Up to 5 Friend Passes at once. Pix only
+    for Schools in Brazil or pricing in reais. A desk sale sends "Payment
+    confirmed". Two price changes at once no longer overwrite each other.
+  - *Time (432):* weekly classes can run past midnight (up to 12 hours,
+    "ends next day"). Portal class times show on the class's own clock.
+    "Who can book" limits a class or slot to women, men or an age range.
+    Closures' dates can be changed and cancelled classes recreated; a one-off
+    class on a closed day asks to confirm. Changing a time zone re-times
+    upcoming classes and tells booked students. The Dashboard week starts on
+    the School's chosen day; day passes end on School calendar days. A bad
+    time-zone name no longer stops other Schools' classes being made.
+  - *Privacy and staff (433):* 90 days after a School closes, members'
+    non-financial data is deleted and all roles end (the Close School card
+    says to export Transactions first). Branch Staff need "Bookings and
+    check-in" to see roll call and waitlist. Coaches get a clear refusal
+    message. Booking and cancelling the same class at once no longer errors.
+    The front-desk tablet locks after 20 wrong codes in 30 minutes.
+    Co-owners, coaches and Branch Staff can give up their own role; ULTM8
+    support can pause a coach or Branch Staff member. Owners can download one
+    member's data (logged). The "Active and former" export leaves former
+    members' phone and date of birth blank.
+  - *Names and text (434):* name search ignores accents, capitals, Arabic
+    spelling variants and full-width characters, and finds Japanese names
+    family name first. Initials show the whole first letter in every script.
+    Notice dates show in the reader's language. New "English (US)" setting.
+    Hidden NUL characters are refused with a clear message. Right-to-left PDFs
+    and printouts lay out correctly. A "Has only one name" tick replaces "." as
+    a surname. Two sign-ups at once no longer duplicate. Approving a walk-in
+    keeps the phone and emergency contact they gave at the desk.
 - **Student portal: parents and passcodes** (Track B, `apps/student`;
   Decision 428) — a parent signs their child's waivers and buys their child a
   plan from "My children". Change passcode is on Home (other devices are

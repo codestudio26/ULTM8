@@ -10,6 +10,7 @@ import { useSchool } from '../schools/schoolQueries';
 import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, isCancellationSettingsValid, type CancellationSettingsForm } from '../cancellations/CancellationSettingsFields';
 import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
+import { TaxLineFields, taxLineBody, taxLineDraft, taxLinesProblem, type TaxLineDraft } from '../charges/TaxLineFields';
 
 /**
  * Decision 231 — a dedicated Branch settings screen, replacing the previous
@@ -215,6 +216,7 @@ export function BranchSettingsPage() {
         </form>
       </Card>
       <BranchCancellationSettingsCard branch={branch} />
+      <BranchTaxCard branch={branch} />
     </>
   );
 }
@@ -277,6 +279,88 @@ function BranchCancellationSettingsCard({ branch }: { branch: BranchResponse }) 
           />
         </Field>
         <CancellationSettingsFields form={shown} onChange={setForm} disabled={!override} currency={branch.currencyOverride || school.defaultCurrency} schoolCurrencyMissing={!school.defaultCurrency} />
+        <div style={{ marginTop: 16 }}>
+          <Button type="submit" loading={update.isPending}>
+            {t('schools.profile.saveChanges')}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}
+
+/**
+ * Decision 431 (MON-6 step 2): this Branch's own tax lines (GST and QST in
+ * Québec, say), used for the members whose home Branch this is instead of the
+ * School's. Off (the default) = the School's lines. Whether prices include
+ * tax, and the tax country, stay School-wide. Its own Card and save.
+ */
+function BranchTaxCard({ branch }: { branch: BranchResponse }) {
+  const t = useT();
+  const update = useUpdateBranch(branch.schoolId, branch.id);
+  const [override, setOverride] = useState(branch.taxOverride ?? false);
+  const [line1, setLine1] = useState<TaxLineDraft>(() => taxLineDraft(branch.taxName, branch.taxRateBasisPoints, branch.taxId));
+  const [line2, setLine2] = useState<TaxLineDraft>(() => taxLineDraft(branch.tax2Name, branch.tax2RateBasisPoints, branch.tax2Id));
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const problem = override ? taxLinesProblem(line1, line2) : null;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+    if (problem === 'tooHigh') return setError(t('charges.settings.taxLinesTooHigh'));
+    if (problem === 'secondNameRequired') return setError(t('charges.settings.tax2NameRequired'));
+    if (problem) return;
+    const first = taxLineBody(line1);
+    const second = taxLineBody(line2);
+    try {
+      await update.mutateAsync(
+        override
+          ? {
+              taxOverride: true,
+              taxName: first.name,
+              taxRateBasisPoints: first.rateBasisPoints ?? 0,
+              taxId: first.taxId,
+              tax2Name: second.name,
+              tax2RateBasisPoints: second.rateBasisPoints ?? 0,
+              tax2Id: second.taxId,
+            }
+          : { taxOverride: false },
+      );
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
+    }
+  }
+
+  return (
+    <Card>
+      <form onSubmit={handleSubmit} data-testid="branch-tax">
+        <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('branches.tax.title')}</h2>
+        <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('branches.tax.subtitle')}</p>
+        {error ? <ErrorBanner message={error} /> : null}
+        {saved ? <SuccessBanner message={t('branches.settingsPage.saved')} /> : null}
+        <Field label={t('branches.tax.sourceLabel')} htmlFor="branch-tax-source">
+          <SelectField
+            id="branch-tax-source"
+            value={override ? 'OWN' : 'SCHOOL'}
+            onChange={(e) => {
+              setOverride(e.target.value === 'OWN');
+              setSaved(false);
+            }}
+            options={[
+              { value: 'SCHOOL', label: t('branches.tax.sameAsSchool') },
+              { value: 'OWN', label: t('branches.tax.own') },
+            ]}
+          />
+        </Field>
+        {override ? (
+          <>
+            <TaxLineFields id="branch-tax1" line={line1} onChange={setLine1} />
+            <TaxLineFields id="branch-tax2" second line={line2} onChange={setLine2} />
+          </>
+        ) : null}
         <div style={{ marginTop: 16 }}>
           <Button type="submit" loading={update.isPending}>
             {t('schools.profile.saveChanges')}

@@ -92,6 +92,23 @@ export function useConfirmTransaction(schoolId: string | null) {
   });
 }
 
+/** Decision 431 (MON-8): "Refund" (POST /transactions/{id}/refund) for a
+ * membership paid at the desk: money given back by hand, part or all, with a
+ * note, the owner choosing whether the membership ends. Refreshes the ledger
+ * and the student's cards. */
+export function useRefundDeskSale(schoolId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, amount, notes, endMembership }: { id: string; amount: number; notes: string; endMembership: boolean }) =>
+      unwrap(apiClient.POST('/v1/transactions/{id}/refund', { params: { path: { id } }, body: { amount, notes, endMembership } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['charges', schoolId] });
+      void queryClient.invalidateQueries({ queryKey: ['memberships'] });
+      return queryClient.invalidateQueries({ queryKey: ['transactions', schoolId] });
+    },
+  });
+}
+
 /** "Cancel payment" (PATCH /transactions/{id}/cancel) for a Pending Cash/Bank
  * Transfer payment: the owner, or staff with "Can cancel charges", with a
  * reason (Decision 338 item 1). Refreshes the ledger and the student's

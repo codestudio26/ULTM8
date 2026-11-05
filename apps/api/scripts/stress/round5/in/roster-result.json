@@ -1,0 +1,349 @@
+{
+ "R1": {
+  "label": "roster-owner",
+  "p50": 796,
+  "max": 965,
+  "status": 200,
+  "kb": 1637,
+  "rows": 4001
+ },
+ "R1all": {
+  "label": "roster-owner-ALL",
+  "p50": 633,
+  "max": 707,
+  "status": 200,
+  "kb": 1637,
+  "rows": 4001
+ },
+ "R1par": "200,200,200,200,200,200,200,200,200,200,200,200,200,200,200,200",
+ "R2": {
+  "venkat": {
+   "q": "Venkat",
+   "status": 200,
+   "n": 321,
+   "sample": [
+    "Venkataraghavan|.",
+    "K. R. Venkataraghavan Subramanian Iyer Ramaswamy Natarajan Krishnamurthy Sundararajan Padmanabhan Ra|Ramachandran"
+   ]
+  },
+  "initials": {
+   "q": "K. R.",
+   "status": 200,
+   "n": 90,
+   "sample": [
+    "K. R. Venkataraghavan Subramanian Iyer Ramaswamy Natarajan Krishnamurthy Sundararajan Padmanabhan Ra|Ramachandran",
+    "K. R. Venkataraghavan|Subramanian"
+   ]
+  },
+  "initialsNoDots": {
+   "q": "KR Venkat",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "initialsSpaced": {
+   "q": "K R Venkataraghavan",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "fullname": {
+   "q": "Venkataraghavan Subramanian",
+   "status": 200,
+   "n": 90,
+   "sample": [
+    "K. R. Venkataraghavan Subramanian Iyer Ramaswamy Natarajan Krishnamurthy Sundararajan Padmanabhan Ra|Ramachandran",
+    "K. R. Venkataraghavan|Subramanian"
+   ]
+  },
+  "reversed": {
+   "q": "Subramanian Venkataraghavan",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "deva": {
+   "q": "शर्मा",
+   "status": 200,
+   "n": 105,
+   "sample": [
+    "आरव|शर्मा",
+    "आरव|शर्मा"
+   ]
+  },
+  "devaFirst": {
+   "q": "आरव",
+   "status": 200,
+   "n": 105,
+   "sample": [
+    "आरव|शर्मा",
+    "आरव|शर्मा"
+   ]
+  },
+  "tamil": {
+   "q": "சுப்பிரமணியன்",
+   "status": 200,
+   "n": 80,
+   "sample": [
+    "கார்த்திக்|சுப்பிரமணியன்",
+    "கார்த்திக்|சுப்பிரமணியன்"
+   ]
+  },
+  "tamilPart": {
+   "q": "கார்த்",
+   "status": 200,
+   "n": 80,
+   "sample": [
+    "கார்த்திக்|சுப்பிரமணியன்",
+    "கார்த்திக்|சுப்பிரமணியன்"
+   ]
+  },
+  "zoyaPrecomposed": {
+   "q": "ज़ोया",
+   "status": 200,
+   "n": 85,
+   "sample": [
+    "ज़ोया|ख़ान",
+    "ज़ोया|ख़ान"
+   ]
+  },
+  "zoyaDecomposed": {
+   "q": "ज़ोया",
+   "status": 200,
+   "n": 85,
+   "sample": [
+    "ज़ोया|ख़ान",
+    "ज़ोया|ख़ान"
+   ]
+  },
+  "khanNFD": {
+   "q": "ख़ान",
+   "status": 200,
+   "n": 85,
+   "sample": [
+    "ज़ोया|ख़ान",
+    "ज़ोया|ख़ान"
+   ]
+  },
+  "khanNFC": {
+   "q": "ख़ान",
+   "status": 200,
+   "n": 85,
+   "sample": [
+    "ज़ोया|ख़ान",
+    "ज़ोया|ख़ान"
+   ]
+  },
+  "mono": {
+   "q": "Venkataraghavan .",
+   "status": 200,
+   "n": 56,
+   "sample": [
+    "Venkataraghavan|.",
+    "Venkataraghavan|."
+   ]
+  },
+  "dsouza": {
+   "q": "D'Souza",
+   "status": 200,
+   "n": 156,
+   "sample": [
+    "Joseph|D'Souza",
+    "Joseph|D'Souza"
+   ]
+  },
+  "dsouzaCurly": {
+   "q": "D’Souza",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "email": {
+   "q": "r5-in-513390-28@stress.test",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "phone": {
+   "q": "+919833900018",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "pct": {
+   "q": "%",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "underscore": {
+   "q": "_",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "inj": {
+   "q": "'; drop table \"User\"; --",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "emoji": {
+   "q": "🥋",
+   "status": 200,
+   "n": 0,
+   "sample": []
+  },
+  "huge": {
+   "q": "aaaaaaaaaaaaaaaaaaaa…",
+   "status": 400
+  }
+ },
+ "R2expect": {
+  "zoyaInCast": 85,
+  "khan": 85,
+  "venkatInitials": 90
+ },
+ "codepoints": {
+  "stored": [
+   "916",
+   "93c",
+   "93e",
+   "928"
+  ],
+  "nfc": [
+   "916",
+   "93c",
+   "93e",
+   "928"
+  ]
+ },
+ "R3": {
+  "label": "export-owner",
+  "p50": 1784,
+  "max": 1825,
+  "status": 200,
+  "kb": 1688,
+  "rows": 4001,
+  "mono": {
+   "id": "e5f560d2-f0b6-437d-9b01-a5c12b2d2791",
+   "firstName": "Venkataraghavan",
+   "surname": ".",
+   "email": "r5-in-513390-18@stress.test",
+   "phone": "+919833900018",
+   "dateOfBirth": "1996-11-04",
+   "status": "ACTIVE",
+   "enrolledAt": "2026-11-04T21:08:43.718Z",
+   "joinedOn": "2026-11-05",
+   "homeBranchName": "Adyar",
+   "visitor": false,
+   "memberships": [
+    "10-class pack"
+   ],
+   "billingStatus": "ACTIVE",
+   "belts": [],
+   "lastVisitAt": null,
+   "guardians": []
+  },
+  "deva": "शर्मा",
+  "leap": "2012-02-29",
+  "keys": [
+   "id",
+   "firstName",
+   "surname",
+   "email",
+   "phone",
+   "dateOfBirth",
+   "status",
+   "enrolledAt",
+   "joinedOn",
+   "homeBranchName",
+   "visitor",
+   "memberships",
+   "billingStatus",
+   "belts",
+   "lastVisitAt",
+   "guardians"
+  ]
+ },
+ "R3all": {
+  "status": 200,
+  "rows": 4001,
+  "kb": 1688
+ },
+ "R4": [
+  {
+   "status": 200,
+   "ms": 784,
+   "rows": 500,
+   "expected": 500,
+   "otherBranchVisible": 0,
+   "missing": 0
+  },
+  {
+   "status": 200,
+   "ms": 535,
+   "rows": 480,
+   "expected": 480,
+   "otherBranchVisible": 0,
+   "missing": 0
+  },
+  {
+   "status": 200,
+   "ms": 526,
+   "rows": 500,
+   "expected": 500,
+   "otherBranchVisible": 0,
+   "missing": 0
+  },
+  {
+   "status": 200,
+   "ms": 519,
+   "rows": 480,
+   "expected": 480,
+   "otherBranchVisible": 0,
+   "missing": 0
+  },
+  {
+   "status": 200,
+   "ms": 556,
+   "rows": 500,
+   "expected": 500,
+   "otherBranchVisible": 0,
+   "missing": 0
+  },
+  {
+   "status": 200,
+   "ms": 497,
+   "rows": 480,
+   "expected": 480,
+   "otherBranchVisible": 0,
+   "missing": 0
+  },
+  {
+   "status": 200,
+   "ms": 566,
+   "rows": 500,
+   "expected": 500,
+   "otherBranchVisible": 0,
+   "missing": 0
+  },
+  {
+   "status": 200,
+   "ms": 565,
+   "rows": 480,
+   "expected": 480,
+   "otherBranchVisible": 0,
+   "missing": 0
+  }
+ ],
+ "R4b": {
+  "exportStatus": 403,
+  "exportRows": 0,
+  "exportOtherBranch": 0,
+  "profileOther": 403,
+  "codeOther": 403,
+  "homelessVisibleInRoster": null,
+  "searchLeak": 0
+ }
+}

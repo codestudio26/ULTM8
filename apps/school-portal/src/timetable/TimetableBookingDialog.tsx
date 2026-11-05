@@ -8,6 +8,9 @@ import { useJoinWaitlist } from '../waitlist/waitlistQueries';
 import { useClass } from '../classes/classQueries';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { useClassZone } from '../classes/useClassZone';
+import { endsNextDayInZone, formatTimeInZone } from '../lib/datetime';
+import { whoCanBookLabel } from '../classes/WhoCanBookFields';
 
 /**
  * The Timetable redesign's click-to-book confirmation dialog — backlog doc's own
@@ -146,7 +149,20 @@ function BookingForm({
   onConfirm,
   onJoinWaitlist,
 }: {
-  occurrence: { id: string; title: string; instructorId?: string | null; startDate: string; endDate: string; breakStartAt?: string | null; breakEndAt?: string | null };
+  occurrence: {
+    id: string;
+    schoolId: string;
+    branchId?: string | null;
+    title: string;
+    instructorId?: string | null;
+    startDate: string;
+    endDate: string;
+    breakStartAt?: string | null;
+    breakEndAt?: string | null;
+    audience?: 'EVERYONE' | 'WOMEN' | 'MEN';
+    minAge?: number | null;
+    maxAge?: number | null;
+  };
   dateLabel: string;
   students: StudentSummary[];
   instructors: InstructorResponse[];
@@ -161,11 +177,15 @@ function BookingForm({
 }) {
   const t = useT();
   const instructor = instructors.find((i) => i.userId === occurrence.instructorId);
-  const timings = `${new Date(occurrence.startDate).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' })} – ${new Date(
-    occurrence.endDate,
-  ).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' })}`;
+  // On the class's own clock, not the browser's (Decision 432 item 5); a
+  // class past midnight says so (item 3).
+  const zone = useClassZone(occurrence);
+  const timeOf = (iso: string) => formatTimeInZone(iso, zone, formatLocale());
+  const timings =
+    `${timeOf(occurrence.startDate)} – ${timeOf(occurrence.endDate)}` +
+    (endsNextDayInZone(occurrence.startDate, occurrence.endDate, zone) ? ` (${t('timetable.endsNextDayShort')})` : '') +
+    (whoCanBookLabel(occurrence, t) ? ` · ${whoCanBookLabel(occurrence, t)}` : '');
   // Decision 353 (Q6): the break is shown with the class details only.
-  const timeOf = (iso: string) => new Date(iso).toLocaleTimeString(formatLocale(), { hour: 'numeric', minute: '2-digit' });
   const breakLine = occurrence.breakStartAt && occurrence.breakEndAt ? t('timetable.booking.breakLine', { start: timeOf(occurrence.breakStartAt), end: timeOf(occurrence.breakEndAt) }) : null;
 
   return (

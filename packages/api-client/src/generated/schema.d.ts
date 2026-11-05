@@ -276,6 +276,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/students/{studentId}/data-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_exportMemberData"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/students/{studentId}/home-branch": {
         parameters: {
             query?: never;
@@ -1099,10 +1115,26 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["GuardiansController_findChildConsent"];
         put?: never;
         post: operations["GuardiansController_grantConsent"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/guardians/me/minors/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["GuardiansController_removeMe"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1444,6 +1476,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/classes/{id}/recreate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClassesController_recreate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/classes/{id}/unarchive": {
         parameters: {
             query?: never;
@@ -1646,6 +1694,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["PlatformAdminSchoolsController_changeMainOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminSchoolsController_listStaff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/staff/{userId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminSchoolsController_pauseStaff"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2020,6 +2100,22 @@ export interface paths {
         patch: operations["PaymentsController_cancelTransaction"];
         trace?: never;
     };
+    "/v1/transactions/{id}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PaymentsController_refundDeskSale"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/timetable": {
         parameters: {
             query?: never;
@@ -2081,7 +2177,7 @@ export interface paths {
         delete: operations["TimetableController_deleteClosure"];
         options?: never;
         head?: never;
-        patch?: never;
+        patch: operations["TimetableController_updateClosure"];
         trace?: never;
     };
     "/v1/timetable/{id}": {
@@ -6788,6 +6884,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/students/{studentId}/guardians": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StudentAccessController_addGuardian"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/students/{studentId}/guardians/{guardianId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["StudentAccessController_removeGuardian"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/child-invites/{id}/decline": {
         parameters: {
             query?: never;
@@ -7515,7 +7643,10 @@ export interface components {
             /** @description E.164 format */
             phone: string;
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description Mobile-only per confirmed field list */
             username?: string;
             /** @description Exactly 6 digits — the account's sole login credential (Decision 72) */
@@ -7667,6 +7798,20 @@ export interface components {
             taxInclusive?: boolean;
             /** @description Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it. */
             taxId?: string | null;
+            /**
+             * @description Decision 431 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".
+             * @example GST
+             */
+            taxName?: string | null;
+            /**
+             * @description Decision 431 (MON-6): the name of a second tax line (required when its rate is above 0).
+             * @example PST
+             */
+            tax2Name?: string | null;
+            /** @description Decision 431 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%. */
+            tax2RateBasisPoints?: number;
+            /** @description Decision 431 (MON-6): the second tax line's registration number. Empty or null clears it. */
+            tax2Id?: string | null;
             /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
             chargeCancelReasonRequired?: boolean;
             /** @description Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only. */
@@ -7799,6 +7944,14 @@ export interface components {
             taxInclusive: boolean;
             /** @description Decision 338 item 6: the School's tax ID for its invoices. */
             taxId?: string | null;
+            /** @description Decision 431 (MON-6): the first tax line's name. */
+            taxName?: string | null;
+            /** @description Decision 431 (MON-6): the second tax line's name. */
+            tax2Name?: string | null;
+            /** @description Decision 431 (MON-6): the second tax line's rate (0 = none). */
+            tax2RateBasisPoints: number;
+            /** @description Decision 431 (MON-6): the second tax line's registration number. */
+            tax2Id?: string | null;
             /** @description Decision 338 item 1: a reason is required when cancelling a charge (default on). */
             chargeCancelReasonRequired: boolean;
             /** @description Decision 338 item 3: notes are required when refunding (default on). */
@@ -7943,6 +8096,20 @@ export interface components {
             taxInclusive?: boolean;
             /** @description Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it. */
             taxId?: string | null;
+            /**
+             * @description Decision 431 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: "Tax".
+             * @example GST
+             */
+            taxName?: string | null;
+            /**
+             * @description Decision 431 (MON-6): the name of a second tax line (required when its rate is above 0).
+             * @example PST
+             */
+            tax2Name?: string | null;
+            /** @description Decision 431 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%. */
+            tax2RateBasisPoints?: number;
+            /** @description Decision 431 (MON-6): the second tax line's registration number. Empty or null clears it. */
+            tax2Id?: string | null;
             /** @description Decision 338 item 1: staff must type a reason when cancelling a charge (default on). */
             chargeCancelReasonRequired?: boolean;
             /** @description Decision 338 item 3: the owner must type notes when refunding a payment toward charges (default on). Notes are for staff only. */
@@ -8070,7 +8237,8 @@ export interface components {
         };
         StudentExportGuardianDto: {
             name: string;
-            email: string;
+            /** @description Decision 430 item 11: null for a parent this School never dealt with (known only through the child's other School). */
+            email?: string | null;
         };
         StudentExportRowDto: {
             id: string;
@@ -8102,6 +8270,47 @@ export interface components {
         };
         StudentExportResponseDto: {
             items: components["schemas"]["StudentExportRowDto"][];
+        };
+        MemberDataExportResponseDto: {
+            /** Format: date-time */
+            exportedAt: string;
+            profile: {
+                [key: string]: unknown;
+            } | null;
+            enrolment: {
+                [key: string]: unknown;
+            }[];
+            joinedOn: string | null;
+            homeBranchName: string | null;
+            tags: string[];
+            customFields: {
+                [key: string]: unknown;
+            }[];
+            customStatus: string | null;
+            guardians: {
+                [key: string]: unknown;
+            }[];
+            notes: {
+                [key: string]: unknown;
+            }[];
+            medicalInfo: {
+                [key: string]: unknown;
+            } | null;
+            bookings: {
+                [key: string]: unknown;
+            }[];
+            memberships: {
+                [key: string]: unknown;
+            }[];
+            payments: {
+                [key: string]: unknown;
+            }[];
+            waiverSignatures: {
+                [key: string]: unknown;
+            }[];
+            belts: {
+                [key: string]: unknown;
+            }[];
         };
         SetHomeBranchDto: {
             /** @description A branch of this School. */
@@ -8166,6 +8375,11 @@ export interface components {
         };
         StudentGuardiansResponseDto: {
             items: components["schemas"]["StudentGuardianDto"][];
+            /**
+             * @description Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app.
+             * @enum {string}
+             */
+            consent: "NOT_NEEDED" | "GIVEN" | "GRANDFATHERED" | "WITHDRAWN" | "PENDING";
         };
         LeavingStudentMembershipDto: {
             id: string;
@@ -8186,7 +8400,10 @@ export interface components {
         };
         UpdateStudentProfileDto: {
             firstName?: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname?: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description Mobile-only per confirmed field list. Null clears it. */
             username?: string | null;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
@@ -8346,6 +8563,14 @@ export interface components {
             schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
             defaultRefundCutoffHours?: number | null;
             noShowFee?: number | null;
+            /** @description Decision 431 (MON-6): this Branch's own tax lines replace the School's. */
+            taxOverride: boolean;
+            taxName?: string | null;
+            taxRateBasisPoints: number;
+            taxId?: string | null;
+            tax2Name?: string | null;
+            tax2RateBasisPoints: number;
+            tax2Id?: string | null;
             /** @description Decision 226 — set when this Branch has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried). */
@@ -8390,6 +8615,14 @@ export interface components {
             schoolCancelledClassResolution: "REFUND_ALL" | "CREDIT_ALL" | "FOLLOW_POLICY";
             defaultRefundCutoffHours?: number | null;
             noShowFee?: number | null;
+            /** @description Decision 431 (MON-6): this Branch's own tax lines replace the School's. */
+            taxOverride: boolean;
+            taxName?: string | null;
+            taxRateBasisPoints: number;
+            taxId?: string | null;
+            tax2Name?: string | null;
+            tax2RateBasisPoints: number;
+            tax2Id?: string | null;
             /** @description Decision 226 — set when this Branch has been archived. Null when active. */
             archivedAt?: string | null;
             /** @description Decision 226 — 90 days after archivedAt; the scheduled purge sweep hard-deletes this Branch once this elapses (unless blocked by a FK, logged and retried). */
@@ -8436,6 +8669,20 @@ export interface components {
             defaultRefundCutoffHours?: number | null;
             /** @description Minor-unit amount. null = off. */
             noShowFee?: number | null;
+            /** @description Decision 431 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec). */
+            taxOverride?: boolean;
+            /** @description The first tax line's name, e.g. GST. */
+            taxName?: string | null;
+            /** @description The first tax line's rate, in hundredths of a percent. */
+            taxRateBasisPoints?: number;
+            /** @description The first tax line's registration number. */
+            taxId?: string | null;
+            /** @description The second tax line's name, e.g. QST (required when its rate is above 0). */
+            tax2Name?: string | null;
+            /** @description The second tax line's rate (0 = no second line). Both lines together at most 100%. */
+            tax2RateBasisPoints?: number;
+            /** @description The second tax line's registration number. */
+            tax2Id?: string | null;
         };
         BranchClosePreviewDto: {
             /** @description Classes that have not ended yet, not counting archived ones. */
@@ -8553,7 +8800,10 @@ export interface components {
             /** @description How the emergency contact is related, e.g. "Mother" (Decision 315 item 5). Blank or null clears it. */
             emergencyContactRelationship?: string | null;
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             email: string;
             /** @description YYYY-MM-DD. The student must be 18 or over. */
             dateOfBirth: string;
@@ -8675,7 +8925,7 @@ export interface components {
         StaffActivityEntryDto: {
             id: string;
             /** @enum {string} */
-            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED" | "MEMBERS_MERGED";
+            action: "ROLE_GIVEN" | "ROLE_REMOVED" | "REMOVED_FROM_SCHOOL" | "PAUSED" | "UNPAUSED" | "ACCESS_CHANGED" | "DETAILS_CHANGED" | "MAIN_OWNER_HANDED_OVER" | "INVITE_SENT" | "INVITE_CANCELLED" | "INVITE_ACCEPTED" | "OPEN_MAT_CHANGED" | "SETTING_CHANGED" | "CHARGE_ACCESS_CHANGED" | "MEMBERS_MERGED" | "GUARDIAN_REMOVED" | "GUARDIAN_LEFT" | "GUARDIAN_INVITED";
             /** @description Who made the change; null once their account is deleted. */
             actorId: string | null;
             /** @description First name and surname of who made the change. */
@@ -8992,13 +9242,15 @@ export interface components {
         CreateMinorDto: {
             firstName: string;
             surname: string;
-            /** @description ISO 8601 date, no time component. */
+            /** @description YYYY-MM-DD. The child must be under 18. */
             dateOfBirth: string;
             /**
              * @description FEMALE, MALE, or null when not given.
              * @enum {string|null}
              */
             gender?: "FEMALE" | "MALE" | null;
+            /** @description Decision 430 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it. */
+            consentPolicyVersion?: string;
         };
         MinorResponseDto: {
             linkId: string;
@@ -9007,6 +9259,17 @@ export interface components {
             surname: string;
             dateOfBirth: string;
             gender?: string | null;
+            /** @description Decision 430 item 4: true when this child was already on the account (same name and date of birth), so nothing new was added. */
+            alreadyAdded?: boolean;
+            /**
+             * @description Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN block booking and check-in until a parent gives it.
+             * @enum {string}
+             */
+            consent?: "NOT_NEEDED" | "GIVEN" | "GRANDFATHERED" | "WITHDRAWN" | "PENDING";
+            /** @description Decision 430 item 7: the child is 18 now (they make their own account; the parent can pay and read history until parentAccessEndsOn). */
+            isAdult?: boolean;
+            /** @description YYYY-MM-DD: the last day a parent can still pay for, and read the history of, a child who is 18. */
+            parentAccessEndsOn?: string | null;
         };
         MinorListResponseDto: {
             items: components["schemas"]["MinorResponseDto"][];
@@ -9026,6 +9289,27 @@ export interface components {
             status: string;
             consentedAt: string;
             withdrawnAt?: string | null;
+        };
+        ChildConsentRecordDto: {
+            id?: string | null;
+            /** @enum {string} */
+            tier: "BASELINE" | "CAMERA";
+            /** @enum {string} */
+            status: "ACTIVE" | "WITHDRAWN";
+            policyVersion: string;
+            consentedAt: string;
+            withdrawnAt?: string | null;
+        };
+        ChildConsentGuardianDto: {
+            guardianId: string;
+            name: string;
+            isMe: boolean;
+            records: components["schemas"]["ChildConsentRecordDto"][];
+        };
+        ChildConsentResponseDto: {
+            /** @enum {string} */
+            state: "NOT_NEEDED" | "GIVEN" | "GRANDFATHERED" | "WITHDRAWN" | "PENDING";
+            guardians: components["schemas"]["ChildConsentGuardianDto"][];
         };
         ConsentRecordListResponseDto: {
             items: components["schemas"]["ConsentRecordResponseDto"][];
@@ -9171,7 +9455,10 @@ export interface components {
         };
         UpdateUserDto: {
             firstName?: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname?: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description Mobile-only per confirmed field list. Null clears it. */
             username?: string | null;
             /** @description ISO 8601 date, no time component. Not in the future, not more than 120 years ago. */
@@ -9245,6 +9532,17 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts this Class into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason.
+             * @enum {string}
+             */
+            audience?: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age (whole years, on the class date) that can book. null: no lower limit. */
+            minAge?: number | null;
+            /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
+            maxAge?: number | null;
+            /** @description Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure. */
+            confirmClosedDay?: boolean;
         };
         ClassStyleResponseDto: {
             disciplineId: string;
@@ -9275,6 +9573,15 @@ export interface components {
             cancellationCharge?: number | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /**
+             * @description Decision 432: who can book.
+             * @enum {string}
+             */
+            audience: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age that can book (whole years on the class date). */
+            minAge?: number | null;
+            /** @description Oldest age that can book. */
+            maxAge?: number | null;
             /** @description Decision 291 — set when the School cancelled this class. A cancelled class can't be booked or waitlisted. */
             cancelledAt?: string | null;
             cancellationReason?: string | null;
@@ -9308,6 +9615,17 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts this Class into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason.
+             * @enum {string}
+             */
+            audience?: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age (whole years, on the class date) that can book. null: no lower limit. */
+            minAge?: number | null;
+            /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
+            maxAge?: number | null;
+            /** @description Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure. */
+            confirmClosedDay?: boolean;
             /** @description Branch to scope this Class to. Pass null to clear (make it School-wide). */
             branchId?: string | null;
             /** @description A User holding an active INSTRUCTOR RoleGrant at this School. Pass null to unassign. */
@@ -9403,6 +9721,29 @@ export interface components {
         ChangeSchoolMainOwnerResponseDto: {
             mainOwnerUserId: string;
             formerMainOwnerRemoved: boolean;
+        };
+        SchoolStaffRoleDto: {
+            /** @enum {string} */
+            role: "INSTRUCTOR" | "BRANCH_STAFF";
+            branchName: string | null;
+        };
+        SchoolStaffMemberDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            roles: components["schemas"]["SchoolStaffRoleDto"][];
+            /** @description Every one of their coach and Branch Staff roles here is paused. */
+            paused: boolean;
+        };
+        SchoolStaffResponseDto: {
+            items: components["schemas"]["SchoolStaffMemberDto"][];
+        };
+        PauseSchoolStaffResponseDto: {
+            userId: string;
+            pausedRoles: number;
+            /** Format: date-time */
+            pausedAt: string;
         };
         SchoolTrialDaysDto: {
             /** @description Days. Start: the trial ends this many days from now. Extend: added to the current end (or to now, if it has ended). */
@@ -9517,6 +9858,40 @@ export interface components {
             /** @description For staff only; never sent to the member. Required unless the School's owner made it optional. */
             reason?: string;
         };
+        RefundDeskSaleDto: {
+            /** @description Minor units (hundredths of the major unit), at most what is left to refund on the payment. */
+            amount: number;
+            /** @description Required: why, and how the money was given back. For staff only; never sent to the member. */
+            notes: string;
+            /**
+             * @description End the membership now (its future bookings it pays for are cancelled). Off: the membership carries on.
+             * @default false
+             */
+            endMembership: boolean;
+        };
+        DeskSaleRefundDto: {
+            id: string;
+            transactionId: string;
+            /** @description Minor units. */
+            amount: number;
+            currency: string;
+            notes: string;
+            endedMembership: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        RefundDeskSaleResponseDto: {
+            refund: components["schemas"]["DeskSaleRefundDto"];
+            /** @description The payment's refunded total after this refund, minor units. */
+            refundedAmount: number;
+            /**
+             * @description Refunded once all of it is back.
+             * @enum {string}
+             */
+            status: "SUCCESSFUL" | "REFUNDED";
+            /** @description Whether this refund ended the membership. */
+            membershipEnded: boolean;
+        };
         CreateTimetableSlotDto: {
             /** @description Branch to scope this slot to. Omit for a School-wide slot. */
             branchId?: string;
@@ -9556,6 +9931,15 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason.
+             * @enum {string}
+             */
+            audience?: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age (whole years, on the class date) that can book. null: no lower limit. */
+            minAge?: number | null;
+            /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
+            maxAge?: number | null;
             /** @description Booking cutoff, in minutes before each occurrence starts. */
             bookingCutoffMinutesBeforeStart?: number;
             /** @description QR check-in window, in minutes, from each occurrence's start. */
@@ -9589,6 +9973,15 @@ export interface components {
             bannerUrl?: string | null;
             termsWaiverRequired: boolean;
             membershipInclusion: boolean;
+            /**
+             * @description Decision 432: who can book.
+             * @enum {string}
+             */
+            audience: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age that can book (whole years on the class date). */
+            minAge?: number | null;
+            /** @description Oldest age that can book. */
+            maxAge?: number | null;
             bookingCutoffMinutesBeforeStart?: number | null;
             qrAttendanceWindowMinutes?: number | null;
             refundCutoffHoursBeforeStart?: number | null;
@@ -9686,6 +10079,39 @@ export interface components {
             /** @description How many classes the closure cancelled. */
             cancelledClasses: number;
         };
+        UpdateClosureDto: {
+            /** @description First closed date, YYYY-MM-DD (local). */
+            startDate?: string;
+            /** @description Last closed date, YYYY-MM-DD (local). */
+            endDate?: string;
+            /** @description Shown on the calendar. Changing it tells nobody. */
+            reason?: string;
+        };
+        RecreatableClassDto: {
+            id: string;
+            title: string;
+            branchId: string | null;
+            /** @description The class's local date, YYYY-MM-DD. */
+            date: string;
+            startDate: string;
+            endDate: string;
+        };
+        ClosureUpdatedResponseDto: {
+            id: string;
+            schoolId: string;
+            /** @description Null: the whole School. */
+            branchId: string | null;
+            /** @description YYYY-MM-DD */
+            startDate: string;
+            /** @description YYYY-MM-DD */
+            endDate: string;
+            reason: string;
+            createdAt: string;
+            /** @description How many classes on newly closed days were cancelled. */
+            cancelledClasses: number;
+            /** @description Classes this closure cancelled on days it no longer covers. They stay cancelled (students were told); POST /classes/{id}/recreate makes a one-off copy. */
+            recreatable: components["schemas"]["RecreatableClassDto"][];
+        };
         UpcomingImpactResponseDto: {
             /** @description Upcoming, unarchived Classes generated from this slot. */
             upcomingClasses: number;
@@ -9723,6 +10149,15 @@ export interface components {
             termsWaiverRequired?: boolean;
             /** @description Opts generated Classes into general-membership access. Default is opt-out (a ticket is required). */
             membershipInclusion?: boolean;
+            /**
+             * @description Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason.
+             * @enum {string}
+             */
+            audience?: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age (whole years, on the class date) that can book. null: no lower limit. */
+            minAge?: number | null;
+            /** @description Oldest age (whole years, on the class date) that can book. null: no upper limit. */
+            maxAge?: number | null;
             /**
              * @description Decisions 322, 332. What to do with this slot's upcoming Classes that already have bookings, when the change moves them (day, start or end time, branch), switches the slot off, or changes their booking rules (waiver, membership inclusion, cut-offs, cancellation charge). MOVE: they follow the change and booked Students are told (not with status OFF). CANCEL: their bookings are cancelled with credit back and the Classes archived; Students are told. KEEP: they keep their day, time, place and rules. CANCEL is only for a move or switching off. Required when such Classes exist; without it the update is refused with 409. Also confirms a capacity cut below the seats booked: Classes fuller than the new capacity keep their size. Title, description, picture, coach and styles always reach every upcoming Class. Unbooked upcoming Classes always follow the change.
              * @enum {string}
@@ -10454,9 +10889,16 @@ export interface components {
             membership: components["schemas"]["MembershipResponseDto"];
             /** @description The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass. */
             transactionId?: string | null;
+            /** @description Decision 431 (MON-15): a Friend Pass gift only: every pass given (membership is the first). */
+            memberships?: components["schemas"]["MembershipResponseDto"][];
         };
         GiftFriendPassDto: {
             membershipPlanId: string;
+            /**
+             * @description Decision 431 (MON-15): how many Friend Passes to give at once (1-5).
+             * @default 1
+             */
+            quantity: number;
         };
         RecordDeskPaymentDto: {
             studentId: string;
@@ -10721,6 +11163,21 @@ export interface components {
         IncomeCategoryNameDto: {
             name: string;
         };
+        TaxLineAmountDto: {
+            /** @example GST */
+            name?: string | null;
+            /** @description Hundredths of a percent (500 = 5%). */
+            rateBasisPoints: number;
+            /** @description The line's registration number, for invoices and receipts. */
+            taxId?: string | null;
+            /** @description Minor units. */
+            amount: number;
+        };
+        IncludedTaxDto: {
+            /** @description The tax included, minor units (the lines added up). */
+            amount: number;
+            lines: components["schemas"]["TaxLineAmountDto"][];
+        };
         TransactionResponseDto: {
             id: string;
             schoolId: string;
@@ -10744,6 +11201,8 @@ export interface components {
             amount: number;
             /** @description Card surcharge paid on top of amount, in the same minor units. 0 when none. */
             surchargeAmount: number;
+            /** @description Decision 431 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded. */
+            includedTax?: components["schemas"]["IncludedTaxDto"] | null;
             currency?: string | null;
             status: string;
             paymentMethod: string;
@@ -12561,6 +13020,15 @@ export interface components {
             breakEndAt?: string | null;
             /** @description Nullable = unlimited. */
             capacity?: number | null;
+            /**
+             * @description Decision 432: who can book.
+             * @enum {string}
+             */
+            audience: "EVERYONE" | "WOMEN" | "MEN";
+            /** @description Youngest age that can book (whole years on the class date). */
+            minAge?: number | null;
+            /** @description Oldest age that can book. */
+            maxAge?: number | null;
             /** @description The IANA time zone the class runs on (its Branch's, else its School's); null when neither is set. Show the class's times on this clock. */
             timezone?: string | null;
         };
@@ -13066,7 +13534,10 @@ export interface components {
             /** @enum {string} */
             kind: "VISITOR" | "MEMBER";
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description YYYY-MM-DD. 18 or over: a child is signed up by their Guardian in the app. */
             dateOfBirth: string;
             /**
@@ -13776,7 +14247,10 @@ export interface components {
         };
         ChildDetailsDto: {
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             /** @description YYYY-MM-DD. The child must be under 18. */
             dateOfBirth: string;
             /**
@@ -13787,7 +14261,10 @@ export interface components {
         };
         GuardianDetailsDto: {
             firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
             surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
             email: string;
         };
         AddChildManuallyDto: {
@@ -13823,6 +14300,8 @@ export interface components {
             childFirstName: string;
             childSurname: string;
             childDateOfBirth: string;
+            /** @description Decision 430 item 6: an invite to be another parent or guardian of a child already at the School ("Add another Guardian"), not to add a new child. */
+            addsGuardian: boolean;
             /** @description For the School's list: the Guardian's name. */
             guardianName?: string | null;
             /** @description For the School's list: the Guardian's email. */
@@ -13832,9 +14311,21 @@ export interface components {
         ChildInviteListDto: {
             items: components["schemas"]["ChildInviteDto"][];
         };
+        AcceptChildInviteDto: {
+            /** @description The version of the privacy notice the parent agreed to. Without it the child is "consent pending" until a parent gives consent. */
+            consentPolicyVersion?: string;
+        };
         AcceptChildInviteResponseDto: {
             schoolId: string;
             studentId: string;
+        };
+        AddGuardianDto: {
+            firstName: string;
+            /** @description Empty only with hasOnlyOneName: true. */
+            surname: string;
+            /** @description True for someone who has only one name; the surname is then sent empty. */
+            hasOnlyOneName?: boolean;
+            email: string;
         };
         TemporaryPasscodeStatusDto: {
             /** @description A new temporary passcode can be made: the account (the student's, or for a child their Guardian's) was made by this School and has not been signed in to yet. */
@@ -14025,6 +14516,8 @@ export interface components {
             taxInclusive: boolean;
             /** @description "No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax". */
             taxExempt: boolean;
+            /** @description Decision 431 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before. */
+            taxLines?: components["schemas"]["TaxLineAmountDto"][] | null;
             /** @description The charge's income category (Decision 316 item 10). Staff only; null for the member. */
             incomeCategoryName?: string | null;
             /** @description The price excluding tax. */
@@ -14171,11 +14664,21 @@ export interface components {
             /** @description Resend a charge's invoice notice: whoever may create charges (Decision 338 item 5). */
             resendInvoice: boolean;
         };
+        TaxLineDto: {
+            /** @example GST */
+            name?: string | null;
+            /** @description Hundredths of a percent (500 = 5%). */
+            rateBasisPoints: number;
+            /** @description The line's registration number, for invoices and receipts. */
+            taxId?: string | null;
+        };
         ChargeSettingsDto: {
             currency?: string | null;
             taxCountry?: string | null;
             taxRateBasisPoints: number;
             taxInclusive: boolean;
+            /** @description Decision 431 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax. */
+            taxLines: components["schemas"]["TaxLineDto"][];
             cancelReasonRequired: boolean;
             /** @description A desk payment can be recorded: the School has its payments set up. */
             paymentsSetUp: boolean;
@@ -15214,6 +15717,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentExportResponseDto"];
+                };
+            };
+        };
+    };
+    SchoolsController_exportMemberData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberDataExportResponseDto"];
                 };
             };
         };
@@ -16645,6 +17170,27 @@ export interface operations {
             };
         };
     };
+    GuardiansController_findChildConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChildConsentResponseDto"];
+                };
+            };
+        };
+    };
     GuardiansController_grantConsent: {
         parameters: {
             query?: never;
@@ -16667,6 +17213,25 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ConsentRecordResponseDto"];
                 };
+            };
+        };
+    };
+    GuardiansController_removeMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -17199,6 +17764,27 @@ export interface operations {
             };
         };
     };
+    ClassesController_recreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClassResponseDto"];
+                };
+            };
+        };
+    };
     ClassesController_unarchive: {
         parameters: {
             query?: never;
@@ -17505,6 +18091,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeSchoolMainOwnerResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_listStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolStaffResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_pauseStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PauseSchoolStaffResponseDto"];
                 };
             };
         };
@@ -18058,6 +18687,31 @@ export interface operations {
             };
         };
     };
+    PaymentsController_refundDeskSale: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundDeskSaleDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefundDeskSaleResponseDto"];
+                };
+            };
+        };
+    };
     TimetableController_findAll: {
         parameters: {
             query?: {
@@ -18200,6 +18854,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    TimetableController_updateClosure: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateClosureDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClosureUpdatedResponseDto"];
+                };
             };
         };
     };
@@ -20079,9 +20758,9 @@ export interface operations {
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
-                /** @description First day included, YYYY-MM-DD (UTC). */
+                /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 from?: string;
-                /** @description Last day included, YYYY-MM-DD (UTC). */
+                /** @description Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 to?: string;
             };
             header?: never;
@@ -20109,9 +20788,9 @@ export interface operations {
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
                 kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
                 membershipPlanId?: string;
-                /** @description First day included, YYYY-MM-DD (UTC). */
+                /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 from?: string;
-                /** @description Last day included, YYYY-MM-DD (UTC). */
+                /** @description Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 to?: string;
             };
             header?: never;
@@ -26301,7 +26980,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptChildInviteDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -26310,6 +26993,53 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AcceptChildInviteResponseDto"];
                 };
+            };
+        };
+    };
+    StudentAccessController_addGuardian: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddGuardianDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddChildManuallyResponseDto"];
+                };
+            };
+        };
+    };
+    StudentAccessController_removeGuardian: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                studentId: string;
+                guardianId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

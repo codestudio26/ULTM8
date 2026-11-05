@@ -33,12 +33,12 @@ export class TransactionFilterDto {
   @IsUUID()
   membershipPlanId?: string;
 
-  @ApiPropertyOptional({ description: 'First day included, YYYY-MM-DD (UTC).' })
+  @ApiPropertyOptional({ description: "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7)." })
   @IsOptional()
   @IsDateString({ strict: true })
   from?: string;
 
-  @ApiPropertyOptional({ description: 'Last day included, YYYY-MM-DD (UTC).' })
+  @ApiPropertyOptional({ description: "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7)." })
   @IsOptional()
   @IsDateString({ strict: true })
   to?: string;

@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
 import { WaiverAssignmentService } from '../waivers/waiver-assignment.service';
 import { WAIVER_RENEWAL_SWEEP_QUEUE, WAIVER_SIGNATURE_REQUESTS_QUEUE } from './queue.constants';
 import type { WaiverNoticeReason, WaiverSignatureRequestJobData } from './waiver-signature-requests.processor';
@@ -10,7 +11,6 @@ import type { WaiverNoticeReason, WaiverSignatureRequestJobData } from './waiver
  * don't start at the same moment. */
 const CRON_DAILY_AT_5AM_UTC = '0 5 * * *';
 const REPEATABLE_JOB_ID = 'waiver-renewal-sweep';
-const AGE_OF_MAJORITY_YEARS = 18;
 
 /** Same fixed-jobId / not-awaited / bounded-retry registration as every other
  * scheduler in this directory (see BookingNoShowProcessingScheduler). */
@@ -50,13 +50,6 @@ function addMonths(date: Date, months: number): Date {
   return d;
 }
 
-function ageOn(dateOfBirth: Date, on: Date): number {
-  const age = on.getUTCFullYear() - dateOfBirth.getUTCFullYear();
-  const hadBirthday =
-    on.getUTCMonth() > dateOfBirth.getUTCMonth() ||
-    (on.getUTCMonth() === dateOfBirth.getUTCMonth() && on.getUTCDate() >= dateOfBirth.getUTCDate());
-  return hadBirthday ? age : age - 1;
-}
 
 /**
  * Decision 354 — the three Waiver settings that act over time, for every
@@ -93,7 +86,7 @@ export class WaiverRenewalSweepProcessor extends WorkerHost {
         archivedAt: null,
         OR: [{ waiverRenewalMonths: { not: null } }, { waiverMinorsSignAgainAt18: true }, { waiverReminderDays: { not: null } }],
       },
-      select: { id: true, waiverRenewalMonths: true, waiverMinorsSignAgainAt18: true, waiverReminderDays: true },
+      select: { id: true, timezone: true, waiverRenewalMonths: true, waiverMinorsSignAgainAt18: true, waiverReminderDays: true },
     });
     let expired = 0;
     let reminded = 0;
@@ -112,7 +105,7 @@ export class WaiverRenewalSweepProcessor extends WorkerHost {
   }
 
   private async sweepSchool(
-    school: { id: string; waiverRenewalMonths: number | null; waiverMinorsSignAgainAt18: boolean; waiverReminderDays: number | null },
+    school: { id: string; timezone?: string | null; waiverRenewalMonths: number | null; waiverMinorsSignAgainAt18: boolean; waiverReminderDays: number | null },
     now: Date,
     batchId: string,
   ): Promise<{ expired: number; reminded: number }> {
@@ -141,7 +134,8 @@ export class WaiverRenewalSweepProcessor extends WorkerHost {
       const dob = new Map(users.map((u) => [u.id, u.dateOfBirth]));
       for (const s of signed) {
         const born = dob.get(s.studentId);
-        if (born && ageOn(born, s.signedDate!) < AGE_OF_MAJORITY_YEARS && ageOn(born, now) >= AGE_OF_MAJORITY_YEARS) {
+        // Decision 430 item 10: both 18th-birthday checks on the School's own date.
+        if (born && !isAdultOn(born, s.signedDate!, school.timezone) && isAdultOn(born, now, school.timezone)) {
           toExpire.set(s.id, { waiverId: s.waiverId, studentId: s.studentId, reason: 'adult' });
         }
       }

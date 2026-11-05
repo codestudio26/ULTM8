@@ -1,3 +1,4 @@
+import { plainMoney } from '@ultm8/i18n';
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Card, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table } from '@ultm8/ui';
@@ -143,10 +144,10 @@ function Balances({ schoolId }: { schoolId: string }) {
   const name = (r: MemberBalanceRow) => `${r.firstName} ${r.surname}`.trim();
 
   function exportCsv() {
-    const money = (minor: number) => (minor / 100).toFixed(2);
+    // Each currency's own decimals (Decision 431, TXT-6), as the Transactions CSV.
     const header = [t('charges.reports.columnMember'), t('charges.reports.columnOwes'), t('charges.reports.columnOverdue'), t('charges.reports.columnCredit'), t('charges.reports.columnBalance'), t('charges.reports.columnCurrency')];
     const lines = [header.map(csvCell).join(',')];
-    for (const r of rows) lines.push([name(r), money(r.owed), money(r.overdue), money(r.credit), money(r.net), r.currency].map(csvCell).join(','));
+    for (const r of rows) lines.push([name(r), plainMoney(r.owed, r.currency), plainMoney(r.overdue, r.currency), plainMoney(r.credit, r.currency), plainMoney(r.net, r.currency), r.currency].map(csvCell).join(','));
     // A byte-order mark so Excel opens accented names correctly, as the Transactions CSV does.
     downloadCsv(`member-balances-${new Date().toISOString().slice(0, 10)}.csv`, `﻿${lines.join('\r\n')}\r\n`);
   }

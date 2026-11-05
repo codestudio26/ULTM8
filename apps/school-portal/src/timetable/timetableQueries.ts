@@ -15,6 +15,8 @@ export type TimetableCalendarResponse = components['schemas']['TimetableCalendar
 export type TimetableCalendarClass = components['schemas']['TimetableCalendarClassDto'];
 export type ClosureResponse = components['schemas']['ClosureResponseDto'];
 export type CreateClosureInput = components['schemas']['CreateClosureDto'];
+export type UpdateClosureInput = components['schemas']['UpdateClosureDto'];
+export type RecreatableClass = components['schemas']['RecreatableClassDto'];
 
 /** Loads every page (100 at a time), like useInstructors: the list used to
  * stop at the API's default page of 20, so a School with more slots lost the
@@ -138,6 +140,30 @@ export function useCreateClosure(schoolId: string) {
   return useMutation({
     mutationFn: (body: CreateClosureInput) => unwrap(apiClient.POST('/v1/schools/{schoolId}/closures', { params: { path: { schoolId } }, body })),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
+  });
+}
+
+/** Decision 432 item 11: change a closure's dates or reason. Classes on newly
+ * closed days are cancelled; classes it cancelled on released days come back
+ * as `recreatable`, for a one-tap Recreate. */
+export function useUpdateClosure(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: UpdateClosureInput }) =>
+      unwrap(apiClient.PATCH('/v1/closures/{id}', { params: { path: { id } }, body })),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] }),
+  });
+}
+
+/** Decision 432 item 11: a one-off copy of a cancelled class that hasn't started. */
+export function useRecreateClass(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (classId: string) => unwrap(apiClient.POST('/v1/classes/{id}/recreate', { params: { path: { id: classId } } })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['timetable', schoolId] });
+      void queryClient.invalidateQueries({ queryKey: ['classes'] });
+    },
   });
 }
 

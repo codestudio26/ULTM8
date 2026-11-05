@@ -3,6 +3,7 @@ import { Transform } from 'class-transformer';
 import { IsBoolean, IsDateString, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
 import { NormalizeEmail } from '../../common/decorators/normalize-email.decorator';
 import { IsBirthDate } from '../../common/decorators/is-birth-date.decorator';
+import { HasOnlyOneNameField, SurnameField } from '../../common/decorators/surname-field.decorator';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
 /** An optional text field: blank means not given. */
@@ -25,12 +26,11 @@ export class KioskSignUpDto {
   @MaxLength(100)
   firstName!: string;
 
-  @ApiProperty()
-  @Transform(trim)
-  @IsString()
-  @MinLength(1, { message: "Surname can't be blank." })
-  @MaxLength(100)
+  @SurnameField()
   surname!: string;
+
+  @HasOnlyOneNameField()
+  hasOnlyOneName?: boolean;
 
   @ApiProperty({ description: 'YYYY-MM-DD. 18 or over: a child is signed up by their Guardian in the app.' })
   @IsDateString()

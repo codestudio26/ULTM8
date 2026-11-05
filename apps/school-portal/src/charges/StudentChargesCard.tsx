@@ -35,6 +35,7 @@ import { CancelPaymentModal } from '../transactions/CancelPaymentModal';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { useDeskMethods } from '../lib/deskMethods';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
   OPEN: 'warning',
@@ -489,7 +490,15 @@ function ChargesBody({
                 key: 'tax',
                 header: t('charges.card.columnTax'),
                 // Decision 414 item 5: a charge made with "No tax on this item".
-                render: (c) => (c.taxExempt ? t('charges.card.noTax') : `${formatMoney(c.taxAmount, c.currency)} (${rateText(c.taxRateBasisPoints)}%)`),
+                render: (c) =>
+                  c.taxExempt
+                    ? t('charges.card.noTax')
+                    : c.taxLines && c.taxLines.length > 0
+                      ? // Decision 431 (MON-6): each named line with its amount.
+                        c.taxLines
+                          .map((l) => t('charges.card.taxLine', { name: l.name || t('charges.card.taxLineUnnamed'), rate: rateText(l.rateBasisPoints), amount: formatMoney(l.amount, c.currency) }))
+                          .join(' · ')
+                      : `${formatMoney(c.taxAmount, c.currency)} (${rateText(c.taxRateBasisPoints)}%)`,
               },
               { key: 'gross', header: t('charges.card.columnTotal'), render: (c) => formatMoney(c.grossAmount, c.currency) },
               { key: 'owed', header: t('charges.card.columnOwed'), render: (c) => formatMoney(c.owedAmount, c.currency) },
@@ -631,7 +640,10 @@ function CreateChargeModal({
 }) {
   const t = useT();
   const create = useCreateCharge(schoolId, studentId);
-  const { currency, taxRateBasisPoints: rate, taxInclusive } = data.settings;
+  const { currency, taxInclusive } = data.settings;
+  // Decision 431 (MON-6): this member's lines (their home Branch's when it
+  // has its own), added up; the School's single rate if none came back.
+  const rate = data.settings.taxLines ? data.settings.taxLines.reduce((n, l) => n + l.rateBasisPoints, 0) : data.settings.taxRateBasisPoints;
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState<{ minorUnits: number | null; valid: boolean }>({ minorUnits: null, valid: true });
   const [discountType, setDiscountType] = useState<'' | 'PERCENT' | 'FIXED'>('');
@@ -648,7 +660,7 @@ function CreateChargeModal({
   const discountValue = discountType === 'PERCENT' ? parseRate(percent) : discountType === 'FIXED' ? fixed.minorUnits : null;
   const preview =
     amount.minorUnits && amount.valid
-      ? previewCharge({ amount: amount.minorUnits, discountType: discountType || null, discountValue, taxRateBasisPoints: taxExempt ? 0 : rate, taxInclusive })
+      ? previewCharge({ amount: amount.minorUnits, discountType: discountType || null, discountValue, taxRateBasisPoints: taxExempt ? 0 : rate, taxInclusive, currency })
       : null;
   const discountOk = !discountType || (!!discountValue && discountValue > 0 && preview !== null);
   const ready = !!currency && description.trim().length > 0 && !!amount.minorUnits && amount.valid && discountOk && !!dueDate;
@@ -781,6 +793,8 @@ function RecordPaymentModal({
 }) {
   const t = useT();
   const record = useRecordChargePayment(schoolId, studentId);
+  // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  const methods = useDeskMethods(schoolId, CHARGE_PAYMENT_METHODS);
   const open = data.charges.filter((c) => c.status === 'OPEN' || c.status === 'PART_PAID');
   const [toward, setToward] = useState(chargeId ?? '');
   const target = open.find((c) => c.id === toward);
@@ -834,7 +848,7 @@ function RecordPaymentModal({
             id="charge-pay-method"
             value={method}
             onChange={(e) => setMethod(e.target.value as (typeof CHARGE_PAYMENT_METHODS)[number])}
-            options={CHARGE_PAYMENT_METHODS.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
+            options={methods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
           />
         </Field>
         {data.settings.receiptNotice ? (

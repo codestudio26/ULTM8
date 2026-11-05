@@ -30,6 +30,9 @@ export function changedSlotFields(slot: TimetableSlotResponse, values: Timetable
     qrAttendanceWindowMinutes: slot.qrAttendanceWindowMinutes ?? null,
     refundCutoffHoursBeforeStart: slot.refundCutoffHoursBeforeStart ?? null,
     cancellationCharge: slot.cancellationCharge ?? null,
+    audience: slot.audience ?? 'EVERYONE',
+    minAge: slot.minAge ?? null,
+    maxAge: slot.maxAge ?? null,
   };
   for (const [key, value] of Object.entries(values)) {
     if (value === undefined) continue;

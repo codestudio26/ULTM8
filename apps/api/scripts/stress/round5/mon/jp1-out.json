@@ -1,0 +1,62 @@
+{
+ "回数券 3回": {
+  "student": "aff5e42b-1dc5-48f5-8dee-79a51e26a872",
+  "stripeCharged": 1000,
+  "piCurrency": "jpy",
+  "recorded": 100000,
+  "shares": [
+   33333,
+   33334,
+   33333
+  ],
+  "resolutions": [
+   "MONEY_REFUNDED",
+   "MONEY_REFUNDED",
+   "MONEY_REFUNDED"
+  ],
+  "stripeRefunds": [
+   333,
+   333,
+   333
+  ],
+  "stripeRefundSum": 999,
+  "txStatus": "REFUNDED",
+  "txRefunded": 100000
+ },
+ "回数券 7回": {
+  "student": "a4da4edd-b290-436b-ae32-c54f15cf9607",
+  "stripeCharged": 1000,
+  "piCurrency": "jpy",
+  "recorded": 100000,
+  "shares": [
+   14286,
+   14285,
+   14286,
+   14286,
+   14286,
+   14285,
+   14286
+  ],
+  "resolutions": [
+   "MONEY_REFUNDED",
+   "MONEY_REFUNDED",
+   "MONEY_REFUNDED",
+   "MONEY_REFUNDED",
+   "MONEY_REFUNDED",
+   "MONEY_REFUNDED",
+   "MONEY_REFUNDED"
+  ],
+  "stripeRefunds": [
+   143,
+   143,
+   143,
+   143,
+   143,
+   143,
+   143
+  ],
+  "stripeRefundSum": 1001,
+  "txStatus": "REFUNDED",
+  "txRefunded": 100000
+ }
+}

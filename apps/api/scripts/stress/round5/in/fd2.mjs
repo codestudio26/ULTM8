@@ -1,0 +1,26 @@
+import fs from 'fs';
+import { db, call, grant, tokenRca } from '../../round4/common.mjs';
+const C = JSON.parse(fs.readFileSync(new URL('./in-cast.json', import.meta.url)));
+const S = C.schoolId; const B0 = C.branches[0];
+const tOwner = tokenRca(C.owner, [grant('SCHOOL_OWNER_MANAGER', S)]);
+const st0 = C.bstaff[0]; const tSt0 = tokenRca(st0, [grant('BRANCH_STAFF', S, st0.branchId)]);
+const out = {};
+out.set4 = await call('p', 'PATCH', `/schools/${S}`, tOwner, { checkInCodeDigits: 4 }).then((r) => `${r.status} ${JSON.stringify(r.body).slice(0, 160)}`);
+const rows = await db.studentCheckInCode.findMany({ where: { schoolId: S }, select: { code: true, studentId: true } });
+out.lengths = rows.reduce((m, r) => ((m[r.code.length] = (m[r.code.length] || 0) + 1), m), {});
+const right = rows[5].code; const taken = new Set(rows.map((r) => r.code));
+const wrong = () => { let c; do { c = String(Math.floor(Math.random() * 1e6)).padStart(6, '0'); } while (taken.has(c)); return c; };
+const sess = await call('s', 'POST', `/schools/${S}/front-desk/sessions`, tSt0, { branchId: B0 });
+const kt = sess.body.sessionToken;
+const st = [];
+for (let i = 0; i < 9; i++) st.push((await call('w', 'POST', '/front-desk/kiosk/code-lookups', kt, { code: wrong() })).status);
+st.push((await call('r', 'POST', '/front-desk/kiosk/code-lookups', kt, { code: right })).status);
+await new Promise((r) => setTimeout(r, 61000));
+for (let i = 0; i < 9; i++) st.push((await call('w', 'POST', '/front-desk/kiosk/code-lookups', kt, { code: wrong() })).status);
+out.interleave = st.join(',');
+out.lockedAfter18Wrong = (await call('k', 'GET', '/front-desk/kiosk/session', kt)).body?.locked;
+// Probability math for a guesser who knows one valid code: 9 guesses/min/tablet
+out.codesInSchool = rows.length;
+fs.writeFileSync(new URL('./fd2-result.json', import.meta.url), JSON.stringify(out, null, 1));
+console.log(out);
+await db.$disconnect();

@@ -1,6 +1,7 @@
 import type { components } from '@ultm8/api-client';
 import type { TranslateFn } from '../i18n/I18nProvider';
 import { csvCell } from '../transactions/transactionsCsv';
+import { printHtmlOpening } from '../lib/printHtml';
 
 export type StudentExportRow = components['schemas']['StudentExportRowDto'];
 export type StudentExportFilter = components['schemas']['StudentExportFilter'];
@@ -44,7 +45,8 @@ export function studentExportTable(t: TranslateFn, rows: StudentExportRow[], wit
     r.belts.map((b) => `${b.style}: ${b.rank}`).join('; '),
     r.lastVisitAt ? r.lastVisitAt.slice(0, 10) : '',
     r.guardians.map((g) => g.name).join('; '),
-    r.guardians.map((g) => g.email).join('; '),
+    // Decision 430 item 11: no email for a parent this School never dealt with.
+    r.guardians.map((g) => g.email ?? '').join('; '),
   ]);
   return [headers, ...body];
 }
@@ -62,10 +64,10 @@ function esc(s: string): string {
 export function studentExportHtml(t: TranslateFn, schoolName: string, table: string[][]): string {
   const [headers, ...rows] = table;
   return (
-    '<!doctype html><html><head><meta charset="utf-8">' +
+    printHtmlOpening() +
     `<title>${esc(t('students.export.printTitle', { school: schoolName }))}</title>` +
     '<style>body{font-family:system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;margin:32px;color:#151719}' +
-    'h1{font-size:18px;margin:0 0 12px}table{border-collapse:collapse;width:100%}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e1e3e5;font-size:11px;vertical-align:top}' +
+    'h1{font-size:18px;margin:0 0 12px}table{border-collapse:collapse;width:100%}th,td{text-align:start;padding:6px 8px;border-bottom:1px solid #e1e3e5;font-size:11px;vertical-align:top}' +
     'th{font-size:10px;text-transform:uppercase;color:#50575e}button{margin-top:20px;padding:10px 16px;border-radius:8px;border:1px solid #5d7081;background:#5d7081;color:#fff;font-weight:600;cursor:pointer}' +
     '@media print{button{display:none}body{margin:0}}</style></head><body>' +
     `<h1>${esc(t('students.export.printTitle', { school: schoolName }))}</h1>` +

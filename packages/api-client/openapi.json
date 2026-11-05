@@ -688,6 +688,49 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/{studentId}/data-export": {
+      "get": {
+        "operationId": "SchoolsController_exportMemberData",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberDataExportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/students/{studentId}/home-branch": {
       "put": {
         "operationId": "SchoolsController_setStudentHomeBranch",
@@ -3398,6 +3441,67 @@
             "bearer": []
           }
         ]
+      },
+      "get": {
+        "operationId": "GuardiansController_findChildConsent",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildConsentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/guardians/me/minors/{studentId}": {
+      "delete": {
+        "operationId": "GuardiansController_removeMe",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "guardians"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
       }
     },
     "/v1/guardians/me/consent": {
@@ -4311,6 +4415,41 @@
         ]
       }
     },
+    "/v1/classes/{id}/recreate": {
+      "post": {
+        "operationId": "ClassesController_recreate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClassResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "classes"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/classes/{id}/unarchive": {
       "post": {
         "operationId": "ClassesController_unarchive",
@@ -4832,6 +4971,84 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChangeSchoolMainOwnerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/staff": {
+      "get": {
+        "operationId": "PlatformAdminSchoolsController_listStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolStaffResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/staff/{userId}/pause": {
+      "post": {
+        "operationId": "PlatformAdminSchoolsController_pauseStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PauseSchoolStaffResponseDto"
                 }
               }
             }
@@ -5760,6 +5977,51 @@
         ]
       }
     },
+    "/v1/transactions/{id}/refund": {
+      "post": {
+        "operationId": "PaymentsController_refundDeskSale",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefundDeskSaleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefundDeskSaleResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/timetable": {
       "post": {
         "operationId": "TimetableController_create",
@@ -6009,6 +6271,49 @@
       }
     },
     "/v1/closures/{id}": {
+      "patch": {
+        "operationId": "TimetableController_updateClosure",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateClosureDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClosureUpdatedResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "timetable"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
       "delete": {
         "operationId": "TimetableController_deleteClosure",
         "parameters": [
@@ -9484,7 +9789,7 @@
             "name": "from",
             "required": false,
             "in": "query",
-            "description": "First day included, YYYY-MM-DD (UTC).",
+            "description": "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9493,7 +9798,7 @@
             "name": "to",
             "required": false,
             "in": "query",
-            "description": "Last day included, YYYY-MM-DD (UTC).",
+            "description": "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9591,7 +9896,7 @@
             "name": "from",
             "required": false,
             "in": "query",
-            "description": "First day included, YYYY-MM-DD (UTC).",
+            "description": "First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -9600,7 +9905,7 @@
             "name": "to",
             "required": false,
             "in": "query",
-            "description": "Last day included, YYYY-MM-DD (UTC).",
+            "description": "Last day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7).",
             "schema": {
               "type": "string"
             }
@@ -20791,6 +21096,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptChildInviteDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": "",
@@ -20801,6 +21116,103 @@
                 }
               }
             }
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/guardians": {
+      "post": {
+        "operationId": "StudentAccessController_addGuardian",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddGuardianDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddChildManuallyResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "student-access"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/students/{studentId}/guardians/{guardianId}": {
+      "delete": {
+        "operationId": "StudentAccessController_removeGuardian",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "guardianId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
           }
         },
         "tags": [
@@ -23165,7 +23577,12 @@
             "type": "string"
           },
           "surname": {
-            "type": "string"
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
           },
           "username": {
             "type": "string",
@@ -23576,6 +23993,32 @@
             "maxLength": 50,
             "description": "Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it."
           },
+          "taxName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "example": "GST",
+            "description": "Decision 431 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: \"Tax\"."
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "example": "PST",
+            "description": "Decision 431 (MON-6): the name of a second tax line (required when its rate is above 0)."
+          },
+          "tax2RateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Decision 431 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%."
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Decision 431 (MON-6): the second tax line's registration number. Empty or null clears it."
+          },
           "chargeCancelReasonRequired": {
             "type": "boolean",
             "description": "Decision 338 item 1: staff must type a reason when cancelling a charge (default on)."
@@ -23926,6 +24369,25 @@
             "nullable": true,
             "description": "Decision 338 item 6: the School's tax ID for its invoices."
           },
+          "taxName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 431 (MON-6): the first tax line's name."
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 431 (MON-6): the second tax line's name."
+          },
+          "tax2RateBasisPoints": {
+            "type": "number",
+            "description": "Decision 431 (MON-6): the second tax line's rate (0 = none)."
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 431 (MON-6): the second tax line's registration number."
+          },
           "chargeCancelReasonRequired": {
             "type": "boolean",
             "description": "Decision 338 item 1: a reason is required when cancelling a charge (default on)."
@@ -24120,6 +24582,7 @@
           "freezeMaxDaysPer12Months",
           "taxRateBasisPoints",
           "taxInclusive",
+          "tax2RateBasisPoints",
           "chargeCancelReasonRequired",
           "chargeRefundNotesRequired",
           "chargeNoticeReceipt",
@@ -24325,6 +24788,32 @@
             "nullable": true,
             "maxLength": 50,
             "description": "Decision 338 item 6: the School's tax ID, shown on its invoices and receipts. Empty or null clears it."
+          },
+          "taxName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "example": "GST",
+            "description": "Decision 431 (MON-6): the name of the first tax line (taxRateBasisPoints, taxId), shown on invoices and receipts. Empty or null: \"Tax\"."
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "example": "PST",
+            "description": "Decision 431 (MON-6): the name of a second tax line (required when its rate is above 0)."
+          },
+          "tax2RateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Decision 431 (MON-6): the second tax line's rate, in hundredths of a percent (700 = 7%; 0 = no second line). Both lines together at most 100%."
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "Decision 431 (MON-6): the second tax line's registration number. Empty or null clears it."
           },
           "chargeCancelReasonRequired": {
             "type": "boolean",
@@ -24665,12 +25154,13 @@
             "type": "string"
           },
           "email": {
-            "type": "string"
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 430 item 11: null for a parent this School never dealt with (known only through the child's other School)."
           }
         },
         "required": [
-          "name",
-          "email"
+          "name"
         ]
       },
       "StudentExportRowDto": {
@@ -24777,6 +25267,124 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "MemberDataExportResponseDto": {
+        "type": "object",
+        "properties": {
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "profile": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "enrolment": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "joinedOn": {
+            "type": "string",
+            "nullable": true
+          },
+          "homeBranchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "customFields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "customStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "guardians": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "medicalInfo": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "bookings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "waiverSignatures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "belts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "exportedAt",
+          "profile",
+          "enrolment",
+          "joinedOn",
+          "homeBranchName",
+          "tags",
+          "customFields",
+          "customStatus",
+          "guardians",
+          "notes",
+          "medicalInfo",
+          "bookings",
+          "memberships",
+          "payments",
+          "waiverSignatures",
+          "belts"
         ]
       },
       "SetHomeBranchDto": {
@@ -24995,10 +25603,22 @@
             "items": {
               "$ref": "#/components/schemas/StudentGuardianDto"
             }
+          },
+          "consent": {
+            "type": "string",
+            "enum": [
+              "NOT_NEEDED",
+              "GIVEN",
+              "GRANDFATHERED",
+              "WITHDRAWN",
+              "PENDING"
+            ],
+            "description": "Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN: no booking or check-in until a parent gives it in the app."
           }
         },
         "required": [
-          "items"
+          "items",
+          "consent"
         ]
       },
       "LeavingStudentMembershipDto": {
@@ -25075,7 +25695,12 @@
             "type": "string"
           },
           "surname": {
-            "type": "string"
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
           },
           "username": {
             "type": "string",
@@ -25570,6 +26195,32 @@
             "type": "number",
             "nullable": true
           },
+          "taxOverride": {
+            "type": "boolean",
+            "description": "Decision 431 (MON-6): this Branch's own tax lines replace the School's."
+          },
+          "taxName": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxRateBasisPoints": {
+            "type": "number"
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true
+          },
+          "tax2RateBasisPoints": {
+            "type": "number"
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -25603,6 +26254,9 @@
           "classCancellationPolicyWindow",
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
+          "taxOverride",
+          "taxRateBasisPoints",
+          "tax2RateBasisPoints",
           "createdAt",
           "updatedAt"
         ]
@@ -25732,6 +26386,32 @@
             "type": "number",
             "nullable": true
           },
+          "taxOverride": {
+            "type": "boolean",
+            "description": "Decision 431 (MON-6): this Branch's own tax lines replace the School's."
+          },
+          "taxName": {
+            "type": "string",
+            "nullable": true
+          },
+          "taxRateBasisPoints": {
+            "type": "number"
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true
+          },
+          "tax2RateBasisPoints": {
+            "type": "number"
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true
+          },
           "archivedAt": {
             "type": "string",
             "nullable": true,
@@ -25773,6 +26453,9 @@
           "classCancellationPolicyWindow",
           "chargeLateCancellationFee",
           "schoolCancelledClassResolution",
+          "taxOverride",
+          "taxRateBasisPoints",
+          "tax2RateBasisPoints",
           "createdAt",
           "updatedAt",
           "studentCount",
@@ -25900,6 +26583,46 @@
             "type": "number",
             "nullable": true,
             "description": "Minor-unit amount. null = off."
+          },
+          "taxOverride": {
+            "type": "boolean",
+            "description": "Decision 431 (MON-6): use this Branch's own tax lines instead of the School's (e.g. GST + QST in Québec)."
+          },
+          "taxName": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "description": "The first tax line's name, e.g. GST."
+          },
+          "taxRateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "The first tax line's rate, in hundredths of a percent."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "The first tax line's registration number."
+          },
+          "tax2Name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40,
+            "description": "The second tax line's name, e.g. QST (required when its rate is above 0)."
+          },
+          "tax2RateBasisPoints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "The second tax line's rate (0 = no second line). Both lines together at most 100%."
+          },
+          "tax2Id": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 50,
+            "description": "The second tax line's registration number."
           }
         }
       },
@@ -26306,7 +27029,12 @@
             "type": "string"
           },
           "surname": {
-            "type": "string"
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
           },
           "email": {
             "type": "string"
@@ -26700,7 +27428,10 @@
               "OPEN_MAT_CHANGED",
               "SETTING_CHANGED",
               "CHARGE_ACCESS_CHANGED",
-              "MEMBERS_MERGED"
+              "MEMBERS_MERGED",
+              "GUARDIAN_REMOVED",
+              "GUARDIAN_LEFT",
+              "GUARDIAN_INVITED"
             ]
           },
           "actorId": {
@@ -27734,7 +28465,7 @@
           },
           "dateOfBirth": {
             "type": "string",
-            "description": "ISO 8601 date, no time component."
+            "description": "YYYY-MM-DD. The child must be under 18."
           },
           "gender": {
             "type": "string",
@@ -27744,6 +28475,10 @@
             ],
             "nullable": true,
             "description": "FEMALE, MALE, or null when not given."
+          },
+          "consentPolicyVersion": {
+            "type": "string",
+            "description": "Decision 430 item 9: the version of the privacy notice the parent agreed to when they ticked consent while adding the child. Records BASELINE consent; without it the child is 'consent pending' (no booking or check-in) until a parent gives it."
           }
         },
         "required": [
@@ -27773,6 +28508,30 @@
           "gender": {
             "type": "string",
             "nullable": true
+          },
+          "alreadyAdded": {
+            "type": "boolean",
+            "description": "Decision 430 item 4: true when this child was already on the account (same name and date of birth), so nothing new was added."
+          },
+          "consent": {
+            "type": "string",
+            "enum": [
+              "NOT_NEEDED",
+              "GIVEN",
+              "GRANDFATHERED",
+              "WITHDRAWN",
+              "PENDING"
+            ],
+            "description": "Decision 430 item 9: the child's BASELINE consent. PENDING and WITHDRAWN block booking and check-in until a parent gives it."
+          },
+          "isAdult": {
+            "type": "boolean",
+            "description": "Decision 430 item 7: the child is 18 now (they make their own account; the parent can pay and read history until parentAccessEndsOn)."
+          },
+          "parentAccessEndsOn": {
+            "type": "string",
+            "nullable": true,
+            "description": "YYYY-MM-DD: the last day a parent can still pay for, and read the history of, a child who is 18."
           }
         },
         "required": [
@@ -27854,6 +28613,96 @@
           "policyVersion",
           "status",
           "consentedAt"
+        ]
+      },
+      "ChildConsentRecordDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "tier": {
+            "type": "string",
+            "enum": [
+              "BASELINE",
+              "CAMERA"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "WITHDRAWN"
+            ]
+          },
+          "policyVersion": {
+            "type": "string"
+          },
+          "consentedAt": {
+            "type": "string"
+          },
+          "withdrawnAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "tier",
+          "status",
+          "policyVersion",
+          "consentedAt"
+        ]
+      },
+      "ChildConsentGuardianDto": {
+        "type": "object",
+        "properties": {
+          "guardianId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isMe": {
+            "type": "boolean"
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChildConsentRecordDto"
+            }
+          }
+        },
+        "required": [
+          "guardianId",
+          "name",
+          "isMe",
+          "records"
+        ]
+      },
+      "ChildConsentResponseDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "NOT_NEEDED",
+              "GIVEN",
+              "GRANDFATHERED",
+              "WITHDRAWN",
+              "PENDING"
+            ]
+          },
+          "guardians": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChildConsentGuardianDto"
+            }
+          }
+        },
+        "required": [
+          "state",
+          "guardians"
         ]
       },
       "ConsentRecordListResponseDto": {
@@ -28340,7 +29189,12 @@
             "type": "string"
           },
           "surname": {
-            "type": "string"
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
           },
           "username": {
             "type": "string",
@@ -28522,6 +29376,33 @@
           "membershipInclusion": {
             "type": "boolean",
             "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Youngest age (whole years, on the class date) that can book. null: no lower limit."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Oldest age (whole years, on the class date) that can book. null: no upper limit."
+          },
+          "confirmClosedDay": {
+            "type": "boolean",
+            "description": "Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure."
           }
         },
         "required": [
@@ -28630,6 +29511,25 @@
           "membershipInclusion": {
             "type": "boolean"
           },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Decision 432: who can book."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Youngest age that can book (whole years on the class date)."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Oldest age that can book."
+          },
           "cancelledAt": {
             "type": "string",
             "nullable": true,
@@ -28676,6 +29576,7 @@
           "endDate",
           "termsWaiverRequired",
           "membershipInclusion",
+          "audience",
           "createdAt",
           "updatedAt"
         ]
@@ -28734,6 +29635,33 @@
           "membershipInclusion": {
             "type": "boolean",
             "description": "Opts this Class into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Youngest age (whole years, on the class date) that can book. null: no lower limit."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Oldest age (whole years, on the class date) that can book. null: no upper limit."
+          },
+          "confirmClosedDay": {
+            "type": "boolean",
+            "description": "Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure."
           },
           "branchId": {
             "type": "string",
@@ -29044,6 +29972,95 @@
         "required": [
           "mainOwnerUserId",
           "formerMainOwnerRemoved"
+        ]
+      },
+      "SchoolStaffRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ]
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "role",
+          "branchName"
+        ]
+      },
+      "SchoolStaffMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolStaffRoleDto"
+            }
+          },
+          "paused": {
+            "type": "boolean",
+            "description": "Every one of their coach and Branch Staff roles here is paused."
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "email",
+          "roles",
+          "paused"
+        ]
+      },
+      "SchoolStaffResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolStaffMemberDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PauseSchoolStaffResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "pausedRoles": {
+            "type": "number"
+          },
+          "pausedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "userId",
+          "pausedRoles",
+          "pausedAt"
         ]
       },
       "SchoolTrialDaysDto": {
@@ -29437,6 +30454,97 @@
           }
         }
       },
+      "RefundDeskSaleDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "minimum": 1,
+            "description": "Minor units (hundredths of the major unit), at most what is left to refund on the payment."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Required: why, and how the money was given back. For staff only; never sent to the member."
+          },
+          "endMembership": {
+            "type": "boolean",
+            "default": false,
+            "description": "End the membership now (its future bookings it pays for are cancelled). Off: the membership carries on."
+          }
+        },
+        "required": [
+          "amount",
+          "notes"
+        ]
+      },
+      "DeskSaleRefundDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "transactionId": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Minor units."
+          },
+          "currency": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "endedMembership": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "transactionId",
+          "amount",
+          "currency",
+          "notes",
+          "endedMembership",
+          "createdAt"
+        ]
+      },
+      "RefundDeskSaleResponseDto": {
+        "type": "object",
+        "properties": {
+          "refund": {
+            "$ref": "#/components/schemas/DeskSaleRefundDto"
+          },
+          "refundedAmount": {
+            "type": "number",
+            "description": "The payment's refunded total after this refund, minor units."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "SUCCESSFUL",
+              "REFUNDED"
+            ],
+            "description": "Refunded once all of it is back."
+          },
+          "membershipEnded": {
+            "type": "boolean",
+            "description": "Whether this refund ended the membership."
+          }
+        },
+        "required": [
+          "refund",
+          "refundedAmount",
+          "status",
+          "membershipEnded"
+        ]
+      },
       "CreateTimetableSlotDto": {
         "type": "object",
         "properties": {
@@ -29521,6 +30629,29 @@
           "membershipInclusion": {
             "type": "boolean",
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Youngest age (whole years, on the class date) that can book. null: no lower limit."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Oldest age (whole years, on the class date) that can book. null: no upper limit."
           },
           "bookingCutoffMinutesBeforeStart": {
             "type": "number",
@@ -29632,6 +30763,25 @@
           "membershipInclusion": {
             "type": "boolean"
           },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Decision 432: who can book."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Youngest age that can book (whole years on the class date)."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Oldest age that can book."
+          },
           "bookingCutoffMinutesBeforeStart": {
             "type": "number",
             "nullable": true
@@ -29682,6 +30832,7 @@
           "styles",
           "termsWaiverRequired",
           "membershipInclusion",
+          "audience",
           "createdAt",
           "updatedAt"
         ]
@@ -29978,6 +31129,108 @@
           "cancelledClasses"
         ]
       },
+      "UpdateClosureDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "description": "First closed date, YYYY-MM-DD (local)."
+          },
+          "endDate": {
+            "type": "string",
+            "description": "Last closed date, YYYY-MM-DD (local)."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Shown on the calendar. Changing it tells nobody."
+          }
+        }
+      },
+      "RecreatableClassDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true
+          },
+          "date": {
+            "type": "string",
+            "description": "The class's local date, YYYY-MM-DD."
+          },
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "branchId",
+          "date",
+          "startDate",
+          "endDate"
+        ]
+      },
+      "ClosureUpdatedResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Null: the whole School."
+          },
+          "startDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "endDate": {
+            "type": "string",
+            "description": "YYYY-MM-DD"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "cancelledClasses": {
+            "type": "number",
+            "description": "How many classes on newly closed days were cancelled."
+          },
+          "recreatable": {
+            "description": "Classes this closure cancelled on days it no longer covers. They stay cancelled (students were told); POST /classes/{id}/recreate makes a one-off copy.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecreatableClassDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "branchId",
+          "startDate",
+          "endDate",
+          "reason",
+          "createdAt",
+          "cancelledClasses",
+          "recreatable"
+        ]
+      },
       "UpcomingImpactResponseDto": {
         "type": "object",
         "properties": {
@@ -30062,6 +31315,29 @@
           "membershipInclusion": {
             "type": "boolean",
             "description": "Opts generated Classes into general-membership access. Default is opt-out (a ticket is required)."
+          },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Who can book: everyone (default), women only or men only, by the member's recorded gender. Staff can book anyone with an overrideReason."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Youngest age (whole years, on the class date) that can book. null: no lower limit."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 120,
+            "description": "Oldest age (whole years, on the class date) that can book. null: no upper limit."
           },
           "bookedClasses": {
             "type": "string",
@@ -32493,6 +33769,13 @@
             "type": "string",
             "nullable": true,
             "description": "The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass."
+          },
+          "memberships": {
+            "description": "Decision 431 (MON-15): a Friend Pass gift only: every pass given (membership is the first).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MembershipResponseDto"
+            }
           }
         },
         "required": [
@@ -32504,6 +33787,13 @@
         "properties": {
           "membershipPlanId": {
             "type": "string"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5,
+            "default": 1,
+            "description": "Decision 431 (MON-15): how many Friend Passes to give at once (1-5)."
           }
         },
         "required": [
@@ -33426,6 +34716,52 @@
           "name"
         ]
       },
+      "TaxLineAmountDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "GST"
+          },
+          "rateBasisPoints": {
+            "type": "number",
+            "description": "Hundredths of a percent (500 = 5%)."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The line's registration number, for invoices and receipts."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Minor units."
+          }
+        },
+        "required": [
+          "rateBasisPoints",
+          "amount"
+        ]
+      },
+      "IncludedTaxDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "The tax included, minor units (the lines added up)."
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaxLineAmountDto"
+            }
+          }
+        },
+        "required": [
+          "amount",
+          "lines"
+        ]
+      },
       "TransactionResponseDto": {
         "type": "object",
         "properties": {
@@ -33503,6 +34839,15 @@
           "surchargeAmount": {
             "type": "number",
             "description": "Card surcharge paid on top of amount, in the same minor units. 0 when none."
+          },
+          "includedTax": {
+            "nullable": true,
+            "description": "Decision 431 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IncludedTaxDto"
+              }
+            ]
           },
           "currency": {
             "type": "string",
@@ -39146,6 +40491,25 @@
             "nullable": true,
             "description": "Nullable = unlimited."
           },
+          "audience": {
+            "type": "string",
+            "enum": [
+              "EVERYONE",
+              "WOMEN",
+              "MEN"
+            ],
+            "description": "Decision 432: who can book."
+          },
+          "minAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Youngest age that can book (whole years on the class date)."
+          },
+          "maxAge": {
+            "type": "number",
+            "nullable": true,
+            "description": "Oldest age that can book."
+          },
           "timezone": {
             "type": "string",
             "nullable": true,
@@ -39158,7 +40522,8 @@
           "title",
           "activities",
           "startDate",
-          "endDate"
+          "endDate",
+          "audience"
         ]
       },
       "AcademyDetailDto": {
@@ -40910,7 +42275,12 @@
             "type": "string"
           },
           "surname": {
-            "type": "string"
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
           },
           "dateOfBirth": {
             "type": "string",
@@ -43305,7 +44675,12 @@
             "type": "string"
           },
           "surname": {
-            "type": "string"
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
           },
           "dateOfBirth": {
             "type": "string",
@@ -43334,7 +44709,12 @@
             "type": "string"
           },
           "surname": {
-            "type": "string"
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
           },
           "email": {
             "type": "string"
@@ -43439,6 +44819,10 @@
           "childDateOfBirth": {
             "type": "string"
           },
+          "addsGuardian": {
+            "type": "boolean",
+            "description": "Decision 430 item 6: an invite to be another parent or guardian of a child already at the School (\"Add another Guardian\"), not to add a new child."
+          },
           "guardianName": {
             "type": "string",
             "nullable": true,
@@ -43460,6 +44844,7 @@
           "childFirstName",
           "childSurname",
           "childDateOfBirth",
+          "addsGuardian",
           "createdAt"
         ]
       },
@@ -43477,6 +44862,15 @@
           "items"
         ]
       },
+      "AcceptChildInviteDto": {
+        "type": "object",
+        "properties": {
+          "consentPolicyVersion": {
+            "type": "string",
+            "description": "The version of the privacy notice the parent agreed to. Without it the child is \"consent pending\" until a parent gives consent."
+          }
+        }
+      },
       "AcceptChildInviteResponseDto": {
         "type": "object",
         "properties": {
@@ -43490,6 +44884,30 @@
         "required": [
           "schoolId",
           "studentId"
+        ]
+      },
+      "AddGuardianDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string",
+            "description": "Empty only with hasOnlyOneName: true."
+          },
+          "hasOnlyOneName": {
+            "type": "boolean",
+            "description": "True for someone who has only one name; the surname is then sent empty."
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "firstName",
+          "surname",
+          "email"
         ]
       },
       "TemporaryPasscodeStatusDto": {
@@ -44035,6 +45453,14 @@
             "type": "boolean",
             "description": "\"No tax on this item (0% or exempt)\" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show \"No tax\"."
           },
+          "taxLines": {
+            "nullable": true,
+            "description": "Decision 431 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaxLineAmountDto"
+            }
+          },
           "incomeCategoryName": {
             "type": "string",
             "nullable": true,
@@ -44496,6 +45922,28 @@
           "resendInvoice"
         ]
       },
+      "TaxLineDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "GST"
+          },
+          "rateBasisPoints": {
+            "type": "number",
+            "description": "Hundredths of a percent (500 = 5%)."
+          },
+          "taxId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The line's registration number, for invoices and receipts."
+          }
+        },
+        "required": [
+          "rateBasisPoints"
+        ]
+      },
       "ChargeSettingsDto": {
         "type": "object",
         "properties": {
@@ -44512,6 +45960,13 @@
           },
           "taxInclusive": {
             "type": "boolean"
+          },
+          "taxLines": {
+            "description": "Decision 431 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TaxLineDto"
+            }
           },
           "cancelReasonRequired": {
             "type": "boolean"
@@ -44532,6 +45987,7 @@
         "required": [
           "taxRateBasisPoints",
           "taxInclusive",
+          "taxLines",
           "cancelReasonRequired",
           "paymentsSetUp",
           "refundNotesRequired",

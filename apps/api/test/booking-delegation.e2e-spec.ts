@@ -82,7 +82,7 @@ describeIfDb('Decision 123 — Guardian Kid Mode booking delegation: HTTP-level 
 
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Kid Mode HTTP School' } });
 
-    const mkUser = (label: string) =>
+    const mkUser = (label: string, dateOfBirth = new Date('2012-01-01')) =>
       superuser.user.create({
         data: {
           id: randomUUID(),
@@ -91,17 +91,20 @@ describeIfDb('Decision 123 — Guardian Kid Mode booking delegation: HTTP-level 
           firstName: label,
           surname: 'Tenant',
           passcodeHash: 'x',
-          dateOfBirth: new Date('2012-01-01'),
+          dateOfBirth,
           phoneVerifiedAt: new Date(),
         },
       });
 
-    guardianA = await mkUser('guardian-a');
-    guardianB = await mkUser('guardian-b');
+    // Decision 430 item 2: a Guardian is 18 or over.
+    guardianA = await mkUser('guardian-a', new Date('1985-01-01'));
+    guardianB = await mkUser('guardian-b', new Date('1985-01-01'));
     minor = await mkUser('minor');
 
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: minor.id, schoolId: school.id } });
     await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardianA.id, studentId: minor.id } });
+    // Decision 430 item 9: booking needs the parent's BASELINE consent.
+    await superuser.consentRecord.create({ data: { id: randomUUID(), guardianId: guardianA.id, studentId: minor.id, tier: 'BASELINE', policyVersion: '2026-09-v1' } });
 
     tokenGuardianA = signAccessToken(guardianA, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
     tokenGuardianB = signAccessToken(guardianB, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
@@ -124,6 +127,7 @@ describeIfDb('Decision 123 — Guardian Kid Mode booking delegation: HTTP-level 
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
     await superuser.bookingDelegation.deleteMany({ where: { guardianId: { in: [guardianA.id, guardianB.id] } } });
+    await superuser.consentRecord.deleteMany({ where: { guardianId: { in: [guardianA.id, guardianB.id] } } });
     await superuser.guardianLink.deleteMany({ where: { guardianId: { in: [guardianA.id, guardianB.id] } } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { email: { contains: 'kid-mode-http-' } } });

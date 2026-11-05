@@ -133,8 +133,11 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
     await superuser.waiver.deleteMany({ where });
     await superuser.membershipPlan.deleteMany({ where });
     await superuser.paymentAccount.deleteMany({ where });
+    await superuser.consentRecord.deleteMany({ where: { guardianId: { in: userIds } } });
     await superuser.guardianLink.deleteMany({ where: { guardianId: { in: userIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
+    // A desk sale now sends the payment notice (MON-14).
+    await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
@@ -318,6 +321,9 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       const { user: minor } = await mkStudent('cancel-minor');
       const guardian = await mkUser('guardian');
       await superuser.guardianLink.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id } });
+      // Decision 430 items 7 and 9: a minor is under 18, and the parent has given BASELINE consent.
+      await superuser.user.update({ where: { id: minor.id }, data: { dateOfBirth: new Date('2015-01-01') } });
+      await superuser.consentRecord.create({ data: { id: randomUUID(), guardianId: guardian.id, studentId: minor.id, tier: 'BASELINE', policyVersion: '2026-09-v1' } });
       const tokenGuardian = sign(guardian, [{ role: 'GUARDIAN', franchiseId: null, schoolId: null, branchId: null }]);
       const sub = await mkSubscription(minor.id);
 

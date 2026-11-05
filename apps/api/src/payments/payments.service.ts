@@ -13,6 +13,7 @@ import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { passExpiryDate, schoolZoneFor } from '../memberships/pass-expiry';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { fromStripeAmount, toStripeAmount } from './stripe-amount';
@@ -22,6 +23,7 @@ import { SUBSCRIPTION_SURCHARGE_METADATA, invoiceSurchargeAmount, splitSubscript
 import { chargeAbilities } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
+import { dayIn } from '../memberships/freeze/membership-freeze';
 
 /** Decision 406: the name of the card-surcharge line on a hosted Checkout
  * page and its Stripe receipt, beside the plan's own title (also untranslated,
@@ -724,19 +726,27 @@ export class PaymentsService {
    */
   async createPriceForPlan(
     connectedAccountId: string,
-    params: { existingProductId?: string | null; productName: string; amount: number; currency: string },
+    params: { existingProductId?: string | null; productName: string; amount: number; currency: string; planId?: string },
   ): Promise<{ productId: string; priceId: string }> {
     const stripe = this.stripeClient.scopedClient(connectedAccountId);
-    const productId = params.existingProductId ?? (await stripe.products.create({ name: params.productName })).id;
-    const price = await stripe.prices.create({
-      product: productId,
-      unit_amount: toStripeAmount(params.amount, params.currency),
-      currency: params.currency.toLowerCase(),
-      // Monthly, matching subscribe()'s own hardcoded interval above — same
-      // "no MembershipPlan-level interval field exists" reasoning, flagged
-      // there, applies identically here.
-      recurring: { interval: 'month' },
-    });
+    // Decision 431 (MON-12): keyed by plan, new amount and currency, so the
+    // same price change sent twice makes one Product and one Price.
+    const cur = params.currency.toLowerCase();
+    const productId =
+      params.existingProductId ??
+      (await stripe.products.create({ name: params.productName }, params.planId ? { idempotencyKey: `plan:${params.planId}:product` } : undefined)).id;
+    const price = await stripe.prices.create(
+      {
+        product: productId,
+        unit_amount: toStripeAmount(params.amount, params.currency),
+        currency: cur,
+        // Monthly, matching subscribe()'s own hardcoded interval above — same
+        // "no MembershipPlan-level interval field exists" reasoning, flagged
+        // there, applies identically here.
+        recurring: { interval: 'month' },
+      },
+      params.planId ? { idempotencyKey: `plan:${params.planId}:price:${params.amount}:${cur}` } : undefined,
+    );
     return { productId, priceId: price.id };
   }
 
@@ -763,7 +773,7 @@ export class PaymentsService {
    * this is called from a background job days/weeks after the Subscription
    * was created, so no in-memory item id survives that long anyway.
    */
-  async migrateSubscriptionToNewPrice(connectedAccountId: string, stripeSubscriptionId: string, newPriceId: string): Promise<void> {
+  async migrateSubscriptionToNewPrice(connectedAccountId: string, stripeSubscriptionId: string, newPriceId: string): Promise<Date | null> {
     const stripe = this.stripeClient.scopedClient(connectedAccountId);
     const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
     // Decision 406: a Subscription with a card surcharge has a second item
@@ -783,7 +793,7 @@ export class PaymentsService {
     const surchargeProduct = subscription.metadata?.[SUBSCRIPTION_SURCHARGE_METADATA.product];
     if (surchargeItem && surchargeProduct && bps > 0) {
       const newPrice = await stripe.prices.retrieve(newPriceId);
-      const amount = cardSurchargeAmount(fromStripeAmount(newPrice.unit_amount ?? 0, newPrice.currency), bps);
+      const amount = cardSurchargeAmount(fromStripeAmount(newPrice.unit_amount ?? 0, newPrice.currency), bps, newPrice.currency);
       items.push(
         amount > 0
           ? {
@@ -794,11 +804,59 @@ export class PaymentsService {
       );
       metadata = { [SUBSCRIPTION_SURCHARGE_METADATA.amount]: String(amount) };
     }
-    await stripe.subscriptions.update(stripeSubscriptionId, {
+    const updated = await stripe.subscriptions.update(stripeSubscriptionId, {
       items,
       proration_behavior: 'none',
       ...(metadata ? { metadata } : {}),
     });
+    // Decision 431 (MON-9): with no proration the new price is first charged
+    // when the period paid for now ends.
+    const periodEnd =
+      updated?.items?.data?.find((i) => i.id === item.id)?.current_period_end ?? (item as { current_period_end?: number }).current_period_end ?? null;
+    return typeof periodEnd === 'number' ? new Date(periodEnd * 1000) : null;
+  }
+
+  /**
+   * Decision 431 (MON-9): a MIGRATE price increase tells each member moved
+   * to the new price what it is and the first day it is charged (in the
+   * School's time zone), so the School gives the notice the law asks of it
+   * (Québec, UAE). A Guardian gets the usual copy of a child's notice
+   * (NotificationFanoutProcessor). Best-effort: a failure is logged, never
+   * thrown, so it never undoes the migration. One notice per price change
+   * and member (the job id), so a retried migration sends it once.
+   */
+  async notifyPriceIncrease(params: {
+    priceChangeId: string;
+    schoolId: string;
+    studentId: string;
+    planTitle: string;
+    amount: number;
+    currency: string;
+    from: Date | null;
+  }): Promise<void> {
+    try {
+      const school = await this.prismaJobs.school.findUnique({ where: { id: params.schoolId }, select: { timezone: true } });
+      const amount = `${(params.amount / 100).toFixed(2)} ${params.currency.toUpperCase()}`;
+      const body = params.from
+        ? `The price of your ${params.planTitle} membership is going up to ${amount}. The new price applies from ${dayIn(params.from, school?.timezone)}.`
+        : `The price of your ${params.planTitle} membership is going up to ${amount}, from your next payment.`;
+      const key = `price-increase-${params.priceChangeId}-${params.studentId}`;
+      await this.notificationFanoutQueue.add(
+        'notify',
+        {
+          notificationId: key,
+          userId: params.studentId,
+          title: 'Membership price going up',
+          body,
+          type: 'MEMBERSHIP_PRICE_CHANGE',
+          schoolId: params.schoolId,
+          targetType: 'PAYMENT',
+        } satisfies NotificationFanoutJobData,
+        { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
+      );
+    } catch (err) {
+      this.logger.warn(`Failed to enqueue the price increase notice for price change ${params.priceChangeId}, student ${params.studentId}: ${err}`);
+    }
   }
 
   /**
@@ -1284,9 +1342,8 @@ export class PaymentsService {
           schoolId: transaction.schoolId,
           frequency: 'ONE_TIME', // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1)
           classesRemaining: plan.classesIncluded ?? undefined,
-          expiryDate: plan.expiryDurationDays
-            ? new Date(Date.now() + plan.expiryDurationDays * 24 * 60 * 60 * 1000)
-            : undefined,
+          // Decision 432 item 8: calendar days in the School's zone.
+          expiryDate: passExpiryDate(plan.expiryDurationDays, await schoolZoneFor(tx, transaction.schoolId)),
           scopedClassId: plan.scopedClassId,
         },
       });
@@ -1352,6 +1409,11 @@ export class PaymentsService {
         throw new ForbiddenException("Only that School's Owner/Manager may perform this action.");
       }
       throw new NotFoundException('Transaction not found');
+    }
+    // Decision 431 (MON-8): a payment that was taken can't be cancelled (it
+    // used to answer 200 with nothing done); a desk sale is refunded instead.
+    if (transaction.status === 'SUCCESSFUL') {
+      throw new ConflictException({ code: 'PAYMENT_ALREADY_TAKEN', message: "This payment was taken, so it can't be cancelled. Refund it instead." });
     }
     if (transaction.status !== 'PENDING') {
       return { transaction, cancelled: false };

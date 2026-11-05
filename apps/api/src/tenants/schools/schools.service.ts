@@ -1,4 +1,6 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { assertIdentityNotShared, changedIdentityFields, IDENTITY_FIELDS } from './identity-lock';
+import { assertNotConsentWithdrawn, baselineConsentState } from '../../guardians/baseline-consent';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
@@ -30,6 +32,7 @@ import { StudentRosterStatusDto, StudentStatusDto } from './dto/student-roster-q
 import { matchesPersonName } from '../../common/search/name-search';
 import { addressWriteData } from '../../common/address/postal-address.dto';
 import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
+import { schoolZone } from '../../common/school-zone';
 import { LIVE_WAITLIST_STATUSES, leavingStudentBookingsWhere } from '../../bookings/leaving-student-cancellation';
 import { StudentLeavingSummaryResponseDto } from './dto/student-leaving-summary-response.dto';
 import { PrismaPlatformAdminService } from '../../common/prisma/prisma-platform-admin.service';
@@ -40,8 +43,11 @@ import { sendFranchiseNotice } from '../franchises/franchise-notifications';
 import { sendStudentAddedNotice } from './student-added-notice';
 import { CloseOwnSchoolDto } from './dto/close-own-school.dto';
 import { requireSchoolCurrency, setsNewPrice } from '../../common/school-currency';
+import { TimeZoneChangeHooks } from '../../common/time-zone-change/time-zone-change.module';
+import { assertWholeMinorUnits } from '../../payments/stripe-amount';
 import { MedicalInfoService } from '../../medical-info/medical-info.service';
 import { assertJoinDateAllowed, loadJoinDates, setJoinDate } from './student-join-dates';
+import { assertTaxLinesValid } from '../../charges/tax-lines';
 
 /** Decision 110's retention window, the same one the Platform Admin close uses. */
 const RETENTION_WINDOW_DAYS = 90;
@@ -65,6 +71,7 @@ export class SchoolsService {
     private readonly stepUp: StepUpService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly notificationFanoutQueue: Queue,
     private readonly medicalInfo: MedicalInfoService,
+    private readonly timeZoneChange: TimeZoneChangeHooks,
   ) {}
 
   /**
@@ -147,7 +154,7 @@ export class SchoolsService {
       // mints client-side for the RoleGrant-in-the-same-transaction reason
       // explained elsewhere, not relevant to joinCode).
       // Decision 414 item 6: a no-show fee is a price, so it needs the currency.
-      if (setsNewPrice(dto.noShowFee)) requireSchoolCurrency(dto.defaultCurrency);
+      if (setsNewPrice(dto.noShowFee)) assertWholeMinorUnits(dto.noShowFee, requireSchoolCurrency(dto.defaultCurrency));
       const created = await tx.school.create({
         data: {
           id: schoolId,
@@ -319,12 +326,17 @@ export class SchoolsService {
       } catch (err) {
         if (!(err instanceof ForbiddenException)) throw err;
         try {
-          await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+          // Decision 430 item 7: a parent doesn't enrol a child who is 18.
+          await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose: 'act', schoolId, branchId: dto?.branchId });
         } catch (guardianErr) {
           // Staff here who aren't the owner (and aren't this child's
           // Guardian) get the reason that applies to them, not the Guardian
           // one (Decision 341, S11).
-          if (guardianErr instanceof ForbiddenException && (await this.tenantAuth.isStaffAtSchool(callerId, schoolId))) {
+          if (
+            guardianErr instanceof ForbiddenException &&
+            !(await this.guardiansService.isActiveGuardianOf(callerId, studentId)) &&
+            (await this.tenantAuth.isStaffAtSchool(callerId, schoolId))
+          ) {
             throw new ForbiddenException('Only the School owner can enrol students.');
           }
           throw guardianErr;
@@ -332,6 +344,10 @@ export class SchoolsService {
         isGuardianAction = true;
       }
     }
+
+    // Decision 430 item 9 (FAM-9): after a parent withdrew BASELINE consent,
+    // the child is enrolled again only once a parent gives fresh consent.
+    if (isOnBehalfOf) await assertNotConsentWithdrawn(this.prismaJobs, studentId);
 
     // Decision 318 item 7: the School may turn off "add family members", a
     // Guardian adding their child here from the app. The owner's own enrolment
@@ -975,8 +991,13 @@ export class SchoolsService {
       await this.assertCurrencyChangeAllowed(callerId, schoolId, dto.defaultCurrency, dto.confirmCurrencyChange === true);
     }
     await this.assertCurrencyForNewFees(callerId, schoolId, dto);
+    await this.assertTaxLines(callerId, schoolId, dto);
     await assertCodeDigitsAllowed(this.prismaJobs, schoolId, dto.checkInCodeDigits);
     const nextGradingDate = parseNextGradingDate(dto.nextGradingDate);
+    // Decision 432 item 2: the zone before the change, to re-time classes after.
+    const zoneBefore = dto.timezone !== undefined
+      ? (await this.prismaApp.withTenantContext(callerId, (tx) => tx.school.findUnique({ where: { id: schoolId }, select: { timezone: true } })))?.timezone ?? null
+      : undefined;
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.update({
@@ -1043,6 +1064,11 @@ export class SchoolsService {
           taxRateBasisPoints: dto.taxRateBasisPoints,
           taxInclusive: dto.taxInclusive,
           taxId: dto.taxId,
+          // Decision 431 (MON-6): named tax lines.
+          taxName: dto.taxName,
+          tax2Name: dto.tax2Name,
+          tax2RateBasisPoints: dto.tax2RateBasisPoints,
+          tax2Id: dto.tax2Id,
           chargeCancelReasonRequired: dto.chargeCancelReasonRequired,
           // Decision 338 items 3, 6 and 10 (backlog §3.6 step 4).
           chargeRefundNotesRequired: dto.chargeRefundNotesRequired,
@@ -1057,6 +1083,11 @@ export class SchoolsService {
         },
       }),
     );
+    // Decision 432 item 2: a new School zone re-times the upcoming classes of
+    // School-wide slots and of Branches with no zone of their own.
+    if (zoneBefore !== undefined && (dto.timezone || null) !== (zoneBefore || null)) {
+      await this.timeZoneChange.changed({ callerId, schoolId, branchId: null });
+    }
     return withoutBillingIds(updated);
   }
 
@@ -1072,13 +1103,29 @@ export class SchoolsService {
   /** Decision 414 item 6: the School's fees (no-show, freeze) are prices, so a
    * new non-zero amount needs the School's currency, set before or in the same
    * save. Unchanged amounts saved before the rule are left alone. */
+  /** Decision 431 (MON-6): the two tax lines as they will be after this save. */
+  private async assertTaxLines(callerId: string, schoolId: string, dto: UpdateSchoolDto) {
+    if (dto.taxRateBasisPoints === undefined && dto.tax2RateBasisPoints === undefined && dto.tax2Name === undefined) return;
+    const current = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { taxRateBasisPoints: true, tax2RateBasisPoints: true, tax2Name: true } }),
+    );
+    assertTaxLinesValid(
+      dto.taxRateBasisPoints ?? current?.taxRateBasisPoints ?? 0,
+      dto.tax2RateBasisPoints ?? current?.tax2RateBasisPoints ?? 0,
+      dto.tax2Name !== undefined ? dto.tax2Name : current?.tax2Name,
+    );
+  }
+
   private async assertCurrencyForNewFees(callerId: string, schoolId: string, dto: UpdateSchoolDto) {
     if (!setsNewPrice(dto.noShowFee) && !setsNewPrice(dto.freezeFeeAmount)) return;
     const current = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true, noShowFee: true, freezeFeeAmount: true } }),
     );
     if (!setsNewPrice(dto.noShowFee, current?.noShowFee) && !setsNewPrice(dto.freezeFeeAmount, current?.freezeFeeAmount)) return;
-    requireSchoolCurrency(dto.defaultCurrency !== undefined ? dto.defaultCurrency : current?.defaultCurrency);
+    const currency = requireSchoolCurrency(dto.defaultCurrency !== undefined ? dto.defaultCurrency : current?.defaultCurrency);
+    // Decision 431 (MON-3): whole units of the School's currency (no ¥0.50 fee).
+    if (setsNewPrice(dto.noShowFee, current?.noShowFee)) assertWholeMinorUnits(dto.noShowFee, currency);
+    if (setsNewPrice(dto.freezeFeeAmount, current?.freezeFeeAmount)) assertWholeMinorUnits(dto.freezeFeeAmount, currency);
   }
 
   private async assertCurrencyChangeAllowed(callerId: string, schoolId: string, next: string | null, confirmed: boolean) {
@@ -1177,13 +1224,22 @@ export class SchoolsService {
     // School owner may make that change (Decision 342).
     if (dto.dateOfBirth && !(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
       const current = await this.usersService.getProfileFor(callerId, studentId);
-      if (isAdultOn(current.dateOfBirth) !== isAdultOn(new Date(dto.dateOfBirth))) {
+      const zone = await schoolZone(this.prismaJobs, schoolId);
+      const now = new Date();
+      if (isAdultOn(current.dateOfBirth, now, zone) !== isAdultOn(new Date(dto.dateOfBirth), now, zone)) {
         throw new ForbiddenException('Only the School owner can change a birth date that makes someone an adult or a child.');
       }
     }
     // Decision 315 item 4: the join date, checked before anything is saved.
     const { joinedOn, ...profile } = dto;
     if (joinedOn !== undefined) await assertJoinDateAllowed(this.prismaJobs, schoolId, joinedOn);
+    // Decision 430 item 13 (PRIV-2): name, birth date and gender are locked
+    // for staff once they're shared with another School or the person's (or
+    // their parent's) own login.
+    if (IDENTITY_FIELDS.some((f) => dto[f] !== undefined)) {
+      const current = await this.usersService.getProfileFor(callerId, studentId);
+      if (changedIdentityFields(current, dto).length > 0) await assertIdentityNotShared(this.prismaJobs, this.prismaAuth, schoolId, studentId);
+    }
     const updated = await this.usersService.updateProfileFor(callerId, studentId, profile);
     if (joinedOn !== undefined) await setJoinDate(this.prismaJobs, schoolId, studentId, joinedOn, callerId);
     return this.withJoinDate(schoolId, updated);
@@ -1220,6 +1276,8 @@ export class SchoolsService {
     const names = await resolveUserNames(this.prismaAuth, links.map((l) => l.guardianId));
     return {
       items: links.map((l) => ({ id: l.guardianId, firstName: names.get(l.guardianId)?.firstName ?? '', surname: names.get(l.guardianId)?.surname ?? '' })),
+      // Decision 430 item 9: staff see "consent pending" (no booking or check-in).
+      consent: await baselineConsentState(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, schoolId)),
     };
   }
 

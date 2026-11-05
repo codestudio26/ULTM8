@@ -1,0 +1,34 @@
+[
+ {
+  "surname": "ख़ान",
+  "shown": "ख",
+  "codepoints": [
+   "916"
+  ],
+  "json": "\"ख\""
+ },
+ {
+  "surname": "ஸ்ரீநிவாசன்",
+  "shown": "ஸ",
+  "codepoints": [
+   "bb8"
+  ],
+  "json": "\"ஸ\""
+ },
+ {
+  "surname": "क्षत्रिय",
+  "shown": "क",
+  "codepoints": [
+   "915"
+  ],
+  "json": "\"क\""
+ },
+ {
+  "surname": "𝒜rjun",
+  "shown": "\ud835",
+  "codepoints": [
+   "d835"
+  ],
+  "json": "\"\\ud835\""
+ }
+]

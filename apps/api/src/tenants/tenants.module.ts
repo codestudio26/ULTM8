@@ -4,6 +4,7 @@ import { GuardiansModule } from '../guardians/guardians.module';
 import { SchoolsController } from './schools/schools.controller';
 import { SchoolsService } from './schools/schools.service';
 import { StudentExportService } from './schools/student-export.service';
+import { MemberDataExportService } from './schools/member-data-export.service';
 import { BranchesController } from './branches/branches.controller';
 import { BranchesService } from './branches/branches.service';
 import { RoleGrantsController } from './role-grants/role-grants.controller';
@@ -17,6 +18,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { UsersModule } from '../users/users.module';
 import { WaiverAssignmentModule } from '../waivers/waiver-assignment.module';
+import { TimeZoneChangeModule } from '../common/time-zone-change/time-zone-change.module';
 import { QueueModule } from '../jobs/queue.module';
 import { MedicalInfoController, MemberMedicalInfoController } from '../medical-info/medical-info.controller';
 import { MedicalInfoService } from '../medical-info/medical-info.service';
@@ -100,9 +102,9 @@ import { MedicalInfoService } from '../medical-info/medical-info.service';
  * when they leave the School (Decision 419 item 1, RoleGrantsService.revoke).
  */
 @Module({
-  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule],
+  imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule, TimeZoneChangeModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController, MedicalInfoController, MemberMedicalInfoController],
-  providers: [SchoolsService, StudentExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
+  providers: [SchoolsService, StudentExportService, MemberDataExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService, MedicalInfoService],
 })
 export class TenantsModule {}

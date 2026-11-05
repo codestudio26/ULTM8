@@ -6,6 +6,8 @@ import {
   IsBoolean,
   IsDateString,
   IsInt,
+  Max,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -151,4 +153,31 @@ export class CreateClassDto {
   @IsOptional()
   @IsBoolean()
   membershipInclusion?: boolean;
+
+  // Decision 432 item 14 (AE-6): who can book. Omitted: everyone, no ages.
+  @ApiPropertyOptional({ enum: ['EVERYONE', 'WOMEN', 'MEN'], description: 'Who can book: everyone (default), women only or men only, by the member\'s recorded gender. Staff can book anyone with an overrideReason.' })
+  @IsOptional()
+  @IsIn(['EVERYONE', 'WOMEN', 'MEN'])
+  audience?: 'EVERYONE' | 'WOMEN' | 'MEN';
+
+  @ApiPropertyOptional({ type: Number, nullable: true, minimum: 0, maximum: 120, description: 'Youngest age (whole years, on the class date) that can book. null: no lower limit.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  minAge?: number | null;
+
+  @ApiPropertyOptional({ type: Number, nullable: true, minimum: 0, maximum: 120, description: 'Oldest age (whole years, on the class date) that can book. null: no upper limit.' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(120)
+  maxAge?: number | null;
+
+  // Decision 432 item 13: creating a class on a date a closure covers is
+  // refused with 409 CLASS_ON_CLOSED_DAY until the caller confirms it.
+  @ApiPropertyOptional({ description: 'Confirms creating this class on a day a closure covers (Decision 432). Without it such a create is refused with 409 CLASS_ON_CLOSED_DAY, naming the closure.' })
+  @IsOptional()
+  @IsBoolean()
+  confirmClosedDay?: boolean;
 }

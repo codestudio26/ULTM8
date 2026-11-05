@@ -409,6 +409,8 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
   it('a Guardian accepts for a child: the charge is on the child\'s balance and the Guardian sees it', async () => {
     await mkStudent('kid', 'white-0');
     await mkUser('parent');
+    // Decision 430 item 7: a parent acts for a child under 18, so the child is one.
+    await su.user.update({ where: { id: user.kid.id }, data: { dateOfBirth: new Date(Date.now() - 15 * 365 * 86_400_000) } });
     await su.guardianLink.create({ data: { id: randomUUID(), guardianId: user.parent.id, studentId: user.kid.id } });
     sign('parent', null, null);
     const id = await gradeToPricedStripe('kid');

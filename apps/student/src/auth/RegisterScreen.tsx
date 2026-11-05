@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { Button, ErrorBanner, Field, PhoneField, Screen, TextField } from '../components/ui';
+import { OneNameSwitch } from '../components/OneNameSwitch';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -27,6 +28,8 @@ export function RegisterScreen({ navigation }: Props) {
     passcodeConfirm: '',
     dateOfBirth: '',
   });
+  // Decision 434 (TXT-8): "I have only one name" sends an empty surname.
+  const [oneName, setOneName] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -49,7 +52,8 @@ export function RegisterScreen({ navigation }: Props) {
             email: form.email,
             phone: form.phone,
             firstName: form.firstName,
-            surname: form.surname,
+            surname: oneName ? '' : form.surname,
+            ...(oneName ? { hasOnlyOneName: true } : {}),
             username: form.username || undefined,
             passcode: form.passcode,
             passcodeConfirm: form.passcodeConfirm,
@@ -89,8 +93,9 @@ export function RegisterScreen({ navigation }: Props) {
           <TextField value={form.firstName} onChangeText={(v) => set('firstName', v)} />
         </Field>
         <Field label={t('auth.register.surname')}>
-          <TextField value={form.surname} onChangeText={(v) => set('surname', v)} />
+          <TextField value={oneName ? '' : form.surname} editable={!oneName} onChangeText={(v) => set('surname', v)} />
         </Field>
+        <OneNameSwitch value={oneName} onChange={setOneName} label={t('auth.register.hasOnlyOneName')} />
         <Field label={t('auth.register.username')} hint={t('auth.register.optional')}>
           <TextField autoCapitalize="none" value={form.username} onChangeText={(v) => set('username', v)} />
         </Field>

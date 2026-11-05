@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { classZone, formatInZone, formatTimeInZone } from './classTime';
+import { classZone, endsNextDayInZone, formatInZone, formatTimeInZone } from './classTime';
 
 describe('classTime', () => {
   it("uses the Branch's zone, else the School's, else UTC", () => {
@@ -16,5 +16,13 @@ describe('classTime', () => {
   it("formats on the zone's clock, not the phone's", () => {
     expect(formatInZone('2030-01-08T17:00:00Z', 'Asia/Tokyo')).toMatch(/^Jan 9, 2030, 2:00\sAM$/);
     expect(formatTimeInZone('2030-01-08T17:00:00Z', 'America/New_York')).toMatch(/^12:00\sPM$/);
+  });
+
+  it("knows a class ends the next day on the zone's clock (Decision 432 item 3)", () => {
+    // 23:00–00:30 in New York, which is the same UTC day.
+    expect(endsNextDayInZone('2030-01-09T04:00:00Z', '2030-01-09T05:30:00Z', 'America/New_York')).toBe(true);
+    // 18:00–19:30 UTC stays on one day; 23:30–00:30 in Tokyo does not.
+    expect(endsNextDayInZone('2030-01-08T18:00:00Z', '2030-01-08T19:30:00Z', 'UTC')).toBe(false);
+    expect(endsNextDayInZone('2030-01-08T14:30:00Z', '2030-01-08T15:30:00Z', 'Asia/Tokyo')).toBe(true);
   });
 });

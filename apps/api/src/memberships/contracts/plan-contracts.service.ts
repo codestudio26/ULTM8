@@ -13,11 +13,12 @@ import { lockSchoolOpen } from '../../tenants/lock-school-open';
 import { dayIn, dayToDate } from '../freeze/membership-freeze';
 import { insertCharge, lockInvoiceNumbers } from '../../charges/charge-insert';
 import { lockBalance } from '../../charges/charge-ledger';
-import { computeCharge, formatInvoiceNumber } from '../../charges/charge-maths';
+import { computeCharge, formatInvoiceNumber, taxLinesForCharge } from '../../charges/charge-maths';
 import { assertSchoolCurrencySet } from '../../common/school-currency';
 import { NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types';
 import { SetPlanContractDto, SignPlanContractDto } from './plan-contract.dto';
+import { loadEffectiveTax } from '../../charges/tax-lines';
 
 const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency.toUpperCase()}`;
 
@@ -165,7 +166,8 @@ export class PlanContractsService {
   /** Signs the plan's current contract. The member signs for themselves
    * (18 or over); a Guardian signs for their child. */
   async sign(callerId: string, planId: string, dto: SignPlanContractDto) {
-    const target = await this.resolveSigner(callerId, dto.studentId);
+    // Decision 430 item 7: a parent doesn't sign for a child who is 18.
+    const target = await this.resolveSigner(callerId, dto.studentId, 'act');
     const plan = await this.findPlanForMember(target, planId);
     if (plan.contractVersion == null || !plan.contractBody) throw new BadRequestException('This plan has no contract to sign.');
     if (plan.archivedAt || !plan.visible) throw new BadRequestException('This plan is not on sale.');
@@ -324,7 +326,9 @@ export class PlanContractsService {
     const currency = (sig.currency ?? school?.defaultCurrency)?.toUpperCase();
     if (!school || !currency) return null;
     const fee = sig.earlyExitFee!;
-    const totals = computeCharge({ unitAmount: fee, discount: null, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive });
+    // Decision 431 (MON-6): the member's tax lines (their home Branch's when it overrides).
+    const tax = taxLinesForCharge(await loadEffectiveTax(this.prismaJobs, membership.schoolId, membership.studentId), false);
+    const totals = computeCharge({ unitAmount: fee, discount: null, ...tax, currency });
     let created: { id: string; invoiceNumber: number };
     try {
       created = await this.prismaJobs.$transaction(async (tx) => {
@@ -385,9 +389,9 @@ export class PlanContractsService {
   }
 
   /** Whose contract it is: the caller, or a child the caller is Guardian of. */
-  private async resolveSigner(callerId: string, studentId?: string): Promise<string> {
+  private async resolveSigner(callerId: string, studentId?: string, purpose: 'act' | 'read' = 'read'): Promise<string> {
     if (studentId && studentId !== callerId) {
-      await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
+      await this.guardiansService.assertGuardianOfStudent(callerId, studentId, { purpose });
       return studentId;
     }
     return callerId;

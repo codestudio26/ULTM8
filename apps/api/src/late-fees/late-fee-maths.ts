@@ -1,4 +1,5 @@
-import { MAX_BASIS_POINTS, MAX_CHARGE_MINOR, divideRoundHalfUp } from '../charges/charge-maths';
+import { MAX_BASIS_POINTS, MAX_CHARGE_MINOR } from '../charges/charge-maths';
+import { divideRoundHalfUpToStep, minorUnitStep } from '../payments/stripe-amount';
 import { dayNumber, dayString } from '../memberships/freeze/membership-freeze';
 
 /**
@@ -15,12 +16,14 @@ export type LateFeeSetting = { type: 'FIXED'; fixedAmount: number } | { type: 'P
 /**
  * The late fee on a payment that still has `overdueAmount` owed: the fixed
  * amount, or the % of what is owed (Decision 413 item 6), rounded half up to
- * the minor unit as a charge's discount is (charge-maths.ts). Never more than
- * a charge can be. 0 when a % of a tiny amount rounds to nothing: no fee.
+ * the currency's real minor unit as a charge's discount is (charge-maths.ts;
+ * whole yen for JPY, MON-2). Never more than a charge can be. 0 when a % of a
+ * tiny amount rounds to nothing: no fee.
  */
-export function lateFeeAmount(setting: LateFeeSetting, overdueAmount: number): number {
+export function lateFeeAmount(setting: LateFeeSetting, overdueAmount: number, currency: string | null | undefined): number {
   if (!Number.isSafeInteger(overdueAmount) || overdueAmount <= 0) return 0;
-  const fee = setting.type === 'FIXED' ? setting.fixedAmount : divideRoundHalfUp(overdueAmount * setting.percentBps, MAX_BASIS_POINTS);
+  const fee =
+    setting.type === 'FIXED' ? setting.fixedAmount : divideRoundHalfUpToStep(overdueAmount * setting.percentBps, MAX_BASIS_POINTS, minorUnitStep(currency));
   return Math.min(Math.max(0, fee), MAX_CHARGE_MINOR);
 }
 

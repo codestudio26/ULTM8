@@ -112,6 +112,8 @@ describeIfDb('MembershipPlan archive + Subscription price-change migrate-vs-gran
     await superuser.membershipPlan.deleteMany({ where: { id: { in: planIds } } });
     await superuser.paymentAccount.deleteMany({ where: { id: { in: paymentAccountIds } } });
     await superuser.roleGrant.deleteMany({ where: { userId: { in: userIds } } });
+    // A price increase now sends each migrated member a notice (MON-9).
+    await superuser.notification.deleteMany({ where: { userId: { in: userIds } } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
     await superuser.school.deleteMany({ where: { id: { in: schoolIds } } });
     await superuser.$disconnect();
@@ -371,7 +373,7 @@ describeIfDb('MembershipPlan archive + Subscription price-change migrate-vs-gran
       expect(patchRes.body.price).toBe(7500);
       expect(patchRes.body.stripePriceId).toBeTruthy();
       expect(fakePricesCreate).toHaveBeenCalledTimes(1);
-      expect(fakePricesCreate).toHaveBeenCalledWith(expect.objectContaining({ unit_amount: 7500, currency: 'gbp' }));
+      expect(fakePricesCreate).toHaveBeenCalledWith(expect.objectContaining({ unit_amount: 7500, currency: 'gbp' }), expect.anything());
 
       const priceChanges = await request(app.getHttpServer()).get(`/v1/membership-plans/${planId}/price-changes`).set('Authorization', `Bearer ${tokenOwner}`);
       expect(priceChanges.status).toBe(200);

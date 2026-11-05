@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -66,6 +66,13 @@ export class ClassesController {
   @Post('classes/:id/archive')
   archive(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.classesService.archive(user.sub, id);
+  }
+
+  /** Decision 432 item 11: a one-off copy of a class a closure cancelled. */
+  @ApiOkResponse({ type: ClassResponseDto })
+  @Post('classes/:id/recreate')
+  recreate(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string) {
+    return this.classesService.recreate(user.sub, id);
   }
 
   @ApiOkResponse({ type: ClassResponseDto })
