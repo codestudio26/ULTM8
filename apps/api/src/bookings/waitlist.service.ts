@@ -198,7 +198,9 @@ export class WaitlistService {
       await this.tenantAuth.assertStaffMay(callerId, resolvedEntry.schoolId, 'bookings', resolvedEntry.branchId);
     }
 
-    await this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
+    await withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
+      // First, like joining and claiming (see lockStudentClass; PRIV-7).
+      await lockStudentClass(tx, resolvedEntry.studentId, resolvedEntry.classId);
       const result = await tx.waitlistEntry.updateMany({
         where: { id: entryId, status: { in: ['WAITING', 'NOTIFIED'] } },
         data: { status: 'CANCELLED' },
@@ -206,7 +208,7 @@ export class WaitlistService {
       if (result.count === 0) {
         throw new ConflictException('This Waitlist entry is no longer active (already Claimed, Expired, or Cancelled).');
       }
-    });
+    }));
   }
 
   /**
@@ -426,6 +428,8 @@ export class WaitlistService {
     // that method's own comment for the corrected account of what this
     // actually defends against (CI caught an earlier, inaccurate version).
     await this.tenantAuth.assertStaffAtSchool(callerId, cls.schoolId, cls.branchId);
+    // Decision 425 Q1 (PRIV-4): the waitlist names, like the roll call.
+    await this.tenantAuth.assertStaffMay(callerId, cls.schoolId, 'bookings', cls.branchId);
     const entries = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.waitlistEntry.findMany({ where: { classId }, orderBy: { position: 'asc' } }),
     );

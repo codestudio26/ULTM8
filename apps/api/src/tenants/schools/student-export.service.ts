@@ -75,14 +75,19 @@ export class StudentExportService {
       const u = user.get(r.id);
       const mine = memberships.filter((m) => m.studentId === r.id);
       const live = mine.filter((m) => isMembershipLive(m, now));
+      // Decision 432 item 11 (PRIV-11, interim until the GDPR programme sets a
+      // retention period): a former member's phone and birth date are read
+      // live from their account, so the School would keep getting them for
+      // ever; the ALL export leaves both blank for them.
+      const former = r.status === StudentStatusDto.INACTIVE;
       return {
         id: r.id,
         firstName: r.firstName,
         surname: r.surname,
         email: r.email,
         // A child's account carries a made-up phone number; leave it out.
-        phone: r.guardianManaged ? null : u?.phone ?? null,
-        dateOfBirth: u?.dateOfBirth ? u.dateOfBirth.toISOString().slice(0, 10) : null,
+        phone: r.guardianManaged || former ? null : u?.phone ?? null,
+        dateOfBirth: u?.dateOfBirth && !former ? u.dateOfBirth.toISOString().slice(0, 10) : null,
         status: r.status as StudentStatusDto,
         enrolledAt: new Date(r.enrolledAt).toISOString(),
         joinedOn: r.joinedOn ?? null,

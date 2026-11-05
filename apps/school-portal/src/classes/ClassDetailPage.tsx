@@ -274,14 +274,20 @@ export function ClassDetailPage() {
   const { id } = useParams<{ id: string }>();
   const classId = id ?? null;
   const { data: cls, isLoading: classLoading, error: classError } = useClass(classId);
-  const { data: bookingData, isLoading: bookingsLoading, error: bookingsError } = useClassBookings(classId);
-  const { data: waitlistData, isLoading: waitlistLoading, error: waitlistError } = useClassWaitlist(classId);
-  const guestWaivers = useClassGuestWaivers(classId ?? undefined);
   const ownedSchoolId = useOwnedSchoolId();
   const coachSchoolId = useCoachSchoolId();
   // Decision 387: staff book and cancel seats with the bookings switch (a
   // coach by role), and cancel the whole class with the cancel-classes one.
-  const access = useMyStaffAccess(ownedSchoolId ? null : coachSchoolId).data?.access;
+  const accessQuery = useMyStaffAccess(ownedSchoolId ? null : coachSchoolId);
+  const access = accessQuery.data?.access;
+  // Decision 425 Q1 (PRIV-4): Branch Staff see the roll call and waitlist
+  // only with the bookings switch on; the API refuses them otherwise.
+  const mayReadRoster = !!ownedSchoolId || !coachSchoolId || (access?.bookings ?? false);
+  const accessLoading = !ownedSchoolId && !!coachSchoolId && accessQuery.isLoading;
+  const rosterClassId = mayReadRoster ? classId : null;
+  const { data: bookingData, isLoading: bookingsLoading, error: bookingsError } = useClassBookings(rosterClassId);
+  const { data: waitlistData, isLoading: waitlistLoading, error: waitlistError } = useClassWaitlist(rosterClassId);
+  const guestWaivers = useClassGuestWaivers(rosterClassId ?? undefined);
   const mayCancel = !!ownedSchoolId || (!!coachSchoolId && (access?.bookings ?? false));
   const mayCancelClass = !!ownedSchoolId || (!!coachSchoolId && (access?.cancelClasses ?? false));
   const [adding, setAdding] = useState(false);
@@ -292,7 +298,7 @@ export function ClassDetailPage() {
   const at = (iso: string) => formatInZone(iso, zone, formatLocale());
 
   if (!classId) return null;
-  if (classLoading || bookingsLoading || waitlistLoading) return <Spinner />;
+  if (classLoading || accessLoading || (mayReadRoster && (bookingsLoading || waitlistLoading))) return <Spinner />;
   if (classError) {
     return <ErrorBanner message={classError instanceof ApiError ? classError.message : t('classes.detail.loadFailed')} />;
   }
@@ -348,6 +354,13 @@ export function ClassDetailPage() {
         </div>
       ) : null}
 
+      {!mayReadRoster ? (
+        <Card>
+          <p style={{ margin: 0 }}>{t('classes.detail.rosterHidden')}</p>
+        </Card>
+      ) : null}
+
+      {mayReadRoster ? (
       <div style={{ marginBottom: 24 }}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
@@ -407,7 +420,9 @@ export function ClassDetailPage() {
           )}
         </Card>
       </div>
+      ) : null}
 
+      {mayReadRoster ? (
       <Card>
         <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
           {t('classes.detail.waitlistHeading')}
@@ -427,6 +442,7 @@ export function ClassDetailPage() {
           />
         )}
       </Card>
+      ) : null}
 
       {adding && cls ? (
         <AddStudentDialog classId={cls.id} schoolId={cls.schoolId} bookedIds={booked} onClose={() => setAdding(false)} onDone={finish} />

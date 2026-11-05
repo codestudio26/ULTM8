@@ -688,6 +688,49 @@
         ]
       }
     },
+    "/v1/schools/{id}/students/{studentId}/data-export": {
+      "get": {
+        "operationId": "SchoolsController_exportMemberData",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberDataExportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{id}/students/{studentId}/home-branch": {
       "put": {
         "operationId": "SchoolsController_setStudentHomeBranch",
@@ -4867,6 +4910,84 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ChangeSchoolMainOwnerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/staff": {
+      "get": {
+        "operationId": "PlatformAdminSchoolsController_listStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolStaffResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "platform-admin-schools"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/platform-admin/schools/{id}/staff/{userId}/pause": {
+      "post": {
+        "operationId": "PlatformAdminSchoolsController_pauseStaff",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PauseSchoolStaffResponseDto"
                 }
               }
             }
@@ -24862,6 +24983,124 @@
           "items"
         ]
       },
+      "MemberDataExportResponseDto": {
+        "type": "object",
+        "properties": {
+          "exportedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "profile": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "enrolment": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "joinedOn": {
+            "type": "string",
+            "nullable": true
+          },
+          "homeBranchName": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "customFields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "customStatus": {
+            "type": "string",
+            "nullable": true
+          },
+          "guardians": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "medicalInfo": {
+            "type": "object",
+            "additionalProperties": true,
+            "nullable": true
+          },
+          "bookings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "payments": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "waiverSignatures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "belts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          }
+        },
+        "required": [
+          "exportedAt",
+          "profile",
+          "enrolment",
+          "joinedOn",
+          "homeBranchName",
+          "tags",
+          "customFields",
+          "customStatus",
+          "guardians",
+          "notes",
+          "medicalInfo",
+          "bookings",
+          "memberships",
+          "payments",
+          "waiverSignatures",
+          "belts"
+        ]
+      },
       "SetHomeBranchDto": {
         "type": "object",
         "properties": {
@@ -29216,6 +29455,95 @@
         "required": [
           "mainOwnerUserId",
           "formerMainOwnerRemoved"
+        ]
+      },
+      "SchoolStaffRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "INSTRUCTOR",
+              "BRANCH_STAFF"
+            ]
+          },
+          "branchName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "role",
+          "branchName"
+        ]
+      },
+      "SchoolStaffMemberDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolStaffRoleDto"
+            }
+          },
+          "paused": {
+            "type": "boolean",
+            "description": "Every one of their coach and Branch Staff roles here is paused."
+          }
+        },
+        "required": [
+          "userId",
+          "firstName",
+          "surname",
+          "email",
+          "roles",
+          "paused"
+        ]
+      },
+      "SchoolStaffResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolStaffMemberDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "PauseSchoolStaffResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "pausedRoles": {
+            "type": "number"
+          },
+          "pausedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "userId",
+          "pausedRoles",
+          "pausedAt"
         ]
       },
       "SchoolTrialDaysDto": {

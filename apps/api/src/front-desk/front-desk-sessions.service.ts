@@ -1,4 +1,9 @@
 import { BadRequestException, ForbiddenException, HttpException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import type IORedis from 'ioredis';
+import { randomUUID } from 'crypto';
+import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -20,6 +25,19 @@ export const FRONT_DESK_MAX_WRONG_CODES = 10;
  * code is typed (Decision 417): codes are short, and at a big School a random
  * guess is often someone's. */
 export const FRONT_DESK_MAX_WRONG_MEMBER_CODES = 10;
+
+/** Wrong member check-in codes within FRONT_DESK_WRONG_MEMBER_CODE_WINDOW_MS
+ * that also lock the tablet, whatever right codes come between (stress test
+ * round 5, PRIV-8; amends Decision 417 item 4). Without it, someone who knew
+ * one code could type 9 guesses, then that code, for ever. A busy desk rarely
+ * types 20 wrong codes in half an hour. */
+export const FRONT_DESK_MAX_WRONG_MEMBER_CODES_IN_WINDOW = 20;
+export const FRONT_DESK_WRONG_MEMBER_CODE_WINDOW_MS = 30 * 60_000;
+
+/** The Redis key holding one session's recent wrong member codes. */
+export function wrongMemberCodesKey(sessionId: string): string {
+  return `front-desk:wrong-member-codes:${sessionId}`;
+}
 
 const STAFF_ROLES = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] as const;
 // Who may start a tablet (handover F1): the owner, or Branch Staff for their Branch.
@@ -65,6 +83,8 @@ export class FrontDeskSessionsService {
     private readonly prismaAuth: PrismaAuthService,
     private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
+    // Only for its Redis connection: the rolling count of wrong member codes.
+    @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly redisQueue: Queue,
   ) {}
 
   /** POST /schools/{schoolId}/front-desk/sessions. `branchId` is required when
@@ -198,6 +218,7 @@ export class FrontDeskSessionsService {
     await this.prismaApp.withTenantContext(session.startedById, (tx) =>
       tx.frontDeskSession.updateMany({ where: { id: session.id, endedAt: null }, data: { lockedAt: null, wrongMemberCodeCount: 0 } }),
     );
+    await this.clearWrongMemberCodeWindow(session.id);
     if (session.lockedAt) this.logger.log(`Front-desk session ${session.id} (School ${session.schoolId}) unlocked by staff ${match.userId}`);
     const names = await resolveUserNames(this.prismaAuth, [match.userId]);
     return { resumedBy: names.get(match.userId)?.firstName ?? '' };
@@ -205,26 +226,68 @@ export class FrontDeskSessionsService {
 
   /** A member code typed on the tablet was wrong (Decision 417). Counted in
    * one statement, like wrong staff codes; at FRONT_DESK_MAX_WRONG_MEMBER_CODES
-   * in a row the tablet locks, and this answers with the lock. */
+   * in a row the tablet locks, and this answers with the lock. It also locks
+   * at FRONT_DESK_MAX_WRONG_MEMBER_CODES_IN_WINDOW wrong codes in the last 30
+   * minutes, right codes between them or not (PRIV-8). */
   async countWrongMemberCode(session: FrontDeskSessionContext): Promise<void> {
+    const inWindow = await this.countInWrongMemberCodeWindow(session.id);
+    const windowFull = inWindow !== null && inWindow >= FRONT_DESK_MAX_WRONG_MEMBER_CODES_IN_WINDOW;
     const wrong = await this.prismaApp.withTenantContext(session.startedById, async (tx) => {
       const row = await tx.frontDeskSession.update({
         where: { id: session.id },
         data: { wrongMemberCodeCount: { increment: 1 } },
         select: { wrongMemberCodeCount: true },
       });
-      if (row.wrongMemberCodeCount >= FRONT_DESK_MAX_WRONG_MEMBER_CODES) {
+      if (row.wrongMemberCodeCount >= FRONT_DESK_MAX_WRONG_MEMBER_CODES || windowFull) {
         await tx.frontDeskSession.updateMany({ where: { id: session.id, lockedAt: null }, data: { lockedAt: new Date() } });
       }
       return row.wrongMemberCodeCount;
     });
-    if (wrong >= FRONT_DESK_MAX_WRONG_MEMBER_CODES) {
-      this.logger.warn(`Front-desk session ${session.id} (School ${session.schoolId}) locked after ${wrong} wrong member codes in a row`);
+    if (wrong >= FRONT_DESK_MAX_WRONG_MEMBER_CODES || windowFull) {
+      this.logger.warn(
+        `Front-desk session ${session.id} (School ${session.schoolId}) locked after ${wrong} wrong member codes in a row, ${inWindow ?? '?'} in the last 30 minutes`,
+      );
       throw new HttpException(FRONT_DESK_LOCKED, 423);
     }
   }
 
-  /** A right member code starts the count again ("in a row"). */
+  /** Adds one wrong member code to the session's 30-minute window in Redis
+   * and returns how many the window holds. A sorted set of timestamps, so the
+   * window rolls; it expires with its newest entry. Null when Redis can't be
+   * reached: the "in a row" count above still locks the tablet. */
+  private async countInWrongMemberCodeWindow(sessionId: string): Promise<number | null> {
+    try {
+      const redis = (await this.redisQueue.client) as unknown as IORedis;
+      const key = wrongMemberCodesKey(sessionId);
+      const now = Date.now();
+      const results = await redis
+        .multi()
+        .zremrangebyscore(key, 0, now - FRONT_DESK_WRONG_MEMBER_CODE_WINDOW_MS)
+        .zadd(key, now, `${now}:${randomUUID()}`)
+        .zcard(key)
+        .pexpire(key, FRONT_DESK_WRONG_MEMBER_CODE_WINDOW_MS)
+        .exec();
+      const [err, count] = results?.[2] ?? [null, null];
+      if (err || typeof count !== 'number') throw err ?? new Error('no count');
+      return count;
+    } catch (err) {
+      this.logger.warn(`Front-desk session ${sessionId}: wrong member code not added to the 30-minute count — ${err instanceof Error ? err.message : String(err)}`);
+      return null;
+    }
+  }
+
+  /** Staff unlocked the tablet: its 30-minute window starts again too. */
+  private async clearWrongMemberCodeWindow(sessionId: string): Promise<void> {
+    try {
+      const redis = await this.redisQueue.client;
+      await redis.del(wrongMemberCodesKey(sessionId));
+    } catch (err) {
+      this.logger.warn(`Front-desk session ${sessionId}: 30-minute wrong-code count not cleared — ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  /** A right member code starts the "in a row" count again. The 30-minute
+   * window is left as it is (PRIV-8). */
   async resetWrongMemberCodes(session: FrontDeskSessionContext): Promise<void> {
     await this.prismaApp.withTenantContext(session.startedById, (tx) =>
       tx.frontDeskSession.updateMany({ where: { id: session.id, wrongMemberCodeCount: { gt: 0 } }, data: { wrongMemberCodeCount: 0 } }),

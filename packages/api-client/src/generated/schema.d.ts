@@ -276,6 +276,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{id}/students/{studentId}/data-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SchoolsController_exportMemberData"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{id}/students/{studentId}/home-branch": {
         parameters: {
             query?: never;
@@ -1662,6 +1678,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["PlatformAdminSchoolsController_changeMainOwner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformAdminSchoolsController_listStaff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform-admin/schools/{id}/staff/{userId}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformAdminSchoolsController_pauseStaff"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8122,6 +8170,47 @@ export interface components {
         StudentExportResponseDto: {
             items: components["schemas"]["StudentExportRowDto"][];
         };
+        MemberDataExportResponseDto: {
+            /** Format: date-time */
+            exportedAt: string;
+            profile: {
+                [key: string]: unknown;
+            } | null;
+            enrolment: {
+                [key: string]: unknown;
+            }[];
+            joinedOn: string | null;
+            homeBranchName: string | null;
+            tags: string[];
+            customFields: {
+                [key: string]: unknown;
+            }[];
+            customStatus: string | null;
+            guardians: {
+                [key: string]: unknown;
+            }[];
+            notes: {
+                [key: string]: unknown;
+            }[];
+            medicalInfo: {
+                [key: string]: unknown;
+            } | null;
+            bookings: {
+                [key: string]: unknown;
+            }[];
+            memberships: {
+                [key: string]: unknown;
+            }[];
+            payments: {
+                [key: string]: unknown;
+            }[];
+            waiverSignatures: {
+                [key: string]: unknown;
+            }[];
+            belts: {
+                [key: string]: unknown;
+            }[];
+        };
         SetHomeBranchDto: {
             /** @description A branch of this School. */
             branchId: string;
@@ -9462,6 +9551,29 @@ export interface components {
         ChangeSchoolMainOwnerResponseDto: {
             mainOwnerUserId: string;
             formerMainOwnerRemoved: boolean;
+        };
+        SchoolStaffRoleDto: {
+            /** @enum {string} */
+            role: "INSTRUCTOR" | "BRANCH_STAFF";
+            branchName: string | null;
+        };
+        SchoolStaffMemberDto: {
+            userId: string;
+            firstName: string;
+            surname: string;
+            email: string;
+            roles: components["schemas"]["SchoolStaffRoleDto"][];
+            /** @description Every one of their coach and Branch Staff roles here is paused. */
+            paused: boolean;
+        };
+        SchoolStaffResponseDto: {
+            items: components["schemas"]["SchoolStaffMemberDto"][];
+        };
+        PauseSchoolStaffResponseDto: {
+            userId: string;
+            pausedRoles: number;
+            /** Format: date-time */
+            pausedAt: string;
         };
         SchoolTrialDaysDto: {
             /** @description Days. Start: the trial ends this many days from now. Extend: added to the current end (or to now, if it has ended). */
@@ -15355,6 +15467,28 @@ export interface operations {
             };
         };
     };
+    SchoolsController_exportMemberData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                studentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberDataExportResponseDto"];
+                };
+            };
+        };
+    };
     SchoolsController_setStudentHomeBranch: {
         parameters: {
             query?: never;
@@ -17663,6 +17797,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChangeSchoolMainOwnerResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_listStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SchoolStaffResponseDto"];
+                };
+            };
+        };
+    };
+    PlatformAdminSchoolsController_pauseStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PauseSchoolStaffResponseDto"];
                 };
             };
         };

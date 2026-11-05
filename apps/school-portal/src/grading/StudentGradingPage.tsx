@@ -9,6 +9,7 @@ import { StudentTagsCard } from '../students/StudentTagsCard';
 import { StudentMedicalInfoCard } from '../students/StudentMedicalInfoCard';
 import { StudentCustomFieldsCard } from '../students/StudentCustomFieldsCard';
 import { MemberFilesCard } from '../students/MemberFilesCard';
+import { MemberDataExportCard } from '../students/MemberDataExportCard';
 import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentGuardians, useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
 import { ReEnrolModal } from '../students/ReEnrolModal';
@@ -283,6 +284,8 @@ export function StudentGradingPage() {
       {maySeeMedical ? <StudentMedicalInfoCard schoolId={schoolId} studentId={studentId} /> : null}
       {/* Decision 315 item 9 (backlog 5.11): Documents, files on the member. */}
       {mayFiles ? <MemberFilesCard schoolId={schoolId} studentId={studentId} canUpload={!inactive} /> : null}
+      {/* Decision 432 item 10: everything the School holds about them. Owner only. */}
+      {my.isOwner ? <MemberDataExportCard schoolId={schoolId} studentId={studentId} /> : null}
 
       {/* Decision 315 item 14: the School's own member fields and status. */}
       {!inactive ? <StudentCustomFieldsCard schoolId={schoolId} studentId={studentId} /> : null}

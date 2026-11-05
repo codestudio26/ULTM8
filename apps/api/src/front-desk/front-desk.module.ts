@@ -4,6 +4,7 @@ import { PackRechargesService } from './pack-recharges.service';
 import { SignUpsController } from './sign-ups.controller';
 import { SignUpsService } from './sign-ups.service';
 import { Module } from '@nestjs/common';
+import { QueueModule } from '../jobs/queue.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { MembershipsModule } from '../memberships/memberships.module';
 import { WaiversModule } from '../waivers/waivers.module';
@@ -23,7 +24,7 @@ import { MembershipCardsController } from './membership-cards.controller';
 /** Locked front-desk tablets (Decision 380, handover F1, F2) and personal
  * check-in codes (Decision 384, F3). */
 @Module({
-  imports: [TenantsModule, MembershipsModule, WaiversModule, RanksModule, AttendanceModule, GuardiansModule, NotificationsModule],
+  imports: [TenantsModule, MembershipsModule, WaiversModule, RanksModule, AttendanceModule, GuardiansModule, NotificationsModule, QueueModule],
   controllers: [FrontDeskSessionsController, FrontDeskKioskController, StudentCheckInCodesController, MembershipCardsController, SignUpsController, PackRechargesController],
   providers: [FrontDeskSessionsService, FrontDeskKioskService, FrontDeskSessionGuard, StudentCheckInCodesService, MembershipCardsService, SignUpsService, PackRechargesService],
 })

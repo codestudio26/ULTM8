@@ -250,14 +250,17 @@ export async function assertNotAlreadyAttended(tx: Pick<TenantTx, 'booking'>, st
  */
 export const BOOKING_TX_OPTIONS = { maxWaitMs: 10_000 };
 
-/** Runs a booking transaction, retrying while the Class's seat lock is busy (about 10 s at most). */
+/** Runs a booking transaction, retrying while the Class's seat lock is busy (about 10 s at most).
+ * A deadlock Postgres broke (40P01) is retried the same way, as a backstop
+ * (stress test round 5, PRIV-7): the whole transaction was rolled back, so
+ * running it again is safe, and the caller gets an answer instead of a 500. */
 export async function withSeatLockRetry<T>(run: () => Promise<T>): Promise<T> {
   const deadline = Date.now() + 10_000;
   for (let attempt = 0; ; attempt++) {
     try {
       return await run();
     } catch (err) {
-      if (!(err instanceof SeatLockBusyError)) throw err;
+      if (!(err instanceof SeatLockBusyError) && !isDeadlock(err)) throw err;
       if (Date.now() >= deadline) {
         throw new ConflictException({ code: 'CLASS_BUSY', message: 'This Class is very busy right now. Please try again in a moment.' });
       }
@@ -265,6 +268,15 @@ export async function withSeatLockRetry<T>(run: () => Promise<T>): Promise<T> {
       await new Promise((resolve) => setTimeout(resolve, backoff / 2 + Math.random() * backoff));
     }
   }
+}
+
+/** Postgres deadlock_detected (40P01), as Prisma surfaces it: P2034 from a
+ * model query, or the code in a raw query's error. */
+export function isDeadlock(err: unknown): boolean {
+  if (!err || typeof err !== 'object') return false;
+  const { code, meta, message } = err as { code?: unknown; meta?: { code?: unknown }; message?: unknown };
+  if (code === 'P2034' || code === '40P01' || meta?.code === '40P01') return true;
+  return typeof message === 'string' && (message.includes('40P01') || message.includes('deadlock detected'));
 }
 
 // Postgres lock_not_available (55P03), as Prisma surfaces it from a raw query.

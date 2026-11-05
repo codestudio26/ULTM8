@@ -170,22 +170,26 @@ export async function personCheckInRefusal(
   studentId: string,
   bookingId: string,
   now: Date = new Date(),
+  classBranchId?: string | null,
 ): Promise<CheckInRefusal | null> {
-  const booking = await tx.booking.findUniqueOrThrow({
-    where: { id: bookingId },
-    select: { schoolId: true, sourceMembershipId: true, class: { select: { branchId: true } } },
-  });
+  // `classBranchId`: the Class's Branch as staff already read it, so the
+  // Class isn't re-read here in the student's context (DE-4).
+  const booking = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, select: { schoolId: true, sourceMembershipId: true } });
+  const branchId =
+    classBranchId !== undefined
+      ? classBranchId
+      : (await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, select: { class: { select: { branchId: true } } } })).class.branchId;
   const rules = await loadCheckInRules(prismaJobs, booking.schoolId);
   if (rules.requireWaiver && !(await hasCountingWaiverSignature(tx, studentId, booking.schoolId))) {
     return { code: 'CHECK_IN_WAIVER_REQUIRED', message: CHECK_IN_RULE_MESSAGES.waiver };
   }
-  if (!rules.otherBranches && booking.class.branchId) {
+  if (!rules.otherBranches && branchId) {
     // A member with no home Branch has no "other" Branch: nothing to refuse.
     const home = await tx.studentHomeBranch.findUnique({
       where: { schoolId_studentId: { schoolId: booking.schoolId, studentId } },
       select: { branchId: true },
     });
-    if (home && home.branchId !== booking.class.branchId) {
+    if (home && home.branchId !== branchId) {
       return { code: 'CHECK_IN_HOME_BRANCH_ONLY', message: CHECK_IN_RULE_MESSAGES.otherBranch };
     }
   }
@@ -214,8 +218,14 @@ export async function personCheckInRefusal(
 }
 
 /** personCheckInRefusal, thrown as a 403 carrying its code and reason. */
-export async function assertPersonMayCheckIn(prismaJobs: PrismaJobsService, tx: TenantTx, studentId: string, bookingId: string): Promise<void> {
-  const refusal = await personCheckInRefusal(prismaJobs, tx, studentId, bookingId);
+export async function assertPersonMayCheckIn(
+  prismaJobs: PrismaJobsService,
+  tx: TenantTx,
+  studentId: string,
+  bookingId: string,
+  classBranchId?: string | null,
+): Promise<void> {
+  const refusal = await personCheckInRefusal(prismaJobs, tx, studentId, bookingId, new Date(), classBranchId);
   if (refusal) throw new ForbiddenException(refusal);
 }
 

@@ -105,6 +105,13 @@ function isForeignKeyRestrictError(err: unknown): boolean {
  *
  * PaymentAccount/Booking/WaitlistEntry/RoleGrant are not special-cased: they
  * cascade away when a School with none of the above is deleted.
+ *
+ * A School kept (anonymized) for any of the reasons above still loses its
+ * members' other data (Decision 432, stress test round 5 PRIV-1): every role
+ * there ends, dated at the close, so nobody can sign in to it any more, and
+ * the member rows that are not payment history or signed waivers are deleted
+ * (purgeMemberData). That runs for every purged School not yet done, so
+ * Schools purged before this change are caught up too.
  */
 @Processor(TENANT_LIFECYCLE_PURGE_QUEUE)
 export class TenantLifecyclePurgeProcessor extends WorkerHost {
@@ -139,6 +146,20 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
         else anonymized += 1;
       } catch (err) {
         this.logger.error(`tenant-lifecycle-purge: failed to purge School ${schoolId}`, err as Error);
+      }
+    }
+
+    // Decision 432 (PRIV-1): Schools anonymized above, and any purged before
+    // this existed, lose their members' non-financial data.
+    const pending = await this.prismaJobs.school.findMany({
+      where: { purgedAt: { not: null }, memberDataPurgedAt: null },
+      select: { id: true, archivedAt: true, purgedAt: true },
+    });
+    for (const school of pending) {
+      try {
+        await this.purgeMemberData(school.id, school.archivedAt ?? school.purgedAt ?? now);
+      } catch (err) {
+        this.logger.error(`tenant-lifecycle-purge: failed to delete the member data of closed School ${school.id}`, err as Error);
       }
     }
 
@@ -284,6 +305,61 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
         purgedAt: new Date(),
       },
     });
+  }
+
+  /**
+   * Decision 432 (stress test round 5, PRIV-1), for a School kept anonymized
+   * after its 90 days:
+   * 1. Every role still live there ends, dated at the close (`closedAt`, the
+   *    School's archivedAt), not today: the waiver retention clock counts from
+   *    when a member left (Decision 426 item 1), and closing is that day. The
+   *    RoleGrant trigger stamps rolesChangedAt, so access tokens issued
+   *    before stop working at once (Decision 361).
+   * 2. The members' data that is neither payment history (Transaction,
+   *    Membership, Charge; Decision 261) nor a signed waiver (Decision 426)
+   *    is deleted: notes, tags, check-in codes, join dates, home branches,
+   *    tablet sign-ups, export logs, custom fields and statuses, rosters,
+   *    child invites, absence alerts, lesson favourites and watch history;
+   *    and, with migration 20270223000100, broadcasts, the staff activity
+   *    log, coach invites, front-desk sessions, hours trained and the
+   *    bookings no money row refers to. Notifications stay: each is its
+   *    recipient's own record (Decisions 244, 277).
+   * Each step can run again; memberDataPurgedAt is set once all succeeded.
+   */
+  private async purgeMemberData(schoolId: string, closedAt: Date): Promise<void> {
+    const db = this.prismaJobs;
+    await db.roleGrant.updateMany({ where: { schoolId, revokedAt: null }, data: { revokedAt: closedAt } });
+
+    const where = { schoolId };
+    // Children before their parents where a foreign key would refuse.
+    await db.studentTag.deleteMany({ where });
+    await db.schoolTag.deleteMany({ where });
+    await db.customMemberFieldValue.deleteMany({ where });
+    await db.customMemberField.deleteMany({ where });
+    await db.studentCustomStatus.deleteMany({ where });
+    await db.customMemberStatus.deleteMany({ where });
+    await db.rosterMember.deleteMany({ where });
+    await db.roster.deleteMany({ where });
+    await db.studentNote.deleteMany({ where });
+    await db.studentCheckInCode.deleteMany({ where });
+    await db.studentJoinDate.deleteMany({ where });
+    await db.studentHomeBranch.deleteMany({ where });
+    await db.signUp.deleteMany({ where });
+    await db.studentExportLog.deleteMany({ where });
+    await db.childInvite.deleteMany({ where });
+    await db.studentAbsenceAlert.deleteMany({ where });
+    await db.favorite.deleteMany({ where });
+    await db.watchHistory.deleteMany({ where });
+    // Stage 2 (migration 20270223000100): only for a School already purged.
+    await db.notificationBroadcast.deleteMany({ where });
+    await db.staffActivity.deleteMany({ where });
+    await db.coachInvite.deleteMany({ where });
+    await db.frontDeskSession.deleteMany({ where });
+    await db.trainingLog.deleteMany({ where });
+    // The policy keeps every Booking a money row refers to; these are the rest.
+    await db.booking.deleteMany({ where });
+
+    await db.school.update({ where: { id: schoolId }, data: { memberDataPurgedAt: new Date() } });
   }
 
   private async purgeFranchise(franchiseId: string): Promise<'deleted' | 'anonymized'> {

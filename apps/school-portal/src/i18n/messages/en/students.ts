@@ -206,6 +206,10 @@ export const students = {
   export: {
     button: "Export",
     title: "Export students",
+    memberDataTitle: "This member's data",
+    memberDataIntro: "Everything this School holds about them, as one file: profile, enrolment, notes, medical information, bookings, memberships, payments, waivers and belts. Each download is logged.",
+    memberDataDownload: "Download this member's data",
+    memberDataFailed: "Could not download this member's data.",
     filterLabel: "Students",
     filterActive: "Active only",
     filterAll: "Active and former",

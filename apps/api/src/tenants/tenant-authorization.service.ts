@@ -24,6 +24,14 @@ export const MAIN_OWNER_ONLY = {
   message: "Only the School's main owner can add or remove people.",
 } as const;
 
+/** Decision 425 Q6: coaches have no owner switches, so a coach refused one of
+ * the Branch Staff switches' actions is told it isn't for coaches, not that
+ * the owner hasn't let them (stress test round 5, PRIV-5). */
+export const NOT_FOR_COACHES = {
+  code: 'NOT_FOR_COACHES',
+  message: "Coaches can't do this. Ask the School owner.",
+} as const;
+
 /**
  * Fresh-DB authorization checks for TenantsModule's mutating endpoints.
  *
@@ -371,7 +379,7 @@ export class TenantAuthorizationService {
       return !!row?.canManageCheckInRules;
     });
     if (!allowed) {
-      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you change the check-in rules." });
+      await this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you change the check-in rules.");
     }
   }
 
@@ -389,7 +397,7 @@ export class TenantAuthorizationService {
       return !!row?.canExportStudents;
     });
     if (!allowed) {
-      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you export the student list." });
+      await this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you export the student list.");
     }
   }
 
@@ -416,7 +424,7 @@ export class TenantAuthorizationService {
       return { isOwner: false, branchIds: [...new Set(grants.map((g) => g.branchId as string))] };
     });
     if (!verdict) {
-      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you see attendance statistics." });
+      return this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you see attendance statistics.");
     }
     return verdict;
   }
@@ -440,7 +448,7 @@ export class TenantAuthorizationService {
       return row?.canImportData ? { isOwner: false } : null;
     });
     if (!verdict) {
-      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you import data." });
+      return this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you import data.");
     }
     return verdict;
   }
@@ -465,7 +473,7 @@ export class TenantAuthorizationService {
       return row?.canFreezeMemberships ? ('staff' as const) : ('no' as const);
     });
     if (verdict === 'no') {
-      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you freeze memberships." });
+      return this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you freeze memberships.");
     }
     if (verdict === 'staff' && studentId) {
       await this.assertBranchCoversStudent(await this.staffBranchCoverage(userId, schoolId), schoolId, studentId);
@@ -492,7 +500,7 @@ export class TenantAuthorizationService {
       return row?.canManageMemberFiles ? ('staff' as const) : ('no' as const);
     });
     if (verdict === 'no') {
-      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you see member files." });
+      return this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you see member files.");
     }
     if (verdict === 'staff') {
       await this.assertBranchCoversStudent(await this.staffBranchCoverage(userId, schoolId), schoolId, studentId);
@@ -518,7 +526,7 @@ export class TenantAuthorizationService {
       return row?.canSeeMedicalInfo ? ('staff' as const) : ('no' as const);
     });
     if (verdict === 'no') {
-      throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: "The School owner hasn't let you see medical information." });
+      await this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you see medical information.");
     }
     if (verdict === 'staff') {
       await this.assertBranchCoversStudent(await this.staffBranchCoverage(userId, schoolId), schoolId, studentId);
@@ -528,10 +536,26 @@ export class TenantAuthorizationService {
   /** staffMay, throwing 403 STAFF_ACCESS_OFF when it says no. */
   async assertStaffMay(userId: string, schoolId: string, access: GatedStaffAccess, targetBranchId?: string | null): Promise<void> {
     if (await this.staffMay(userId, schoolId, access, targetBranchId)) return;
-    throw new ForbiddenException({
-      code: 'STAFF_ACCESS_OFF',
-      message: STAFF_ACCESS_OFF_MESSAGES[access],
-    });
+    await this.refuseStaffSwitch(userId, schoolId, STAFF_ACCESS_OFF_MESSAGES[access]);
+  }
+
+  /**
+   * Throws the refusal for a Branch Staff switch that is off: 403
+   * STAFF_ACCESS_OFF with `message`, or 403 NOT_FOR_COACHES when the caller
+   * is a coach here and not Branch Staff (Decision 425 Q6: coaches have no
+   * switches, so "the owner hasn't let you" would send them to look for one).
+   */
+  private async refuseStaffSwitch(userId: string, schoolId: string, message: string): Promise<never> {
+    const roles = await this.prismaApp.withTenantContext(userId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      }),
+    );
+    if (roles.some((g) => g.role === 'INSTRUCTOR') && !roles.some((g) => g.role === 'BRANCH_STAFF')) {
+      throw new ForbiddenException(NOT_FOR_COACHES);
+    }
+    throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message });
   }
 
   /**
