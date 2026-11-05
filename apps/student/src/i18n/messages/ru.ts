@@ -1098,6 +1098,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + {surcharge} надбавка за оплату картой",
+      includedTax: "Включая налог: {lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "Загрузка…",
       viewReceipt: "Посмотреть чек",
       noReceipt: "Для этого платежа чек недоступен.",
@@ -1199,6 +1201,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "Оплатить до {date}",
     exTax: "Цена без налога",
     tax: "Налог ({rate}%)",
+    taxNamed: "{name} ({rate}%)",
+    taxLineId: "Рег. номер {name}: {taxId}",
+    taxUnnamed: "Налог",
     incTax: "Цена с налогом",
     noTax: "Без налога на эту позицию",
     discount: "Скидка",

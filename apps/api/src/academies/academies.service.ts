@@ -3,6 +3,7 @@ import { PrismaDiscoveryService } from '../common/prisma/prisma-discovery.servic
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { shapeTimetableSlotResponse } from '../timetable/timetable.service';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
+import { chargeCurrency } from '../common/school-currency';
 import { classTimeZone } from '../classes/class-time-zone';
 
 // These four `select` shapes MUST match the column-level Postgres GRANTs the Phase 14
@@ -233,9 +234,12 @@ export class AcademiesService {
 
   /** Decision 406: each plan's card surcharge, so the member sees it before
    * paying. One rule with the purchase (card_surcharge_bps()). */
-  private async withCardSurcharge<T extends { id: string; membershipPlans: Array<{ type: string; price: number }> }>(school: T) {
+  private async withCardSurcharge<T extends { id: string; defaultCurrency: string | null; membershipPlans: Array<{ type: string; price: number; currency: string | null }> }>(school: T) {
     const bps = await readCardSurchargeBps(this.prismaDiscovery, school.id);
-    return { ...school, membershipPlans: school.membershipPlans.map((p) => ({ ...p, cardSurchargeAmount: planCardSurcharge(p, bps) })) };
+    return {
+      ...school,
+      membershipPlans: school.membershipPlans.map((p) => ({ ...p, cardSurchargeAmount: planCardSurcharge(p, bps, chargeCurrency(p.currency, school.defaultCurrency)) })),
+    };
   }
 
   /** One nested query, not three sequential ones — membershipPlans/classes are fetched

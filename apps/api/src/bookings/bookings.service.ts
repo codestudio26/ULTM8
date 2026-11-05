@@ -34,6 +34,7 @@ import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
+import { resolveChargeCurrency } from '../common/school-currency';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -420,7 +421,7 @@ export class BookingsService {
         : await this.cancellation.isSchoolOwner(callerId, resolvedBooking.schoolId);
 
     let cancellationChargeAmount: number | null = null;
-    let cancellationChargeCurrency = 'usd';
+    let cancellationChargeCurrency: string | null = null;
     const refunds: StripeRefundPlan[] = [];
     let needsStaff = 0;
     const booking = await withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
@@ -475,10 +476,9 @@ export class BookingsService {
       // first; a Class with none falls back to the charge on the plan the
       // Booking used. One fee per Booking, never both.
       if (!opts?.schoolCancelled && pastCutoff && school.chargeLateCancellationFee) {
-        // No currency field on Class itself — reuses the Booking's own
-        // sourceMembership's MembershipPlan currency, the same `?? 'usd'`
-        // fallback MembershipsService.purchase() already applies when charging
-        // this exact Membership's own Stripe payments.
+        // No currency field on Class itself: the plan the Booking used, else
+        // the School's (the one shared rule, common/school-currency.ts;
+        // Decision 430 MON-5). Never US dollars by default.
         const sourceMembership = resolvedBooking.sourceMembershipId
           ? await tx.membership.findUnique({
               where: { id: resolvedBooking.sourceMembershipId },
@@ -488,7 +488,7 @@ export class BookingsService {
         const fee = lateCancellationFee(cls.cancellationCharge, sourceMembership?.membershipPlan.cancellationCharge ?? null);
         if (fee !== null) {
           cancellationChargeAmount = fee;
-          cancellationChargeCurrency = sourceMembership?.membershipPlan.currency ?? 'usd';
+          cancellationChargeCurrency = await resolveChargeCurrency(this.prismaJobs, cls.schoolId, sourceMembership?.membershipPlan.currency);
         }
       }
 
@@ -551,14 +551,14 @@ export class BookingsService {
       const feeAmount = cancellationChargeAmount;
       let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
       let paymentIntentId: string | null = null;
+      const feeCurrency = cancellationChargeCurrency as string | null;
       try {
-        const charge = await this.paymentsService.chargeOffSession(
-          resolvedBooking.studentId,
-          resolvedBooking.schoolId,
-          cancellationChargeAmount,
-          cancellationChargeCurrency,
-          'Late-cancellation fee',
-        );
+        if (!feeCurrency) {
+          // Neither the plan nor the School has a currency: nothing is
+          // charged, and staff can see why in the log (MON-5).
+          throw new Error('no currency on the plan or the School');
+        }
+        const charge = await this.paymentsService.chargeOffSession(resolvedBooking.studentId, resolvedBooking.schoolId, cancellationChargeAmount, feeCurrency, 'Late-cancellation fee');
         outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
         paymentIntentId = charge.paymentIntentId || null;
       } catch (err) {
@@ -573,7 +573,7 @@ export class BookingsService {
         // Decision 346 (G5) — a fee that was charged, or tried and declined, is
         // also a row on the School's Transactions ledger. No saved card means
         // nothing was charged, so no row.
-        if (outcome !== 'NO_SAVED_PAYMENT_METHOD') {
+        if (outcome !== 'NO_SAVED_PAYMENT_METHOD' && feeCurrency) {
           const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: resolvedBooking.schoolId }, select: { id: true } });
           if (paymentAccount) {
             await tx.transaction.create({
@@ -585,7 +585,7 @@ export class BookingsService {
                 kind: 'LATE_CANCEL_FEE',
                 bookingId,
                 amount: feeAmount,
-                currency: cancellationChargeCurrency.toUpperCase(),
+                currency: feeCurrency.toUpperCase(),
                 status: outcome === 'CHARGED' ? 'SUCCESSFUL' : 'FAILED',
                 paymentMethod: 'STRIPE',
                 stripePaymentIntentId: paymentIntentId,

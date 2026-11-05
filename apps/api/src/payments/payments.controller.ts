@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Headers, HttpCode, Param, Patch, Post, RawBodyRequest, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Headers, HttpCode, Param, ParseUUIDPipe, Patch, Post, RawBodyRequest, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiExcludeEndpoint, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { Request } from 'express';
@@ -8,6 +8,8 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
+import { RefundDeskSaleDto, RefundDeskSaleResponseDto } from './dto/refund-desk-sale.dto';
+import { DeskSaleRefundsService } from './desk-sale-refunds.service';
 import { ConnectOnboardingResponseDto, ConnectStatusResponseDto, PaymentAccountResponseDto } from './dto/payment-account-response.dto';
 import { PaymentMethodResponseDto, SetupSessionResponseDto } from './dto/payment-method-response.dto';
 
@@ -25,7 +27,10 @@ import { PaymentMethodResponseDto, SetupSessionResponseDto } from './dto/payment
 @ApiTags('payments')
 @Controller()
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly deskSaleRefunds: DeskSaleRefundsService,
+  ) {}
 
   // ---- School side (fully reachable this phase) ----
 
@@ -135,6 +140,17 @@ export class PaymentsController {
   @Patch('transactions/:id/cancel')
   cancelTransaction(@CurrentUser() user: JwtPayload, @Param('id') id: string, @Body() dto: CancelTransactionDto) {
     return this.paymentsService.cancelTransaction(user.sub, id, dto);
+  }
+
+  /** Decision 430 (MON-8): the owner records money given back by hand for a
+   * membership paid at the desk, part or all of it, with a note, and chooses
+   * whether the membership ends. */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiCreatedResponse({ type: RefundDeskSaleResponseDto })
+  @Post('transactions/:id/refund')
+  refundDeskSale(@CurrentUser() user: JwtPayload, @Param('id', ParseUUIDPipe) id: string, @Body() dto: RefundDeskSaleDto) {
+    return this.deskSaleRefunds.refund(user.sub, id, dto);
   }
 
   // ---- Webhook receiving — Stripe calls this directly, no ULTM8 access token ----

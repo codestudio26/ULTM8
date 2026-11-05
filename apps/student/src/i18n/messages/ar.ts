@@ -1128,6 +1128,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + {surcharge} رسوم بطاقة إضافية",
+      includedTax: "يشمل الضريبة: {lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "جارٍ التحميل…",
       viewReceipt: "عرض الإيصال",
       noReceipt: "لا يوجد إيصال متاح لهذه الدفعة.",
@@ -1229,6 +1231,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "تستحق في {date}",
     exTax: "السعر بدون ضريبة",
     tax: "الضريبة ({rate}%)",
+    taxNamed: "{name} ({rate}%)",
+    taxLineId: "رقم تسجيل {name}: {taxId}",
+    taxUnnamed: "ضريبة",
     incTax: "السعر شامل الضريبة",
     noTax: "لا ضريبة على هذا البند",
     discount: "الخصم",

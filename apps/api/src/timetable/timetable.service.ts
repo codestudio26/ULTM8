@@ -21,6 +21,7 @@ import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
 import { noticeWallTime } from '../common/notice-time';
 import { TimeZoneChangeHooks, type TimeZoneChange } from '../common/time-zone-change/time-zone-change.module';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -237,7 +238,8 @@ export class TimetableService implements OnModuleInit {
     await this.assertZoneUsable(callerId, { schoolId, branchId: dto.branchId ?? null });
 
     // Decision 414 item 6: no price before the School's currency is set.
-    if (setsNewPrice(dto.cancellationCharge)) await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
+    // Decision 430 (MON-3): and in whole units of that currency.
+    if (setsNewPrice(dto.cancellationCharge)) assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId)));
 
     const slotId = randomUUID();
     const created = await this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -339,7 +341,8 @@ export class TimetableService implements OnModuleInit {
     ]);
     // Decision 414 item 6: no price before the School's currency is set.
     if (setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
-      await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId));
+      // Decision 430 (MON-3): and in whole units of that currency.
+      assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId)));
     }
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, existing.schoolId);

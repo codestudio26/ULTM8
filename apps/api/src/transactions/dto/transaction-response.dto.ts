@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { TaxLineAmountDto } from '../../charges/dto/charge.dto';
 
 /**
  * Field-for-field match of the Transaction Prisma model, plus three joined
@@ -20,6 +21,15 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * strings, on that path's actual JSON response despite being typed
  * required here.
  */
+/** Decision 430 (MON-6 step 1): the tax a membership price included. */
+export class IncludedTaxDto {
+  @ApiProperty({ description: 'The tax included, minor units (the lines added up).' })
+  amount!: number;
+
+  @ApiProperty({ type: () => TaxLineAmountDto, isArray: true })
+  lines!: TaxLineAmountDto[];
+}
+
 export class TransactionResponseDto {
   @ApiProperty()
   id!: string;
@@ -91,6 +101,14 @@ export class TransactionResponseDto {
    * units; 0 when none. Shown as its own line on the receipt. */
   @ApiProperty({ description: 'Card surcharge paid on top of amount, in the same minor units. 0 when none.' })
   surchargeAmount!: number;
+
+  @ApiPropertyOptional({
+    type: () => IncludedTaxDto,
+    nullable: true,
+    description:
+      "Decision 430 (MON-6 step 1): for a membership sale or renewal, the tax its price included, worked out with the School's tax settings (or the member's home Branch's) when it was paid. Null when no tax applied, when the School's prices have tax added on top (membership prices aren't taxed on top yet), or for a payment from before this was recorded.",
+  })
+  includedTax!: IncludedTaxDto | null;
 
   @ApiPropertyOptional({ type: String, nullable: true })
   currency!: string | null;

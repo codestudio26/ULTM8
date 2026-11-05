@@ -13,11 +13,12 @@ import { lockSchoolOpen } from '../../tenants/lock-school-open';
 import { dayIn, dayToDate } from '../freeze/membership-freeze';
 import { insertCharge, lockInvoiceNumbers } from '../../charges/charge-insert';
 import { lockBalance } from '../../charges/charge-ledger';
-import { computeCharge, formatInvoiceNumber } from '../../charges/charge-maths';
+import { computeCharge, formatInvoiceNumber, taxLinesForCharge } from '../../charges/charge-maths';
 import { assertSchoolCurrencySet } from '../../common/school-currency';
 import { NOTIFICATION_FANOUT_QUEUE } from '../../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types';
 import { SetPlanContractDto, SignPlanContractDto } from './plan-contract.dto';
+import { loadEffectiveTax } from '../../charges/tax-lines';
 
 const money = (minor: number, currency: string) => `${(minor / 100).toFixed(2)} ${currency.toUpperCase()}`;
 
@@ -325,7 +326,9 @@ export class PlanContractsService {
     const currency = (sig.currency ?? school?.defaultCurrency)?.toUpperCase();
     if (!school || !currency) return null;
     const fee = sig.earlyExitFee!;
-    const totals = computeCharge({ unitAmount: fee, discount: null, taxRateBasisPoints: school.taxRateBasisPoints, taxInclusive: school.taxInclusive });
+    // Decision 430 (MON-6): the member's tax lines (their home Branch's when it overrides).
+    const tax = taxLinesForCharge(await loadEffectiveTax(this.prismaJobs, membership.schoolId, membership.studentId), false);
+    const totals = computeCharge({ unitAmount: fee, discount: null, ...tax, currency });
     let created: { id: string; invoiceNumber: number };
     try {
       created = await this.prismaJobs.$transaction(async (tx) => {

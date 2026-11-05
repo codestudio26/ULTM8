@@ -21,6 +21,7 @@ import { noticeWallTime } from '../common/notice-time';
 import { assertAgeRange } from './who-can-book';
 import { isClosedOn } from '../timetable/slot-occurrences';
 import { classTimeZone } from './class-time-zone';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -77,7 +78,8 @@ export class ClassesService {
     });
 
     // Decision 414 item 6: no price before the School's currency is set.
-    if (setsNewPrice(dto.cancellationCharge)) await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
+    // Decision 430 (MON-3): and in whole units of that currency.
+    if (setsNewPrice(dto.cancellationCharge)) assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId)));
     // Decision 431 item 13: a one-off class on a closed day is allowed (a
     // special event during a holiday), once the owner has seen the warning.
     if (!dto.confirmClosedDay) await this.assertNotOnClosedDay(callerId, schoolId, dto.branchId ?? null, startDate);
@@ -280,7 +282,8 @@ export class ClassesService {
 
     // Decision 414 item 6: no price before the School's currency is set.
     if (setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
-      await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId));
+      // Decision 430 (MON-3): and in whole units of that currency.
+      assertWholeMinorUnits(dto.cancellationCharge, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId)));
     }
 
     const branchChanges = dto.branchId !== undefined && dto.branchId !== existing.branchId;

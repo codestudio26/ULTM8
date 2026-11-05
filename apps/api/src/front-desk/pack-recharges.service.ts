@@ -7,6 +7,7 @@ import { QrTokenService } from '../attendance/qr-token.service';
 import { assertAtKioskBranch, frontDeskLookupOwner, FrontDeskCheckInService, KIOSK_BOOK_FIRST } from '../attendance/front-desk-check-in.service';
 import { isMembershipLive } from '../memberships/membership-creation-guard';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
+import { chargeCurrency } from '../common/school-currency';
 import { CreatePackRechargeDto, MyPackRechargeDto, PackRechargeDto, PackRechargeStatusDto } from './dto/pack-recharge.dto';
 
 type Kiosk = { sessionId: string; branchId: string | null };
@@ -117,7 +118,7 @@ export class PackRechargesService {
       where: { studentId: { in: [callerId, ...children.map((c) => c.studentId)] }, completedAt: null, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: 'asc' },
       include: {
-        school: { select: { name: true } },
+        school: { select: { name: true, defaultCurrency: true } },
         student: { select: { firstName: true } },
         membershipPlan: { select: { id: true, schoolId: true, type: true, title: true, price: true, currency: true, expiryDurationDays: true, classesIncluded: true, visible: true, contractVersion: true, archivedAt: true } },
       },
@@ -127,7 +128,7 @@ export class PackRechargesService {
       if (r.membershipPlan.archivedAt || (await this.isPaid(r))) continue;
       const { archivedAt: _archived, ...plan } = r.membershipPlan;
       // Decision 406: the card surcharge, shown before the member pays.
-      const cardSurchargeAmount = planCardSurcharge(plan, await readCardSurchargeBps(this.prismaJobs, r.schoolId));
+      const cardSurchargeAmount = planCardSurcharge(plan, await readCardSurchargeBps(this.prismaJobs, r.schoolId), chargeCurrency(plan.currency, r.school.defaultCurrency));
       items.push({
         id: r.id,
         schoolId: r.schoolId,

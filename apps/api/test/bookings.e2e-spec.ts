@@ -124,7 +124,9 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // AUTO_CREDIT: these cancellation tests predate Decision 291 and cover the
     // credit-back path, which was every School's behaviour before the policy
     // was read. The other policies are covered in class-cancellation-policy.e2e-spec.ts.
-    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Bookings HTTP School', waitlistClaimWindowMinutes: 120, classCancellationPolicy: 'AUTO_CREDIT' } });
+    // A currency, as a cancellation charge needs one (Decision 430 MON-5: a
+    // fee is never charged in US dollars by default).
+    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Bookings HTTP School', waitlistClaimWindowMinutes: 120, classCancellationPolicy: 'AUTO_CREDIT', defaultCurrency: 'usd' } });
 
     const mkUser = (label: string) =>
       superuser.user.create({

@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
-import { MAX_BASIS_POINTS, MAX_CHARGE_MINOR } from '../../charges/charge-maths';
+import { MAX_BASIS_POINTS } from '../../charges/charge-maths';
 import { LATE_FEE_MAX_GRACE_DAYS } from '../late-fee-maths';
 
 export const LATE_FEE_TYPES = ['FIXED', 'PERCENT'] as const;
@@ -51,7 +51,7 @@ export class UpdateLateFeeSettingsDto {
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(MAX_CHARGE_MINOR)
+  // The cap (MAX_CHARGE_MINOR) is checked in the service, with its own code (MON-11).
   fixedAmount?: number | null;
 
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'PERCENT: hundredths of a percent (250 = 2.5%), 1 to 10000. Required to switch a % fee on.' })

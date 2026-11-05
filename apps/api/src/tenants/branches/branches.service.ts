@@ -12,6 +12,8 @@ import { BranchDependentCounts, branchHasHistory, countBranchDependents, describ
 import { CloseBranchDto, WHOLE_SCHOOL } from './dto/close-branch.dto';
 import { assertSchoolCurrencySet, setsNewPrice } from '../../common/school-currency';
 import { TimeZoneChangeHooks } from '../../common/time-zone-change/time-zone-change.module';
+import { assertWholeMinorUnits } from '../../payments/stripe-amount';
+import { assertTaxLinesValid } from '../../charges/tax-lines';
 
 const RETENTION_WINDOW_DAYS = 90;
 
@@ -112,7 +114,17 @@ export class BranchesService {
     // Decision 414 item 6: no price before the School's currency is set.
     // The School's currency, not the Branch's own currency override.
     if (setsNewPrice(dto.noShowFee, existing.noShowFee)) {
-      await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId));
+      // Decision 430 (MON-3): and in whole units of that currency.
+      assertWholeMinorUnits(dto.noShowFee, await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, existing.schoolId)));
+    }
+
+    // Decision 430 (MON-6): the two lines as they will be after this save.
+    if (dto.taxRateBasisPoints !== undefined || dto.tax2RateBasisPoints !== undefined || dto.tax2Name !== undefined) {
+      assertTaxLinesValid(
+        dto.taxRateBasisPoints ?? existing.taxRateBasisPoints,
+        dto.tax2RateBasisPoints ?? existing.tax2RateBasisPoints,
+        dto.tax2Name !== undefined ? dto.tax2Name : existing.tax2Name,
+      );
     }
 
     const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -138,6 +150,14 @@ export class BranchesService {
           schoolCancelledClassResolution: dto.schoolCancelledClassResolution,
           defaultRefundCutoffHours: dto.defaultRefundCutoffHours,
           noShowFee: dto.noShowFee,
+          // Decision 430 (MON-6): the Branch's own tax lines.
+          taxOverride: dto.taxOverride,
+          taxName: dto.taxName,
+          taxRateBasisPoints: dto.taxRateBasisPoints,
+          taxId: dto.taxId,
+          tax2Name: dto.tax2Name,
+          tax2RateBasisPoints: dto.tax2RateBasisPoints,
+          tax2Id: dto.tax2Id,
         },
       }),
     );

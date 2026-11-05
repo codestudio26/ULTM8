@@ -108,6 +108,22 @@ function TransactionRow({ transaction }: { transaction: Transaction }) {
           })}
         </Text>
       ) : null}
+      {/* Decision 430 (MON-6 step 1): the tax a membership's price included. */}
+      {transaction.includedTax ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>
+          {t('transactions.row.includedTax', {
+            lines: transaction.includedTax.lines
+              .map((l) =>
+                t('transactions.row.includedTaxLine', {
+                  name: l.name || t('charges.taxUnnamed'),
+                  rate: String(l.rateBasisPoints / 100),
+                  amount: formatMoney(l.amount, transaction.currency),
+                }),
+              )
+              .join(' · '),
+          })}
+        </Text>
+      ) : null}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 }}>
         <Text style={{ color: '#5F6368', fontSize: 12 }}>{formatDate(transaction.billingDate)}</Text>
         <Text style={{ color: statusColor, fontSize: 12, fontWeight: '600' }}>{statusLabel ? t(statusLabel) : transaction.status}</Text>

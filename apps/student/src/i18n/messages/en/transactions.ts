@@ -6,6 +6,8 @@ export const transactions = {
   },
   row: {
     surchargeLine: "{price} + {surcharge} card surcharge",
+    includedTax: "Includes tax: {lines}",
+    includedTaxLine: "{name} {rate}% {amount}",
     loading: 'Loading…',
     viewReceipt: 'View receipt',
     noReceipt: 'No receipt is available for this payment.',

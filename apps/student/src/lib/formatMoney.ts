@@ -1,3 +1,4 @@
+import { moneyDigits, plainMoney } from '@ultm8/i18n';
 import { formatLocale } from '../i18n/format';
 
 /** `MembershipPlan.price` (and everywhere else price appears in this schema) is a
@@ -7,9 +8,11 @@ import { formatLocale } from '../i18n/format';
  * every paid plan's price 100x too large on every Academy a Student browses. */
 export function formatMoney(minorUnits: number, currency?: string | null): string {
   const amount = minorUnits / 100;
+  const code = (currency ?? 'usd').toUpperCase();
   try {
-    return new Intl.NumberFormat(formatLocale(), { style: 'currency', currency: (currency ?? 'usd').toUpperCase() }).format(amount);
+    // Each currency's own decimals (Decision 430, TXT-6), as the portal shows them.
+    return new Intl.NumberFormat(formatLocale(), { style: 'currency', currency: code, ...moneyDigits(code) }).format(amount);
   } catch {
-    return `${amount.toFixed(2)} ${(currency ?? 'usd').toUpperCase()}`;
+    return `${plainMoney(minorUnits, code)} ${code}`;
   }
 }

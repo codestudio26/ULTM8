@@ -3,7 +3,7 @@ import { assertSelfAttestedAdult } from '../common/self-attested-adult';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
-import { Prisma } from '@prisma/client';
+import { Prisma, type Membership } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -35,7 +35,8 @@ import { passExpiryDate, schoolZoneFor } from './pass-expiry';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 import { loadFreezeStates } from './freeze/freeze-states';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
-import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
+import { assertSchoolCurrencySet, resolveChargeCurrency, setsNewPrice } from '../common/school-currency';
+import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
 import { PlanContractsService } from './contracts/plan-contracts.service';
 
@@ -115,7 +116,13 @@ export class MembershipsService {
     const price = dto.type === 'FRIEND_PASS' ? 0 : dto.price;
     // Decision 414 item 6: no price is saved before the School's currency is
     // set, even on a plan given its own currency. A free plan needs none.
-    if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) await this.assertSchoolCurrencySet(callerId, schoolId);
+    if (setsNewPrice(price) || setsNewPrice(dto.cancellationCharge)) {
+      const schoolCurrency = await this.assertSchoolCurrencySet(callerId, schoolId);
+      // Decision 430 (MON-3): no decimals a currency doesn't have (¥999.50).
+      const planCurrency = this.normalizeCurrency(dto.currency) ?? schoolCurrency;
+      assertWholeMinorUnits(price, planCurrency);
+      assertWholeMinorUnits(dto.cancellationCharge, planCurrency);
+    }
     // Decision 316 item 10: one of this School's own income categories.
     const incomeCategoryId = await this.incomeCategories.resolveForSchool(schoolId, dto.incomeCategoryId);
 
@@ -257,6 +264,15 @@ export class MembershipsService {
     if (setsNewPrice(nextPrice, existing.price) || setsNewPrice(dto.cancellationCharge, existing.cancellationCharge)) {
       await this.assertSchoolCurrencySet(callerId, existing.schoolId);
     }
+    // Decision 430 (MON-3): the amounts this save sets (or moves to another
+    // currency) must be whole units of the plan's currency (no ¥999.50).
+    const newPrice = setsNewPrice(nextPrice, existing.price) || currencyChanged;
+    const newCancellationCharge = dto.cancellationCharge !== undefined || currencyChanged;
+    if (newPrice || newCancellationCharge) {
+      const planCurrency = await this.prismaApp.withTenantContext(callerId, (tx) => resolveChargeCurrency(tx, existing.schoolId, nextCurrency));
+      if (newPrice) assertWholeMinorUnits(nextPrice, planCurrency);
+      if (newCancellationCharge) assertWholeMinorUnits(dto.cancellationCharge !== undefined ? dto.cancellationCharge : existing.cancellationCharge, planCurrency);
+    }
     // Decision 334 (Memberships review M2/M4): a type change clears the fields
     // the new type doesn't use (Class Pack -> Subscription used to keep its 10
     // credits). Required fields are only checked when this edit touches them or
@@ -339,6 +355,8 @@ export class MembershipsService {
         productName: title ?? existing.title,
         amount: nextPrice,
         currency: chargeCurrency.toLowerCase(),
+        // Decision 430 (MON-12): the same new price saved twice makes one Stripe Price.
+        planId,
       });
       stripeProductId = created.productId;
       stripePriceId = created.priceId;
@@ -357,9 +375,13 @@ export class MembershipsService {
       stripePriceId = null;
     }
 
-    const updated = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.membershipPlan.update({
-        where: { id: planId },
+    // Decision 430 (MON-12): a price change saves only if the price is still
+    // the one this edit started from, so the same change sent five times at
+    // once records (and migrates) once. The others answer 409.
+    const priceMoves = priceOrTypeChanged && nextPrice !== existing.price;
+    const updated = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const saved = await tx.membershipPlan.updateMany({
+        where: { id: planId, ...(priceMoves ? { price: existing.price } : {}) },
         data: {
           type: dto.type,
           title,
@@ -384,8 +406,12 @@ export class MembershipsService {
           stripePriceId,
           incomeCategoryId,
         },
-      }),
-    );
+      });
+      if (saved.count === 0) {
+        throw new ConflictException({ code: 'PLAN_PRICE_JUST_CHANGED', message: "This plan's price was just changed. Reload the plan and try again." });
+      }
+      return tx.membershipPlan.findUniqueOrThrow({ where: { id: planId } });
+    });
 
     if (priceChanged && affectedMembershipCount > 0 && dto.priceChangeStrategy) {
       await this.recordPriceChangeDecision(callerId, {
@@ -641,8 +667,8 @@ export class MembershipsService {
     return code;
   }
 
-  private async assertSchoolCurrencySet(callerId: string, schoolId: string): Promise<void> {
-    await this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
+  private async assertSchoolCurrencySet(callerId: string, schoolId: string): Promise<string> {
+    return this.prismaApp.withTenantContext(callerId, (tx) => assertSchoolCurrencySet(tx, schoolId));
   }
 
   /**
@@ -653,14 +679,12 @@ export class MembershipsService {
    * it for Stripe.
    */
   private async resolveChargeCurrency(contextUserId: string, schoolId: string, planCurrency: string | null): Promise<string> {
-    if (planCurrency) return planCurrency.toUpperCase();
-    const school = await this.prismaApp.withTenantContext(contextUserId, (tx) =>
-      tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } }),
-    );
-    if (!school?.defaultCurrency) {
+    // The shared rule (common/school-currency.ts, Decision 430 MON-5).
+    const currency = await this.prismaApp.withTenantContext(contextUserId, (tx) => resolveChargeCurrency(tx, schoolId, planCurrency));
+    if (!currency) {
       throw new BadRequestException("This plan has no currency and the School has no default currency set — set one on the plan or the School's settings first.");
     }
-    return school.defaultCurrency.toUpperCase();
+    return currency;
   }
 
   /**
@@ -929,7 +953,7 @@ export class MembershipsService {
       // subscribe()). Never cash or a bank transfer. The member saw the same
       // amount on the plan before paying (AcademiesService).
       const surchargeBps = await this.prismaApp.withTenantContext(studentId, (tx) => readCardSurchargeBps(tx, plan.schoolId));
-      const surcharge = planCardSurcharge(plan, surchargeBps);
+      const surcharge = planCardSurcharge(plan, surchargeBps, currency);
       if (plan.type === 'SUBSCRIPTION') {
         // Payment is still collected fresh, client-side, via Stripe Elements
         // against the returned clientSecret (PaymentsService.subscribe()'s own
@@ -1394,15 +1418,16 @@ export class MembershipsService {
     const currency = plan.price > 0 ? await this.resolveChargeCurrency(studentId, schoolId, plan.currency) : null;
 
     const schoolZone = await schoolZoneFor(this.prismaJobs, schoolId);
+    let sale: { membership: Membership; transactionId: string | null; amount: number };
     try {
-      return await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      sale = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'SALE');
         const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan, schoolZone) });
         if (plan.price === 0) {
           // Spec 55 §6.1: a £0 plan has no Transaction, as in purchase().
-          return { membership, transactionId: null };
+          return { membership, transactionId: null, amount: 0 };
         }
         const transaction = await tx.transaction.create({
           data: {
@@ -1420,11 +1445,21 @@ export class MembershipsService {
           },
           select: { id: true },
         });
-        return { membership, transactionId: transaction.id };
+        return { membership, transactionId: transaction.id, amount: plan.price };
       });
     } catch (err) {
       throw this.toCreationConflict(err);
     }
+    // Decision 346 / Decision 430 (MON-14): the member (and their Guardians)
+    // hear that the desk payment was taken, whichever desk path recorded it,
+    // once it is committed. notifyCashPayment never throws.
+    if (sale.transactionId) {
+      await this.paymentsService.notifyCashPayment(
+        { id: sale.transactionId, schoolId, studentId, membershipPlanId: plan.id, amount: sale.amount, currency },
+        'confirmed',
+      );
+    }
+    return { membership: sale.membership, transactionId: sale.transactionId };
   }
 
   /**
@@ -1509,14 +1544,22 @@ export class MembershipsService {
       throw new BadRequestException('Only a Friend Pass plan can be given. Use Sell a plan for the others.');
     }
     const schoolZone = await schoolZoneFor(this.prismaJobs, schoolId);
+    // Decision 430 (MON-15): one action may give up to five passes. The repeat
+    // guard runs once for the action, so a second guest no longer needs a
+    // second click a minute later.
+    const quantity = dto.quantity ?? 1;
     try {
-      const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      const memberships = await this.prismaApp.withTenantContext(studentId, async (tx) => {
         await lockSchoolOpen(tx, schoolId);
         await assertCanCreateMembership(tx, studentId, schoolId, plan);
         await this.assertNotJustRecorded(tx, studentId, plan.id, 'GIFT');
-        return tx.membership.create({ data: { ...this.newMembershipData(studentId, plan, schoolZone), giftedById: callerId } });
+        const made: Membership[] = [];
+        for (let i = 0; i < quantity; i++) {
+          made.push(await tx.membership.create({ data: { ...this.newMembershipData(studentId, plan, schoolZone), giftedById: callerId } }));
+        }
+        return made;
       });
-      return { membership, transactionId: null };
+      return { membership: memberships[0], memberships, transactionId: null };
     } catch (err) {
       throw this.toCreationConflict(err);
     }
@@ -1725,15 +1768,7 @@ export class MembershipsService {
       { membershipPlanId: dto.membershipPlanId, paymentMethod: dto.paymentMethod },
       { recordedById: callerId },
     );
-    if (transactionId) {
-      const transaction = await this.prismaApp.withTenantContext(dto.studentId, (tx) =>
-        tx.transaction.findUnique({
-          where: { id: transactionId },
-          select: { id: true, schoolId: true, studentId: true, membershipPlanId: true, amount: true, currency: true },
-        }),
-      );
-      if (transaction) await this.paymentsService.notifyCashPayment(transaction, 'confirmed');
-    }
+    // recordDeskSale() tells the member (Decision 430, MON-14).
     return { transactionId, membershipId: membership.id };
   }
 

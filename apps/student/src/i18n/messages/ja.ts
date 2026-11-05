@@ -1043,6 +1043,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + カード手数料 {surcharge}",
+      includedTax: "税込み：{lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "読み込み中…",
       viewReceipt: "領収書を表示",
       noReceipt: "この支払いの領収書はありません。",
@@ -1144,6 +1146,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "支払期日 {date}",
     exTax: "税抜価格",
     tax: "税（{rate}%）",
+    taxNamed: "{name}（{rate}%）",
+    taxLineId: "{name}登録番号：{taxId}",
+    taxUnnamed: "税",
     incTax: "税込価格",
     noTax: "この品目は非課税",
     discount: "割引",

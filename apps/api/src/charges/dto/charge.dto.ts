@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Matches, Max, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
+import { IsBoolean, IsIn, IsInt, IsISO8601, IsOptional, IsString, IsUUID, Matches, MaxLength, Min, MinLength, ValidateIf } from 'class-validator';
 import { MAX_CHARGE_MINOR } from '../charge-maths';
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -47,7 +47,7 @@ export class CreateChargeDto {
   @ApiProperty({ description: "The price in minor units of the School's currency, as the School prices (with or without tax, by its tax setting).", minimum: 1, maximum: MAX_CHARGE_MINOR })
   @IsInt()
   @Min(1)
-  @Max(MAX_CHARGE_MINOR)
+  // The cap (MAX_CHARGE_MINOR) is checked in the service, with its own code (MON-11).
   amount!: number;
 
   @ApiPropertyOptional({ enum: ['PERCENT', 'FIXED'], nullable: true })
@@ -59,7 +59,7 @@ export class CreateChargeDto {
   @ValidateIf((o: CreateChargeDto) => !!o.discountType)
   @IsInt()
   @Min(1)
-  @Max(MAX_CHARGE_MINOR)
+  // The cap (MAX_CHARGE_MINOR) is checked in the service, with its own code (MON-11).
   discountValue?: number | null;
 
   @ApiProperty({ example: '2026-11-15', description: 'The due date (YYYY-MM-DD).' })
@@ -98,7 +98,7 @@ export class RecordChargePaymentDto {
   @ApiProperty({ minimum: 1, maximum: MAX_CHARGE_MINOR, description: 'Minor units. More than is owed becomes credit; less leaves the rest owed.' })
   @IsInt()
   @Min(1)
-  @Max(MAX_CHARGE_MINOR)
+  // The cap (MAX_CHARGE_MINOR) is checked in the service, with its own code (MON-11).
   amount!: number;
 
   @ApiProperty({ enum: DESK_CHARGE_PAYMENT_METHODS })
@@ -164,6 +164,14 @@ export class ChargeResponseDto {
 
   @ApiProperty({ description: '"No tax on this item (0% or exempt)" was ticked (Decision 414 item 5): taxRateBasisPoints and taxAmount are 0. Show "No tax".' })
   taxExempt!: boolean;
+
+  @ApiPropertyOptional({
+    type: () => TaxLineAmountDto,
+    isArray: true,
+    nullable: true,
+    description: 'Decision 430 (MON-6): each named tax line with its amount (they add up to taxAmount). Null for a charge made with one unnamed rate: show taxRateBasisPoints and taxAmount as before.',
+  })
+  taxLines!: TaxLineAmountDto[] | null;
 
   @ApiPropertyOptional({ type: String, nullable: true, description: "The charge's income category (Decision 316 item 10). Staff only; null for the member." })
   incomeCategoryName!: string | null;
@@ -450,6 +458,24 @@ export class ChargeAbilitiesDto {
   resendInvoice!: boolean;
 }
 
+/** Decision 430 (MON-6): one named tax line. */
+export class TaxLineDto {
+  @ApiPropertyOptional({ type: String, nullable: true, example: 'GST' })
+  name!: string | null;
+
+  @ApiProperty({ description: 'Hundredths of a percent (500 = 5%).' })
+  rateBasisPoints!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: "The line's registration number, for invoices and receipts." })
+  taxId!: string | null;
+}
+
+/** Decision 430 (MON-6): one named tax line, worked out on a charge or receipt. */
+export class TaxLineAmountDto extends TaxLineDto {
+  @ApiProperty({ description: 'Minor units.' })
+  amount!: number;
+}
+
 export class ChargeSettingsDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   currency!: string | null;
@@ -462,6 +488,9 @@ export class ChargeSettingsDto {
 
   @ApiProperty()
   taxInclusive!: boolean;
+
+  @ApiProperty({ type: () => TaxLineDto, isArray: true, description: "Decision 430 (MON-6): the tax lines this member's new charges get (the School's, or their home Branch's when it overrides). Empty: no tax." })
+  taxLines!: TaxLineDto[];
 
   @ApiProperty()
   cancelReasonRequired!: boolean;
@@ -713,7 +742,7 @@ export class RefundChargePaymentDto {
   @ApiProperty({ minimum: 1, maximum: MAX_CHARGE_MINOR, description: 'Minor units. Part refunds are allowed; never more than is left to refund on the payment.' })
   @IsInt()
   @Min(1)
-  @Max(MAX_CHARGE_MINOR)
+  // The cap (MAX_CHARGE_MINOR) is checked in the service, with its own code (MON-11).
   amount!: number;
 
   @ApiProperty({
@@ -738,7 +767,7 @@ export class GiveCreditDto {
   @ApiProperty({ minimum: 1, maximum: MAX_CHARGE_MINOR, description: "Minor units of the School's currency." })
   @IsInt()
   @Min(1)
-  @Max(MAX_CHARGE_MINOR)
+  // The cap (MAX_CHARGE_MINOR) is checked in the service, with its own code (MON-11).
   amount!: number;
 
   @ApiProperty({ maxLength: 500, description: 'Why: for staff only, never shown to the member.' })

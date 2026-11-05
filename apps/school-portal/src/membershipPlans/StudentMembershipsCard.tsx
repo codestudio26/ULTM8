@@ -27,6 +27,7 @@ import {
   useStudentFreezableMemberships,
 } from './freezeQueries';
 import { useSchool } from '../schools/schoolQueries';
+import { useDeskMethods } from '../lib/deskMethods';
 
 const TYPE_LABELS: Record<string, TranslationKey> = {
   SUBSCRIPTION: 'membershipPlans.types.subscription',
@@ -320,12 +321,16 @@ function DeskModal({
 }) {
   const t = useT();
   const sell = useSellMembership(schoolId, studentId);
+  // Decision 430 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  const deskMethods = useDeskMethods(schoolId, DESK_PAYMENT_METHODS);
   const gift = useGiftFriendPass(schoolId, studentId);
   const [pickedPlanId, setPlanId] = useState(plans[0]?.id ?? '');
   // The plans can arrive after the window opens (or change under it): fall back
   // to the first one, as the select shows it, so the button never stays disabled.
   const planId = plans.some((p) => p.id === pickedPlanId) ? pickedPlanId : (plans[0]?.id ?? '');
   const [paymentMethod, setPaymentMethod] = useState<DeskPaymentMethod>('CASH');
+  // Decision 430 (MON-15): one pass per guest, up to five in one go.
+  const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const busy = sell.isPending || gift.isPending;
   const plan = plans.find((p) => p.id === planId);
@@ -334,7 +339,7 @@ function DeskModal({
     setError(null);
     try {
       if (kind === 'sell') await sell.mutateAsync({ membershipPlanId: planId, paymentMethod });
-      else await gift.mutateAsync({ membershipPlanId: planId });
+      else await gift.mutateAsync({ membershipPlanId: planId, quantity });
       onClose();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('membershipPlans.studentCard.deskFailed'));
@@ -366,13 +371,23 @@ function DeskModal({
               }))}
             />
           </Field>
+          {kind === 'gift' ? (
+            <Field label={t('membershipPlans.studentCard.giftQuantityLabel')} htmlFor="desk-gift-quantity" hint={t('membershipPlans.studentCard.giftQuantityHint')}>
+              <SelectField
+                id="desk-gift-quantity"
+                value={String(quantity)}
+                onChange={(e) => setQuantity(Number(e.target.value))}
+                options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))}
+              />
+            </Field>
+          ) : null}
           {kind === 'sell' && plan && plan.price > 0 ? (
             <Field label={t('membershipPlans.studentCard.paidByLabel')} htmlFor="desk-paid-by">
               <SelectField
                 id="desk-paid-by"
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as DeskPaymentMethod)}
-                options={DESK_PAYMENT_METHODS.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
+                options={deskMethods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
               />
             </Field>
           ) : null}

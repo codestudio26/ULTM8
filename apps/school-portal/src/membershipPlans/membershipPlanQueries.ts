@@ -207,7 +207,8 @@ export function useSellMembership(schoolId: string, studentId: string) {
 export function useGiftFriendPass(schoolId: string, studentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { membershipPlanId: string }) =>
+    // Decision 430 (MON-15): quantity 1-5 gives that many passes in one action.
+    mutationFn: (body: { membershipPlanId: string; quantity: number }) =>
       unwrap(
         apiClient.POST('/v1/schools/{schoolId}/students/{studentId}/memberships/gift', { params: { path: { schoolId, studentId } }, body }),
       ),

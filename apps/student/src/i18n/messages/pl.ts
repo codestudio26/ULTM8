@@ -1098,6 +1098,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + {surcharge} dopłaty za kartę",
+      includedTax: "Zawiera podatek: {lines}",
+      includedTaxLine: "{name} {rate}% {amount}",
       loading: "Wczytywanie…",
       viewReceipt: "Zobacz potwierdzenie",
       noReceipt: "Brak potwierdzenia dla tej płatności.",
@@ -1199,6 +1201,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "Termin {date}",
     exTax: "Cena netto",
     tax: "Podatek ({rate}%)",
+    taxNamed: "{name} ({rate}%)",
+    taxLineId: "Nr rejestracyjny {name}: {taxId}",
+    taxUnnamed: "Podatek",
     incTax: "Cena brutto",
     noTax: "Bez podatku na tę pozycję",
     discount: "Rabat",

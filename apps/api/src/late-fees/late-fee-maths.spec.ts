@@ -4,21 +4,21 @@ import { lateFeeForChargeNotice, lateFeeForRenewalNotice, lateFeeWaivedNotice } 
 
 describe('late fee maths (Decision 413)', () => {
   it('a fixed fee is the fixed amount, whatever is owed', () => {
-    expect(lateFeeAmount({ type: 'FIXED', fixedAmount: 1500 }, 1)).toBe(1500);
-    expect(lateFeeAmount({ type: 'FIXED', fixedAmount: 1500 }, 999_999)).toBe(1500);
+    expect(lateFeeAmount({ type: 'FIXED', fixedAmount: 1500 }, 1, 'USD')).toBe(1500);
+    expect(lateFeeAmount({ type: 'FIXED', fixedAmount: 1500 }, 999_999, 'USD')).toBe(1500);
   });
 
   it('a % is of what is still owed, rounded half up to the minor unit', () => {
-    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 200 }, 10000)).toBe(200); // 2% of 100.00
-    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 250 }, 4321)).toBe(108); // 2.5% of 43.21 = 1.08025
-    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 1050 }, 3330)).toBe(350); // 10.5% of 33.30 = 3.4965
-    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 500 }, 10)).toBe(1); // 0.5 rounds up
-    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 10000 }, 7000)).toBe(7000); // 100%
+    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 200 }, 10000, 'USD')).toBe(200); // 2% of 100.00
+    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 250 }, 4321, 'USD')).toBe(108); // 2.5% of 43.21 = 1.08025
+    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 1050 }, 3330, 'USD')).toBe(350); // 10.5% of 33.30 = 3.4965
+    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 500 }, 10, 'USD')).toBe(1); // 0.5 rounds up
+    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 10000 }, 7000, 'USD')).toBe(7000); // 100%
   });
 
   it('nothing owed, or a % that rounds to nothing, is no fee', () => {
-    expect(lateFeeAmount({ type: 'FIXED', fixedAmount: 1500 }, 0)).toBe(0);
-    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 100 }, 49)).toBe(0); // 0.49 → 0
+    expect(lateFeeAmount({ type: 'FIXED', fixedAmount: 1500 }, 0, 'USD')).toBe(0);
+    expect(lateFeeAmount({ type: 'PERCENT', percentBps: 100 }, 49, 'USD')).toBe(0); // 0.49 → 0
   });
 
   it('the fee comes the day after the grace days', () => {

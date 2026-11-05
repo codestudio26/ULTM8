@@ -190,6 +190,9 @@ export class DeskMembershipResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true, description: 'The Successful Transaction recorded for a paid sale; null for a £0 plan or a Friend Pass.' })
   transactionId!: string | null;
+
+  @ApiPropertyOptional({ type: MembershipResponseDto, isArray: true, description: 'Decision 430 (MON-15): a Friend Pass gift only: every pass given (membership is the first).' })
+  memberships?: MembershipResponseDto[];
 }
 
 /** GET /students/{id}/membership-status — computed signal only, never a raw row. */

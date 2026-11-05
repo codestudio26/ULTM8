@@ -69,6 +69,27 @@ export class BranchResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true })
   noShowFee!: number | null;
 
+  @ApiProperty({ description: "Decision 430 (MON-6): this Branch's own tax lines replace the School's." })
+  taxOverride!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  taxName!: string | null;
+
+  @ApiProperty()
+  taxRateBasisPoints!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  taxId!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  tax2Name!: string | null;
+
+  @ApiProperty()
+  tax2RateBasisPoints!: number;
+
+  @ApiPropertyOptional({ type: String, nullable: true })
+  tax2Id!: string | null;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 226 — set when this Branch has been archived. Null when active.' })
   archivedAt!: string | null;
 

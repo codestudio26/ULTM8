@@ -1053,6 +1053,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       surchargeLine: "{price} + {surcharge} Kartenzuschlag",
+      includedTax: "Enthält Steuer: {lines}",
+      includedTaxLine: "{name} {rate} % {amount}",
       loading: "Wird geladen…",
       viewReceipt: "Beleg ansehen",
       noReceipt: "Für diese Zahlung ist kein Beleg verfügbar.",
@@ -1154,6 +1156,9 @@ export const messages: PartialMessages<EnglishMessages> = {
     due: "Fällig am {date}",
     exTax: "Preis netto",
     tax: "Steuer ({rate} %)",
+    taxNamed: "{name} ({rate} %)",
+    taxLineId: "{name}-Registrierungsnr. {taxId}",
+    taxUnnamed: "Steuer",
     incTax: "Preis brutto",
     noTax: "Keine Steuer auf diesen Artikel",
     discount: "Rabatt",

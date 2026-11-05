@@ -57,10 +57,10 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
   }
 
   /** A Class Pack on a plan with the given charge, and a Class starting tomorrow. */
-  async function setUp(opts: { planCharge: number | null; classCharge: number | null; pastCutoff?: boolean }) {
+  async function setUp(opts: { planCharge: number | null; classCharge: number | null; pastCutoff?: boolean; planCurrency?: string | null }) {
     const { user, token } = await mkStudent();
     const plan = await superuser.membershipPlan.create({
-      data: { id: randomUUID(), schoolId: school.id, title: `Pack ${randomUUID().slice(0, 6)}`, type: 'CLASS_PACK', price: 6000, currency: 'GBP', classesIncluded: 10, cancellationCharge: opts.planCharge },
+      data: { id: randomUUID(), schoolId: school.id, title: `Pack ${randomUUID().slice(0, 6)}`, type: 'CLASS_PACK', price: 6000, currency: opts.planCurrency === undefined ? 'GBP' : opts.planCurrency, classesIncluded: 10, cancellationCharge: opts.planCharge },
     });
     await superuser.membership.create({
       data: { id: randomUUID(), studentId: user.id, membershipPlanId: plan.id, schoolId: school.id, frequency: 'ONE_TIME', classesRemaining: 10 },
@@ -131,6 +131,30 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
     expect(chargeOffSession).toHaveBeenCalledWith(user.id, school.id, 700, 'GBP', 'Late-cancellation fee');
     const tx = await superuser.transaction.findFirstOrThrow({ where: { bookingId } });
     expect(tx).toMatchObject({ kind: 'LATE_CANCEL_FEE', amount: 700, currency: 'GBP', status: 'SUCCESSFUL' });
+  });
+
+  // Decision 430 (MON-5): a plan with no currency charges in the School's,
+  // never US dollars; with neither, nothing is charged.
+  it("charges a plan without a currency in the School's currency, not USD", async () => {
+    await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: 'CAD' } });
+    try {
+      const { user, token, bookingId } = await setUp({ planCharge: 1500, classCharge: null, planCurrency: null });
+      const res = await cancel(bookingId, token);
+      expect(res.body).toMatchObject({ cancellationChargeOutcome: 'CHARGED', cancellationChargeAmount: 1500 });
+      expect(chargeOffSession).toHaveBeenCalledWith(user.id, school.id, 1500, 'CAD', 'Late-cancellation fee');
+      expect(await superuser.transaction.findFirstOrThrow({ where: { bookingId } })).toMatchObject({ amount: 1500, currency: 'CAD' });
+    } finally {
+      await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: null } });
+    }
+  });
+
+  it('charges nothing, and records no payment, when neither the plan nor the School has a currency', async () => {
+    const { token, bookingId } = await setUp({ planCharge: 1500, classCharge: null, planCurrency: null });
+    const res = await cancel(bookingId, token);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ cancellationChargeOutcome: 'FAILED' });
+    expect(chargeOffSession).not.toHaveBeenCalled();
+    expect(await superuser.transaction.count({ where: { bookingId } })).toBe(0);
   });
 
   it("charges only the Class's own fee when both have one", async () => {

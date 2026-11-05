@@ -1,4 +1,5 @@
-import { fromStripeAmount, toStripeAmount } from './stripe-amount';
+import { currencyFractionDigits } from '@ultm8/i18n';
+import { assertWholeMinorUnits, divideRoundHalfUpToStep, fromStripeAmount, isWholeMinorUnits, minorUnitStep, roundToStep, toStripeAmount } from './stripe-amount';
 
 describe('stripe-amount (stress test round 4, M1)', () => {
   it('sends two-decimal currencies unchanged', () => {
@@ -32,5 +33,53 @@ describe('stripe-amount (stress test round 4, M1)', () => {
   it('treats a missing currency as two decimals', () => {
     expect(toStripeAmount(500, null)).toBe(500);
     expect(fromStripeAmount(500, undefined)).toBe(500);
+  });
+});
+
+describe('the currency\'s real minor unit (Decision 430, stress test round 5 MON-1..3)', () => {
+  it('is whole yen, won and krónur for zero-decimal currencies, the cent elsewhere', () => {
+    expect(minorUnitStep('JPY')).toBe(100);
+    expect(minorUnitStep('krw')).toBe(100);
+    expect(minorUnitStep('ISK')).toBe(100);
+    expect(minorUnitStep('HUF')).toBe(1);
+    expect(minorUnitStep('TWD')).toBe(1);
+    expect(minorUnitStep('USD')).toBe(1);
+    expect(minorUnitStep('KWD')).toBe(1);
+    expect(minorUnitStep(null)).toBe(1);
+  });
+
+  it('matches the decimals the apps let people type (@ultm8/i18n currencyFractionDigits)', () => {
+    for (const code of ['BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF', 'ISK', 'HUF', 'TWD', 'USD', 'EUR', 'BRL', 'KWD', 'BHD']) {
+      expect(minorUnitStep(code)).toBe(10 ** (2 - Math.min(2, currencyFractionDigits(code))));
+    }
+  });
+
+  it('rounds half up to the step', () => {
+    expect(roundToStep(33333.33, 100)).toBe(33300);
+    expect(roundToStep(66666.67, 100)).toBe(66700);
+    expect(roundToStep(14285.71, 100)).toBe(14300);
+    expect(roundToStep(14250, 100)).toBe(14300);
+    expect(roundToStep(14249.9, 100)).toBe(14200);
+    expect(roundToStep(1234.5, 1)).toBe(1235);
+    expect(divideRoundHalfUpToStep(123400 * 800, 10000, 100)).toBe(9900); // ¥1,234 × 8% = ¥98.72 → ¥99
+    expect(divideRoundHalfUpToStep(123400 * 800, 10000, 1)).toBe(9872);
+    expect(divideRoundHalfUpToStep(5, 2, 1)).toBe(3);
+  });
+
+  it('knows whole and fractional amounts', () => {
+    expect(isWholeMinorUnits(100000, 'JPY')).toBe(true);
+    expect(isWholeMinorUnits(99950, 'JPY')).toBe(false);
+    expect(isWholeMinorUnits(99950, 'USD')).toBe(true);
+    expect(() => assertWholeMinorUnits(50, 'JPY')).toThrow(expect.objectContaining({ response: expect.objectContaining({ code: 'AMOUNT_NOT_WHOLE_UNIT' }) }));
+    expect(() => assertWholeMinorUnits(null, 'JPY')).not.toThrow();
+    expect(() => assertWholeMinorUnits(5000, 'JPY')).not.toThrow();
+  });
+
+  it('refuses to send Stripe a fraction of a yen instead of rounding it', () => {
+    expect(() => toStripeAmount(33333, 'JPY')).toThrow(expect.objectContaining({ response: expect.objectContaining({ code: 'AMOUNT_NOT_WHOLE_UNIT' }) }));
+    expect(() => toStripeAmount(49, 'JPY')).toThrow();
+    expect(() => toStripeAmount(150, 'ISK')).toThrow();
+    expect(toStripeAmount(15000, 'ISK')).toBe(15000);
+    expect(toStripeAmount(33300, 'JPY')).toBe(333);
   });
 });
