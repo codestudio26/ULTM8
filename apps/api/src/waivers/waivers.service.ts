@@ -35,7 +35,23 @@ const WAIVER_SETTINGS_SELECT = {
   waiverPaperSignaturesAllowed: true,
   waiverNoticeOnJoin: true,
   waiverReminderDays: true,
+  waiverChildSignsFromAge: true,
 } as const;
+
+/** Whole years old today (UTC, by calendar: someone turning N today is N). */
+function ageToday(dateOfBirth: Date, today: Date = new Date()): number {
+  let age = today.getUTCFullYear() - dateOfBirth.getUTCFullYear();
+  const hasHadBirthdayThisYear =
+    today.getUTCMonth() > dateOfBirth.getUTCMonth() ||
+    (today.getUTCMonth() === dateOfBirth.getUTCMonth() && today.getUTCDate() >= dateOfBirth.getUTCDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}
+
+/** Decision 318 item 8: the School lets children of this age sign themselves. */
+function childOldEnough(dateOfBirth: Date | null, childSignsFromAge: number | null): boolean {
+  return childSignsFromAge != null && dateOfBirth != null && ageToday(dateOfBirth) >= childSignsFromAge;
+}
 
 /**
  * Phase 10 scope: Waiver CRUD + Student self-signing + Student's own read of
@@ -516,6 +532,7 @@ export class WaiversService {
           waiverPaperSignaturesAllowed: dto.waiverPaperSignaturesAllowed,
           waiverNoticeOnJoin: dto.waiverNoticeOnJoin,
           waiverReminderDays: dto.waiverReminderDays,
+          waiverChildSignsFromAge: dto.waiverChildSignsFromAge,
         },
         select: WAIVER_SETTINGS_SELECT,
       }),
@@ -720,6 +737,11 @@ export class WaiversService {
   async sign(callerId: string, waiverId: string, dto: SignWaiverDto) {
     const studentId = dto.studentId ?? callerId;
     const isGuardianAction = dto.studentId !== undefined && dto.studentId !== callerId;
+    // Decision 318 item 8: the child signs in their parent's app.
+    const byChild = dto.signedByChild === true;
+    if (byChild && !isGuardianAction) {
+      throw new BadRequestException('Only a parent signing for their child can choose that the child signs.');
+    }
     if (isGuardianAction) {
       await this.guardiansService.assertGuardianOfStudent(callerId, studentId);
     }
@@ -736,7 +758,9 @@ export class WaiversService {
     // satisfies SKILL.md §13's "or must be Guardian-linked" branch, so only the
     // ordinary self-signing path needs the age-of-majority check.
     if (!isGuardianAction) {
-      await this.assertSelfAttestedAdult(callerId);
+      await this.assertSelfAttestedAdult(callerId, waiver.schoolId);
+    } else if (byChild) {
+      await this.assertChildMaySign(studentId, waiver.schoolId);
     }
 
     if (dto.signatureImageKey) {
@@ -764,7 +788,10 @@ export class WaiversService {
       signedWaiverBody: null as string | null,
       signedWaiverSha256: null as string | null,
       signedWaiverVersion: null as number | null,
-      signedById: callerId,
+      // Decision 318 item 8: a child who signs in their parent's app is the
+      // signer; the parent's account is kept beside it.
+      signedById: byChild ? studentId : callerId,
+      signedViaGuardianId: byChild ? callerId : null,
       method: 'ONLINE' as const,
       recordedById: null as string | null,
       signerFullName: dto.signerFullName,
@@ -847,26 +874,45 @@ export class WaiversService {
    * Student-enrollment path still sets it at creation (register(),
    * GuardiansService.createMinor(), SchoolsService.join()), so a null value
    * here means this caller was never actually enrolled as a Student with a
-   * known age; treated the same as under-18, not silently allowed. */
-  private async assertSelfAttestedAdult(callerId: string): Promise<void> {
+   * known age; treated the same as under-18, not silently allowed.
+   *
+   * Decision 318 item 8: an under-18 student signs themselves when the
+   * School lets children of their age sign. */
+  private async assertSelfAttestedAdult(callerId: string, schoolId: string): Promise<void> {
     const student = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } }),
     );
     if (!student.dateOfBirth) {
       throw new ForbiddenException('Add your date of birth to your profile before signing a waiver.');
     }
-    const today = new Date();
-    let age = today.getUTCFullYear() - student.dateOfBirth.getUTCFullYear();
-    const hasHadBirthdayThisYear =
-      today.getUTCMonth() > student.dateOfBirth.getUTCMonth() ||
-      (today.getUTCMonth() === student.dateOfBirth.getUTCMonth() && today.getUTCDate() >= student.dateOfBirth.getUTCDate());
-    if (!hasHadBirthdayThisYear) age -= 1;
+    const age = ageToday(student.dateOfBirth);
 
-    if (age < 18) {
+    if (age < 18 && !childOldEnough(student.dateOfBirth, await this.childSignsFromAge(callerId, schoolId))) {
       throw new ForbiddenException(
         "You're under 18, so a parent or guardian needs to sign this waiver for you from their Guardian account.",
       );
     }
+  }
+
+  /** Decision 318 item 8: a child signs in their parent's app only at a
+   * School that lets children sign, once old enough by date of birth. */
+  private async assertChildMaySign(studentId: string, schoolId: string): Promise<void> {
+    const fromAge = await this.childSignsFromAge(studentId, schoolId);
+    if (fromAge == null) throw new ForbiddenException("This School doesn't let children sign their own waivers.");
+    const child = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { dateOfBirth: true } }),
+    );
+    if (!child.dateOfBirth) throw new ForbiddenException("Add the child's date of birth before they sign a waiver themselves.");
+    if (!childOldEnough(child.dateOfBirth, fromAge)) throw new ForbiddenException("This child isn't old enough yet to sign this School's waivers themselves.");
+  }
+
+  /** The School's "children sign from age" setting, read as the student (a
+   * current Student there, as sign() has already checked). */
+  private async childSignsFromAge(studentId: string, schoolId: string): Promise<number | null> {
+    const school = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.school.findUnique({ where: { id: schoolId }, select: { waiverChildSignsFromAge: true } }),
+    );
+    return school?.waiverChildSignsFromAge ?? null;
   }
 
   /** GET /students/{id}/waiver-status?schoolId= — any staff at the School
@@ -898,10 +944,15 @@ export class WaiversService {
     return this.prismaApp.withTenantContext(studentId, async (tx) => {
       const grants = await tx.roleGrant.findMany({
         where: { userId: studentId, role: 'STUDENT', revokedAt: null, school: { archivedAt: null } },
-        select: { schoolId: true, school: { select: { name: true } } },
+        select: { schoolId: true, school: { select: { name: true, waiverChildSignsFromAge: true } } },
         distinct: ['schoolId'],
       });
       const schoolNames = new Map(grants.filter((g) => g.schoolId && g.school).map((g) => [g.schoolId!, g.school!.name]));
+      // Decision 318 item 8: Schools where this child is old enough to sign themselves.
+      const { dateOfBirth } = await tx.user.findUniqueOrThrow({ where: { id: studentId }, select: { dateOfBirth: true } });
+      const childMaySignAt = new Set(
+        grants.filter((g) => g.schoolId && g.school && childOldEnough(dateOfBirth, g.school.waiverChildSignsFromAge)).map((g) => g.schoolId!),
+      );
       const schoolIds = [...schoolNames.keys()];
       const waivers = await tx.waiver.findMany({
         where: { schoolId: { in: schoolIds }, archivedAt: null },
@@ -922,6 +973,7 @@ export class WaiversService {
         updatedAt: w.updatedAt.toISOString(),
         schoolName: schoolNames.get(w.schoolId) ?? '',
         signedDate: signedByWaiver.get(w.id)?.toISOString() ?? null,
+        childMaySign: childMaySignAt.has(w.schoolId),
       }));
       items.sort((a, b) => a.schoolName.localeCompare(b.schoolName));
       return { items };

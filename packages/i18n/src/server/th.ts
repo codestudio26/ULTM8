@@ -1,5 +1,9 @@
 /** Thai — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "โรงเรียนนี้ไม่อนุญาตให้เด็กลงนามเอกสารสละสิทธิ์เอง",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "เด็กคนนี้ยังอายุไม่ถึงที่จะลงนามเอกสารสละสิทธิ์ของโรงเรียนนี้เอง",
+  "Add the child's date of birth before they sign a waiver themselves.": "เพิ่มวันเกิดของเด็กก่อนให้เด็กลงนามเอกสารสละสิทธิ์เอง",
+  "Only a parent signing for their child can choose that the child signs.": "เฉพาะผู้ปกครองที่ลงนามแทนบุตรเท่านั้นที่เลือกให้เด็กลงนามเองได้",
   "Guests can only be added by a parent, not in Kid Mode.": "เฉพาะผู้ปกครองเท่านั้นที่เพิ่มแขกได้ ไม่สามารถทำได้ในโหมดเด็ก",
   "Your current passcode is not right.": "รหัสเข้าใช้ปัจจุบันของคุณไม่ถูกต้อง",
   "Choose a new passcode that is different from your current one.": "เลือกรหัสเข้าใช้ใหม่ที่ไม่ซ้ำกับรหัสปัจจุบัน",

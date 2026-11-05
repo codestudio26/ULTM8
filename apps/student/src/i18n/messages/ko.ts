@@ -1003,6 +1003,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "보호자로서 {name} 님을 대신해 서명합니다.",
+      whoSigns: "누가 서명하나요?",
+      parentSigns: "보호자로서 제가 서명",
+      childSigns: "{name} 님이 서명",
+      childSigning: "{name} 님이 휴대폰에서 이 면책 동의서에 직접 서명합니다. 자녀에게 휴대폰을 건네 이름을 입력하고 서명하게 하세요.",
       cancel: "취소",
       showLess: "간략히 보기",
       readFull: "면책 동의서 전체 보기",

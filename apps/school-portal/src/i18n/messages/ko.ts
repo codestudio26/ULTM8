@@ -3612,6 +3612,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "서명: {name}",
       signedName: "입력한 이름",
       byGuardian: "보호자가 서명함",
+      byChildOnParentsAccount: "보호자의 앱에서 어린이 본인이 서명함",
       signature: "서명",
       drawnAlt: "직접 그린 서명",
       signedOn: "서명일",
@@ -3667,6 +3668,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "알림 간격(일)",
         invalid: "1~90 사이의 정수로 일수를 입력하세요.",
         advice: "대부분의 학교는 끄고 알림 버튼을 씁니다. 켠다면 7일마다가 일반적입니다.",
+      },
+      childSigns: {
+        label: "정한 나이부터 어린이가 직접 면책 동의서에 서명",
+        on: "아래 나이 이상의 어린이는 앱에서 직접 면책 동의서에 서명할 수 있습니다. 보호자가 대신 서명할 수도 있습니다.",
+        off: "모든 어린이는 보호자가 서명합니다.",
+        age: "시작 나이",
+        invalid: "1~17 사이의 정수로 나이를 입력하세요.",
+        advice: "대부분의 학교는 끄고, 모든 어린이는 보호자가 서명합니다.",
       },
     },
     resign: {

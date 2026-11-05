@@ -89,6 +89,7 @@ export const waivers = {
     title: 'Signature: {name}',
     signedName: 'Name typed',
     byGuardian: 'signed by a Guardian',
+    byChildOnParentsAccount: "signed by the child, in their parent's app",
     signature: 'Signature',
     drawnAlt: 'Drawn signature',
     signedOn: 'Signed on',
@@ -144,6 +145,14 @@ export const waivers = {
       days: 'Days between reminders',
       invalid: 'Enter a whole number of days from 1 to 90.',
       advice: 'Most schools leave this off and use the Remind button. If you turn it on, every 7 days is common.',
+    },
+    childSigns: {
+      label: 'Children sign their own waivers from a set age',
+      on: 'Children from the age below can sign their waivers themselves in the app. A parent or guardian can still sign for them.',
+      off: 'A parent or guardian signs for every child.',
+      age: 'From age',
+      invalid: 'Enter a whole number of years from 1 to 17.',
+      advice: 'Most schools leave this off, so a parent or guardian signs for every child.',
     },
   },
   resign: {

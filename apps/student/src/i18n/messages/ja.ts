@@ -1003,6 +1003,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "保護者として{name}さんの代わりに署名します。",
+      whoSigns: "誰が署名しますか？",
+      parentSigns: "保護者として私が署名",
+      childSigns: "{name}さんが署名",
+      childSigning: "{name}さんがあなたのスマートフォンでこの免責同意書に自分で署名します。お子さんに渡して、名前を入力して署名してもらってください。",
       cancel: "キャンセル",
       showLess: "表示を減らす",
       readFull: "同意書を全文表示",

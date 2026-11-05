@@ -7,6 +7,10 @@ export const waivers = {
   },
   row: {
     signingFor: 'Signing for {name}, as their parent.',
+    whoSigns: 'Who is signing?',
+    parentSigns: 'I sign, as their parent',
+    childSigns: '{name} signs',
+    childSigning: '{name} signs this waiver themselves on your phone. Hand it to them to type their name and sign.',
     cancel: 'Cancel',
     showLess: 'Show less',
     readFull: 'Read full waiver',

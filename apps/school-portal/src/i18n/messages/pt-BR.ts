@@ -3655,6 +3655,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Assinatura: {name}",
       signedName: "Nome digitado",
       byGuardian: "assinado por um responsável",
+      byChildOnParentsAccount: "assinado pela própria criança, no app de um responsável",
       signature: "Assinatura",
       drawnAlt: "Assinatura desenhada",
       signedOn: "Assinado em",
@@ -3710,6 +3711,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "Dias entre lembretes",
         invalid: "Digite um número inteiro de dias de 1 a 90.",
         advice: "A maioria das escolas deixa isso desligado e usa o botão Lembrar. Se ligar, a cada 7 dias é comum.",
+      },
+      childSigns: {
+        label: "Crianças assinam os próprios termos a partir de uma idade definida",
+        on: "Crianças a partir da idade abaixo podem assinar os próprios termos no app. Um responsável ainda pode assinar por elas.",
+        off: "Um responsável assina por cada criança.",
+        age: "A partir da idade",
+        invalid: "Digite um número inteiro de anos de 1 a 17.",
+        advice: "A maioria das escolas deixa isso desligado, para que um responsável assine por cada criança.",
       },
     },
     resign: {

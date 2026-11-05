@@ -3655,6 +3655,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Firma: {name}",
       signedName: "Nombre escrito",
       byGuardian: "firmado por un tutor",
+      byChildOnParentsAccount: "firmada por el propio niño, en la app de su padre o madre",
       signature: "Firma",
       drawnAlt: "Firma dibujada",
       signedOn: "Firmado el",
@@ -3710,6 +3711,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "Días entre recordatorios",
         invalid: "Introduce un número entero de días entre 1 y 90.",
         advice: "La mayoría de las escuelas lo deja desactivado y usa el botón Recordar. Si lo activas, cada 7 días es lo habitual.",
+      },
+      childSigns: {
+        label: "Los niños firman sus propias exenciones a partir de una edad",
+        on: "Los niños a partir de la edad indicada abajo pueden firmar ellos mismos sus exenciones en la app. Un padre, madre o tutor puede seguir firmando por ellos.",
+        off: "Un padre, madre o tutor firma por cada niño.",
+        age: "Desde la edad",
+        invalid: "Introduce un número entero de años entre 1 y 17.",
+        advice: "La mayoría de las escuelas lo deja desactivado, así que un padre, madre o tutor firma por cada niño.",
       },
     },
     resign: {

@@ -3612,6 +3612,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "署名:{name}",
       signedName: "入力された名前",
       byGuardian: "保護者が署名",
+      byChildOnParentsAccount: "保護者のアプリで子ども本人が署名",
       signature: "署名",
       drawnAlt: "手書きの署名",
       signedOn: "署名日",
@@ -3667,6 +3668,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "リマインドの間隔（日）",
         invalid: "1〜90の整数で日数を入力してください。",
         advice: "多くのスクールはオフにして、リマインドボタンを使います。オンにする場合は7日ごとが一般的です。",
+      },
+      childSigns: {
+        label: "設定した年齢から子どもが自分で免責同意書に署名する",
+        on: "下の年齢以上の子どもは、アプリで自分で免責同意書に署名できます。保護者が代わりに署名することもできます。",
+        off: "すべての子どもについて保護者が署名します。",
+        age: "対象年齢（以上）",
+        invalid: "1〜17の整数で年齢を入力してください。",
+        advice: "多くのスクールはオフにして、すべての子どもについて保護者が署名します。",
       },
     },
     resign: {

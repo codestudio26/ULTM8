@@ -3741,6 +3741,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Podpis: {name}",
       signedName: "Wpisane imię i nazwisko",
       byGuardian: "podpisane przez opiekuna",
+      byChildOnParentsAccount: "podpisane przez samo dziecko, w aplikacji rodzica",
       signature: "Podpis",
       drawnAlt: "Narysowany podpis",
       signedOn: "Podpisano",
@@ -3796,6 +3797,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "Dni między przypomnieniami",
         invalid: "Podaj liczbę całkowitą dni od 1 do 90.",
         advice: "Większość szkół zostawia to wyłączone i używa przycisku Przypomnij. Po włączeniu typowo co 7 dni.",
+      },
+      childSigns: {
+        label: "Dzieci od ustalonego wieku same podpisują oświadczenia",
+        on: "Dzieci od wieku podanego niżej mogą same podpisać oświadczenia w aplikacji. Rodzic lub opiekun nadal może podpisać za nie.",
+        off: "Rodzic lub opiekun podpisuje za każde dziecko.",
+        age: "Od wieku",
+        invalid: "Podaj liczbę całkowitą lat od 1 do 17.",
+        advice: "Większość szkół zostawia to wyłączone, więc za każde dziecko podpisuje rodzic lub opiekun.",
       },
     },
     resign: {

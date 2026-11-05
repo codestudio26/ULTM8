@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUUID, Matches, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, Matches, MaxLength, Min, MinLength } from 'class-validator';
 
 // Waivers review W5: a name made of spaces is not a signature.
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -68,4 +68,12 @@ export class SignWaiverDto {
   @IsInt()
   @Min(1)
   waiverVersion?: number;
+
+  @ApiPropertyOptional({
+    description:
+      "Decision 318 item 8, with studentId: the child signs this themselves in their parent's app, at a School that lets children sign from an age they have reached. The child is recorded as the signer (signedById) and the parent's account as signedViaGuardianId.",
+  })
+  @IsOptional()
+  @IsBoolean()
+  signedByChild?: boolean;
 }

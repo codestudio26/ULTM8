@@ -3655,6 +3655,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Firma: {name}",
       signedName: "Nome digitato",
       byGuardian: "firmato da un tutore",
+      byChildOnParentsAccount: "firmata dal bambino stesso, nell’app di un genitore",
       signature: "Firma",
       drawnAlt: "Firma disegnata",
       signedOn: "Firmato il",
@@ -3710,6 +3711,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "Giorni tra i promemoria",
         invalid: "Inserisci un numero intero di giorni da 1 a 90.",
         advice: "La maggior parte delle scuole lo lascia disattivato e usa il pulsante Ricorda. Se lo attivi, ogni 7 giorni è una scelta comune.",
+      },
+      childSigns: {
+        label: "I bambini firmano da soli le liberatorie da un’età stabilita",
+        on: "I bambini dall’età indicata sotto possono firmare da soli le liberatorie nell’app. Un genitore o tutore può comunque firmare per loro.",
+        off: "Un genitore o tutore firma per ogni bambino.",
+        age: "Dall’età di",
+        invalid: "Inserisci un numero intero di anni da 1 a 17.",
+        advice: "La maggior parte delle scuole lo lascia disattivato, così un genitore o tutore firma per ogni bambino.",
       },
     },
     resign: {

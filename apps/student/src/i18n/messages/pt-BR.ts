@@ -1026,6 +1026,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Você está assinando por {name}, como responsável.",
+      whoSigns: "Quem vai assinar?",
+      parentSigns: "Eu, como responsável",
+      childSigns: "{name} assina",
+      childSigning: "{name} assina este termo no seu celular. Entregue o celular para a criança digitar o nome e assinar.",
       cancel: "Cancelar",
       showLess: "Mostrar menos",
       readFull: "Ler o termo completo",

@@ -1,5 +1,9 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This School doesn't let children sign their own waivers.": "لا تسمح هذه المدرسة للأطفال بتوقيع إقراراتهم بأنفسهم.",
+  "This child isn't old enough yet to sign this School's waivers themselves.": "لم يبلغ هذا الطفل بعد العمر الذي يسمح له بتوقيع إقرارات هذه المدرسة بنفسه.",
+  "Add the child's date of birth before they sign a waiver themselves.": "أضف تاريخ ميلاد الطفل قبل أن يوقّع إقرارًا بنفسه.",
+  "Only a parent signing for their child can choose that the child signs.": "لا يمكن اختيار أن يوقّع الطفل إلا لوليّ أمر يوقّع عن طفله.",
   "Guests can only be added by a parent, not in Kid Mode.": "لا يمكن إضافة الضيوف إلا من قبل أحد الوالدين، وليس في وضع الأطفال.",
   "Your current passcode is not right.": "رمز الدخول الحالي غير صحيح.",
   "Choose a new passcode that is different from your current one.": "اختر رمز دخول جديدًا مختلفًا عن رمزك الحالي.",

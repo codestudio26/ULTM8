@@ -1010,6 +1010,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Du unterschreibst als Elternteil für {name}.",
+      whoSigns: "Wer unterschreibt?",
+      parentSigns: "Ich, als Elternteil",
+      childSigns: "{name} unterschreibt",
+      childSigning: "{name} unterschreibt diesen Haftungsausschluss selbst auf deinem Handy. Gib es weiter, damit dein Kind seinen Namen eintippt und unterschreibt.",
       cancel: "Abbrechen",
       showLess: "Weniger anzeigen",
       readFull: "Ganze Verzichtserklärung lesen",

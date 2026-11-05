@@ -3655,6 +3655,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Handtekening: {name}",
       signedName: "Getypte naam",
       byGuardian: "ondertekend door een voogd",
+      byChildOnParentsAccount: "door het kind zelf ondertekend, in de app van een ouder",
       signature: "Handtekening",
       drawnAlt: "Getekende handtekening",
       signedOn: "Ondertekend op",
@@ -3710,6 +3711,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "Dagen tussen herinneringen",
         invalid: "Vul een heel aantal dagen in van 1 tot 90.",
         advice: "De meeste scholen laten dit uit en gebruiken de knop Herinneren. Zet je het aan, dan is elke 7 dagen gebruikelijk.",
+      },
+      childSigns: {
+        label: "Kinderen ondertekenen hun vrijwaringen zelf vanaf een ingestelde leeftijd",
+        on: "Kinderen vanaf de leeftijd hieronder kunnen hun vrijwaringen zelf ondertekenen in de app. Een ouder of voogd kan nog steeds voor ze tekenen.",
+        off: "Een ouder of voogd tekent voor elk kind.",
+        age: "Vanaf leeftijd",
+        invalid: "Vul een heel aantal jaren in van 1 tot 17.",
+        advice: "De meeste scholen laten dit uit, zodat een ouder of voogd voor elk kind tekent.",
       },
     },
     resign: {

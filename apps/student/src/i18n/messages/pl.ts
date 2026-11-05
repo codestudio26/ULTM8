@@ -1049,6 +1049,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "Podpisujesz za {name} jako rodzic.",
+      whoSigns: "Kto podpisuje?",
+      parentSigns: "Ja, jako rodzic",
+      childSigns: "Podpisuje {name}",
+      childSigning: "{name} podpisuje to oświadczenie samodzielnie na twoim telefonie. Przekaż telefon dziecku, aby wpisało imię i nazwisko i podpisało.",
       cancel: "Anuluj",
       showLess: "Pokaż mniej",
       readFull: "Przeczytaj całe oświadczenie",

@@ -3655,6 +3655,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "İmza: {name}",
       signedName: "Yazılan ad",
       byGuardian: "bir veli tarafından imzalandı",
+      byChildOnParentsAccount: "çocuğun kendisi tarafından, bir ebeveynin uygulamasında imzalandı",
       signature: "İmza",
       drawnAlt: "Çizilmiş imza",
       signedOn: "İmza tarihi",
@@ -3710,6 +3711,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "Hatırlatmalar arası gün",
         invalid: "1 ile 90 arasında tam sayı olarak gün girin.",
         advice: "Çoğu okul bunu kapalı tutar ve Hatırlat düğmesini kullanır. Açarsanız 7 günde bir yaygındır.",
+      },
+      childSigns: {
+        label: "Çocuklar belirli bir yaştan itibaren feragatnamelerini kendileri imzalar",
+        on: "Aşağıdaki yaştan itibaren çocuklar feragatnamelerini uygulamada kendileri imzalayabilir. Bir ebeveyn veya vasi yine de onların yerine imzalayabilir.",
+        off: "Her çocuk için bir ebeveyn veya vasi imzalar.",
+        age: "Başlangıç yaşı",
+        invalid: "1 ile 17 arasında tam sayı olarak yıl girin.",
+        advice: "Çoğu okul bunu kapalı tutar; böylece her çocuk için bir ebeveyn veya vasi imzalar.",
       },
     },
     resign: {

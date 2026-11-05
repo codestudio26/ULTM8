@@ -1002,6 +1002,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     row: {
       signingFor: "你正以家长身份代 {name} 签署。",
+      whoSigns: "谁来签署？",
+      parentSigns: "我，以家长身份",
+      childSigns: "{name} 签署",
+      childSigning: "{name} 将在你的手机上自行签署此免责声明。请把手机交给孩子，让其输入姓名并签名。",
       cancel: "取消",
       showLess: "收起",
       readFull: "阅读完整免责声明",

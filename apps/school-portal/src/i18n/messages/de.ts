@@ -3655,6 +3655,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Unterschrift: {name}",
       signedName: "Eingetippter Name",
       byGuardian: "von einem Erziehungsberechtigten unterschrieben",
+      byChildOnParentsAccount: "vom Kind selbst unterschrieben, in der App eines Elternteils",
       signature: "Unterschrift",
       drawnAlt: "Gezeichnete Unterschrift",
       signedOn: "Unterschrieben am",
@@ -3710,6 +3711,14 @@ export const messages: PartialMessages<EnglishMessages> = {
         days: "Tage zwischen Erinnerungen",
         invalid: "Gib eine ganze Zahl von 1 bis 90 Tagen ein.",
         advice: "Die meisten Schulen lassen das aus und nutzen die Schaltfläche „Erinnern“. Wenn du es einschaltest, sind 7 Tage üblich.",
+      },
+      childSigns: {
+        label: "Kinder unterschreiben ihre Haftungsausschlüsse ab einem festen Alter selbst",
+        on: "Kinder ab dem Alter unten können ihre Haftungsausschlüsse in der App selbst unterschreiben. Ein Elternteil oder Erziehungsberechtigter kann weiterhin für sie unterschreiben.",
+        off: "Ein Elternteil oder Erziehungsberechtigter unterschreibt für jedes Kind.",
+        age: "Ab Alter",
+        invalid: "Gib eine ganze Zahl von 1 bis 17 Jahren ein.",
+        advice: "Die meisten Schulen lassen das aus, sodass ein Elternteil oder Erziehungsberechtigter für jedes Kind unterschreibt.",
       },
     },
     resign: {

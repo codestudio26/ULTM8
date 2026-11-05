@@ -562,7 +562,7 @@ in code. Every toggle below would be a new School-level setting (one settings en
 |---|---|---|
 | DS1 | Require Guardian signature for minors | ✅ Built in (Guardian consent model, SKILL.md §14), not optional |
 | DS2 | **Minor age** configurable per School (default 18) | ⚠️ ULTM8 decides adult vs minor from DOB (Decision 67). Whether the age threshold is fixed or per country/School: to verify |
-| DS3 | Require both minor and Guardian signatures | ❌ |
+| DS3 | Require both minor and Guardian signatures | 🟡 **5 Nov 2026: partly built** (Decision 318 item 8). Waivers → Settings: "Children sign their own waivers from a set age" (off by default; 1–17). From that age a child signs themselves (with their own login, or in their parent's app); a parent can still sign for them. Either signature counts on its own: whether both are required, and whether the parent is told, waits for the product owner |
 | DS4 | Email signed copy: no / to manager / to manager and member / to member | ❓ |
 | DS5 | Email membership contracts for signature | 🟡 Waiver signature requests exist (`waiver-signature-requests` job) |
 

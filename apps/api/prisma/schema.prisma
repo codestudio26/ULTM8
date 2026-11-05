@@ -1061,6 +1061,9 @@ model School {
   waiverNoticeOnJoin            Boolean @default(true)
   /// Remind members again every N days until they sign; null = off.
   waiverReminderDays            Int?
+  /// Decision 318 item 8: children sign their own waivers from this age
+  /// (1 to 17). Null (the default) = off: a parent or guardian signs.
+  waiverChildSignsFromAge       Int?
 
   /// Decision 396: "New staff must accept first". When on, "Give role" for a
   /// coach or Branch Staff sends an invite link the person accepts instead of
@@ -3873,6 +3876,11 @@ model WaiverSignature {
   // either record is a member of the School, this counts as a member's
   // signature. A plain id, no foreign key.
   mergedIntoStudentId String?
+  // Decision 318 item 8: a child signed this themselves in their parent's
+  // app (the parent was signed in and handed the phone over). signedById is
+  // the child; this is the parent's User id. A plain id, no foreign key.
+  // Null otherwise.
+  signedViaGuardianId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
