@@ -4702,4 +4702,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "L’e-mail n’a pas pu être envoyé. Créez un nouveau code d’accès temporaire sur la page de l’élève.",
     },
   },
+  adTracking: {
+    title: "Suivi publicitaire",
+    subtitle: "Connectez votre Meta Pixel ou Google Analytics en saisissant son identifiant. Seules ces connexions toutes prêtes sont proposées : ULTM8 n’ajoute jamais votre propre code à ses pages.",
+    notUsedYet: "Enregistrés pour les pages publiques de votre école. Aucune page ne les utilise encore.",
+    metaPixelLabel: "Identifiant Meta Pixel",
+    metaPixelHint: "Uniquement des chiffres, comme dans le Gestionnaire d’événements Meta, par ex. 123456789012345.",
+    metaPixelInvalid: "Un identifiant Meta Pixel compte de 10 à 20 chiffres, rien d’autre.",
+    googleAnalyticsLabel: "ID de mesure Google Analytics",
+    googleAnalyticsHint: "Commence par G-, par ex. G-AB12CD34EF.",
+    googleAnalyticsInvalid: "Un ID de mesure Google Analytics commence par G- suivi de 4 à 16 lettres ou chiffres.",
+  },
 };

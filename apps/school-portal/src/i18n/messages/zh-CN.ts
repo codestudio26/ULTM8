@@ -4656,4 +4656,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "邮件发送失败。请在学员页面生成新的临时密码。",
     },
   },
+  adTracking: {
+    title: "广告跟踪",
+    subtitle: "输入 ID 即可连接 Meta Pixel 或 Google Analytics。仅提供这些现成的连接：ULTM8 绝不会在其页面中添加您自己的代码。",
+    notUsedYet: "已为学校的公开页面保存。目前还没有页面使用它们。",
+    metaPixelLabel: "Meta Pixel ID",
+    metaPixelHint: "仅限数字，与 Meta 事件管理工具中显示的一致，例如 123456789012345。",
+    metaPixelInvalid: "Meta Pixel ID 由 10 到 20 位数字组成，不含其他字符。",
+    googleAnalyticsLabel: "Google Analytics 衡量 ID",
+    googleAnalyticsHint: "以 G- 开头，例如 G-AB12CD34EF。",
+    googleAnalyticsInvalid: "Google Analytics 衡量 ID 以 G- 开头，后接 4 到 16 个字母或数字。",
+  },
 };

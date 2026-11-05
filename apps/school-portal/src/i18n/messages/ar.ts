@@ -4914,4 +4914,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "تعذّر إرسال البريد الإلكتروني. أنشئ رمز دخول مؤقتًا جديدًا في صفحة الطالب.",
     },
   },
+  adTracking: {
+    title: "تتبّع الإعلانات",
+    subtitle: "اربط Meta Pixel أو Google Analytics بإدخال المعرّف الخاص به. تُتاح هذه الاتصالات الجاهزة فقط: لا يضيف ULTM8 أبدًا أي شيفرة خاصة بك إلى صفحاته.",
+    notUsedYet: "محفوظة للصفحات العامة لمدرستك. لا تستخدمها أي صفحة بعد.",
+    metaPixelLabel: "معرّف Meta Pixel",
+    metaPixelHint: "أرقام فقط، كما يظهر في مدير الأحداث في Meta، مثل 123456789012345.",
+    metaPixelInvalid: "يتكوّن معرّف Meta Pixel من 10 إلى 20 رقمًا فقط، ولا شيء غير ذلك.",
+    googleAnalyticsLabel: "معرّف القياس في Google Analytics",
+    googleAnalyticsHint: "يبدأ بـ G-، مثل G-AB12CD34EF.",
+    googleAnalyticsInvalid: "يبدأ معرّف القياس في Google Analytics بـ G- يليه من 4 إلى 16 حرفًا أو رقمًا.",
+  },
 };

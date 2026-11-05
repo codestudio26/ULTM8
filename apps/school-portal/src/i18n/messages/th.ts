@@ -4656,4 +4656,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "ส่งอีเมลไม่ได้ สร้างรหัสผ่านชั่วคราวใหม่ในหน้าของนักเรียน",
     },
   },
+  adTracking: {
+    title: "การติดตามโฆษณา",
+    subtitle: "เชื่อมต่อ Meta Pixel หรือ Google Analytics โดยใส่ ID ของคุณ มีให้เฉพาะการเชื่อมต่อสำเร็จรูปเหล่านี้เท่านั้น ULTM8 จะไม่เพิ่มโค้ดของคุณเองลงในหน้าเว็บ",
+    notUsedYet: "บันทึกไว้สำหรับหน้าสาธารณะของโรงเรียนแล้ว ยังไม่มีหน้าใดใช้งาน",
+    metaPixelLabel: "Meta Pixel ID",
+    metaPixelHint: "ตัวเลขเท่านั้น ตามที่แสดงใน Meta Events Manager เช่น 123456789012345",
+    metaPixelInvalid: "Meta Pixel ID ประกอบด้วยตัวเลข 10 ถึง 20 หลักเท่านั้น",
+    googleAnalyticsLabel: "รหัสการวัดของ Google Analytics",
+    googleAnalyticsHint: "ขึ้นต้นด้วย G- เช่น G-AB12CD34EF",
+    googleAnalyticsInvalid: "รหัสการวัดของ Google Analytics ขึ้นต้นด้วย G- ตามด้วยตัวอักษรหรือตัวเลข 4 ถึง 16 ตัว",
+  },
 };

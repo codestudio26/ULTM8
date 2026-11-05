@@ -4814,4 +4814,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "Не удалось отправить письмо. Создайте новый временный код доступа на странице ученика.",
     },
   },
+  adTracking: {
+    title: "Отслеживание рекламы",
+    subtitle: "Подключите Meta Pixel или Google Analytics, указав его идентификатор. Доступны только эти готовые подключения: ULTM8 никогда не добавляет ваш собственный код на свои страницы.",
+    notUsedYet: "Сохранено для публичных страниц вашей школы. Пока ни одна страница их не использует.",
+    metaPixelLabel: "Идентификатор Meta Pixel",
+    metaPixelHint: "Только цифры, как в Meta Events Manager, например 123456789012345.",
+    metaPixelInvalid: "Идентификатор Meta Pixel — это от 10 до 20 цифр и ничего больше.",
+    googleAnalyticsLabel: "Идентификатор потока Google Analytics",
+    googleAnalyticsHint: "Начинается с G-, например G-AB12CD34EF.",
+    googleAnalyticsInvalid: "Идентификатор потока Google Analytics начинается с G-, за которым идут от 4 до 16 букв или цифр.",
+  },
 };

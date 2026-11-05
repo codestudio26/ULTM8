@@ -4656,4 +4656,15 @@ export const messages: PartialMessages<EnglishMessages> = {
       EMAIL_NOT_SENT: "이메일을 보낼 수 없었습니다. 학생 페이지에서 새 임시 비밀번호를 만드세요.",
     },
   },
+  adTracking: {
+    title: "광고 추적",
+    subtitle: "ID를 입력해 Meta Pixel 또는 Google Analytics를 연결하세요. 미리 준비된 연결만 제공되며, ULTM8은 페이지에 직접 작성한 코드를 절대 추가하지 않습니다.",
+    notUsedYet: "학교의 공개 페이지용으로 저장했습니다. 아직 이를 사용하는 페이지는 없습니다.",
+    metaPixelLabel: "Meta Pixel ID",
+    metaPixelHint: "Meta 이벤트 관리자에 표시된 숫자만 입력하세요. 예: 123456789012345.",
+    metaPixelInvalid: "Meta Pixel ID는 10~20자리 숫자로만 이루어집니다.",
+    googleAnalyticsLabel: "Google Analytics 측정 ID",
+    googleAnalyticsHint: "G-로 시작합니다. 예: G-AB12CD34EF.",
+    googleAnalyticsInvalid: "Google Analytics 측정 ID는 G- 뒤에 영문자나 숫자 4~16자가 옵니다.",
+  },
 };

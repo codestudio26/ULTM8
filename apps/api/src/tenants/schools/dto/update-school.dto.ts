@@ -2,6 +2,11 @@ import { ApiPropertyOptional, OmitType, PartialType } from '@nestjs/swagger';
 import { IsBoolean, IsEmail, IsString, IsOptional, IsUrl, Matches, MaxLength } from 'class-validator';
 import { CreateSchoolDto, FOOTER_EMAIL_MESSAGE, FOOTER_URL_MESSAGE, FOOTER_URL_OPTIONS } from './create-school.dto';
 
+/** Decision 318 item 10: the only ad tracking IDs a School can save. ASCII
+ * only, anchored, no spaces or punctuation beyond the "G-" prefix. */
+export const META_PIXEL_ID_PATTERN = /^[0-9]{10,20}$/;
+export const GOOGLE_ANALYTICS_ID_PATTERN = /^G-[A-Z0-9]{4,16}$/;
+
 const NULLABLE_ON_UPDATE = [
   'mobileNumber',
   'address',
@@ -161,6 +166,21 @@ export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLA
   @MaxLength(2048)
   @IsUrl(FOOTER_URL_OPTIONS, { message: FOOTER_URL_MESSAGE })
   footerTwitterUrl?: string | null;
+
+  /** Decision 318 item 10 — ad tracking, ready-made connections only. A strict
+   * format whitelist, so only an ID (never script or markup) can be saved.
+   * The same patterns are CHECK constraints on School. null clears. */
+  @ApiPropertyOptional({ type: String, nullable: true, pattern: META_PIXEL_ID_PATTERN.source, description: 'Meta Pixel ID: 10 to 20 digits, nothing else.' })
+  @IsOptional()
+  @IsString()
+  @Matches(META_PIXEL_ID_PATTERN, { message: 'metaPixelId must be 10 to 20 digits.' })
+  metaPixelId?: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, pattern: GOOGLE_ANALYTICS_ID_PATTERN.source, description: 'Google Analytics GA4 measurement ID: "G-" and 4 to 16 capital letters or digits.' })
+  @IsOptional()
+  @IsString()
+  @Matches(GOOGLE_ANALYTICS_ID_PATTERN, { message: 'googleAnalyticsId must be a GA4 measurement ID, like G-AB12CD34EF.' })
+  googleAnalyticsId?: string | null;
 
   /** Decision 350 — show the Franchise's name and logo on this School. Shown only
    * while the Franchise Owner also allows it (Franchise.shareBrandingWithMembers). */
