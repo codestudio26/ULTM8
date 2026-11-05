@@ -27,6 +27,7 @@ import {
   useStudentFreezableMemberships,
 } from './freezeQueries';
 import { useSchool } from '../schools/schoolQueries';
+import { useDeskMethods } from '../lib/deskMethods';
 
 const TYPE_LABELS: Record<string, TranslationKey> = {
   SUBSCRIPTION: 'membershipPlans.types.subscription',
@@ -320,6 +321,8 @@ function DeskModal({
 }) {
   const t = useT();
   const sell = useSellMembership(schoolId, studentId);
+  // Decision 430 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  const deskMethods = useDeskMethods(schoolId, DESK_PAYMENT_METHODS);
   const gift = useGiftFriendPass(schoolId, studentId);
   const [pickedPlanId, setPlanId] = useState(plans[0]?.id ?? '');
   // The plans can arrive after the window opens (or change under it): fall back
@@ -372,7 +375,7 @@ function DeskModal({
                 id="desk-paid-by"
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value as DeskPaymentMethod)}
-                options={DESK_PAYMENT_METHODS.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
+                options={deskMethods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
               />
             </Field>
           ) : null}

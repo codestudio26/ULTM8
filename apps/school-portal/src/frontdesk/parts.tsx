@@ -30,6 +30,7 @@ import {
 } from './frontDeskQueries';
 import { useStudentNotes } from '../students/studentNotesQueries';
 import { formatMoney } from '../lib/money';
+import { deskMethodsFor } from '../lib/deskMethods';
 
 export type CheckInMethod = 'scan' | 'code' | 'name';
 
@@ -815,7 +816,8 @@ function PackUsedUp({
               {t('frontDesk.packUsedUp.paidBy')}
             </label>
             <select id="fd-pack-method" value={method} onChange={(e) => setMethod(e.target.value as DeskPaymentMethod)}>
-              {DESK_PAYMENT_METHODS.map((m) => (
+              {/* Decision 430 (MON-13): Pix only when the pack is priced in reais. */}
+              {deskMethodsFor(DESK_PAYMENT_METHODS, { defaultCurrency: offer?.currency }).map((m) => (
                 <option key={m} value={m}>
                   {t(PAYMENT_METHOD_LABELS[m])}
                 </option>

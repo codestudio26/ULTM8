@@ -35,6 +35,7 @@ import { CancelPaymentModal } from '../transactions/CancelPaymentModal';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { useDeskMethods } from '../lib/deskMethods';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
   OPEN: 'warning',
@@ -781,6 +782,8 @@ function RecordPaymentModal({
 }) {
   const t = useT();
   const record = useRecordChargePayment(schoolId, studentId);
+  // Decision 430 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  const methods = useDeskMethods(schoolId, CHARGE_PAYMENT_METHODS);
   const open = data.charges.filter((c) => c.status === 'OPEN' || c.status === 'PART_PAID');
   const [toward, setToward] = useState(chargeId ?? '');
   const target = open.find((c) => c.id === toward);
@@ -834,7 +837,7 @@ function RecordPaymentModal({
             id="charge-pay-method"
             value={method}
             onChange={(e) => setMethod(e.target.value as (typeof CHARGE_PAYMENT_METHODS)[number])}
-            options={CHARGE_PAYMENT_METHODS.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
+            options={methods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
           />
         </Field>
         {data.settings.receiptNotice ? (
