@@ -222,6 +222,7 @@ export const server = {
     cancellationClassReviewBody: 'Bookings from the cancelled class {class} need a refund decision or a cash refund paid ({count}). See Cancellations to resolve.',
     cashWaitingTitle: "Cash payment waiting",
     cashWaitingBody: "{name} chose to pay {amount} for {plan} by cash or bank transfer. Mark it as paid on the Transactions page once the money arrives.",
+    cashWaitingStaffBody: "{name} chose to pay {amount} for {plan} by cash or bank transfer. Mark it as paid on their Payments card once the money arrives.",
     paymentConfirmedTitle: "Payment confirmed",
     paymentConfirmedBody: "Your payment of {amount} for {plan} was confirmed. Your membership is now active.",
     childPaymentConfirmedBody: "{name}'s payment of {amount} for {plan} was confirmed. The membership is now active.",

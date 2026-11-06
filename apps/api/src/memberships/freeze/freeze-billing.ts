@@ -37,7 +37,9 @@ import { backDay, dayIn, dayNumber, dayStart } from './membership-freeze';
  * value too. billingShiftAppliedAt / billingRestoredAt say Stripe took it.
  *
  * A membership paid in cash or by bank (no stripeSubscriptionId) has nothing to
- * shift. Runs on the jobs connection: the request paths call it after their
+ * shift here; a monthly plan billed to the balance has its recurring charge
+ * moved the same way instead (Decision 442 item 5, membership-series.ts
+ * syncSeriesFreezes). Runs on the jobs connection: the request paths call it after their
  * own checks, and so do the renewal webhook and the 15-minute membership
  * sweep.
  *

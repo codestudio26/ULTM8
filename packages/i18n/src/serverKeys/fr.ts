@@ -248,6 +248,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "Le payeur a contesté {charge} de {amount} (statut : {status}).",
     cashWaitingTitle: "Paiement en espèces en attente",
     cashWaitingBody: "{name} a choisi de payer {amount} pour {plan} en espèces ou par virement. Marquez-le comme payé sur la page Transactions dès réception de l'argent.",
+    cashWaitingStaffBody: "{name} a choisi de payer {amount} pour {plan} en espèces ou par virement. Marquez-le comme payé sur sa carte Paiements dès réception de l'argent.",
     paymentConfirmedTitle: "Paiement confirmé",
     paymentConfirmedBody: "Votre paiement de {amount} pour {plan} a été confirmé. Votre abonnement est maintenant actif.",
     childPaymentConfirmedBody: "Le paiement de {amount} pour {plan} de {name} a été confirmé. L'abonnement est maintenant actif.",

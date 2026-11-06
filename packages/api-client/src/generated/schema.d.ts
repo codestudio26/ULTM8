@@ -9461,8 +9461,8 @@ export interface components {
              * @description What clicking the notification opens (Decision 355), or null for nothing.
              * @enum {string|null}
              */
-            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | "FRANCHISE" | "SCHOOL" | null;
-            /** @description The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364). */
+            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | "FRANCHISE" | "SCHOOL" | "STUDENT" | null;
+            /** @description The Class, Waiver, Franchise or student id, for CLASS, WAIVER, FRANCHISE and STUDENT targets (Decisions 355, 364, 442). */
             targetId?: string | null;
         };
         NotificationListResponseDto: {

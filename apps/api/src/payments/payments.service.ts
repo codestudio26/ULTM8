@@ -1622,7 +1622,8 @@ export class PaymentsService {
 
   /**
    * Decision 339 (T11) — in-app notices around a Cash/Bank Transfer payment:
-   * `waiting` tells the School's Owners/Managers one has arrived to check;
+   * `waiting` tells the School's Owners/Managers one has arrived to check,
+   * and (Decision 442 item 4) the Branch Staff who may confirm it;
    * `confirmed`/`cancelled` tell the Student, or the Guardians of a linked minor
    * (who never logs in). Read through the jobs connection, since the caller's own
    * RLS context can see neither the School's other grants nor GuardianLink.
@@ -1643,17 +1644,40 @@ export class PaymentsService {
       const amount = `${(transaction.amount / 100).toFixed(2)} ${(transaction.currency ?? 'USD').toUpperCase()}`;
       const planTitle = plan?.title ?? 'a membership';
       const name = [student?.firstName, student?.surname].filter(Boolean).join(' ') || 'A student';
-      const notices: Array<{ userId: string; title: string; body: string }> = [];
+      const notices: Array<{ userId: string; title: string; body: string; targetType?: 'PAYMENT' | 'STUDENT'; targetId?: string }> = [];
       if (event === 'waiting') {
-        const owners = await this.prismaJobs.roleGrant.findMany({
-          where: { schoolId: transaction.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
-          select: { userId: true },
+        const grants = await this.prismaJobs.roleGrant.findMany({
+          where: { schoolId: transaction.schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+          select: { userId: true, role: true },
         });
-        for (const o of owners) {
+        const owners = new Set(grants.filter((g) => g.role === 'SCHOOL_OWNER_MANAGER').map((g) => g.userId));
+        for (const userId of owners) {
           notices.push({
-            userId: o.userId,
+            userId,
             title: 'Cash payment waiting',
             body: `${name} chose to pay ${amount} for ${planTitle} by cash or bank transfer. Mark it as paid on the Transactions page once the money arrives.`,
+          });
+        }
+        // Decision 442 item 4: also the Branch Staff who may confirm this
+        // order (Decision 441 item 2): the School lets Branch Staff record
+        // payments and the student is one of their branches' students. The
+        // same check as PATCH /transactions/{id}/confirm (mayConfirmDeskOrder),
+        // run as each of them. They mark it paid on the student's Payments
+        // card, so the notice opens the student.
+        const staff = [...new Set(grants.filter((g) => g.role === 'BRANCH_STAFF' && !owners.has(g.userId)).map((g) => g.userId))];
+        for (const userId of staff) {
+          // One failed check never holds back the owners' notices.
+          const may = await mayConfirmDeskOrder(this.prismaApp, userId, transaction.schoolId, transaction.studentId).catch((err) => {
+            this.logger.warn(`Cash payment waiting ${transaction.id}: checking whether ${userId} may confirm it failed: ${err}`);
+            return false;
+          });
+          if (!may) continue;
+          notices.push({
+            userId,
+            title: 'Cash payment waiting',
+            body: `${name} chose to pay ${amount} for ${planTitle} by cash or bank transfer. Mark it as paid on their Payments card once the money arrives.`,
+            targetType: 'STUDENT',
+            targetId: transaction.studentId,
           });
         }
       } else {
@@ -1688,7 +1712,8 @@ export class PaymentsService {
         await this.notificationFanoutQueue.add(
           'notify',
           {
-            notificationId: key, userId: notice.userId, title: notice.title, body: notice.body, type: 'CASH_PAYMENT', schoolId: transaction.schoolId, targetType: 'PAYMENT',
+            notificationId: key, userId: notice.userId, title: notice.title, body: notice.body, type: 'CASH_PAYMENT', schoolId: transaction.schoolId,
+            targetType: notice.targetType ?? 'PAYMENT', ...(notice.targetId ? { targetId: notice.targetId } : {}),
           } satisfies NotificationFanoutJobData,
           { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
         );

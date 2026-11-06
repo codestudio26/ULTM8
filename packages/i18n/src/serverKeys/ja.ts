@@ -220,6 +220,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "{amount}の{charge}について、支払者が異議を申し立てました（ステータス：{status}）。",
     cashWaitingTitle: "現金払いの確認待ち",
     cashWaitingBody: "{name}さんが{plan}の{amount}を現金または銀行振込で支払うことを選びました。入金を確認したら、取引ページで支払い済みにしてください。",
+    cashWaitingStaffBody: "{name}さんが{plan}の{amount}を現金または銀行振込で支払うことを選びました。入金を確認したら、その方の支払いカードで支払い済みにしてください。",
     paymentConfirmedTitle: "支払いが確認されました",
     paymentConfirmedBody: "{plan}の{amount}の支払いが確認されました。メンバーシップが有効になりました。",
     childPaymentConfirmedBody: "{name}さんの{plan}の{amount}の支払いが確認されました。メンバーシップが有効になりました。",

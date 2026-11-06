@@ -220,6 +220,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "결제자가 {amount} 상당의 {charge}에 이의를 제기했습니다(상태: {status}).",
     cashWaitingTitle: "현금 결제 대기 중",
     cashWaitingBody: "{name}님이 {plan} 금액 {amount}을(를) 현금 또는 계좌이체로 결제하기로 했습니다. 입금되면 거래 페이지에서 결제 완료로 표시하세요.",
+    cashWaitingStaffBody: "{name}님이 {plan} 금액 {amount}을(를) 현금 또는 계좌이체로 결제하기로 했습니다. 입금되면 해당 회원의 결제 카드에서 결제 완료로 표시하세요.",
     paymentConfirmedTitle: "결제 확인됨",
     paymentConfirmedBody: "{plan} 결제 금액 {amount}이(가) 확인되었습니다. 이제 멤버십이 활성화되었습니다.",
     childPaymentConfirmedBody: "{name}님의 {plan} 결제 금액 {amount}이(가) 확인되었습니다. 이제 멤버십이 활성화되었습니다.",

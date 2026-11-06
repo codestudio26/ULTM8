@@ -84,6 +84,10 @@ export function notificationLink(n: Pick<NotificationResponse, 'targetType' | 't
       return n.targetId ? `/franchises/${n.targetId}` : null;
     case 'SCHOOL':
       return '/school';
+    // Decision 442 item 4: a member's order Branch Staff may mark as paid,
+    // from the student's Payments card.
+    case 'STUDENT':
+      return n.targetId ? `/students/${n.targetId}` : null;
     default:
       return null;
   }

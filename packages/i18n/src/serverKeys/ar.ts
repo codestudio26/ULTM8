@@ -290,6 +290,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "فتح الدافع نزاعًا على {charge} بمبلغ {amount} (الحالة: {status}).",
     cashWaitingTitle: "دفعة نقدية بانتظار التأكيد",
     cashWaitingBody: "اختار {name} دفع {amount} مقابل {plan} نقدًا أو بتحويل بنكي. ضع علامة مدفوع في صفحة المعاملات عند وصول المبلغ.",
+    cashWaitingStaffBody: "اختار {name} دفع {amount} مقابل {plan} نقدًا أو بتحويل بنكي. ضع علامة مدفوع في بطاقة المدفوعات الخاصة به عند وصول المبلغ.",
     paymentConfirmedTitle: "تم تأكيد الدفعة",
     paymentConfirmedBody: "تم تأكيد دفعتك البالغة {amount} مقابل {plan}. عضويتك نشطة الآن.",
     childPaymentConfirmedBody: "تم تأكيد دفعة {name} البالغة {amount} مقابل {plan}. العضوية نشطة الآن.",

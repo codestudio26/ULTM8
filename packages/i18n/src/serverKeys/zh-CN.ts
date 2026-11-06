@@ -220,6 +220,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "付款人对一笔金额为 {amount} 的{charge}提出了争议（状态：{status}）。",
     cashWaitingTitle: "现金付款待确认",
     cashWaitingBody: "{name} 选择以现金或银行转账支付 {plan} 的 {amount}。收到款项后，请在交易页面标记为已付款。",
+    cashWaitingStaffBody: "{name} 选择以现金或银行转账支付 {plan} 的 {amount}。收到款项后，请在该学员的付款卡片中标记为已付款。",
     paymentConfirmedTitle: "付款已确认",
     paymentConfirmedBody: "你为 {plan} 支付的 {amount} 已确认。你的会员资格现已生效。",
     childPaymentConfirmedBody: "{name} 为 {plan} 支付的 {amount} 已确认。会员资格现已生效。",
