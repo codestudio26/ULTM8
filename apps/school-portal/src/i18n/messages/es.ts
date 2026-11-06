@@ -3372,7 +3372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "Último día",
       fixedDatesInvalid: "Indica el primer y el último día; el último, el mismo o posterior al primero.",
       switchToLabel: "Al terminar, cambiar a",
-      switchToHint: "Los miembros que aceptan al comprar pasan a este plan cuando termina el suyo, con cargo a su tarjeta guardada. Se les avisa antes. Sin tarjeta guardada, simplemente termina.",
+      switchToHint: "Los miembros que aceptan al comprar pasan a este plan cuando termina el suyo, con cargo a su tarjeta guardada. Se les avisa antes. Sin tarjeta guardada, o si este plan está completo, el suyo simplemente termina y no se cobra nada.",
       switchToNone: "Nada (simplemente termina)",
       joiningFeeLabel: "Cuota de inscripción",
       joiningFeeHint: "Por ejemplo 25.00. Se agrega una vez al primer plan de un miembro en esta escuela, con el mismo impuesto y recargo por tarjeta que el plan. Nunca se cobra al volver ni al renovar. Déjalo en blanco si no hay cuota.",

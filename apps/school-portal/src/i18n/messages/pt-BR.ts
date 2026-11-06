@@ -3372,7 +3372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "Último dia",
       fixedDatesInvalid: "Informe o primeiro e o último dia; o último igual ou depois do primeiro.",
       switchToLabel: "Ao terminar, mudar para",
-      switchToHint: "Quem concordar na compra passa para este plano quando o seu terminar, cobrado no cartão salvo. É avisado antes. Sem cartão salvo, ele simplesmente termina.",
+      switchToHint: "Quem concordar na compra passa para este plano quando o seu terminar, cobrado no cartão salvo. É avisado antes. Sem cartão salvo, ou se este plano estiver lotado, o plano atual simplesmente termina e nada é cobrado.",
       switchToNone: "Nada (simplesmente termina)",
       joiningFeeLabel: "Taxa de matrícula",
       joiningFeeHint: "Por exemplo 25.00. Adicionada uma vez ao primeiro plano de um aluno nesta escola, com o mesmo imposto e o mesmo acréscimo no cartão do plano. Nunca cobrada ao voltar nem na renovação. Deixe em branco se não houver.",

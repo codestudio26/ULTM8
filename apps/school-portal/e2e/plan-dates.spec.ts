@@ -47,6 +47,8 @@ test('a camp on fixed dates that switches to a Class Pack when it ends', async (
   await expect(page.getByLabel("Starts on the member's first check-in")).toHaveCount(0);
   await page.getByRole('button', { name: '3. Policies' }).click();
   await page.getByLabel('When it ends, switch to').selectOption({ label: 'Ten classes' });
+  // Decision 438 item 2 / Decision 436 item 8: the owner is told a full next plan ends it too.
+  await expect(page.getByText('Without a saved card, or if this plan is full, theirs simply ends and nothing is charged.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('cell', { name: 'Summer camp', exact: true })).toBeVisible();

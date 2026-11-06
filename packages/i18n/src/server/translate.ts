@@ -1,6 +1,7 @@
 import type { MessageVars } from '../types';
 import { SERVER_PATTERNS } from './en';
 import { moneyDigits } from '../money';
+import { server as englishServer } from '../serverKeys/en';
 
 /**
  * Translates the English text the API sends — error messages and the titles and
@@ -342,6 +343,12 @@ const charge = (t: Translate, label: string) => n(t, CHARGES[label]);
 const STYLE = String.raw`((?:[^()]|\([^()]*\))+)`;
 const body = (source: string) => new RegExp(source, 's');
 
+/** The waiver request as the API wrote it before #317 (Decision 333): the
+ * waiver's title where the sender belongs ("Kids waiver has invited you to sign
+ * the following waiver."). Those rows are still stored, so they are matched
+ * here and reworded for English readers too. */
+const OLD_WAIVER_REQUEST = /^(.+) has invited you to sign the following waiver\.$/s;
+
 /** apps/api/src/jobs/*.processor.ts — every Notification body a job writes. */
 const BODY_RULES: Array<[RegExp, Rule]> = [
   // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
@@ -401,8 +408,9 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   // Decision 435 item 30 — apps/api/src/waivers/child-signed-notice.ts.
   [/^(.+?) signed the waiver "(.+)" at (.+)\.$/s, (m, { t }) => n(t, 'waiverSignedByChildBody', { child: m[1], waiver: m[2], school: m[3] })],
   // Older rows, written before the School was named (the waiver's title sat
-  // where the sender belongs).
-  [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
+  // where the sender belongs). Only the title is known, so the translation
+  // names the waiver and no sender (English readers: createEnglishServerTextTranslator).
+  [OLD_WAIVER_REQUEST, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
   // apps/api/src/timetable/timetable.service.ts — "Your booking moved with it." is
   // the wording before the waitlist was told too.
   [/^(.+) has moved to (.+)\. (?:Bookings|Your booking) moved with it\.$/s, (m, { t, locale }) => n(t, 'classMovedBody', { class: m[1], when: formatWhen(m[2], locale) })],
@@ -710,6 +718,10 @@ export function createEnglishServerTextTranslator(locale: string): ServerTextTra
     error: (_status, _code, message) => message,
     notification({ title, body, type }) {
       if (type === 'SCHOOL_BROADCAST') return { title, body };
+      // A parent's copy keeps its "For {name}: " in front.
+      const forChild = body.match(/^For [^:]+: /)?.[0] ?? '';
+      const oldWaiverRequest = body.slice(forChild.length).match(OLD_WAIVER_REQUEST);
+      if (oldWaiverRequest) return { title, body: forChild + englishServer.notifications.waiverRequestBody.replace('{waiver}', oldWaiverRequest[1]) };
       return { title, body: body.replace(times, (_m, when: string, utc?: string) => formatWhen(`${when}${utc ?? ''}`, locale)) };
     },
   };

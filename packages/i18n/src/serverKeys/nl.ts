@@ -207,7 +207,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Een leerling van je school kan na meerdere verloren kaartbetwistingen alleen nog contant of per bankoverschrijving betalen.",
     paymentRestrictedNamedBody: "{name}, een leerling van je school, kan na meerdere verloren kaartbetwistingen alleen nog contant of per bankoverschrijving betalen.",
     waiverRequestTitle: "Handtekening voor vrijwaring gevraagd",
-    waiverRequestBody: "Je bent uitgenodigd om de volgende vrijwaring te ondertekenen: {waiver}.",
+    waiverRequestBody: "Je bent uitgenodigd om de vrijwaring \"{waiver}\" te ondertekenen.",
     newStripeTitle: "Nieuwe streep!",
     stepUpTitle: "Stap omhoog!",
     promotedTitle: "Gepromoveerd!",

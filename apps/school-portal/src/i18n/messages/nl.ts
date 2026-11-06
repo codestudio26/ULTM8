@@ -3372,7 +3372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "Laatste dag",
       fixedDatesInvalid: "Vul de eerste en de laatste dag in, de laatste op of na de eerste.",
       switchToLabel: "Aan het eind overstappen op",
-      switchToHint: "Leden die bij aankoop akkoord gaan, stappen aan het eind over op dit abonnement, afgeschreven van hun opgeslagen kaart. Ze horen het vooraf. Zonder opgeslagen kaart eindigt het gewoon.",
+      switchToHint: "Leden die bij aankoop akkoord gaan, stappen aan het eind over op dit abonnement, afgeschreven van hun opgeslagen kaart. Ze horen het vooraf. Zonder opgeslagen kaart, of als dit abonnement vol is, eindigt hun abonnement gewoon en wordt er niets afgeschreven.",
       switchToNone: "Niets (het eindigt gewoon)",
       joiningFeeLabel: "Inschrijfgeld",
       joiningFeeHint: "Bijvoorbeeld 25.00. Eén keer toegevoegd aan het eerste abonnement van een lid bij deze school, met dezelfde btw en kaarttoeslag als het abonnement. Nooit bij terugkeer of verlenging. Laat leeg voor geen inschrijfgeld.",

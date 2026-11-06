@@ -921,7 +921,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistError: "De wachtlijst kon niet worden bijgewerkt — probeer het opnieuw.",
       startsOnFirstCheckIn: "Begint bij je eerste check-in",
       fixedDates: "Van {from} tot {to}",
-      agreeToSwitch: "Aan het eind overstappen op {plan} ({price}), afgeschreven van mijn opgeslagen kaart. Ik hoor het vooraf; zonder opgeslagen kaart eindigt het gewoon.",
+      agreeToSwitch: "Aan het eind overstappen op {plan} ({price}), afgeschreven van mijn opgeslagen kaart. Ik hoor het vooraf; zonder opgeslagen kaart, of als {plan} vol is, eindigt het gewoon en wordt er niets afgeschreven.",
       joiningFee: "+ {amount} inschrijfgeld bij je eerste abonnement bij deze school",
       cardSurcharge: "+ {amount} kaarttoeslag bij betalen met een kaart",
       classesIncluded: { one: "{count} les", other: "{count} lessen" },

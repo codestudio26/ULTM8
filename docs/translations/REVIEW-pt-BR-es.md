@@ -12,7 +12,10 @@ That is 6,383 strings per language. English is the source. Only values were
 changed: no key, placeholder (`{name}`) or plural form was touched, and the
 key-completeness tests still pass. Strings added to `master` after this review
 started (account deletion, the payroll setting, the plan-switch notice, the
-Connect Stripe country gate) were not reviewed and may need a later pass.
+Connect Stripe country gate) were not reviewed here; they were checked in a
+follow-up pass on 6 Nov 2026 (one es change: "la nómina" for payroll in an API
+message; pt-BR needed none — the "(Pix)" in its Stripe message is kept, Decision
+439 item 6).
 
 How the review was done: the high-risk areas (waivers, children's consent,
 privacy and medical data, closing and deleting, contracts, early-exit fees,

@@ -3372,7 +3372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "Letzter Tag",
       fixedDatesInvalid: "Gib den ersten und den letzten Tag an, den letzten am oder nach dem ersten.",
       switchToLabel: "Am Ende wechseln zu",
-      switchToHint: "Mitglieder, die beim Kauf zustimmen, wechseln am Ende zu diesem Tarif, abgebucht von ihrer gespeicherten Karte. Sie werden vorher informiert. Ohne gespeicherte Karte endet er einfach.",
+      switchToHint: "Mitglieder, die beim Kauf zustimmen, wechseln am Ende zu diesem Tarif, abgebucht von ihrer gespeicherten Karte. Sie werden vorher informiert. Ohne gespeicherte Karte oder wenn dieser Tarif voll ist, endet ihr Tarif einfach und es wird nichts abgebucht.",
       switchToNone: "Nichts (er endet einfach)",
       joiningFeeLabel: "Aufnahmegebühr",
       joiningFeeHint: "Zum Beispiel 25.00. Wird einmal zum ersten Tarif eines Mitglieds an dieser Schule hinzugefügt, mit derselben Steuer und Kartengebühr wie der Tarif. Nie bei einer Rückkehr oder Verlängerung. Leer lassen für keine Gebühr.",
@@ -4990,7 +4990,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     staffRates: {
       title: "Was Mitarbeiter mit Zugriff auf die Lohnabrechnung sehen",
       label: "Lohnsätze im Bericht anzeigen",
-      hint: "Mitarbeiter mit dem Schalter „Lohnabrechnung“ sehen im Bericht und im Download die Stunden- und Kurssätze jeder Person, nur lesend. Aus: Sie sehen nur Kurse, Stunden und Lohn. Du siehst die Sätze immer.",
+      hint: "Mitarbeiter mit dem Schalter „Lohnabrechnung“ sehen im Bericht und im Download die Stunden- und Kurssätze jeder Person, nur lesend. Ausgeschaltet sehen sie nur Kurse, Stunden und Lohn. Du siehst die Sätze immer.",
     },
     noAccess: "Nur die Inhaber der Schule und Mitarbeiter, denen sie es erlauben, können die Lohnabrechnung sehen.",
     loadFailed: "Die Lohnabrechnung konnte nicht geladen werden. Bitte versuche es erneut.",

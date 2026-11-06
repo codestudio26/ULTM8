@@ -3452,7 +3452,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "Ostatni dzień",
       fixedDatesInvalid: "Podaj pierwszy i ostatni dzień; ostatni tego samego dnia lub później.",
       switchToLabel: "Po zakończeniu przejdź na",
-      switchToHint: "Członkowie, którzy zgodzą się przy zakupie, po zakończeniu przejdą na ten plan, płatny zapisaną kartą. Dostaną informację wcześniej. Bez zapisanej karty po prostu się kończy.",
+      switchToHint: "Członkowie, którzy zgodzą się przy zakupie, po zakończeniu przejdą na ten plan, płatny zapisaną kartą. Dostaną informację wcześniej. Bez zapisanej karty albo gdy ten plan nie ma wolnych miejsc, ich plan po prostu się kończy i nic nie jest pobierane.",
       switchToNone: "Nic (po prostu się kończy)",
       joiningFeeLabel: "Opłata wpisowa",
       joiningFeeHint: "Na przykład 25.00. Doliczana raz do pierwszego planu członka w tej szkole, z tym samym podatkiem i dopłatą za kartę co plan. Nigdy przy powrocie ani odnowieniu. Zostaw puste, jeśli bez opłaty.",

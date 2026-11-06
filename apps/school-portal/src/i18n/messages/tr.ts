@@ -2487,7 +2487,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "Tamam",
       todoLabel: "Yapılacak",
       stripeHint: "ULTM8 desteği Stripe hesabını senin için bağlar.",
-      stripeUnavailable: "Uygulamada kartla ödeme ülkende henüz kullanılamıyor; üyeler nakit veya banka havalesiyle (Brezilya'da Pix) öder, personel de onaylar.",
+      stripeUnavailable: "Uygulamada kartla ödeme ülkenizde henüz kullanılamıyor; üyeler nakit veya banka havalesiyle (Brezilya'da Pix) öder, personel de onaylar.",
       steps: {
         BRANCH: "Şube ekle",
         STYLE_AND_BELTS: "Branş ve kuşaklarını ekle",
@@ -3372,7 +3372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "Son gün",
       fixedDatesInvalid: "İlk ve son günü girin; son gün ilk günle aynı ya da sonra olmalı.",
       switchToLabel: "Bitince geçilecek plan",
-      switchToHint: "Satın alırken onaylayan üyeler, planları bitince bu plana geçer ve kayıtlı kartlarından ödeme alınır. Önceden bilgilendirilirler. Kayıtlı kart yoksa sadece sona erer.",
+      switchToHint: "Satın alırken onaylayan üyeler, planları bitince bu plana geçer ve kayıtlı kartlarından ödeme alınır. Önceden bilgilendirilirler. Kayıtlı kart yoksa veya bu plan doluysa planları sadece sona erer ve hiçbir ücret alınmaz.",
       switchToNone: "Hiçbiri (sadece sona erer)",
       joiningFeeLabel: "Katılım ücreti",
       joiningFeeHint: "Örneğin 25.00. Bir üyenin bu okuldaki ilk planına bir kez eklenir; plana uygulanan vergi ve kart ek ücreti buna da uygulanır. Yeniden katılımda veya yenilemede asla alınmaz. Ücret yoksa boş bırakın.",
