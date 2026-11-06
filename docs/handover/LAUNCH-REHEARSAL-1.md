@@ -1,6 +1,6 @@
 # Launch rehearsal 1: a UK School and a Brazilian School, end to end
 
-**Run:** 6 Nov 2026, against `master` at `efc0212` (after #497, #500). **Scripts:** `apps/api/scripts/rehearsal/` (see its README to run it again). **Results:** `results-mw58gp4v.json`, `portal-results-mw58gp4v.json` and `member-results-mw58gp4v.json` in that folder. Earlier rounds: `STRESS-TEST-ROUND3.md`, `-ROUND4.md`, `-ROUND5.md`.
+**Run:** 6 Nov 2026, against `master` at `efc0212` (after #497, #500). The language checks were run again after merging `8737a25` (#503, the 6 Nov translation follow-ups) and still pass. **Scripts:** `apps/api/scripts/rehearsal/` (see its README to run it again). **Results:** `results-mw58gp4v.json`, `portal-results-mw58gp4v.json` and `member-results-mw58gp4v.json` in that folder. Earlier rounds: `STRESS-TEST-ROUND3.md`, `-ROUND4.md`, `-ROUND5.md`.
 
 ## In plain words
 
