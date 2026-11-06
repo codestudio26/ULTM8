@@ -1,0 +1,105 @@
+{
+  "_comment": "Plugin advisor rules. Single source of truth for .claude/hooks/plugin-advisor.mjs (automatic) and the plugin-advisor agent (on demand). Advisory only: nothing here runs a plugin, it only suggests one. Edit freely; each id is shown at most once per session.",
+  "fileRules": [
+    {
+      "id": "payments",
+      "pattern": "apps/api/src/(payments|charges|card-surcharge|late-fees|franchise-fees|subscription-plans|memberships|transactions)/|stripe",
+      "flags": "i",
+      "suggest": "Payments code changed: use the stripe:stripe-best-practices skill and skills/ultm8-payments; /stripe:test-cards for test scenarios; run /security-review before the PR."
+    },
+    {
+      "id": "database",
+      "pattern": "apps/api/prisma/(schema\\.prisma|migrations/)|\\.sql$",
+      "suggest": "Schema/migration changed: use supabase:supabase-postgres-best-practices and skills/ultm8-tenant-isolation; confirm every new table has RLS policies and the scoped roles' grants."
+    },
+    {
+      "id": "auth-tenancy",
+      "pattern": "apps/api/src/(auth|tenants|platform-admin|guardians|student-access|users)/|apps/api/src/common/.*(guard|tenant|rls|auth)",
+      "flags": "i",
+      "suggest": "Auth/tenancy boundary code changed: run /security-review and check against skills/ultm8-tenant-isolation before the PR."
+    },
+    {
+      "id": "sensitive-data",
+      "pattern": "apps/api/src/(waivers|signed-documents|medical-info|member-files|uploads)/",
+      "suggest": "Sensitive personal data (waivers/medical/files) changed: run /security-review and load skills/ultm8-domain-rules before changing retention or access rules."
+    },
+    {
+      "id": "render",
+      "pattern": "(^|/)render\\.yaml$",
+      "suggest": "render.yaml changed: render:render-blueprints / render:render-env-vars skills apply (the Render plugin also validates the file automatically); after deploying, /render:check-render-status."
+    },
+    {
+      "id": "terraform",
+      "pattern": "^infra/terraform/|\\.tf$",
+      "suggest": "Terraform changed: use the terraform plugin / skills/devops-deployment and review a `terraform plan` before anything is applied (deploy.yml runs apply)."
+    },
+    {
+      "id": "mobile-release-config",
+      "pattern": "^apps/student/(app\\.json|eas\\.json|app\\.config\\.(js|ts))$",
+      "suggest": "Mobile app config changed: run /mobile-check before the next store build (signing, permission texts, leaked keys)."
+    },
+    {
+      "id": "mobile",
+      "pattern": "^apps/student/",
+      "suggest": "Track B (Expo) code changed: the expo:expo-overview skill routes to the right Expo guidance."
+    },
+    {
+      "id": "dependencies",
+      "pattern": "(^|/)package(-lock)?\\.json$",
+      "suggest": "Dependencies changed: run /dep-scan (Dependency Sentinel) or `npm audit` to check for known vulnerabilities and licences."
+    },
+    {
+      "id": "ci",
+      "pattern": "^\\.github/workflows/",
+      "suggest": "CI workflow changed: run /security-review (secrets, permissions, untrusted input in workflows)."
+    },
+    {
+      "id": "claude-md",
+      "pattern": "(^|/)CLAUDE\\.md$",
+      "suggest": "CLAUDE.md changed: claude-md-management:claude-md-improver can audit it for stale or conflicting rules."
+    },
+    {
+      "id": "portal-ui",
+      "pattern": "^apps/(school-portal|platform-admin)/src/.*\\.tsx$",
+      "suggest": "Portal UI changed: design:accessibility-review before the redesign PR (contrast, keyboard, screen reader)."
+    }
+  ],
+  "promptRules": [
+    {
+      "id": "pr",
+      "pattern": "\\b(pr|pull request|merge|ready to ship|open a pr)\\b",
+      "flags": "i",
+      "suggest": "Before the PR: /code-review:code-review (plus /security-review if auth, payments or tenancy code changed)."
+    },
+    {
+      "id": "deploy",
+      "pattern": "\\b(deploy|deployment|staging|render)\\b",
+      "flags": "i",
+      "suggest": "Deploy work: /render:check-render-status (needs the Render connection) and the render:render-debug skill if a deploy failed."
+    },
+    {
+      "id": "release",
+      "pattern": "\\b(release|app ?store|testflight|play store|eas build)\\b",
+      "flags": "i",
+      "suggest": "Mobile release: /mobile-check, then /mobile-release."
+    },
+    {
+      "id": "commit",
+      "pattern": "\\bcommit\\b",
+      "flags": "i",
+      "suggest": "Committing: review `git diff` first and add a CHANGELOG.md 'Unreleased' entry for any user-visible change."
+    },
+    {
+      "id": "vulns",
+      "pattern": "\\b(vulnerab\\w*|cve|security audit|dependency audit)\\b",
+      "flags": "i",
+      "suggest": "Security audit: /security-review for code, /dep-scan for dependencies."
+    },
+    {
+      "id": "context",
+      "pattern": "\\b(compact|context|long session|too many tokens|huge file|large file)\\b",
+      "flags": "i",
+      "suggest": "Long session or big file: /compact-plan (Context Compactor) or /headroom:peek."
+    }
+  ]
+}
