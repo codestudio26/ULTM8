@@ -155,7 +155,21 @@ Changes are counted as strings changed (a plural message counts once).
   says "{waiver} has invited you to sign the following waiver.", with the
   waiver's name where the inviter should be. Some translations follow the
   meaning instead (nl and th: "You have been invited to sign: {waiver}"), so
-  the English should be fixed first, then the translations.
+  the English should be fixed first, then the translations. **Fixed (6 Nov
+  2026, follow-up pass):** the key only translates notices stored before the
+  notice named the School, so it now reads "You've been invited to sign the
+  waiver "{waiver}"." in English and all 14 translations.
+
+## Follow-up pass, 6 Nov 2026
+
+The text merged after this review (the payroll switch, the plan-switch notice,
+the Connect Stripe country gate and Delete my account) was checked in all 14
+non-English languages against the glossary and forms of address above. Fixed:
+"sen" in Turkish and "tu" in one French API message; the passcode word each
+app's login screen uses (de, it, ko, th, tr, zh-CN); the waiver and belt words
+(de, ru, th); gender-neutral Polish; Korean particles (도장을) and 원장 for a
+School owner; Italian "titolare" for owner; "회원님" (member) in a Korean
+owner-facing note. "Erased User" stays in English everywhere (Decision 440).
 
 ## Check before launch
 

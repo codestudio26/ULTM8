@@ -93,6 +93,8 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
       <MembershipPlanRow plan={plan as never} schoolId="school-1" switchTo={{ title: 'Ten classes', price: 6000, currency: 'gbp' }} />,
     );
     expect(getByText('Starts on your first check-in')).toBeTruthy();
+    // Decision 438 item 2 / Decision 436 item 8: a full next plan ends it too, with nothing charged.
+    expect(getByText(/^When it ends, switch me to Ten classes \(.+\), charged to my saved card\. I'll be told before; without a saved card, or if Ten classes is full, it simply ends and nothing is charged\.$/)).toBeTruthy();
     await fireEvent.press(getByText('Purchase'));
     expect(purchase.mutate).toHaveBeenLastCalledWith(expect.objectContaining({ planId: 'plan-1', agreeToPlanSwitch: false }), expect.anything());
     await fireEvent(getByRole('switch'), 'valueChange', true);

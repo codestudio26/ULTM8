@@ -3372,7 +3372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "Dernier jour",
       fixedDatesInvalid: "Indiquez le premier et le dernier jour, le dernier le même jour ou après.",
       switchToLabel: "À la fin, passer à",
-      switchToHint: "Les membres qui l'acceptent à l'achat passent à cette formule à la fin de la leur, débitée de leur carte enregistrée. Ils sont prévenus avant. Sans carte enregistrée, elle se termine simplement.",
+      switchToHint: "Les membres qui l'acceptent à l'achat passent à cette formule à la fin de la leur, débitée de leur carte enregistrée. Ils sont prévenus avant. Sans carte enregistrée, ou si cette formule est complète, la leur se termine simplement et rien n'est débité.",
       switchToNone: "Rien (elle se termine simplement)",
       joiningFeeLabel: "Frais d'inscription",
       joiningFeeHint: "Par exemple 25.00. Ajoutés une seule fois à la première formule d'un membre dans cette école, avec la même taxe et les mêmes frais de carte que la formule. Jamais facturés lors d'un retour ou d'un renouvellement. Laissez vide pour aucuns frais.",

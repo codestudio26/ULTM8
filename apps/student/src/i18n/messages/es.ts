@@ -937,7 +937,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistError: "No se pudo actualizar la lista de espera; inténtalo de nuevo.",
       startsOnFirstCheckIn: "Empieza en tu primer check-in",
       fixedDates: "Del {from} al {to}",
-      agreeToSwitch: "Al terminar, cámbiame a {plan} ({price}), con cargo a mi tarjeta guardada. Me avisarán antes; sin tarjeta guardada, simplemente termina.",
+      agreeToSwitch: "Al terminar, cámbiame a {plan} ({price}), con cargo a mi tarjeta guardada. Me avisarán antes; sin tarjeta guardada, o si {plan} está completo, simplemente termina y no se cobra nada.",
       joiningFee: "+ {amount} de cuota de inscripción en tu primer plan en esta escuela",
       cardSurcharge: "+ {amount} de recargo si pagas con tarjeta",
       classesIncluded: { one: "{count} clase", other: "{count} clases" },

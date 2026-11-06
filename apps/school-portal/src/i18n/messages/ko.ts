@@ -2451,7 +2451,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "완료",
       todoLabel: "미완료",
       stripeHint: "Stripe 계정 연결은 ULTM8 지원팀이 해 드립니다.",
-      stripeUnavailable: "회원님의 국가에서는 아직 앱 카드 결제를 사용할 수 없어, 회원은 현금이나 계좌이체(브라질은 Pix)로 결제하고 직원이 확인합니다.",
+      stripeUnavailable: "도장이 있는 국가에서는 아직 앱 카드 결제를 사용할 수 없어, 회원은 현금이나 계좌이체(브라질은 Pix)로 결제하고 직원이 확인합니다.",
       steps: {
         BRANCH: "지점 추가",
         STYLE_AND_BELTS: "종목과 띠 추가",
@@ -3332,7 +3332,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "마지막 날",
       fixedDatesInvalid: "첫날과 마지막 날을 입력하세요. 마지막 날은 첫날과 같거나 그 이후여야 합니다.",
       switchToLabel: "끝나면 전환할 플랜",
-      switchToHint: "구매할 때 동의한 회원은 플랜이 끝나면 이 플랜으로 전환되고 저장된 카드로 결제됩니다. 미리 안내됩니다. 저장된 카드가 없으면 그대로 끝납니다.",
+      switchToHint: "구매할 때 동의한 회원은 플랜이 끝나면 이 플랜으로 전환되고 저장된 카드로 결제됩니다. 미리 안내됩니다. 저장된 카드가 없거나 이 플랜의 정원이 다 찼으면 회원의 플랜은 그대로 끝나고 아무것도 결제되지 않습니다.",
       switchToNone: "없음(그대로 끝남)",
       joiningFeeLabel: "가입비",
       joiningFeeHint: "예: 25.00. 이 도장에서 회원의 첫 플랜에 한 번만 추가되며, 플랜과 같은 세금과 카드 수수료가 적용됩니다. 재가입이나 갱신에는 청구되지 않습니다. 없으면 비워 두세요.",

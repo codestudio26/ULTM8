@@ -193,7 +193,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "由于多次银行卡争议失败，你学校的一名学员现在只能使用现金或银行转账付款。",
     paymentRestrictedNamedBody: "由于多次银行卡争议失败，你学校的学员 {name} 现在只能使用现金或银行转账付款。",
     waiverRequestTitle: "请求签署免责声明",
-    waiverRequestBody: "你被邀请签署以下免责声明：{waiver}。",
+    waiverRequestBody: "你收到了签署免责声明“{waiver}”的邀请。",
     newStripeTitle: "新条纹！",
     stepUpTitle: "升至下一步骤！",
     promotedTitle: "晋级！",

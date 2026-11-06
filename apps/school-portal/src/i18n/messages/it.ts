@@ -3372,7 +3372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "Ultimo giorno",
       fixedDatesInvalid: "Indica il primo e l'ultimo giorno, l'ultimo uguale o successivo al primo.",
       switchToLabel: "Alla scadenza, passa a",
-      switchToHint: "I membri che accettano all'acquisto passano a questo piano quando il loro finisce, con addebito sulla carta salvata. Vengono avvisati prima. Senza carta salvata, termina e basta.",
+      switchToHint: "I membri che accettano all'acquisto passano a questo piano quando il loro finisce, con addebito sulla carta salvata. Vengono avvisati prima. Senza carta salvata, o se questo piano è al completo, il loro termina e basta e non viene addebitato nulla.",
       switchToNone: "Niente (termina e basta)",
       joiningFeeLabel: "Quota di iscrizione",
       joiningFeeHint: "Ad esempio 25.00. Aggiunta una sola volta al primo piano di un membro in questa scuola, con la stessa imposta e lo stesso sovrapprezzo carta del piano. Mai addebitata a chi ritorna o al rinnovo. Lascia vuoto per nessuna quota.",

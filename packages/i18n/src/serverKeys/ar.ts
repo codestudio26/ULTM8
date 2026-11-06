@@ -263,7 +263,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "أصبح أحد طلاب مدرستك مقيّدًا بالدفع نقدًا أو بالتحويل البنكي فقط، بعد تكرار خسارة نزاعات البطاقات.",
     paymentRestrictedNamedBody: "أصبح الطالب {name} في مدرستك مقيّدًا بالدفع نقدًا أو بالتحويل البنكي فقط، بعد تكرار خسارة نزاعات البطاقات.",
     waiverRequestTitle: "طلب توقيع إقرار إخلاء مسؤولية",
-    waiverRequestBody: "تمت دعوتك لتوقيع إقرار إخلاء المسؤولية التالي: {waiver}.",
+    waiverRequestBody: "تمت دعوتك إلى توقيع الإقرار \"{waiver}\".",
     newStripeTitle: "شريط جديد!",
     stepUpTitle: "ترقية خطوة!",
     promotedTitle: "تمت الترقية!",

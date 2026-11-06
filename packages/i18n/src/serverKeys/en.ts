@@ -190,7 +190,7 @@ export const server = {
       'A student at your school has been restricted to cash or bank transfer payments only, following a pattern of lost card disputes.',
     paymentRestrictedNamedBody: '{name}, a student at your school, has been restricted to cash or bank transfer payments only, following a pattern of lost card disputes.',
     waiverRequestTitle: 'Waiver signature requested',
-    waiverRequestBody: '{waiver} has invited you to sign the following waiver.',
+    waiverRequestBody: 'You\'ve been invited to sign the waiver "{waiver}".',
     newStripeTitle: 'New stripe!',
     stepUpTitle: 'Step up!',
     promotedTitle: 'Promoted!',

@@ -912,7 +912,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       waitlistError: "キャンセル待ちを更新できませんでした。もう一度お試しください。",
       startsOnFirstCheckIn: "初回チェックインで開始",
       fixedDates: "{from}〜{to}",
-      agreeToSwitch: "終了時に{plan}（{price}）へ切り替え、保存済みのカードに請求する。事前に通知があります。保存済みのカードがない場合はそのまま終了します。",
+      agreeToSwitch: "終了時に{plan}（{price}）へ切り替え、保存済みのカードに請求する。事前に通知があります。保存済みのカードがない場合や{plan}が満員の場合は、そのまま終了し、何も請求されません。",
       joiningFee: "このスクールで最初のプランには入会金 {amount} が加算されます",
       cardSurcharge: "カード払いの場合 + 手数料 {amount}",
       classesIncluded: { other: "{count}クラス" },

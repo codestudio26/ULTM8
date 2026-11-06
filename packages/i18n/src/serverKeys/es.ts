@@ -221,7 +221,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Un alumno de tu escuela ahora solo puede pagar en efectivo o por transferencia bancaria, tras varias disputas de tarjeta perdidas.",
     paymentRestrictedNamedBody: "{name}, alumno de tu escuela, ahora solo puede pagar en efectivo o por transferencia bancaria, tras varias disputas de tarjeta perdidas.",
     waiverRequestTitle: "Firma de exención solicitada",
-    waiverRequestBody: "Te han invitado a firmar la siguiente exención: {waiver}.",
+    waiverRequestBody: "Te han invitado a firmar la exención \"{waiver}\".",
     newStripeTitle: "¡Nueva franja!",
     stepUpTitle: "¡Subió de paso!",
     promotedTitle: "¡Promovido!",
