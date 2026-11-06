@@ -485,7 +485,9 @@ describeIfDb('Export all signed documents (Decision 315 item 13)', () => {
       const all = [...files.keys()].join('\n');
       expect(all).not.toContain('erased');
       expect(all).not.toContain('lost');
-      expect(all).not.toContain('bea');
+      // Not the bare letters 'bea': folder names end in hex id characters, which can spell it.
+      expect(all).not.toContain('Bea Other');
+      expect(all).not.toContain('bea.pdf');
       expect([...files.values()].some((b) => b.equals(memberFileBodies.bea) || b.equals(memberFileBodies.erased))).toBe(false);
     });
 
