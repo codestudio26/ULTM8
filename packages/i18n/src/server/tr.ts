@@ -830,6 +830,7 @@ export const serverMessages: Record<string, string> = {
   "This date is not valid.": "Bu tarih geçerli değil.",
   "Attendance can only be logged from {v1} to {v2}.": "Devam yalnızca {v1} ile {v2} arasında kaydedilebilir.",
   "The School owner hasn't let you import data.": "Okul sahibi veri içe aktarmana izin vermedi.",
+  "The School owner hasn't let you see payroll.": "Okul sahibi bordroyu görmenize izin vermedi.",
   "A row number is past the end of this import.": "Bir satır numarası bu içe aktarmanın sonunu aşıyor.",
   "Import not found": "İçe aktarma bulunamadı",
   "Each row number can only be sent once.": "Her satır numarası yalnızca bir kez gönderilebilir.",

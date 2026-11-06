@@ -1662,6 +1662,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Ver, enviar, baixar e excluir arquivos dos alunos das suas unidades. Os alunos nunca veem esses arquivos.",
       seeMedicalInfo: "Ver informações médicas",
       seeMedicalInfoHint: "Ler as informações médicas que os alunos das suas filiais deram no cadastro. Instrutores nunca as veem.",
+      // Decision 435 item 22.
+      payroll: "Folha de pagamento",
+      payrollHint: "Ver apenas o relatório da folha de pagamento, para a escola inteira, donos incluídos. Definir os valores continua com os donos da escola.",
       ownerOnly: "Dinheiro (pagamentos, reembolsos, planos e preços), configurações da Escola e proprietários ficam sempre com os proprietários da Escola.",
       saved: "Acesso salvo para {name}.",
       readOnlyIntro: "A equipe das suas filiais. Só os proprietários da Escola podem mudar funções ou acessos.",
@@ -4981,7 +4984,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Quanto cada membro da equipe ganhou com as aulas que deu, pelos valores que você definir. O ULTM8 não paga ninguém: você paga sua equipe fora do ULTM8.",
     tabReport: "Relatório",
     tabRates: "Valores",
-    noAccess: "Só o dono da escola pode ver a folha de pagamento.",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "O que cada membro da equipe ganhou com as aulas que deu, pelos valores definidos pelos donos da escola. O ULTM8 não paga ninguém: a escola paga sua equipe fora do ULTM8.",
+    ratesHidden: "Os donos da escola optaram por não mostrar os valores aqui: você vê as aulas, as horas e o pagamento.",
+    staffRates: {
+      title: "O que a equipe com acesso à folha de pagamento vê",
+      label: "Mostrar os valores no relatório",
+      hint: "A equipe com o acesso Folha de pagamento vê o valor por hora e por aula de cada pessoa no relatório e no download, só para leitura. Desligado: vê só as aulas, as horas e o pagamento. Você sempre vê os valores.",
+    },
+    noAccess: "Só os donos da escola, e a equipe que eles permitirem, podem ver a folha de pagamento.",
     loadFailed: "Não foi possível carregar a folha de pagamento. Tente novamente.",
     periodLabel: "Datas",
     preset: {

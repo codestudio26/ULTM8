@@ -1662,6 +1662,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Ver, subir, descargar y eliminar archivos de los alumnos de sus sedes. Los miembros nunca ven estos archivos.",
       seeMedicalInfo: "Ver información médica",
       seeMedicalInfoHint: "Leer la información médica que los alumnos de sus sedes dieron al registrarse. Los instructores nunca la ven.",
+      // Decision 435 item 22.
+      payroll: "Nómina",
+      payrollHint: "Ver solo el informe de nómina, para toda la escuela, propietarios incluidos. Fijar las tarifas de pago sigue siendo cosa de los propietarios de la escuela.",
       ownerOnly: "El dinero (pagos, reembolsos, planes y precios), la configuración de la Escuela y los propietarios quedan siempre en manos de los propietarios de la Escuela.",
       saved: "Acceso guardado para {name}.",
       readOnlyIntro: "El personal de tus sedes. Solo los propietarios de la Escuela pueden cambiar roles o accesos.",
@@ -4981,7 +4984,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Lo que ha ganado cada miembro del personal con las clases que impartió, según las tarifas que fijes. ULTM8 no paga a nadie: pagas a tu personal fuera de ULTM8.",
     tabReport: "Informe",
     tabRates: "Tarifas",
-    noAccess: "Solo el propietario de la escuela puede ver la nómina.",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Lo que ha ganado cada miembro del personal con las clases que impartió, según las tarifas que fijan los propietarios de la escuela. ULTM8 no paga a nadie: la escuela paga a su personal fuera de ULTM8.",
+    ratesHidden: "Los propietarios de la escuela han decidido no mostrar aquí las tarifas: ves las clases, las horas y el pago.",
+    staffRates: {
+      title: "Lo que ve el personal con acceso a la nómina",
+      label: "Mostrar las tarifas en el informe",
+      hint: "El personal con el interruptor Nómina ve la tarifa por hora y por clase de cada persona en el informe y en su descarga, solo lectura. Desactivado: ve solo las clases, las horas y el pago. Tú siempre ves las tarifas.",
+    },
+    noAccess: "Solo los propietarios de la escuela, y el personal al que se lo permitan, pueden ver la nómina.",
     loadFailed: "No se pudo cargar la nómina. Inténtalo de nuevo.",
     periodLabel: "Fechas",
     preset: {

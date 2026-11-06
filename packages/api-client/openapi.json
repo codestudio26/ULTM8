@@ -24182,6 +24182,10 @@
             "type": "boolean",
             "description": "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged."
           },
+          "payrollStaffSeeRates": {
+            "type": "boolean",
+            "description": "Decision 435 item 22: whether Branch Staff with the \"Payroll\" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them."
+          },
           "taxCountry": {
             "type": "string",
             "nullable": true,
@@ -24566,6 +24570,10 @@
             "type": "boolean",
             "description": "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged."
           },
+          "payrollStaffSeeRates": {
+            "type": "boolean",
+            "description": "Decision 435 item 22: whether Branch Staff with the \"Payroll\" switch see the pay rates in the payroll report, read only (default off). Owners always see them."
+          },
           "taxCountry": {
             "type": "string",
             "nullable": true,
@@ -24796,6 +24804,7 @@
           "checkInRequireBooking",
           "freezeMaxDaysPer12Months",
           "joiningFeesEnabled",
+          "payrollStaffSeeRates",
           "taxRateBasisPoints",
           "taxInclusive",
           "tax2RateBasisPoints",
@@ -24986,6 +24995,10 @@
           "joiningFeesEnabled": {
             "type": "boolean",
             "description": "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged."
+          },
+          "payrollStaffSeeRates": {
+            "type": "boolean",
+            "description": "Decision 435 item 22: whether Branch Staff with the \"Payroll\" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them."
           },
           "taxCountry": {
             "type": "string",
@@ -27362,6 +27375,10 @@
             "type": "boolean",
             "description": "See the medical information of their branches' students (off by default; Decision 315 item 10)."
           },
+          "payroll": {
+            "type": "boolean",
+            "description": "See the payroll report, for the whole School. Setting the pay rates stays with the School owners (off by default, in no preset; Decision 435 item 22)."
+          },
           "memberFiles": {
             "type": "boolean",
             "description": "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)."
@@ -27383,6 +27400,7 @@
           "freezeMemberships",
           "attendanceStats",
           "seeMedicalInfo",
+          "payroll",
           "memberFiles",
           "importData"
         ]
@@ -47964,11 +47982,13 @@
           },
           "hourlyRate": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Null when not set, or left out for staff the School does not show rates to (ratesShown false)."
           },
           "perClassRate": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Null when not set, or left out for staff the School does not show rates to (ratesShown false)."
           },
           "classesTaught": {
             "type": "number",
@@ -48020,6 +48040,10 @@
             "type": "string",
             "nullable": true
           },
+          "ratesShown": {
+            "type": "boolean",
+            "description": "Decision 435 item 22: whether the rows carry the pay rates. Always true for owners; for Branch Staff with the \"Payroll\" switch, the School's payrollStaffSeeRates setting (off by default), and when false every rate is null."
+          },
           "rows": {
             "description": "Everyone with a rate, by name.",
             "type": "array",
@@ -48042,6 +48066,7 @@
           "from",
           "to",
           "currency",
+          "ratesShown",
           "rows",
           "totalClasses",
           "totalMinutes",

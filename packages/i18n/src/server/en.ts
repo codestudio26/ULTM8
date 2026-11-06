@@ -655,6 +655,7 @@ export const SERVER_MESSAGES: string[] = [
   "This class hasn't started yet. Check them in instead.",
   "This date is not valid.",
   "The School owner hasn't let you import data.",
+ "The School owner hasn't let you see payroll.",
   "A row number is past the end of this import.",
   "Import not found",
   "Each row number can only be sent once.",

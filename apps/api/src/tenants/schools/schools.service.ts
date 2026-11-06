@@ -1083,6 +1083,8 @@ export class SchoolsService {
           freezeFeeAmount: dto.freezeFeeAmount,
           // Decision 435 item 6: joining fees on or off for the School.
           joiningFeesEnabled: dto.joiningFeesEnabled,
+          // Decision 435 item 22: payroll staff see the rates, or not.
+          payrollStaffSeeRates: dto.payrollStaffSeeRates,
           // Decision 411: tax on staff-created charges; Decision 338 items 1 and 6.
           taxCountry: dto.taxCountry,
           taxRateBasisPoints: dto.taxRateBasisPoints,

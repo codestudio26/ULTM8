@@ -1267,6 +1267,11 @@ model School {
   /// the whole School (off by default). Off, the amounts stay saved on the
   /// plans but nothing is charged.
   joiningFeesEnabled             Boolean                         @default(false)
+  /// Decision 435 item 22 (owner's answer, 6 Nov 2026): whether Branch Staff
+  /// with the "Payroll" switch see the pay rates in the payroll report, read
+  /// only. Off by default: they see classes, hours and pay only. Owners
+  /// always see the rates.
+  payrollStaffSeeRates           Boolean                         @default(false)
   /// Decision 411: tax on staff-created charges, set by the School. The country
   /// the School is in (ISO 3166-1 alpha-2; picking it pre-fills the rate from
   /// ULTM8's list, which the School can change), the one rate in hundredths of
@@ -5103,6 +5108,11 @@ model StaffPermission {
   /// attendance from a spreadsheet, for their own Branches. Branch Staff
   /// only; off by default; owners always can.
   canImportData         Boolean  @default(false)
+  /// Decision 435 item 22: may see the payroll report (Decision 320 item 4),
+  /// for the whole School. The report only: the pay rates stay the owners'
+  /// to set. Branch Staff only; off by default and in no preset; owners
+  /// always can.
+  canSeePayroll         Boolean  @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)

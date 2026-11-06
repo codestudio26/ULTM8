@@ -830,6 +830,7 @@ export const serverMessages: Record<string, string> = {
   "This date is not valid.": "วันที่นี้ไม่ถูกต้อง",
   "Attendance can only be logged from {v1} to {v2}.": "บันทึกการเข้าเรียนได้เฉพาะตั้งแต่ {v1} ถึง {v2}",
   "The School owner hasn't let you import data.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณนำเข้าข้อมูล",
+  "The School owner hasn't let you see payroll.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณดูเงินเดือน",
   "A row number is past the end of this import.": "หมายเลขแถวเกินจุดสิ้นสุดของการนำเข้านี้",
   "Import not found": "ไม่พบการนำเข้า",
   "Each row number can only be sent once.": "ส่งหมายเลขแถวแต่ละหมายเลขได้เพียงครั้งเดียว",

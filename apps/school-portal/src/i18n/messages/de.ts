@@ -1662,6 +1662,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Dateien der Schüler ihrer Standorte sehen, hochladen, herunterladen und löschen. Mitglieder sehen diese Dateien nie.",
       seeMedicalInfo: "Medizinische Angaben sehen",
       seeMedicalInfoHint: "Die medizinischen Angaben lesen, die die Schüler ihrer Standorte bei der Anmeldung gemacht haben. Trainer sehen sie nie.",
+      // Decision 435 item 22.
+      payroll: "Lohnabrechnung",
+      payrollHint: "Nur die Lohnabrechnung sehen, für die ganze Schule, Inhaber eingeschlossen. Die Lohnsätze legen weiterhin die Inhaber der Schule fest.",
       ownerOnly: "Geld (Zahlungen, Erstattungen, Tarife und Preise), Schuleinstellungen und Inhaber bleiben immer bei den Inhabern der Schule.",
       saved: "Zugriff für {name} gespeichert.",
       readOnlyIntro: "Das Team deiner Filialen. Nur die Inhaber der Schule können Rollen oder Zugriffe ändern.",
@@ -4981,7 +4984,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Was jedes Teammitglied mit den unterrichteten Kursen zu den von dir festgelegten Sätzen verdient hat. ULTM8 zahlt niemandem etwas aus: Du bezahlst dein Personal außerhalb von ULTM8.",
     tabReport: "Bericht",
     tabRates: "Sätze",
-    noAccess: "Nur der Schulinhaber kann die Lohnabrechnung sehen.",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Was jedes Teammitglied mit den unterrichteten Kursen zu den von den Inhabern der Schule festgelegten Sätzen verdient hat. ULTM8 zahlt niemandem etwas aus: Die Schule bezahlt ihr Personal außerhalb von ULTM8.",
+    ratesHidden: "Die Inhaber der Schule zeigen die Lohnsätze hier nicht an: Du siehst Kurse, Stunden und Lohn.",
+    staffRates: {
+      title: "Was Mitarbeiter mit Zugriff auf die Lohnabrechnung sehen",
+      label: "Lohnsätze im Bericht anzeigen",
+      hint: "Mitarbeiter mit dem Schalter „Lohnabrechnung“ sehen im Bericht und im Download die Stunden- und Kurssätze jeder Person, nur lesend. Aus: Sie sehen nur Kurse, Stunden und Lohn. Du siehst die Sätze immer.",
+    },
+    noAccess: "Nur die Inhaber der Schule und Mitarbeiter, denen sie es erlauben, können die Lohnabrechnung sehen.",
     loadFailed: "Die Lohnabrechnung konnte nicht geladen werden. Bitte versuche es erneut.",
     periodLabel: "Zeitraum",
     preset: {

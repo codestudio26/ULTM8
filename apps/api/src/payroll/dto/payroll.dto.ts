@@ -78,10 +78,10 @@ export class PayrollRowDto {
   @ApiProperty({ description: 'False when the person is no longer on the staff.' })
   onStaff!: boolean;
 
-  @ApiProperty({ type: Number, nullable: true })
+  @ApiProperty({ type: Number, nullable: true, description: 'Null when not set, or left out for staff the School does not show rates to (ratesShown false).' })
   hourlyRate!: number | null;
 
-  @ApiProperty({ type: Number, nullable: true })
+  @ApiProperty({ type: Number, nullable: true, description: 'Null when not set, or left out for staff the School does not show rates to (ratesShown false).' })
   perClassRate!: number | null;
 
   @ApiProperty({ description: 'Classes they taught in the range.' })
@@ -106,6 +106,12 @@ export class PayrollReportResponseDto {
 
   @ApiProperty({ type: String, nullable: true })
   currency!: string | null;
+
+  @ApiProperty({
+    description:
+      'Decision 435 item 22: whether the rows carry the pay rates. Always true for owners; for Branch Staff with the "Payroll" switch, the School\'s payrollStaffSeeRates setting (off by default), and when false every rate is null.',
+  })
+  ratesShown!: boolean;
 
   @ApiProperty({ type: [PayrollRowDto], description: 'Everyone with a rate, by name.' })
   rows!: PayrollRowDto[];
