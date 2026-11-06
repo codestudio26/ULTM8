@@ -1662,7 +1662,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "Die medizinischen Angaben lesen, die die Schüler ihrer Standorte bei der Anmeldung gemacht haben. Trainer sehen sie nie.",
       // Decision 435 item 22.
       payroll: "Lohnabrechnung",
-      payrollHint: "Die Lohnabrechnung sehen und die Lohnsätze aller Mitarbeiter festlegen, für die ganze Schule, Inhaber eingeschlossen.",
+      payrollHint: "Nur die Lohnabrechnung sehen, für die ganze Schule, Inhaber eingeschlossen. Die Lohnsätze legen weiterhin die Inhaber der Schule fest.",
       ownerOnly: "Geld (Zahlungen, Erstattungen, Tarife und Preise), Schuleinstellungen und Inhaber bleiben immer bei den Inhabern der Schule.",
       saved: "Zugriff für {name} gespeichert.",
       readOnlyIntro: "Das Team deiner Filialen. Nur die Inhaber der Schule können Rollen oder Zugriffe ändern.",

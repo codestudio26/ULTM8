@@ -1662,7 +1662,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "Leggere le informazioni mediche che gli allievi delle loro sedi hanno dato all'iscrizione. Gli istruttori non le vedono mai.",
       // Decision 435 item 22.
       payroll: "Paghe",
-      payrollHint: "Vedere il report delle paghe e impostare le tariffe di tutto lo staff, per tutta la scuola, titolari compresi.",
+      payrollHint: "Vedere solo il report delle paghe, per tutta la scuola, titolari compresi. Le tariffe restano impostate dai titolari della scuola.",
       ownerOnly: "Denaro (pagamenti, rimborsi, piani e prezzi), impostazioni della Scuola e proprietari restano sempre ai proprietari della Scuola.",
       saved: "Accesso salvato per {name}.",
       readOnlyIntro: "Lo staff delle tue sedi. Solo i proprietari della Scuola possono cambiare ruoli o accessi.",

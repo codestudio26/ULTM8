@@ -1662,7 +1662,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "Ler as informações médicas que os alunos das suas filiais deram no cadastro. Instrutores nunca as veem.",
       // Decision 435 item 22.
       payroll: "Folha de pagamento",
-      payrollHint: "Ver o relatório da folha de pagamento e definir os valores de toda a equipe, para a escola inteira, donos incluídos.",
+      payrollHint: "Ver apenas o relatório da folha de pagamento, para a escola inteira, donos incluídos. Definir os valores continua com os donos da escola.",
       ownerOnly: "Dinheiro (pagamentos, reembolsos, planos e preços), configurações da Escola e proprietários ficam sempre com os proprietários da Escola.",
       saved: "Acesso salvo para {name}.",
       readOnlyIntro: "A equipe das suas filiais. Só os proprietários da Escola podem mudar funções ou acessos.",

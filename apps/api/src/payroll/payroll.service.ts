@@ -40,15 +40,18 @@ const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompar
  *   zone, else the School's.
  * Hours are the class's length, start to end. There is no clock in or out.
  *
- * Who: the School's owners, and Branch Staff the owner switched on
- * ("Payroll", Decision 435 item 22), for the whole School: every staff member
- * and every Branch's classes. Checked by assertMayRunPayroll. The rates are
- * read and written on the app connection, whose RLS policy lets only the
- * School's owners and those Branch Staff reach them (is_payroll_staff). What
- * the report adds up around them (who is on the staff, the School's names
- * for them, the Branches and the classes taught) is read on the jobs
- * connection for this School only, after that check: a Branch Staff
- * member's own view stops at their Branches.
+ * Who: the report is for the School's owners, and Branch Staff the owner
+ * switched on ("Payroll", Decision 435 item 22), for the whole School: every
+ * staff member and every Branch's classes. Checked by assertMayRunPayroll.
+ * The switch gives the report only: the Rates tab (listing and setting the
+ * rates) stays the School's owners' alone, as before it, so nobody switched
+ * on can change their own rate or anyone else's. The rates are read and
+ * written on the app connection, whose RLS policy lets the School's owners
+ * read and write them and those Branch Staff only read them
+ * (is_payroll_staff). What the report adds up around them (who is on the
+ * staff, the School's names for them, the Branches and the classes taught)
+ * is read on the jobs connection for this School only, after that check: a
+ * Branch Staff member's own view stops at their Branches.
  */
 @Injectable()
 export class PayrollService {
@@ -62,15 +65,16 @@ export class PayrollService {
   /** Everyone on the staff, with their rates, and anyone who left but still
    * has a rate (so it can be cleared). */
   async listRates(callerId: string, schoolId: string): Promise<PayRatesResponseDto> {
-    await this.tenantAuth.assertMayRunPayroll(callerId, schoolId);
-    const rates = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.staffPayRate.findMany({ where: { schoolId }, select: { userId: true, hourlyRate: true, perClassRate: true } }),
-    );
-    const [school, grants, permissions] = await Promise.all([
-      this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } }),
-      this.prismaJobs.roleGrant.findMany({ where: { schoolId, role: { in: STAFF_ROLES }, revokedAt: null }, select: { userId: true, role: true } }),
-      this.prismaJobs.staffPermission.findMany({ where: { schoolId }, select: { userId: true, displayName: true } }),
-    ]);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const { school, grants, rates, permissions } = await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const [school, grants, rates, permissions] = await Promise.all([
+        tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } }),
+        tx.roleGrant.findMany({ where: { schoolId, role: { in: STAFF_ROLES }, revokedAt: null }, select: { userId: true, role: true } }),
+        tx.staffPayRate.findMany({ where: { schoolId }, select: { userId: true, hourlyRate: true, perClassRate: true } }),
+        tx.staffPermission.findMany({ where: { schoolId }, select: { userId: true, displayName: true } }),
+      ]);
+      return { school, grants, rates, permissions };
+    });
     const roles = new Map<string, Set<string>>();
     for (const g of grants) roles.set(g.userId, (roles.get(g.userId) ?? new Set()).add(g.role));
     const rateOf = new Map(rates.map((r) => [r.userId, r]));
@@ -93,7 +97,7 @@ export class PayrollService {
   /** Sets both rates. Only a current member of staff can be given a rate;
    * clearing both removes the person from payroll, on or off the staff. */
   async setRate(callerId: string, schoolId: string, userId: string, dto: SetPayRateDto): Promise<PayRatesResponseDto> {
-    await this.tenantAuth.assertMayRunPayroll(callerId, schoolId);
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const existing = await tx.staffPayRate.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { hourlyRate: true, perClassRate: true } });
@@ -101,11 +105,11 @@ export class PayrollService {
         if (existing) await tx.staffPayRate.delete({ where: { schoolId_userId: { schoolId, userId } } });
         return;
       }
-      const onStaff = await this.prismaJobs.roleGrant.findFirst({ where: { schoolId, userId, role: { in: STAFF_ROLES }, revokedAt: null }, select: { id: true } });
+      const onStaff = await tx.roleGrant.findFirst({ where: { schoolId, userId, role: { in: STAFF_ROLES }, revokedAt: null }, select: { id: true } });
       if (!onStaff) throw new NotFoundException(NOT_STAFF);
       // Decision 414 item 6: a new non-zero amount needs the School's currency.
       if (setsNewPrice(dto.hourlyRate, existing?.hourlyRate) || setsNewPrice(dto.perClassRate, existing?.perClassRate)) {
-        const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } });
+        const school = await tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true } });
         requireSchoolCurrency(school?.defaultCurrency);
       }
       const data = { hourlyRate: dto.hourlyRate, perClassRate: dto.perClassRate, updatedById: callerId };

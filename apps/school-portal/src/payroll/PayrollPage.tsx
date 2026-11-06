@@ -38,9 +38,10 @@ function dateLabel(iso: string): string {
  * Payroll (Decision 320 item 4): a report of what each member of staff
  * earned from the classes they taught, at the hourly and per-class rates the
  * owner sets, over a date range, with a CSV download. ULTM8 pays nobody.
- * The School's owners, and Branch Staff with the "Payroll" switch (Decision
- * 435 item 22), who see and set it for the whole School as the owner does.
- * The API checks the same.
+ * The School's owners see the report and set the rates. Branch Staff with
+ * the "Payroll" switch (Decision 435 item 22) see the report only, for the
+ * whole School: no Rates tab, so no editing anyone's rate, their own
+ * included. The API checks the same.
  */
 export function PayrollPage() {
   const t = useT();
@@ -48,19 +49,23 @@ export function PayrollPage() {
   const coachSchoolId = useCoachSchoolId();
   const staffAccess = useMyStaffAccess(ownedSchoolId ? null : coachSchoolId).data;
   const schoolId = ownedSchoolId ?? (staffAccess?.branchStaff && staffAccess.access.payroll ? coachSchoolId : null);
+  // The rates are the owners' alone; switched-on staff get the report only.
+  const isOwner = !!ownedSchoolId;
   const [tab, setTab] = useState<Tab>('report');
 
   return (
     <>
       <PageHeader title={t('payroll.title')} subtitle={t('payroll.subtitle')} />
-      <div role="tablist" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        {(['report', 'rates'] as const).map((id) => (
-          <Button key={id} role="tab" aria-selected={tab === id} variant={tab === id ? 'primary' : 'secondary'} onClick={() => setTab(id)}>
-            {id === 'report' ? t('payroll.tabReport') : t('payroll.tabRates')}
-          </Button>
-        ))}
-      </div>
-      {!schoolId ? <ErrorBanner message={t('payroll.noAccess')} /> : tab === 'report' ? <Report schoolId={schoolId} /> : <Rates schoolId={schoolId} />}
+      {isOwner ? (
+        <div role="tablist" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+          {(['report', 'rates'] as const).map((id) => (
+            <Button key={id} role="tab" aria-selected={tab === id} variant={tab === id ? 'primary' : 'secondary'} onClick={() => setTab(id)}>
+              {id === 'report' ? t('payroll.tabReport') : t('payroll.tabRates')}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+      {!schoolId ? <ErrorBanner message={t('payroll.noAccess')} /> : isOwner && tab === 'rates' ? <Rates schoolId={schoolId} /> : <Report schoolId={schoolId} />}
     </>
   );
 }

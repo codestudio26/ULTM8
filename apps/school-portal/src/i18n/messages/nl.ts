@@ -1662,7 +1662,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "De medische informatie lezen die leerlingen van hun vestigingen bij de aanmelding gaven. Trainers zien die nooit.",
       // Decision 435 item 22.
       payroll: "Salarisoverzicht",
-      payrollHint: "Het salarisoverzicht zien en de tarieven van alle medewerkers instellen, voor de hele school, eigenaren inbegrepen.",
+      payrollHint: "Alleen het salarisoverzicht zien, voor de hele school, eigenaren inbegrepen. De tarieven blijven door de eigenaren van de school ingesteld.",
       ownerOnly: "Geld (betalingen, terugbetalingen, abonnementen en prijzen), Schoolinstellingen en eigenaren blijven altijd bij de eigenaren van de School.",
       saved: "Toegang opgeslagen voor {name}.",
       readOnlyIntro: "Het team van jouw filialen. Alleen de eigenaren van de School kunnen rollen of toegang wijzigen.",

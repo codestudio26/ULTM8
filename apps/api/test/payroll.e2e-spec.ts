@@ -275,7 +275,7 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
       expect((await as('owner').get(`/v1/schools/${schoolA}/staff/me/access`)).body.access.payroll).toBe(true);
     });
 
-    it('switched on, they see the whole School: every staff member, every Branch, and set rates', async () => {
+    it('switched on, they read the report for the whole School: every staff member, every Branch', async () => {
       const put = await setAccess({ ...DEFAULTS, payroll: true });
       expect(put.status).toBe(200);
       expect(put.body.access.payroll).toBe(true);
@@ -289,20 +289,42 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
       expect(row('coach')).toMatchObject({ name: 'Coach Ana', onStaff: true, classesTaught: 2, minutesTaught: 150, pay: 6000 });
       expect(row('sub')).toMatchObject({ classesTaught: 2, minutesTaught: 75 });
 
-      const list = await as('desk').get(rates());
-      expect(list.status).toBe(200);
-      expect(list.body.items.map((i: { name: string }) => i.name)).toEqual(expect.arrayContaining(['Coach Ana', 'sub Payroll', 'owner Payroll']));
-      const set = await as('desk').put(`${rates()}/${users.blank.id}`).send({ hourlyRate: 900, perClassRate: null });
-      expect(set.status).toBe(200);
-      expect(set.body.items.find((i: { userId: string }) => i.userId === users.blank.id)).toMatchObject({ hourlyRate: 900 });
-
-      // The database lets them reach this School's rates, and no other School's.
-      expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count({ where: { schoolId: schoolA } }))).toBe(4);
-      await expect(
-        asUser(users.desk.id, (tx) => tx.staffPayRate.create({ data: { id: randomUUID(), schoolId: schoolB, userId: users.ownerB.id, hourlyRate: 1 } })),
-      ).rejects.toThrow();
+      // The database lets them read this School's rates (the report shows
+      // them), and no other School's.
+      const inA = await superuser.staffPayRate.count({ where: { schoolId: schoolA } });
+      expect(inA).toBeGreaterThan(0);
+      expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count({ where: { schoolId: schoolA } }))).toBe(inA);
+      expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count())).toBe(inA);
       // Another School stays closed to them.
+      expect((await as('desk').get(report(march, schoolB))).status).toBe(403);
       expect((await as('desk').get(rates(schoolB))).status).toBe(403);
+    });
+
+    it('switched on, the rates stay the owners\' alone: no Rates list and a 403 setting any rate, their own included', async () => {
+      expect((await setAccess({ ...DEFAULTS, payroll: true })).status).toBe(200);
+      expect((await as('desk').get(report(march))).status).toBe(200);
+      const before = await superuser.staffPayRate.findMany({ where: { schoolId: schoolA }, orderBy: { userId: 'asc' } });
+
+      expect((await as('desk').get(rates())).status).toBe(403);
+      // Their own rate, an owner's, a coach's with a rate, and a coach's without one.
+      for (const who of ['desk', 'owner', 'coach', 'blank']) {
+        const set = await as('desk').put(`${rates()}/${users[who].id}`).send({ hourlyRate: 99_999, perClassRate: 99_999 });
+        expect([who, set.status]).toEqual([who, 403]);
+        const clear = await as('desk').put(`${rates()}/${users[who].id}`).send({ hourlyRate: null, perClassRate: null });
+        expect([who, clear.status]).toEqual([who, 403]);
+      }
+
+      // The database refuses their writes too, even to their own rate.
+      await expect(
+        asUser(users.desk.id, (tx) => tx.staffPayRate.create({ data: { id: randomUUID(), schoolId: schoolA, userId: users.desk.id, hourlyRate: 99_999 } })),
+      ).rejects.toThrow();
+      expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.updateMany({ where: { schoolId: schoolA }, data: { hourlyRate: 99_999 } }))).toEqual({ count: 0 });
+      expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.deleteMany({ where: { schoolId: schoolA } }))).toEqual({ count: 0 });
+      expect(await superuser.staffPayRate.findMany({ where: { schoolId: schoolA }, orderBy: { userId: 'asc' } })).toEqual(before);
+
+      // The owner still sets them.
+      expect((await as('owner').put(`${rates()}/${users.blank.id}`).send({ hourlyRate: 900, perClassRate: null })).status).toBe(200);
+      expect((await as('owner').put(`${rates()}/${users.blank.id}`).send({ hourlyRate: null, perClassRate: null })).status).toBe(200);
     });
 
     it('a coach never has it, even with the column set; a paused Branch Staff member loses it', async () => {
@@ -323,6 +345,7 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
 
     it('switched off again, they are refused at once', async () => {
       expect((await setAccess(DEFAULTS)).status).toBe(200);
+      expect((await as('desk').get(report(march))).status).toBe(403);
       expect((await as('desk').get(rates())).status).toBe(403);
       expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count())).toBe(0);
     });

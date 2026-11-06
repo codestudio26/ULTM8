@@ -5103,9 +5103,10 @@ model StaffPermission {
   /// attendance from a spreadsheet, for their own Branches. Branch Staff
   /// only; off by default; owners always can.
   canImportData         Boolean  @default(false)
-  /// Decision 435 item 22: may see the payroll report and set the pay rates
-  /// (Decision 320 item 4), for the whole School. Branch Staff only; off by
-  /// default and in no preset; owners always can.
+  /// Decision 435 item 22: may see the payroll report (Decision 320 item 4),
+  /// for the whole School. The report only: the pay rates stay the owners'
+  /// to set. Branch Staff only; off by default and in no preset; owners
+  /// always can.
   canSeePayroll         Boolean  @default(false)
 
   grantedById String?

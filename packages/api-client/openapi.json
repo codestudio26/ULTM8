@@ -27364,7 +27364,7 @@
           },
           "payroll": {
             "type": "boolean",
-            "description": "See the payroll report and set the pay rates, for the whole School (off by default, in no preset; Decision 435 item 22)."
+            "description": "See the payroll report, for the whole School. Setting the pay rates stays with the School owners (off by default, in no preset; Decision 435 item 22)."
           },
           "memberFiles": {
             "type": "boolean",

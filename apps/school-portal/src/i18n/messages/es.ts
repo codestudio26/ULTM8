@@ -1662,7 +1662,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "Leer la información médica que los alumnos de sus sedes dieron al registrarse. Los instructores nunca la ven.",
       // Decision 435 item 22.
       payroll: "Nómina",
-      payrollHint: "Ver el informe de nómina y fijar las tarifas de pago de todo el personal, para toda la escuela, propietarios incluidos.",
+      payrollHint: "Ver solo el informe de nómina, para toda la escuela, propietarios incluidos. Fijar las tarifas de pago sigue siendo cosa de los propietarios de la escuela.",
       ownerOnly: "El dinero (pagos, reembolsos, planes y precios), la configuración de la Escuela y los propietarios quedan siempre en manos de los propietarios de la Escuela.",
       saved: "Acceso guardado para {name}.",
       readOnlyIntro: "El personal de tus sedes. Solo los propietarios de la Escuela pueden cambiar roles o accesos.",

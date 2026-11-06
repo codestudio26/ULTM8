@@ -1647,7 +1647,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "담당 지점 학생들이 가입할 때 제공한 의료 정보를 읽습니다. 코치는 절대 볼 수 없습니다.",
       // Decision 435 item 22.
       payroll: "급여",
-      payrollHint: "학교 전체(소유자 포함)의 급여 보고서를 보고 모든 직원의 급여 단가를 정합니다.",
+      payrollHint: "학교 전체(소유자 포함)의 급여 보고서만 볼 수 있습니다. 급여 단가는 학교 소유자만 정합니다.",
       ownerOnly: "돈(결제, 환불, 요금제와 가격), 스쿨 설정, 소유자는 항상 스쿨 소유자에게 남습니다.",
       saved: "{name}의 권한을 저장했습니다.",
       readOnlyIntro: "내 지점의 직원입니다. 역할이나 권한은 스쿨 소유자만 바꿀 수 있습니다.",

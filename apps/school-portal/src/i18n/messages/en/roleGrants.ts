@@ -225,7 +225,7 @@ export const roleGrants = {
     seeMedicalInfoHint: "Read the medical information their branches' students gave at sign-up. Coaches never see it.",
     // Decision 435 item 22.
     payroll: "Payroll",
-    payrollHint: "See the payroll report and set every staff member's pay rates, for the whole School, owners included.",
+    payrollHint: "See the payroll report only, for the whole School, owners included. Setting pay rates stays with the School's owners.",
     ownerOnly: "Money (payments, refunds, plans and prices), School settings and owners always stay with the School's owners.",
     saved: 'Access saved for {name}.',
     readOnlyIntro: "The staff at your branches. Only the School's owners can change roles or access.",

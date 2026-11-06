@@ -1662,7 +1662,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "Şubelerindeki öğrencilerin kayıtta verdiği sağlık bilgilerini okuma. Antrenörler bunları asla görmez.",
       // Decision 435 item 22.
       payroll: "Bordro",
-      payrollHint: "Tüm okul için, sahipler dahil, bordro raporunu görmek ve tüm personelin ücret oranlarını belirlemek.",
+      payrollHint: "Tüm okul için, sahipler dahil, yalnızca bordro raporunu görmek. Ücret oranlarını yine yalnızca okul sahipleri belirler.",
       ownerOnly: "Para (ödemeler, iadeler, planlar ve fiyatlar), Okul ayarları ve sahipler her zaman Okul sahiplerinde kalır.",
       saved: "{name} için erişim kaydedildi.",
       readOnlyIntro: "Şubelerinizin personeli. Rolleri veya erişimi yalnızca Okul sahipleri değiştirebilir.",

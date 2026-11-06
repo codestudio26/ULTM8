@@ -88,7 +88,7 @@ test('the owner sets a coach’s rates and reads what they earned', async ({ pag
   expect(file.suggestedFilename()).toBe('payroll-2026-03-01-to-2026-03-31.csv');
 });
 
-test('Decision 435 item 22: Branch Staff see payroll only once the owner switches "Payroll" on, for the whole School', async ({ page }) => {
+test('Decision 435 item 22: Branch Staff see the payroll report only once the owner switches "Payroll" on, for the whole School, and never the rates', async ({ page }) => {
   const north = await addBranch(s, 'North');
   const bea = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
   await db.staffPayRate.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: coachId, hourlyRate: 2000, perClassRate: 550 } });
@@ -121,4 +121,8 @@ test('Decision 435 item 22: Branch Staff see payroll only once the owner switche
   await report.getByLabel('From').fill('2026-03-01');
   await report.getByLabel('To').fill('2026-03-31');
   await expect(report.getByRole('row', { name: /Cora Coach/ })).toContainText('61.00 GBP');
+  // The report only (owner's answer, 6 Nov 2026): no Rates tab, so no rate to edit.
+  await expect(page.getByRole('tab')).toHaveCount(0);
+  await expect(page.getByTestId('payroll-rates')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: /rate/i })).toHaveCount(0);
 });

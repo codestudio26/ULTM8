@@ -1647,7 +1647,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "查看其分馆学员在报名时提供的医疗信息。教练永远看不到。",
       // Decision 435 item 22.
       payroll: "工资",
-      payrollHint: "查看工资报表并设置全校所有员工（包括所有者）的工资标准。",
+      payrollHint: "仅可查看全校（包括所有者）的工资报表。工资标准仍只由学校所有者设置。",
       ownerOnly: "资金（付款、退款、套餐和价格）、学校设置以及所有者始终由学校所有者掌管。",
       saved: "已保存 {name} 的权限。",
       readOnlyIntro: "你所在分校的员工。只有学校所有者可以更改角色或权限。",

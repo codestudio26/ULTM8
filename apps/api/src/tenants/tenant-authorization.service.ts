@@ -70,8 +70,8 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * Decision 315 items 12 and 13's "Import data", checked by importScope.
  * "seeMedicalInfo" is Decision 315 item 10's "See medical information",
  * checked by assertMaySeeMedicalInfo. "payroll" is Decision 435 item 22's
- * "Payroll" (the report and the rates, whole School), checked by
- * assertMayRunPayroll. */
+ * "Payroll" (the payroll report only, whole School; the rates stay
+ * owner-only), checked by assertMayRunPayroll. */
 export const STAFF_ACCESS = [
   'classes',
   'bookings',

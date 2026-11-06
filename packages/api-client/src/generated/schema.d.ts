@@ -8899,7 +8899,7 @@ export interface components {
             attendanceStats: boolean;
             /** @description See the medical information of their branches' students (off by default; Decision 315 item 10). */
             seeMedicalInfo: boolean;
-            /** @description See the payroll report and set the pay rates, for the whole School (off by default, in no preset; Decision 435 item 22). */
+            /** @description See the payroll report, for the whole School. Setting the pay rates stays with the School owners (off by default, in no preset; Decision 435 item 22). */
             payroll: boolean;
             /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
             memberFiles: boolean;

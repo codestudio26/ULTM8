@@ -1647,7 +1647,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "担当支部の生徒が登録時に入力した医療情報を閲覧します。コーチには表示されません。",
       // Decision 435 item 22.
       payroll: "給与",
-      payrollHint: "スクール全体（オーナーを含む）の給与レポートを見て、全スタッフの給与単価を設定します。",
+      payrollHint: "スクール全体（オーナーを含む）の給与レポートを見ることだけができます。給与単価の設定はスクールのオーナーだけが行います。",
       ownerOnly: "お金（支払い、返金、プランと料金）、スクールの設定、オーナーは常にスクールのオーナーが管理します。",
       saved: "{name}のアクセスを保存しました。",
       readOnlyIntro: "あなたの支店のスタッフです。役割やアクセスを変更できるのはスクールのオーナーだけです。",

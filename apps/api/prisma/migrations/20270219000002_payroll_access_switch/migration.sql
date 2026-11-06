@@ -1,6 +1,7 @@
 -- Decision 435 item 22 (builds Decision 320 item 4): a "Payroll" access
 -- switch for Branch Staff. Off by default and in no preset; it covers the
--- whole School (the report and the rates). Owners keep access by role.
+-- whole School, and gives the payroll report only: setting the pay rates
+-- stays with the School's owners. Owners keep access by role.
 -- StaffPermission's existing grants and policies apply to the new column.
 ALTER TABLE "StaffPermission" ADD COLUMN "canSeePayroll" BOOLEAN NOT NULL DEFAULT false;
 
@@ -38,9 +39,10 @@ AS $$
 $$;
 ALTER FUNCTION public."is_payroll_staff"(text) OWNER TO ultm8_rls_helper;
 
--- The rates: the owner's policy stays; Branch Staff switched on read and
--- write them for the whole School too. Nobody else, and still no grant to
--- ultm8_jobs.
-CREATE POLICY "staff_pay_rate_payroll_staff_manage" ON "StaffPayRate"
-  USING (is_payroll_staff("StaffPayRate"."schoolId"))
-  WITH CHECK (is_payroll_staff("StaffPayRate"."schoolId"));
+-- The rates: the owner's policy stays the only one that writes them. Branch
+-- Staff switched on may only read them, for the report (which shows the
+-- rate each person was paid at), for the whole School. Nobody else, and
+-- still no grant to ultm8_jobs.
+CREATE POLICY "staff_pay_rate_payroll_staff_read" ON "StaffPayRate"
+  FOR SELECT
+  USING (is_payroll_staff("StaffPayRate"."schoolId"));

@@ -7,8 +7,9 @@ import { PayRatesResponseDto, PayrollReportQueryDto, PayrollReportResponseDto, S
 import { PayrollService } from './payroll.service';
 
 /** The payroll report and the rates it uses (Decision 320 item 4). The
- * School's owners, and Branch Staff with the "Payroll" switch (Decision 435
- * item 22), for the whole School. */
+ * rates are the School's owners' only. The report is theirs too, and Branch
+ * Staff with the "Payroll" switch (Decision 435 item 22) may read it, for
+ * the whole School. */
 @ApiTags('payroll')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)

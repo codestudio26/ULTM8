@@ -1692,7 +1692,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "Czytać informacje medyczne, które uczniowie ich oddziałów podali przy zapisie. Trenerzy nigdy ich nie widzą.",
       // Decision 435 item 22.
       payroll: "Wynagrodzenia",
-      payrollHint: "Oglądać raport wynagrodzeń i ustawiać stawki całego personelu, dla całej szkoły, łącznie z właścicielami.",
+      payrollHint: "Tylko oglądać raport wynagrodzeń, dla całej szkoły, łącznie z właścicielami. Stawki nadal ustalają wyłącznie właściciele szkoły.",
       ownerOnly: "Pieniądze (płatności, zwroty, plany i ceny), ustawienia Szkoły i właściciele zawsze zostają przy właścicielach Szkoły.",
       saved: "Zapisano dostęp: {name}.",
       readOnlyIntro: "Personel Twoich oddziałów. Tylko właściciele Szkoły mogą zmieniać role lub dostęp.",

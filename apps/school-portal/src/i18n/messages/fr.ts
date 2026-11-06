@@ -1662,7 +1662,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       seeMedicalInfoHint: "Lire les informations médicales que les élèves de leurs sites ont données à l'inscription. Les coachs ne les voient jamais.",
       // Decision 435 item 22.
       payroll: "Paie",
-      payrollHint: "Voir le rapport de paie et fixer les taux de rémunération de tout le personnel, pour toute l’école, propriétaires compris.",
+      payrollHint: "Voir uniquement le rapport de paie, pour toute l’école, propriétaires compris. Les taux de rémunération restent fixés par les propriétaires de l’école.",
       ownerOnly: "L’argent (paiements, remboursements, formules et prix), les paramètres de l’École et les propriétaires restent toujours aux propriétaires de l’École.",
       saved: "Accès enregistré pour {name}.",
       readOnlyIntro: "Le personnel de vos sites. Seuls les propriétaires de l’École peuvent changer les rôles ou les accès.",
