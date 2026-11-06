@@ -104,6 +104,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
     // The School's check-in rules (Decision 394).
     case 'CHECK_IN_WAIVER_REQUIRED':
       return t('server.codes.checkInWaiverRequired');
+    // Decision 441: "Waiver must be signed before booking or check-in".
+    case 'WAIVER_REQUIRED':
+      return t('server.codes.waiverRequired');
     case 'CHECK_IN_HOME_BRANCH_ONLY':
       return t('server.codes.checkInHomeBranchOnly');
     case 'CHECK_IN_VISITORS_OFF':

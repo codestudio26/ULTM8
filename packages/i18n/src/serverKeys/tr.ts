@@ -50,6 +50,7 @@ export const server: PartialMessages<ServerKeys> = {
     adultAlready: "Bu öğrencinin yetişkin programında zaten bir derecesi var.",
     adultFirstBelt: "Yetişkin programının ilk kuşağının üzerinde bir yetişkin derecesi seçin.",
     checkInWaiverRequired: "Bu Okul check-in öncesinde imzalı bir feragatname istiyor.",
+    waiverRequired: "Bu Okul, ders rezervasyonu veya check-in öncesinde imzalı bir feragatname istiyor.",
     checkInHomeBranchOnly: "Bu Okul üyelerin check-in'ini yalnızca kendi Şubelerinde yapar.",
     checkInVisitorsOff: "Bu Okul şu anda ziyaret kartıyla ziyaretçi check-in'i yapmıyor.",
     checkInOneClass: "Bu Okul tek seferde bir derse check-in yapar.",

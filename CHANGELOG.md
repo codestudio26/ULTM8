@@ -230,6 +230,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Open mats are unchanged. The owner, and Branch Staff with "Change check-in
   rules", change it. Needs migration
   `20270207120000_check_in_require_booking`.
+- **Waiver must be signed before booking or check-in** (Decision 441 item 5;
+  launch rehearsal D5) — the "Need a signed waiver to check in" switch on
+  Check-in → Check-in rules becomes **"Waiver must be signed before booking
+  or check-in"**, now **on by default**, and every existing School is
+  switched on too. While it's on, a member, or a child through their parent,
+  who hasn't signed the School's waiver can't book a class, join its waiting
+  list, claim an offered place or check in, whoever books for them (the
+  member, a parent, staff, or a check-in that books a place first). A School
+  with no waiver in use (none, or only archived ones) stops nobody. Buying a
+  plan isn't blocked. When off, a class marked as needing a waiver still asks
+  for one at booking, as before. The refusal has its own message in the
+  portal and the member app, in every language. Needs migration
+  `20270303000001_waiver_before_booking`.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The

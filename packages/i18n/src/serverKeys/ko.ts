@@ -50,6 +50,7 @@ export const server: PartialMessages<ServerKeys> = {
     adultAlready: "이 수련생은 이미 성인 프로그램에 등급이 있습니다.",
     adultFirstBelt: "성인 프로그램의 첫 띠보다 높은 성인 등급을 고르세요.",
     checkInWaiverRequired: "이 도장은 체크인 전에 서명된 면책 동의서가 필요합니다.",
+    waiverRequired: "이 도장은 수업 예약이나 체크인 전에 서명된 면책 동의서가 필요합니다.",
     checkInHomeBranchOnly: "이 도장은 회원을 소속 지점에서만 체크인합니다.",
     checkInVisitorsOff: "이 도장은 현재 방문 패스로 방문자를 체크인하지 않습니다.",
     checkInOneClass: "이 도장은 한 번에 한 수업만 체크인합니다.",
