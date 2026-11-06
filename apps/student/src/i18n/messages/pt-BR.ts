@@ -1134,6 +1134,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       sign: "Assinar",
     },
   },
+  legal: {
+    titles: {
+      terms: "Termos de Serviço",
+      privacy: "Política de Privacidade",
+      schoolAgreement: "Contrato de Escola e Franquia",
+      childrenNotice: "Aviso de Privacidade para Crianças e Responsáveis",
+      cookies: "Aviso de Cookies e Armazenamento",
+    },
+    agree: {
+      account: "Concordo com os Termos de Serviço e li a Política de Privacidade.",
+    },
+    version: "Versão {version}",
+    beingPrepared: "Esta página está sendo preparada. Ela será publicada aqui antes do lançamento do ULTM8.",
+    loadFailed: "Não foi possível carregar esta página. Tente novamente.",
+  },
   charges: {
     recurring: {
       heading: "Cobranças recorrentes",

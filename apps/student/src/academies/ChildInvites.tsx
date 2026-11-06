@@ -8,6 +8,7 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
 import { theme, spacing, fontSize, radius, minTouchTarget } from '../theme/tokens';
 import { CURRENT_POLICY_VERSION } from '../guardians/ConsentTierRow';
+import { LegalLinks } from '../legal/LegalLinks';
 
 type ChildInvite = components['schemas']['ChildInviteDto'];
 
@@ -79,6 +80,7 @@ function ChildInviteCard({ invite }: { invite: ChildInvite }) {
         <Switch value={consent} onValueChange={setConsent} accessibilityLabel={t('academies.childInvites.consent', { child: invite.childFirstName })} />
         <Text style={{ flex: 1, fontSize: fontSize.footnote }}>{t('academies.childInvites.consent', { child: invite.childFirstName })}</Text>
       </View>
+      <LegalLinks slugs={['children-notice']} />
       {answer.isError ? <ErrorBanner message={getApiErrorMessage(answer.error, t('academies.signUpInvites.failed'))} /> : null}
       <Button title={t('academies.signUpInvites.accept')} loading={answer.isPending} onPress={() => answer.mutate({ id: invite.id, accept: true, consent })} />
       <Button title={t('academies.signUpInvites.decline')} variant="secondary" disabled={answer.isPending} onPress={() => answer.mutate({ id: invite.id, accept: false })} />

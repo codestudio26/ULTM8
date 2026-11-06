@@ -347,7 +347,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
       const res = await request(app.getHttpServer())
         .post('/v1/schools')
         .set('Authorization', `Bearer ${signAccessToken(teen, [])}`)
-        .send({ name: 'Teen School' });
+        .send({ acceptAgreement: true, name: 'Teen School' });
       expect(res.status).toBe(403);
       expect(res.body.error.message).toBe('You must be 18 or over to create a School.');
       expect(await superuser.school.count({ where: { name: 'Teen School' } })).toBe(0);
@@ -360,7 +360,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'TZ School', timezone: 'Europe/London' });
+      .send({ acceptAgreement: true, name: 'TZ School', timezone: 'Europe/London' });
     expect(createRes.status).toBe(201);
     expect(createRes.body.timezone).toBe('Europe/London');
     const tzSchoolId = createRes.body.id as string;
@@ -395,7 +395,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Footer Settings School' });
+      .send({ acceptAgreement: true, name: 'Footer Settings School' });
     expect(createRes.status).toBe(201);
     const footerSchoolId = createRes.body.id as string;
     const token = createRes.body.accessToken as string;
@@ -904,7 +904,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Self-Service School' });
+      .send({ acceptAgreement: true, name: 'Self-Service School' });
     expect(createRes.status).toBe(201);
 
     const grant = await superuser.roleGrant.findFirst({
@@ -1230,7 +1230,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Self-Service Franchise' });
+      .send({ acceptAgreement: true, name: 'Self-Service Franchise' });
     expect(createRes.status).toBe(201);
     expect(createRes.body.feeModel).toBe('FLAT'); // schema default, never sent
 
@@ -1256,11 +1256,11 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createFranchiseA = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Isolation Franchise A' });
+      .send({ acceptAgreement: true, name: 'Isolation Franchise A' });
     const createFranchiseB = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerB}`)
-      .send({ name: 'Isolation Franchise B' });
+      .send({ acceptAgreement: true, name: 'Isolation Franchise B' });
     expect(createFranchiseA.status).toBe(201);
     expect(createFranchiseB.status).toBe(201);
     const franchiseAId = createFranchiseA.body.id;
@@ -1316,11 +1316,11 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const flatJiuJitsu = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Filter Franchise Flat JiuJitsu', feeModel: 'FLAT', activities: ['Jiu Jitsu'] });
+      .send({ acceptAgreement: true, name: 'Filter Franchise Flat JiuJitsu', feeModel: 'FLAT', activities: ['Jiu Jitsu'] });
     const headcountKarate = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Filter Franchise Headcount Karate', feeModel: 'PER_HEADCOUNT', activities: ['Karate'] });
+      .send({ acceptAgreement: true, name: 'Filter Franchise Headcount Karate', feeModel: 'PER_HEADCOUNT', activities: ['Karate'] });
     expect(flatJiuJitsu.status).toBe(201);
     expect(headcountKarate.status).toBe(201);
     const ids = [flatJiuJitsu.body.id, headcountKarate.body.id];
@@ -1371,7 +1371,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Nullable-Field Franchise', mobileNumber: '+15551234567', description: 'Original description' });
+      .send({ acceptAgreement: true, name: 'Nullable-Field Franchise', mobileNumber: '+15551234567', description: 'Original description' });
     expect(createRes.status).toBe(201);
     const franchiseId = createRes.body.id;
     expect(createRes.body.mobileNumber).toBe('+15551234567');
@@ -1416,7 +1416,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes2 = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Reject-Null-Rate Franchise', flatFeeAmount: 5000 });
+      .send({ acceptAgreement: true, name: 'Reject-Null-Rate Franchise', flatFeeAmount: 5000 });
     expect(createRes2.status).toBe(201);
     const franchiseId2 = createRes2.body.id;
 
@@ -1443,7 +1443,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createFranchise = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Roster Franchise' });
+      .send({ acceptAgreement: true, name: 'Roster Franchise' });
     expect(createFranchise.status).toBe(201);
     const franchiseId = createFranchise.body.id;
 
@@ -1502,14 +1502,14 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createSchoolRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Join-Franchise Test School' });
+      .send({ acceptAgreement: true, name: 'Join-Franchise Test School' });
     expect(createSchoolRes.status).toBe(201);
     const freshSchoolId = createSchoolRes.body.id;
 
     const createFranchiseRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Join-Franchise Test Franchise' });
+      .send({ acceptAgreement: true, name: 'Join-Franchise Test Franchise' });
     expect(createFranchiseRes.status).toBe(201);
     const franchiseId = createFranchiseRes.body.id;
 
@@ -1563,7 +1563,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createFranchiseRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Unauthorized Join Test Franchise' });
+      .send({ acceptAgreement: true, name: 'Unauthorized Join Test Franchise' });
     expect(createFranchiseRes.status).toBe(201);
     const franchiseId = createFranchiseRes.body.id;
 
@@ -1593,14 +1593,14 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createSchoolRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Leave-Franchise Test School' });
+      .send({ acceptAgreement: true, name: 'Leave-Franchise Test School' });
     expect(createSchoolRes.status).toBe(201);
     const freshSchoolId = createSchoolRes.body.id;
 
     const createFranchiseRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Leave-Franchise Test Franchise A' });
+      .send({ acceptAgreement: true, name: 'Leave-Franchise Test Franchise A' });
     const franchiseAId = createFranchiseRes.body.id;
 
     await joinViaRequest(freshSchoolId, franchiseAId, tokenOwnerA);
@@ -1618,7 +1618,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createFranchiseBRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Leave-Franchise Test Franchise B' });
+      .send({ acceptAgreement: true, name: 'Leave-Franchise Test Franchise B' });
     const franchiseBId = createFranchiseBRes.body.id;
 
     await joinViaRequest(freshSchoolId, franchiseBId, tokenOwnerA);
@@ -1640,7 +1640,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createFranchiseRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Unauthorized Leave Test Franchise' });
+      .send({ acceptAgreement: true, name: 'Unauthorized Leave Test Franchise' });
     const franchiseId = createFranchiseRes.body.id;
     await joinViaRequest(schoolA.id, franchiseId, tokenOwnerA);
 
@@ -1672,7 +1672,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Join-Code Test School' });
+      .send({ acceptAgreement: true, name: 'Join-Code Test School' });
     expect(createRes.status).toBe(201);
     const schoolId = createRes.body.id;
     const originalCode: string = createRes.body.joinCode;
@@ -1740,7 +1740,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Fee-Rate Test Franchise', feeModel: 'PER_HEADCOUNT', perHeadcountRate: 500 });
+      .send({ acceptAgreement: true, name: 'Fee-Rate Test Franchise', feeModel: 'PER_HEADCOUNT', perHeadcountRate: 500 });
     expect(createRes.status).toBe(201);
     expect(createRes.body.perHeadcountRate).toBe(500);
     expect(createRes.body.flatFeeAmount).toBeNull();
@@ -1766,7 +1766,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const res = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Overflow Test Franchise', flatFeeAmount: 2147483648 }); // 2^31, one past the signed 32-bit ceiling
+      .send({ acceptAgreement: true, name: 'Overflow Test Franchise', flatFeeAmount: 2147483648 }); // 2^31, one past the signed 32-bit ceiling
     expect(res.status).toBe(400);
   });
 
@@ -1774,7 +1774,7 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     const createRes = await request(app.getHttpServer())
       .post('/v1/franchises')
       .set('Authorization', `Bearer ${tokenOwnerA}`)
-      .send({ name: 'Rate-Lock Test Franchise', feeModel: 'FLAT', flatFeeAmount: 5000 });
+      .send({ acceptAgreement: true, name: 'Rate-Lock Test Franchise', feeModel: 'FLAT', flatFeeAmount: 5000 });
     expect(createRes.status).toBe(201);
     const franchiseId = createRes.body.id;
 

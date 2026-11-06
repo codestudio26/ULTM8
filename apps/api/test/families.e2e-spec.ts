@@ -419,7 +419,9 @@ describeIfDb('Families (Decision 430)', () => {
       const created = await http().post('/v1/guardians/me/minors').set(auth(parent)).send({ firstName: 'fam-ready', surname: 'Family', dateOfBirth: '2016-07-07', consentPolicyVersion: POLICY });
       expect(created.status).toBe(201);
       expect((await http().get(`/v1/guardians/me/minors/${created.body.studentId}/consent`).set(auth(parent))).body.state).toBe('GIVEN');
-      expect(await superuser.consentRecord.count({ where: { guardianId: parent.id, studentId: created.body.studentId, tier: 'BASELINE', policyVersion: POLICY } })).toBe(1);
+      // Decision 440 (C5): saved with the server's Children notice version, not the app's.
+      const notice = await superuser.legalDocument.findUniqueOrThrow({ where: { slug: 'children-notice' } });
+      expect(await superuser.consentRecord.count({ where: { guardianId: parent.id, studentId: created.body.studentId, tier: 'BASELINE', policyVersion: notice.version } })).toBe(1);
     });
 
     it('a child already on ULTM8 before this rule keeps booking', async () => {

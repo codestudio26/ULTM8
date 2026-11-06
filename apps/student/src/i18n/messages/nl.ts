@@ -1134,6 +1134,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       correctionSameRank: "Dat is de band die je al hebt. Kies de band die je zou moeten hebben.",
     },
   },
+  legal: {
+    titles: {
+      terms: "Servicevoorwaarden",
+      privacy: "Privacybeleid",
+      schoolAgreement: "School- en Franchiseovereenkomst",
+      childrenNotice: "Privacyverklaring voor kinderen en voogden",
+      cookies: "Verklaring over cookies en opslag",
+    },
+    agree: {
+      account: "Ik ga akkoord met de Servicevoorwaarden en ik heb het Privacybeleid gelezen.",
+    },
+    version: "Versie {version}",
+    beingPrepared: "Deze pagina wordt voorbereid. Ze wordt hier gepubliceerd voordat ULTM8 live gaat.",
+    loadFailed: "Deze pagina kon niet worden geladen. Probeer het opnieuw.",
+  },
   charges: {
     recurring: {
       heading: "Terugkerende kosten",

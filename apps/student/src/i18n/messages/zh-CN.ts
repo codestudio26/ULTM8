@@ -1123,6 +1123,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       correctionSameRank: "这就是你现在的腰带。请选择你应有的腰带。",
     },
   },
+  legal: {
+    titles: {
+      terms: "服务条款",
+      privacy: "隐私政策",
+      schoolAgreement: "学校和加盟协议",
+      childrenNotice: "儿童和监护人隐私声明",
+      cookies: "Cookie 和存储声明",
+    },
+    agree: {
+      account: "我同意服务条款，并已阅读隐私政策。",
+    },
+    version: "版本 {version}",
+    beingPrepared: "此页面正在准备中，将在 ULTM8 上线前在此发布。",
+    loadFailed: "无法加载此页面，请重试。",
+  },
   charges: {
     recurring: {
       heading: "定期收费项",

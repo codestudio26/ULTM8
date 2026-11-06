@@ -72,6 +72,13 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.childAdultAccessEnded');
     case 'GUARDIAN_UNDER_18':
       return t('server.codes.guardianUnder18');
+    // Legal go-live (Decision 440).
+    case 'TERMS_NOT_ACCEPTED':
+      return t('server.codes.termsNotAccepted');
+    case 'REGISTER_UNDER_18':
+      return t('server.codes.registerUnder18');
+    case 'AGREEMENT_NOT_ACCEPTED':
+      return t('server.codes.agreementNotAccepted');
     case 'NOT_A_MINOR':
       return t('server.codes.notAMinor');
     case 'CHILD_ALREADY_HERE':

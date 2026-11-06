@@ -4969,6 +4969,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "아직 직원이 없습니다",
     emptyRatesDescription: "직원 페이지에서 추가한 직원이 여기에 표시됩니다.",
   },
+  legal: {
+    titles: {
+      terms: "서비스 약관",
+      privacy: "개인정보 처리방침",
+      schoolAgreement: "스쿨 및 프랜차이즈 계약",
+      childrenNotice: "아동 및 보호자 개인정보 안내",
+      cookies: "쿠키 및 저장소 안내",
+    },
+    agree: {
+      account: "{terms}에 동의하며 {privacy}을 읽었습니다.",
+      agreement: "데이터 처리 부속서를 포함한 {agreement}에 동의합니다.",
+    },
+    version: "버전 {version}",
+    beingPrepared: "이 페이지는 준비 중입니다. ULTM8 출시 전에 여기에 게시됩니다.",
+    loadFailed: "이 페이지를 불러오지 못했습니다. 다시 시도하세요.",
+    notFound: "페이지를 찾을 수 없습니다",
+    backToSignIn: "로그인으로 돌아가기",
+  },
   whatsNew: {
     title: "새 소식",
     subtitle: "ULTM8 팀이 전하는 ULTM8 소식입니다.",

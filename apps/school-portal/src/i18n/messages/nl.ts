@@ -5015,6 +5015,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Nog geen personeel",
     emptyRatesDescription: "Personeel dat je op de pagina Personeel toevoegt, verschijnt hier.",
   },
+  legal: {
+    titles: {
+      terms: "Servicevoorwaarden",
+      privacy: "Privacybeleid",
+      schoolAgreement: "School- en Franchiseovereenkomst",
+      childrenNotice: "Privacyverklaring voor kinderen en voogden",
+      cookies: "Verklaring over cookies en opslag",
+    },
+    agree: {
+      account: "Ik ga akkoord met de {terms} en ik heb het {privacy} gelezen.",
+      agreement: "Ik accepteer de {agreement}, inclusief de verwerkersovereenkomst.",
+    },
+    version: "Versie {version}",
+    beingPrepared: "Deze pagina wordt voorbereid. Ze wordt hier gepubliceerd voordat ULTM8 live gaat.",
+    loadFailed: "Deze pagina kon niet worden geladen. Probeer het opnieuw.",
+    notFound: "Pagina niet gevonden",
+    backToSignIn: "Terug naar inloggen",
+  },
   whatsNew: {
     title: "Nieuw",
     subtitle: "Nieuws over ULTM8 van het ULTM8-team.",

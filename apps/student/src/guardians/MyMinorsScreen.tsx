@@ -5,6 +5,7 @@ import { Button, ErrorBanner, Field, InlineError, Screen, SuccessBanner, TextFie
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { formatDateOnly } from '../lib/formatDate';
 import { useT } from '../i18n/I18nProvider';
+import { LegalLinks } from '../legal/LegalLinks';
 import { useAddMinor, useMyMinors } from './guardianQueries';
 import { CURRENT_POLICY_VERSION } from './ConsentTierRow';
 import type { TranslationKey } from '../i18n/types';
@@ -212,6 +213,7 @@ export function MyMinorsScreen({ navigation }: Props) {
             />
             <Text style={{ flex: 1, fontSize: 13 }}>{t('guardians.myMinors.consentLabel')}</Text>
           </View>
+          <LegalLinks slugs={['children-notice']} />
           {addMinor.isError ? (
             <InlineError message={getApiErrorMessage(addMinor.error, t('guardians.myMinors.addError'))} />
           ) : null}

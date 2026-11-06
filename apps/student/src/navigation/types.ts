@@ -1,4 +1,5 @@
 import type { Lesson } from '../curriculum/curriculumQueries';
+import type { LegalSlug } from '../legal/legalPages';
 
 /** Decision 266 — Apple 4.2.6/4.3 compliance (Decision 247's "one shared app,
  * School picked after install"). A single screen, not a multi-step stack —
@@ -16,6 +17,8 @@ export type AuthStackParamList = {
   ResetPasscode: { phone?: string } | undefined;
   /** First sign-in with a temporary passcode (Decision 371). */
   ChoosePasscode: { passcodeChangeToken: string };
+  /** Decision 440: a legal page, readable before signing in. */
+  LegalDocument: { slug: LegalSlug };
 };
 
 export type AppStackParamList = {
@@ -58,6 +61,8 @@ export type AppStackParamList = {
   ChildCard: { studentId: string; name: string };
   /** Decision 428 (M3): change one's own passcode. */
   ChangePasscode: undefined;
+  /** Decision 440: a legal page. */
+  LegalDocument: { slug: LegalSlug };
   KidModePin: undefined;
   KidModeBooking: undefined;
   PendingReview: undefined;

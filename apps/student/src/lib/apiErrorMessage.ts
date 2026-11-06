@@ -101,6 +101,13 @@ function codedMessage(err: ApiError): string | null {
       return translate('server.codes.childAdultAccessEnded');
     case 'GUARDIAN_UNDER_18':
       return translate('server.codes.guardianUnder18');
+    // Legal go-live (Decision 440).
+    case 'TERMS_NOT_ACCEPTED':
+      return translate('server.codes.termsNotAccepted');
+    case 'REGISTER_UNDER_18':
+      return translate('server.codes.registerUnder18');
+    case 'AGREEMENT_NOT_ACCEPTED':
+      return translate('server.codes.agreementNotAccepted');
     case 'NOT_A_MINOR':
       return translate('server.codes.notAMinor');
     case 'CHILD_ALREADY_HERE':

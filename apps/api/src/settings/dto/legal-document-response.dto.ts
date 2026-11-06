@@ -20,6 +20,9 @@ export class LegalDocumentResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Null until real legal/product content is populated.' })
   content!: string | null;
 
+  @ApiProperty({ description: 'Decision 440: the version people accept; "unpublished" until the real text is loaded.' })
+  version!: string;
+
   @ApiProperty()
   createdAt!: string;
 

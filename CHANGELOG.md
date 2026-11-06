@@ -15,6 +15,20 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Legal go-live: "I agree" step, 18+ sign-up and the Children notice version**
+  (Track A and Track B; Decision 440). **Needs a database migration**
+  (`20270226000000_legal_acceptance`).
+  - Creating an account (portal and app) needs a tick to agree to the Terms of
+    Service and the Privacy Policy; creating a School or a Franchise needs a
+    tick to accept the School and Franchise Agreement. The version accepted
+    and when are saved.
+  - Nobody under 18 can create their own account; the message tells them to
+    ask a parent or guardian.
+  - Guardian consent is saved with the Children notice version the server
+    publishes, and the app links to the notice.
+  - Each legal page has its own address (`/legal/<page>` in the portal, a
+    screen in the app) and says it is being prepared until its text is loaded.
+
 - **Stress test round 5 fixes** (Track A and Track B; Decisions 430–434;
   `docs/handover/STRESS-TEST-ROUND5.md`). **Needs database migrations**
   (`20270220000000` to `20270224000000`, nine in all).

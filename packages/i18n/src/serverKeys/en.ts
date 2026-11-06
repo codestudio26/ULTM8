@@ -38,6 +38,10 @@ export const server = {
     childIsAdult: 'This child is 18 now and signs for themselves. They can make their own ULTM8 account.',
     childAdultAccessEnded: 'This child turned 18 more than 30 days ago, so their account is no longer managed from a parent\'s account.',
     guardianUnder18: 'A Guardian must be 18 or over.',
+    // Decision 440 (legal go-live).
+    termsNotAccepted: "Agree to the Terms of Service and the Privacy Policy to create an account.",
+    registerUnder18: "You need to be 18 or over to create an account. Ask your parent or guardian to add you from their ULTM8 account.",
+    agreementNotAccepted: "Accept the School and Franchise Agreement to continue.",
     notAMinor: 'This is for children (under 18). An adult makes their own account.',
     childAlreadyHere: 'This child is already a student here, with a parent or guardian. Open their page and use "Add another Guardian" instead.',
     alreadyGuardian: 'This person is already a parent or guardian of this child.',

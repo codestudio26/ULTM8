@@ -1209,6 +1209,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       correctionSameRank: "هذا هو الحزام الذي لديك بالفعل. اختر الحزام الذي يجب أن يكون لديك.",
     },
   },
+  legal: {
+    titles: {
+      terms: "شروط الخدمة",
+      privacy: "سياسة الخصوصية",
+      schoolAgreement: "اتفاقية المدرسة والامتياز",
+      childrenNotice: "إشعار خصوصية الأطفال وأولياء الأمور",
+      cookies: "إشعار ملفات تعريف الارتباط والتخزين",
+    },
+    agree: {
+      account: "أوافق على شروط الخدمة وقد قرأت سياسة الخصوصية.",
+    },
+    version: "الإصدار {version}",
+    beingPrepared: "هذه الصفحة قيد الإعداد. ستُنشر هنا قبل إطلاق ULTM8.",
+    loadFailed: "تعذّر تحميل هذه الصفحة. حاول مرة أخرى.",
+  },
   charges: {
     recurring: {
       heading: "الرسوم المتكررة",

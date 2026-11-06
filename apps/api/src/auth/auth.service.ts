@@ -26,6 +26,8 @@ import { ChangePasscodeFirstLoginDto } from './dto/change-passcode-first-login.d
 import { ChangePasscodeDto } from './dto/change-passcode.dto';
 import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
 import { addressWriteData } from '../common/address/postal-address.dto';
+import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
+import { LEGAL_SLUGS, recordLegalAcceptances } from '../legal/legal-acceptance';
 
 // Native `bcrypt`, not `bcryptjs`, everywhere in src/: each hash/compare at
 // cost 12 runs on the libuv threadpool instead of the event loop, so a burst
@@ -33,6 +35,13 @@ import { addressWriteData } from '../common/address/postal-address.dto';
 // (stress test round 3). Same $2a/$2b format: hashes written by bcryptjs
 // (seeds, older rows) still verify.
 const BCRYPT_ROUNDS = 12;
+
+/** Decision 440: what a new account agrees to at sign-up. */
+const REGISTER_LEGAL_SLUGS = [LEGAL_SLUGS.terms, LEGAL_SLUGS.privacy] as const;
+
+/** The first place on Earth to reach a new day (UTC+14), for the sign-up age
+ * check: someone already 18 anywhere is not turned away. */
+const LATEST_TIME_ZONE = 'Pacific/Kiritimati';
 
 /** Decision 375 (Q2): how old an unverified sign-up must be before a new
  * sign-up with the same email or phone may replace it — long enough that a
@@ -100,6 +109,16 @@ export class AuthService {
   async register(dto: RegisterDto) {
     if (dto.passcode !== dto.passcodeConfirm) {
       throw new BadRequestException('passcode and passcodeConfirm must match');
+    }
+    // Decision 440: nobody gets an account without agreeing to the Terms.
+    if (dto.acceptTerms !== true) {
+      throw new BadRequestException({ code: 'TERMS_NOT_ACCEPTED', message: 'Agree to the Terms of Service and the Privacy Policy to create an account.' });
+    }
+    // Decision 440: under-18s never open their own account; a Guardian adds
+    // them. Checked before anything is saved, on the latest calendar date on
+    // Earth, so nobody who is already 18 somewhere is turned away.
+    if (!isAdultOn(new Date(dto.dateOfBirth), new Date(), LATEST_TIME_ZONE)) {
+      throw new ForbiddenException({ code: 'REGISTER_UNDER_18', message: "You need to be 18 or over to create an account. Ask your parent or guardian to add you from their ULTM8 account." });
     }
     // Before anything is saved: with Twilio unset the account used to be created
     // and then the OTP send failed with a 500, leaving an account that could
@@ -169,11 +188,12 @@ export class AuthService {
             createdAt: new Date(),
           },
         });
+        await recordLegalAcceptances(tx, replaceable.id, REGISTER_LEGAL_SLUGS);
       });
     } else {
       const id = randomUUID();
-      await this.prismaApp.withTenantContext(id, (tx) =>
-        tx.user.create({
+      await this.prismaApp.withTenantContext(id, async (tx) => {
+        await tx.user.create({
           data: {
             id,
             ...profile,
@@ -182,8 +202,9 @@ export class AuthService {
             nationality: dto.nationality,
             ...addressWriteData(dto),
           },
-        }),
-      );
+        });
+        await recordLegalAcceptances(tx, id, REGISTER_LEGAL_SLUGS);
+      });
     }
 
     await this.twilioVerify.sendOtp(dto.phone);

@@ -3,6 +3,7 @@ import { assertIdentityNotShared, changedIdentityFields, IDENTITY_FIELDS } from 
 import { assertNotConsentWithdrawn, baselineConsentState } from '../../guardians/baseline-consent';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { LEGAL_SLUGS, assertAgreementAccepted, recordLegalAcceptances } from '../../legal/legal-acceptance';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { photosShownFor } from '../../common/prisma/student-photos';
@@ -140,6 +141,8 @@ export class SchoolsService {
     const schoolId = randomUUID();
     const roleGrantId = randomUUID();
 
+    // Decision 440: no School without its owner accepting the Agreement and DPA.
+    assertAgreementAccepted(dto.acceptAgreement);
     const school = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       // Decision 375 (Q5): only someone 18 or over may create a School and
       // become its owner. Read from the caller's own row, in the same
@@ -212,6 +215,7 @@ export class SchoolsService {
           isMainOwner: true, // Decision 370: whoever creates the School is its main owner
         },
       });
+      await recordLegalAcceptances(tx, callerId, [LEGAL_SLUGS.schoolAgreement], { schoolId: created.id });
 
       return created;
     });

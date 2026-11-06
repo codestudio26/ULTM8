@@ -103,6 +103,8 @@ test('F5 — a new Franchise\'s flat fee is typed in dollars and saved in cents'
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Franchise name').fill(name);
   await dialog.getByLabel('Flat fee (USD per month)').fill('50.25');
+  // Decision 440: the Agreement tick is required to create a Franchise.
+  await dialog.getByRole('checkbox', { name: /I accept the School and Franchise Agreement/ }).check();
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog).toHaveCount(0);
 
@@ -118,6 +120,7 @@ test('F7 — a Franchise can\'t be saved without a fee for its fee model', async
   await page.getByRole('button', { name: 'Add franchise' }).first().click();
   const dialog = page.getByRole('dialog');
   await dialog.getByLabel('Franchise name').fill(name);
+  await dialog.getByRole('checkbox', { name: /I accept the School and Franchise Agreement/ }).check();
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog.getByText('Enter a flat fee for the Flat fee model.')).toBeVisible();
 

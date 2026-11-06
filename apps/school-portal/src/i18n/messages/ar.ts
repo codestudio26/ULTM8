@@ -5227,6 +5227,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "لا يوجد موظفون بعد",
     emptyRatesDescription: "يظهر هنا الموظفون الذين تضيفهم في صفحة الموظفين.",
   },
+  legal: {
+    titles: {
+      terms: "شروط الخدمة",
+      privacy: "سياسة الخصوصية",
+      schoolAgreement: "اتفاقية المدرسة والامتياز",
+      childrenNotice: "إشعار خصوصية الأطفال وأولياء الأمور",
+      cookies: "إشعار ملفات تعريف الارتباط والتخزين",
+    },
+    agree: {
+      account: "أوافق على {terms} وقد قرأت {privacy}.",
+      agreement: "أقبل {agreement}، بما في ذلك ملحق معالجة البيانات.",
+    },
+    version: "الإصدار {version}",
+    beingPrepared: "هذه الصفحة قيد الإعداد. ستُنشر هنا قبل إطلاق ULTM8.",
+    loadFailed: "تعذّر تحميل هذه الصفحة. حاول مرة أخرى.",
+    notFound: "الصفحة غير موجودة",
+    backToSignIn: "العودة إلى تسجيل الدخول",
+  },
   whatsNew: {
     title: "الجديد",
     subtitle: "أخبار ULTM8 من فريق ULTM8.",

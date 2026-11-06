@@ -210,7 +210,7 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
   describe('saving a Franchise', () => {
     it('F10 — a name of only spaces is rejected on create and on edit', async () => {
       const { franchise, token } = await seedFranchise();
-      const create = await http().post('/v1/franchises').set('Authorization', `Bearer ${token}`).send({ name: '   ' });
+      const create = await http().post('/v1/franchises').set('Authorization', `Bearer ${token}`).send({ acceptAgreement: true, name: '   ' });
       expect(create.status).toBe(400);
       const edit = await http().patch(`/v1/franchises/${franchise.id}`).set('Authorization', `Bearer ${token}`).send({ name: '   ' });
       expect(edit.status).toBe(400);
@@ -237,7 +237,7 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
 
     it('F21 — language and currency must come from the supported lists', async () => {
       const { franchise, token } = await seedFranchise();
-      const badCreate = await http().post('/v1/franchises').set('Authorization', `Bearer ${token}`).send({ name: 'Lang Test', defaultLanguage: 'klingon' });
+      const badCreate = await http().post('/v1/franchises').set('Authorization', `Bearer ${token}`).send({ acceptAgreement: true, name: 'Lang Test', defaultLanguage: 'klingon' });
       expect(badCreate.status).toBe(400);
       const badEdit = await http().patch(`/v1/franchises/${franchise.id}`).set('Authorization', `Bearer ${token}`).send({ defaultCurrency: 'ZZZ' });
       expect(badEdit.status).toBe(400);

@@ -4969,6 +4969,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "まだスタッフがいません",
     emptyRatesDescription: "スタッフページで追加したスタッフがここに表示されます。",
   },
+  legal: {
+    titles: {
+      terms: "利用規約",
+      privacy: "プライバシーポリシー",
+      schoolAgreement: "スクールおよびフランチャイズ契約",
+      childrenNotice: "お子様と保護者のためのプライバシー通知",
+      cookies: "Cookieおよびストレージに関する通知",
+    },
+    agree: {
+      account: "{terms}に同意し、{privacy}を読みました。",
+      agreement: "データ処理補遺を含む{agreement}に同意します。",
+    },
+    version: "バージョン {version}",
+    beingPrepared: "このページは準備中です。ULTM8の公開前にここで公開されます。",
+    loadFailed: "このページを読み込めませんでした。もう一度お試しください。",
+    notFound: "ページが見つかりません",
+    backToSignIn: "ログインに戻る",
+  },
   whatsNew: {
     title: "お知らせ",
     subtitle: "ULTM8チームからのULTM8に関するお知らせです。",

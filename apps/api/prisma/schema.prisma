@@ -614,6 +614,7 @@ model User {
   bookingDelegationsAsStudent       BookingDelegation[]         @relation("BookingDelegationStudent")
   notifications                     Notification[]
   deviceTokens                      DeviceToken[]
+  legalAcceptances                  LegalAcceptance[]
   refreshTokens                     RefreshToken[]
   guestWaiverSignaturesBooked       GuestWaiverSignature[]      @relation("GuestWaiverSignatureBookedBy")
   signUps                           SignUp[]                    @relation("SignUpUser")
@@ -2034,9 +2035,40 @@ model LegalDocument {
 
   title   String
   content String?
+  /// Decision 440: the version people accept (e.g. "terms-2.0"). Stays
+  /// "unpublished" until the real text is loaded; each LegalAcceptance row
+  /// copies the version current when it was accepted.
+  version String  @default("unpublished")
 
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+}
+
+/// LegalAcceptance (Decision 440) — evidence that a person agreed to a legal
+/// page: which page, which version, when, and (for the School and Franchise
+/// Agreement) for which School or Franchise. Append-only: a re-acceptance after
+/// a new version adds a row, so earlier acceptances stay on record.
+///
+/// RLS: self-only (`userId` = caller), the same shape as DeviceToken — every
+/// row is written under the accepting person's own context (register, creating
+/// a School or Franchise). `schoolId` / `franchiseId` are plain ids, not
+/// foreign keys, so a School's 90-day purge is never blocked by this record.
+model LegalAcceptance {
+  id String @id @default(uuid())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// LegalDocument.slug, e.g. "terms-and-conditions".
+  documentSlug String
+  version      String
+
+  schoolId    String?
+  franchiseId String?
+
+  acceptedAt DateTime @default(now())
+
+  @@index([userId, documentSlug])
 }
 
 /// Translation (Phase 49, ultm8-nestjs-module §5) — the CMS-backed i18n content this

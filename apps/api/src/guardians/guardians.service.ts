@@ -17,6 +17,7 @@ import { recordStaffActivity } from '../tenants/staff-activity/staff-activity';
 import { CreateMinorDto } from './dto/create-minor.dto';
 import { GrantConsentDto } from './dto/grant-consent.dto';
 import { baselineConsentState } from './baseline-consent';
+import { childrenNoticeVersion } from '../legal/legal-acceptance';
 
 /**
  * What a parent is doing for their child (Decision 430 item 7, FAM-7). From
@@ -179,13 +180,16 @@ export class GuardiansService {
       // Decision 430 item 9 (FAM-9): the parent's BASELINE consent, ticked
       // when adding the child, recorded with the policy version they saw.
       if (consentVersion) {
-        await tx.consentRecord.create({ data: { id: randomUUID(), guardianId, studentId: minorId, tier: 'BASELINE', policyVersion: consentVersion } });
+        // Decision 440 (C5): saved with the Children notice version the server
+        // is publishing now, not whatever the app sent.
+        const policyVersion = await childrenNoticeVersion(tx);
+        await tx.consentRecord.create({ data: { id: randomUUID(), guardianId, studentId: minorId, tier: 'BASELINE', policyVersion } });
       }
       return { link };
     });
     if ('existing' in created && created.existing) {
       const same = created.existing;
-      if (consentVersion) await this.recordBaselineConsent(guardianId, same.studentId, consentVersion);
+      if (consentVersion) await this.recordBaselineConsent(guardianId, same.studentId);
       return { ...same, alreadyAdded: true };
     }
     const { link } = created as { link: { id: string } };
@@ -297,15 +301,17 @@ export class GuardiansService {
     return !!link && !link.revokedAt;
   }
 
-  /** Records (or renews) a parent's BASELINE consent. */
-  async recordBaselineConsent(guardianId: string, studentId: string, policyVersion: string) {
-    await this.prismaApp.withTenantContext(guardianId, (tx) =>
-      tx.consentRecord.upsert({
+  /** Records (or renews) a parent's BASELINE consent, with the Children
+   * notice version published now (Decision 440, C5). */
+  async recordBaselineConsent(guardianId: string, studentId: string) {
+    await this.prismaApp.withTenantContext(guardianId, async (tx) => {
+      const policyVersion = await childrenNoticeVersion(tx);
+      return tx.consentRecord.upsert({
         where: { guardianId_studentId_tier: { guardianId, studentId, tier: 'BASELINE' } },
         create: { id: randomUUID(), guardianId, studentId, tier: 'BASELINE', policyVersion },
         update: { status: 'ACTIVE', policyVersion, consentedAt: new Date(), withdrawnAt: null },
-      }),
-    );
+      });
+    });
   }
 
   /**
@@ -379,24 +385,28 @@ export class GuardiansService {
     await this.assertGuardianNotUnder18(guardianId);
     await this.assertChildNotAdult(studentId, { purpose: 'act' });
 
-    return this.prismaApp.withTenantContext(guardianId, (tx) =>
-      tx.consentRecord.upsert({
+    // Decision 440 (C5): the version saved is the Children notice the server
+    // publishes now. The app's dto.policyVersion is still accepted (older
+    // app builds send it) but no longer trusted as the record.
+    return this.prismaApp.withTenantContext(guardianId, async (tx) => {
+      const policyVersion = await childrenNoticeVersion(tx);
+      return tx.consentRecord.upsert({
         where: { guardianId_studentId_tier: { guardianId, studentId, tier: dto.tier } },
         create: {
           id: randomUUID(),
           guardianId,
           studentId,
           tier: dto.tier,
-          policyVersion: dto.policyVersion,
+          policyVersion,
         },
         update: {
           status: 'ACTIVE',
-          policyVersion: dto.policyVersion,
+          policyVersion,
           consentedAt: new Date(),
           withdrawnAt: null,
         },
-      }),
-    );
+      });
+    });
   }
 
   /** GET /guardians/me/consent. */

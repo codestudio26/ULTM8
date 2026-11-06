@@ -6,6 +6,7 @@ import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import type { FranchiseResponse } from './franchiseQueries';
 import { useT } from '../i18n/I18nProvider';
+import { LegalAgreeCheckbox } from '../legal/LegalAgreeCheckbox';
 import { languageName } from '../i18n/format';
 
 const FEE_MODELS = ['FLAT', 'PER_HEADCOUNT'] as const;
@@ -50,6 +51,8 @@ export interface FranchiseFormValues {
   shareBrandingWithMembers: boolean;
   /** Decision 99's own follow-up — omitted unless feeRateChangeDecisionRequired. */
   feeRateChangeStrategy?: (typeof FEE_RATE_CHANGE_STRATEGIES)[number];
+  /** Decision 440 (C1): sent only when creating, never on an edit. */
+  acceptAgreement?: boolean;
 }
 
 /** Fields match CreateFranchiseDto/UpdateFranchiseDto exactly —
@@ -107,6 +110,7 @@ export function FranchiseFormModal({
   const [initialAddress] = useState(() => (initial ? postalAddressFromRecord(initial, guessDefaultCountry()) : undefined));
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
+  const [acceptAgreement, setAcceptAgreement] = useState(false);
 
   // Decision 99's own follow-up — mirrors FranchisesService.update()'s own
   // `changingRate` check exactly (both rate fields, not just the one the
@@ -163,6 +167,7 @@ export function FranchiseFormModal({
         perHeadcountRate: perHeadcountCents,
         shareBrandingWithMembers: form.shareBrandingWithMembers,
         feeRateChangeStrategy: feeRateChangeDecisionRequired && feeRateChangeStrategy ? feeRateChangeStrategy : undefined,
+        ...(initial ? {} : { acceptAgreement }),
       });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
@@ -336,6 +341,7 @@ export function FranchiseFormModal({
             </div>
           </Field>
         ) : null}
+        {initial ? null : <LegalAgreeCheckbox kind="agreement" checked={acceptAgreement} onChange={setAcceptAgreement} />}
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
           <Button type="submit" loading={submitting}>
             {t('common.save')}

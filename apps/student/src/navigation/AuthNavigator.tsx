@@ -6,6 +6,8 @@ import { VerifyOtpScreen } from '../auth/VerifyOtpScreen';
 import { ForgotPasscodeScreen } from '../auth/ForgotPasscodeScreen';
 import { ResetPasscodeScreen } from '../auth/ResetPasscodeScreen';
 import { ChoosePasscodeScreen } from '../auth/ChoosePasscodeScreen';
+import { LegalDocumentScreen } from '../legal/LegalDocumentScreen';
+import { LEGAL_PAGES } from '../legal/legalPages';
 import { useT } from '../i18n/I18nProvider';
 import type { AuthStackParamList } from './types';
 
@@ -32,6 +34,11 @@ export function AuthNavigator() {
         name="ChoosePasscode"
         component={ChoosePasscodeScreen}
         options={{ headerShown: true, title: t('navigation.auth.choosePasscode') }}
+      />
+      <Stack.Screen
+        name="LegalDocument"
+        component={LegalDocumentScreen}
+        options={({ route }) => ({ headerShown: true, title: t(LEGAL_PAGES[route.params.slug]) })}
       />
     </Stack.Navigator>
   );

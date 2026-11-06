@@ -210,7 +210,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
     const writeRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${impersonationToken}`)
-      .send({ name: 'Should Never Be Created' });
+      .send({ acceptAgreement: true, name: 'Should Never Be Created' });
     expect(writeRes.status).toBe(403);
 
     // Sanity check the rejection is specific to the impersonation token, not
@@ -220,7 +220,7 @@ describeIfDb('PlatformAdminModule — impersonation-sessions (Slice 8)', () => {
     const ordinaryWriteRes = await request(app.getHttpServer())
       .post('/v1/schools')
       .set('Authorization', `Bearer ${ordinaryToken}`)
-      .send({ name: 'Created By The Real Student' });
+      .send({ acceptAgreement: true, name: 'Created By The Real Student' });
     expect(ordinaryWriteRes.status).toBe(201);
     schoolIds.push(ordinaryWriteRes.body.id);
   });

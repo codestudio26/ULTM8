@@ -7835,3 +7835,20 @@ User (Code), 6 Nov 2026: "This should be the decision of the school owner" (pay 
 ### Recorded by
 
 User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #496's choices.
+
+## Decision 440 — Legal go-live fixes C1, C2 and C5: an "I agree" step, no self-sign-up under 18, and the real Children notice version
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 236, 375, 430 item 9, and the legal pages drafted 6 Nov 2026 (go-live checklist fixes C1, C2 and C5)
+
+1. **Sign-up needs an "I agree" tick (C1).** Creating an account, in the portal or the app, needs a tick on "I agree to the Terms of Service and I have read the Privacy Policy", with a link to each page. The API refuses a sign-up without it (`TERMS_NOT_ACCEPTED`).
+2. **Creating a School or a Franchise needs the Agreement tick (C1).** "I accept the School and Franchise Agreement, including its Data Processing Addendum" is required when a School or a Franchise is created. The API refuses it without the tick (`AGREEMENT_NOT_ACCEPTED`). Editing a School or Franchise doesn't ask again, and doesn't take the field.
+3. **What was accepted is saved.** A new `LegalAcceptance` row records who accepted which page, at which version, and when (and the School or Franchise for the Agreement). The version is the one the server publishes at that moment, never one the app sends. Rows are only added, never changed; each person can read only their own (row-level security); they are deleted with the person's row. The School and Franchise are plain ids, not links, so a School's 90-day purge is never blocked.
+4. **Each page has a version.** `LegalDocument` gains a `version` (default `unpublished`). The School and Franchise Agreement, the Children and Guardians Privacy Notice and the Cookie and Storage Notice get rows next to the existing Terms and Privacy rows. Until the reviewed text is loaded, each page shows "This page is being prepared", and an acceptance records `unpublished`. There is no editor yet; the text is loaded on the server when the lawyer has signed it off.
+5. **The legal pages are open to everyone.** The portal shows each page at `/legal/<page>` without signing in; the app has a screen for each, reachable before and after signing in. The footer links stay off until the text is published.
+6. **No self-sign-up under 18 (C2).** The API refuses a sign-up with a date of birth under 18 (`REGISTER_UNDER_18`), telling the person to ask a parent or guardian to add them. It counts the birthday in the earliest time zone, so nobody is refused on their 18th birthday.
+7. **Guardian consent saves the real Children notice version (C5).** Every consent (giving it on the child's page, ticking it when adding a child or accepting a School's invite) is saved with the Children notice version the server publishes, not the app's `1.0-placeholder`. The app still sends a value so older builds keep working. The consent tick, the child's consent page and School invites link to the notice.
+8. **Not done here.** Asking Guardians who consented under `1.0-placeholder` (or `unpublished`) to consent again, and asking everyone to accept a new version of a page, are left for when the reviewed pages are published. All new text is in all 15 languages.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "start it", on the recommendation to build go-live fixes C1, C2 and C5 first.

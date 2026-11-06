@@ -48,7 +48,7 @@ const NULLABLE_ON_UPDATE = [
  * there), `ranksToggle`/`classCancellationPolicy`/`waitlistClaimWindowMinutes`
  * (boolean/enum/required-shaped fields with no "clear" concept).
  */
-export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, NULLABLE_ON_UPDATE)) {
+export class UpdateSchoolDto extends PartialType(OmitType(CreateSchoolDto, [...NULLABLE_ON_UPDATE, 'acceptAgreement'] as const)) {
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()
   @IsString()

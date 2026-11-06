@@ -49,7 +49,7 @@ describe('ChildInvites (Decision 403)', () => {
     await fireEvent(screen.getByLabelText('I give consent for Kit under the ULTM8 privacy notice.'), 'valueChange', true);
     fireEvent.press(screen.getByText('Accept'));
     await waitFor(() =>
-      expect(apiClient.POST).toHaveBeenCalledWith('/v1/child-invites/{id}/accept', { params: { path: { id: 'inv1' } }, body: { consentPolicyVersion: '1.0-placeholder' } }),
+      expect(apiClient.POST).toHaveBeenCalledWith('/v1/child-invites/{id}/accept', { params: { path: { id: 'inv1' } }, body: { consentPolicyVersion: 'children-notice' } }),
     );
   });
 

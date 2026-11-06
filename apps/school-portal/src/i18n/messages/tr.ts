@@ -5015,6 +5015,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Henüz personel yok",
     emptyRatesDescription: "Personel sayfasında eklediğiniz personel burada görünür.",
   },
+  legal: {
+    titles: {
+      terms: "Hizmet Şartları",
+      privacy: "Gizlilik Politikası",
+      schoolAgreement: "Okul ve Franchise Sözleşmesi",
+      childrenNotice: "Çocuklar ve Veliler İçin Gizlilik Bildirimi",
+      cookies: "Çerez ve Depolama Bildirimi",
+    },
+    agree: {
+      account: "{terms}'nı kabul ediyorum ve {privacy}'nı okudum.",
+      agreement: "Veri İşleme Ekiyle birlikte {agreement}'ni kabul ediyorum.",
+    },
+    version: "Sürüm {version}",
+    beingPrepared: "Bu sayfa hazırlanıyor. ULTM8 yayına girmeden önce burada yayımlanacak.",
+    loadFailed: "Bu sayfa yüklenemedi. Tekrar deneyin.",
+    notFound: "Sayfa bulunamadı",
+    backToSignIn: "Girişe dön",
+  },
   whatsNew: {
     title: "Yenilikler",
     subtitle: "ULTM8 ekibinden ULTM8 haberleri.",

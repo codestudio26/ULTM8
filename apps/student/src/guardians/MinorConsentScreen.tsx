@@ -5,6 +5,7 @@ import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
 import { ConsentTierRow } from './ConsentTierRow';
+import { LegalLinks } from '../legal/LegalLinks';
 import { BookingDelegationRow } from './BookingDelegationRow';
 import { MedicalInfoSharing } from '../profile/MedicalInfoSharing';
 import { useChildConsent, useMyConsentRecords, useMyMinors, useRemoveMe } from './guardianQueries';
@@ -70,6 +71,7 @@ export function MinorConsentScreen({ route, navigation }: Props) {
           <>
             <ConsentTierRow studentId={studentId} tier="BASELINE" record={activeByTier.get('BASELINE')} />
             <ConsentTierRow studentId={studentId} tier="CAMERA" record={activeByTier.get('CAMERA')} />
+            <LegalLinks slugs={['children-notice']} />
             <BookingDelegationRow studentId={studentId} delegation={activeDelegation} />
           </>
         )}

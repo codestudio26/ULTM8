@@ -4969,6 +4969,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "还没有员工",
     emptyRatesDescription: "您在“员工”页面添加的员工会显示在这里。",
   },
+  legal: {
+    titles: {
+      terms: "服务条款",
+      privacy: "隐私政策",
+      schoolAgreement: "学校和加盟协议",
+      childrenNotice: "儿童和监护人隐私声明",
+      cookies: "Cookie 和存储声明",
+    },
+    agree: {
+      account: "我同意{terms}，并已阅读{privacy}。",
+      agreement: "我接受{agreement}，包括其数据处理附录。",
+    },
+    version: "版本 {version}",
+    beingPrepared: "此页面正在准备中，将在 ULTM8 上线前在此发布。",
+    loadFailed: "无法加载此页面，请重试。",
+    notFound: "未找到页面",
+    backToSignIn: "返回登录",
+  },
   whatsNew: {
     title: "新功能动态",
     subtitle: "来自 ULTM8 团队的 ULTM8 动态。",
