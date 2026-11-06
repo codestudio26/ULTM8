@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "문제가 발생했습니다. 다시 시도하세요.",
   },
   codes: {
+    accountClosing: "이 계정은 삭제 중이므로 더 이상 예약, 출석 체크, 구매를 할 수 없습니다.",
+    accountLocked: "이 계정은 삭제 중입니다. 계속 사용하려면 다시 로그인하세요.",
+    mainOwnerMustHandOver: "도장 또는 프랜차이즈의 대표 소유자입니다. 계정을 삭제하기 전에 다른 소유자에게 넘기거나(ULTM8 지원팀이 도와드릴 수 있습니다) 닫아 주세요.",
+    subscriptionNotStopped: "지금은 정기 결제를 중지할 수 없어 계정이 삭제되지 않았습니다. 잠시 후 다시 시도해 주세요.",
     classFull: "이 수업은 정원이 찼습니다. 대신 수련생을 대기자 명단에 추가할 수 있습니다.",
     waitlistFirst: "이 수업에는 이미 자리를 기다리는 수련생이 있습니다. 대기자 명단에 등록해 순서를 기다려 주세요.",
     bookingClosed: "이 수업의 예약이 마감되었습니다. 직원은 여전히 추가해 드릴 수 있습니다.",
@@ -170,6 +174,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "계정 삭제 요청됨",
+    accountDeletionRequestedBody: "ULTM8 계정이 {when}에 삭제됩니다. 그때까지 계정은 잠겨 있습니다. 계속 사용하려면 그 전에 다시 로그인하세요.",
+    accountDeletionRequestedChildrenBody: "ULTM8 계정이 {when}에 삭제됩니다. 그때까지 계정은 잠겨 있습니다. 다음 자녀의 계정도 함께 삭제됩니다: {children}. 계속 사용하려면 그 전에 다시 로그인하세요.",
+    memberLeftTitle: "회원이 떠났습니다",
+    memberLeftBody: "한 회원이 ULTM8 계정을 삭제하고 도장를 떠났습니다. 개인 정보는 삭제되었습니다. 결제, 면책 동의서, 띠 기록은 \"Erased User\"로 도장에 남습니다.",
     classCancelledBySchoolBody: "{when}의 {class} 수업이 도장에 의해 취소되었습니다.",
     classCancelledBySchoolBodyWithReason: "{when}의 {class} 수업이 도장에 의해 취소되었습니다. 사유: {reason}",
     cancellationsTitle: "처리할 취소",

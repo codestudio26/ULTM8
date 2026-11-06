@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "Coś poszło nie tak — spróbuj ponownie.",
   },
   codes: {
+    accountClosing: "To konto jest usuwane, więc nie może już rezerwować, meldować się ani kupować.",
+    accountLocked: "To konto jest usuwane. Zaloguj się ponownie, aby je zachować.",
+    mainOwnerMustHandOver: "Jesteś głównym właścicielem szkoły lub franczyzy. Przekaż ją innemu właścicielowi (może to zrobić wsparcie ULTM8) albo zamknij ją, zanim usuniesz konto.",
+    subscriptionNotStopped: "Nie udało się teraz zatrzymać płatności cyklicznej, więc twoje konto nie zostało usunięte. Spróbuj ponownie za chwilę.",
     classFull: "Te zajęcia są pełne. Możesz zamiast tego dodać ucznia do listy oczekujących.",
     waitlistFirst: "Na miejsce na tych zajęciach czekają już uczniowie. Zapisz się na listę oczekujących, aby poczekać na swoją kolej.",
     bookingClosed: "Rezerwacje na te zajęcia są zamknięte. Członek personelu nadal może cię zapisać.",
@@ -212,6 +216,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "Zgłoszono usunięcie konta",
+    accountDeletionRequestedBody: "Twoje konto ULTM8 zostanie usunięte {when}. Do tego czasu jest zablokowane. Aby je zachować, zaloguj się ponownie przed tym terminem.",
+    accountDeletionRequestedChildrenBody: "Twoje konto ULTM8 zostanie usunięte {when}. Do tego czasu jest zablokowane. Razem z nim zostaną usunięte konta tych dzieci: {children}. Aby je zachować, zaloguj się ponownie przed tym terminem.",
+    memberLeftTitle: "Członek odszedł",
+    memberLeftBody: "Członek usunął swoje konto ULTM8 i opuścił twoją szkołę. Jego dane zostały usunięte. Jego płatności, oświadczenia i historia pasów zostają w twojej szkole jako \"Erased User\".",
     classCancelledBySchoolBody: "{class} ({when}) zostały odwołane przez szkołę.",
     classCancelledBySchoolBodyWithReason: "{class} ({when}) zostały odwołane przez szkołę. Powód: {reason}",
     cancellationsTitle: "Anulowania do rozpatrzenia",

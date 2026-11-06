@@ -241,6 +241,9 @@ export function formatWhen(when: string, locale: string): string {
 }
 
 const NOTIFICATION_TITLES: Record<string, string> = {
+  // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
+  'Account deletion requested': 'accountDeletionRequestedTitle',
+  'A member left': 'memberLeftTitle',
   'A spot opened up': 'spotOpenedTitle',
   'Ready to grade': 'readyToGradeTitle',
   'Student payment-restricted': 'paymentRestrictedTitle',
@@ -341,6 +344,16 @@ const body = (source: string) => new RegExp(source, 's');
 
 /** apps/api/src/jobs/*.processor.ts — every Notification body a job writes. */
 const BODY_RULES: Array<[RegExp, Rule]> = [
+  // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
+  [
+    /^Your ULTM8 account will be deleted on (.+?)\. Until then it is locked\. These children's accounts will be deleted with it: (.+)\. To keep it, sign in again before then\.$/s,
+    (m, { t, locale }) => n(t, 'accountDeletionRequestedChildrenBody', { when: formatWhen(m[1], locale), children: m[2] }),
+  ],
+  [
+    /^Your ULTM8 account will be deleted on (.+?)\. Until then it is locked\. To keep it, sign in again before then\.$/s,
+    (m, { t, locale }) => n(t, 'accountDeletionRequestedBody', { when: formatWhen(m[1], locale) }),
+  ],
+  [/^A member deleted their ULTM8 account and left your School\. Their details have been removed\. Their payments, waivers and belt history stay with your School under "Erased User"\.$/, (_m, { t }) => n(t, 'memberLeftBody')],
   // Decision 291 — CancellationService (apps/api/src/bookings/cancellation.service.ts).
   [
     /^(.+) on (.+?) has been cancelled by the school\. Reason: (.+)$/s,

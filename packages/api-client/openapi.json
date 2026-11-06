@@ -7965,6 +7965,66 @@
         ]
       }
     },
+    "/v1/users/me/deletion": {
+      "get": {
+        "operationId": "AccountDeletionController_preview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionStateDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "AccountDeletionController_request",
+        "parameters": [
+          {
+            "name": "x-step-up-token",
+            "required": true,
+            "in": "header",
+            "description": "From POST /auth/step-up/verify.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionStateDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/settings/languages": {
       "get": {
         "operationId": "SettingsController_getLanguages",
@@ -23917,6 +23977,10 @@
           "passcodeChangeToken": {
             "type": "string",
             "description": "Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else."
+          },
+          "deletionCancelled": {
+            "type": "boolean",
+            "description": "True when this sign-in cancelled the account deletion the member had asked for."
           }
         }
       },
@@ -33191,6 +33255,130 @@
         "required": [
           "uploadUrl",
           "objectKey"
+        ]
+      },
+      "DeletionBlockDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "SCHOOL",
+              "FRANCHISE"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ]
+      },
+      "DeletionChildDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname"
+        ]
+      },
+      "DeletionKeptChildDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "OTHER_PARENT",
+              "OWN_LOGIN"
+            ],
+            "description": "Why the child stays: another active parent is linked, or the child has a login of their own. Only this parent's link ends."
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname",
+          "reason"
+        ]
+      },
+      "AccountDeletionStateDto": {
+        "type": "object",
+        "properties": {
+          "pending": {
+            "type": "boolean",
+            "description": "True once deletion has been asked for and not cancelled."
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the account is anonymised for good, unless the member signs in again before then."
+          },
+          "graceDays": {
+            "type": "number",
+            "description": "Days between asking and the deletion becoming final."
+          },
+          "blockedBy": {
+            "description": "Open Schools and Franchises this member is the main owner of. While any is listed, deletion is refused (MAIN_OWNER_MUST_HAND_OVER).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeletionBlockDto"
+            }
+          },
+          "childrenDeleted": {
+            "description": "Children deleted with this account (no other active parent and no login of their own).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeletionChildDto"
+            }
+          },
+          "childrenKept": {
+            "description": "Children who keep their account; only this parent's link to them ends.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeletionKeptChildDto"
+            }
+          }
+        },
+        "required": [
+          "pending",
+          "requestedAt",
+          "dueAt",
+          "graceDays",
+          "blockedBy",
+          "childrenDeleted",
+          "childrenKept"
         ]
       },
       "CodeNameResponseDto": {

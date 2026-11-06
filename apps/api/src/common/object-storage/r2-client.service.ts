@@ -247,6 +247,19 @@ export class R2ClientService {
     await client.send(new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }));
   }
 
+  /** Deletes a profile photo from the PUBLIC bucket, given the URL
+   * getPublicPhotoUrl() made for it ("Delete my account": the photo goes for
+   * good). A URL not under R2_PUBLIC_BASE_URL is left alone (false). Deleting
+   * a key that is already gone succeeds. */
+  async deletePublicPhotoByUrl(url: string): Promise<boolean> {
+    const client = this.assertConfigured();
+    if (!this.publicBucketName || !this.publicBaseUrl || !url.startsWith(`${this.publicBaseUrl}/`)) return false;
+    const key = decodeURIComponent(url.slice(this.publicBaseUrl.length + 1));
+    if (!key) return false;
+    await client.send(new DeleteObjectCommand({ Bucket: this.publicBucketName, Key: key }));
+    return true;
+  }
+
   /** A presigned PUT URL for `key` in the PUBLIC bucket (`R2_PUBLIC_BUCKET_NAME`),
    * not the private one `getPresignedUploadUrl` above writes to — see this file's
    * own header comment for why gallery photos get a second bucket rather than

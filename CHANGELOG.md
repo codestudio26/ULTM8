@@ -98,6 +98,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the signing form has Cancel. Already-booked classes show as booked, plans
   say "Join this School to buy" to non-members, status words read as words,
   the sign-in screen shows the picked School, and removing a card asks first.
+- **Delete my account** (Track B, `apps/student`, and `apps/api`; Decision
+  427 item 5, required by Apple; Decision 436 items 1–6)
+  — My profile → "Delete my account" says what happens, names the children
+  deleted too, and asks for the passcode again. The account is locked at once
+  (signed out everywhere; no booking, check-in or purchase, by anyone), its
+  recurring payments stop, and signing in again within 30 days cancels it.
+  After 30 days a daily job anonymises it as "Erased User": login, name,
+  contact details, date of birth, photo, passcode and medical notes go, and so
+  do staff notes, files the School uploaded, custom fields, tags, import rows
+  and invites; their name in older staff activity lines and staff notices
+  becomes "Erased User". Their upcoming bookings and waitlist places are given
+  up as when a School removes a member (no fee). Payments, signed waivers,
+  contracts, belt and attendance history stay with the School, unnamed. A child goes too only when this was their only parent and they have
+  no login of their own. The main owner of an open School or Franchise must
+  hand it over or close it first. The member is emailed; each School's owners
+  get a "A member left" notice. New `GET`/`POST /users/me/deletion`; sign-in
+  answers `deletionCancelled`. **Needs a database migration**
+  (`20270227100012_account_deletion`): four `User` columns, a write-only
+  `AccountErasureLog`, and one narrow `erase_due_account` function (the jobs
+  role may only call it, and it refuses accounts that aren't due).
 - **Student app: class times on the School's clock** (Track B, `apps/student`;
   Decision 427 SP6) — class times in the app (a School's classes, Kid Mode,
   My bookings, My waitlist, a child's bookings) now show on the class's own

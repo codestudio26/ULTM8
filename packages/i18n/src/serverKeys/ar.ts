@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "حدث خطأ ما — حاول مرة أخرى.",
   },
   codes: {
+    accountClosing: "يجري حذف هذا الحساب، لذا لم يعد بإمكانه الحجز أو تسجيل الحضور أو الشراء.",
+    accountLocked: "يجري حذف هذا الحساب. سجّل الدخول مرة أخرى للاحتفاظ به.",
+    mainOwnerMustHandOver: "أنت المالك الرئيسي لمدرسة أو امتياز. سلّمها لمالك آخر (يمكن لدعم ULTM8 القيام بذلك) أو أغلقها قبل حذف حسابك.",
+    subscriptionNotStopped: "تعذّر إيقاف دفعة متكررة الآن، لذا لم يُحذف حسابك. يُرجى المحاولة مرة أخرى بعد قليل.",
     classFull: "هذه الحصة ممتلئة. يمكنك إضافة الطالب إلى قائمة الانتظار بدلًا من ذلك.",
     waitlistFirst: "هناك طلاب ينتظرون بالفعل مكانًا في هذه الحصة. انضم إلى قائمة الانتظار لتأخذ دورك.",
     bookingClosed: "أُغلق الحجز لهذه الحصة. لا يزال بإمكان أحد الموظفين إضافتك.",
@@ -240,6 +244,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "طُلب حذف الحساب",
+    accountDeletionRequestedBody: "سيُحذف حسابك على ULTM8 في {when}. وحتى ذلك الحين يبقى مقفلًا. للاحتفاظ به، سجّل الدخول مرة أخرى قبل ذلك.",
+    accountDeletionRequestedChildrenBody: "سيُحذف حسابك على ULTM8 في {when}. وحتى ذلك الحين يبقى مقفلًا. ستُحذف معه حسابات هؤلاء الأطفال: {children}. للاحتفاظ به، سجّل الدخول مرة أخرى قبل ذلك.",
+    memberLeftTitle: "غادر أحد الأعضاء",
+    memberLeftBody: "حذف أحد الأعضاء حسابه على ULTM8 وغادر مدرستك. أُزيلت بياناته. تبقى مدفوعاته وإقراراته وسجل أحزمته لدى مدرستك باسم \"Erased User\".",
     classCancelledBySchoolBody: "أُلغيت {class} في {when} من قبل المدرسة.",
     classCancelledBySchoolBodyWithReason: "أُلغيت {class} في {when} من قبل المدرسة. السبب: {reason}",
     cancellationsTitle: "الإلغاءات المطلوب حسمها",

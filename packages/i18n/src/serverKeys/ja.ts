@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "問題が発生しました。もう一度お試しください。",
   },
   codes: {
+    accountClosing: "このアカウントは削除処理中のため、予約・チェックイン・購入はできません。",
+    accountLocked: "このアカウントは削除処理中です。残したい場合はもう一度サインインしてください。",
+    mainOwnerMustHandOver: "あなたはスクールまたはフランチャイズのメインオーナーです。アカウントを削除する前に、別のオーナーに引き継ぐ（ULTM8サポートが対応できます）か、閉鎖してください。",
+    subscriptionNotStopped: "定期支払いを今は停止できなかったため、アカウントは削除されていません。少し待ってからもう一度お試しください。",
     classFull: "このクラスは満員です。代わりに生徒をキャンセル待ちに追加できます。",
     waitlistFirst: "このクラスにはすでに空きを待っている生徒がいます。キャンセル待ちに登録して順番をお待ちください。",
     bookingClosed: "このクラスの予約受付は終了しました。スタッフであれば引き続き追加できます。",
@@ -170,6 +174,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "アカウント削除のリクエスト",
+    accountDeletionRequestedBody: "あなたのULTM8アカウントは{when}に削除されます。それまでロックされます。残したい場合は、それまでにもう一度サインインしてください。",
+    accountDeletionRequestedChildrenBody: "あなたのULTM8アカウントは{when}に削除されます。それまでロックされます。次のお子さまのアカウントも一緒に削除されます：{children}。残したい場合は、それまでにもう一度サインインしてください。",
+    memberLeftTitle: "メンバーが退会しました",
+    memberLeftBody: "メンバーがULTM8アカウントを削除し、スクールを退会しました。個人情報は削除されました。支払い、免責同意書、帯の履歴は「Erased User」としてスクールに残ります。",
     classCancelledBySchoolBody: "{when} の {class} はスクールによりキャンセルされました。",
     classCancelledBySchoolBodyWithReason: "{when} の {class} はスクールによりキャンセルされました。理由：{reason}",
     cancellationsTitle: "対応が必要なキャンセル",

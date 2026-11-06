@@ -363,7 +363,9 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
       null as never,
       null as never,
       null as never, // StripeClientService (Decision 348 cancel)
-      null as never, // PrismaJobsService (Decision 404 freezes)
+      // PrismaJobsService (Decision 404 freezes; "Delete my account": the
+      // buyer's account is not being deleted).
+      { user: { findUnique: jest.fn().mockResolvedValue({ deletionRequestedAt: null, erasedAt: null }) } } as never,
       null as never, // IncomeCategoriesService (Decision 316 item 10)
       null as never, // PlanContractsService (Decision 316 item 6)
     );

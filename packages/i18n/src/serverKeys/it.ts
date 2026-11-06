@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "Qualcosa è andato storto: riprova.",
   },
   codes: {
+    accountClosing: "Questo account è in fase di eliminazione, quindi non può più prenotare, fare il check-in o acquistare.",
+    accountLocked: "Questo account è in fase di eliminazione. Accedi di nuovo per mantenerlo.",
+    mainOwnerMustHandOver: "Sei il proprietario principale di una scuola o di un franchising. Passalo a un altro proprietario (può farlo il supporto ULTM8) o chiudilo prima di eliminare il tuo account.",
+    subscriptionNotStopped: "Non siamo riusciti a interrompere un pagamento ricorrente in questo momento, quindi il tuo account non è stato eliminato. Riprova tra poco.",
     classFull: "Questo corso è al completo. Puoi invece aggiungere l’allievo alla lista d’attesa.",
     waitlistFirst: "Ci sono già allievi in attesa di un posto in questo corso. Iscriviti alla lista d’attesa per aspettare il tuo turno.",
     bookingClosed: "Le prenotazioni per questo corso sono chiuse. Un membro dello staff può ancora aggiungerti.",
@@ -198,6 +202,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "Eliminazione dell’account richiesta",
+    accountDeletionRequestedBody: "Il tuo account ULTM8 verrà eliminato il {when}. Fino ad allora è bloccato. Per mantenerlo, accedi di nuovo prima di quella data.",
+    accountDeletionRequestedChildrenBody: "Il tuo account ULTM8 verrà eliminato il {when}. Fino ad allora è bloccato. Gli account di questi bambini verranno eliminati insieme al tuo: {children}. Per mantenerlo, accedi di nuovo prima di quella data.",
+    memberLeftTitle: "Un membro se n’è andato",
+    memberLeftBody: "Un membro ha eliminato il suo account ULTM8 e ha lasciato la tua scuola. I suoi dati sono stati rimossi. Pagamenti, liberatorie e storico delle cinture restano alla tua scuola come \"Erased User\".",
     classCancelledBySchoolBody: "{class} del {when} è stata annullata dalla scuola.",
     classCancelledBySchoolBodyWithReason: "{class} del {when} è stata annullata dalla scuola. Motivo: {reason}",
     cancellationsTitle: "Cancellazioni da gestire",
