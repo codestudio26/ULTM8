@@ -846,7 +846,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "合同",
       intro: "请阅读此计划的合同并签署后购买。",
       guardianSigns: "作为家长或监护人，你代孩子签署此合同。",
-      termsLine: "最短期限 {months} 个月 · 提前退出费 {amount}",
+      termsLine: "最短期限 {months} 个月 · 提前解约费 {amount}",
       taxNote: "与学校的其他费用一样，此费用可能另加税费。",
       signAndContinue: "签署并继续",
       signError: "无法签署合同。",
@@ -854,7 +854,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 16.
       endsAfterTerm: "此会员资格在最短期限结束时终止，不会续订。",
       endsOn: "最短期限结束后于 {date} 终止，不会续订。",
-      cancelFee: "你的合同最短期限到 {date}。如果会员资格在此之前结束，{amount} 的提前退出费将计入你的余额。",
+      cancelFee: "你的合同最短期限到 {date}。如果会员资格在此之前结束，{amount} 的提前解约费将计入你的余额。",
     },
     recharge: {
       title: "你的课时包已用完",
@@ -1229,7 +1229,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     // Decision 435 item 19.
     earlyExitFee: {
-      label: "提前退出费",
+      label: "提前解约费",
     },
     lateFee: {
       label: "滞纳金",
