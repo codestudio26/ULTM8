@@ -7869,3 +7869,40 @@ User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #496's c
 ### Recorded by
 
 User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #497's choices.
+
+---
+
+## Decision 441 — The launch rehearsal's questions: monthly plans without cards, who confirms Pix and cash, waivers, connecting Stripe
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Answers:** the "Needs decision" items D1–D6 and follow-ups F1–F3, F5 and F6 of `docs/handover/LAUNCH-REHEARSAL-1.md` (PR #504) · **Builds on:** Decisions 348, 412, 413, 423, 437, 439
+
+### Decision
+
+**Monthly plans at a School without cards** (D1; Brazil)
+1. **A monthly plan at a School that takes no cards is billed to the member's balance each month.** The first month is a Pix or cash order, as with any plan there. After that, each month becomes a normal charge on the member's balance, reusing recurring charges (Decision 412). The member pays it by Pix or cash and staff confirm it. Unpaid charges follow the School's existing overdue and late-fee rules (Decision 413). Card-only wording and technical words in the current refusal (F4) go with this.
+
+**Who confirms a Pix or cash order** (D2)
+2. **Staff with "Can record payments" (Decision 348) can also confirm a member's Pix or cash order**, not only owners.
+
+**Plan switch at a School without cards** (D3)
+3. **"Switch to another plan when it ends" is hidden at a School that takes no cards**, both on the plan form and as the opt-in in the member app. The switch needs a saved card, so there it could only ever end with "no card".
+
+**Privacy policy version** (D4)
+4. **The consent policy version stays "1.0-placeholder" until the lawyer's privacy text is ready.** Setting the real version and text is a launch task for the GDPR/LGPD programme owner (Decision 423 item 9). Nothing is built now.
+
+**Waiver before booking or check-in** (D5)
+5. **New School setting: "Waiver must be signed before booking or check-in", on by default.** With it on, a member (or a child, through their parent) who hasn't signed the School's current waiver can't book a class or check in. The existing per-class "waiver required" mark keeps working when the setting is off. Buying a plan is not blocked by it.
+
+**Connecting Stripe** (D6; UK and the other Connect countries of Decision 437)
+6. **The School owner gets a "Connect Stripe" button in the portal** that starts Stripe's own onboarding, instead of ULTM8 support doing it. **The setup checklist ticks "Connect Stripe" only once Stripe confirms the account is ready** (onboarding complete), not as soon as onboarding starts.
+
+**Small fixes** (follow-ups)
+7. **Addresses show the country in the reader's language** (F1), not always in English.
+8. **The belt templates (e.g. IBJJF) give translated belt names** in the School's language (F2). The owner can still rename them.
+9. **The account-deletion notice shows the date and time in the member's own time zone** (F3), not UTC.
+10. **Adding a coach profile for someone who was never an instructor gets a clear message** (F6), not "This person is no longer an instructor at this School."
+11. **The cancellation policy of a new School stays MANUAL** (F5), as designed.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "Ok", on the recommendations given in chat for D1–D6 and the small fixes.
