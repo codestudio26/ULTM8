@@ -18,6 +18,15 @@ function codedMessage(err: ApiError): string | null {
   switch (err.code) {
     case 'CLASS_FULL':
       return translate('lib.apiError.classFull');
+    // "Delete my account": the shared wording in @ultm8/i18n.
+    case 'ACCOUNT_CLOSING':
+      return translate('server.codes.accountClosing');
+    case 'ACCOUNT_LOCKED':
+      return translate('server.codes.accountLocked');
+    case 'MAIN_OWNER_MUST_HAND_OVER':
+      return translate('server.codes.mainOwnerMustHandOver');
+    case 'SUBSCRIPTION_NOT_STOPPED':
+      return translate('server.codes.subscriptionNotStopped');
     case 'WAITLIST_FIRST':
       return translate('lib.apiError.waitlistFirst');
     case 'BOOKING_CLOSED':

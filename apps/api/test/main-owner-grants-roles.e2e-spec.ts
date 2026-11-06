@@ -53,6 +53,7 @@ const ALL_ON = {
   memberFiles: true,
   importData: true,
   seeMedicalInfo: true,
+  payroll: true,
 };
 
 describeIfDb('Only the main owner adds or removes roles (Decision 423 item 10)', () => {

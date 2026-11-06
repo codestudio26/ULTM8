@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "Algo deu errado — tente novamente.",
   },
   codes: {
+    accountClosing: "Esta conta está sendo excluída, então não pode mais reservar, fazer check-in nem comprar.",
+    accountLocked: "Esta conta está sendo excluída. Entre novamente para mantê-la.",
+    mainOwnerMustHandOver: "Você é o proprietário principal de uma escola ou franquia. Passe-a para outro proprietário (o suporte da ULTM8 pode fazer isso) ou encerre-a antes de excluir sua conta.",
+    subscriptionNotStopped: "Não foi possível interromper um pagamento recorrente agora, por isso sua conta não foi excluída. Tente novamente em instantes.",
     classFull: "Esta aula está lotada. Você pode adicionar o aluno à lista de espera.",
     waitlistFirst: "Já há alunos esperando uma vaga nesta aula. Entre na lista de espera para aguardar a sua vez.",
     bookingClosed: "As reservas para esta aula foram encerradas. Um membro da equipe ainda pode incluir você.",
@@ -198,6 +202,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "Exclusão de conta solicitada",
+    accountDeletionRequestedBody: "Sua conta ULTM8 será excluída em {when}. Até lá, ela fica bloqueada. Para mantê-la, entre novamente antes dessa data.",
+    accountDeletionRequestedChildrenBody: "Sua conta ULTM8 será excluída em {when}. Até lá, ela fica bloqueada. As contas destas crianças serão excluídas junto: {children}. Para mantê-la, entre novamente antes dessa data.",
+    memberLeftTitle: "Um membro saiu",
+    memberLeftBody: "Um membro excluiu a conta ULTM8 e saiu da sua escola. Os dados dele foram removidos. Os pagamentos, termos de responsabilidade e histórico de faixas ficam com a sua escola como \"Erased User\".",
     classCancelledBySchoolBody: "{class} em {when} foi cancelada pela escola.",
     classCancelledBySchoolBodyWithReason: "{class} em {when} foi cancelada pela escola. Motivo: {reason}",
     cancellationsTitle: "Cancelamentos a resolver",

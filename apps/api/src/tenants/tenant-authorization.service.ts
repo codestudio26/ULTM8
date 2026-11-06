@@ -69,7 +69,9 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * manage member files", checked by assertMayManageMemberFiles. "importData" is
  * Decision 315 items 12 and 13's "Import data", checked by importScope.
  * "seeMedicalInfo" is Decision 315 item 10's "See medical information",
- * checked by assertMaySeeMedicalInfo. */
+ * checked by assertMaySeeMedicalInfo. "payroll" is Decision 435 item 22's
+ * "Payroll" (the payroll report only, whole School; the rates stay
+ * owner-only), checked by assertMayRunPayroll. */
 export const STAFF_ACCESS = [
   'classes',
   'bookings',
@@ -84,10 +86,11 @@ export const STAFF_ACCESS = [
   'memberFiles',
   'importData',
   'seeMedicalInfo',
+  'payroll',
 ] as const;
 export type StaffAccess = (typeof STAFF_ACCESS)[number];
 /** The switches staffMay checks. */
-type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'memberFiles' | 'importData' | 'seeMedicalInfo'>;
+type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'memberFiles' | 'importData' | 'seeMedicalInfo' | 'payroll'>;
 export type StaffAccessSet = Record<StaffAccess, boolean>;
 
 /** A Branch Staff member with no StaffPermission row yet has these: what
@@ -107,6 +110,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   memberFiles: false,
   importData: false,
   seeMedicalInfo: false,
+  payroll: false,
 };
 
 /** What an Instructor may do by role, whatever the switches say (Spec 55
@@ -138,6 +142,7 @@ export function staffAccessFrom(row: {
   canManageMemberFiles: boolean;
   canImportData: boolean;
   canSeeMedicalInfo: boolean;
+  canSeePayroll: boolean;
 } | null | undefined): StaffAccessSet {
   if (!row) return { ...DEFAULT_STAFF_ACCESS };
   return {
@@ -154,6 +159,7 @@ export function staffAccessFrom(row: {
     memberFiles: row.canManageMemberFiles,
     importData: row.canImportData,
     seeMedicalInfo: row.canSeeMedicalInfo,
+    payroll: row.canSeePayroll,
   };
 }
 
@@ -172,6 +178,7 @@ export const STAFF_ACCESS_SELECT = {
   canManageMemberFiles: true,
   canImportData: true,
   canSeeMedicalInfo: true,
+  canSeePayroll: true,
 } as const;
 
 @Injectable()
@@ -531,6 +538,31 @@ export class TenantAuthorizationService {
     if (verdict === 'staff') {
       await this.assertBranchCoversStudent(await this.staffBranchCoverage(userId, schoolId), schoolId, studentId);
     }
+  }
+
+  /**
+   * Decision 435 item 22: the payroll report and the pay rates (Decision 320
+   * item 4) are for the School's owners, and for Branch Staff the owner
+   * switched on ("Payroll"), for the whole School. Coaches never. The rates
+   * themselves are also guarded in the database (StaffPayRate's RLS:
+   * is_active_school_owner_manager or is_payroll_staff). Returns whether the
+   * caller is an owner.
+   */
+  async assertMayRunPayroll(userId: string, schoolId: string): Promise<{ isOwner: boolean }> {
+    const verdict = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return 'owner' as const;
+      if (grants.length === 0) return 'no' as const;
+      const row = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canSeePayroll: true } });
+      return row?.canSeePayroll ? ('staff' as const) : ('no' as const);
+    });
+    if (verdict === 'no') {
+      return this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you see payroll.");
+    }
+    return { isOwner: verdict === 'owner' };
   }
 
   /** staffMay, throwing 403 STAFF_ACCESS_OFF when it says no. */

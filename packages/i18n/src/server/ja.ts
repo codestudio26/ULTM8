@@ -830,6 +830,7 @@ export const serverMessages: Record<string, string> = {
   "This date is not valid.": "この日付は無効です。",
   "Attendance can only be logged from {v1} to {v2}.": "出席を記録できるのは {v1} から {v2} までです。",
   "The School owner hasn't let you import data.": "スクールのオーナーからデータのインポートを許可されていません。",
+  "The School owner hasn't let you see payroll.": "スクールのオーナーが給与の閲覧を許可していません。",
   "A row number is past the end of this import.": "行番号がこのインポートの最後を超えています。",
   "Import not found": "インポートが見つかりません",
   "Each row number can only be sent once.": "各行番号は一度だけ送信できます。",

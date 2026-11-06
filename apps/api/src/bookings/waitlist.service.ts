@@ -22,6 +22,7 @@ import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
+import { assertAccountNotClosing } from '../account-deletion/account-closing';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -93,6 +94,8 @@ export class WaitlistService {
     await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
     // Decision 430 item 9: no place for a child still waiting for a parent's consent.
     await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
+    // "Delete my account": an account being deleted is locked.
+    await assertAccountNotClosing(this.prismaJobs, studentId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       // First, before any row lock (see lockStudentClass): a Student who has
@@ -277,6 +280,7 @@ export class WaitlistService {
     await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
     // Decision 430 item 9: a claim is a booking; it waits for a parent's consent.
     await assertBaselineConsentGiven(this.prismaJobs, resolvedEntry.studentId, await schoolZone(this.prismaJobs, resolvedEntry.schoolId, resolvedEntry.branchId));
+    await assertAccountNotClosing(this.prismaJobs, resolvedEntry.studentId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const studentId = resolvedEntry.studentId;

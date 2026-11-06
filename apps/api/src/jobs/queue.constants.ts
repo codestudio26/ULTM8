@@ -131,3 +131,6 @@ export const SIGNED_DOCUMENTS_EXPORT_QUEUE = 'signed-documents-export';
 // surcharge allow-list, one job removes the surcharge item from every running
 // Subscription at Schools in that country, from its next renewal.
 export const CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE = 'card-surcharge-country-removal';
+// "Delete my account" (Decision 427 item 5): the daily run that anonymises
+// each account whose 30-day grace period is over.
+export const ACCOUNT_ERASURE_QUEUE = 'account-erasure';

@@ -1647,6 +1647,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "담당 지점 수련생의 파일을 보고, 업로드하고, 다운로드하고, 삭제합니다. 회원은 이 파일을 볼 수 없습니다.",
       seeMedicalInfo: "의료 정보 보기",
       seeMedicalInfoHint: "담당 지점 수련생들이 가입할 때 제공한 의료 정보를 읽습니다. 코치는 절대 볼 수 없습니다.",
+      // Decision 435 item 22.
+      payroll: "급여",
+      payrollHint: "도장 전체(원장 포함)의 급여 보고서만 볼 수 있습니다. 급여 단가는 도장 원장만 정합니다.",
       ownerOnly: "돈(결제, 환불, 요금제와 가격), 도장 설정, 소유자는 항상 도장 원장에게 남습니다.",
       saved: "{name}의 권한을 저장했습니다.",
       readOnlyIntro: "내 지점의 직원입니다. 역할이나 권한은 도장 원장만 바꿀 수 있습니다.",
@@ -4935,7 +4938,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "설정한 단가로 각 직원이 맡은 수업에서 번 금액입니다. ULTM8은 누구에게도 지급하지 않습니다. 직원 급여는 ULTM8 밖에서 지급하세요.",
     tabReport: "보고서",
     tabRates: "단가",
-    noAccess: "급여는 도장 원장만 볼 수 있습니다.",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "도장 원장이 정한 단가로 각 직원이 맡은 수업에서 번 금액입니다. ULTM8은 누구에게도 지급하지 않습니다. 도장이 ULTM8 밖에서 직원에게 지급합니다.",
+    ratesHidden: "도장 원장이 여기에 단가를 표시하지 않기로 했습니다. 수업, 시간, 급여만 볼 수 있습니다.",
+    staffRates: {
+      title: "급여 권한이 있는 직원에게 보이는 내용",
+      label: "보고서에 단가 표시",
+      hint: "급여 스위치가 켜진 직원은 보고서와 다운로드 파일에서 각 사람의 시간당 단가와 수업당 단가를 읽기 전용으로 봅니다. 끄면 수업, 시간, 급여만 봅니다. 원장님은 항상 단가를 봅니다.",
+    },
+    noAccess: "급여는 도장 원장과 원장이 허용한 직원만 볼 수 있습니다.",
     loadFailed: "급여를 불러오지 못했습니다. 다시 시도해 주세요.",
     periodLabel: "기간",
     preset: {

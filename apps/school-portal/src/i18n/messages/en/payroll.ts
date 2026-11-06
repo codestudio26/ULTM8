@@ -5,7 +5,15 @@ export const payroll = {
   subtitle: "What each member of staff earned from the classes they taught, at the rates you set. ULTM8 doesn't pay anyone: you pay your staff outside ULTM8.",
   tabReport: 'Report',
   tabRates: 'Rates',
-  noAccess: 'Only the School owner can see payroll.',
+  // Decision 435 item 22: what staff with the Payroll switch see.
+  subtitleStaff: "What each member of staff earned from the classes they taught, at the rates the School's owners set. ULTM8 doesn't pay anyone: the School pays its staff outside ULTM8.",
+  ratesHidden: "The School's owners have chosen not to show pay rates here: you see the classes, hours and pay.",
+  staffRates: {
+    title: "What staff with payroll access see",
+    label: "Show pay rates in the report",
+    hint: "Staff with the Payroll switch see each person's hourly and per-class rates in the report and its download, read only. Off: they see the classes, hours and pay only. You always see the rates.",
+  },
+  noAccess: "Only the School's owners, and staff they allow, can see payroll.",
   loadFailed: "Couldn't load payroll. Please try again.",
   periodLabel: 'Dates',
   preset: {

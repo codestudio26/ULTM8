@@ -43,6 +43,7 @@ import { PlanContractsService } from './contracts/plan-contracts.service';
 import { assertPlanHasRoom } from './waitlist/plan-capacity';
 import { assertPlanTermValid, fixedPlanOver, membershipTerm, planDay, PLAN_OVER, TERM_PLAN_TYPES } from './plan-term';
 import { assertJoiningFeeAllowed, joiningFeeDue, NO_JOINING_FEE, type JoiningFeeDue } from './joining-fee';
+import { assertAccountNotClosing } from '../account-deletion/account-closing';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -881,6 +882,8 @@ export class MembershipsService {
    */
   async purchase(callerId: string, planId: string, dto?: PurchaseMembershipDto, stepUpToken?: string) {
     const studentId = dto?.studentId ?? callerId;
+    // "Delete my account": an account being deleted can't buy.
+    await assertAccountNotClosing(this.prismaJobs, studentId);
     const isGuardianAction = dto?.studentId !== undefined && dto.studentId !== callerId;
     if (isGuardianAction) {
       // Decision 430 item 7: a parent keeps paying for 30 days after 18.
@@ -1573,6 +1576,7 @@ export class MembershipsService {
    * doesn't depend on the recorder's access to Membership or Transaction.
    */
   async recordDeskSale(schoolId: string, studentId: string, dto: SellMembershipDto, { recordedById }: { recordedById: string }) {
+    await assertAccountNotClosing(this.prismaJobs, studentId);
     const plan = await this.loadDeskPlan(schoolId, studentId, dto.membershipPlanId);
     if (plan.type === 'FRIEND_PASS') {
       throw new BadRequestException('A Friend Pass is given, not sold. Use Give a Friend Pass instead.');
@@ -1689,6 +1693,7 @@ export class MembershipsService {
    * visitor period at that moment.
    */
   async grantVisitPass(givenById: string, schoolId: string, studentId: string, days: number) {
+    await assertAccountNotClosing(this.prismaJobs, studentId);
     await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
     const now = new Date();
     return this.prismaApp.withTenantContext(studentId, async (tx) => {

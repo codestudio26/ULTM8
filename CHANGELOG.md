@@ -98,6 +98,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the signing form has Cancel. Already-booked classes show as booked, plans
   say "Join this School to buy" to non-members, status words read as words,
   the sign-in screen shows the picked School, and removing a card asks first.
+- **Delete my account** (Track B, `apps/student`, and `apps/api`; Decision
+  427 item 5, required by Apple; Decision 436 items 1–6)
+  — My profile → "Delete my account" says what happens, names the children
+  deleted too, and asks for the passcode again. The account is locked at once
+  (signed out everywhere; no booking, check-in or purchase, by anyone), its
+  recurring payments stop, and signing in again within 30 days cancels it.
+  After 30 days a daily job anonymises it as "Erased User": login, name,
+  contact details, date of birth, photo, passcode and medical notes go, and so
+  do staff notes, files the School uploaded, custom fields, tags, import rows
+  and invites; their name in older staff activity lines and staff notices
+  becomes "Erased User". Their upcoming bookings and waitlist places are given
+  up as when a School removes a member (no fee). Payments, signed waivers,
+  contracts, belt and attendance history stay with the School, unnamed. A child goes too only when this was their only parent and they have
+  no login of their own. The main owner of an open School or Franchise must
+  hand it over or close it first. The member is emailed; each School's owners
+  get a "A member left" notice. New `GET`/`POST /users/me/deletion`; sign-in
+  answers `deletionCancelled`. **Needs a database migration**
+  (`20270227100012_account_deletion`): four `User` columns, a write-only
+  `AccountErasureLog`, and one narrow `erase_due_account` function (the jobs
+  role may only call it, and it refuses accounts that aren't due).
 - **Student app: class times on the School's clock** (Track B, `apps/student`;
   Decision 427 SP6) — class times in the app (a School's classes, Kid Mode,
   My bookings, My waitlist, a child's bookings) now show on the class's own
@@ -442,6 +462,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   New `StaffPayRate` table (migration `20270215000001_staff_pay_rates`,
   owner-only RLS); `GET /schools/:id/payroll/rates`, `PUT …/rates/:userId`,
   `GET …/payroll/report`. 15 languages.
+- **"Payroll" access switch for Branch Staff** (Decision 435 item 22) — the
+  owner can now let a Branch Staff member see the Payroll page: a new
+  **Payroll** switch in their Access window (Staff group), off by default and
+  in neither preset. With it they see the payroll report for the whole
+  School, every Branch and every staff member, and Payroll appears in their
+  menu. It is the report only: the Rates tab, and setting anyone's rate
+  (their own and the owners' included), stays with the School's owners, as
+  before. Whether they see the pay rates in the report is the owner's choice:
+  a new **Show pay rates in the report** setting on the Payroll page's Rates
+  tab, off by default. Off, they see the classes, hours and pay only (the
+  rate columns are left out of the page and the CSV, and the API leaves the
+  rates out); on, they see the rates read only. Owners always see them. Their
+  page subtitle now says "at the rates the School's owners set". Coaches
+  never have it; a paused role loses it. Enforced by the API and by the
+  database (`StaffPayRate` RLS now also lets `is_payroll_staff` read the
+  rates, never write them). **Needs database migrations**
+  (`20270219000002_payroll_access_switch`,
+  `20270226106000_payroll_staff_see_rates`).
 - **Data tools: merge duplicate members, export all signed documents**
   (Decision 315 item 13; imports are a separate change). **Merge a duplicate**
   on a student's page: the owner picks the other record of the same person at

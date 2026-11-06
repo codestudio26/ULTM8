@@ -41,4 +41,7 @@ export class LoginResponseDto {
 
   @ApiPropertyOptional({ description: 'Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else.' })
   passcodeChangeToken?: string;
+
+  @ApiPropertyOptional({ description: 'True when this sign-in cancelled the account deletion the member had asked for.' })
+  deletionCancelled?: true;
 }

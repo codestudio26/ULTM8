@@ -170,6 +170,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged." })
   joiningFeesEnabled!: boolean;
 
+  @ApiProperty({ description: 'Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (default off). Owners always see them.' })
+  payrollStaffSeeRates!: boolean;
+
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 411: the country the School is in, for its tax.' })
   taxCountry!: string | null;
 

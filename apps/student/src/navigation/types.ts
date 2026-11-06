@@ -58,6 +58,8 @@ export type AppStackParamList = {
   ChildCard: { studentId: string; name: string };
   /** Decision 428 (M3): change one's own passcode. */
   ChangePasscode: undefined;
+  /** "Delete my account" (Decision 427 item 5), from My profile. */
+  DeleteAccount: undefined;
   KidModePin: undefined;
   KidModeBooking: undefined;
   PendingReview: undefined;

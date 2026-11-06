@@ -1662,6 +1662,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Voir, envoyer, télécharger et supprimer les fichiers des élèves de leurs sites. Les membres ne voient jamais ces fichiers.",
       seeMedicalInfo: "Voir les informations médicales",
       seeMedicalInfoHint: "Lire les informations médicales que les élèves de leurs sites ont données à l'inscription. Les coachs ne les voient jamais.",
+      // Decision 435 item 22.
+      payroll: "Paie",
+      payrollHint: "Voir uniquement le rapport de paie, pour toute l’école, propriétaires compris. Les taux de rémunération restent fixés par les propriétaires de l’école.",
       ownerOnly: "L’argent (paiements, remboursements, formules et prix), les paramètres de l’École et les propriétaires restent toujours aux propriétaires de l’École.",
       saved: "Accès enregistré pour {name}.",
       readOnlyIntro: "Le personnel de vos sites. Seuls les propriétaires de l’École peuvent changer les rôles ou les accès.",
@@ -4981,7 +4984,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Ce que chaque membre du personnel a gagné avec les cours qu’il a donnés, aux taux que vous fixez. ULTM8 ne paie personne : vous payez votre personnel en dehors d’ULTM8.",
     tabReport: "Rapport",
     tabRates: "Taux",
-    noAccess: "Seul le propriétaire de l’école peut voir la paie.",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Ce que chaque membre du personnel a gagné avec les cours qu’il a donnés, aux taux fixés par les propriétaires de l’école. ULTM8 ne paie personne : l’école paie son personnel en dehors d’ULTM8.",
+    ratesHidden: "Les propriétaires de l’école ont choisi de ne pas afficher les taux ici : vous voyez les cours, les heures et la paie.",
+    staffRates: {
+      title: "Ce que voit le personnel ayant accès à la paie",
+      label: "Afficher les taux dans le rapport",
+      hint: "Le personnel ayant l’accès « Paie » voit les taux horaires et par cours de chacun dans le rapport et son téléchargement, en lecture seule. Désactivé : il ne voit que les cours, les heures et la paie. Vous voyez toujours les taux.",
+    },
+    noAccess: "Seuls les propriétaires de l’école, et le personnel qu’ils autorisent, peuvent voir la paie.",
     loadFailed: "Impossible de charger la paie. Veuillez réessayer.",
     periodLabel: "Dates",
     preset: {

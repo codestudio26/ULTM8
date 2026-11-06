@@ -2724,6 +2724,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/me/deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AccountDeletionController_preview"];
+        put?: never;
+        post: operations["AccountDeletionController_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/settings/languages": {
         parameters: {
             query?: never;
@@ -7737,6 +7753,8 @@ export interface components {
             mustChangePasscode?: boolean;
             /** @description Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else. */
             passcodeChangeToken?: string;
+            /** @description True when this sign-in cancelled the account deletion the member had asked for. */
+            deletionCancelled?: boolean;
         };
         RefreshTokenDto: {
             refreshToken: string;
@@ -7837,6 +7855,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged. */
             joiningFeesEnabled?: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them. */
+            payrollStaffSeeRates?: boolean;
             /**
              * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
              * @example GB
@@ -7988,6 +8008,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged. */
             joiningFeesEnabled: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (default off). Owners always see them. */
+            payrollStaffSeeRates: boolean;
             /** @description Decision 411: the country the School is in, for its tax. */
             taxCountry?: string | null;
             /** @description Decision 411: the School's tax rate on charges, in hundredths of a percent (default 0). */
@@ -8139,6 +8161,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged. */
             joiningFeesEnabled?: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them. */
+            payrollStaffSeeRates?: boolean;
             /**
              * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
              * @example GB
@@ -8899,6 +8923,8 @@ export interface components {
             attendanceStats: boolean;
             /** @description See the medical information of their branches' students (off by default; Decision 315 item 10). */
             seeMedicalInfo: boolean;
+            /** @description See the payroll report, for the whole School. Setting the pay rates stays with the School owners (off by default, in no preset; Decision 435 item 22). */
+            payroll: boolean;
             /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
             memberFiles: boolean;
             /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */
@@ -10685,6 +10711,46 @@ export interface components {
             uploadUrl: string;
             /** @description Pass this back as certificationKey when calling PATCH /instructors/me/profile. */
             objectKey: string;
+        };
+        DeletionBlockDto: {
+            /** @enum {string} */
+            kind: "SCHOOL" | "FRANCHISE";
+            id: string;
+            name: string;
+        };
+        DeletionChildDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+        };
+        DeletionKeptChildDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            /**
+             * @description Why the child stays: another active parent is linked, or the child has a login of their own. Only this parent's link ends.
+             * @enum {string}
+             */
+            reason: "OTHER_PARENT" | "OWN_LOGIN";
+        };
+        AccountDeletionStateDto: {
+            /** @description True once deletion has been asked for and not cancelled. */
+            pending: boolean;
+            /** Format: date-time */
+            requestedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the account is anonymised for good, unless the member signs in again before then.
+             */
+            dueAt: string | null;
+            /** @description Days between asking and the deletion becoming final. */
+            graceDays: number;
+            /** @description Open Schools and Franchises this member is the main owner of. While any is listed, deletion is refused (MAIN_OWNER_MUST_HAND_OVER). */
+            blockedBy: components["schemas"]["DeletionBlockDto"][];
+            /** @description Children deleted with this account (no other active parent and no login of their own). */
+            childrenDeleted: components["schemas"]["DeletionChildDto"][];
+            /** @description Children who keep their account; only this parent's link to them ends. */
+            childrenKept: components["schemas"]["DeletionKeptChildDto"][];
         };
         CodeNameResponseDto: {
             code: string;
@@ -15328,7 +15394,9 @@ export interface components {
             name: string;
             /** @description False when the person is no longer on the staff. */
             onStaff: boolean;
+            /** @description Null when not set, or left out for staff the School does not show rates to (ratesShown false). */
             hourlyRate: number | null;
+            /** @description Null when not set, or left out for staff the School does not show rates to (ratesShown false). */
             perClassRate: number | null;
             /** @description Classes they taught in the range. */
             classesTaught: number;
@@ -15345,6 +15413,8 @@ export interface components {
             /** @description Last date covered, YYYY-MM-DD. */
             to: string;
             currency: string | null;
+            /** @description Decision 435 item 22: whether the rows carry the pay rates. Always true for owners; for Branch Staff with the "Payroll" switch, the School's payrollStaffSeeRates setting (off by default), and when false every rate is null. */
+            ratesShown: boolean;
             /** @description Everyone with a rate, by name. */
             rows: components["schemas"]["PayrollRowDto"][];
             totalClasses: number;
@@ -19987,6 +20057,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CertificationUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AccountDeletionController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDeletionStateDto"];
+                };
+            };
+        };
+    };
+    AccountDeletionController_request: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify. */
+                "x-step-up-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDeletionStateDto"];
                 };
             };
         };

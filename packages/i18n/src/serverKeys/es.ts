@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "Algo salió mal; inténtalo de nuevo.",
   },
   codes: {
+    accountClosing: "Esta cuenta se está eliminando, así que ya no puede reservar, hacer check-in ni comprar.",
+    accountLocked: "Esta cuenta se está eliminando. Vuelve a iniciar sesión para conservarla.",
+    mainOwnerMustHandOver: "Eres el propietario principal de una escuela o franquicia. Pásala a otro propietario (el soporte de ULTM8 puede hacerlo) o ciérrala antes de eliminar tu cuenta.",
+    subscriptionNotStopped: "No pudimos detener un pago recurrente en este momento, así que tu cuenta no se eliminó. Inténtalo de nuevo en un momento.",
     classFull: "Esta clase está completa. Puedes agregar al alumno a la lista de espera.",
     waitlistFirst: "Ya hay alumnos esperando lugar en esta clase. Únete a la lista de espera para esperar tu turno.",
     bookingClosed: "Las reservas para esta clase están cerradas. Un miembro del personal todavía puede inscribirte.",
@@ -198,6 +202,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "Eliminación de cuenta solicitada",
+    accountDeletionRequestedBody: "Tu cuenta de ULTM8 se eliminará el {when}. Hasta entonces está bloqueada. Para conservarla, vuelve a iniciar sesión antes de esa fecha.",
+    accountDeletionRequestedChildrenBody: "Tu cuenta de ULTM8 se eliminará el {when}. Hasta entonces está bloqueada. Las cuentas de estos niños se eliminarán con ella: {children}. Para conservarla, vuelve a iniciar sesión antes de esa fecha.",
+    memberLeftTitle: "Un miembro se ha ido",
+    memberLeftBody: "Un miembro eliminó su cuenta de ULTM8 y dejó tu escuela. Sus datos se han eliminado. Sus pagos, exenciones e historial de cinturones se quedan en tu escuela como \"Erased User\".",
     classCancelledBySchoolBody: "{class} el {when} ha sido cancelada por la escuela.",
     classCancelledBySchoolBodyWithReason: "{class} el {when} ha sido cancelada por la escuela. Motivo: {reason}",
     cancellationsTitle: "Cancelaciones por resolver",

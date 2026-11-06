@@ -46,6 +46,8 @@ const COMPLETE_PROFILE_NAV: NavItem = { label: 'layout.nav.completeProfile', to:
 /** Decision 387 — Branch Staff whose owner switched these on. */
 const STUDENTS_NAV: NavItem = { label: 'layout.nav.students', to: '/students' };
 const STAFF_NAV: NavItem = { label: 'layout.nav.staff', to: '/staff' };
+/** Decision 435 item 22 — Branch Staff with the "Payroll" switch. */
+const PAYROLL_NAV: NavItem = { label: 'payroll.nav', to: '/payroll' };
 
 const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.dashboard', to: '/dashboard' },
@@ -64,7 +66,7 @@ const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.transactions', to: '/transactions' },
   BILLING_REPORTS_NAV,
   // Decision 320 item 4: the owner's payroll report.
-  { label: 'payroll.nav', to: '/payroll' },
+  PAYROLL_NAV,
   { label: 'layout.nav.cancellations', to: '/cancellations' },
   { label: 'layout.nav.waivers', to: '/waivers' },
   { label: 'layout.nav.franchises', to: '/franchises' },
@@ -88,6 +90,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         ...(access?.cancelClasses ?? true ? [CANCELLATIONS_NAV] : []),
         ...(access?.students ? [STUDENTS_NAV] : []),
         ...(access?.staffList ? [STAFF_NAV] : []),
+        ...(access?.payroll ? [PAYROLL_NAV] : []),
       ]
     : [];
   return (

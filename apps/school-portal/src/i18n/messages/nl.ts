@@ -1662,6 +1662,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       memberFilesHint: "Bestanden van de leerlingen van hun vestigingen bekijken, uploaden, downloaden en verwijderen. Leden zien deze bestanden nooit.",
       seeMedicalInfo: "Medische informatie zien",
       seeMedicalInfoHint: "De medische informatie lezen die leerlingen van hun vestigingen bij de aanmelding gaven. Trainers zien die nooit.",
+      // Decision 435 item 22.
+      payroll: "Salarisoverzicht",
+      payrollHint: "Alleen het salarisoverzicht zien, voor de hele school, eigenaren inbegrepen. De tarieven blijven door de eigenaren van de school ingesteld.",
       ownerOnly: "Geld (betalingen, terugbetalingen, abonnementen en prijzen), Schoolinstellingen en eigenaren blijven altijd bij de eigenaren van de School.",
       saved: "Toegang opgeslagen voor {name}.",
       readOnlyIntro: "Het team van jouw filialen. Alleen de eigenaren van de School kunnen rollen of toegang wijzigen.",
@@ -4981,7 +4984,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Wat elk teamlid heeft verdiend met de lessen die het gaf, tegen de tarieven die je instelt. ULTM8 betaalt niemand uit: je betaalt je personeel buiten ULTM8.",
     tabReport: "Overzicht",
     tabRates: "Tarieven",
-    noAccess: "Alleen de eigenaar van de school kan het salarisoverzicht zien.",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Wat elk teamlid heeft verdiend met de lessen die het gaf, tegen de tarieven die de eigenaren van de school instellen. ULTM8 betaalt niemand uit: de school betaalt haar personeel buiten ULTM8.",
+    ratesHidden: "De eigenaren van de school tonen de tarieven hier niet: je ziet de lessen, uren en het loon.",
+    staffRates: {
+      title: "Wat medewerkers met toegang tot het salarisoverzicht zien",
+      label: "Tarieven in het overzicht tonen",
+      hint: "Medewerkers met de schakelaar Salarisoverzicht zien het uur- en lestarief van iedereen in het overzicht en de download, alleen lezen. Uit: ze zien alleen de lessen, uren en het loon. Jij ziet de tarieven altijd.",
+    },
+    noAccess: "Alleen de eigenaren van de school, en medewerkers die zij toestemming geven, kunnen het salarisoverzicht zien.",
     loadFailed: "Het salarisoverzicht kon niet worden geladen. Probeer het opnieuw.",
     periodLabel: "Datums",
     preset: {

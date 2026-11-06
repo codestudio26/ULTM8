@@ -39,7 +39,7 @@ describe('AuthService', () => {
     rolesChanged = { forget: jest.fn() };
     loginAttempts = { isLocked: jest.fn().mockReturnValue(false), recordFailure: jest.fn(), recordSuccess: jest.fn() };
 
-    service = new AuthService(prismaApp, prismaAuth, twilio, jwt, loginAttempts, rolesChanged);
+    service = new AuthService(prismaApp, prismaAuth, twilio, jwt, loginAttempts, rolesChanged, {} as never);
   });
 
   describe('register', () => {
@@ -175,7 +175,7 @@ describe('AuthService', () => {
       // actually happened, not skipped.
       expect(prismaAuth.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'a@example.test' },
-        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true, temporaryPasscodeExpiresAt: true },
+        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true, temporaryPasscodeExpiresAt: true, deletionRequestedAt: true, erasedAt: true },
       });
       // The lock check must still reject before ever reaching the compare-and-record
       // step — recordFailure() must not fire for an already-locked account, same as

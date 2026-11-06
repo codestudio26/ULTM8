@@ -12,6 +12,7 @@ import { ClassesModule } from './classes/classes.module';
 import { TimetableModule } from './timetable/timetable.module';
 import { InstructorsModule } from './instructors/instructors.module';
 import { UsersModule } from './users/users.module';
+import { AccountDeletionModule } from './account-deletion/account-deletion.module';
 import { SettingsModule } from './settings/settings.module';
 import { PaymentsModule } from './payments/payments.module';
 import { MembershipsModule } from './memberships/memberships.module';
@@ -85,6 +86,7 @@ import { NoNulCharactersPipe } from './common/pipes/no-nul-characters.pipe';
     TimetableModule,
     InstructorsModule,
     UsersModule,
+    AccountDeletionModule,
     SettingsModule,
     PaymentsModule,
     MembershipsModule,

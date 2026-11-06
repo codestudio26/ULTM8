@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "Er ging iets mis — probeer het opnieuw.",
   },
   codes: {
+    accountClosing: "Dit account wordt verwijderd en kan dus niet meer boeken, inchecken of kopen.",
+    accountLocked: "Dit account wordt verwijderd. Log opnieuw in om het te houden.",
+    mainOwnerMustHandOver: "Je bent de hoofdeigenaar van een school of franchise. Draag die over aan een andere eigenaar (ULTM8-support kan dat doen) of sluit hem voordat je je account verwijdert.",
+    subscriptionNotStopped: "We konden een terugkerende betaling nu niet stoppen, dus je account is niet verwijderd. Probeer het zo meteen opnieuw.",
     classFull: "Deze les is vol. Je kunt de leerling in plaats daarvan op de wachtlijst zetten.",
     waitlistFirst: "Er wachten al leerlingen op een plek in deze les. Zet je op de wachtlijst om je beurt af te wachten.",
     bookingClosed: "Boeken voor deze les is gesloten. Een medewerker kan je nog wel toevoegen.",
@@ -184,6 +188,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "Verwijdering van account aangevraagd",
+    accountDeletionRequestedBody: "Je ULTM8-account wordt verwijderd op {when}. Tot die tijd is het geblokkeerd. Wil je het houden, log dan vóór die tijd opnieuw in.",
+    accountDeletionRequestedChildrenBody: "Je ULTM8-account wordt verwijderd op {when}. Tot die tijd is het geblokkeerd. De accounts van deze kinderen worden mee verwijderd: {children}. Wil je het houden, log dan vóór die tijd opnieuw in.",
+    memberLeftTitle: "Een lid is vertrokken",
+    memberLeftBody: "Een lid heeft zijn ULTM8-account verwijderd en je school verlaten. Zijn gegevens zijn verwijderd. Betalingen, vrijwaringen en bandgeschiedenis blijven bij je school onder \"Erased User\".",
     classCancelledBySchoolBody: "{class} op {when} is geannuleerd door de school.",
     classCancelledBySchoolBodyWithReason: "{class} op {when} is geannuleerd door de school. Reden: {reason}",
     cancellationsTitle: "Open annuleringen",

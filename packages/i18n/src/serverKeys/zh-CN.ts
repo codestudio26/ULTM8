@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "出了点问题，请重试。",
   },
   codes: {
+    accountClosing: "此账户正在删除中，因此不能再预约、签到或购买。",
+    accountLocked: "此账户正在删除中。如需保留，请重新登录。",
+    mainOwnerMustHandOver: "你是某个学校或加盟品牌的主要所有者。删除账户前，请将其交给另一位所有者（ULTM8 支持团队可以办理）或将其关闭。",
+    subscriptionNotStopped: "暂时无法停止一笔定期付款，因此你的账户尚未删除。请稍后再试。",
     classFull: "此课程已满。你可以改为将学员加入候补名单。",
     waitlistFirst: "已有学员在等待此课程的名额。请加入候补名单排队等候。",
     bookingClosed: "此课程的预约已截止。员工仍可为你添加。",
@@ -170,6 +174,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "已申请删除账户",
+    accountDeletionRequestedBody: "你的 ULTM8 账户将于 {when} 删除。在此之前账户已锁定。如需保留，请在此之前重新登录。",
+    accountDeletionRequestedChildrenBody: "你的 ULTM8 账户将于 {when} 删除。在此之前账户已锁定。以下孩子的账户将一并删除：{children}。如需保留，请在此之前重新登录。",
+    memberLeftTitle: "一位会员已离开",
+    memberLeftBody: "一位会员删除了 ULTM8 账户并离开了你的学校。其个人信息已被删除。其付款、免责声明和腰带记录以“Erased User”的名义保留在你的学校。",
     classCancelledBySchoolBody: "{when} 的 {class} 已被学校取消。",
     classCancelledBySchoolBodyWithReason: "{when} 的 {class} 已被学校取消。原因：{reason}",
     cancellationsTitle: "待处理的取消",

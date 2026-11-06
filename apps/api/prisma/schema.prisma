@@ -467,6 +467,21 @@ model User {
   /// role change takes effect on the next request (RolesChangedService).
   rolesChangedAt DateTime?
 
+  /// "Delete my account" (Decision 427 item 5; product owner, 6 Nov 2026).
+  /// Set when the member asks for their account to be deleted (or, for a
+  /// child with no login of their own, when their only parent does). From
+  /// then the account is locked; signing in again before `deletionDueAt`
+  /// clears all three. Read by JwtStrategy (through RolesChangedService).
+  deletionRequestedAt   DateTime?
+  /// 30 days after `deletionRequestedAt`: the account-erasure job anonymises
+  /// the account on or after this time.
+  deletionDueAt         DateTime?
+  /// Who asked: the member themselves, or the parent whose request includes
+  /// this child.
+  deletionRequestedById String?
+  /// When the account was anonymised for good ("Erased User"). Never cleared.
+  erasedAt              DateTime?
+
   /// Decision 68/112 — set once by the chargeback-pattern-restriction job when this
   /// Student's lost Stripe disputes (Transaction.disputeLostAt) cross the confirmed
   /// threshold (2). While set, MembershipsService.purchase() refuses a purchase at any
@@ -659,6 +674,7 @@ model User {
 
   @@index([email])
   @@index([phone])
+  @@index([deletionDueAt])
 }
 
 /// ultm8-nestjs-module §7's own confirmed refresh-token gap, now built: closes the
@@ -1267,6 +1283,11 @@ model School {
   /// the whole School (off by default). Off, the amounts stay saved on the
   /// plans but nothing is charged.
   joiningFeesEnabled             Boolean                         @default(false)
+  /// Decision 435 item 22 (owner's answer, 6 Nov 2026): whether Branch Staff
+  /// with the "Payroll" switch see the pay rates in the payroll report, read
+  /// only. Off by default: they see classes, hours and pay only. Owners
+  /// always see the rates.
+  payrollStaffSeeRates           Boolean                         @default(false)
   /// Decision 411: tax on staff-created charges, set by the School. The country
   /// the School is in (ISO 3166-1 alpha-2; picking it pre-fills the rate from
   /// ULTM8's list, which the School can change), the one rate in hundredths of
@@ -4522,6 +4543,30 @@ enum WaiverPurgeRule {
 /// School's id (no foreign key, so it outlives the School), the SHA-256 of the
 /// School's wording signed, the rule, and the dates. RLS on; only the jobs
 /// role may INSERT; the app role has no access.
+/// "Delete my account": the permanent internal record of each step of an
+/// account deletion (asked, cancelled by signing in again, made final). Ids
+/// and dates only, no personal details. Only the jobs role may add to it;
+/// no app role can read it.
+model AccountErasureLog {
+  id            String              @id @default(uuid())
+  userId        String
+  event         AccountErasureEvent
+  /// The member who asked (themselves, or the parent for a child).
+  requestedById String?
+  at            DateTime            @default(now())
+
+  @@index([userId])
+}
+
+enum AccountErasureEvent {
+  REQUESTED
+  CANCELLED
+  ERASED
+  /// A child was kept at the end (another parent was linked by then); only
+  /// the deleting parent's link ended.
+  KEPT
+}
+
 model WaiverSignaturePurgeLog {
   id                 String                   @id @default(uuid())
   kind               WaiverSignaturePurgeKind
@@ -5103,6 +5148,11 @@ model StaffPermission {
   /// attendance from a spreadsheet, for their own Branches. Branch Staff
   /// only; off by default; owners always can.
   canImportData         Boolean  @default(false)
+  /// Decision 435 item 22: may see the payroll report (Decision 320 item 4),
+  /// for the whole School. The report only: the pay rates stay the owners'
+  /// to set. Branch Staff only; off by default and in no preset; owners
+  /// always can.
+  canSeePayroll         Boolean  @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)

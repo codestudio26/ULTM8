@@ -24,6 +24,11 @@ export const server = {
   /** Booking and schedule errors the API marks with a code (Decision 322), shown
    * in every language, English included — see the School Portal's `src/i18n/server/codes.ts`. */
   codes: {
+    // "Delete my account" (apps/api/src/account-deletion).
+    accountClosing: "This account is being deleted, so it can no longer book, check in or buy.",
+    accountLocked: "This account is being deleted. Sign in again to keep it.",
+    mainOwnerMustHandOver: "You're the main owner of a School or Franchise. Hand it to another owner (ULTM8 support can do this) or close it before you delete your account.",
+    subscriptionNotStopped: "We couldn't stop a recurring payment just now, so your account hasn't been deleted. Please try again in a moment.",
     classFull: 'This class is full. You can add the student to the waitlist instead.',
     waitlistFirst: 'Students are already waiting for a place in this class. Join the waitlist to take your turn.',
     bookingClosed: 'Booking for this class has closed. A member of staff can still add you.',
@@ -169,6 +174,12 @@ export const server = {
     gradingPermissionMissing: "Your grading permission for this style doesn't include this: {toggle}. The school owner can turn it on.",
   },
   notifications: {
+    // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
+    accountDeletionRequestedTitle: "Account deletion requested",
+    accountDeletionRequestedBody: "Your ULTM8 account will be deleted on {when}. Until then it is locked. To keep it, sign in again before then.",
+    accountDeletionRequestedChildrenBody: "Your ULTM8 account will be deleted on {when}. Until then it is locked. These children's accounts will be deleted with it: {children}. To keep it, sign in again before then.",
+    memberLeftTitle: "A member left",
+    memberLeftBody: "A member deleted their ULTM8 account and left your School. Their details have been removed. Their payments, waivers and belt history stay with your School under \"Erased User\".",
     spotOpenedTitle: 'A spot opened up',
     spotOpenedBody: "A spot opened up in {class}. Claim it soon — it goes to the next person on the waitlist if you don't.",
     readyToGradeTitle: 'Ready to grade',
