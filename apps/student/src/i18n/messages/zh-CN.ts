@@ -1108,6 +1108,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "签署免责声明",
     screen: {
       notEnrolled: "你还没有在任何学校注册 — 注册后，免责声明会显示在这里。",
       loadError: "无法加载免责声明，请重试。",

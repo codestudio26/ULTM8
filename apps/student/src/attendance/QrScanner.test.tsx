@@ -30,6 +30,9 @@ jest.mock('expo-camera', () => ({
 }));
 jest.mock('./attendanceQueries', () => ({ useScanAttendance: jest.fn() }));
 
+const mockNavigate = jest.fn();
+jest.mock('@react-navigation/native', () => ({ useNavigation: () => ({ navigate: mockNavigate }) }));
+
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
 
 const VALID_TOKEN = (() => {
@@ -115,5 +118,27 @@ describe('QrScanner', () => {
     const { getByText } = await render(<QrScanner />);
     expect(getByText('Checked in ✓')).toBeTruthy();
     expect(getByText('Scan again')).toBeTruthy();
+  });
+
+  it('does not offer "Sign the waiver" for another refusal', async () => {
+    const { ApiError } = jest.requireActual<typeof import('@ultm8/api-client')>('@ultm8/api-client');
+    mocked(require('expo-camera').useCameraPermissions).mockReturnValue([{ granted: true }, jest.fn(), jest.fn()]);
+    Object.assign(scan, { isError: true, error: new ApiError(403, 'CHECK_IN_PAYMENT_OVERDUE', 'Overdue.') });
+    const { queryByText } = await render(<QrScanner />);
+    expect(queryByText('Sign the waiver')).toBeNull();
+  });
+
+  // Decision 442 item 1. A check-in that books a place first can be refused by booking's own code.
+  it.each([
+    ['CHECK_IN_WAIVER_REQUIRED', 'This School needs a signed waiver before checking in.'],
+    ['WAIVER_REQUIRED', 'This School needs a signed waiver before booking a class or checking in.'],
+  ])('offers "Sign the waiver" when check-in is refused with %s', async (code, text) => {
+    const { ApiError } = jest.requireActual<typeof import('@ultm8/api-client')>('@ultm8/api-client');
+    mocked(require('expo-camera').useCameraPermissions).mockReturnValue([{ granted: true }, jest.fn(), jest.fn()]);
+    Object.assign(scan, { isError: true, error: new ApiError(403, code, text) });
+    const { getByText } = await render(<QrScanner />);
+    expect(getByText(text)).toBeTruthy();
+    await fireEvent.press(getByText('Sign the waiver'));
+    expect(mockNavigate).toHaveBeenCalledWith('Waivers', undefined);
   });
 });

@@ -58,6 +58,8 @@ Totals: **238 pass, 0 fail, 0 blocked, 11 notes** (`results-mw58gp4v.json` 235 =
 
 **Built (Decision 441 items 2 and 3, 6 Nov 2026, branch `feature/no-card-staff-confirm-and-switch`):** D2 — Branch Staff with the School's "Let Branch Staff record payments" switch confirm a member's Pix, cash or bank-transfer order for their own branches' students (`mayConfirmDeskOrder()` in `charge-abilities.ts`, `PaymentsService.confirmTransaction`), from the student's Payments card. D3 — "When it ends, switch to" is hidden on the plan form and in the member app where the School has no Stripe payment account; the API refuses a new next plan there and ignores `agreeToPlanSwitch` when buying.
 
+**Built (Decision 442 item 1, 6 Nov 2026, branch `feature/waiver-import-and-sign-button`):** D5 follow-ups. Imported past attendance skips "Waiver must be signed before booking or check-in" (`personCheckInRefusal`'s `importedPast`, passed by `completeInTx` for `importPast`); the other check-in rules about the person still apply. The member app shows a "Sign the waiver" button next to the waiver refusal (`WAIVER_REQUIRED` when booking, joining or claiming a waiting-list place; `CHECK_IN_WAIVER_REQUIRED` at check-in by scan or code), opening My waivers, or a parent's child's waivers, for that School (`apps/student/src/waivers/SignWaiverButton.tsx`).
+
 ## Follow-ups (not blocking, no decision needed unless you want one)
 
 > **Built (6 Nov 2026, Decision 441 items 7–10, branch `fix/rehearsal-small-fixes`):** F1 (country in the reader's language, at display time), F2 (IBJJF templates name belts in the School's language), F3 (deletion notice in the member's own time zone) and F6 (`NOT_AN_INSTRUCTOR`). F5 stays as designed (item 11).

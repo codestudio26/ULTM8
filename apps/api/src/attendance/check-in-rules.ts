@@ -167,6 +167,11 @@ export function overdueBlocksCheckIn(dueDay: string, blockOverdueDays: number, t
  *
  * Returns null when the person may check in, else the first rule that
  * refuses, with its reason.
+ *
+ * `opts.importedPast`: imported past attendance (Decision 423 items 5–7).
+ * Those visits already happened, so "Waiver must be signed before booking or
+ * check-in" doesn't refuse them (Decision 442 item 1); every other rule here
+ * still applies, judged as of today (Decision 423 item 6).
  */
 export async function personCheckInRefusal(
   prismaJobs: PrismaJobsService,
@@ -175,6 +180,7 @@ export async function personCheckInRefusal(
   bookingId: string,
   now: Date = new Date(),
   classBranchId?: string | null,
+  opts: PersonCheckInOptions = {},
 ): Promise<CheckInRefusal | null> {
   // `classBranchId`: the Class's Branch as staff already read it, so the
   // Class isn't re-read here in the student's context (DE-4).
@@ -185,8 +191,10 @@ export async function personCheckInRefusal(
       : (await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, select: { class: { select: { branchId: true } } } })).class.branchId;
   const rules = await loadCheckInRules(prismaJobs, booking.schoolId);
   // Decision 441 item 5: a School with no waiver in use stops nobody.
+  // Decision 442 item 1: nor does it stop imported past attendance.
   if (
     rules.requireWaiver &&
+    !opts.importedPast &&
     !(await hasCountingWaiverSignature(tx, studentId, booking.schoolId)) &&
     (await schoolHasWaiverInUse(prismaJobs, booking.schoolId))
   ) {
@@ -226,6 +234,13 @@ export async function personCheckInRefusal(
   return null;
 }
 
+/** How personCheckInRefusal is asked. */
+export interface PersonCheckInOptions {
+  /** The check-in is imported past attendance (Decision 442 item 1): the
+   * waiver rule is skipped, the other rules apply. */
+  importedPast?: boolean;
+}
+
 /** personCheckInRefusal, thrown as a 403 carrying its code and reason. */
 export async function assertPersonMayCheckIn(
   prismaJobs: PrismaJobsService,
@@ -233,8 +248,9 @@ export async function assertPersonMayCheckIn(
   studentId: string,
   bookingId: string,
   classBranchId?: string | null,
+  opts: PersonCheckInOptions = {},
 ): Promise<void> {
-  const refusal = await personCheckInRefusal(prismaJobs, tx, studentId, bookingId, new Date(), classBranchId);
+  const refusal = await personCheckInRefusal(prismaJobs, tx, studentId, bookingId, new Date(), classBranchId, opts);
   if (refusal) throw new ForbiddenException(refusal);
 }
 

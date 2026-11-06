@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 import { type components } from '@ultm8/api-client';
 import { Button, InlineError, TextField } from '../components/ui';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
-import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isWaiverRefusal } from '../lib/apiErrorMessage';
 import { formatClassTimes } from '../lib/formatDate';
 import { classZone } from '../lib/classTime';
 import { useEnterCheckInCode } from '../attendance/attendanceQueries';
@@ -11,6 +11,7 @@ import { useCancelBooking, useMyBookings } from './bookingQueries';
 import { BookingGuests } from './BookingGuests';
 import { MyWaitlist } from './MyWaitlist';
 import { useT } from '../i18n/I18nProvider';
+import { SignWaiverButton } from '../waivers/SignWaiverButton';
 import type { TranslationKey } from '../i18n/types';
 
 const BOOKING_STATUS: Record<string, TranslationKey> = {
@@ -30,6 +31,8 @@ function BookingRow({ booking }: { booking: Booking }) {
   const cancelBooking = useCancelBooking();
   const enterCode = useEnterCheckInCode();
   const [error, setError] = useState<string | null>(null);
+  // Decision 442 item 1: check-in was refused for want of a signed waiver.
+  const [waiverNeeded, setWaiverNeeded] = useState(false);
   // FOUND ON REVIEW (same class of bug as ConsentTierRow's withdraw confirmation):
   // Alert.alert is a documented no-op on React Native Web, this app's own
   // interactive-test target, so this confirmation never actually appeared there —
@@ -57,6 +60,7 @@ function BookingRow({ booking }: { booking: Booking }) {
     if (cancelBooking.isPending) return;
     setConfirming(false);
     setError(null);
+    setWaiverNeeded(false);
     try {
       await cancelBooking.mutateAsync(booking.id);
     } catch (err) {
@@ -67,6 +71,7 @@ function BookingRow({ booking }: { booking: Booking }) {
   function openCodeEntry() {
     if (enterCode.isPending) return;
     setError(null);
+    setWaiverNeeded(false);
     setCode('');
     setEnteringCode(true);
   }
@@ -79,12 +84,14 @@ function BookingRow({ booking }: { booking: Booking }) {
   async function submitCode() {
     if (enterCode.isPending) return;
     setError(null);
+    setWaiverNeeded(false);
     try {
       await enterCode.mutateAsync({ classId: booking.classId, code });
       setEnteringCode(false);
       setCode('');
     } catch (err) {
       setError(getApiErrorMessage(err, t('bookings.myBookings.codeError')));
+      setWaiverNeeded(isWaiverRefusal(err));
     }
   }
 
@@ -96,6 +103,7 @@ function BookingRow({ booking }: { booking: Booking }) {
       {booking.schoolName ? <Text style={{ color: '#5F6368', fontSize: 12 }}>{booking.schoolName}</Text> : null}
       <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>{t('bookings.myBookings.status', { status: BOOKING_STATUS[booking.status] ? t(BOOKING_STATUS[booking.status]) : booking.status })}</Text>
       {error ? <InlineError message={error} /> : null}
+      {error && waiverNeeded ? <SignWaiverButton schoolId={booking.schoolId} /> : null}
       {booking.status === 'UPCOMING' && booking.attendees.length > 0 ? <BookingGuests bookingId={booking.id} /> : null}
 
       {booking.status === 'UPCOMING' && confirming ? (

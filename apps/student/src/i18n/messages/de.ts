@@ -1119,6 +1119,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "Haftungsausschluss unterschreiben",
     screen: {
       notEnrolled: "Du bist noch an keiner Schule eingeschrieben — Haftungsausschlüsse erscheinen hier, sobald du es bist.",
       loadError: "Haftungsausschlüsse konnten nicht geladen werden — bitte versuche es erneut.",

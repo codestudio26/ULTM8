@@ -1119,6 +1119,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "Vrijwaring ondertekenen",
     screen: {
       notEnrolled: "Je bent nog niet ingeschreven bij een school — vrijwaringen verschijnen hier zodra je dat bent.",
       loadError: "Vrijwaringen konden niet worden geladen — probeer het opnieuw.",

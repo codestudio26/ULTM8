@@ -1135,6 +1135,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "Assinar o termo",
     screen: {
       notEnrolled: "Você ainda não está matriculado em uma Escola — os termos de responsabilidade aparecem aqui quando estiver.",
       loadError: "Não foi possível carregar os termos de responsabilidade — tente novamente.",
