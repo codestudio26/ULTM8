@@ -249,7 +249,7 @@ export const server = {
     planPlaceHeldTitle: "A place is free",
     planPlaceHeldBody: "A place on {plan} is held for you until {until}. Buy it before then, or it goes to the next person waiting.",
     planSwitchNoticeTitle: "Your plan is about to change",
-    planSwitchNoticeBody: "Your {plan} ends on {date}. Then {next} starts and {amount} is charged to your saved card. Without a saved card, it simply ends.",
+    planSwitchNoticeBody: "Your {plan} ends on {date}. Then {next} starts and {amount} is charged to your saved card. Without a saved card, or if {next} is full, it simply ends and nothing is charged.",
     planSwitchedTitle: "Your plan has changed",
     planSwitchedBody: "Your {plan} has ended and {next} has started. {amount} was charged to your saved card.",
     planSwitchEndedTitle: "Membership ended",

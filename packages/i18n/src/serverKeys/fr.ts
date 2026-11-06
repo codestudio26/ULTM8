@@ -275,7 +275,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "Une place s'est libérée",
     planPlaceHeldBody: "Une place dans {plan} vous est réservée jusqu'au {until}. Achetez-la avant, sinon elle passe à la personne suivante.",
     planSwitchNoticeTitle: "Votre formule va changer",
-    planSwitchNoticeBody: "Votre {plan} se termine le {date}. Ensuite {next} commence et {amount} est débité de votre carte enregistrée. Sans carte enregistrée, elle se termine simplement.",
+    planSwitchNoticeBody: "Votre {plan} se termine le {date}. Ensuite {next} commence et {amount} est débité de votre carte enregistrée. Sans carte enregistrée, ou si {next} est complet, elle se termine simplement et rien n’est débité.",
     planSwitchedTitle: "Votre formule a changé",
     planSwitchedBody: "Votre {plan} est terminée et {next} a commencé. {amount} a été débité de votre carte enregistrée.",
     planSwitchEndedTitle: "Abonnement terminé",

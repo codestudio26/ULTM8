@@ -247,7 +247,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "空きが出ました",
     planPlaceHeldBody: "{plan}の席を{until}まで確保しています。それまでに購入しないと、次に待っている方に移ります。",
     planSwitchNoticeTitle: "まもなくプランが切り替わります",
-    planSwitchNoticeBody: "{plan}は{date}に終了します。その後{next}が始まり、保存済みのカードに{amount}が請求されます。保存済みのカードがない場合は、そのまま終了します。",
+    planSwitchNoticeBody: "{plan}は{date}に終了します。その後{next}が始まり、保存済みのカードに{amount}が請求されます。保存済みのカードがない場合や{next}が満員の場合は、そのまま終了し、何も請求されません。",
     planSwitchedTitle: "プランが切り替わりました",
     planSwitchedBody: "{plan}が終了し、{next}が始まりました。保存済みのカードに{amount}が請求されました。",
     planSwitchEndedTitle: "会員プランが終了しました",
