@@ -10,6 +10,9 @@ export const memberships = {
     signAndContinue: "Sign and continue",
     signError: "The contract could not be signed.",
     loadError: "The contract could not be loaded.",
+    // Decision 435 item 16.
+    endsAfterTerm: "This membership stops when the minimum term ends. It doesn't renew.",
+    endsOn: "Ends after its minimum term, on {date}. It doesn't renew.",
     cancelFee: "Your contract's minimum term runs until {date}. If your membership ends before then, the early-exit fee of {amount} is added to your balance.",
   },
   recharge: {
@@ -29,6 +32,7 @@ export const memberships = {
     oneTime: 'One time',
     classesRemaining: { one: '{count} class remaining', other: '{count} classes remaining' },
     expires: 'Expires {date}',
+    awaitingFirstCheckIn: "Starts on your first check-in",
     empty: 'No memberships yet.',
     loadError: 'Failed to load memberships — please try again.',
     cancelSubscription: 'Cancel subscription',
@@ -61,6 +65,15 @@ export const memberships = {
   },
   planRow: {
     joinFirst: 'Join this School to buy.',
+    full: "Full",
+    joinWaitlist: "Join the waiting list",
+    onWaitlist: "You're number {position} on the waiting list.",
+    leaveWaitlist: "Leave the waiting list",
+    placeHeld: "A place is held for you until {date}. Buy it before then.",
+    waitlistError: "Could not update the waiting list — please try again.",
+    startsOnFirstCheckIn: "Starts on your first check-in",
+    fixedDates: "Runs {from} – {to}",
+    agreeToSwitch: "When it ends, switch me to {plan} ({price}), charged to my saved card. I'll be told before; without a saved card it simply ends.",
     /** Decision 435: a paid plan's joining fee, charged with a member's first plan at the School only. */
     joiningFee: '+ {amount} joining fee on your first plan at this School',
     cardSurcharge: "+ {amount} card surcharge when paying by card",

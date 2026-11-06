@@ -7,6 +7,7 @@ import { useT } from '../i18n/I18nProvider';
 import { useAuth, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import { ClassBookingRow } from '../bookings/ClassBookingRow';
 import { MembershipPlanRow } from '../memberships/MembershipPlanRow';
+import { usePlanAvailability } from '../memberships/planWaitlistQueries';
 import { rememberPlanNames } from '../memberships/planNameCache';
 import { MyRankSection } from '../ranks/MyRankSection';
 import { useDisciplines, useStudentRanks } from '../ranks/rankQueries';
@@ -32,6 +33,8 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
   const { academyId } = route.params;
   const { claims } = useAuth();
   const enrolled = useEnrolledSchoolIds().includes(academyId);
+  // Decision 435 items 10-15: which limited plans are full, and the member's place in line.
+  const availability = usePlanAvailability(academyId, undefined, enrolled);
   const isGuardian = useIsGuardian();
   // A student who joined without adding a belt can add one later (Decision 137).
   const beltOptions = useDeclareOptions(enrolled ? claims?.sub ?? null : null, academyId);
@@ -124,7 +127,14 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
           <View style={{ marginTop: 16 }}>
             <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.membershipPlans')}</Text>
             {academy.membershipPlans.map((plan) => (
-              <MembershipPlanRow key={plan.id} plan={plan} schoolId={academyId} canBuy={enrolled} />
+              <MembershipPlanRow
+                key={plan.id}
+                plan={plan}
+                schoolId={academyId}
+                canBuy={enrolled}
+                availability={availability.data?.items.find((a) => a.planId === plan.id)}
+                switchTo={academy.membershipPlans.find((p) => p.id === plan.switchToPlanId)}
+              />
             ))}
           </View>
         ) : null}

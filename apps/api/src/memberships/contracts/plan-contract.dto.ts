@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min } from 'class-validator';
 
 const MAX_MINOR_UNITS = 2147483647;
 
@@ -29,6 +29,14 @@ export class SetPlanContractDto {
   @Min(0)
   @Max(MAX_MINOR_UNITS)
   earlyExitFee?: number | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Decision 435 item 16. Subscription only, with a minimum term: the Subscription stops on the day the minimum term ends (freezes added) instead of renewing. Default false.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  endsAfterMinimumTerm?: boolean;
 }
 
 export class PlanContractForMemberQueryDto {
@@ -80,6 +88,7 @@ export class PlanContractDto {
   @ApiProperty() body!: string;
   @ApiProperty({ type: Number, nullable: true }) minimumTermMonths!: number | null;
   @ApiProperty({ type: Number, nullable: true, description: "Minor units, before the School's tax." }) earlyExitFee!: number | null;
+  @ApiProperty({ description: 'Decision 435 item 16: the Subscription stops when the minimum term ends instead of renewing.' }) endsAfterMinimumTerm!: boolean;
   @ApiProperty({ type: String, nullable: true }) currency!: string | null;
   @ApiProperty() version!: number;
 }
@@ -103,6 +112,7 @@ export class PlanContractSignatureDto {
   @ApiProperty({ description: 'The exact text signed.' }) contractBody!: string;
   @ApiProperty({ type: Number, nullable: true }) minimumTermMonths!: number | null;
   @ApiProperty({ type: Number, nullable: true }) earlyExitFee!: number | null;
+  @ApiProperty({ description: 'Decision 435 item 16: signed with "ends after the minimum term".' }) endsAfterMinimumTerm!: boolean;
   @ApiProperty({ type: String, nullable: true }) currency!: string | null;
   @ApiProperty() contractVersion!: number;
   @ApiProperty({ description: 'SHA-256 of the signed text.' }) contractSha256!: string;

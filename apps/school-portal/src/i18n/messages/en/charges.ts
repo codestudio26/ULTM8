@@ -367,6 +367,10 @@ export const charges = {
     waivedLine: "Fee waived in grading on {date} by {name}",
     cancelledLine: "Fee cancelled in grading on {date} by {name}",
   },
+  // Decision 435 item 19 — a signed contract's early-exit fee.
+  earlyExitFee: {
+    badge: "Early-exit fee",
+  },
   lateFee: {
     badge: "Late fee",
     forInvoice: "For invoice {invoice} ({description}), due {date}",

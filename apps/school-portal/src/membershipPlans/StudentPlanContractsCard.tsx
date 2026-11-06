@@ -49,6 +49,7 @@ function SignedContractRow({ contract: c, studentId }: { contract: PlanContractS
             months: c.minimumTermMonths,
             amount: formatMoney(c.earlyExitFee ?? 0, c.currency),
           })}
+          {c.endsAfterMinimumTerm ? ` · ${t('membershipPlans.contract.endsAfterTermLine')}` : ''}
         </div>
       ) : null}
       <Button variant="secondary" onClick={() => setOpen((o) => !o)}>

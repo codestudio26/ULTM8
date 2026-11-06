@@ -7,6 +7,8 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { StripeClientService } from '../src/payments/stripe-client.service';
+import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
+import { applyDueMinimumTermEnds } from '../src/memberships/contracts/minimum-term';
 
 /**
  * Decision 316 item 6 — contracts on plans: the owner writes the contract and
@@ -42,6 +44,7 @@ describeIfDb('Contracts on plans (Decision 316 item 6)', () => {
   const schoolIds: string[] = [];
   const userIds: string[] = [];
   const periodEnd = new Date(Math.floor((Date.now() + 20 * DAY) / 1000) * 1000);
+  let stripeUpdate: jest.Mock;
 
   const sign = (user: { id: string; email: string }, grants: Array<Record<string, unknown>>) => jwt.sign({ sub: user.id, email: user.email, grants });
 
@@ -93,8 +96,8 @@ describeIfDb('Contracts on plans (Decision 316 item 6)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.listen(0);
-    const stripeCancel = jest.fn().mockResolvedValue({ cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } });
-    jest.spyOn(app.get(StripeClientService), 'scopedClient').mockReturnValue({ subscriptions: { update: stripeCancel } } as never);
+    stripeUpdate = jest.fn().mockResolvedValue({ cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } });
+    jest.spyOn(app.get(StripeClientService), 'scopedClient').mockReturnValue({ subscriptions: { update: stripeUpdate } } as never);
 
     // A Cash School: a contract plan can be bought end to end without Stripe.
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Contracts School', defaultCurrency: 'GBP' } });
@@ -117,6 +120,7 @@ describeIfDb('Contracts on plans (Decision 316 item 6)', () => {
     await superuser.chargeAllocation.deleteMany({ where });
     await superuser.charge.deleteMany({ where });
     await superuser.planContractSignature.deleteMany({ where });
+    await superuser.membershipFreeze.deleteMany({ where });
     await superuser.transaction.deleteMany({ where });
     await superuser.membership.deleteMany({ where });
     await superuser.membershipPlan.deleteMany({ where });
@@ -162,6 +166,23 @@ describeIfDb('Contracts on plans (Decision 316 item 6)', () => {
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: outsider.id, schoolId: otherSchool.id } });
       const tokenOutsider = sign(outsider, [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: otherSchool.id, branchId: null }]);
       expect((await setContract(plan.id, { body: 'Terms' }, tokenOutsider)).status).toBe(404);
+    });
+
+    it('Decision 435 item 16: "ends after the minimum term" needs a term, is a new version, and is signed with the contract', async () => {
+      const plan = await mkPlan(school.id, { type: 'SUBSCRIPTION' });
+      expect((await setContract(plan.id, { body: 'Terms', endsAfterMinimumTerm: true })).status).toBe(400);
+      const v1 = await setContract(plan.id, { body: 'Terms', minimumTermMonths: 6 });
+      expect(v1.body).toMatchObject({ contractVersion: 1, contractEndsAfterMinimumTerm: false });
+      const v2 = await setContract(plan.id, { body: 'Terms', minimumTermMonths: 6, endsAfterMinimumTerm: true });
+      expect(v2.body).toMatchObject({ contractVersion: 2, contractEndsAfterMinimumTerm: true });
+      const { token } = await mkStudent('ends-after');
+      const read = await http().get(`/v1/membership-plans/${plan.id}/contract`).set(auth(token));
+      expect(read.body).toMatchObject({ endsAfterMinimumTerm: true, minimumTermMonths: 6, version: 2 });
+      const signed = await signContract(plan.id, token, { contractVersion: 2 });
+      expect(signed.status).toBe(200);
+      expect(signed.body.endsAfterMinimumTerm).toBe(true);
+      // Removing the contract clears it.
+      expect((await setContract(plan.id, { body: null })).body.contractEndsAfterMinimumTerm).toBe(false);
     });
 
     it("a plan type change can't leave a minimum term on a non-Subscription plan", async () => {
@@ -264,7 +285,11 @@ describeIfDb('Contracts on plans (Decision 316 item 6)', () => {
 
   describe('cancelling early', () => {
     /** A Subscription bought with a signed contract, as the webhook would have left it. */
-    async function mkContractSubscription(studentId: string, startDate: Date, terms: { minimumTermMonths: number | null; earlyExitFee: number | null }) {
+    async function mkContractSubscription(
+      studentId: string,
+      startDate: Date,
+      terms: { minimumTermMonths: number | null; earlyExitFee: number | null; endsAfterMinimumTerm?: boolean },
+    ) {
       const plan = await mkPlan(school.id, { type: 'SUBSCRIPTION', contractBody: 'Twelve months', contractVersion: 1, contractMinimumTermMonths: terms.minimumTermMonths, contractEarlyExitFee: terms.earlyExitFee });
       const membership = await superuser.membership.create({
         data: { id: randomUUID(), studentId, membershipPlanId: plan.id, schoolId: school.id, frequency: 'RECURRING', startDate, stripeSubscriptionId: `sub_${randomUUID()}` },
@@ -277,6 +302,7 @@ describeIfDb('Contracts on plans (Decision 316 item 6)', () => {
         data: {
           id: randomUUID(), schoolId: school.id, membershipPlanId: plan.id, studentId, signedById: studentId, signerFullName: 'Pat', signatureText: 'Pat',
           planTitle: plan.title, planType: 'SUBSCRIPTION', contractBody: 'Twelve months', minimumTermMonths: terms.minimumTermMonths, earlyExitFee: terms.earlyExitFee,
+          endsAfterMinimumTerm: terms.endsAfterMinimumTerm ?? false,
           currency: 'GBP', contractVersion: 1, contractSha256: 'x'.repeat(64), usedAt: new Date(), transactionId: order.id,
         },
       });
@@ -311,6 +337,92 @@ describeIfDb('Contracts on plans (Decision 316 item 6)', () => {
       const m = await mkContractSubscription(byOwner.user.id, new Date(Date.now() - 30 * DAY), { minimumTermMonths: 12, earlyExitFee: 5000 });
       expect((await cancel(m.id, tokenOwner)).status).toBe(201);
       expect(await superuser.charge.count({ where: { studentId: byOwner.user.id } })).toBe(0);
+    });
+
+    /** A start date whose 12-month term ends `daysFromNow` days from now. */
+    const startForTermEndIn = (daysFromNow: number) => {
+      const d = new Date(Date.now() + daysFromNow * DAY);
+      d.setUTCFullYear(d.getUTCFullYear() - 1);
+      return d;
+    };
+    const day = (offset: number) => new Date(`${new Date(Date.now() + offset * DAY).toISOString().slice(0, 10)}T00:00:00.000Z`);
+    async function freeze(m: { id: string; studentId: string }, startOffset: number, days: number) {
+      await superuser.membershipFreeze.create({
+        data: { id: randomUUID(), membershipId: m.id, schoolId: school.id, studentId: m.studentId, startsAt: day(startOffset), endsAt: day(startOffset + days), status: 'APPROVED' },
+      });
+    }
+
+    it('Decision 435 items 17 and 19: a freeze pushes the term back, so leaving after the plain term but before the pushed one owes the fee, labelled as an early-exit fee', async () => {
+      const { user, token } = await mkStudent('frozen-leaver');
+      // The plain term ends in 10 days; the paid period (the Stripe stub) in 20.
+      const m = await mkContractSubscription(user.id, startForTermEndIn(10), { minimumTermMonths: 12, earlyExitFee: 3000 });
+      await freeze(m, -60, 30);
+      const mine = await http().get('/v1/memberships/me').set(auth(token));
+      const row = mine.body.items.find((r: { id: string }) => r.id === m.id);
+      expect(Math.round((new Date(row.contract.minimumTermEndsAt).getTime() - Date.now()) / DAY)).toBe(40);
+      expect(row.contract.endsAfterMinimumTerm).toBe(false);
+
+      expect((await cancel(m.id, token)).status).toBe(201);
+      const charges = await http().get(`/v1/schools/${school.id}/students/${user.id}/charges`).set(auth(tokenOwner));
+      expect(charges.status).toBe(200);
+      expect(charges.body.charges).toHaveLength(1);
+      expect(charges.body.charges[0]).toMatchObject({ earlyExitFee: true, unitAmount: 3000 });
+      // The member sees the same label.
+      const own = await http().get(`/v1/students/${user.id}/charges`).set(auth(token));
+      expect(own.status).toBe(200);
+      const ownSchool = own.body.schools.find((s: { schoolId: string }) => s.schoolId === school.id);
+      expect(ownSchool.charges[0].earlyExitFee).toBe(true);
+      // Any other charge isn't labelled.
+      const plain = await mkStudent('plain-charge');
+      const made = await http()
+        .post(`/v1/schools/${school.id}/students/${plain.user.id}/charges`)
+        .set(auth(tokenOwner))
+        .send({ description: 'Gi', amount: 2000, dueDate: new Date().toISOString().slice(0, 10) });
+      expect(made.status).toBe(201);
+      const plainList = await http().get(`/v1/schools/${school.id}/students/${plain.user.id}/charges`).set(auth(tokenOwner));
+      expect(plainList.body.charges).toHaveLength(1);
+      expect(plainList.body.charges[0].earlyExitFee).toBe(false);
+    });
+
+    it('Decision 435 item 16: the sweep sets an "ends after the minimum term" Subscription to stop on the day the term ends, once it is near, freezes added', async () => {
+      const jobs = app.get(PrismaJobsService);
+      const logger = { error: jest.fn() };
+      const soon = await mkStudent('term-soon');
+      const mSoon = await mkContractSubscription(soon.user.id, startForTermEndIn(5), { minimumTermMonths: 12, earlyExitFee: 1000, endsAfterMinimumTerm: true });
+      const later = await mkStudent('term-later');
+      const mLater = await mkContractSubscription(later.user.id, startForTermEndIn(60), { minimumTermMonths: 12, earlyExitFee: null, endsAfterMinimumTerm: true });
+      const frozen = await mkStudent('term-frozen');
+      const mFrozen = await mkContractSubscription(frozen.user.id, startForTermEndIn(5), { minimumTermMonths: 12, earlyExitFee: null, endsAfterMinimumTerm: true });
+      await freeze(mFrozen, -40, 20);
+      const renews = await mkStudent('term-renews');
+      const mRenews = await mkContractSubscription(renews.user.id, startForTermEndIn(5), { minimumTermMonths: 12, earlyExitFee: null });
+
+      stripeUpdate.mockClear();
+      await applyDueMinimumTermEnds(jobs, app.get(StripeClientService), logger);
+      expect(logger.error).not.toHaveBeenCalled();
+
+      const termEnd = new Date(mSoon.startDate);
+      termEnd.setUTCFullYear(termEnd.getUTCFullYear() + 1);
+      const termEndS = Math.floor(termEnd.getTime() / 1000);
+      const stopped = await superuser.membership.findUniqueOrThrow({ where: { id: mSoon.id } });
+      expect(stopped.cancelAt?.getTime()).toBe(termEndS * 1000);
+      expect(stopped.cancelledById).toBeNull();
+      const forSoon = stripeUpdate.mock.calls.filter((c) => c[0] === mSoon.stripeSubscriptionId);
+      expect(forSoon).toHaveLength(1);
+      expect(forSoon[0][1]).toEqual({ cancel_at: termEndS, proration_behavior: 'none' });
+      // Not near yet, pushed out by a freeze, or renewing as usual: untouched.
+      for (const m of [mLater, mFrozen, mRenews]) {
+        expect((await superuser.membership.findUniqueOrThrow({ where: { id: m.id } })).cancelAt).toBeNull();
+        expect(stripeUpdate.mock.calls.filter((c) => c[0] === m.stripeSubscriptionId)).toHaveLength(0);
+      }
+      // Done once: a second run changes nothing; the member cancelling then
+      // changes nothing either and owes no fee (it ends at the term).
+      await applyDueMinimumTermEnds(jobs, app.get(StripeClientService), logger);
+      expect((await cancel(mSoon.id, soon.token)).status).toBe(201);
+      expect(stripeUpdate.mock.calls.filter((c) => c[0] === mSoon.stripeSubscriptionId)).toHaveLength(1);
+      expect(await superuser.charge.count({ where: { studentId: soon.user.id } })).toBe(0);
+      const mine = await http().get('/v1/memberships/me').set(auth(soon.token));
+      expect(mine.body.items.find((r: { id: string }) => r.id === mSoon.id).contract.endsAfterMinimumTerm).toBe(true);
     });
   });
 });

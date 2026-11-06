@@ -52,8 +52,11 @@ export function usePurchaseMembership() {
       stepUpToken,
       studentId,
       contractSignatureId,
+      agreeToPlanSwitch,
     }: {
       planId: string;
+      /** Decision 435 item 9: the member agrees to switch to the plan's next plan when it ends. */
+      agreeToPlanSwitch?: boolean;
       /** Decision 316 item 6: the signed contract, for a plan that has one. */
       contractSignatureId?: string;
       payWithSavedCard?: boolean;
@@ -69,7 +72,9 @@ export function usePurchaseMembership() {
             ...(payWithSavedCard ? { payWithSavedCard: true } : useHostedCheckout ? { useHostedCheckout: true } : {}),
             ...(studentId ? { studentId } : {}),
             ...(contractSignatureId ? { contractSignatureId } : {}),
+            ...(agreeToPlanSwitch ? { agreeToPlanSwitch: true } : {}),
           },
+
           headers: stepUpToken ? { 'X-Step-Up-Token': stepUpToken } : undefined,
         }),
       ),

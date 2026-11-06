@@ -121,16 +121,16 @@ including a filled-in example where possible. Empty screens hide most fields.
 | P6 | Pricing type: **Per-session** | 🟡 | Class Pack covers prepaid credits; pay-per-session is different |
 | P7 | Pricing type: Trial | ✅ | `TRIAL_MEMBERSHIP` (length set by the School; the 30-day caps were removed by Decision 410) |
 | P8 | Frequency "every N weeks/months" + **max number of payments** | 🟡 | `billingCycleAnchorDay` exists; no custom interval and no payment-count cap |
-| P9 | Start membership on first check-in | ❌ | |
+| P9 | Start membership on first check-in | ✅ **5 Nov 2026: built** (Decision 316 item 4, answered by Decision 435 items 7-9; branch `feature/plan-dates`, migration `20270225100100_plan_dates`): Class Packs, Weekly Passes and Trials, never Subscriptions | |
 | P10 | **Sign-up fee** | ✅ **5 Nov 2026: built** (Decision 316 item 3, answered by Decision 435 items 1-6; branch `feature/plan-joining-fee`, migration `20270225100000_plan_joining_fee`): a fixed joining fee on a paid plan, on a member's first-ever plan at the School only, with the plan's tax and card surcharge, refundable or not per plan; switched on or off per School | |
 | P11 | **Late fee + grace days** ("when 5 days overdue") | ❌ | |
 | P12 | **Family discounts** (2nd / 3rd / 4th+ member, % or fixed) | ❌ | |
-| P13 | Duration: Ongoing / Limited (N months) / Specific dates (enrolment periods) | 🟡 | `expiryDurationDays` covers "limited"; fixed-date enrolment periods ❌ |
-| P14 | End-of-term action: cancel / convert to another plan | ❌ | |
+| P13 | Duration: Ongoing / Limited (N months) / Specific dates (enrolment periods) | ✅ | `expiryDurationDays` covers "limited"; fixed-date plans **5 Nov 2026: built** (Decision 316 item 4, answered by Decision 435 items 7-9; branch `feature/plan-dates`, migration `20270225100100_plan_dates`): one-off payment, sold before and during at full price |
+| P14 | End-of-term action: cancel / convert to another plan | ✅ **5 Nov 2026: built** (Decision 316 item 4, answered by Decision 435 items 7-9; branch `feature/plan-dates`, migration `20270225100100_plan_dates`): switch to a one-off plan with the member's agreement when buying, charged to the saved card, else it ends | |
 | P15 | **Cancellation fee** | ✅ | `MembershipPlan.cancellationCharge` (+ `refundFeeDate`) |
 | P16 | Show only to visitors / exclude from trial reporting | ❌ | Depends on M6 |
 | P17 | **Income categories** (GL code, department code, income category) | 🟡 | **5 Nov 2026: built** in Decision 316.10's smaller shape: a School-named category on a plan, a charge and a recurring charge, in the Transactions CSV; no GL/department codes (branch `feature/plan-options-income-categories`, migration `20270212000001_income_categories`) |
-| P18 | Access to training: attendance limit, membership capacity, which programmes | 🟡 | `disciplineIds`, `scopedClassId`, `classesIncluded` exist; per-plan member capacity ❌ |
+| P18 | Access to training: attendance limit, membership capacity, which programmes | 🟡 | `disciplineIds`, `scopedClassId`, `classesIncluded` exist; per-plan member capacity ✅ **5 Nov 2026: built** (Decision 316 item 5, answered by Decision 435 items 10-15; branch `feature/plan-member-limit`, migration `20270225100200_plan_member_limit`): a member limit per plan with a waiting list and a 24-hour held place |
 | P19 | Membership templates on the empty state (3x Week, Unlimited, Training Camp, 10-Class Punch Card) | 🟡 | Frontend-only once the plan types exist |
 
 **Questions:**
@@ -406,7 +406,7 @@ the current check-in rules in code before deciding.
 | # | Gymdesk element | ULTM8 | Notes |
 |---|---|---|---|
 | DOC1 | Document templates list: name, members, signatures, last updated, edit/delete | ✅ | Waivers + Signatures panel |
-| DOC2 | General **contracts** beyond liability waivers | ✅ **5 Nov 2026: built** (Decision 316 item 6, feature/plan-contracts): a contract on a plan, its own entity (`PlanContractSignature`), signed in the app before buying, never deleted (retention not decided) | Waiver entity only. Decision 253: waivers are never deleted, so Gymdesk's **delete** icon must be **archive** in ULTM8 |
+| DOC2 | General **contracts** beyond liability waivers | ✅ **5 Nov 2026: built** (Decision 316 item 6, feature/plan-contracts): a contract on a plan, its own entity (`PlanContractSignature`), signed in the app before buying, never deleted (retention not decided). **5 Nov 2026: follow-ups built** (Decision 435 items 16, 17, 19, feature/contract-followups): "ends after the minimum term" option, freezes push the term end back, "Early-exit fee" invoice label. Item 18 (keep signed contracts by the waiver rule, Decision 426) **still to build**: needs its own change to the retention job and the contract table's delete rules, after the lawyer's answer | Waiver entity only. Decision 253: waivers are never deleted, so Gymdesk's **delete** icon must be **archive** in ULTM8 |
 
 **Questions:** DOC2: are contracts a Waiver type or a separate entity? Retention period is still an open legal item (CLAUDE.md "Current phase").
 

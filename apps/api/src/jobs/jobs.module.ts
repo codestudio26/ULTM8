@@ -32,6 +32,8 @@ import { ChargeOverdueNoticeProcessor, ChargeOverdueNoticeScheduler } from './ch
 import { ChargeDueReminderProcessor, ChargeDueReminderScheduler } from './charge-due-reminder.processor';
 import { LateFeeProcessor, LateFeeScheduler } from './late-fee.processor';
 import { MembershipExpiryReminderProcessor, MembershipExpiryReminderScheduler } from './membership-expiry-reminder.processor';
+import { PlanWaitlistProcessor, PlanWaitlistScheduler } from './plan-waitlist.processor';
+import { PlanSwitchProcessor, PlanSwitchScheduler } from './plan-switch.processor';
 import { StudentAbsenceAlertProcessor, StudentAbsenceAlertScheduler } from './student-absence-alert.processor';
 import { MembershipEndingReportProcessor, MembershipEndingReportScheduler } from './membership-ending-report.processor';
 import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-recurring.processor';
@@ -259,6 +261,10 @@ import { CardSurchargeCountryRemovalProcessor } from './card-surcharge-country-r
     LateFeeScheduler,
     MembershipExpiryReminderProcessor,
     MembershipExpiryReminderScheduler,
+    PlanWaitlistProcessor,
+    PlanWaitlistScheduler,
+    PlanSwitchProcessor,
+    PlanSwitchScheduler,
     StudentAbsenceAlertProcessor,
     StudentAbsenceAlertScheduler,
     MembershipEndingReportProcessor,

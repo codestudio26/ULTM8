@@ -877,6 +877,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Assinar e continuar",
       signError: "Não foi possível assinar o contrato.",
       loadError: "Não foi possível carregar o contrato.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Esta assinatura termina quando o prazo mínimo acaba. Ela não renova.",
+      endsOn: "Termina após o prazo mínimo, em {date}. Não renova.",
       cancelFee: "O prazo mínimo do seu contrato vai até {date}. Se sua assinatura terminar antes, a multa por saída antecipada de {amount} é lançada no seu saldo.",
     },
     recharge: {
@@ -893,6 +896,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Única",
       classesRemaining: { one: "{count} aula restante", other: "{count} aulas restantes" },
       expires: "Expira em {date}",
+      awaitingFirstCheckIn: "Começa no seu primeiro check-in",
       empty: "Nenhuma matrícula ainda.",
       loadError: "Não foi possível carregar as matrículas — tente novamente.",
       cancelSubscription: "Cancelar assinatura",
@@ -925,6 +929,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Entre nesta escola para comprar.",
+      full: "Lotado",
+      joinWaitlist: "Entrar na lista de espera",
+      onWaitlist: "Você é o número {position} na lista de espera.",
+      leaveWaitlist: "Sair da lista de espera",
+      placeHeld: "Uma vaga está reservada para você até {date}. Compre antes disso.",
+      waitlistError: "Não foi possível atualizar a lista de espera — tente novamente.",
+      startsOnFirstCheckIn: "Começa no seu primeiro check-in",
+      fixedDates: "De {from} a {to}",
+      agreeToSwitch: "Ao terminar, mude-me para {plan} ({price}), cobrado no meu cartão salvo. Serei avisado antes; sem cartão salvo, ele simplesmente termina.",
       joiningFee: "+ {amount} de taxa de matrícula no seu primeiro plano nesta escola",
       cardSurcharge: "+ {amount} de acréscimo ao pagar com cartão",
       classesIncluded: { one: "{count} aula", other: "{count} aulas" },
@@ -1224,6 +1237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Taxa de graduação",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Multa por saída antecipada",
     },
     lateFee: {
       label: "Multa por atraso",

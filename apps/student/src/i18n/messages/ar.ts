@@ -911,6 +911,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "وقّع وتابع",
       signError: "تعذّر توقيع العقد.",
       loadError: "تعذّر تحميل العقد.",
+      // Decision 435 item 16.
+      endsAfterTerm: "تتوقف هذه العضوية عند انتهاء المدة الدنيا، ولا تتجدد.",
+      endsOn: "تنتهي بعد مدتها الدنيا في {date}، ولا تتجدد.",
       cancelFee: "تستمر المدة الدنيا لعقدك حتى {date}. إذا انتهت عضويتك قبل ذلك، تُضاف رسوم الخروج المبكر البالغة {amount} إلى رصيدك.",
     },
     recharge: {
@@ -934,6 +937,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "تتبقّى {count} حصة",
       },
       expires: "تنتهي في {date}",
+      awaitingFirstCheckIn: "تبدأ عند أول تسجيل حضور لك",
       empty: "لا توجد عضويات بعد.",
       loadError: "تعذّر تحميل العضويات، يُرجى المحاولة مرة أخرى.",
       cancelSubscription: "إلغاء الاشتراك",
@@ -966,6 +970,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "انضم إلى هذه المدرسة للشراء.",
+      full: "ممتلئة",
+      joinWaitlist: "الانضمام إلى قائمة الانتظار",
+      onWaitlist: "ترتيبك {position} في قائمة الانتظار.",
+      leaveWaitlist: "مغادرة قائمة الانتظار",
+      placeHeld: "مكان محجوز لك حتى {date}. اشترِه قبل ذلك.",
+      waitlistError: "تعذر تحديث قائمة الانتظار — حاول مرة أخرى.",
+      startsOnFirstCheckIn: "تبدأ عند أول تسجيل حضور لك",
+      fixedDates: "من {from} إلى {to}",
+      agreeToSwitch: "عند انتهائها، انقلني إلى {plan} ({price}) مع الخصم من بطاقتي المحفوظة. سأُبلَّغ مسبقاً؛ بدون بطاقة محفوظة تنتهي ببساطة.",
       joiningFee: "+ {amount} رسوم انضمام على أول خطة لك في هذه المدرسة",
       cardSurcharge: "+ {amount} رسوم إضافية عند الدفع بالبطاقة",
       classesIncluded: {
@@ -1299,6 +1312,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "رسوم الترقية",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "رسوم الخروج المبكر",
     },
     lateFee: {
       label: "رسوم تأخير",

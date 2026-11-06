@@ -861,6 +861,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Ondertekenen en doorgaan",
       signError: "Het contract kon niet worden ondertekend.",
       loadError: "Het contract kon niet worden geladen.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Dit lidmaatschap stopt als de minimale looptijd eindigt. Het wordt niet verlengd.",
+      endsOn: "Eindigt na de minimale looptijd, op {date}. Het wordt niet verlengd.",
       cancelFee: "De minimale looptijd van je contract loopt tot {date}. Eindigt je lidmaatschap eerder, dan komen de opzegkosten van {amount} op je saldo.",
     },
     recharge: {
@@ -877,6 +880,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Eenmalig",
       classesRemaining: { one: "Nog {count} les over", other: "Nog {count} lessen over" },
       expires: "Verloopt op {date}",
+      awaitingFirstCheckIn: "Begint bij je eerste check-in",
       empty: "Nog geen lidmaatschappen.",
       loadError: "Lidmaatschappen konden niet worden geladen — probeer het opnieuw.",
       cancelSubscription: "Abonnement opzeggen",
@@ -909,6 +913,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Word lid van deze school om te kopen.",
+      full: "Vol",
+      joinWaitlist: "Op de wachtlijst",
+      onWaitlist: "Je staat op plek {position} van de wachtlijst.",
+      leaveWaitlist: "Van de wachtlijst af",
+      placeHeld: "Er is een plek voor je vastgehouden tot {date}. Koop hem daarvoor.",
+      waitlistError: "De wachtlijst kon niet worden bijgewerkt — probeer het opnieuw.",
+      startsOnFirstCheckIn: "Begint bij je eerste check-in",
+      fixedDates: "Van {from} tot {to}",
+      agreeToSwitch: "Aan het eind overstappen op {plan} ({price}), afgeschreven van mijn opgeslagen kaart. Ik hoor het vooraf; zonder opgeslagen kaart eindigt het gewoon.",
       joiningFee: "+ {amount} inschrijfgeld bij je eerste abonnement bij deze school",
       cardSurcharge: "+ {amount} kaarttoeslag bij betalen met een kaart",
       classesIncluded: { one: "{count} les", other: "{count} lessen" },
@@ -1224,6 +1237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Promotievergoeding",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Kosten voor vroegtijdig opzeggen",
     },
     lateFee: {
       label: "Te-laatvergoeding",

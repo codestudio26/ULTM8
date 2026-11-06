@@ -874,6 +874,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Signer et continuer",
       signError: "Le contrat n'a pas pu être signé.",
       loadError: "Le contrat n'a pas pu être chargé.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Cette adhésion s'arrête à la fin de la durée minimale. Elle ne se renouvelle pas.",
+      endsOn: "Se termine après sa durée minimale, le {date}. Elle ne se renouvelle pas.",
       cancelFee: "La durée minimale de ton contrat court jusqu'au {date}. Si ton adhésion se termine avant, les frais de résiliation anticipée de {amount} sont ajoutés à ton solde.",
     },
     recharge: {
@@ -894,6 +897,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "{count} cours restants",
       },
       expires: "Expire le {date}",
+      awaitingFirstCheckIn: "Commence à votre premier check-in",
       empty: "Aucune adhésion pour le moment.",
       loadError: "Impossible de charger les adhésions — veuillez réessayer.",
       cancelSubscription: "Résilier l'abonnement",
@@ -926,6 +930,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Rejoignez cette école pour acheter.",
+      full: "Complet",
+      joinWaitlist: "Rejoindre la liste d'attente",
+      onWaitlist: "Vous êtes numéro {position} sur la liste d'attente.",
+      leaveWaitlist: "Quitter la liste d'attente",
+      placeHeld: "Une place vous est réservée jusqu'au {date}. Achetez-la avant.",
+      waitlistError: "Impossible de mettre à jour la liste d'attente — réessayez.",
+      startsOnFirstCheckIn: "Commence à votre premier check-in",
+      fixedDates: "Du {from} au {to}",
+      agreeToSwitch: "À la fin, me passer à {plan} ({price}), débité de ma carte enregistrée. Je serai prévenu avant ; sans carte enregistrée, elle se termine simplement.",
       joiningFee: "+ {amount} de frais d'inscription sur votre première formule dans cette école",
       cardSurcharge: "+ {amount} de frais si vous payez par carte",
       classesIncluded: { one: "{count} cours", many: "{count} cours", other: "{count} cours" },
@@ -1242,6 +1255,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Frais de promotion",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Frais de résiliation anticipée",
     },
     lateFee: {
       label: "Frais de retard",

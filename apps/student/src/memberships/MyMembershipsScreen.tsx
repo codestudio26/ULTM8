@@ -38,6 +38,10 @@ export function MembershipRow({ membership, freezable }: { membership: Membershi
   const schoolCancels = !schoolAllows(useMemberAppSettings().data, membership.schoolId, 'cancelMembership');
   const cancellable = membership.frequency === 'RECURRING' && membership.status === 'ACTIVE' && !membership.cancelAt;
   const canCancel = cancellable && !schoolCancels;
+  // Decision 435 item 16: a contract signed to end after the minimum term;
+  // once the School's sweep sets it to stop, cancelAt is that same day.
+  const termEnd = membership.contract?.endsAfterMinimumTerm ? new Date(membership.contract.minimumTermEndsAt).getTime() : null;
+  const endsAtTerm = termEnd !== null && (!membership.cancelAt || Math.abs(new Date(membership.cancelAt).getTime() - termEnd) < 2 * 60 * 1000);
 
   async function confirmCancel() {
     if (cancel.isPending) return;
@@ -68,8 +72,15 @@ export function MembershipRow({ membership, freezable }: { membership: Membershi
       {membership.classesRemaining != null ? (
         <Text style={{ color: '#5F6368', fontSize: 12 }}>{t('memberships.myMemberships.classesRemaining', { count: membership.classesRemaining })}</Text>
       ) : null}
+      {/* Decision 435 item 7: its days start on the first check-in. */}
+      {membership.awaitingFirstCheckIn ? (
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{t('memberships.myMemberships.awaitingFirstCheckIn')}</Text>
+      ) : null}
       {membership.expiryDate ? <Text style={{ color: '#9AA0A6', fontSize: 11, marginTop: 2 }}>{t('memberships.myMemberships.expires', { date: formatDate(membership.expiryDate) })}</Text> : null}
-      {membership.cancelAt && membership.status === 'ACTIVE' ? (
+      {endsAtTerm && membership.status === 'ACTIVE' ? (
+        // Decision 435 item 16: signed to end after the minimum term (not a cancellation).
+        <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{t('memberships.contract.endsOn', { date: formatDate(membership.contract!.minimumTermEndsAt) })}</Text>
+      ) : membership.cancelAt && membership.status === 'ACTIVE' ? (
         <Text style={{ color: '#B06000', fontSize: 12, marginTop: 2 }}>{t('memberships.myMemberships.cancelledEnds', { date: formatDate(membership.cancelAt) })}</Text>
       ) : null}
       {/* Decision 404: freezing; the controls when it can be frozen now, else just its freeze. */}

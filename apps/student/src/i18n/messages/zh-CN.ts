@@ -851,6 +851,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "签署并继续",
       signError: "无法签署合同。",
       loadError: "无法加载合同。",
+      // Decision 435 item 16.
+      endsAfterTerm: "此会员资格在最短期限结束时终止，不会续订。",
+      endsOn: "最短期限结束后于 {date} 终止，不会续订。",
       cancelFee: "你的合同最短期限到 {date}。如果会员资格在此之前结束，{amount} 的提前退出费将计入你的余额。",
     },
     recharge: {
@@ -867,6 +870,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "一次性",
       classesRemaining: { other: "剩余 {count} 节课" },
       expires: "{date} 到期",
+      awaitingFirstCheckIn: "从你首次签到开始",
       empty: "还没有会员。",
       loadError: "无法加载会员，请重试。",
       cancelSubscription: "取消订阅",
@@ -899,6 +903,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "加入这所学校后才能购买。",
+      full: "已满",
+      joinWaitlist: "加入候补名单",
+      onWaitlist: "你在候补名单中排第 {position} 位。",
+      leaveWaitlist: "退出候补名单",
+      placeHeld: "名额为你保留到 {date}，请在此之前购买。",
+      waitlistError: "无法更新候补名单，请重试。",
+      startsOnFirstCheckIn: "从你首次签到开始",
+      fixedDates: "{from} 至 {to}",
+      agreeToSwitch: "结束时将我转为{plan}（{price}），从我保存的卡中扣款。我会提前收到通知；没有保存的卡则直接结束。",
       joiningFee: "在本学校的第一个方案需加收入会费 {amount}",
       cardSurcharge: "刷卡支付另加 {amount} 附加费",
       classesIncluded: { other: "{count} 节课" },
@@ -1213,6 +1226,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "晋级费",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "提前退出费",
     },
     lateFee: {
       label: "滞纳金",

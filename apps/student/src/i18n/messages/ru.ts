@@ -889,6 +889,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Подписать и продолжить",
       signError: "Не удалось подписать договор.",
       loadError: "Не удалось загрузить договор.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Это членство прекращается по окончании минимального срока. Оно не продлевается.",
+      endsOn: "Заканчивается после минимального срока, {date}. Не продлевается.",
       cancelFee: "Минимальный срок вашего договора — до {date}. Если членство закончится раньше, плата за досрочный выход {amount} добавится к вашему балансу.",
     },
     recharge: {
@@ -910,6 +913,7 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "Осталось {count} занятия",
       },
       expires: "Действует до {date}",
+      awaitingFirstCheckIn: "Начнётся с вашей первой отметки",
       empty: "Абонементов пока нет.",
       loadError: "Не удалось загрузить абонементы — попробуйте ещё раз.",
       cancelSubscription: "Отменить подписку",
@@ -942,6 +946,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Вступите в эту школу, чтобы купить.",
+      full: "Мест нет",
+      joinWaitlist: "Встать в лист ожидания",
+      onWaitlist: "Вы номер {position} в листе ожидания.",
+      leaveWaitlist: "Выйти из листа ожидания",
+      placeHeld: "Место закреплено за вами до {date}. Купите его до этого времени.",
+      waitlistError: "Не удалось обновить лист ожидания — попробуйте ещё раз.",
+      startsOnFirstCheckIn: "Начнётся с вашей первой отметки",
+      fixedDates: "С {from} по {to}",
+      agreeToSwitch: "По окончании перевести меня на {plan} ({price}) с оплатой сохранённой картой. Меня предупредят заранее; без сохранённой карты он просто закончится.",
       joiningFee: "+ {amount} вступительный взнос при первом тарифе в этой школе",
       cardSurcharge: "+ {amount} надбавка при оплате картой",
       classesIncluded: {
@@ -1269,6 +1282,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Сбор за повышение",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Плата за досрочный выход",
     },
     lateFee: {
       label: "Пеня за просрочку",

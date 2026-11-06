@@ -169,7 +169,18 @@ export function usePlanMembers(planId: string | null) {
   });
 }
 
+/** Decision 435 items 10-15: a plan's places taken and its waiting list, first
+ * in line first. Owner only. */
+export function usePlanWaitlist(planId: string | null) {
+  return useQuery({
+    queryKey: ['membershipPlan', planId, 'waitlist'],
+    queryFn: () => unwrap(apiClient.GET('/v1/membership-plans/{id}/waitlist', { params: { path: { id: planId! } } })),
+    enabled: !!planId,
+  });
+}
+
 /** A Student's Memberships at the School, newest first. Owner only. */
+
 export function useStudentMemberships(schoolId: string | null, studentId: string | null) {
   return useQuery({
     queryKey: ['studentMemberships', schoolId, studentId],

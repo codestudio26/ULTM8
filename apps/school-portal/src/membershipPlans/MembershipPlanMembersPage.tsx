@@ -6,7 +6,7 @@ import { useOwnedSchoolId } from '../auth/AuthContext';
 import { formatLocale } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 import { OwnerOnly } from './MembershipPlansPage';
-import { useMembershipPlan, usePlanMembers, type PlanMemberResponse } from './membershipPlanQueries';
+import { useMembershipPlan, usePlanMembers, usePlanWaitlist, type PlanMemberResponse } from './membershipPlanQueries';
 
 function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
@@ -21,6 +21,8 @@ export function MembershipPlanMembersPage() {
   const t = useT();
   const plan = useMembershipPlan(schoolId ? id ?? null : null);
   const members = usePlanMembers(schoolId ? id ?? null : null);
+  // Decision 435 items 10-15: the places taken and the waiting list.
+  const waitlist = usePlanWaitlist(schoolId && plan.data?.memberLimit != null ? id ?? null : null);
 
   if (!schoolId) return <OwnerOnly />;
   if (plan.isLoading || members.isLoading) return <Spinner />;
@@ -72,6 +74,30 @@ export function MembershipPlanMembersPage() {
           />
         )}
       </Card>
+      {plan.data?.memberLimit != null && waitlist.data ? (
+        <Card>
+          <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('membershipPlans.members.waitlistTitle')}</h2>
+          <p style={{ color: 'var(--text-muted)', margin: '0 0 12px' }} data-testid="plan-places">
+            {t('membershipPlans.members.limitLine', { taken: waitlist.data.placesTaken, limit: plan.data.memberLimit })}
+          </p>
+          {waitlist.data.items.length === 0 ? (
+            <p style={{ margin: 0 }}>{t('membershipPlans.members.waitlistEmpty')}</p>
+          ) : (
+            <ol data-testid="plan-waitlist" style={{ margin: 0, paddingInlineStart: 20 }}>
+              {waitlist.data.items.map((e) => (
+                <li key={e.id}>
+                  <Link to={`/students/${e.studentId}`}>{`${e.firstName} ${e.surname}`.trim()}</Link>
+                  {' · '}
+                  {e.status === 'OFFERED' && e.offerExpiresAt
+                    ? t('membershipPlans.members.waitlistHeld', { date: new Date(e.offerExpiresAt).toLocaleString(formatLocale()) })
+                    : t('membershipPlans.members.waitlistWaiting', { date: formatDay(e.joinedAt) })}
+                </li>
+              ))}
+            </ol>
+          )}
+        </Card>
+      ) : null}
     </>
   );
 }
+

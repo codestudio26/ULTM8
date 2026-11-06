@@ -6,6 +6,7 @@ import { MEMBERSHIP_EXPIRY_SWEEP_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from
 import { cancelFutureBookingsFundedByExpiredMembership } from './membership-booking-cancellation';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { applyDueFreezeBilling } from '../memberships/freeze/freeze-billing';
+import { applyDueMinimumTermEnds } from '../memberships/contracts/minimum-term';
 
 /** Same cadence as BookingNoShowProcessingScheduler's own sweep — frequent
  * enough that a Student's stale Bookings against a long-expired Membership
@@ -185,5 +186,11 @@ export class MembershipExpirySweepProcessor extends WorkerHost {
     // Membership.status.
     const shifted = await applyDueFreezeBilling(this.prismaJobs, this.stripeClient, this.logger, now);
     if (shifted > 0) this.logger.log(`membership-expiry-sweep: moved the next charge of ${shifted} frozen Subscription(s).`);
+
+    // Decision 435 item 16: a Subscription signed with "ends after the
+    // minimum term" is set to stop on the day the term ends (freezes added)
+    // once that day is near (minimum-term.ts).
+    const stopping = await applyDueMinimumTermEnds(this.prismaJobs, this.stripeClient, this.logger, now);
+    if (stopping > 0) this.logger.log(`membership-expiry-sweep: set ${stopping} Subscription(s) to stop at the end of their minimum term.`);
   }
 }

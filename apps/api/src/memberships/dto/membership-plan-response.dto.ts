@@ -78,6 +78,24 @@ export class MembershipPlanResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Goes up by one each time the contract changes; null = no contract.' })
   contractVersion!: number | null;
 
+  @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 435 items 10-15: the most members this plan can have; null = no limit.' })
+  memberLimit!: number | null;
+
+  @ApiProperty({ description: "Decision 435 item 7: the membership's days start on the member's first check-in with it." })
+  startsOnFirstCheckIn!: boolean;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 8: the first day of a plan on fixed dates (the day at UTC midnight); null when it has none.' })
+  fixedStartDate!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 8: the last day of a plan on fixed dates.' })
+  fixedEndDate!: string | null;
+
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 9: the plan a member can agree, when buying, to switch to when this one ends.' })
+  switchToPlanId!: string | null;
+
+  @ApiProperty({ description: 'Decision 435 item 16: the Subscription stops when the minimum term ends instead of renewing.' })
+  contractEndsAfterMinimumTerm!: boolean;
+
   @ApiProperty()
   createdAt!: string;
 

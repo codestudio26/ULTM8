@@ -11,6 +11,15 @@ import * as planContractQueries from './planContractQueries';
 jest.mock('./membershipQueries', () => ({ usePurchaseMembership: jest.fn(), useInvalidateMyMemberships: jest.fn() }));
 jest.mock('../payments/paymentMethodQueries', () => ({ usePaymentMethod: jest.fn() }));
 jest.mock('../auth/stepUpQueries', () => ({ useVerifyStepUp: jest.fn() }));
+// Decision 435 items 10-15: the waiting-list buttons' mutations.
+const mockWaitlistJoin = jest.fn();
+const mockWaitlistLeave = jest.fn();
+jest.mock('./planWaitlistQueries', () => ({
+  usePlanWaitlist: () => ({
+    join: { mutate: mockWaitlistJoin, isPending: false, error: null },
+    leave: { mutate: mockWaitlistLeave, isPending: false, error: null },
+  }),
+}));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn() }));
 // Decision 316 item 6: the contract signer's queries and its signature pad
 // (a WebView canvas this environment can't run; see WaiverRow.test.tsx).
@@ -73,6 +82,24 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
     expect(getByText('+ £1.25 card surcharge when paying by card')).toBeTruthy();
   });
 
+  it('shows when a plan starts or runs, and buys with the switch only once the member agrees (Decision 435)', async () => {
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
+    const plan = { ...CLASS_PACK, cardSurchargeAmount: 0, startsOnFirstCheckIn: true, switchToPlanId: 'plan-9' };
+    const { getByText, getByRole, unmount } = await render(
+      <MembershipPlanRow plan={plan as never} schoolId="school-1" switchTo={{ title: 'Ten classes', price: 6000, currency: 'gbp' }} />,
+    );
+    expect(getByText('Starts on your first check-in')).toBeTruthy();
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenLastCalledWith(expect.objectContaining({ planId: 'plan-1', agreeToPlanSwitch: false }), expect.anything());
+    await fireEvent(getByRole('switch'), 'valueChange', true);
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenLastCalledWith(expect.objectContaining({ agreeToPlanSwitch: true }), expect.anything());
+    await unmount();
+    const camp = { ...CLASS_PACK, cardSurchargeAmount: 0, fixedStartDate: '2027-07-01T00:00:00.000Z', fixedEndDate: '2027-08-11T00:00:00.000Z' };
+    const { getByText: text } = await render(<MembershipPlanRow plan={camp as never} schoolId="school-1" />);
+    expect(text(/^Runs /)).toBeTruthy();
+  });
+
   it('shows the joining fee on a first plan, and nothing when the plan has none (Decision 435)', async () => {
     mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
     const { getByText, unmount } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0, joiningFee: 2500 } as never} schoolId="school-1" />);
@@ -80,6 +107,27 @@ describe('MembershipPlanRow — Decision 236 pay-with-saved-card', () => {
     await unmount();
     const { queryByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0, joiningFee: null } as never} schoolId="school-1" />);
     expect(queryByText(/joining fee/)).toBeNull();
+  });
+
+  it('a full plan offers its waiting list instead of Purchase; a place held shows Purchase again (Decision 435)', async () => {
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: false } } as never);
+    const plan = { ...CLASS_PACK, cardSurchargeAmount: 0, memberLimit: 10 };
+    const full = { planId: 'plan-1', full: true, waitlist: null };
+    const { getByText, queryByText, unmount } = await render(<MembershipPlanRow plan={plan as never} schoolId="school-1" availability={full as never} />);
+    expect(queryByText('Purchase')).toBeNull();
+    await fireEvent.press(getByText('Join the waiting list'));
+    expect(mockWaitlistJoin).toHaveBeenCalledWith({ planId: 'plan-1', studentId: undefined });
+    await unmount();
+    const waiting = { planId: 'plan-1', full: true, waitlist: { id: 'w', status: 'WAITING', position: 3, offerExpiresAt: null } };
+    const second = await render(<MembershipPlanRow plan={plan as never} schoolId="school-1" forStudentId="kid-1" availability={waiting as never} />);
+    expect(second.getByText("You're number 3 on the waiting list.")).toBeTruthy();
+    await fireEvent.press(second.getByText('Leave the waiting list'));
+    expect(mockWaitlistLeave).toHaveBeenCalledWith({ planId: 'plan-1', studentId: 'kid-1' });
+    await second.unmount();
+    const held = { planId: 'plan-1', full: false, waitlist: { id: 'w', status: 'OFFERED', position: null, offerExpiresAt: '2027-01-02T10:00:00.000Z' } };
+    const third = await render(<MembershipPlanRow plan={plan as never} schoolId="school-1" availability={held as never} />);
+    expect(third.getByText(/A place is held for you until/)).toBeTruthy();
+    expect(third.getByText('Purchase')).toBeTruthy();
   });
 
   it('shows no card surcharge line when there is none (Decision 406)', async () => {

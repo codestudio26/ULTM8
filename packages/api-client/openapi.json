@@ -9577,6 +9577,170 @@
         ]
       }
     },
+    "/v1/membership-plans/{id}/waitlist": {
+      "post": {
+        "operationId": "PlanWaitlistController_join",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanWaitlistMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanWaitlistPlaceDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PlanWaitlistController_leave",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "A parent: the child this is for. Omit for yourself.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanWaitlistLeaveResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PlanWaitlistController_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanWaitlistOwnerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/plan-availability": {
+      "get": {
+        "operationId": "PlanWaitlistController_availability",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "A parent: the child this is for. Omit for yourself.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanAvailabilityResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/income-categories": {
       "get": {
         "operationId": "IncomeCategoriesController_list",
@@ -33093,6 +33257,22 @@
             "type": "boolean",
             "description": "Defaults to false when omitted."
           },
+          "startsOnFirstCheckIn": {
+            "type": "boolean",
+            "description": "Decision 435 item 7: Class Pack, Weekly Pass or Trial only. The membership's days start on the member's first check-in with it, not when it is bought (needs expiryDurationDays). Defaults to false."
+          },
+          "fixedStartDate": {
+            "type": "string",
+            "description": "Decision 435 item 8: Class Pack, Weekly Pass or Trial only. The first day of a plan that runs on fixed dates (YYYY-MM-DD, in the School's time zone), with fixedEndDate, in place of expiryDurationDays. It can be bought before it starts, and after at full price, until its last day."
+          },
+          "fixedEndDate": {
+            "type": "string",
+            "description": "Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD), on or after fixedStartDate."
+          },
+          "switchToPlanId": {
+            "type": "string",
+            "description": "Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one it simply ends."
+          },
           "joiningFee": {
             "type": "number",
             "description": "Decision 435 items 1-6: a one-off joining fee, in the plan's currency (minor units), added to a member's first-ever plan at this School (never a rejoin or a renewal), with the plan's tax and card surcharge. Paid plans only. Charged only while the School has joining fees on (School.joiningFeesEnabled). Omit for none."
@@ -33100,6 +33280,10 @@
           "joiningFeeRefundable": {
             "type": "boolean",
             "description": "Decision 435 item 5: whether the joining fee is refunded together with the membership payment. Defaults to false (never refunded)."
+          },
+          "memberLimit": {
+            "type": "number",
+            "description": "Decision 435 items 10-15: the most members this plan can have (live and frozen members and waiting Cash/Bank payments count). When full, members join its waiting list; owners and staff can still sell over it at the desk. Omit for no limit."
           },
           "incomeCategoryId": {
             "type": "string",
@@ -33242,6 +33426,34 @@
             "nullable": true,
             "description": "Goes up by one each time the contract changes; null = no contract."
           },
+          "memberLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 435 items 10-15: the most members this plan can have; null = no limit."
+          },
+          "startsOnFirstCheckIn": {
+            "type": "boolean",
+            "description": "Decision 435 item 7: the membership's days start on the member's first check-in with it."
+          },
+          "fixedStartDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 8: the first day of a plan on fixed dates (the day at UTC midnight); null when it has none."
+          },
+          "fixedEndDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 8: the last day of a plan on fixed dates."
+          },
+          "switchToPlanId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 9: the plan a member can agree, when buying, to switch to when this one ends."
+          },
+          "contractEndsAfterMinimumTerm": {
+            "type": "boolean",
+            "description": "Decision 435 item 16: the Subscription stops when the minimum term ends instead of renewing."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -33261,6 +33473,8 @@
           "disciplineIds",
           "includesLessons",
           "newMemberBillingStrategy",
+          "startsOnFirstCheckIn",
+          "contractEndsAfterMinimumTerm",
           "createdAt",
           "updatedAt"
         ]
@@ -33314,6 +33528,10 @@
           "termsWaiverRequired": {
             "type": "boolean",
             "description": "Defaults to false when omitted."
+          },
+          "startsOnFirstCheckIn": {
+            "type": "boolean",
+            "description": "Decision 435 item 7: Class Pack, Weekly Pass or Trial only. The membership's days start on the member's first check-in with it, not when it is bought (needs expiryDurationDays). Defaults to false."
           },
           "joiningFeeRefundable": {
             "type": "boolean",
@@ -33381,10 +33599,30 @@
             "nullable": true,
             "description": "One of the School's income categories (Decision 316 item 10). Pass null to clear."
           },
+          "fixedStartDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 8: the first day of a plan on fixed dates (YYYY-MM-DD). Pass null (with fixedEndDate null) to remove the dates."
+          },
+          "fixedEndDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD). Pass null to remove."
+          },
+          "switchToPlanId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to."
+          },
           "joiningFee": {
             "type": "number",
             "nullable": true,
             "description": "Decision 435 items 1-6: the joining fee in the plan's currency (minor units). Pass null to remove it."
+          },
+          "memberLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 435 items 13 and 15: the most members this plan can have. Pass null for no limit. A limit below the current count keeps everyone and closes the plan to new buyers until there is room."
           }
         }
       },
@@ -33593,6 +33831,10 @@
           "contractSignatureId": {
             "type": "string",
             "description": "Decision 316 item 6: required for a plan with a contract — the id from POST /membership-plans/{id}/contract/sign (signed within the last day, not used yet)."
+          },
+          "agreeToPlanSwitch": {
+            "type": "boolean",
+            "description": "Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. Omit or false: it simply ends."
           }
         }
       },
@@ -33645,6 +33887,15 @@
             "type": "string",
             "nullable": true
           },
+          "awaitingFirstCheckIn": {
+            "type": "boolean",
+            "description": "Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then."
+          },
+          "switchToPlanId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -33660,6 +33911,7 @@
           "status",
           "startDate",
           "frequency",
+          "awaitingFirstCheckIn",
           "createdAt",
           "updatedAt"
         ]
@@ -33788,6 +34040,15 @@
             "type": "string",
             "nullable": true
           },
+          "awaitingFirstCheckIn": {
+            "type": "boolean",
+            "description": "Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then."
+          },
+          "switchToPlanId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -33826,6 +34087,7 @@
           "status",
           "startDate",
           "frequency",
+          "awaitingFirstCheckIn",
           "createdAt",
           "updatedAt",
           "planTitle",
@@ -34045,7 +34307,11 @@
         "properties": {
           "minimumTermEndsAt": {
             "type": "string",
-            "description": "When the signed minimum term ends."
+            "description": "When the signed minimum term ends, with any freezes added (Decision 435 item 17)."
+          },
+          "endsAfterMinimumTerm": {
+            "type": "boolean",
+            "description": "Decision 435 item 16: the membership stops when the minimum term ends instead of renewing."
           },
           "earlyExitFee": {
             "type": "number",
@@ -34058,6 +34324,7 @@
         },
         "required": [
           "minimumTermEndsAt",
+          "endsAfterMinimumTerm",
           "earlyExitFee"
         ]
       },
@@ -34110,6 +34377,15 @@
             "type": "string",
             "nullable": true
           },
+          "awaitingFirstCheckIn": {
+            "type": "boolean",
+            "description": "Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then."
+          },
+          "switchToPlanId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -34161,6 +34437,7 @@
           "status",
           "startDate",
           "frequency",
+          "awaitingFirstCheckIn",
           "createdAt",
           "updatedAt",
           "visitPass",
@@ -34582,6 +34859,10 @@
             "type": "number",
             "nullable": true,
             "description": "Subscription only, with a minimum term: the School's fee, in the plan's currency's minor units, put on the member's balance when they cancel and the membership ends before the minimum term does. The School's tax settings apply."
+          },
+          "endsAfterMinimumTerm": {
+            "type": "boolean",
+            "description": "Decision 435 item 16. Subscription only, with a minimum term: the Subscription stops on the day the minimum term ends (freezes added) instead of renewing. Default false."
           }
         }
       },
@@ -34609,6 +34890,10 @@
             "nullable": true,
             "description": "Minor units, before the School's tax."
           },
+          "endsAfterMinimumTerm": {
+            "type": "boolean",
+            "description": "Decision 435 item 16: the Subscription stops when the minimum term ends instead of renewing."
+          },
           "currency": {
             "type": "string",
             "nullable": true
@@ -34624,6 +34909,7 @@
           "body",
           "minimumTermMonths",
           "earlyExitFee",
+          "endsAfterMinimumTerm",
           "currency",
           "version"
         ]
@@ -34730,6 +35016,10 @@
             "type": "number",
             "nullable": true
           },
+          "endsAfterMinimumTerm": {
+            "type": "boolean",
+            "description": "Decision 435 item 16: signed with \"ends after the minimum term\"."
+          },
           "currency": {
             "type": "string",
             "nullable": true
@@ -34760,6 +35050,7 @@
           "contractBody",
           "minimumTermMonths",
           "earlyExitFee",
+          "endsAfterMinimumTerm",
           "currency",
           "contractVersion",
           "contractSha256",
@@ -34778,6 +35069,157 @@
         },
         "required": [
           "data"
+        ]
+      },
+      "PlanWaitlistMemberDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "A parent: the child this is for. Omit for yourself."
+          }
+        }
+      },
+      "PlanWaitlistPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "OFFERED"
+            ],
+            "description": "OFFERED: a place is held for them until offerExpiresAt (24 hours); they can buy the plan now."
+          },
+          "position": {
+            "type": "number",
+            "nullable": true,
+            "description": "Their place in line while WAITING (1 = next); null once offered."
+          },
+          "offerExpiresAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Until when the place is held for them."
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
+      "PlanWaitlistLeaveResponseDto": {
+        "type": "object",
+        "properties": {
+          "left": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "left"
+        ]
+      },
+      "PlanWaitlistOwnerEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "OFFERED"
+            ]
+          },
+          "joinedAt": {
+            "type": "string"
+          },
+          "offerExpiresAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "firstName",
+          "surname",
+          "status",
+          "joinedAt"
+        ]
+      },
+      "PlanWaitlistOwnerResponseDto": {
+        "type": "object",
+        "properties": {
+          "memberLimit": {
+            "type": "number",
+            "nullable": true
+          },
+          "placesTaken": {
+            "type": "number",
+            "description": "Places taken now: live and frozen members, waiting Cash/Bank payments and places held, each person once."
+          },
+          "items": {
+            "description": "Waiting and offered, first in line first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanWaitlistOwnerEntryDto"
+            }
+          }
+        },
+        "required": [
+          "placesTaken",
+          "items"
+        ]
+      },
+      "PlanAvailabilityItemDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string"
+          },
+          "full": {
+            "type": "boolean",
+            "description": "The plan is full for this member: they can join its waiting list but not buy it."
+          },
+          "waitlist": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlanWaitlistPlaceDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "planId",
+          "full"
+        ]
+      },
+      "PlanAvailabilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanAvailabilityItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "IncomeCategoryDto": {
@@ -40559,6 +41001,30 @@
             "nullable": true,
             "description": "Goes up by one each time the contract changes; null = no contract."
           },
+          "memberLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 435 items 10-15: the most members this plan can have; null = no limit."
+          },
+          "startsOnFirstCheckIn": {
+            "type": "boolean",
+            "description": "Decision 435 item 7: the membership's days start on the member's first check-in with it."
+          },
+          "fixedStartDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 8: the first day of a plan on fixed dates (the day at UTC midnight); null when it has none."
+          },
+          "fixedEndDate": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 8: the last day of a plan on fixed dates."
+          },
+          "switchToPlanId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Decision 435 item 9: the plan a member can agree, when buying, to switch to when this one ends."
+          },
           "cardSurchargeAmount": {
             "type": "number",
             "description": "The card surcharge added to price when this plan is paid by card, in the same minor units. 0 when none (always 0 for a Friend Pass). For a Subscription, the surcharge on each monthly payment."
@@ -40572,6 +41038,7 @@
           "price",
           "visible",
           "joiningFeeRefundable",
+          "startsOnFirstCheckIn",
           "cardSurchargeAmount"
         ]
       },
@@ -45683,6 +46150,10 @@
               }
             ]
           },
+          "earlyExitFee": {
+            "type": "boolean",
+            "description": "Decision 435 item 19: this charge is a signed plan contract's early-exit fee, labelled \"Early-exit fee\" in both apps."
+          },
           "refundedAmount": {
             "type": "number",
             "description": "Step 4 (Decision 338 item 3): refunded off its total, to the card, in cash or as credit. A refund never re-opens a charge."
@@ -45715,6 +46186,7 @@
           "overdue",
           "createdAt",
           "cardSurchargeAmount",
+          "earlyExitFee",
           "refundedAmount"
         ]
       },

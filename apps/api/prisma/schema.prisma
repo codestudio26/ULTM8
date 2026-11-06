@@ -298,6 +298,31 @@ enum MembershipPlanType {
   VISIT_PASS
 }
 
+/// Decision 435 items 11 and 14: a place on a full plan's waiting list.
+/// WAITING: in line. OFFERED: a place is held for them until offerExpiresAt
+/// (24 hours). BOUGHT: they bought the plan. EXPIRED: the 24 hours passed;
+/// the place went to the next person. LEFT: they (or a parent) left the list,
+/// or they left the School.
+enum PlanWaitlistStatus {
+  WAITING
+  OFFERED
+  BOUGHT
+  EXPIRED
+  LEFT
+}
+
+/// Decision 316 item 4 / Decision 435 item 9: what happened when a membership
+/// the member agreed to switch reached its end (plan-switch.processor.ts).
+/// SWITCHED: the next plan was charged to the saved card and started.
+/// NO_CARD, DECLINED, NOT_SOLD: it simply ended (no saved card or card
+/// payments; the card was declined; the next plan couldn't be sold).
+enum PlanSwitchOutcome {
+  SWITCHED
+  NO_CARD
+  DECLINED
+  NOT_SOLD
+}
+
 /// Decision 259 — see MembershipPlan.newMemberBillingStrategy's own comment.
 enum NewMemberBillingStrategy {
   FRESH_CYCLE
@@ -561,6 +586,8 @@ model User {
   waiverSignaturesSigned            WaiverSignature[]           @relation("WaiverSignatureSignedBy")
   planContractSignatures            PlanContractSignature[]     @relation("PlanContractSignatureStudent")
   planContractSignaturesSigned      PlanContractSignature[]     @relation("PlanContractSignatureSignedBy")
+  planWaitlistEntries               PlanWaitlistEntry[]         @relation("PlanWaitlistStudent")
+  planWaitlistEntriesJoined         PlanWaitlistEntry[]         @relation("PlanWaitlistJoinedBy")
   favorites                         Favorite[]                  @relation("FavoriteStudent")
   watchHistories                    WatchHistory[]              @relation("WatchHistoryStudent")
   playlists                         Playlist[]                  @relation("PlaylistStudent")
@@ -1388,9 +1415,9 @@ model School {
   /// blocks the delete outright. Decision 426: closing counts as every member
   /// leaving on archivedAt for signed-waiver retention, and once the last
   /// signature is purged the templates and then the School are deleted.
-  archivedAt DateTime?
-  purgeAt    DateTime?
-  purgedAt   DateTime?
+  archivedAt         DateTime?
+  purgeAt            DateTime?
+  purgedAt           DateTime?
   /// Decision 433 (PRIV-1): when the purge ended every role here and deleted
   /// the members' non-financial data of this anonymized School. Null on a
   /// purged School means that is still to do (the daily sweep does it).
@@ -2349,32 +2376,60 @@ model MembershipPlan {
   /// wording it was given. Minimum term and early-exit fee are Subscription
   /// only (the only plan type that can be cancelled). The fee is in the
   /// plan's currency, minor units, before the School's tax.
-  contractBody              String?
-  contractMinimumTermMonths Int?
-  contractEarlyExitFee      Int?
-  contractVersion           Int?
+  contractBody                 String?
+  contractMinimumTermMonths    Int?
+  contractEarlyExitFee         Int?
+  contractVersion              Int?
+  /// Decision 435 item 16: the Subscription stops at the end of the minimum
+  /// term instead of renewing (needs a minimum term; part of the contract's
+  /// version).
+  contractEndsAfterMinimumTerm Boolean @default(false)
 
   /// Decision 316 item 10: the School's income category for this plan, shown
   /// in the Transactions export. Optional; one from the School's own list.
   incomeCategoryId String?
   incomeCategory   IncomeCategory? @relation(fields: [incomeCategoryId], references: [id], onDelete: NoAction)
 
+  /// Decision 316 item 4, as answered by Decision 435 items 7-9 (plan-term.ts).
+  /// startsOnFirstCheckIn: a Class Pack, Weekly Pass or Trial whose days start
+  /// on the member's first check-in with it, not when it is bought.
+  /// fixedStartDate/fixedEndDate: a one-off plan that runs on fixed days (a
+  /// 6-week camp), in place of a number of days; bought before or after it
+  /// starts at full price, never once it is over.
+  /// switchToPlanId: the plan a member can agree, when buying, to switch to
+  /// when this one ends; charged to their saved card, else it simply ends.
+  startsOnFirstCheckIn Boolean          @default(false)
+  fixedStartDate       DateTime?        @db.Date
+  fixedEndDate         DateTime?        @db.Date
+  switchToPlanId       String?
+  switchToPlan         MembershipPlan?  @relation("PlanSwitchTo", fields: [switchToPlanId], references: [id], onDelete: SetNull)
+  switchedFromPlans    MembershipPlan[] @relation("PlanSwitchTo")
   /// Decision 316 item 3 / Decision 435 items 1-6: a one-off joining fee on a
   /// paid plan, in the plan's currency (minor units), added to a member's
   /// first-ever plan at the School only (never a rejoin or a renewal). Null =
   /// none. Charged only while School.joiningFeesEnabled is on. The owner sets
   /// whether it is refunded with the membership payment.
   joiningFee           Int?
-  joiningFeeRefundable Boolean @default(false)
+  joiningFeeRefundable Boolean          @default(false)
+
+  /// Decision 316 item 5, as answered by Decision 435 items 10-15: the most
+  /// members this plan can have (blank = no limit). Live and frozen members
+  /// and Cash/Bank payments still waiting count (plan_places_taken()). When
+  /// full, members join the waiting list (PlanWaitlistEntry) instead; owners
+  /// and staff can still sell over it at the desk. Lowering it below the
+  /// count keeps everyone and closes the plan to new buyers until there is room.
+  memberLimit Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  memberships        Membership[]
-  transactions       Transaction[]
-  priceChanges       MembershipPlanPriceChange[]
-  packRecharges      PackRecharge[]
-  contractSignatures PlanContractSignature[]
+  waitlistEntries        PlanWaitlistEntry[]
+  membershipsSwitchingTo Membership[]                @relation("MembershipSwitchToPlan")
+  memberships            Membership[]
+  transactions           Transaction[]
+  priceChanges           MembershipPlanPriceChange[]
+  packRecharges          PackRecharge[]
+  contractSignatures     PlanContractSignature[]
 
   // Composite index leading with the tenant column (Decision 30).
   @@index([schoolId])
@@ -2506,6 +2561,23 @@ model Membership {
   // Class this Membership can book. Set once at creation from membershipPlan.scopedClassId.
   scopedClassId String?
   scopedClass   Class?  @relation("MembershipScopedClass", fields: [scopedClassId], references: [id])
+
+  /// Decision 435 item 7: bought on a plan that starts on the first check-in
+  /// and not used yet: no expiryDate until that check-in starts its days
+  /// (AttendanceService.completeInTx).
+  awaitingFirstCheckIn Boolean @default(false)
+
+  /// Decision 435 item 9: the plan the member agreed, when buying, to switch
+  /// to when this membership ends (null: it simply ends), and when they
+  /// agreed. plan-switch.processor.ts tells them before (switchNoticeSentAt),
+  /// then claims the switch (switchedAt) and records what happened.
+  switchToPlanId         String?
+  switchToPlan           MembershipPlan?    @relation("MembershipSwitchToPlan", fields: [switchToPlanId], references: [id], onDelete: SetNull)
+  switchAgreedAt         DateTime?
+  switchNoticeSentAt     DateTime?
+  switchedAt             DateTime?
+  switchOutcome          PlanSwitchOutcome?
+  switchedToMembershipId String?
 
   // Friend Pass only — distinguishes a School comp from a paid purchase.
   giftedById String?
@@ -2654,6 +2726,11 @@ model Transaction {
   /// `amount` (and refundedAmount, revenue) stays the plan's own price, so
   /// reports aren't changed by the surcharge.
   surchargeAmount Int @default(0)
+
+  /// Decision 435 item 9: a purchase whose member agreed to switch to this
+  /// plan when the bought one ends. Copied onto the Membership the payment
+  /// creates (card webhook, cash confirmation). A snapshot, not a link.
+  planSwitchToPlanId String?
 
   /// Decision 435 items 2-5: the joining fee this first payment included, as
   /// part of `amount` (so tax, receipts and reports count it with the plan),
@@ -5511,12 +5588,12 @@ model SignUp {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([schoolId, status])
-  @@index([userId])
   // Decision 434 (TXT-9): also a partial unique index, "SignUp_one_waiting_per_email",
   // on (schoolId, email) WHERE status IN ('PENDING', 'INVITED'), made in SQL
   // (migration 20270224000000_sign_up_one_waiting_per_email): Prisma can't declare one.
+
+  @@index([schoolId, status])
+  @@index([userId])
 }
 
 /// Decision 393 (Decision 316 item 7, handover F8): a Class Pack ran out at
@@ -6699,9 +6776,41 @@ model StaffCalendarFeed {
 /// once: purchase() marks it used and links the order (`transactionId`) or,
 /// for a free plan, the Membership. The early-exit fee is worked out from
 /// this copy, never from the plan's current terms. Never deleted by any job:
-/// how long a signed contract is kept is not decided yet.
+/// Decision 435 item 18 keeps signed contracts by the waiver rule (Decision
+/// 426), subject to the lawyer's answer; not applied yet.
 /// RLS: the School's Owner/Manager, or the row's own Student (a Guardian
 /// writes under the child's context, as for waivers).
+/// Decision 316 item 5, as answered by Decision 435 items 10-15: one member
+/// on a full plan's waiting list, first come first served. A parent can add
+/// their child (joinedById is the parent). One open entry (WAITING or
+/// OFFERED) per member and plan. plan-waitlist.processor.ts offers each
+/// freed place to the first person waiting and holds it 24 hours.
+model PlanWaitlistEntry {
+  id String @id @default(uuid())
+
+  schoolId String
+
+  membershipPlanId String
+  membershipPlan   MembershipPlan @relation(fields: [membershipPlanId], references: [id], onDelete: Cascade)
+
+  studentId String
+  student   User   @relation("PlanWaitlistStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  joinedById String
+  joinedBy   User   @relation("PlanWaitlistJoinedBy", fields: [joinedById], references: [id], onDelete: Cascade)
+
+  status         PlanWaitlistStatus @default(WAITING)
+  offeredAt      DateTime?
+  offerExpiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([schoolId])
+  @@index([membershipPlanId, status, createdAt])
+  @@index([studentId])
+}
+
 model PlanContractSignature {
   id String @id @default(uuid())
 
@@ -6722,14 +6831,20 @@ model PlanContractSignature {
   signedAt          DateTime @default(now())
 
   // The copy of what was signed.
-  planTitle         String
-  planType          MembershipPlanType
-  contractBody      String
-  minimumTermMonths Int?
-  earlyExitFee      Int?
-  currency          String?
-  contractVersion   Int
-  contractSha256    String
+  planTitle            String
+  planType             MembershipPlanType
+  contractBody         String
+  minimumTermMonths    Int?
+  earlyExitFee         Int?
+  currency             String?
+  contractVersion      Int
+  contractSha256       String
+  /// Decision 435 item 16: signed with "ends after the minimum term".
+  endsAfterMinimumTerm Boolean            @default(false)
+  /// The membership sweep's bookkeeping: when it set the Subscription to stop
+  /// at the end of the minimum term (freezes added), or found nothing left to
+  /// stop. Null = still to do. Written on the jobs connection only.
+  termEndHandledAt     DateTime?
 
   usedAt        DateTime?
   transactionId String?   @unique

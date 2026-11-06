@@ -861,6 +861,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signAndContinue: "Unterschreiben und weiter",
       signError: "Der Vertrag konnte nicht unterschrieben werden.",
       loadError: "Der Vertrag konnte nicht geladen werden.",
+      // Decision 435 item 16.
+      endsAfterTerm: "Diese Mitgliedschaft endet mit der Mindestlaufzeit. Sie verlängert sich nicht.",
+      endsOn: "Endet nach der Mindestlaufzeit am {date}. Sie verlängert sich nicht.",
       cancelFee: "Die Mindestlaufzeit deines Vertrags läuft bis {date}. Endet deine Mitgliedschaft vorher, wird die Gebühr für vorzeitige Kündigung von {amount} deinem Guthaben belastet.",
     },
     recharge: {
@@ -877,6 +880,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       oneTime: "Einmalig",
       classesRemaining: { one: "{count} Kurs übrig", other: "{count} Kurse übrig" },
       expires: "Läuft ab am {date}",
+      awaitingFirstCheckIn: "Beginnt bei deinem ersten Check-in",
       empty: "Noch keine Mitgliedschaften.",
       loadError: "Mitgliedschaften konnten nicht geladen werden — bitte versuche es erneut.",
       cancelSubscription: "Abo kündigen",
@@ -909,6 +913,15 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Tritt dieser Schule bei, um zu kaufen.",
+      full: "Voll",
+      joinWaitlist: "Auf die Warteliste",
+      onWaitlist: "Du bist Nummer {position} auf der Warteliste.",
+      leaveWaitlist: "Warteliste verlassen",
+      placeHeld: "Ein Platz ist bis {date} für dich reserviert. Kauf ihn vorher.",
+      waitlistError: "Die Warteliste konnte nicht aktualisiert werden — bitte versuche es erneut.",
+      startsOnFirstCheckIn: "Beginnt bei deinem ersten Check-in",
+      fixedDates: "Läuft vom {from} bis {to}",
+      agreeToSwitch: "Am Ende zu {plan} ({price}) wechseln, abgebucht von meiner gespeicherten Karte. Ich werde vorher informiert; ohne gespeicherte Karte endet er einfach.",
       joiningFee: "+ {amount} Aufnahmegebühr beim ersten Tarif an dieser Schule",
       cardSurcharge: "+ {amount} Kartenzuschlag bei Kartenzahlung",
       classesIncluded: { one: "{count} Kurs", other: "{count} Kurse" },
@@ -1224,6 +1237,10 @@ export const messages: PartialMessages<EnglishMessages> = {
     promotionFee: {
       label: "Beförderungsgebühr",
       forRank: "{rank} · {style}",
+    },
+    // Decision 435 item 19.
+    earlyExitFee: {
+      label: "Gebühr für vorzeitige Kündigung",
     },
     lateFee: {
       label: "Säumnisgebühr",
