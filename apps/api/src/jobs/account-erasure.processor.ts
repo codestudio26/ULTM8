@@ -1,14 +1,18 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job, Queue } from 'bullmq';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { cancelPlacesOfLeavingStudent } from '../bookings/leaving-student-cancellation';
+import { eraseMemberFiles } from '../member-files/member-file-erasure';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 import { NotificationDeliveryService } from '../notifications/notification-delivery.service';
 import { AccountDeletionService, hasOwnLogin } from '../account-deletion/account-deletion.service';
 import { deletionFinalEmail, memberLeftNotice } from '../account-deletion/account-deletion-notices';
-import { ACCOUNT_ERASURE_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
+import { ACCOUNT_ERASURE_QUEUE, NOTIFICATION_FANOUT_QUEUE, WAITLIST_CASCADE_PROCESSING_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
 
 /** Daily, after the other purge sweeps (tenant 3am). The 30 days are
@@ -65,6 +69,9 @@ export interface AccountErasureResult {
  * - waits with a child until the parent who asked is erased;
  * - never erases the main owner of a School or Franchise that is still open
  *   (rule 5, checked again; it can't normally happen, the account is locked);
+ * - deletes the files the Schools uploaded for them (stored copy, then row);
+ * - gives up their upcoming bookings and waitlist places at each School, as
+ *   when a School removes a member (no fee, no notice);
  * - deletes the profile photo from storage, sends the member the "your account
  *   has been deleted" email, and tells each School they were a member of
  *   (its owners, through the notification-fanout job, the same channel as
@@ -80,10 +87,12 @@ export class AccountErasureProcessor extends WorkerHost {
 
   constructor(
     private readonly prismaJobs: PrismaJobsService,
+    private readonly prismaApp: PrismaAppService,
     private readonly r2: R2ClientService,
     private readonly delivery: NotificationDeliveryService,
     private readonly accountDeletion: AccountDeletionService,
     @InjectQueue(NOTIFICATION_FANOUT_QUEUE) private readonly fanoutQueue: Queue,
+    @InjectQueue(WAITLIST_CASCADE_PROCESSING_QUEUE) private readonly waitlistCascadeQueue: Queue,
   ) {
     super();
   }
@@ -142,23 +151,62 @@ export class AccountErasureProcessor extends WorkerHost {
 
     // Read before the details go: where to send the email, and which Schools
     // to tell (where they are a member now).
-    const [person, memberships] = await Promise.all([
+    const [person, memberships, files] = await Promise.all([
       this.prismaJobs.user.findUnique({ where: { id: user.id }, select: { email: true } }),
       this.prismaJobs.roleGrant.findMany({
         where: { userId: user.id, role: 'STUDENT', revokedAt: null, schoolId: { not: null } },
         select: { schoolId: true },
         distinct: ['schoolId'],
       }),
+      this.prismaJobs.memberFile.findMany({ where: { studentId: user.id }, select: { id: true } }),
     ]);
     const passcodeHash = await bcrypt.hash(randomUUID(), 12);
     const rows = await this.prismaJobs.$queryRaw<Array<{ erased: boolean; old_photo_url: string | null }>>`
       SELECT * FROM "erase_due_account"(${user.id}, ${passcodeHash})`;
     if (!rows[0]?.erased) return 'skipped';
 
+    const schoolIds = memberships.map((m) => m.schoolId!);
     await this.deletePhoto(user.id, rows[0].old_photo_url);
+    // Files the Schools uploaded for them: the stored copy, then the row (the
+    // function unlinked them; the daily offboarding sweep retries a failure).
+    if (files.length > 0) await eraseMemberFiles(this.prismaJobs, this.r2, this.logger, { id: { in: files.map((f) => f.id) } });
+    await this.giveUpPlaces(user.id, schoolIds);
     if (person && hasOwnLogin(person.email)) await this.sendFinalEmail(user.id, person.email);
-    await this.tellSchools(user.id, memberships.map((m) => m.schoolId!));
+    await this.tellSchools(user.id, schoolIds);
     return 'erased';
+  }
+
+  /**
+   * Their upcoming bookings are cancelled and waitlist places removed at each
+   * School, exactly as when a School removes a member (Decision 343,
+   * cancelPlacesOfLeavingStudent): the credit rule of a staff cancel, no
+   * late-cancellation fee, no money refunded, and no notice (that path sends
+   * none). Run as the School's main owner, the context that may change those
+   * rows; the cancellation is recorded as resolved by the member themselves.
+   * Freed seats go to the waitlist afterwards. A School where it fails is
+   * logged and left; the account itself is already erased.
+   */
+  private async giveUpPlaces(userId: string, schoolIds: string[]): Promise<void> {
+    for (const schoolId of schoolIds) {
+      try {
+        const main = await this.prismaJobs.roleGrant.findFirst({
+          where: { schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
+          orderBy: [{ isMainOwner: 'desc' }, { grantedAt: 'asc' }, { id: 'asc' }],
+          select: { userId: true },
+        });
+        if (!main) continue;
+        const { freedClassIds } = await this.prismaApp.withTenantContext(main.userId, (tx) =>
+          cancelPlacesOfLeavingStudent(tx as Prisma.TransactionClient, schoolId, userId, userId, this.logger),
+        );
+        for (const classId of freedClassIds) {
+          await this.waitlistCascadeQueue.add('seat-freed', { classId }).catch((err: unknown) => {
+            this.logger.warn(`account-erasure: waitlist cascade for Class ${classId} not queued — ${err instanceof Error ? err.message : String(err)}`);
+          });
+        }
+      } catch (err) {
+        this.logger.error(`account-erasure: ${userId}'s bookings at School ${schoolId} not cancelled — ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
   }
 
   private async deletePhoto(userId: string, url: string | null): Promise<void> {

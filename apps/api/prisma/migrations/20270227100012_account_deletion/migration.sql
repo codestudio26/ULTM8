@@ -66,6 +66,20 @@ GRANT UPDATE ("revokedAt", "pausedAt", "pausedById", "updatedAt") ON "RoleGrant"
 GRANT SELECT ("studentId", "signedById", "signerFullName", "signatureText"), UPDATE ("signerFullName", "signatureText", "updatedAt") ON "WaiverSignature" TO ultm8_rls_helper;
 GRANT SELECT ("signedById"), UPDATE ("signerFullName", "signatureText") ON "PlanContractSignature" TO ultm8_rls_helper;
 GRANT INSERT ON "AccountErasureLog" TO ultm8_rls_helper;
+-- The rest of their personal data at each School (owner's answers on #497,
+-- 6 Nov 2026): staff notes, custom fields and statuses, tags, import rows,
+-- invites, and their name copied into older staff activity lines and notices.
+-- Member files are unlinked here and deleted (stored copy first) by the job.
+GRANT SELECT ("studentId"), DELETE ON "StudentNote" TO ultm8_rls_helper;
+GRANT SELECT ("studentId"), DELETE ON "CustomMemberFieldValue" TO ultm8_rls_helper;
+GRANT SELECT ("studentId"), DELETE ON "StudentCustomStatus" TO ultm8_rls_helper;
+GRANT SELECT ("studentId"), DELETE ON "StudentTag" TO ultm8_rls_helper;
+GRANT SELECT ("studentId"), DELETE ON "DataImportRow" TO ultm8_rls_helper;
+GRANT SELECT ("guardianId", "studentId"), DELETE ON "ChildInvite" TO ultm8_rls_helper;
+GRANT SELECT ("email", "acceptedById"), DELETE ON "CoachInvite" TO ultm8_rls_helper;
+GRANT SELECT ("studentId"), UPDATE ("studentId") ON "MemberFile" TO ultm8_rls_helper;
+GRANT SELECT ("actorId", "targetUserId", "details"), UPDATE ("details") ON "StaffActivity" TO ultm8_rls_helper;
+GRANT SELECT ("schoolId", "title", "body"), UPDATE ("title", "body") ON "Notification" TO ultm8_rls_helper;
 
 CREATE FUNCTION "erase_due_account"(p_user_id text, p_passcode_hash text)
 RETURNS TABLE (erased boolean, old_photo_url text)
@@ -76,9 +90,15 @@ AS $$
 DECLARE
   v_photo text;
   v_by text;
+  v_first text;
+  v_surname text;
+  v_email text;
+  v_name text;
+  v_json_name text;
   v_now timestamp(3) := (now() AT TIME ZONE 'UTC');
 BEGIN
-  SELECT u."profilePhotoUrl", u."deletionRequestedById" INTO v_photo, v_by
+  SELECT u."profilePhotoUrl", u."deletionRequestedById", u."firstName", u."surname", u."email"
+    INTO v_photo, v_by, v_first, v_surname, v_email
     FROM "User" u
    WHERE u."id" = p_user_id
      AND u."erasedAt" IS NULL
@@ -89,6 +109,11 @@ BEGIN
     RETURN QUERY SELECT false, NULL::text;
     RETURN;
   END IF;
+
+  -- Their name as other rows copied it ("First Surname", or the first name
+  -- alone when there is no real surname), and as it reads inside JSON.
+  v_name := btrim(CASE WHEN btrim(coalesce(v_surname, '')) IN ('', '.', '-', '_') THEN v_first ELSE v_first || ' ' || v_surname END);
+  v_json_name := substr(to_jsonb(v_name)::text, 2, length(to_jsonb(v_name)::text) - 2);
 
   -- The person: name, contact details, date of birth, photo, passcode and
   -- the rest of the profile go for good. The row stays (with its id) so
@@ -134,6 +159,33 @@ BEGIN
      AND ("signerFullName" IS NOT NULL OR "signatureText" IS NOT NULL);
   UPDATE "PlanContractSignature" SET "signerFullName" = 'Erased User', "signatureText" = 'Erased User'
    WHERE "signedById" = p_user_id;
+
+  -- The rest of their personal data at each School. Attendance and check-in
+  -- history stay (they show the person as "Erased User").
+  DELETE FROM "StudentNote" WHERE "studentId" = p_user_id;
+  DELETE FROM "CustomMemberFieldValue" WHERE "studentId" = p_user_id;
+  DELETE FROM "StudentCustomStatus" WHERE "studentId" = p_user_id;
+  DELETE FROM "StudentTag" WHERE "studentId" = p_user_id;
+  DELETE FROM "DataImportRow" WHERE "studentId" = p_user_id;
+  DELETE FROM "ChildInvite" WHERE "guardianId" = p_user_id OR "studentId" = p_user_id;
+  DELETE FROM "CoachInvite" WHERE "acceptedById" = p_user_id OR lower("email") = lower(v_email);
+  -- Unlinked: the account-erasure job (or the daily offboarding sweep, which
+  -- takes every file with no member) deletes the stored copy, then the row.
+  UPDATE "MemberFile" SET "studentId" = NULL WHERE "studentId" = p_user_id;
+  -- Their name, copied into older staff activity lines about them and into
+  -- notices at their Schools or to their family, becomes "Erased User". A
+  -- name under three characters is too short to replace safely and is left.
+  IF length(v_name) >= 3 THEN
+    UPDATE "StaffActivity" SET "details" = replace("details"::text, v_json_name, 'Erased User')::jsonb
+     WHERE "details" IS NOT NULL
+       AND ("actorId" = p_user_id OR "targetUserId" = p_user_id OR strpos("details"::text, p_user_id) > 0)
+       AND strpos("details"::text, v_json_name) > 0;
+    UPDATE "Notification" SET "title" = replace("title", v_name, 'Erased User'), "body" = replace("body", v_name, 'Erased User')
+     WHERE (strpos("title", v_name) > 0 OR strpos("body", v_name) > 0)
+       AND ("schoolId" IN (SELECT rg."schoolId" FROM "RoleGrant" rg WHERE rg."userId" = p_user_id AND rg."schoolId" IS NOT NULL)
+            OR "userId" IN (SELECT gl."guardianId" FROM "GuardianLink" gl WHERE gl."studentId" = p_user_id
+                            UNION SELECT gl."studentId" FROM "GuardianLink" gl WHERE gl."guardianId" = p_user_id));
+  END IF;
 
   INSERT INTO "AccountErasureLog" ("id", "userId", "event", "requestedById", "at")
   VALUES (gen_random_uuid()::text, p_user_id, 'ERASED', v_by, v_now);

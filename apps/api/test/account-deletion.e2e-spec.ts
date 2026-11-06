@@ -21,6 +21,7 @@ import { StripeClientService } from '../src/payments/stripe-client.service';
 import { AccountErasureProcessor } from '../src/jobs/account-erasure.processor';
 import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 import { assertAccountNotClosing } from '../src/account-deletion/account-closing';
+import { R2ClientService } from '../src/common/object-storage/r2-client.service';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 const DATABASE_URL_APP = process.env.DATABASE_URL_APP;
@@ -150,6 +151,22 @@ describeIfDb('Delete my account', () => {
       await superuser.waiver.deleteMany({ where: { schoolId: id } });
       await superuser.transaction.deleteMany({ where: { schoolId: id } });
       await superuser.recurringCharge.deleteMany({ where: { schoolId: id } });
+      await superuser.waitlistEntry.deleteMany({ where: { schoolId: id } });
+      await superuser.booking.deleteMany({ where: { schoolId: id } });
+      await superuser.class.deleteMany({ where: { schoolId: id } });
+      await superuser.studentNote.deleteMany({ where: { schoolId: id } });
+      await superuser.memberFile.deleteMany({ where: { schoolId: id } });
+      await superuser.customMemberFieldValue.deleteMany({ where: { schoolId: id } });
+      await superuser.customMemberField.deleteMany({ where: { schoolId: id } });
+      await superuser.studentTag.deleteMany({ where: { schoolId: id } });
+      await superuser.schoolTag.deleteMany({ where: { schoolId: id } });
+      await superuser.studentCustomStatus.deleteMany({ where: { schoolId: id } });
+      await superuser.customMemberStatus.deleteMany({ where: { schoolId: id } });
+      await superuser.dataImportRow.deleteMany({ where: { import: { schoolId: id } } });
+      await superuser.dataImport.deleteMany({ where: { schoolId: id } });
+      await superuser.childInvite.deleteMany({ where: { schoolId: id } });
+      await superuser.coachInvite.deleteMany({ where: { schoolId: id } });
+      await superuser.notification.deleteMany({ where: { schoolId: id } });
       await superuser.membership.deleteMany({ where: { schoolId: id } });
       await superuser.membershipPlan.deleteMany({ where: { schoolId: id } });
       await superuser.studentMedicalInfo.deleteMany({ where: { schoolId: id } });
@@ -343,6 +360,75 @@ describeIfDb('Delete my account', () => {
       title: 'A member left',
       body: 'A member deleted their ULTM8 account and left your School. Their details have been removed. Their payments, waivers and belt history stay with your School under "Erased User".',
     });
+  });
+
+  it('at the end, gives up their bookings and waitlist places (no fee, no notice) and clears the rest of their personal data', async () => {
+    const m = await person('Zelda', { studentAt: [school.id] });
+    const fullName = 'Zelda Member';
+    const at = (h: number) => new Date(Date.now() + h * 3_600_000);
+    const pack = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'CLASS_PACK', title: 'Ten', price: 9000, classesIncluded: 10 } });
+    const credits = await superuser.membership.create({
+      data: { id: randomUUID(), studentId: m.id, schoolId: school.id, membershipPlanId: pack.id, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 4 },
+    });
+    const future = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Erasure future', startDate: at(72), endDate: at(73) } });
+    const full = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Erasure full', startDate: at(80), endDate: at(81) } });
+    const past = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Erasure past', startDate: at(-30), endDate: at(-29) } });
+    const upcoming = await superuser.booking.create({ data: { id: randomUUID(), studentId: m.id, classId: future.id, schoolId: school.id, sourceMembershipId: credits.id, creditUsed: true } });
+    const attended = await superuser.booking.create({ data: { id: randomUUID(), studentId: m.id, classId: past.id, schoolId: school.id, status: 'COMPLETED', checkInMethod: 'STAFF_LOGGED' } });
+    const waiting = await superuser.waitlistEntry.create({ data: { id: randomUUID(), studentId: m.id, classId: full.id, schoolId: school.id, position: 1 } });
+
+    await superuser.studentNote.create({ data: { id: randomUUID(), schoolId: school.id, studentId: m.id, body: 'Knee injury' } });
+    const field = await superuser.customMemberField.create({ data: { id: randomUUID(), schoolId: school.id, name: 'T-shirt', type: 'TEXT', position: 0 } });
+    await superuser.customMemberFieldValue.create({ data: { fieldId: field.id, schoolId: school.id, studentId: m.id, value: 'XL' } });
+    const tag = await superuser.schoolTag.create({ data: { id: randomUUID(), schoolId: school.id, name: `${TAG}-tag` } });
+    await superuser.studentTag.create({ data: { tagId: tag.id, schoolId: school.id, studentId: m.id } });
+    const status = await superuser.customMemberStatus.create({ data: { id: randomUUID(), schoolId: school.id, name: 'VIP' } });
+    await superuser.studentCustomStatus.create({ data: { schoolId: school.id, statusId: status.id, studentId: m.id } });
+    const imp = await superuser.dataImport.create({ data: { id: randomUUID(), schoolId: school.id, kind: 'MEMBERS', totalRows: 1 } });
+    await superuser.dataImportRow.create({ data: { importId: imp.id, rowNumber: 1, outcome: 'CREATED', studentId: m.id, phone: '+15550001111' } });
+    await superuser.childInvite.create({ data: { id: randomUUID(), schoolId: school.id, guardianId: m.id, childFirstName: 'Kid', childSurname: 'Member', childDateOfBirth: new Date('2018-01-01') } });
+    await superuser.coachInvite.create({ data: { id: randomUUID(), schoolId: school.id, email: m.email, tokenHash: randomUUID(), expiresAt: at(48) } });
+    const file = await superuser.memberFile.create({
+      data: { id: randomUUID(), schoolId: school.id, studentId: m.id, fileName: 'id.pdf', contentType: 'application/pdf', sizeBytes: 10, objectKey: `member-files/${randomUUID()}.pdf` },
+    });
+    const activity = await superuser.staffActivity.create({
+      data: { id: randomUUID(), schoolId: school.id, actorId: owner.id, targetUserId: m.id, action: 'GUARDIAN_REMOVED', details: { studentName: fullName, guardianName: 'owner Member' } },
+    });
+    const staffNotice = await superuser.notification.create({
+      data: { id: randomUUID(), userId: owner.id, schoolId: school.id, title: 'Member absent', body: `${fullName} hasn't checked in for 3 weeks.` },
+    });
+    const unrelated = await superuser.notification.create({ data: { id: randomUUID(), userId: owner.id, title: 'Note', body: `${fullName} elsewhere` } });
+    const deleteObject = jest.spyOn(R2ClientService.prototype, 'deleteObject').mockResolvedValue(undefined);
+
+    expect((await requestDeletion(m)).status).toBe(200);
+    // Nothing is given up while the deletion can still be cancelled.
+    expect((await superuser.booking.findUniqueOrThrow({ where: { id: upcoming.id } })).status).toBe('UPCOMING');
+    await makeDue([m.id]);
+    expect((await processor.sweep()).erased).toContain(m.id);
+
+    // Places: cancelled with the staff-cancel credit rule, no fee, no notice to them.
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: upcoming.id } })).toMatchObject({ status: 'CANCELLED', refundResolution: 'REFUNDED', resolvedById: m.id });
+    expect((await superuser.membership.findUniqueOrThrow({ where: { id: credits.id } })).classesRemaining).toBe(5);
+    expect((await superuser.waitlistEntry.findUniqueOrThrow({ where: { id: waiting.id } })).status).toBe('CANCELLED');
+    expect(await superuser.notification.count({ where: { userId: m.id } })).toBe(0);
+    // Attendance history stays, linked to "Erased User".
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: attended.id } })).toMatchObject({ status: 'COMPLETED', studentId: m.id });
+
+    // The rest of their personal data.
+    expect(await superuser.studentNote.count({ where: { studentId: m.id } })).toBe(0);
+    expect(await superuser.customMemberFieldValue.count({ where: { studentId: m.id } })).toBe(0);
+    expect(await superuser.studentTag.count({ where: { studentId: m.id } })).toBe(0);
+    expect(await superuser.studentCustomStatus.count({ where: { studentId: m.id } })).toBe(0);
+    expect(await superuser.dataImportRow.count({ where: { studentId: m.id } })).toBe(0);
+    expect(await superuser.childInvite.count({ where: { guardianId: m.id } })).toBe(0);
+    expect(await superuser.coachInvite.count({ where: { email: m.email } })).toBe(0);
+    expect(deleteObject).toHaveBeenCalledWith(file.objectKey);
+    expect(await superuser.memberFile.count({ where: { id: file.id } })).toBe(0);
+    expect((await superuser.staffActivity.findUniqueOrThrow({ where: { id: activity.id } })).details).toEqual({ studentName: 'Erased User', guardianName: 'owner Member' });
+    expect((await superuser.notification.findUniqueOrThrow({ where: { id: staffNotice.id } })).body).toBe("Erased User hasn't checked in for 3 weeks.");
+    // A notice from no School of theirs is left alone.
+    expect((await superuser.notification.findUniqueOrThrow({ where: { id: unrelated.id } })).body).toBe(`${fullName} elsewhere`);
+    deleteObject.mockRestore();
   });
 
   it('keeps a child who got another parent before the 30 days were over', async () => {

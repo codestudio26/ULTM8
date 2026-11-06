@@ -105,9 +105,12 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (signed out everywhere; no booking, check-in or purchase, by anyone), its
   recurring payments stop, and signing in again within 30 days cancels it.
   After 30 days a daily job anonymises it as "Erased User": login, name,
-  contact details, date of birth, photo, passcode and medical notes go;
-  payments, signed waivers, contracts and belt history stay with the School,
-  unnamed. A child goes too only when this was their only parent and they have
+  contact details, date of birth, photo, passcode and medical notes go, and so
+  do staff notes, files the School uploaded, custom fields, tags, import rows
+  and invites; their name in older staff activity lines and staff notices
+  becomes "Erased User". Their upcoming bookings and waitlist places are given
+  up as when a School removes a member (no fee). Payments, signed waivers,
+  contracts, belt and attendance history stay with the School, unnamed. A child goes too only when this was their only parent and they have
   no login of their own. The main owner of an open School or Franchise must
   hand it over or close it first. The member is emailed; each School's owners
   get a "A member left" notice. New `GET`/`POST /users/me/deletion`; sign-in
