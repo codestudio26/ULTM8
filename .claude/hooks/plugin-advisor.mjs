@@ -115,7 +115,7 @@ function hook() {
         hookEventName: event === 'UserPromptSubmit' ? 'UserPromptSubmit' : 'PostToolUse',
         additionalContext:
           `ULTM8 plugin advisor (suggestions only, nothing was run). Tell the user in one short line which of these applies and why, ` +
-          `and run one only if they agree or it is part of what they asked:\n${lines}`,
+          `and run one only if they agree or it is part of what they asked. Skip any whose plugin is not installed in this session:\n${lines}`,
       },
     }),
   );
@@ -123,7 +123,10 @@ function hook() {
 
 try {
   const i = process.argv.indexOf('--report');
-  if (i !== -1) report(process.argv[i + 1] || 'origin/master');
+  const base = process.argv[i + 1] || 'origin/master';
+  // A ref name only: never let the argument be read by git as an option.
+  if (i !== -1 && !/^[\w][\w./-]*$/.test(base)) console.log(`Not a branch or ref name: ${base}`);
+  else if (i !== -1) report(base);
   else hook();
 } catch {
   // never break the session

@@ -67,19 +67,19 @@
   "promptRules": [
     {
       "id": "pr",
-      "pattern": "\\b(pr|pull request|merge|ready to ship|open a pr)\\b",
+      "pattern": "\\b(pull request|(open|create|raise|review) (a |the |my |this )?pr|merge (this|the|my) (pr|branch)|merge (in)?to (master|main)|ready to (ship|merge))\\b",
       "flags": "i",
       "suggest": "Before the PR: /code-review:code-review (plus /security-review if auth, payments or tenancy code changed)."
     },
     {
       "id": "deploy",
-      "pattern": "\\b(deploy|deployment|staging|render)\\b",
+      "pattern": "\\b(deploy\\w*|staging|render\\.com|render\\.yaml|render (service|dashboard|deploy|logs?|blueprint))\\b",
       "flags": "i",
       "suggest": "Deploy work: /render:check-render-status (needs the Render connection) and the render:render-debug skill if a deploy failed."
     },
     {
       "id": "release",
-      "pattern": "\\b(release|app ?store|testflight|play store|eas build)\\b",
+      "pattern": "\\b(app ?store|testflight|play store|eas (build|submit)|store (build|release|submission)|release (build|the app|to (the )?stores?))\\b",
       "flags": "i",
       "suggest": "Mobile release: /mobile-check, then /mobile-release."
     },
@@ -97,7 +97,7 @@
     },
     {
       "id": "context",
-      "pattern": "\\b(compact|context|long session|too many tokens|huge file|large file)\\b",
+      "pattern": "\\b(compact|\\/compact|context (window|limit|is full)|long session|too many tokens|(huge|large|big) (file|log))\\b",
       "flags": "i",
       "suggest": "Long session or big file: /compact-plan (Context Compactor) or /headroom:peek."
     }
