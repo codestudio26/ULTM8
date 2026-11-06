@@ -55,3 +55,31 @@ export async function chargeAbilities(
     recordPayment: branchStaff && !!school?.branchStaffCanRecordPayments,
   };
 }
+
+/**
+ * Decision 441 item 2: who may confirm a member's Pix, cash or bank-transfer
+ * order (PATCH /transactions/{id}/confirm). The owner always may; Branch
+ * Staff when the School lets them record payments (Decision 347) and the
+ * student is one they could record a desk payment for: their own branches'
+ * students through desk_payment_students(), the same scope as Record a
+ * payment. Instructors never may.
+ */
+export async function mayConfirmDeskOrder(
+  prismaApp: PrismaAppService,
+  callerId: string,
+  schoolId: string,
+  studentId: string,
+): Promise<boolean> {
+  return prismaApp.withTenantContext(callerId, async (tx) => {
+    const grants = await tx.roleGrant.findMany({
+      where: { userId: callerId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+      select: { role: true },
+    });
+    if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return true;
+    if (grants.length === 0) return false;
+    const school = await tx.school.findUnique({ where: { id: schoolId }, select: { branchStaffCanRecordPayments: true } });
+    if (!school?.branchStaffCanRecordPayments) return false;
+    const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM desk_payment_students(${schoolId}) WHERE "id" = ${studentId}`;
+    return rows.length > 0;
+  });
+}

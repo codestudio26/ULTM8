@@ -121,7 +121,7 @@ export class CreateMembershipPlanDto {
   @Matches(PLAN_DAY_PATTERN, { message: 'fixedEndDate must be a day, YYYY-MM-DD.' })
   fixedEndDate?: string;
 
-  @ApiPropertyOptional({ description: "Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one it simply ends." })
+  @ApiPropertyOptional({ description: "Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one, or if the next plan is full (Decision 438), it simply ends. Refused at a School that takes no cards (Decision 441 item 3)." })
   @IsOptional()
   @IsUUID()
   switchToPlanId?: string;

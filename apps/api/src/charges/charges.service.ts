@@ -18,7 +18,7 @@ import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { ChargeMathsError, computeCharge, formatInvoiceNumber, taxLinesForCharge } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
-import { chargeAbilities, type ChargeAbilities } from './charge-abilities';
+import { chargeAbilities, mayConfirmDeskOrder, type ChargeAbilities } from './charge-abilities';
 import {
   allocate,
   chargePaid,
@@ -183,10 +183,14 @@ export class ChargesService {
     const school = await this.loadSchool(schoolId);
     const data = await this.prismaApp.withTenantContext(callerId, (tx) => this.readLedger(tx, schoolId, studentId));
     const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true, can.owner);
+    // Decision 441 item 2: who may mark a member's Pix, cash or bank-transfer
+    // order as paid (the owner; Branch Staff with Record a payment, for their
+    // own branches' students).
+    const confirmPayment = can.owner || (can.recordPayment && (await mayConfirmDeskOrder(this.prismaApp, callerId, schoolId, studentId)));
     return {
       ...view,
-      deskMembershipPayments: can.cancel ? await this.readDeskMembershipPayments(schoolId, studentId) : [],
-      can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment, refund: can.owner, addCredit: can.owner, resendInvoice: can.create },
+      deskMembershipPayments: can.cancel || confirmPayment ? await this.readDeskMembershipPayments(schoolId, studentId) : [],
+      can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment, confirmPayment, refund: can.owner, addCredit: can.owner, resendInvoice: can.create },
       settings: {
         currency: school.defaultCurrency?.toUpperCase() ?? null,
         taxCountry: school.taxCountry,
@@ -940,7 +944,8 @@ export class ChargesService {
 
   /** Decision 338 item 1 (last point): the student's membership payments by
    * cash or bank transfer still waiting at the desk, and the ones cancelled,
-   * so the owner and staff with "Can cancel charges" can cancel them from the
+   * so the owner and staff with "Can cancel charges" can cancel them (and those
+   * who may, mark them paid: Decision 441 item 2) from the
    * Payments card (PATCH /transactions/{id}/cancel). Read on the jobs
    * connection after the caller's access was checked, as above. */
   private async readDeskMembershipPayments(schoolId: string, studentId: string) {

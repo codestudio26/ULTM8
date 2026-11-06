@@ -376,6 +376,18 @@ describe('MembershipPlanRow — School without card payments (Decision 437)', ()
     );
   });
 
+  it('offers no plan switch, and sends no agreement, where the School takes no cards (Decision 441 item 3)', async () => {
+    mocked(academyQueries.useAcademy).mockReturnValue({ data: { cardPayments: false, inBrazil: true } });
+    const plan = { ...CLASS_PACK, cardSurchargeAmount: 0, switchToPlanId: 'plan-9' };
+    const { getByText, queryByRole, queryByText } = await render(
+      <MembershipPlanRow plan={plan as never} schoolId="school-1" switchTo={{ title: 'Ten classes', price: 6000, currency: 'brl' }} />,
+    );
+    expect(queryByRole('switch')).toBeNull();
+    expect(queryByText(/switch me to Ten classes/)).toBeNull();
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenCalledWith({ planId: 'plan-1', studentId: undefined }, expect.anything());
+  });
+
   it('a School that takes cards shows no note and keeps hosted Checkout and the saved card', async () => {
     mocked(academyQueries.useAcademy).mockReturnValue({ data: { cardPayments: true, inBrazil: false } });
     const { getByText, queryByTestId } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" />);

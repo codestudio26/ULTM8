@@ -10810,7 +10810,7 @@ export interface components {
             fixedStartDate?: string;
             /** @description Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD), on or after fixedStartDate. */
             fixedEndDate?: string;
-            /** @description Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one it simply ends. */
+            /** @description Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one, or if the next plan is full (Decision 438), it simply ends. Refused at a School that takes no cards (Decision 441 item 3). */
             switchToPlanId?: string;
             /** @description Decision 435 items 1-6: a one-off joining fee, in the plan's currency (minor units), added to a member's first-ever plan at this School (never a rejoin or a renewal), with the plan's tax and card surcharge. Paid plans only. Charged only while the School has joining fees on (School.joiningFeesEnabled). Omit for none. */
             joiningFee?: number;
@@ -10937,7 +10937,7 @@ export interface components {
             fixedStartDate?: string | null;
             /** @description Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD). Pass null to remove. */
             fixedEndDate?: string | null;
-            /** @description Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to. */
+            /** @description Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to. A new next plan is refused at a School that takes no cards (Decision 441 item 3); one the plan already has is kept. */
             switchToPlanId?: string | null;
             /** @description Decision 435 items 1-6: the joining fee in the plan's currency (minor units). Pass null to remove it. */
             joiningFee?: number | null;
@@ -11003,7 +11003,7 @@ export interface components {
             useHostedCheckout?: boolean;
             /** @description Decision 316 item 6: required for a plan with a contract — the id from POST /membership-plans/{id}/contract/sign (signed within the last day, not used yet). */
             contractSignatureId?: string;
-            /** @description Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. Omit or false: it simply ends. */
+            /** @description Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. If the next plan is full when it ends, the membership simply ends and nothing is charged (Decision 438). Ignored at a School that takes no cards (Decision 441 item 3). Omit or false: it simply ends. */
             agreeToPlanSwitch?: boolean;
         };
         MembershipResponseDto: {
@@ -14947,6 +14947,8 @@ export interface components {
             create: boolean;
             cancel: boolean;
             recordPayment: boolean;
+            /** @description Decision 441 item 2: mark the student's Pix, cash or bank-transfer membership payment as paid (PATCH /transactions/{id}/confirm): the owner, and Branch Staff whose School lets them record payments, for their own branches' students. */
+            confirmPayment: boolean;
             /** @description Refund a payment (owner only, Decision 303 item 3). */
             refund: boolean;
             /** @description Give credit (owner only, Decision 303 item 3). */
@@ -14986,7 +14988,7 @@ export interface components {
             payments: components["schemas"]["ChargePaymentResponseDto"][];
             /** @description Credit the owner gave, newest first. */
             credits: components["schemas"]["BalanceCreditResponseDto"][];
-            /** @description Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them. */
+            /** @description Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them or mark them paid (can.cancel, can.confirmPayment). */
             deskMembershipPayments: components["schemas"]["DeskMembershipPaymentDto"][];
             /** @description What the caller may do here. */
             can: components["schemas"]["ChargeAbilitiesDto"];
