@@ -99,7 +99,7 @@ export function ChildBookingScreen({ route }: Props) {
           <Text style={{ color: '#5F6368', fontSize: 13 }}>{t('guardians.childBooking.noClasses')}</Text>
         ) : null}
         {schoolId
-          ? academy.data?.upcomingClasses.map((c) => <ClassBookingRow key={`${schoolId}-${c.id}`} classItem={c} schoolId={schoolId} studentId={studentId} />)
+          ? academy.data?.upcomingClasses.map((c) => <ClassBookingRow key={`${schoolId}-${c.id}`} classItem={c} schoolId={schoolId} studentId={studentId} childName={name} />)
           : null}
       </Screen>
     </ScrollView>

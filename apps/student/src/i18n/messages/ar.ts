@@ -1194,6 +1194,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "وقّع الإقرار",
     screen: {
       notEnrolled: "لست مسجّلًا في أي مدرسة بعد — ستظهر الإقرارات هنا بعد تسجيلك.",
       loadError: "تعذّر تحميل الإقرارات، يُرجى المحاولة مرة أخرى.",

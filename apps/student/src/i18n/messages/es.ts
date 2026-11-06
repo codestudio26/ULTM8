@@ -1135,6 +1135,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "Firmar la exención",
     screen: {
       notEnrolled: "Aún no estás inscrito en ninguna Escuela — las exenciones aparecerán aquí cuando lo estés.",
       loadError: "No se pudieron cargar las exenciones — inténtalo de nuevo.",

@@ -12,6 +12,9 @@ jest.mock('./waitlistMutations', () => ({
 
 jest.setTimeout(30_000);
 
+const mockNavigate = jest.fn();
+jest.mock('@react-navigation/native', () => ({ useNavigation: () => ({ navigate: mockNavigate }) }));
+
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
 const idleMutation = () => ({ mutateAsync: jest.fn<(...args: unknown[]) => Promise<unknown>>(), isPending: false });
 
@@ -61,5 +64,23 @@ describe('MyWaitlist', () => {
     const screen = await render(<MyWaitlist />);
     await fireEvent.press(screen.getByText('Claim spot'));
     await waitFor(() => expect(screen.getByText("This Waitlist entry's claim window has passed.")).toBeTruthy());
+  });
+});
+
+/** Decision 442 item 1: a claim refused for want of a signed waiver. */
+describe('MyWaitlist — Sign the waiver', () => {
+  it("offers \"Sign the waiver\" for that School when the claim needs a waiver", async () => {
+    const { ApiError } = jest.requireActual<typeof import('@ultm8/api-client')>('@ultm8/api-client');
+    mockNavigate.mockClear();
+    const claim = idleMutation();
+    mocked(waitlistMutations.useClaimWaitlist).mockReturnValue(claim);
+    mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+    mocked(waitlistMutations.useMyWaitlist).mockReturnValue({ data: { items: [{ ...ENTRY, status: 'NOTIFIED' }] } });
+    claim.mutateAsync.mockRejectedValue(new ApiError(403, 'WAIVER_REQUIRED', 'This School needs a signed waiver before booking a class or checking in.'));
+    const screen = await render(<MyWaitlist />);
+    await fireEvent.press(screen.getByText('Claim spot'));
+    await waitFor(() => expect(screen.getByText('This School needs a signed waiver before booking a class or checking in.')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Sign the waiver'));
+    expect(mockNavigate).toHaveBeenCalledWith('Waivers', { schoolId: 'school-1' });
   });
 });

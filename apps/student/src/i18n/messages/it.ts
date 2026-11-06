@@ -1137,6 +1137,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "Firma la liberatoria",
     screen: {
       notEnrolled: "Non sei ancora iscritto a nessuna scuola — le liberatorie compariranno qui quando lo sarai.",
       loadError: "Impossibile caricare le liberatorie — riprova.",

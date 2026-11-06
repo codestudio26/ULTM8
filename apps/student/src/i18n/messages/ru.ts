@@ -1164,6 +1164,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "Подписать отказ",
     screen: {
       notEnrolled: "Вы пока не состоите ни в одной Школе — отказы от ответственности появятся здесь, когда вы вступите.",
       loadError: "Не удалось загрузить отказы от ответственности — попробуйте ещё раз.",

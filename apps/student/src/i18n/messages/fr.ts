@@ -1137,6 +1137,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "Signer la décharge",
     screen: {
       notEnrolled: "Vous n’êtes encore inscrit dans aucune école — les décharges apparaîtront ici une fois inscrit.",
       loadError: "Impossible de charger les décharges — veuillez réessayer.",
