@@ -1,4 +1,6 @@
 import { randomUUID } from 'crypto';
+import { readFile } from 'fs/promises';
+import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
@@ -57,6 +59,15 @@ test.afterAll(async () => {
   await cleanup();
 });
 
+/** Downloads the report's CSV and returns its lines (without the byte-order mark). */
+async function downloadCsvLines(page: Page, report: Locator): Promise<string[]> {
+  const download = page.waitForEvent('download');
+  await report.getByRole('button', { name: 'Download CSV' }).click();
+  const file = await download;
+  const text = await readFile((await file.path()) as string, 'utf8');
+  return text.replace(/^\uFEFF/, '').split('\r\n').filter(Boolean);
+}
+
 test('the owner sets a coach’s rates and reads what they earned', async ({ page }) => {
   await page.goto('/payroll');
   await expect(page.getByRole('heading', { name: 'Payroll' })).toBeVisible();
@@ -88,7 +99,7 @@ test('the owner sets a coach’s rates and reads what they earned', async ({ pag
   expect(file.suggestedFilename()).toBe('payroll-2026-03-01-to-2026-03-31.csv');
 });
 
-test('Decision 435 item 22: Branch Staff see the payroll report only once the owner switches "Payroll" on, for the whole School, and never the rates', async ({ page }) => {
+test('Decision 435 item 22: Branch Staff see the payroll report only once the owner switches "Payroll" on, for the whole School: never the Rates tab, and the rates only if the owner chooses', async ({ page }) => {
   const north = await addBranch(s, 'North');
   const bea = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
   await db.staffPayRate.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: coachId, hourlyRate: 2000, perClassRate: 550 } });
@@ -125,4 +136,44 @@ test('Decision 435 item 22: Branch Staff see the payroll report only once the ow
   await expect(page.getByRole('tab')).toHaveCount(0);
   await expect(page.getByTestId('payroll-rates')).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: /rate/i })).toHaveCount(0);
+
+  // The rates themselves are hidden from her by default (owner's answer, 6 Nov
+  // 2026): classes, hours and pay only, on the page and in the CSV.
+  await expect(page.getByTestId('payroll-rates-hidden')).toBeVisible();
+  await expect(report.getByRole('columnheader', { name: 'Hourly rate' })).toHaveCount(0);
+  await expect(report.getByRole('columnheader', { name: 'Per-class rate' })).toHaveCount(0);
+  await expect(report.getByRole('row', { name: /Cora Coach/ })).not.toContainText('20.00 GBP');
+  // Her subtitle names the owners' rates, not hers.
+  await expect(page.getByText("at the rates the School's owners set")).toBeVisible();
+  const hidden = await downloadCsvLines(page, report);
+  expect(hidden[0]).toBe('Staff member,Classes taught,Hours,Pay,Currency');
+  expect(hidden.find((l) => l.startsWith('Cora Coach'))).toBe('Cora Coach,2,2.5,61.00,GBP');
+
+  // The owner chooses to show them, on the Rates tab.
+  await signIn(page, s.ownerToken);
+  await page.goto('/payroll');
+  await page.getByRole('tab', { name: 'Rates' }).click();
+  const setting = page.getByTestId('payroll-staff-rates-setting');
+  const show = setting.getByLabel('Show pay rates in the report');
+  await expect(show).not.toBeChecked();
+  await show.check();
+  await expect(setting.getByText('Saved')).toBeVisible();
+  await expect(show).toBeChecked();
+  await expect.poll(async () => (await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).payrollStaffSeeRates).toBe(true);
+
+  // Now she sees them, read only, on the page and in the CSV.
+  await signIn(page, bea.token);
+  await page.goto('/payroll');
+  await report.getByLabel('Dates').selectOption('CUSTOM');
+  await report.getByLabel('From').fill('2026-03-01');
+  await report.getByLabel('To').fill('2026-03-31');
+  const cora = report.getByRole('row', { name: /Cora Coach/ });
+  await expect(cora).toContainText('20.00 GBP');
+  await expect(cora).toContainText('5.50 GBP');
+  await expect(page.getByTestId('payroll-rates-hidden')).toHaveCount(0);
+  await expect(page.getByRole('tab')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: /rate/i })).toHaveCount(0);
+  const shown = await downloadCsvLines(page, report);
+  expect(shown[0]).toBe('Staff member,Classes taught,Hours,Hourly rate,Per-class rate,Pay,Currency');
+  expect(shown.find((l) => l.startsWith('Cora Coach'))).toBe('Cora Coach,2,2.5,20.00,5.50,61.00,GBP');
 });

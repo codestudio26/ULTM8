@@ -4981,6 +4981,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Ce que chaque membre du personnel a gagné avec les cours qu’il a donnés, aux taux que vous fixez. ULTM8 ne paie personne : vous payez votre personnel en dehors d’ULTM8.",
     tabReport: "Rapport",
     tabRates: "Taux",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Ce que chaque membre du personnel a gagné avec les cours qu’il a donnés, aux taux fixés par les propriétaires de l’école. ULTM8 ne paie personne : l’école paie son personnel en dehors d’ULTM8.",
+    ratesHidden: "Les propriétaires de l’école ont choisi de ne pas afficher les taux ici : vous voyez les cours, les heures et la paie.",
+    staffRates: {
+      title: "Ce que voit le personnel ayant accès à la paie",
+      label: "Afficher les taux dans le rapport",
+      hint: "Le personnel ayant l’accès « Paie » voit les taux horaires et par cours de chacun dans le rapport et son téléchargement, en lecture seule. Désactivé : il ne voit que les cours, les heures et la paie. Vous voyez toujours les taux.",
+    },
     noAccess: "Seuls les propriétaires de l’école, et le personnel qu’ils autorisent, peuvent voir la paie.",
     loadFailed: "Impossible de charger la paie. Veuillez réessayer.",
     periodLabel: "Dates",

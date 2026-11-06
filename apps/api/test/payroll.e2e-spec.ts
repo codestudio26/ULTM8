@@ -38,6 +38,7 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
   const as = (who: string) => ({
     get: (path: string) => http().get(path).set('Authorization', `Bearer ${tokens[who]}`),
     put: (path: string) => http().put(path).set('Authorization', `Bearer ${tokens[who]}`),
+    patch: (path: string) => http().patch(path).set('Authorization', `Bearer ${tokens[who]}`),
   });
   const rates = (schoolId = schoolA) => `/v1/schools/${schoolId}/payroll/rates`;
   const report = (query: string, schoolId = schoolA) => `/v1/schools/${schoolId}/payroll/report?${query}`;
@@ -325,6 +326,47 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
       // The owner still sets them.
       expect((await as('owner').put(`${rates()}/${users.blank.id}`).send({ hourlyRate: 900, perClassRate: null })).status).toBe(200);
       expect((await as('owner').put(`${rates()}/${users.blank.id}`).send({ hourlyRate: null, perClassRate: null })).status).toBe(200);
+    });
+
+    it("shows them the rates only when the School owner chooses to (off by default); the owner always sees them", async () => {
+      expect((await setAccess({ ...DEFAULTS, payroll: true })).status).toBe(200);
+      const school = `/v1/schools/${schoolA}`;
+      // Off by default.
+      expect((await as('owner').get(school)).body.payrollStaffSeeRates).toBe(false);
+      const coachRow = (body: { rows: Array<{ userId: string }> }) => body.rows.find((r) => r.userId === users.coach.id);
+
+      const owner = await as('owner').get(report(march));
+      expect(owner.body.ratesShown).toBe(true);
+      expect(coachRow(owner.body)).toMatchObject({ hourlyRate: expect.any(Number), perClassRate: expect.any(Number) });
+
+      // Off: classes, hours and pay, and no rate on any row.
+      const off = await as('desk').get(report(march));
+      expect(off.status).toBe(200);
+      expect(off.body.ratesShown).toBe(false);
+      expect(off.body.rows.length).toBeGreaterThan(0);
+      for (const r of off.body.rows) expect(r).toMatchObject({ hourlyRate: null, perClassRate: null });
+      expect(coachRow(off.body)).toMatchObject({ classesTaught: 2, minutesTaught: 150, pay: 6000 });
+      expect(off.body.totalPay).toBe(owner.body.totalPay);
+
+      // Only the owner changes it.
+      expect((await as('desk').patch(school).send({ payrollStaffSeeRates: true })).status).toBe(403);
+      expect((await as('coach').patch(school).send({ payrollStaffSeeRates: true })).status).toBe(403);
+      const turnedOn = await as('owner').patch(school).send({ payrollStaffSeeRates: true });
+      expect(turnedOn.status).toBe(200);
+      expect(turnedOn.body.payrollStaffSeeRates).toBe(true);
+      try {
+        // On: the same rates as the owner sees, read only.
+        const on = await as('desk').get(report(march));
+        expect(on.body.ratesShown).toBe(true);
+        expect(on.body.rows).toEqual(owner.body.rows);
+        expect((await as('desk').put(`${rates()}/${users.coach.id}`).send({ hourlyRate: 1, perClassRate: 1 })).status).toBe(403);
+        expect((await as('desk').get(rates())).status).toBe(403);
+        // Another School's setting changes nothing here.
+        expect((await as('desk').get(report(march, schoolB))).status).toBe(403);
+      } finally {
+        expect((await as('owner').patch(school).send({ payrollStaffSeeRates: false })).status).toBe(200);
+      }
+      expect((await as('desk').get(report(march))).body.ratesShown).toBe(false);
     });
 
     it('a coach never has it, even with the column set; a paused Branch Staff member loses it', async () => {

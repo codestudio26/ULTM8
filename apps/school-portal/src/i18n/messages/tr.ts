@@ -4981,6 +4981,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Her personelin verdiği derslerden, belirlediğiniz ücretlerle ne kadar kazandığı. ULTM8 kimseye ödeme yapmaz: personelinize ödemeyi ULTM8 dışında yaparsınız.",
     tabReport: "Rapor",
     tabRates: "Ücretler",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Okul sahiplerinin belirlediği ücret oranlarıyla, her personelin verdiği derslerden kazandığı tutar. ULTM8 kimseye ödeme yapmaz: okul personeline ULTM8 dışında ödeme yapar.",
+    ratesHidden: "Okul sahipleri ücret oranlarını burada göstermemeyi seçti: dersleri, saatleri ve ödemeyi görürsünüz.",
+    staffRates: {
+      title: "Bordro erişimi olan personelin gördükleri",
+      label: "Raporda ücret oranlarını göster",
+      hint: "Bordro anahtarı açık olan personel, raporda ve indirilen dosyada herkesin saatlik ve ders başı ücret oranını salt okunur olarak görür. Kapalıyken yalnızca dersleri, saatleri ve ödemeyi görür. Siz oranları her zaman görürsünüz.",
+    },
     noAccess: "Bordroyu yalnızca okul sahipleri ve izin verdikleri personel görebilir.",
     loadFailed: "Bordro yüklenemedi. Lütfen tekrar deneyin.",
     periodLabel: "Tarihler",

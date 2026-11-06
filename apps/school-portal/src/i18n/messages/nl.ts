@@ -4981,6 +4981,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Wat elk teamlid heeft verdiend met de lessen die het gaf, tegen de tarieven die je instelt. ULTM8 betaalt niemand uit: je betaalt je personeel buiten ULTM8.",
     tabReport: "Overzicht",
     tabRates: "Tarieven",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Wat elk teamlid heeft verdiend met de lessen die het gaf, tegen de tarieven die de eigenaren van de school instellen. ULTM8 betaalt niemand uit: de school betaalt haar personeel buiten ULTM8.",
+    ratesHidden: "De eigenaren van de school tonen de tarieven hier niet: je ziet de lessen, uren en het loon.",
+    staffRates: {
+      title: "Wat medewerkers met toegang tot het salarisoverzicht zien",
+      label: "Tarieven in het overzicht tonen",
+      hint: "Medewerkers met de schakelaar Salarisoverzicht zien het uur- en lestarief van iedereen in het overzicht en de download, alleen lezen. Uit: ze zien alleen de lessen, uren en het loon. Jij ziet de tarieven altijd.",
+    },
     noAccess: "Alleen de eigenaren van de school, en medewerkers die zij toestemming geven, kunnen het salarisoverzicht zien.",
     loadFailed: "Het salarisoverzicht kon niet worden geladen. Probeer het opnieuw.",
     periodLabel: "Datums",

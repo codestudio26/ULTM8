@@ -45,7 +45,9 @@ const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompar
  * staff member and every Branch's classes. Checked by assertMayRunPayroll.
  * The switch gives the report only: the Rates tab (listing and setting the
  * rates) stays the School's owners' alone, as before it, so nobody switched
- * on can change their own rate or anyone else's. The rates are read and
+ * on can change their own rate or anyone else's. Whether the report shows
+ * them the rates (read only) is the owner's choice, School.payrollStaffSeeRates
+ * (off by default): off, the rows carry classes, hours and pay, and no rate. The rates are read and
  * written on the app connection, whose RLS policy lets the School's owners
  * read and write them and those Branch Staff only read them
  * (is_payroll_staff). What the report adds up around them (who is on the
@@ -123,13 +125,16 @@ export class PayrollService {
   }
 
   async report(callerId: string, schoolId: string, query: PayrollReportQueryDto, now = new Date()): Promise<PayrollReportResponseDto> {
-    await this.tenantAuth.assertMayRunPayroll(callerId, schoolId);
+    const { isOwner } = await this.tenantAuth.assertMayRunPayroll(callerId, schoolId);
     const rates = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.staffPayRate.findMany({ where: { schoolId }, select: { userId: true, hourlyRate: true, perClassRate: true } }),
     );
     // The rest of the report: this School only, after the check above.
     const db = this.prismaJobs;
-    const school = await db.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true, timezone: true } });
+    const school = await db.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true, timezone: true, payrollStaffSeeRates: true } });
+    // The owners always see the rates; switched-on staff only when the School
+    // says so (off by default). Pay is still worked out from them.
+    const ratesShown = isOwner || school?.payrollStaffSeeRates === true;
     const schoolZone = safeZone(school?.timezone);
     const preset = query.preset ?? 'LAST_30_DAYS';
     const range = preset === 'CUSTOM' ? { from: query.from as string, to: query.to as string } : presetRange(preset, now, schoolZone);
@@ -177,8 +182,8 @@ export class PayrollService {
           userId: r.userId,
           name: names.get(r.userId) ?? '',
           onStaff: onStaff.has(r.userId),
-          hourlyRate: r.hourlyRate,
-          perClassRate: r.perClassRate,
+          hourlyRate: ratesShown ? r.hourlyRate : null,
+          perClassRate: ratesShown ? r.perClassRate : null,
           classesTaught: t.classes,
           minutesTaught: t.minutes,
           pay: payFor(t.minutes, t.classes, r.hourlyRate, r.perClassRate),
@@ -190,6 +195,7 @@ export class PayrollService {
       from: range.from,
       to: range.to,
       currency: school?.defaultCurrency?.trim().toUpperCase() || null,
+      ratesShown,
       rows,
       totalClasses: rows.reduce((s, r) => s + r.classesTaught, 0),
       totalMinutes: rows.reduce((s, r) => s + r.minutesTaught, 0),

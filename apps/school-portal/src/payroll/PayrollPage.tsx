@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
+import { useSchool, useUpdateSchool } from '../schools/schoolQueries';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { formatMoney } from '../lib/money';
@@ -41,7 +42,9 @@ function dateLabel(iso: string): string {
  * The School's owners see the report and set the rates. Branch Staff with
  * the "Payroll" switch (Decision 435 item 22) see the report only, for the
  * whole School: no Rates tab, so no editing anyone's rate, their own
- * included. The API checks the same.
+ * included. Whether their report shows the rates (read only) is the owner's
+ * choice, on the Rates tab (off by default: classes, hours and pay only; the
+ * API leaves the rates out). The API checks the same.
  */
 export function PayrollPage() {
   const t = useT();
@@ -55,7 +58,7 @@ export function PayrollPage() {
 
   return (
     <>
-      <PageHeader title={t('payroll.title')} subtitle={t('payroll.subtitle')} />
+      <PageHeader title={t('payroll.title')} subtitle={t(isOwner || !schoolId ? 'payroll.subtitle' : 'payroll.subtitleStaff')} />
       {isOwner ? (
         <div role="tablist" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           {(['report', 'rates'] as const).map((id) => (
@@ -124,7 +127,14 @@ function Report({ schoolId }: { schoolId: string }) {
       ) : report.isLoading || !report.data ? (
         preset === 'CUSTOM' && (!from || !to) ? null : <Spinner />
       ) : (
-        <ReportTable data={report.data} />
+        <>
+          {!report.data.ratesShown ? (
+            <p className="ultm8-field__hint" data-testid="payroll-rates-hidden">
+              {t('payroll.ratesHidden')}
+            </p>
+          ) : null}
+          <ReportTable data={report.data} />
+        </>
       )}
     </div>
   );
@@ -160,8 +170,13 @@ function ReportTable({ data }: { data: PayrollReport }) {
           },
           { key: 'classes', header: t('payroll.columnClasses'), render: (r) => String(r.classesTaught) },
           { key: 'hours', header: t('payroll.columnHours'), render: (r) => hours(r.minutesTaught) },
-          { key: 'hourly', header: t('payroll.columnHourlyRate'), render: (r) => (r.isTotal ? '' : money(r.hourlyRate)) },
-          { key: 'perClass', header: t('payroll.columnPerClassRate'), render: (r) => (r.isTotal ? '' : money(r.perClassRate)) },
+          // Left out when the School doesn't show staff the rates (Decision 435 item 22).
+          ...(data.ratesShown
+            ? [
+                { key: 'hourly', header: t('payroll.columnHourlyRate'), render: (r: Row) => (r.isTotal ? '' : money(r.hourlyRate)) },
+                { key: 'perClass', header: t('payroll.columnPerClassRate'), render: (r: Row) => (r.isTotal ? '' : money(r.perClassRate)) },
+              ]
+            : []),
           { key: 'pay', header: t('payroll.columnPay'), render: (r) => <strong>{formatMoney(r.pay, data.currency)}</strong> },
         ]}
       />
@@ -175,21 +190,22 @@ function ReportTable({ data }: { data: PayrollReport }) {
 function exportCsv(data: PayrollReport, t: ReturnType<typeof useT>) {
   const money = (minor: number | null) => (minor === null ? '' : (minor / 100).toFixed(2));
   const hrs = (minutes: number) => String(Math.round((minutes / 60) * 100) / 100);
+  // The rate columns only when the report carries them (Decision 435 item 22).
+  const rateCells = (hourly: string, perClass: string) => (data.ratesShown ? [hourly, perClass] : []);
   const header = [
     t('payroll.columnName'),
     t('payroll.columnClasses'),
     t('payroll.columnHours'),
-    t('payroll.columnHourlyRate'),
-    t('payroll.columnPerClassRate'),
+    ...rateCells(t('payroll.columnHourlyRate'), t('payroll.columnPerClassRate')),
     t('payroll.columnPay'),
     t('payroll.columnCurrency'),
   ];
   const currency = data.currency ?? '';
   const lines = [header.map(csvCell).join(',')];
   for (const r of data.rows) {
-    lines.push([r.name, String(r.classesTaught), hrs(r.minutesTaught), money(r.hourlyRate), money(r.perClassRate), money(r.pay), currency].map(csvCell).join(','));
+    lines.push([r.name, String(r.classesTaught), hrs(r.minutesTaught), ...rateCells(money(r.hourlyRate), money(r.perClassRate)), money(r.pay), currency].map(csvCell).join(','));
   }
-  lines.push([t('payroll.total'), String(data.totalClasses), hrs(data.totalMinutes), '', '', money(data.totalPay), currency].map(csvCell).join(','));
+  lines.push([t('payroll.total'), String(data.totalClasses), hrs(data.totalMinutes), ...rateCells('', ''), money(data.totalPay), currency].map(csvCell).join(','));
   // A byte-order mark so Excel opens accented names correctly, as the other CSVs do.
   downloadCsv(`payroll-${data.from}-to-${data.to}.csv`, `﻿${lines.join('\r\n')}\r\n`);
 }
@@ -205,6 +221,7 @@ function Rates({ schoolId }: { schoolId: string }) {
   const { currency, items } = rates.data;
   return (
     <div data-testid="payroll-rates">
+      <StaffRatesSetting schoolId={schoolId} />
       <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
         {t('payroll.ratesIntro')}
       </p>
@@ -233,6 +250,55 @@ function Rates({ schoolId }: { schoolId: string }) {
         </Card>
       )}
     </div>
+  );
+}
+
+/**
+ * Decision 435 item 22 (owner's answer, 6 Nov 2026): whether staff with the
+ * Payroll switch see the pay rates in their report, read only. A School
+ * setting, off by default; owner only, as the Rates tab is.
+ */
+function StaffRatesSetting({ schoolId }: { schoolId: string }) {
+  const t = useT();
+  const school = useSchool(schoolId).data;
+  const update = useUpdateSchool(schoolId);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  // What the owner just picked, shown at once while it saves.
+  const [picked, setPicked] = useState<boolean | null>(null);
+  if (!school) return null;
+  return (
+    <Card>
+      <div data-testid="payroll-staff-rates-setting" style={{ marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, margin: '0 0 8px' }}>{t('payroll.staffRates.title')}</h2>
+        {error ? <ErrorBanner message={error} /> : null}
+        {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
+        <Checkbox
+          label={t('payroll.staffRates.label')}
+          checked={picked ?? school.payrollStaffSeeRates}
+          disabled={update.isPending}
+          onChange={(e) => {
+            const next = e.target.checked;
+            setPicked(next);
+            setSaved(false);
+            setError(null);
+            update.mutate(
+              { payrollStaffSeeRates: next },
+              {
+                onSuccess: () => setSaved(true),
+                onError: (err) => {
+                  setPicked(null);
+                  setError(errorText(err, t('common.tryAgain')));
+                },
+              },
+            );
+          }}
+        />
+        <p className="ultm8-field__hint" style={{ marginBottom: 0 }}>
+          {t('payroll.staffRates.hint')}
+        </p>
+      </div>
+    </Card>
   );
 }
 

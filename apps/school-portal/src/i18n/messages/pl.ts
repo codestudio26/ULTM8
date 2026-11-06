@@ -5093,6 +5093,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Ile każdy członek zespołu zarobił na prowadzonych zajęciach według ustalonych przez Ciebie stawek. ULTM8 nikomu nie płaci: wynagrodzenia wypłacasz poza ULTM8.",
     tabReport: "Raport",
     tabRates: "Stawki",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Ile każdy członek zespołu zarobił na prowadzonych zajęciach według stawek ustalonych przez właścicieli szkoły. ULTM8 nikomu nie płaci: szkoła wypłaca wynagrodzenia poza ULTM8.",
+    ratesHidden: "Właściciele szkoły zdecydowali, że stawki nie są tu pokazywane: widzisz zajęcia, godziny i wynagrodzenie.",
+    staffRates: {
+      title: "Co widzą pracownicy z dostępem do wynagrodzeń",
+      label: "Pokazuj stawki w raporcie",
+      hint: "Pracownicy z przełącznikiem Wynagrodzenia widzą w raporcie i w pobranym pliku stawki godzinowe i za zajęcia każdej osoby, tylko do odczytu. Wyłączone: widzą tylko zajęcia, godziny i wynagrodzenie. Ty zawsze widzisz stawki.",
+    },
     noAccess: "Wynagrodzenia widzą tylko właściciele szkoły i pracownicy, którym na to pozwolą.",
     loadFailed: "Nie udało się wczytać wynagrodzeń. Spróbuj ponownie.",
     periodLabel: "Daty",

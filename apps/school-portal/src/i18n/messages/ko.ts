@@ -4935,6 +4935,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "설정한 단가로 각 직원이 맡은 수업에서 번 금액입니다. ULTM8은 누구에게도 지급하지 않습니다. 직원 급여는 ULTM8 밖에서 지급하세요.",
     tabReport: "보고서",
     tabRates: "단가",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "학교 소유자가 정한 단가로 각 직원이 맡은 수업에서 번 금액입니다. ULTM8은 누구에게도 지급하지 않습니다. 학교가 ULTM8 밖에서 직원에게 지급합니다.",
+    ratesHidden: "학교 소유자가 여기에 단가를 표시하지 않기로 했습니다. 수업, 시간, 급여만 볼 수 있습니다.",
+    staffRates: {
+      title: "급여 권한이 있는 직원에게 보이는 내용",
+      label: "보고서에 단가 표시",
+      hint: "급여 스위치가 켜진 직원은 보고서와 다운로드 파일에서 각 사람의 시간당 단가와 수업당 단가를 읽기 전용으로 봅니다. 끄면 수업, 시간, 급여만 봅니다. 나는 항상 단가를 봅니다.",
+    },
     noAccess: "급여는 학교 소유자와 소유자가 허용한 직원만 볼 수 있습니다.",
     loadFailed: "급여를 불러오지 못했습니다. 다시 시도해 주세요.",
     periodLabel: "기간",

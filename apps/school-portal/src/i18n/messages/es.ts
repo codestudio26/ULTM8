@@ -4981,6 +4981,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Lo que ha ganado cada miembro del personal con las clases que impartió, según las tarifas que fijes. ULTM8 no paga a nadie: pagas a tu personal fuera de ULTM8.",
     tabReport: "Informe",
     tabRates: "Tarifas",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Lo que ha ganado cada miembro del personal con las clases que impartió, según las tarifas que fijan los propietarios de la escuela. ULTM8 no paga a nadie: la escuela paga a su personal fuera de ULTM8.",
+    ratesHidden: "Los propietarios de la escuela han decidido no mostrar aquí las tarifas: ves las clases, las horas y el pago.",
+    staffRates: {
+      title: "Lo que ve el personal con acceso a la nómina",
+      label: "Mostrar las tarifas en el informe",
+      hint: "El personal con el interruptor Nómina ve la tarifa por hora y por clase de cada persona en el informe y en su descarga, solo lectura. Desactivado: ve solo las clases, las horas y el pago. Tú siempre ves las tarifas.",
+    },
     noAccess: "Solo los propietarios de la escuela, y el personal al que se lo permitan, pueden ver la nómina.",
     loadFailed: "No se pudo cargar la nómina. Inténtalo de nuevo.",
     periodLabel: "Fechas",

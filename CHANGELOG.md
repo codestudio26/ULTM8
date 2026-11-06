@@ -411,10 +411,17 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   School, every Branch and every staff member, and Payroll appears in their
   menu. It is the report only: the Rates tab, and setting anyone's rate
   (their own and the owners' included), stays with the School's owners, as
-  before. Coaches never have it; a paused role loses it. Enforced by the API
-  and by the database (`StaffPayRate` RLS now also lets `is_payroll_staff`
-  read the rates, never write them). **Needs a database migration**
-  (`20270219000002_payroll_access_switch`).
+  before. Whether they see the pay rates in the report is the owner's choice:
+  a new **Show pay rates in the report** setting on the Payroll page's Rates
+  tab, off by default. Off, they see the classes, hours and pay only (the
+  rate columns are left out of the page and the CSV, and the API leaves the
+  rates out); on, they see the rates read only. Owners always see them. Their
+  page subtitle now says "at the rates the School's owners set". Coaches
+  never have it; a paused role loses it. Enforced by the API and by the
+  database (`StaffPayRate` RLS now also lets `is_payroll_staff` read the
+  rates, never write them). **Needs database migrations**
+  (`20270219000002_payroll_access_switch`,
+  `20270226106000_payroll_staff_see_rates`).
 - **Data tools: merge duplicate members, export all signed documents**
   (Decision 315 item 13; imports are a separate change). **Merge a duplicate**
   on a student's page: the owner picks the other record of the same person at

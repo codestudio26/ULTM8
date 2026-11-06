@@ -328,6 +328,11 @@ export class CreateSchoolDto {
   @IsBoolean()
   joiningFeesEnabled?: boolean;
 
+  @ApiPropertyOptional({ description: 'Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them.' })
+  @IsOptional()
+  @IsBoolean()
+  payrollStaffSeeRates?: boolean;
+
 
   @ApiPropertyOptional({ type: String, nullable: true, example: 'GB', description: "Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it." })
   @IsOptional()

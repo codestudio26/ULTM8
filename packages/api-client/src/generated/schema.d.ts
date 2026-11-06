@@ -7837,6 +7837,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged. */
             joiningFeesEnabled?: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them. */
+            payrollStaffSeeRates?: boolean;
             /**
              * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
              * @example GB
@@ -7988,6 +7990,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged. */
             joiningFeesEnabled: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (default off). Owners always see them. */
+            payrollStaffSeeRates: boolean;
             /** @description Decision 411: the country the School is in, for its tax. */
             taxCountry?: string | null;
             /** @description Decision 411: the School's tax rate on charges, in hundredths of a percent (default 0). */
@@ -8139,6 +8143,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged. */
             joiningFeesEnabled?: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them. */
+            payrollStaffSeeRates?: boolean;
             /**
              * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
              * @example GB
@@ -15319,7 +15325,9 @@ export interface components {
             name: string;
             /** @description False when the person is no longer on the staff. */
             onStaff: boolean;
+            /** @description Null when not set, or left out for staff the School does not show rates to (ratesShown false). */
             hourlyRate: number | null;
+            /** @description Null when not set, or left out for staff the School does not show rates to (ratesShown false). */
             perClassRate: number | null;
             /** @description Classes they taught in the range. */
             classesTaught: number;
@@ -15336,6 +15344,8 @@ export interface components {
             /** @description Last date covered, YYYY-MM-DD. */
             to: string;
             currency: string | null;
+            /** @description Decision 435 item 22: whether the rows carry the pay rates. Always true for owners; for Branch Staff with the "Payroll" switch, the School's payrollStaffSeeRates setting (off by default), and when false every rate is null. */
+            ratesShown: boolean;
             /** @description Everyone with a rate, by name. */
             rows: components["schemas"]["PayrollRowDto"][];
             totalClasses: number;

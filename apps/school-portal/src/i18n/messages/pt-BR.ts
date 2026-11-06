@@ -4981,6 +4981,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Quanto cada membro da equipe ganhou com as aulas que deu, pelos valores que você definir. O ULTM8 não paga ninguém: você paga sua equipe fora do ULTM8.",
     tabReport: "Relatório",
     tabRates: "Valores",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "O que cada membro da equipe ganhou com as aulas que deu, pelos valores definidos pelos donos da escola. O ULTM8 não paga ninguém: a escola paga sua equipe fora do ULTM8.",
+    ratesHidden: "Os donos da escola optaram por não mostrar os valores aqui: você vê as aulas, as horas e o pagamento.",
+    staffRates: {
+      title: "O que a equipe com acesso à folha de pagamento vê",
+      label: "Mostrar os valores no relatório",
+      hint: "A equipe com o acesso Folha de pagamento vê o valor por hora e por aula de cada pessoa no relatório e no download, só para leitura. Desligado: vê só as aulas, as horas e o pagamento. Você sempre vê os valores.",
+    },
     noAccess: "Só os donos da escola, e a equipe que eles permitirem, podem ver a folha de pagamento.",
     loadFailed: "Não foi possível carregar a folha de pagamento. Tente novamente.",
     periodLabel: "Datas",

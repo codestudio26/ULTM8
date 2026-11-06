@@ -4935,6 +4935,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "按您设定的费率，每位员工从所教课程中应得的金额。ULTM8 不向任何人付款：员工工资在 ULTM8 之外支付。",
     tabReport: "报表",
     tabRates: "费率",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "按学校所有者设定的标准，每位员工从所教课程中获得的报酬。ULTM8 不向任何人付款：学校在 ULTM8 之外向员工付款。",
+    ratesHidden: "学校所有者选择不在此显示工资标准：你可以看到课程数、小时数和报酬。",
+    staffRates: {
+      title: "有工资权限的员工能看到的内容",
+      label: "在报表中显示工资标准",
+      hint: "开启工资开关的员工可在报表及其下载文件中只读查看每个人的时薪和每节课报酬。关闭时，他们只能看到课程数、小时数和报酬。你始终能看到工资标准。",
+    },
     noAccess: "只有学校所有者及其允许的员工可以查看工资。",
     loadFailed: "无法加载工资，请重试。",
     periodLabel: "日期",

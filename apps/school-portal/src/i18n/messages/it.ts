@@ -4981,6 +4981,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "Quanto ha guadagnato ogni membro dello staff con le lezioni che ha tenuto, alle tariffe che imposti. ULTM8 non paga nessuno: paghi il tuo staff al di fuori di ULTM8.",
     tabReport: "Report",
     tabRates: "Tariffe",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "Quanto ha guadagnato ogni membro dello staff con le lezioni che ha tenuto, alle tariffe impostate dai titolari della scuola. ULTM8 non paga nessuno: la scuola paga il suo staff al di fuori di ULTM8.",
+    ratesHidden: "I titolari della scuola hanno scelto di non mostrare qui le tariffe: vedi lezioni, ore e paga.",
+    staffRates: {
+      title: "Cosa vede lo staff con accesso alle paghe",
+      label: "Mostra le tariffe nel report",
+      hint: "Lo staff con l’interruttore Paghe vede la tariffa oraria e per lezione di ogni persona nel report e nel file scaricato, in sola lettura. Disattivato: vede solo lezioni, ore e paga. Tu vedi sempre le tariffe.",
+    },
     noAccess: "Solo i titolari della scuola, e lo staff a cui lo permettono, possono vedere le paghe.",
     loadFailed: "Impossibile caricare le paghe. Riprova.",
     periodLabel: "Date",

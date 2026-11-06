@@ -4935,6 +4935,14 @@ export const messages: PartialMessages<EnglishMessages> = {
     subtitle: "設定した単価で、各スタッフが担当したクラスから得た金額です。ULTM8 は支払いを行いません。スタッフへの支払いは ULTM8 の外で行ってください。",
     tabReport: "レポート",
     tabRates: "単価",
+    // Decision 435 item 22: what staff with the Payroll switch see.
+    subtitleStaff: "スクールのオーナーが設定した単価で、各スタッフが担当したクラスから得た金額です。ULTM8 は支払いを行いません。スタッフへの支払いはスクールが ULTM8 の外で行います。",
+    ratesHidden: "スクールのオーナーはここに単価を表示しないことにしています。クラス数、時間、支払額が表示されます。",
+    staffRates: {
+      title: "給与の権限があるスタッフに表示される内容",
+      label: "レポートに単価を表示する",
+      hint: "給与スイッチがオンのスタッフは、レポートとダウンロードで各人の時給とクラス単価を閲覧のみで見られます。オフの場合は、クラス数、時間、支払額だけが表示されます。あなたには常に単価が表示されます。",
+    },
     noAccess: "給与を見られるのは、スクールのオーナーと、オーナーが許可したスタッフだけです。",
     loadFailed: "給与を読み込めませんでした。もう一度お試しください。",
     periodLabel: "期間",
