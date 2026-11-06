@@ -288,7 +288,9 @@ export class StaffAttendanceService {
    *   the class's waiver to book) are about taking a place in a class to come,
    *   so they don't apply to a visit that already happened.
    * - **Belt progress:** checked in through the same completeInTx as every
-   *   other way in (the School's check-in rules about the person, the grading
+   *   other way in (the School's check-in rules about the person except
+   *   "Waiver must be signed before booking or check-in", which an imported
+   *   visit skips because it already happened (Decision 442 item 1); the grading
    *   count with its class types and weekly cap, hours trained), except that
    *   only a class on or after the day the current belt was awarded counts
    *   toward the next one (StudentRank.dateOfCurrentRank, Decision 423); an

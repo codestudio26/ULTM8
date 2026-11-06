@@ -1109,6 +1109,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "면책 동의서 서명하기",
     screen: {
       notEnrolled: "아직 도장에 등록하지 않았습니다. 등록하면 면책 동의서가 여기에 표시됩니다.",
       loadError: "면책 동의서를 불러오지 못했습니다. 다시 시도해 주세요.",

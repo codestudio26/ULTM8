@@ -150,3 +150,10 @@ function codedMessage(err: ApiError): string | null {
 export function isWaitlistNext(err: unknown): boolean {
   return err instanceof ApiError && (err.code === 'CLASS_FULL' || err.code === 'WAITLIST_FIRST');
 }
+
+/** Whether a booking, a waiting-list join or claim, or a check-in was refused
+ * because the School needs a signed waiver first (Decision 441 item 5): the
+ * refusal that gets a "Sign the waiver" button (Decision 442 item 1). */
+export function isWaiverRefusal(err: unknown): boolean {
+  return err instanceof ApiError && (err.code === 'WAIVER_REQUIRED' || err.code === 'CHECK_IN_WAIVER_REQUIRED');
+}

@@ -23,6 +23,9 @@ jest.mock('./ClassTicketOffer', () => {
   return { ClassTicketOffer: (p: { classId: string; studentId?: string }) => <Text>{`ticket offer ${p.classId} ${p.studentId ?? 'me'}`}</Text> };
 });
 
+const mockNavigate = jest.fn();
+jest.mock('@react-navigation/native', () => ({ useNavigation: () => ({ navigate: mockNavigate }) }));
+
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
 const idleMutation = () => ({ mutateAsync: jest.fn<(...args: unknown[]) => Promise<unknown>>(), isPending: false });
 
@@ -248,5 +251,62 @@ describe('ClassBookingRow — remembers what you already did', () => {
     const screen = await render(<ClassBookingRow classItem={classItem} />);
     expect(screen.getByText("You're #2 on the waitlist.")).toBeTruthy();
     expect(screen.queryByText('Book')).toBeNull();
+  });
+});
+
+/** Decision 442 item 1: "Sign the waiver" next to the School's waiver refusal. */
+describe('ClassBookingRow — Sign the waiver', () => {
+  let book: ReturnType<typeof idleMutation>;
+  let join: ReturnType<typeof idleMutation>;
+  const WAIVER = () => new ApiError(403, 'WAIVER_REQUIRED', 'This School needs a signed waiver before booking a class or checking in.');
+
+  beforeEach(() => {
+    mockNavigate.mockClear();
+    book = idleMutation();
+    join = idleMutation();
+    mocked(bookingQueries.useBookClass).mockReturnValue(book);
+    mocked(bookingQueries.useMyFriendPasses).mockReturnValue({ data: { items: [] } });
+    mocked(bookingQueries.useMyBookings).mockReturnValue({ data: { pages: [{ items: [] }] } });
+    mocked(waitlistMutations.useMyWaitlist).mockReturnValue({ data: { items: [] } });
+    mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(join);
+    mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+  });
+
+  it("takes the member to that School's waivers when booking is refused", async () => {
+    book.mutateAsync.mockRejectedValue(WAIVER());
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" />);
+    expect(screen.queryByText('Sign the waiver')).toBeNull();
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('This School needs a signed waiver before booking a class or checking in.')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Sign the waiver'));
+    expect(mockNavigate).toHaveBeenCalledWith('Waivers', { schoolId: 'school-1' });
+  });
+
+  it("takes a parent to their child's waivers at that School", async () => {
+    book.mutateAsync.mockRejectedValue(WAIVER());
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" studentId="child-1" childName="Mia" />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Sign the waiver')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Sign the waiver'));
+    expect(mockNavigate).toHaveBeenCalledWith('ChildWaivers', { studentId: 'child-1', name: 'Mia', schoolId: 'school-1' });
+  });
+
+  it('offers it when joining the waiting list is refused too', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(409, 'CLASS_FULL', 'This Class is full.'));
+    join.mutateAsync.mockRejectedValue(WAIVER());
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Join waitlist')).toBeTruthy());
+    expect(screen.queryByText('Sign the waiver')).toBeNull();
+    await fireEvent.press(screen.getByText('Join waitlist'));
+    await waitFor(() => expect(screen.getByText('Sign the waiver')).toBeTruthy());
+  });
+
+  it('is not offered for any other refusal', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(409, 'CLASS_BUSY', 'This Class is very busy right now. Please try again in a moment.'));
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Lots of people are booking this class right now. Please try again in a moment.')).toBeTruthy());
+    expect(screen.queryByText('Sign the waiver')).toBeNull();
   });
 });

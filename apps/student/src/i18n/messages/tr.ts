@@ -1119,6 +1119,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "Feragatnameyi imzala",
     screen: {
       notEnrolled: "Henüz bir okula kayıtlı değilsiniz — kaydolduğunuzda feragatnameler burada görünür.",
       loadError: "Feragatnameler yüklenemedi — lütfen tekrar deneyin.",

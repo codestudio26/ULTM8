@@ -1,6 +1,7 @@
 import React from 'react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { ApiError } from '@ultm8/api-client';
 import * as bookingQueries from './bookingQueries';
 import * as attendanceQueries from '../attendance/attendanceQueries';
 import { MyBookingsScreen } from './MyBookingsScreen';
@@ -14,6 +15,9 @@ jest.mock('./MyWaitlist', () => ({ MyWaitlist: () => null }));
 jest.mock('../attendance/attendanceQueries', () => ({
   useEnterCheckInCode: jest.fn(),
 }));
+
+const mockNavigate = jest.fn();
+jest.mock('@react-navigation/native', () => ({ useNavigation: () => ({ navigate: mockNavigate }) }));
 
 const mocked = <T,>(fn: T) => fn as unknown as jest.Mock;
 
@@ -155,5 +159,31 @@ describe('MyBookingsScreen — class details', () => {
     );
     const { getByText } = await render(<MyBookingsScreen />);
     expect(getByText(/^Fri, Nov 6, 2026, 3:00\sAM – 4:00\sAM$/)).toBeTruthy();
+  });
+});
+
+/** Decision 442 item 1: check-in with a code refused for want of a signed waiver. */
+describe('MyBookingsScreen — Sign the waiver', () => {
+  it('offers "Sign the waiver" for the booking\'s School when check-in needs a waiver, and not for another refusal', async () => {
+    mockNavigate.mockClear();
+    const enterCode = idleMutation();
+    mocked(bookingQueries.useCancelBooking).mockReturnValue(idleMutation());
+    mocked(attendanceQueries.useEnterCheckInCode).mockReturnValue(enterCode);
+    mocked(bookingQueries.useMyBookings).mockReturnValue(pagedQuery([{ id: 'b1', classId: 'c1', schoolId: 'school-1', status: 'UPCOMING', attendees: [] }]));
+    enterCode.mutateAsync
+      .mockRejectedValueOnce(new ApiError(403, 'CHECK_IN_HOME_BRANCH_ONLY', 'This School checks members in only at their home Branch.'))
+      .mockRejectedValueOnce(new ApiError(403, 'CHECK_IN_WAIVER_REQUIRED', 'This School needs a signed waiver before checking in.'));
+
+    const { getByText, getByPlaceholderText, queryByText } = await render(<MyBookingsScreen />);
+    await fireEvent.press(getByText('Check in with code'));
+    await fireEvent.changeText(getByPlaceholderText('123456'), '482913');
+    await fireEvent.press(getByText('Check in'));
+    await waitFor(() => expect(getByText('This School checks members in only at their home Branch.')).toBeTruthy());
+    expect(queryByText('Sign the waiver')).toBeNull();
+
+    await fireEvent.press(getByText('Check in'));
+    await waitFor(() => expect(getByText('This School needs a signed waiver before checking in.')).toBeTruthy());
+    await fireEvent.press(getByText('Sign the waiver'));
+    expect(mockNavigate).toHaveBeenCalledWith('Waivers', { schoolId: 'school-1' });
   });
 });

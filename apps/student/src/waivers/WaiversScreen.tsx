@@ -1,11 +1,15 @@
 import React from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useEnrolledSchoolIds } from '../auth/AuthContext';
 import { WaiverRow } from './WaiverRow';
 import { useT } from '../i18n/I18nProvider';
 import { useAllEnrolledSchoolWaivers, useEnrolledSchoolNames, useMyWaiverSignatures } from './waiverQueries';
+import type { AppStackParamList } from '../navigation/types';
+
+type Props = Partial<NativeStackScreenProps<AppStackParamList, 'Waivers'>>;
 
 /** Off Home, alongside My Bookings/Memberships/Notifications. Shows every Waiver
  * across every School the Student holds a STUDENT RoleGrant at (`useEnrolledSchoolIds`)
@@ -14,10 +18,15 @@ import { useAllEnrolledSchoolWaivers, useEnrolledSchoolNames, useMyWaiverSignatu
  * `useAllEnrolledSchoolWaivers`'s own header comment in waiverQueries.ts for the
  * "wide single page per School" approach and why). Grouped by School, since a
  * multi-School Student needs to know which Waiver belongs to which School, not just
- * a merged, undifferentiated list. */
-export function WaiversScreen() {
+ * a merged, undifferentiated list.
+ *
+ * Opened from "Sign the waiver" (Decision 442 item 1) with a `schoolId`, it
+ * shows only that School's waivers, when the Student is enrolled there. */
+export function WaiversScreen({ route }: Props = {}) {
   const t = useT();
-  const schoolIds = useEnrolledSchoolIds();
+  const enrolled = useEnrolledSchoolIds();
+  const onlySchoolId = route?.params?.schoolId;
+  const schoolIds = onlySchoolId && enrolled.includes(onlySchoolId) ? [onlySchoolId] : enrolled;
   const waivers = useAllEnrolledSchoolWaivers(schoolIds);
   const mySignatures = useMyWaiverSignatures(schoolIds.length > 0);
   const schoolNames = useEnrolledSchoolNames(schoolIds);
@@ -81,7 +90,7 @@ export function WaiversScreen() {
           .filter((schoolId) => waiversBySchool.has(schoolId))
           .map((schoolId) => (
             <View key={schoolId} style={{ marginBottom: 20 }}>
-              {schoolIds.length > 1 ? (
+              {enrolled.length > 1 ? (
                 <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 4 }}>
                   {schoolNames.get(schoolId) ?? schoolId}
                 </Text>
