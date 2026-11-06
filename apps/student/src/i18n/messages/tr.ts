@@ -68,7 +68,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     joinPick: {
       notNow: "Şimdi değil",
       join: "Katıl",
-      body: "Ders ayırtmak ve plan satın almak için katıl. Orada zaten antrenman yapıyor, ders veriyor ya da çocuğunu getiriyorsan Şimdi değil'e dokun.",
+      body: "Ders ayırtmak ve plan satın almak için katılın. Orada zaten antrenman yapıyor, ders veriyor ya da çocuğunuzu getiriyorsanız Şimdi değil'e dokunun.",
       title: "{school} okuluna katılmak ister misin?",
     },
     title: "ULTM8 Öğrenci",
@@ -162,7 +162,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     choosePasscode: {
       title: "Erişim kodunu seç",
-      intro: "Okulun sana geçici bir erişim kodu verdi. Girişi tamamlamak için kendi 6 haneli kodunu seç.",
+      intro: "Okulunuz size geçici bir erişim kodu verdi. Girişi tamamlamak için kendi 6 haneli kodunuzu seçin.",
       submit: "Kaydet ve giriş yap",
     },
     stepUp: {
@@ -298,10 +298,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       buyFirst: "Bu dersin biletini alın, ardından tekrar Rezerve et'e dokunun.",
     },
     waitlist: {
-      claimError: "Yer alınamadı — lütfen tekrar dene.",
+      claimError: "Yer alınamadı — lütfen tekrar deneyin.",
       claim: "Yeri al",
-      spotFreeUntil: "Senin için bir yer açıldı. {date} tarihine kadar al.",
-      spotFree: "Senin için bir yer açıldı. Hemen al.",
+      spotFreeUntil: "Sizin için bir yer açıldı. {date} tarihine kadar alın.",
+      spotFree: "Sizin için bir yer açıldı. Hemen alın.",
       title: "Bekleme listem",
     },
     myBookings: {
@@ -353,9 +353,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       unsigned: "Feragatnameyi henüz imzalamadı",
       share: "Bağlantıyı paylaş",
       shareMessage: "Lütfen dersten önce feragatnameyi imzala: {link}",
-      noLink: "İmza bağlantısı kullanılamıyor. Okuldan göndermesini iste.",
-      noShare: "Burada paylaşım yapılamıyor. Yukarıdaki bağlantıyı kopyalayıp misafirine gönder.",
-      loadError: "Misafirlerin yüklenemedi — lütfen tekrar dene.",
+      noLink: "İmza bağlantısı kullanılamıyor. Okuldan göndermesini isteyin.",
+      noShare: "Burada paylaşım yapılamıyor. Yukarıdaki bağlantıyı kopyalayıp misafirinize gönderin.",
+      loadError: "Misafirleriniz yüklenemedi — lütfen tekrar deneyin.",
     },
     statusLabel: {
       upcoming: "YAKLAŞAN",
@@ -642,7 +642,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     correction: {
       a11yLabel: "Kuşak düzeltmesi: {style}",
-      waiting: "Kuşağının {rank} olarak düzeltilmesini istedin. Okul yanıt verecek.",
+      waiting: "Kuşağınızın {rank} olarak düzeltilmesini istediniz. Okul yanıt verecek.",
       approved: "Kuşağın {rank} olarak düzeltildi.",
       rejected: "Okul kuşağını olduğu gibi bıraktı ({rank} istemiştin).",
       askedOn: "{date} tarihinde istendi",
@@ -652,7 +652,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       pickBelt: "Hangi kuşakta olmalısın?",
       noteLabel: "Neden yanlış?",
       noteHint: "Örneğin: “Mart ayında eski kulübümde terfi ettim.”",
-      sendError: "İsteğin gönderilemedi. Tekrar dene.",
+      sendError: "İsteğiniz gönderilemedi. Tekrar deneyin.",
       send: "İsteği gönder",
       cancel: "İptal",
     },
@@ -677,7 +677,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       accept: "{amount} kabul et",
       decline: "Reddet",
       plusTax: "Artı {tax} vergi: toplam {total}.",
-      acceptedInvoice: "Ücreti kabul ettin. Fatura {invoice}: uygulamada veya resepsiyonda ödenecek {amount}.",
+      acceptedInvoice: "Ücreti kabul ettiniz. Fatura {invoice}: uygulamada veya resepsiyonda ödenecek {amount}.",
       waitsForPayment: "{rank} terfisi ödendiğinde gerçekleşir.",
       payNow: "Şimdi öde",
       paid: "Ödendi. Teşekkürler.",
@@ -727,9 +727,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       bookTitle: "Ders rezervasyonu yap",
       noSchools: "{name} henüz hiçbir okulda öğrenci değil.",
       noClasses: "Bu okulda yaklaşan ders yok.",
-      loadError: "Çocuğunun okulları yüklenemedi — lütfen tekrar dene.",
-      bookingsLoadError: "Çocuğunun rezervasyonları yüklenemedi — lütfen tekrar dene.",
-      classesLoadError: "Dersler yüklenemedi — lütfen tekrar dene.",
+      loadError: "Çocuğunuzun okulları yüklenemedi — lütfen tekrar deneyin.",
+      bookingsLoadError: "Çocuğunuzun rezervasyonları yüklenemedi — lütfen tekrar deneyin.",
+      classesLoadError: "Dersler yüklenemedi — lütfen tekrar deneyin.",
     },
     myMinors: {
       dateInvalid: "YYYY-AA-GG biçiminde gerçek bir tarih girin.",
@@ -856,7 +856,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Sözleşme",
       intro: "Planı satın almak için bu planın sözleşmesini okuyun ve imzalayın.",
       guardianSigns: "Ebeveyni veya vasisi olarak bu sözleşmeyi çocuğunuz adına imzalıyorsunuz.",
-      termsLine: "Asgari süre {months} ay · erken çıkış ücreti {amount}",
+      termsLine: "Asgari süre {months} ay · erken fesih ücreti {amount}",
       taxNote: "Okulun diğer ücretlerinde olduğu gibi ücrete vergi eklenebilir.",
       signAndContinue: "İmzala ve devam et",
       signError: "Sözleşme imzalanamadı.",
@@ -864,7 +864,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 16.
       endsAfterTerm: "Bu üyelik asgari süre bitince sona erer. Yenilenmez.",
       endsOn: "Asgari sürenin ardından {date} tarihinde biter. Yenilenmez.",
-      cancelFee: "Sözleşmenizin asgari süresi {date} tarihine kadar sürer. Üyeliğiniz bundan önce biterse {amount} erken çıkış ücreti bakiyenize eklenir.",
+      cancelFee: "Sözleşmenizin asgari süresi {date} tarihine kadar sürer. Üyeliğiniz bundan önce biterse {amount} erken fesih ücreti bakiyenize eklenir.",
     },
     recharge: {
       title: "Ders paketiniz bitti",
@@ -887,7 +887,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       keepSubscription: "Devam et",
       cancelBySchool: "İptal etmek için okula başvurun.",
       cancelConfirm: "Ödediğin ayın sonuna kadar aboneliğini kullanmaya devam edersin. Sonra abonelik biter ve başka ödeme alınmaz.",
-      cancelError: "Aboneliğin iptal edilemedi — lütfen tekrar dene.",
+      cancelError: "Aboneliğiniz iptal edilemedi — lütfen tekrar deneyin.",
       cancelledEnds: "İptal edildi, {date} tarihinde bitiyor",
       freeze: {
         request: "Dondurma iste",
@@ -912,7 +912,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     planRow: {
-      joinFirst: "Satın almak için bu okula katıl.",
+      joinFirst: "Satın almak için bu okula katılın.",
       full: "Dolu",
       joinWaitlist: "Bekleme listesine katıl",
       onWaitlist: "Bekleme listesinde {position}. sıradasınız.",
@@ -1015,12 +1015,12 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSizeHint: "Okulunuzun kullandığı şekilde yazın.",
       secondaryPhone: "İkincil telefon",
       secondaryEmail: "İkincil e-posta",
-      secondaryHint: "Okulunun sana ulaşmasının başka bir yolu. Giriş için kullanılmaz.",
+      secondaryHint: "Okulunuzun size ulaşmasının başka bir yolu. Giriş için kullanılmaz.",
       emergencyHeading: "Acil durum kişisi",
       emergencyHint: "Okulunun acil bir durumda arayabileceği kişi. Veli değildir ve hesaba ihtiyacı yoktur.",
       emergencyName: "Adı",
       emergencyPhone: "Telefonu",
-      emergencyRelationship: "Sana yakınlığı",
+      emergencyRelationship: "Sizinle yakınlığı",
       language: "Dil",
       rtlRestartHint: "Arapça, uygulamayı yeniden başlattıktan sonra sağdan sola gösterilir.",
       currency: "Para birimi",
@@ -1041,8 +1041,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       confirm: "Onay geri çekilsin mi? {school} okulundaki sağlık bilgileri hemen silinir. Bu geri alınamaz.",
       confirmWithdraw: "Geri çek",
       cancel: "İptal",
-      withdrawFailed: "Onay geri çekilemedi — lütfen tekrar dene.",
-      loadFailed: "Sağlık bilgilerin yüklenemedi — lütfen tekrar dene.",
+      withdrawFailed: "Onay geri çekilemedi — lütfen tekrar deneyin.",
+      loadFailed: "Sağlık bilgileriniz yüklenemedi — lütfen tekrar deneyin.",
     },
     deleteAccount: {
       open: "Hesabımı sil",
@@ -1156,8 +1156,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       checkInNotOpenAt: "Bu ders için giriş henüz açılmadı. Açılış: {time}.",
       trialEnded: "Bu okul şu anda uygulamada yeni rezervasyon veya ödeme alamıyor. Resepsiyona sorun.",
       correctionNotVerified: "Bu stildeki kuşağın hâlâ okul tarafından kontrol edilmeyi bekliyor. O zaman düzeltebilirler.",
-      correctionPending: "Bu stilde zaten düzeltme istedin. Okulun yanıtını bekle.",
-      correctionSameRank: "Bu zaten sahip olduğun kuşak. Olması gereken kuşağı seç.",
+      correctionPending: "Bu stilde zaten düzeltme istediniz. Okulun yanıtını bekleyin.",
+      correctionSameRank: "Bu zaten sahip olduğunuz kuşak. Olması gereken kuşağı seçin.",
     },
   },
   charges: {
@@ -1266,7 +1266,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     // Decision 435 item 19.
     earlyExitFee: {
-      label: "Erken çıkış ücreti",
+      label: "Erken fesih ücreti",
     },
     lateFee: {
       label: "Gecikme ücreti",

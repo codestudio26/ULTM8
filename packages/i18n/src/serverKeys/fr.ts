@@ -105,7 +105,7 @@ export const server: PartialMessages<ServerKeys> = {
     ticketRequired: "Ce cours ponctuel nécessite son propre billet. Un abonnement, un pass semaine ou un carnet de cours général ne le couvre pas.",
     classBranchBooked: "Des élèves sont inscrits ou en liste d'attente pour ce cours. Annule leurs réservations avant de le déplacer vers un autre site.",
     classMovedToPast: "Des élèves sont inscrits ou en liste d'attente pour ce cours : il ne peut être déplacé qu'à un horaire qui n'est pas encore passé.",
-    classAlreadyEnded: "Ce cours est déjà terminé. Choisis une heure de fin dans le futur.",
+    classAlreadyEnded: "Ce cours est déjà terminé. Choisissez une heure de fin dans le futur.",
     schoolCurrencyChange: "Formules facturées dans la devise de l'école : {count}. Elles sont désormais facturées en {currency}, avec les mêmes montants.",
     schoolCurrencyInUse: "Formules facturées dans la devise de l'école : {count}. Donnez-leur leur propre devise avant de l'effacer.",
     // Decision 414 item 6.
@@ -284,7 +284,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "Une place s'est libérée",
     planPlaceHeldBody: "Une place dans {plan} vous est réservée jusqu'au {until}. Achetez-la avant, sinon elle passe à la personne suivante.",
     planSwitchNoticeTitle: "Votre formule va changer",
-    planSwitchNoticeBody: "Votre {plan} se termine le {date}. Ensuite {next} commence et {amount} est débité de votre carte enregistrée. Sans carte enregistrée, elle se termine simplement.",
+    planSwitchNoticeBody: "Votre {plan} se termine le {date}. Ensuite {next} commence et {amount} est débité de votre carte enregistrée. Sans carte enregistrée, ou si {next} est complet, elle se termine simplement et rien n’est débité.",
     planSwitchedTitle: "Votre formule a changé",
     planSwitchedBody: "Votre {plan} est terminée et {next} a commencé. {amount} a été débité de votre carte enregistrée.",
     planSwitchEndedTitle: "Abonnement terminé",

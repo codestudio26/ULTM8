@@ -326,7 +326,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "يوجد مكان شاغر",
     planPlaceHeldBody: "مكان في {plan} محجوز لك حتى {until}. اشترِه قبل ذلك، وإلا ينتقل إلى الشخص التالي في الانتظار.",
     planSwitchNoticeTitle: "خطتك على وشك أن تتغير",
-    planSwitchNoticeBody: "تنتهي {plan} في {date}. بعدها تبدأ {next} ويُخصم {amount} من بطاقتك المحفوظة. بدون بطاقة محفوظة، تنتهي ببساطة.",
+    planSwitchNoticeBody: "تنتهي {plan} في {date}. بعدها تبدأ {next} ويُخصم {amount} من بطاقتك المحفوظة. بدون بطاقة محفوظة، أو إذا كانت {next} ممتلئة، تنتهي ببساطة ولا يُخصم شيء.",
     planSwitchedTitle: "تغيرت خطتك",
     planSwitchedBody: "انتهت {plan} وبدأت {next}. خُصم {amount} من بطاقتك المحفوظة.",
     planSwitchEndedTitle: "انتهت العضوية",

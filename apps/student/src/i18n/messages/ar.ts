@@ -380,7 +380,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       gradingError: "تعذّر تحميل الترقيات الخاصة بك.",
       noStyles: "لا توجد رياضات لتقييمها بعد. لم يمنحك مالك المدرسة صلاحية الترقية في أي رياضة.",
       openBoard: "فتح لوحة الترقيات لـ {style}",
-      styleLink: "{style} ‹",
+      styleLink: "{style} ›",
       boardError: "تعذّر تحميل هذه اللوحة.",
       boardSummary: {
         zero: "{ready} جاهزون للترقية · {gettingThere} يقتربون · {count} طالب",
@@ -906,7 +906,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "العقد",
       intro: "اقرأ عقد هذه الخطة ووقّعه لشراء الخطة.",
       guardianSigns: "بصفتك أحد الوالدين أو الوصي، توقّع هذا العقد عن طفلك.",
-      termsLine: "المدة الدنيا {months} أشهر · رسوم الخروج المبكر {amount}",
+      termsLine: "المدة الدنيا {months} أشهر · رسوم الإنهاء المبكر {amount}",
       taxNote: "قد تُضاف ضريبة إلى الرسوم، كما في رسوم المدرسة الأخرى.",
       signAndContinue: "وقّع وتابع",
       signError: "تعذّر توقيع العقد.",
@@ -914,7 +914,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 16.
       endsAfterTerm: "تتوقف هذه العضوية عند انتهاء المدة الدنيا، ولا تتجدد.",
       endsOn: "تنتهي بعد مدتها الدنيا في {date}، ولا تتجدد.",
-      cancelFee: "تستمر المدة الدنيا لعقدك حتى {date}. إذا انتهت عضويتك قبل ذلك، تُضاف رسوم الخروج المبكر البالغة {amount} إلى رصيدك.",
+      cancelFee: "تستمر المدة الدنيا لعقدك حتى {date}. إذا انتهت عضويتك قبل ذلك، تُضاف رسوم الإنهاء المبكر البالغة {amount} إلى رصيدك.",
     },
     recharge: {
       title: "نفدت باقة الحصص الخاصة بك",
@@ -1341,7 +1341,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     // Decision 435 item 19.
     earlyExitFee: {
-      label: "رسوم الخروج المبكر",
+      label: "رسوم الإنهاء المبكر",
     },
     lateFee: {
       label: "رسوم تأخير",

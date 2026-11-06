@@ -884,7 +884,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       title: "Договор",
       intro: "Прочитайте договор этого тарифа и подпишите его, чтобы купить тариф.",
       guardianSigns: "Как родитель или опекун, вы подписываете этот договор за ребёнка.",
-      termsLine: "Минимальный срок {months} мес. · плата за досрочный выход {amount}",
+      termsLine: "Минимальный срок {months} мес. · плата за досрочное расторжение {amount}",
       taxNote: "К плате может добавиться налог, как к другим платежам школы.",
       signAndContinue: "Подписать и продолжить",
       signError: "Не удалось подписать договор.",
@@ -892,7 +892,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 16.
       endsAfterTerm: "Это членство прекращается по окончании минимального срока. Оно не продлевается.",
       endsOn: "Заканчивается после минимального срока, {date}. Не продлевается.",
-      cancelFee: "Минимальный срок вашего договора — до {date}. Если членство закончится раньше, плата за досрочный выход {amount} добавится к вашему балансу.",
+      cancelFee: "Минимальный срок вашего договора — до {date}. Если членство закончится раньше, плата за досрочное расторжение {amount} добавится к вашему балансу.",
     },
     recharge: {
       title: "Ваш пакет занятий закончился",
@@ -1063,7 +1063,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       emergencyHint: "Кому школа может позвонить в экстренной ситуации. Не опекун, учётная запись не нужна.",
       emergencyName: "Имя",
       emergencyPhone: "Телефон",
-      emergencyRelationship: "Кем тебе приходится",
+      emergencyRelationship: "Кем он(а) вам приходится",
       language: "Язык",
       rtlRestartHint: "Арабский будет отображаться справа налево после перезапуска приложения.",
       currency: "Валюта",
@@ -1311,7 +1311,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     // Decision 435 item 19.
     earlyExitFee: {
-      label: "Плата за досрочный выход",
+      label: "Плата за досрочное расторжение",
     },
     lateFee: {
       label: "Пеня за просрочку",

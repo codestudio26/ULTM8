@@ -284,7 +284,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "Hay una plaza libre",
     planPlaceHeldBody: "Te guardamos una plaza en {plan} hasta el {until}. Cómprala antes o pasará a la siguiente persona en espera.",
     planSwitchNoticeTitle: "Tu plan va a cambiar",
-    planSwitchNoticeBody: "Tu {plan} termina el {date}. Después empieza {next} y se cobran {amount} a tu tarjeta guardada. Sin tarjeta guardada, simplemente termina.",
+    planSwitchNoticeBody: "Tu {plan} termina el {date}. Después empieza {next} y se cobran {amount} a tu tarjeta guardada. Sin tarjeta guardada, o si {next} está completo, simplemente termina y no se cobra nada.",
     planSwitchedTitle: "Tu plan ha cambiado",
     planSwitchedBody: "Tu {plan} ha terminado y {next} ha empezado. Se cobraron {amount} a tu tarjeta guardada.",
     planSwitchEndedTitle: "Membresía terminada",
