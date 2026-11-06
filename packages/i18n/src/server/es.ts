@@ -1,5 +1,10 @@
 /** Spanish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "Este plan está completo. Únete a su lista de espera para saber cuándo se libera una plaza.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "Este plan no tiene límite de miembros, así que no tiene lista de espera. Cómpralo ahora.",
+  "You already have this plan.": "Ya tienes este plan.",
+  "This plan has room now. Buy it instead.": "Este plan tiene plaza ahora. Cómpralo en su lugar.",
+  "Only a current Student of this School can join its waiting lists.": "Solo un alumno actual de esta escuela puede unirse a sus listas de espera.",
   "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.": "Solo un bono de clases, un pase semanal o una prueba pueden empezar en el primer check-in.",
   "A plan on fixed dates starts on its first day, not on the first check-in.": "Un plan con fechas fijas empieza su primer día, no en el primer check-in.",
   "A plan that starts on the first check-in needs the number of days it lasts.": "Un plan que empieza en el primer check-in necesita el número de días que dura.",

@@ -1,5 +1,10 @@
 /** Korean — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "이 플랜은 마감되었습니다. 자리가 나면 알림을 받으려면 대기자 명단에 등록하세요.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "이 플랜은 인원 제한이 없어 대기자 명단이 없습니다. 지금 구매하세요.",
+  "You already have this plan.": "이미 이 플랜이 있습니다.",
+  "This plan has room now. Buy it instead.": "이 플랜에 지금 자리가 있습니다. 대신 구매하세요.",
+  "Only a current Student of this School can join its waiting lists.": "이 학교의 현재 학생만 대기자 명단에 등록할 수 있습니다.",
   "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.": "첫 체크인에 시작할 수 있는 것은 수업권, 주간 패스, 체험뿐입니다.",
   "A plan on fixed dates starts on its first day, not on the first check-in.": "고정 날짜 플랜은 첫 체크인이 아니라 첫날에 시작합니다.",
   "A plan that starts on the first check-in needs the number of days it lasts.": "첫 체크인에 시작하는 플랜에는 유효 일수가 필요합니다.",

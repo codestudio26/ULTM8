@@ -913,6 +913,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Tritt dieser Schule bei, um zu kaufen.",
+      full: "Voll",
+      joinWaitlist: "Auf die Warteliste",
+      onWaitlist: "Du bist Nummer {position} auf der Warteliste.",
+      leaveWaitlist: "Warteliste verlassen",
+      placeHeld: "Ein Platz ist bis {date} für dich reserviert. Kauf ihn vorher.",
+      waitlistError: "Die Warteliste konnte nicht aktualisiert werden — bitte versuche es erneut.",
       startsOnFirstCheckIn: "Beginnt bei deinem ersten Check-in",
       fixedDates: "Läuft vom {from} bis {to}",
       agreeToSwitch: "Am Ende zu {plan} ({price}) wechseln, abgebucht von meiner gespeicherten Karte. Ich werde vorher informiert; ohne gespeicherte Karte endet er einfach.",

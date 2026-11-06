@@ -40,6 +40,7 @@ import { assertSchoolCurrencySet, resolveChargeCurrency, setsNewPrice } from '..
 import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
 import { PlanContractsService } from './contracts/plan-contracts.service';
+import { assertPlanHasRoom } from './waitlist/plan-capacity';
 import { assertPlanTermValid, fixedPlanOver, membershipTerm, planDay, PLAN_OVER, TERM_PLAN_TYPES } from './plan-term';
 import { assertJoiningFeeAllowed, joiningFeeDue, NO_JOINING_FEE, type JoiningFeeDue } from './joining-fee';
 
@@ -171,6 +172,8 @@ export class MembershipsService {
           switchToPlanId,
           joiningFee: dto.joiningFee ?? null,
           joiningFeeRefundable: dto.joiningFeeRefundable ?? false,
+          // Decision 435 item 13: blank = no limit.
+          memberLimit: dto.memberLimit ?? null,
         },
       }),
     );
@@ -505,6 +508,9 @@ export class MembershipsService {
           switchToPlanId: nextSwitchToPlanId,
           joiningFee: dto.joiningFee,
           joiningFeeRefundable: dto.joiningFeeRefundable,
+          // Decision 435 items 13 and 15: null removes the limit; a lower one
+          // keeps current members.
+          memberLimit: dto.memberLimit,
         },
       });
       if (saved.count === 0) {
@@ -912,6 +918,10 @@ export class MembershipsService {
     if (!plan.visible) {
       throw new BadRequestException('This plan is not on sale.');
     }
+    // Decision 435 items 10-12 and 15: a member can't buy a full plan (the
+    // desk can sell over the limit). A place held for them is theirs.
+    await this.prismaApp.withTenantContext(studentId, (tx) => assertPlanHasRoom(tx, plan, studentId));
+
     // Decision 435 item 8: a fixed-date plan is sold until its last day.
     if (plan.fixedEndDate && fixedPlanOver(plan, await schoolZoneFor(this.prismaJobs, plan.schoolId))) {
       throw new BadRequestException(PLAN_OVER);

@@ -272,6 +272,8 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "Plano termina em breve",
     membershipExpiryBody: "Seu plano {plan} termina em {date}.",
+    planPlaceHeldTitle: "Abriu uma vaga",
+    planPlaceHeldBody: "Uma vaga em {plan} está reservada para você até {until}. Compre antes disso, ou ela passa para a próxima pessoa na espera.",
     planSwitchNoticeTitle: "Seu plano vai mudar",
     planSwitchNoticeBody: "Seu {plan} termina em {date}. Depois começa {next} e {amount} é cobrado no seu cartão salvo. Sem cartão salvo, ele simplesmente termina.",
     planSwitchedTitle: "Seu plano mudou",

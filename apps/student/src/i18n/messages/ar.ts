@@ -970,6 +970,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "انضم إلى هذه المدرسة للشراء.",
+      full: "ممتلئة",
+      joinWaitlist: "الانضمام إلى قائمة الانتظار",
+      onWaitlist: "ترتيبك {position} في قائمة الانتظار.",
+      leaveWaitlist: "مغادرة قائمة الانتظار",
+      placeHeld: "مكان محجوز لك حتى {date}. اشترِه قبل ذلك.",
+      waitlistError: "تعذر تحديث قائمة الانتظار — حاول مرة أخرى.",
       startsOnFirstCheckIn: "تبدأ عند أول تسجيل حضور لك",
       fixedDates: "من {from} إلى {to}",
       agreeToSwitch: "عند انتهائها، انقلني إلى {plan} ({price}) مع الخصم من بطاقتي المحفوظة. سأُبلَّغ مسبقاً؛ بدون بطاقة محفوظة تنتهي ببساطة.",

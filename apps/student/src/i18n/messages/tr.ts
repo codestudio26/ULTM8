@@ -913,6 +913,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Satın almak için bu okula katıl.",
+      full: "Dolu",
+      joinWaitlist: "Bekleme listesine katıl",
+      onWaitlist: "Bekleme listesinde {position}. sıradasınız.",
+      leaveWaitlist: "Bekleme listesinden çık",
+      placeHeld: "{date} tarihine kadar sizin için bir yer ayrıldı. O zamana kadar satın alın.",
+      waitlistError: "Bekleme listesi güncellenemedi — lütfen tekrar deneyin.",
       startsOnFirstCheckIn: "İlk girişinizde başlar",
       fixedDates: "{from} – {to}",
       agreeToSwitch: "Bitince beni {plan} ({price}) planına geçir, ödeme kayıtlı kartımdan alınsın. Önceden bilgilendirileceğim; kayıtlı kart yoksa sadece sona erer.",

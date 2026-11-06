@@ -913,6 +913,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "Word lid van deze school om te kopen.",
+      full: "Vol",
+      joinWaitlist: "Op de wachtlijst",
+      onWaitlist: "Je staat op plek {position} van de wachtlijst.",
+      leaveWaitlist: "Van de wachtlijst af",
+      placeHeld: "Er is een plek voor je vastgehouden tot {date}. Koop hem daarvoor.",
+      waitlistError: "De wachtlijst kon niet worden bijgewerkt — probeer het opnieuw.",
       startsOnFirstCheckIn: "Begint bij je eerste check-in",
       fixedDates: "Van {from} tot {to}",
       agreeToSwitch: "Aan het eind overstappen op {plan} ({price}), afgeschreven van mijn opgeslagen kaart. Ik hoor het vooraf; zonder opgeslagen kaart eindigt het gewoon.",

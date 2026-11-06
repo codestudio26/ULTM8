@@ -278,6 +278,8 @@ const NOTIFICATION_TITLES: Record<string, string> = {
   'Payment due soon': 'chargeDueReminderTitle',
   // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
   'Membership ending soon': 'membershipExpiryTitle',
+  // Decision 435 item 11 — plan-waitlist job.
+  'A place is free': 'planPlaceHeldTitle',
   // Decision 435 item 9 — plan-switch job.
   'Your plan is about to change': 'planSwitchNoticeTitle',
   'Your plan has changed': 'planSwitchedTitle',
@@ -537,6 +539,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   ],
   // Decision 317 item 7 — the membership expiry reminder and the absence alert. Days are YYYY-MM-DD.
   [/^Your (.+) membership ends on (\d{4}-\d{2}-\d{2})\.$/s, (m, { t, locale }) => n(t, 'membershipExpiryBody', { plan: m[1], date: formatDay(m[2], locale) })],
+  // Decision 435 item 11 — a full plan's freed place, held 24 hours.
+  [
+    /^A place on (.+) is held for you until (\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?: UTC)?)\. Buy it before then, or it goes to the next person waiting\.$/s,
+    (m, { t, locale }) => n(t, 'planPlaceHeldBody', { plan: m[1], until: formatWhen(m[2], locale) }),
+  ],
   // Decision 435 item 9 — the plan-switch job's notices.
   [
     /^Your (.+) ends on (\d{4}-\d{2}-\d{2})\. Then (.+) starts and ([\d.]+) ([A-Z]{3}) is charged to your saved card\. Without a saved card, it simply ends\.$/s,

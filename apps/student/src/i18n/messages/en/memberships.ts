@@ -65,6 +65,12 @@ export const memberships = {
   },
   planRow: {
     joinFirst: 'Join this School to buy.',
+    full: "Full",
+    joinWaitlist: "Join the waiting list",
+    onWaitlist: "You're number {position} on the waiting list.",
+    leaveWaitlist: "Leave the waiting list",
+    placeHeld: "A place is held for you until {date}. Buy it before then.",
+    waitlistError: "Could not update the waiting list — please try again.",
     startsOnFirstCheckIn: "Starts on your first check-in",
     fixedDates: "Runs {from} – {to}",
     agreeToSwitch: "When it ends, switch me to {plan} ({price}), charged to my saved card. I'll be told before; without a saved card it simply ends.",

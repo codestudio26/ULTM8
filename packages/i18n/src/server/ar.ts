@@ -1,5 +1,10 @@
 /** Arabic — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "هذه الخطة ممتلئة. انضم إلى قائمة الانتظار لتُبلَّغ عندما يتوفر مكان.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "لا يوجد حد للأعضاء في هذه الخطة، لذلك لا توجد قائمة انتظار. اشترها الآن.",
+  "You already have this plan.": "لديك هذه الخطة بالفعل.",
+  "This plan has room now. Buy it instead.": "يوجد مكان في هذه الخطة الآن. اشترها بدلاً من ذلك.",
+  "Only a current Student of this School can join its waiting lists.": "يمكن فقط لطالب حالي في هذه المدرسة الانضمام إلى قوائم الانتظار.",
   "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.": "يمكن فقط لباقة الحصص أو التصريح الأسبوعي أو التجربة أن تبدأ عند أول تسجيل حضور.",
   "A plan on fixed dates starts on its first day, not on the first check-in.": "الخطة ذات التواريخ الثابتة تبدأ في يومها الأول، لا عند أول تسجيل حضور.",
   "A plan that starts on the first check-in needs the number of days it lasts.": "الخطة التي تبدأ عند أول تسجيل حضور تحتاج إلى عدد الأيام التي تستمر فيها.",

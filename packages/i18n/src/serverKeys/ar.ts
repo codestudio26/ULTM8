@@ -314,6 +314,8 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "عضويتك تنتهي قريبًا",
     membershipExpiryBody: "تنتهي عضويتك {plan} في {date}.",
+    planPlaceHeldTitle: "يوجد مكان شاغر",
+    planPlaceHeldBody: "مكان في {plan} محجوز لك حتى {until}. اشترِه قبل ذلك، وإلا ينتقل إلى الشخص التالي في الانتظار.",
     planSwitchNoticeTitle: "خطتك على وشك أن تتغير",
     planSwitchNoticeBody: "تنتهي {plan} في {date}. بعدها تبدأ {next} ويُخصم {amount} من بطاقتك المحفوظة. بدون بطاقة محفوظة، تنتهي ببساطة.",
     planSwitchedTitle: "تغيرت خطتك",

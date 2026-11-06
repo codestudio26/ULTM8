@@ -903,6 +903,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "加入这所学校后才能购买。",
+      full: "已满",
+      joinWaitlist: "加入候补名单",
+      onWaitlist: "你在候补名单中排第 {position} 位。",
+      leaveWaitlist: "退出候补名单",
+      placeHeld: "名额为你保留到 {date}，请在此之前购买。",
+      waitlistError: "无法更新候补名单，请重试。",
       startsOnFirstCheckIn: "从你首次签到开始",
       fixedDates: "{from} 至 {to}",
       agreeToSwitch: "结束时将我转为{plan}（{price}），从我保存的卡中扣款。我会提前收到通知；没有保存的卡则直接结束。",

@@ -120,7 +120,7 @@ export class PackRechargesService {
       include: {
         school: { select: { name: true, defaultCurrency: true } },
         student: { select: { firstName: true } },
-        membershipPlan: { select: { id: true, schoolId: true, type: true, title: true, price: true, currency: true, expiryDurationDays: true, classesIncluded: true, visible: true, contractVersion: true, startsOnFirstCheckIn: true, fixedStartDate: true, fixedEndDate: true, switchToPlanId: true, archivedAt: true } },
+        membershipPlan: { select: { id: true, schoolId: true, type: true, title: true, price: true, currency: true, expiryDurationDays: true, classesIncluded: true, visible: true, contractVersion: true, startsOnFirstCheckIn: true, fixedStartDate: true, fixedEndDate: true, switchToPlanId: true, memberLimit: true, archivedAt: true } },
       },
     });
     const items: MyPackRechargeDto[] = [];

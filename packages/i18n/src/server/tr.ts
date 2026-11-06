@@ -1,5 +1,10 @@
 /** Turkish — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "Bu plan dolu. Yer açıldığında haber almak için bekleme listesine katılın.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "Bu planın üye sınırı yok, bu yüzden bekleme listesi de yok. Hemen satın alın.",
+  "You already have this plan.": "Bu plana zaten sahipsiniz.",
+  "This plan has room now. Buy it instead.": "Bu planda şu an yer var. Bunun yerine satın alın.",
+  "Only a current Student of this School can join its waiting lists.": "Bekleme listelerine yalnızca bu okulun mevcut öğrencileri katılabilir.",
   "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.": "Yalnızca ders paketi, haftalık geçiş veya deneme ilk girişte başlayabilir.",
   "A plan on fixed dates starts on its first day, not on the first check-in.": "Sabit tarihli bir plan ilk girişte değil, ilk gününde başlar.",
   "A plan that starts on the first check-in needs the number of days it lasts.": "İlk girişte başlayan bir planın kaç gün süreceği girilmelidir.",

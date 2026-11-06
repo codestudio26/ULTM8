@@ -350,6 +350,8 @@ export class TenantLifecyclePurgeProcessor extends WorkerHost {
     await db.studentAbsenceAlert.deleteMany({ where });
     await db.favorite.deleteMany({ where });
     await db.watchHistory.deleteMany({ where });
+    // Decision 435 item 14: places on full plans' waiting lists.
+    await db.planWaitlistEntry.deleteMany({ where });
     // Stage 2 (migration 20270223000100): only for a School already purged.
     await db.notificationBroadcast.deleteMany({ where });
     await db.staffActivity.deleteMany({ where });

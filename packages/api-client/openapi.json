@@ -9577,6 +9577,170 @@
         ]
       }
     },
+    "/v1/membership-plans/{id}/waitlist": {
+      "post": {
+        "operationId": "PlanWaitlistController_join",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlanWaitlistMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanWaitlistPlaceDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "PlanWaitlistController_leave",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "A parent: the child this is for. Omit for yourself.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanWaitlistLeaveResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "operationId": "PlanWaitlistController_list",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanWaitlistOwnerResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/plan-availability": {
+      "get": {
+        "operationId": "PlanWaitlistController_availability",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "description": "A parent: the child this is for. Omit for yourself.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlanAvailabilityResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "memberships"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/income-categories": {
       "get": {
         "operationId": "IncomeCategoriesController_list",
@@ -33112,6 +33276,10 @@
             "type": "boolean",
             "description": "Decision 435 item 5: whether the joining fee is refunded together with the membership payment. Defaults to false (never refunded)."
           },
+          "memberLimit": {
+            "type": "number",
+            "description": "Decision 435 items 10-15: the most members this plan can have (live and frozen members and waiting Cash/Bank payments count). When full, members join its waiting list; owners and staff can still sell over it at the desk. Omit for no limit."
+          },
           "incomeCategoryId": {
             "type": "string",
             "description": "One of the School's income categories (Decision 316 item 10), shown in the Transactions export."
@@ -33252,6 +33420,11 @@
             "type": "number",
             "nullable": true,
             "description": "Goes up by one each time the contract changes; null = no contract."
+          },
+          "memberLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 435 items 10-15: the most members this plan can have; null = no limit."
           },
           "startsOnFirstCheckIn": {
             "type": "boolean",
@@ -33440,6 +33613,11 @@
             "type": "number",
             "nullable": true,
             "description": "Decision 435 items 1-6: the joining fee in the plan's currency (minor units). Pass null to remove it."
+          },
+          "memberLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 435 items 13 and 15: the most members this plan can have. Pass null for no limit. A limit below the current count keeps everyone and closes the plan to new buyers until there is room."
           }
         }
       },
@@ -34886,6 +35064,157 @@
         },
         "required": [
           "data"
+        ]
+      },
+      "PlanWaitlistMemberDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "description": "A parent: the child this is for. Omit for yourself."
+          }
+        }
+      },
+      "PlanWaitlistPlaceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "OFFERED"
+            ],
+            "description": "OFFERED: a place is held for them until offerExpiresAt (24 hours); they can buy the plan now."
+          },
+          "position": {
+            "type": "number",
+            "nullable": true,
+            "description": "Their place in line while WAITING (1 = next); null once offered."
+          },
+          "offerExpiresAt": {
+            "type": "string",
+            "nullable": true,
+            "description": "Until when the place is held for them."
+          }
+        },
+        "required": [
+          "id",
+          "status"
+        ]
+      },
+      "PlanWaitlistLeaveResponseDto": {
+        "type": "object",
+        "properties": {
+          "left": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "left"
+        ]
+      },
+      "PlanWaitlistOwnerEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "WAITING",
+              "OFFERED"
+            ]
+          },
+          "joinedAt": {
+            "type": "string"
+          },
+          "offerExpiresAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "firstName",
+          "surname",
+          "status",
+          "joinedAt"
+        ]
+      },
+      "PlanWaitlistOwnerResponseDto": {
+        "type": "object",
+        "properties": {
+          "memberLimit": {
+            "type": "number",
+            "nullable": true
+          },
+          "placesTaken": {
+            "type": "number",
+            "description": "Places taken now: live and frozen members, waiting Cash/Bank payments and places held, each person once."
+          },
+          "items": {
+            "description": "Waiting and offered, first in line first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanWaitlistOwnerEntryDto"
+            }
+          }
+        },
+        "required": [
+          "placesTaken",
+          "items"
+        ]
+      },
+      "PlanAvailabilityItemDto": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string"
+          },
+          "full": {
+            "type": "boolean",
+            "description": "The plan is full for this member: they can join its waiting list but not buy it."
+          },
+          "waitlist": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PlanWaitlistPlaceDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "planId",
+          "full"
+        ]
+      },
+      "PlanAvailabilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlanAvailabilityItemDto"
+            }
+          }
+        },
+        "required": [
+          "items"
         ]
       },
       "IncomeCategoryDto": {
@@ -40666,6 +40995,11 @@
             "type": "number",
             "nullable": true,
             "description": "Goes up by one each time the contract changes; null = no contract."
+          },
+          "memberLimit": {
+            "type": "number",
+            "nullable": true,
+            "description": "Decision 435 items 10-15: the most members this plan can have; null = no limit."
           },
           "startsOnFirstCheckIn": {
             "type": "boolean",

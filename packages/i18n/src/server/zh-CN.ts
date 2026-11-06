@@ -1,5 +1,10 @@
 /** Chinese (Simplified) — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "此方案已满。加入候补名单，有名额时会通知你。",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "此方案没有人数上限，因此没有候补名单。现在就可以购买。",
+  "You already have this plan.": "你已经有这个方案了。",
+  "This plan has room now. Buy it instead.": "此方案现在有名额，请直接购买。",
+  "Only a current Student of this School can join its waiting lists.": "只有本学校的在读学员才能加入候补名单。",
   "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.": "只有课时包、周卡或体验课可以在首次签到时开始。",
   "A plan on fixed dates starts on its first day, not on the first check-in.": "固定日期的方案从其第一天开始，而不是首次签到时。",
   "A plan that starts on the first check-in needs the number of days it lasts.": "从首次签到开始的方案需要填写有效天数。",

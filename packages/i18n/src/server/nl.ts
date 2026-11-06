@@ -1,5 +1,10 @@
 /** Dutch — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "Dit abonnement is vol. Zet je op de wachtlijst om te horen wanneer er een plek vrijkomt.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "Dit abonnement heeft geen ledenlimiet en dus geen wachtlijst. Koop het nu.",
+  "You already have this plan.": "Je hebt dit abonnement al.",
+  "This plan has room now. Buy it instead.": "Dit abonnement heeft nu plek. Koop het in plaats daarvan.",
+  "Only a current Student of this School can join its waiting lists.": "Alleen een huidige leerling van deze school kan op de wachtlijsten.",
   "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.": "Alleen een rittenkaart, weekpas of proefles kan bij de eerste check-in beginnen.",
   "A plan on fixed dates starts on its first day, not on the first check-in.": "Een abonnement met vaste data begint op de eerste dag, niet bij de eerste check-in.",
   "A plan that starts on the first check-in needs the number of days it lasts.": "Een abonnement dat bij de eerste check-in begint, heeft een aantal dagen nodig.",

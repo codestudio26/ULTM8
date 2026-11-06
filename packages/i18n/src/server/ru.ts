@@ -1,5 +1,10 @@
 /** Russian — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "Этот тариф заполнен. Встаньте в лист ожидания, чтобы узнать, когда освободится место.",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "У этого тарифа нет лимита участников, поэтому нет листа ожидания. Купите его сейчас.",
+  "You already have this plan.": "У вас уже есть этот тариф.",
+  "This plan has room now. Buy it instead.": "Сейчас в этом тарифе есть место. Купите его.",
+  "Only a current Student of this School can join its waiting lists.": "Встать в листы ожидания может только текущий ученик этой школы.",
   "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.": "Начаться с первой отметки может только абонемент на занятия, недельный пропуск или пробное занятие.",
   "A plan on fixed dates starts on its first day, not on the first check-in.": "Тариф с фиксированными датами начинается в свой первый день, а не с первой отметки.",
   "A plan that starts on the first check-in needs the number of days it lasts.": "Тарифу, который начинается с первой отметки, нужно число дней действия.",

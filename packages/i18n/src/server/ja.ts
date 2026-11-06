@@ -1,5 +1,10 @@
 /** Japanese — first-draft translation of the API's error messages (Decision 273). */
 export const serverMessages: Record<string, string> = {
+  "This plan is full. Join its waiting list to be told when a place frees up.": "このプランは満員です。空きが出たときに通知を受けるには、キャンセル待ちに登録してください。",
+  "This plan has no member limit, so it has no waiting list. Buy it now.": "このプランには人数制限がないため、キャンセル待ちはありません。今すぐ購入できます。",
+  "You already have this plan.": "このプランはすでにお持ちです。",
+  "This plan has room now. Buy it instead.": "このプランには今空きがあります。購入してください。",
+  "Only a current Student of this School can join its waiting lists.": "この道場の現在の生徒だけがキャンセル待ちに登録できます。",
   "Only a Class Pack, a Weekly Pass or a Trial can start on the first check-in.": "初回チェックインで開始できるのは、回数券、週間パス、体験だけです。",
   "A plan on fixed dates starts on its first day, not on the first check-in.": "期間固定のプランは初日に始まります。初回チェックインではありません。",
   "A plan that starts on the first check-in needs the number of days it lasts.": "初回チェックインで始まるプランには有効日数が必要です。",

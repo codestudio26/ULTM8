@@ -904,6 +904,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "購入するにはこのスクールに入会してください。",
+      full: "満員",
+      joinWaitlist: "キャンセル待ちに登録",
+      onWaitlist: "キャンセル待ちの{position}番目です。",
+      leaveWaitlist: "キャンセル待ちをやめる",
+      placeHeld: "{date}まで席を確保しています。それまでに購入してください。",
+      waitlistError: "キャンセル待ちを更新できませんでした。もう一度お試しください。",
       startsOnFirstCheckIn: "初回チェックインで開始",
       fixedDates: "{from}〜{to}",
       agreeToSwitch: "終了時に{plan}（{price}）へ切り替え、保存済みのカードに請求する。事前に通知があります。保存済みのカードがない場合はそのまま終了します。",

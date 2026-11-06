@@ -138,6 +138,13 @@ export class CreateMembershipPlanDto {
   @IsBoolean()
   joiningFeeRefundable?: boolean;
 
+  @ApiPropertyOptional({ description: "Decision 435 items 10-15: the most members this plan can have (live and frozen members and waiting Cash/Bank payments count). When full, members join its waiting list; owners and staff can still sell over it at the desk. Omit for no limit." })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  memberLimit?: number;
+
   @ApiPropertyOptional({ description: "One of the School's income categories (Decision 316 item 10), shown in the Transactions export." })
 
   @IsOptional()

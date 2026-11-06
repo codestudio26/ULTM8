@@ -903,6 +903,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "เข้าร่วมโรงเรียนนี้เพื่อซื้อ",
+      full: "เต็ม",
+      joinWaitlist: "ลงชื่อรอ",
+      onWaitlist: "คุณอยู่ลำดับที่ {position} ในรายชื่อรอ",
+      leaveWaitlist: "ออกจากรายชื่อรอ",
+      placeHeld: "จองที่ไว้ให้คุณถึง {date} ซื้อก่อนเวลานั้น",
+      waitlistError: "อัปเดตรายชื่อรอไม่ได้ โปรดลองอีกครั้ง",
       startsOnFirstCheckIn: "เริ่มเมื่อคุณเช็กอินครั้งแรก",
       fixedDates: "{from} – {to}",
       agreeToSwitch: "เมื่อหมด ให้เปลี่ยนเป็น {plan} ({price}) โดยเรียกเก็บจากบัตรที่บันทึกไว้ ฉันจะได้รับแจ้งก่อน หากไม่มีบัตรที่บันทึกไว้ ก็จะสิ้นสุดไปเลย",

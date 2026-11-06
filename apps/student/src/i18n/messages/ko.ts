@@ -904,6 +904,12 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     planRow: {
       joinFirst: "구매하려면 이 학교에 가입하세요.",
+      full: "마감",
+      joinWaitlist: "대기자 명단에 등록",
+      onWaitlist: "대기자 명단 {position}번입니다.",
+      leaveWaitlist: "대기자 명단에서 나가기",
+      placeHeld: "{date}까지 자리를 맡아 두었습니다. 그 전에 구매하세요.",
+      waitlistError: "대기자 명단을 업데이트하지 못했습니다. 다시 시도하세요.",
       startsOnFirstCheckIn: "첫 체크인에 시작됩니다",
       fixedDates: "{from} ~ {to}",
       agreeToSwitch: "끝나면 {plan}({price})(으)로 전환하고 저장된 카드로 결제합니다. 미리 안내받으며, 저장된 카드가 없으면 그대로 끝납니다.",

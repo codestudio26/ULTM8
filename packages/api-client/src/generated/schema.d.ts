@@ -3300,6 +3300,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/membership-plans/{id}/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanWaitlistController_list"];
+        put?: never;
+        post: operations["PlanWaitlistController_join"];
+        delete: operations["PlanWaitlistController_leave"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/plan-availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlanWaitlistController_availability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/income-categories": {
         parameters: {
             query?: never;
@@ -10694,6 +10726,8 @@ export interface components {
             joiningFee?: number;
             /** @description Decision 435 item 5: whether the joining fee is refunded together with the membership payment. Defaults to false (never refunded). */
             joiningFeeRefundable?: boolean;
+            /** @description Decision 435 items 10-15: the most members this plan can have (live and frozen members and waiting Cash/Bank payments count). When full, members join its waiting list; owners and staff can still sell over it at the desk. Omit for no limit. */
+            memberLimit?: number;
             /** @description One of the School's income categories (Decision 316 item 10), shown in the Transactions export. */
             incomeCategoryId?: string;
             /** @description The School's styles this plan covers (Decision 195). */
@@ -10746,6 +10780,8 @@ export interface components {
             contractEarlyExitFee?: number | null;
             /** @description Goes up by one each time the contract changes; null = no contract. */
             contractVersion?: number | null;
+            /** @description Decision 435 items 10-15: the most members this plan can have; null = no limit. */
+            memberLimit?: number | null;
             /** @description Decision 435 item 7: the membership's days start on the member's first check-in with it. */
             startsOnFirstCheckIn: boolean;
             /** @description Decision 435 item 8: the first day of a plan on fixed dates (the day at UTC midnight); null when it has none. */
@@ -10815,6 +10851,8 @@ export interface components {
             switchToPlanId?: string | null;
             /** @description Decision 435 items 1-6: the joining fee in the plan's currency (minor units). Pass null to remove it. */
             joiningFee?: number | null;
+            /** @description Decision 435 items 13 and 15: the most members this plan can have. Pass null for no limit. A limit below the current count keeps everyone and closes the plan to new buyers until there is room. */
+            memberLimit?: number | null;
         };
         MembershipPlanActiveCountResponseDto: {
             activeCount: number;
@@ -11240,6 +11278,51 @@ export interface components {
         };
         PlanContractSignatureListDto: {
             data: components["schemas"]["PlanContractSignatureDto"][];
+        };
+        PlanWaitlistMemberDto: {
+            /** @description A parent: the child this is for. Omit for yourself. */
+            studentId?: string;
+        };
+        PlanWaitlistPlaceDto: {
+            id: string;
+            /**
+             * @description OFFERED: a place is held for them until offerExpiresAt (24 hours); they can buy the plan now.
+             * @enum {string}
+             */
+            status: "WAITING" | "OFFERED";
+            /** @description Their place in line while WAITING (1 = next); null once offered. */
+            position?: number | null;
+            /** @description Until when the place is held for them. */
+            offerExpiresAt?: string | null;
+        };
+        PlanWaitlistLeaveResponseDto: {
+            left: boolean;
+        };
+        PlanWaitlistOwnerEntryDto: {
+            id: string;
+            studentId: string;
+            firstName: string;
+            surname: string;
+            /** @enum {string} */
+            status: "WAITING" | "OFFERED";
+            joinedAt: string;
+            offerExpiresAt?: string | null;
+        };
+        PlanWaitlistOwnerResponseDto: {
+            memberLimit?: number | null;
+            /** @description Places taken now: live and frozen members, waiting Cash/Bank payments and places held, each person once. */
+            placesTaken: number;
+            /** @description Waiting and offered, first in line first. */
+            items: components["schemas"]["PlanWaitlistOwnerEntryDto"][];
+        };
+        PlanAvailabilityItemDto: {
+            planId: string;
+            /** @description The plan is full for this member: they can join its waiting list but not buy it. */
+            full: boolean;
+            waitlist?: components["schemas"]["PlanWaitlistPlaceDto"] | null;
+        };
+        PlanAvailabilityResponseDto: {
+            items: components["schemas"]["PlanAvailabilityItemDto"][];
         };
         IncomeCategoryDto: {
             id: string;
@@ -13101,6 +13184,8 @@ export interface components {
             joiningFeeRefundable: boolean;
             /** @description Goes up by one each time the contract changes; null = no contract. */
             contractVersion?: number | null;
+            /** @description Decision 435 items 10-15: the most members this plan can have; null = no limit. */
+            memberLimit?: number | null;
             /** @description Decision 435 item 7: the membership's days start on the member's first check-in with it. */
             startsOnFirstCheckIn: boolean;
             /** @description Decision 435 item 8: the first day of a plan on fixed dates (the day at UTC midnight); null when it has none. */
@@ -20785,6 +20870,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlanContractSignatureListDto"];
+                };
+            };
+        };
+    };
+    PlanWaitlistController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanWaitlistOwnerResponseDto"];
+                };
+            };
+        };
+    };
+    PlanWaitlistController_join: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlanWaitlistMemberDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanWaitlistPlaceDto"];
+                };
+            };
+        };
+    };
+    PlanWaitlistController_leave: {
+        parameters: {
+            query?: {
+                /** @description A parent: the child this is for. Omit for yourself. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanWaitlistLeaveResponseDto"];
+                };
+            };
+        };
+    };
+    PlanWaitlistController_availability: {
+        parameters: {
+            query?: {
+                /** @description A parent: the child this is for. Omit for yourself. */
+                studentId?: string;
+            };
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanAvailabilityResponseDto"];
                 };
             };
         };

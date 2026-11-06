@@ -258,6 +258,8 @@ export const server: PartialMessages<ServerKeys> = {
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
     membershipExpiryTitle: "Üyelik yakında bitiyor",
     membershipExpiryBody: "{plan} üyeliğiniz {date} tarihinde bitiyor.",
+    planPlaceHeldTitle: "Bir yer açıldı",
+    planPlaceHeldBody: "{plan} planında bir yer {until} tarihine kadar sizin için ayrıldı. O zamana kadar satın alın, yoksa sıradaki kişiye geçer.",
     planSwitchNoticeTitle: "Planınız değişmek üzere",
     planSwitchNoticeBody: "{plan} {date} tarihinde bitiyor. Ardından {next} başlar ve kayıtlı kartınızdan {amount} çekilir. Kayıtlı kart yoksa sadece sona erer.",
     planSwitchedTitle: "Planınız değişti",

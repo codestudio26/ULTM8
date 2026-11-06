@@ -13,6 +13,8 @@ import { MembershipFreezesController } from './freeze/membership-freezes.control
 import { MembershipFreezesService } from './freeze/membership-freezes.service';
 import { PlanContractsController } from './contracts/plan-contracts.controller';
 import { PlanContractsService } from './contracts/plan-contracts.service';
+import { PlanWaitlistController } from './waitlist/plan-waitlist.controller';
+import { PlanWaitlistService } from './waitlist/plan-waitlist.service';
 import { R2ClientService } from '../common/object-storage/r2-client.service';
 
 /**
@@ -59,10 +61,10 @@ import { R2ClientService } from '../common/object-storage/r2-client.service';
 @Module({
   imports: [TenantsModule, PaymentsModule, GuardiansModule, SubscriptionPlansModule, AuthModule, QueueModule, BookingsModule, IncomeCategoriesModule],
   // Decision 404: freezing a membership.
-  controllers: [MembershipsController, MembershipFreezesController, PlanContractsController],
+  controllers: [MembershipsController, MembershipFreezesController, PlanContractsController, PlanWaitlistController],
   // Decision 316 item 6: R2ClientService for the drawn contract signatures,
   // a plain provider as in the other modules that store files.
-  providers: [MembershipsService, MembershipFreezesService, PlanContractsService, R2ClientService],
+  providers: [MembershipsService, MembershipFreezesService, PlanContractsService, PlanWaitlistService, R2ClientService],
   // The locked front-desk tablet's welcome card (FrontDeskModule, Decision 380).
   exports: [MembershipsService],
 })
