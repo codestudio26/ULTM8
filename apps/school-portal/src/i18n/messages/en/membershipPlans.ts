@@ -159,7 +159,7 @@ export const membershipPlans = {
     fixedEndLabel: "Last day",
     fixedDatesInvalid: "Give the first and the last day, the last on or after the first.",
     switchToLabel: "When it ends, switch to",
-    switchToHint: "Members who agree when buying move to this plan when theirs ends, charged to their saved card. They're told before. Without a saved card, it simply ends.",
+    switchToHint: "Members who agree when buying move to this plan when theirs ends, charged to their saved card. They're told before. Without a saved card, or if this plan is full, theirs simply ends and nothing is charged.",
     switchToNone: "Nothing (it simply ends)",
     joiningFeeLabel: "Joining fee",
     joiningFeeHint: "For example 25.00. Added once to a member's first plan at this School, with the same tax and card surcharge as the plan. Never charged on a rejoin or a renewal. Leave blank for none.",

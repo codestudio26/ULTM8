@@ -3332,7 +3332,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       fixedEndLabel: "最后一天",
       fixedDatesInvalid: "请填写第一天和最后一天，最后一天不能早于第一天。",
       switchToLabel: "结束后转为",
-      switchToHint: "购买时同意的会员会在原方案结束后转为此方案，并从其保存的卡中扣款。会提前通知。没有保存的卡则直接结束。",
+      switchToHint: "购买时同意的会员会在原方案结束后转为此方案，并从其保存的卡中扣款。会提前通知。没有保存的卡或此方案已满时，原方案直接结束，不会扣款。",
       switchToNone: "无（直接结束）",
       joiningFeeLabel: "入会费",
       joiningFeeHint: "例如 25.00。在会员于本学校的第一个方案中加收一次，税费和刷卡附加费与方案相同。重新加入或续费时不收取。没有入会费请留空。",

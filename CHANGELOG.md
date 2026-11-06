@@ -965,6 +965,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   to change" notice 7 days before (push, email and in-app) now says so too:
   "Without a saved card, or if {next plan} is full, it simply ends and nothing
   is charged." (all 15 languages). No migration.
+- **The full-plan line in two more places, a waiver notice fix, and a
+  translation pass on 6 Nov's new text** (Track A and Track B; Decisions 436
+  item 8 and 438 item 2):
+  - the member's agreement line when buying a plan that switches, and the
+    owner's hint under "When it ends, switch to" on the plan form, now also say
+    that if the next plan is full, it simply ends and nothing is charged (all
+    15 languages);
+  - waiver requests stored before the notice named the School read
+    "{waiver} has invited you to sign the following waiver.", with the
+    waiver's name where the sender belongs. They now read "You've been invited
+    to sign the waiver "{waiver}"." in English and in every translation. New
+    requests already name the School;
+  - the text added by the payroll switch, the plan-switch notice, the Connect
+    Stripe country gate and Delete my account was checked in all 14 other
+    languages against the glossaries in `docs/translations/`: Turkish and
+    French "siz"/"vous" where "sen"/"tu" had slipped in, the passcode and
+    waiver words each app already uses, gender-neutral Polish, Korean
+    particles and 원장, and Italian "titolare".
+
+  Only text values changed; no keys or placeholders. No migration.
 - **Contracts on plans: ending after the minimum term, freezes and the
   early-exit label** (Decision 435 items 16, 17, 19) — the Contract card has a
   new **End the Subscription after the minimum term** option: the member is

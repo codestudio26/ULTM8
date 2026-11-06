@@ -73,7 +73,7 @@ export const memberships = {
     waitlistError: "Could not update the waiting list — please try again.",
     startsOnFirstCheckIn: "Starts on your first check-in",
     fixedDates: "Runs {from} – {to}",
-    agreeToSwitch: "When it ends, switch me to {plan} ({price}), charged to my saved card. I'll be told before; without a saved card it simply ends.",
+    agreeToSwitch: "When it ends, switch me to {plan} ({price}), charged to my saved card. I'll be told before; without a saved card, or if {plan} is full, it simply ends and nothing is charged.",
     /** Decision 435: a paid plan's joining fee, charged with a member's first plan at the School only. */
     joiningFee: '+ {amount} joining fee on your first plan at this School',
     cardSurcharge: "+ {amount} card surcharge when paying by card",

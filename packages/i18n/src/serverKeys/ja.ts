@@ -193,7 +193,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "カードの異議申し立てで何度も負けたため、スクールの生徒1名の支払い方法が現金または銀行振込のみに制限されました。",
     paymentRestrictedNamedBody: "カードの異議申し立てで何度も負けたため、スクールの生徒 {name} さんの支払い方法が現金または銀行振込のみに制限されました。",
     waiverRequestTitle: "免責同意書への署名のお願い",
-    waiverRequestBody: "次の免責同意書への署名をお願いします：{waiver}。",
+    waiverRequestBody: "免責同意書「{waiver}」への署名依頼が届いています。",
     newStripeTitle: "新しいストライプ！",
     stepUpTitle: "ステップアップ！",
     promotedTitle: "昇級！",

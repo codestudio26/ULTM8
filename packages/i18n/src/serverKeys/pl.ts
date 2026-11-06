@@ -235,7 +235,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Uczeń Twojej szkoły może teraz płacić tylko gotówką lub przelewem bankowym, po kilku przegranych sporach dotyczących płatności kartą.",
     paymentRestrictedNamedBody: "{name}, uczeń Twojej szkoły, może teraz płacić tylko gotówką lub przelewem bankowym, po kilku przegranych sporach dotyczących płatności kartą.",
     waiverRequestTitle: "Prośba o podpisanie oświadczenia",
-    waiverRequestBody: "Zaproszono Cię do podpisania tego oświadczenia: {waiver}.",
+    waiverRequestBody: "Zaproszono cię do podpisania oświadczenia „{waiver}”.",
     newStripeTitle: "Nowa belka!",
     stepUpTitle: "Krok wyżej!",
     promotedTitle: "Awans!",

@@ -20,7 +20,7 @@ export const server: PartialMessages<ServerKeys> = {
   codes: {
     accountClosing: "Questo account è in fase di eliminazione, quindi non può più prenotare, fare il check-in o acquistare.",
     accountLocked: "Questo account è in fase di eliminazione. Accedi di nuovo per mantenerlo.",
-    mainOwnerMustHandOver: "Sei il proprietario principale di una scuola o di un franchising. Passalo a un altro proprietario (può farlo il supporto ULTM8) o chiudilo prima di eliminare il tuo account.",
+    mainOwnerMustHandOver: "Sei il titolare principale di una scuola o di un franchising. Passali a un altro titolare (può farlo il supporto ULTM8) o chiudili prima di eliminare il tuo account.",
     subscriptionNotStopped: "Non siamo riusciti a interrompere un pagamento ricorrente in questo momento, quindi il tuo account non è stato eliminato. Riprova tra poco.",
     classFull: "Questo corso è al completo. Puoi invece aggiungere l’allievo alla lista d’attesa.",
     waitlistFirst: "Ci sono già allievi in attesa di un posto in questo corso. Iscriviti alla lista d’attesa per aspettare il tuo turno.",
@@ -221,7 +221,7 @@ export const server: PartialMessages<ServerKeys> = {
     paymentRestrictedBody: "Un allievo della tua scuola ora può pagare solo in contanti o con bonifico bancario, dopo diverse contestazioni su carta perse.",
     paymentRestrictedNamedBody: "{name}, allievo della tua scuola, ora può pagare solo in contanti o con bonifico bancario, dopo diverse contestazioni su carta perse.",
     waiverRequestTitle: "Firma della liberatoria richiesta",
-    waiverRequestBody: "Sei stato invitato a firmare la seguente liberatoria: {waiver}.",
+    waiverRequestBody: "Ti è stato chiesto di firmare la liberatoria \"{waiver}\".",
     newStripeTitle: "Nuova striscia!",
     stepUpTitle: "Avanzamento di passo!",
     promotedTitle: "Promosso!",
