@@ -217,7 +217,7 @@ describeIfDb('Franchise fee paid by card (Decision 407)', () => {
     const connectedAccountId = opts.connected === false ? null : `acct_fake_${randomUUID()}`;
     const account = connectedAccountId
       ? await superuser.paymentAccount.create({
-          data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: connectedAccountId },
+          data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: connectedAccountId },
         })
       : null;
     const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Card School', franchiseId: franchise.id, ...opts.school } });

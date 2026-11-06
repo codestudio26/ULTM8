@@ -1714,6 +1714,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "Wynagrodzenia",
       payrollHint: "Tylko oglądać raport wynagrodzeń, dla całej szkoły, łącznie z właścicielami. Stawki nadal ustalają wyłącznie właściciele szkoły.",
+      // Decision 442 item 3.
+      groupPayments: "Płatności",
+      connectStripe: "Połącz Stripe",
+      connectStripeHint: "Połączyć konto Stripe szkoły, aby członkowie mogli płacić kartą: rozpocząć lub dokończyć konfigurację w Stripe i sprawdzić, czy jest połączone. Płatności, zwroty, plany i ceny pozostają u właścicieli szkoły.",
       ownerOnly: "Pieniądze (płatności, zwroty, plany i ceny), ustawienia Szkoły i właściciele zawsze zostają przy właścicielach Szkoły.",
       saved: "Zapisano dostęp: {name}.",
       readOnlyIntro: "Personel Twoich oddziałów. Tylko właściciele Szkoły mogą zmieniać role lub dostęp.",

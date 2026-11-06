@@ -174,7 +174,7 @@ describeIfDb('Franchise fee-rate migration (Decision 99 follow-up)', () => {
     franchiseIds.push(franchise.id);
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: owner.id, franchiseId: franchise.id, grantedById: owner.id } });
     const paymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fake_${randomUUID()}` },
+      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fake_${randomUUID()}` },
     });
     paymentAccountIds.push(paymentAccount.id);
 

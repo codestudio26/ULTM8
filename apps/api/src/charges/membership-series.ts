@@ -2,6 +2,7 @@ import { Logger } from '@nestjs/common';
 import { Prisma, PrismaClient, RecurringCharge } from '@prisma/client';
 import { chargeCurrency } from '../common/school-currency';
 import { backDay, dayIn, dayNumber, dayStart, dayString, frozenDays } from '../memberships/freeze/membership-freeze';
+import { CardAccount, takesCards } from '../payments/takes-cards';
 import { addDays, anchorAt, dayOf, dayValue, firstIndexOnOrAfter, nextDay, occurrenceDay, schoolToday } from './recurring-schedule';
 
 /**
@@ -23,22 +24,21 @@ import { addDays, anchorAt, dayOf, dayValue, firstIndexOnOrAfter, nextDay, occur
  * - A freeze pauses it, as it pauses a card Subscription (Decision 442 item
  *   5, syncSeriesFreezes below).
  *
- * A School with a Stripe payment account (cards) is untouched: its monthly
- * plans stay card Subscriptions.
+ * A School that takes cards (a Stripe account Stripe says is ready, Decision
+ * 442 item 2) is untouched: its monthly plans stay card Subscriptions.
  */
 
 type Db = Pick<PrismaClient, 'membership' | 'recurringCharge' | 'school' | '$transaction'>;
 type Tx = Pick<Prisma.TransactionClient, 'recurringCharge' | 'school' | '$queryRaw'>;
 
-/** Whether a School takes card payments in the app: a Stripe payment
- * account, the same test as the purchase and school_card_payments(). */
-export function takesCards(account: { provider: string } | null | undefined): boolean {
-  return account?.provider === 'STRIPE';
-}
+/** Whether a School takes card payments in the app (Decision 442 item 2: a
+ * Stripe payment account that Stripe says is ready). */
+export { takesCards };
 
-/** A paid monthly plan sold at a School with a payment account that isn't
- * Stripe: billed to the member's balance after the first month. */
-export function isBalanceBilled(plan: { type: string; price: number }, account: { provider: string } | null | undefined): boolean {
+/** A paid monthly plan sold at a School with a payment account that takes no
+ * cards (not Stripe, or a Stripe account not ready yet, Decision 442 item 2):
+ * billed to the member's balance after the first month. */
+export function isBalanceBilled(plan: { type: string; price: number }, account: CardAccount | null | undefined): boolean {
   return plan.type === 'SUBSCRIPTION' && plan.price > 0 && !!account && !takesCards(account);
 }
 

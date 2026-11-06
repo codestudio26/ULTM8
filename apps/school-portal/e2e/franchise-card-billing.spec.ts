@@ -98,7 +98,7 @@ test('the Franchise Owner sees Not connected and connects Stripe, choosing the c
 
 test('Action needed and Connected come from Stripe', async ({ page }) => {
   await db.paymentAccount.create({
-    data: { id: randomUUID(), franchiseId, provider: 'STRIPE', accountTitle: 'Card Co', country: 'GB', stripeConnectedAccountId: `acct_e2e_${randomUUID()}` },
+    data: { id: randomUUID(), franchiseId, provider: 'STRIPE', accountTitle: 'Card Co', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_e2e_${randomUUID()}` },
   });
   let status = 'ACTION_NEEDED';
   await page.route('**/v1/franchises/*/payment-account/connect-status', (route) =>
@@ -125,7 +125,7 @@ test("the School Owner can't add a card until the Franchise has connected Stripe
 
 test("the School Owner adds a card on Stripe's page, then sees it and the School's fee charges", async ({ page }) => {
   const account = await db.paymentAccount.create({
-    data: { id: randomUUID(), franchiseId, provider: 'STRIPE', accountTitle: 'Card Co', country: 'GB', stripeConnectedAccountId: `acct_e2e_${randomUUID()}` },
+    data: { id: randomUUID(), franchiseId, provider: 'STRIPE', accountTitle: 'Card Co', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_e2e_${randomUUID()}` },
   });
   for (const [month, status] of [['2026-10', 'SUCCESSFUL'], ['2026-11', 'FAILED']] as const) {
     await db.franchiseFeeCharge.create({

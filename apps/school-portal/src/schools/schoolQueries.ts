@@ -20,10 +20,11 @@ export function useSchool(schoolId: string | null) {
  * (curriculumQueries.ts), here for `SchoolSwitcher`'s option labels. Returns
  * `null` for a name still loading or that failed to load, rather than
  * blocking the whole switcher on every School resolving. */
-/** Decision 441 item 3: whether the School takes card payments, the
- * school_card_payments() rule of Decisions 437 and 439 (a Stripe payment
- * account). `false` when it has none (the API answers 404) or only cash and
- * bank transfer; `undefined` while loading. Owner only. */
+/** Decision 441 item 3: whether the School takes card payments: the API's
+ * `cardPayments`, the one rule of Decisions 437, 439 and 442 item 2 (a Stripe
+ * account that Stripe says is ready). `false` when it has none (the API
+ * answers 404), only cash and bank transfer, or a Stripe account not ready
+ * yet; `undefined` while loading. Owner only. */
 export function useSchoolTakesCards(schoolId: string | null): boolean | undefined {
   const { data } = useQuery({
     queryKey: ['school-payment-account', schoolId],
@@ -37,7 +38,7 @@ export function useSchoolTakesCards(schoolId: string | null): boolean | undefine
     },
     enabled: !!schoolId,
   });
-  return data === undefined ? undefined : data?.provider === 'STRIPE';
+  return data === undefined ? undefined : !!data?.cardPayments;
 }
 
 export function useSchoolNames(schoolIds: string[]): Array<{ id: string; name: string | null }> {

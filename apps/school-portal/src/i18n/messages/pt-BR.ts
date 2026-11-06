@@ -1684,6 +1684,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "Folha de pagamento",
       payrollHint: "Ver apenas o relatório da folha de pagamento, para a escola inteira, donos incluídos. Definir os valores continua com os donos da escola.",
+      // Decision 442 item 3.
+      groupPayments: "Pagamentos",
+      connectStripe: "Conectar o Stripe",
+      connectStripeHint: "Conectar a conta Stripe da Escola para que os membros paguem com cartão: iniciar ou concluir a configuração no Stripe e ver se está conectada. Pagamentos, reembolsos, planos e preços continuam com os donos da Escola.",
       ownerOnly: "Dinheiro (pagamentos, reembolsos, planos e preços), configurações da Escola e proprietários ficam sempre com os proprietários da Escola.",
       saved: "Acesso salvo para {name}.",
       readOnlyIntro: "A equipe das suas unidades. Só os proprietários da Escola podem mudar funções ou acessos.",

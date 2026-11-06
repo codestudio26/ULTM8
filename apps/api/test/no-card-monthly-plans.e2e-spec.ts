@@ -116,7 +116,7 @@ describeIfDb('Monthly plans at a School without cards (Decision 441 item 1)', ()
     schoolIds.push(school.id, cardSchool.id);
     await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'BANK_TRANSFER', accountTitle: 'Pix', country: 'BR' } });
     await su.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: cardSchool.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+      data: { id: randomUUID(), schoolId: cardSchool.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
     });
     const owner = await mkUser('owner');
     await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id, isMainOwner: true } });

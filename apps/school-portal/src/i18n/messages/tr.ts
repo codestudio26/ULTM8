@@ -1684,6 +1684,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "Bordro",
       payrollHint: "Tüm okul için, sahipler dahil, yalnızca bordro raporunu görmek. Ücret oranlarını yine yalnızca okul sahipleri belirler.",
+      // Decision 442 item 3.
+      groupPayments: "Ödemeler",
+      connectStripe: "Stripe'ı bağla",
+      connectStripeHint: "Üyelerin kartla ödeyebilmesi için okulun Stripe hesabını bağlamak: Stripe kurulumunu başlatmak veya bitirmek ve bağlı olup olmadığını görmek. Ödemeler, iadeler, planlar ve fiyatlar okul sahiplerinde kalır.",
       ownerOnly: "Para (ödemeler, iadeler, planlar ve fiyatlar), Okul ayarları ve sahipler her zaman Okul sahiplerinde kalır.",
       saved: "{name} için erişim kaydedildi.",
       readOnlyIntro: "Şubelerinizin personeli. Rolleri veya erişimi yalnızca Okul sahipleri değiştirebilir.",

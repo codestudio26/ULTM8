@@ -38,7 +38,9 @@ async function startPlan(page: import('@playwright/test').Page, title: string, t
 
 test('a camp on fixed dates that switches to a Class Pack when it ends', async ({ page }) => {
   // The switch charges a saved card, so the School takes cards (Decision 441 item 3).
-  await db.paymentAccount.create({ data: { id: randomUUID(), schoolId: s.schoolId, provider: 'STRIPE', accountTitle: 'Card', country: 'GB' } });
+  await db.paymentAccount.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_e2e_${randomUUID()}`, stripeAccountReady: true },
+  });
   const next = await db.membershipPlan.create({
     data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Ten classes', price: 6000, currency: 'GBP', classesIncluded: 10 },
   });

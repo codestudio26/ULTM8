@@ -31,6 +31,7 @@ import {
 } from './membership-freeze';
 import { CreateMembershipFreezeDto } from './dto/membership-freeze.dto';
 import { loadFreezeStates } from './freeze-states';
+import { CARD_ACCOUNT_SELECT, takesCards } from '../../payments/takes-cards';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FREEZE_NOT_FOUND = { code: 'FREEZE_NOT_FOUND', message: 'Freeze not found' };
@@ -583,7 +584,7 @@ export class MembershipFreezesService {
       include: { membership: { select: { membershipPlan: { select: { currency: true } } } }, school: { select: { defaultCurrency: true } } },
     });
     if (!freeze.feeAmount || freeze.feeTransactionId || freeze.status !== 'APPROVED') return;
-    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: freeze.schoolId }, select: { id: true, provider: true } });
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: freeze.schoolId }, select: { id: true, ...CARD_ACCOUNT_SELECT } });
     const currency = (freeze.school.defaultCurrency ?? freeze.membership.membershipPlan.currency)?.toUpperCase();
     if (!account || !currency) return;
     const base = {
@@ -597,7 +598,9 @@ export class MembershipFreezesService {
     };
 
     let paid: { status: 'SUCCESSFUL' | 'FAILED'; paymentIntentId: string | null } | null = null;
-    if (account.provider === 'STRIPE') {
+    // Decision 442 item 2: by card only once Stripe says the School's account
+    // is ready; until then a pending desk charge, as at a School without cards.
+    if (takesCards(account)) {
       try {
         const charge = await this.paymentsService.chargeOffSession(
           freeze.studentId,

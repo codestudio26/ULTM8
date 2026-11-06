@@ -1684,6 +1684,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "Lohnabrechnung",
       payrollHint: "Nur die Lohnabrechnung sehen, für die ganze Schule, Inhaber eingeschlossen. Die Lohnsätze legen weiterhin die Inhaber der Schule fest.",
+      // Decision 442 item 3.
+      groupPayments: "Zahlungen",
+      connectStripe: "Stripe verbinden",
+      connectStripeHint: "Das Stripe-Konto der Schule verbinden, damit Mitglieder mit Karte zahlen können: die Einrichtung bei Stripe starten oder abschließen und sehen, ob es verbunden ist. Zahlungen, Erstattungen, Tarife und Preise bleiben bei den Inhabern der Schule.",
       ownerOnly: "Geld (Zahlungen, Erstattungen, Tarife und Preise), Schuleinstellungen und Inhaber bleiben immer bei den Inhabern der Schule.",
       saved: "Zugriff für {name} gespeichert.",
       readOnlyIntro: "Das Team deiner Filialen. Nur die Inhaber der Schule können Rollen oder Zugriffe ändern.",

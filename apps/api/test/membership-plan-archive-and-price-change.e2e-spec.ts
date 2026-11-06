@@ -158,7 +158,7 @@ describeIfDb('MembershipPlan archive + Subscription price-change migrate-vs-gran
       ],
     });
     const paymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fake_${randomUUID()}` },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fake_${randomUUID()}` },
     });
     paymentAccountIds.push(paymentAccount.id);
 

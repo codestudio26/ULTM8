@@ -1684,6 +1684,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "Paghe",
       payrollHint: "Vedere solo il report delle paghe, per tutta la scuola, titolari compresi. Le tariffe restano impostate dai titolari della scuola.",
+      // Decision 442 item 3.
+      groupPayments: "Pagamenti",
+      connectStripe: "Collega Stripe",
+      connectStripeHint: "Collegare l'account Stripe della scuola perché i membri possano pagare con carta: avviare o completare la configurazione su Stripe e vedere se è collegato. Pagamenti, rimborsi, piani e prezzi restano ai titolari della scuola.",
       ownerOnly: "Denaro (pagamenti, rimborsi, piani e prezzi), impostazioni della Scuola e proprietari restano sempre ai proprietari della Scuola.",
       saved: "Accesso salvato per {name}.",
       readOnlyIntro: "Lo staff delle tue sedi. Solo i proprietari della Scuola possono cambiare ruoli o accessi.",

@@ -55,7 +55,8 @@ export class PaymentsController {
   }
 
   /** Decision 441 item 6 — Connected / Action needed / Not connected, for the
-   * School page's Stripe card. School owners only. */
+   * School page's Stripe card. School owners, and Branch Staff with "Connect
+   * Stripe" (Decision 442 item 3). */
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @ApiOkResponse({ type: ConnectStatusResponseDto })

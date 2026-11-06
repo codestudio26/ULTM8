@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "การพักนี้สิ้นสุดแล้ว",
     freezeNotFound: "ไม่พบการพักนี้",
     freezeFeeNoPayments: "โรงเรียนนี้เก็บค่าธรรมเนียมการพัก แต่ยังไม่ได้ตั้งค่าการชำระเงินหรือสกุลเงิน ตั้งค่าก่อน หรือลบค่าธรรมเนียมออก",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "โรงเรียนนี้ยังไม่รับชำระด้วยบัตร โปรดชำระที่โรงเรียนแทนด้วยเงินสดหรือโอนเงินผ่านธนาคาร แล้วเจ้าหน้าที่จะยืนยันให้",
     noPackToRecharge: "บุคคลนี้ไม่มีแพ็กคลาสที่ใช้หมดแล้วให้ซื้อซ้ำ",
     packNotForSale: "แพ็กนี้ไม่มีขายแล้ว โปรดสอบถามแผนอื่นที่เคาน์เตอร์",
     rechargeNotPaid: "แพ็กนี้ยังไม่ได้ชำระเงิน",

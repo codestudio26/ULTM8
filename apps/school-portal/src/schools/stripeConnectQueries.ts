@@ -19,7 +19,8 @@ export function useSchoolPaymentAccount(schoolId: string) {
 }
 
 /** Decision 441 item 6 — Connected / Action needed / Not connected, read live
- * from Stripe (the API saves it for the setup checklist). School owners only. */
+ * from Stripe (the API saves it for the setup checklist). School owners, and
+ * Branch Staff with "Connect Stripe" (Decision 442 item 3). */
 export function useSchoolConnectStatus(schoolId: string) {
   return useQuery({
     queryKey: ['school-connect-status', schoolId],

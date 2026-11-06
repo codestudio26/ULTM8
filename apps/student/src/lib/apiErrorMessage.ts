@@ -99,6 +99,9 @@ function codedMessage(err: ApiError): string | null {
       return translate('server.codes.freezeNotFound');
     case 'FREEZE_FEE_NO_PAYMENTS':
       return translate('server.codes.freezeFeeNoPayments');
+    // Decision 442 item 2: no card payments until Stripe says the School's account is ready.
+    case 'CARD_PAYMENTS_NOT_READY':
+      return translate('server.codes.cardPaymentsNotReady');
     // The School's free trial of ULTM8 ended (backlog 3.14).
     case 'TRIAL_ENDED':
       return translate('lib.apiError.trialEnded');

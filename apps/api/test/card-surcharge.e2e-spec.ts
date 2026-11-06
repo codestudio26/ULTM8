@@ -214,12 +214,12 @@ describeIfDb('Card surcharge (Decision 406)', () => {
     });
     schoolIds.push(card.id, cash.id, abroad.id);
     await su.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: abroad.id, provider: 'STRIPE', accountTitle: 'Card', country: OTHER_COUNTRY, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+      data: { id: randomUUID(), schoolId: abroad.id, provider: 'STRIPE', accountTitle: 'Card', country: OTHER_COUNTRY, stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
     });
     abroadMonthly = await su.membershipPlan.create({ data: { id: randomUUID(), schoolId: abroad.id, type: 'SUBSCRIPTION', title: 'Monthly', price: 5000, currency: 'USD' } });
     const branch = await su.branch.create({ data: { id: randomUUID(), schoolId: card.id, name: 'Main' } });
     await su.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: card.id, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+      data: { id: randomUUID(), schoolId: card.id, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
     });
     await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: cash.id, provider: 'CASH', accountTitle: 'Cash', country: COUNTRY } });
     pack = await su.membershipPlan.create({ data: { id: randomUUID(), schoolId: card.id, type: 'CLASS_PACK', title: '10-Class Pack', price: 1999, classesIncluded: 10, currency: 'USD' } });

@@ -113,7 +113,7 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships Desk School', defaultCurrency: 'GBP' } });
     schoolIds.push(school.id);
     await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: 'acct_fixture' },
     });
     owner = await mkUser('owner');
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id } });

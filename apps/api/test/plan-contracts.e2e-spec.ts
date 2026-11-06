@@ -104,7 +104,7 @@ describeIfDb('Contracts on plans (Decision 316 item 6)', () => {
     otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Other Contracts School', defaultCurrency: 'GBP' } });
     schoolIds.push(school.id, otherSchool.id);
     await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'CASH', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'CASH', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: 'acct_fixture' },
     });
     owner = await mkUser('owner');
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id } });

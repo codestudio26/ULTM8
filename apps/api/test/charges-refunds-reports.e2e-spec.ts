@@ -217,7 +217,7 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     school = await su.school.create({ data: { id: randomUUID(), name: 'Refunds School', defaultCurrency: 'BRL', addressCountry: COUNTRY, timezone: 'UTC' } });
     other = await su.school.create({ data: { id: randomUUID(), name: 'Other Refunds School', defaultCurrency: 'BRL', timezone: 'UTC' } });
     schoolIds.push(school.id, other.id);
-    await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeConnectedAccountId: acct } });
+    await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeAccountReady: true, stripeConnectedAccountId: acct } });
     branchA = await su.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Branch A' } });
 
     const owner = await mkUser('owner');

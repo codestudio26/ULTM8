@@ -407,6 +407,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   `stripeAccountReady` on the payment account. All 15 languages. **Needs
   migration `20270304000001_payment_account_stripe_ready`**, and
   `account.updated` switched on for the Stripe Connect webhook endpoint.
+- **Card payments wait for a ready Stripe account; staff can be let connect
+  Stripe** (Track A and Track B; Decision 442 items 2 and 3). A School takes
+  card payments only once Stripe says its account is ready (the same test as
+  the checklist). Until then, or while Stripe asks for more details, it works
+  as a School without cards: the member app shows the cash or bank-transfer
+  (Pix) note, a purchase is an order staff confirm, monthly plans are billed
+  to the member's balance and sold at the desk, the card surcharge isn't
+  added, "When it ends, switch to" isn't offered, and paying by card, saving
+  a card, automatic payment and off-session fees take nothing. A card payment
+  asked for anyway gets a clear message in all 15 languages. Existing card
+  Subscriptions are left as they are. The payment account gains
+  `cardPayments`. Owners (co-owners included) can give a Branch Staff member
+  the new **Connect Stripe** access switch (off by default, in no preset):
+  they then get **Stripe account** in their menu, with the School's Stripe
+  card, and may create the Stripe account, start or continue Stripe's
+  onboarding and read its status; setting up cash or bank transfer stays the
+  owners'. All 15 languages. **Needs migration
+  `20270312000001_card_payments_need_ready_stripe`.**
 - **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
   School's card surcharge applies, a monthly Subscription now carries it too:
   members see it on the plan before subscribing, and it is added to the first

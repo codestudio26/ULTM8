@@ -109,7 +109,7 @@ describeIfDb('Money fixes (Decision 431, stress test round 5)', () => {
     schoolIds.push(school.id);
     const branch = await su.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: `${label} main` } });
     const account = await su.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: label === 'ca' ? acct : `acct_${randomUUID().slice(0, 12)}` },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: label === 'ca' ? acct : `acct_${randomUUID().slice(0, 12)}` },
     });
     const owner = await mkUser(`${label}-owner`);
     await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id, isMainOwner: true } });

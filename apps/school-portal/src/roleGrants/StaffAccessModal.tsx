@@ -14,6 +14,8 @@ const GROUPS: Array<{ heading: TranslationKey; keys: AccessKey[] }> = [
   // Decision 435 item 22: payroll covers the whole School's staff.
   { heading: 'roleGrants.access.groupStaff', keys: ['staffList', 'payroll'] },
   { heading: 'roleGrants.access.groupDisciplines', keys: ['disciplines'] },
+  // Decision 442 item 3: "Can connect Stripe", in no preset.
+  { heading: 'roleGrants.access.groupPayments', keys: ['connectStripe'] },
 ];
 
 const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }> = {
@@ -31,6 +33,7 @@ const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }>
   importData: { label: 'imports.access.label', hint: 'imports.access.hint' },
   seeMedicalInfo: { label: 'roleGrants.access.seeMedicalInfo', hint: 'roleGrants.access.seeMedicalInfoHint' },
   payroll: { label: 'roleGrants.access.payroll', hint: 'roleGrants.access.payrollHint' },
+  connectStripe: { label: 'roleGrants.access.connectStripe', hint: 'roleGrants.access.connectStripeHint' },
 };
 
 /** Decision 387's two presets. "Front desk": bookings and check-in, and
@@ -41,15 +44,16 @@ const LABELS: Record<AccessKey, { label: TranslationKey; hint: TranslationKey }>
  * (Decision 317 item 3: only staff the owner grants it), sees member files
  * (Decision 315 item 9), imports data (Decision 315 items 12, 13: only
  * staff the owner grants it), reads medical information (Decision 315
- * item 10), or sees payroll (Decision 435 item 22: in no preset). */
+ * item 10), sees payroll (Decision 435 item 22: in no preset), or connects
+ * Stripe (Decision 442 item 3: in no preset). */
 export const PRESETS: Array<{ name: TranslationKey; access: StaffAccess }> = [
   {
     name: 'roleGrants.access.presetFrontDesk',
-    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false },
+    access: { classes: false, bookings: true, students: true, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false },
   },
   {
     name: 'roleGrants.access.presetBranchManager',
-    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false },
+    access: { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false },
   },
 ];
 

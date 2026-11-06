@@ -99,7 +99,7 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
 
     school = await superuser.school.create({ data: { id: randomUUID(), name: 'Late Cancel Plan Fee School', cancellationPolicyChosenAt: new Date() } });
     await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: 'acct_fixture' },
     });
   });
 

@@ -373,7 +373,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
   }
 
   const scopePlan = { id: 'plan-1', schoolId: 'school-1', type: 'CLASS_PACK', price: 3000, title: 'Pack', currency: 'usd', visible: true, expiryDurationDays: null };
-  const stripeAccount = { id: 'account-1', provider: 'STRIPE' };
+  const stripeAccount = { id: 'account-1', provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true };
   const cashBankAccount = { id: 'account-1', provider: 'CASH_BANK_TRANSFER' };
 
   it('a Guardian-driven purchase with useHostedCheckout is NOT rejected the way payWithSavedCard would be — reaches the hosted-Checkout branch, for the MINOR\'s own School context', async () => {

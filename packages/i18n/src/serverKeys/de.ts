@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "Dieses Einfrieren ist bereits beendet.",
     freezeNotFound: "Dieses Einfrieren wurde nicht gefunden.",
     freezeFeeNoPayments: "Diese Schule berechnet eine Gebühr fürs Einfrieren, hat aber keine Zahlungen oder Währung eingerichtet. Richte sie ein oder entferne die Gebühr.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "Diese Schule nimmt noch keine Kartenzahlungen an. Bezahle stattdessen in der Schule, bar oder per Überweisung, das Team bestätigt es.",
     noPackToRecharge: "Diese Person hat kein aufgebrauchtes Kurspaket, das erneut gekauft werden kann.",
     packNotForSale: "Dieses Paket wird nicht mehr verkauft. Frag am Empfang nach einem anderen Tarif.",
     rechargeNotPaid: "Das Paket wurde noch nicht bezahlt.",

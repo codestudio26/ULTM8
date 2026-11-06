@@ -832,6 +832,7 @@ export const serverMessages: Record<string, string> = {
   "Attendance can only be logged from {v1} to {v2}.": "يمكن تسجيل الحضور فقط من {v1} إلى {v2}.",
   "The School owner hasn't let you import data.": "لم يسمح لك مالك المدرسة باستيراد البيانات.",
   "The School owner hasn't let you see payroll.": "لم يسمح لك مالك المدرسة برؤية كشف الرواتب.",
+  "The School owner hasn't let you connect Stripe.": "لم يسمح لك مالك المدرسة بربط Stripe.",
   "A row number is past the end of this import.": "رقم صف يتجاوز نهاية هذا الاستيراد.",
   "Import not found": "لم يتم العثور على الاستيراد",
   "Each row number can only be sent once.": "لا يمكن إرسال رقم كل صف إلا مرة واحدة.",

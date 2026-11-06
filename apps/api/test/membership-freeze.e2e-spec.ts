@@ -188,7 +188,7 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
     otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Other Freeze School', defaultCurrency: 'GBP' } });
     schoolIds.push(school.id, otherSchool.id);
     await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: 'acct_fixture' },
     });
     owner = await mkUser('owner');
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id, isMainOwner: true } });
@@ -735,7 +735,7 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
   });
 
   describe('Decision 409: the "Can freeze memberships" switch', () => {
-    const ACCESS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false };
+    const ACCESS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false };
 
     it("staff with it act for their own branches' students only; the School's freeze settings stay the owner's; turning it on is logged", async () => {
       const branched = await superuser.school.create({ data: { id: randomUUID(), name: 'Branched Freeze School', defaultCurrency: 'GBP' } });

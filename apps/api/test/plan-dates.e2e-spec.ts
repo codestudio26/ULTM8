@@ -101,7 +101,7 @@ describeIfDb('Plan start and end dates (Decision 316 item 4, Decision 435 items 
     const school = await su.school.create({ data: { id: randomUUID(), name: `Plan dates ${label}`, timezone: ZONE, defaultCurrency: 'GBP', addressCountry: 'GB' } });
     schoolIds.push(school.id);
     await su.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider, accountTitle: provider, country: 'GB', stripeConnectedAccountId: provider === 'STRIPE' ? `acct_${randomUUID().slice(0, 12)}` : undefined },
+      data: { id: randomUUID(), schoolId: school.id, provider, accountTitle: provider, country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: provider === 'STRIPE' ? `acct_${randomUUID().slice(0, 12)}` : undefined },
     });
     const owner = await mkUser(`${label}-owner`);
     await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id, isMainOwner: true } });

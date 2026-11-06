@@ -178,7 +178,7 @@ describeIfDb('Franchises review fixes (Decision 337)', () => {
     if (opts.stripeAccount) {
       connectedAccountId = `acct_fake_${randomUUID()}`;
       await superuser.paymentAccount.create({
-        data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: connectedAccountId },
+        data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: connectedAccountId },
       });
     }
     return { franchise, owner, token, connectedAccountId };

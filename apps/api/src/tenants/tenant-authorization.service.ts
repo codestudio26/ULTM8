@@ -71,7 +71,10 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * "seeMedicalInfo" is Decision 315 item 10's "See medical information",
  * checked by assertMaySeeMedicalInfo. "payroll" is Decision 435 item 22's
  * "Payroll" (the payroll report only, whole School; the rates stay
- * owner-only), checked by assertMayRunPayroll. */
+ * owner-only), checked by assertMayRunPayroll. "connectStripe" is Decision
+ * 442 item 3's "Can connect Stripe" (the School's Stripe account: create it,
+ * start Stripe's onboarding, read its status), checked by
+ * assertMayConnectStripe. */
 export const STAFF_ACCESS = [
   'classes',
   'bookings',
@@ -87,10 +90,11 @@ export const STAFF_ACCESS = [
   'importData',
   'seeMedicalInfo',
   'payroll',
+  'connectStripe',
 ] as const;
 export type StaffAccess = (typeof STAFF_ACCESS)[number];
 /** The switches staffMay checks. */
-type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'memberFiles' | 'importData' | 'seeMedicalInfo' | 'payroll'>;
+type GatedStaffAccess = Exclude<StaffAccess, 'disciplines' | 'checkInRules' | 'exportStudents' | 'freezeMemberships' | 'attendanceStats' | 'memberFiles' | 'importData' | 'seeMedicalInfo' | 'payroll' | 'connectStripe'>;
 export type StaffAccessSet = Record<StaffAccess, boolean>;
 
 /** A Branch Staff member with no StaffPermission row yet has these: what
@@ -111,6 +115,7 @@ export const DEFAULT_STAFF_ACCESS: StaffAccessSet = {
   importData: false,
   seeMedicalInfo: false,
   payroll: false,
+  connectStripe: false,
 };
 
 /** What an Instructor may do by role, whatever the switches say (Spec 55
@@ -143,6 +148,7 @@ export function staffAccessFrom(row: {
   canImportData: boolean;
   canSeeMedicalInfo: boolean;
   canSeePayroll: boolean;
+  canConnectStripe: boolean;
 } | null | undefined): StaffAccessSet {
   if (!row) return { ...DEFAULT_STAFF_ACCESS };
   return {
@@ -160,6 +166,7 @@ export function staffAccessFrom(row: {
     importData: row.canImportData,
     seeMedicalInfo: row.canSeeMedicalInfo,
     payroll: row.canSeePayroll,
+    connectStripe: row.canConnectStripe,
   };
 }
 
@@ -179,6 +186,7 @@ export const STAFF_ACCESS_SELECT = {
   canImportData: true,
   canSeeMedicalInfo: true,
   canSeePayroll: true,
+  canConnectStripe: true,
 } as const;
 
 @Injectable()
@@ -563,6 +571,29 @@ export class TenantAuthorizationService {
       return this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you see payroll.");
     }
     return { isOwner: verdict === 'owner' };
+  }
+
+  /**
+   * Decision 442 item 3: the School's Stripe account is connected by its
+   * owners (co-owners included) and by Branch Staff the owners switched on
+   * ("Can connect Stripe"). Coaches never. Covers creating the School's
+   * Stripe payment account, starting or continuing Stripe's onboarding and
+   * reading the connection status.
+   */
+  async assertMayConnectStripe(userId: string, schoolId: string): Promise<void> {
+    const allowed = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return true;
+      if (grants.length === 0) return false;
+      const row = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canConnectStripe: true } });
+      return !!row?.canConnectStripe;
+    });
+    if (!allowed) {
+      await this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you connect Stripe.");
+    }
   }
 
   /** staffMay, throwing 403 STAFF_ACCESS_OFF when it says no. */

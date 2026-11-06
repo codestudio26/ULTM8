@@ -1669,6 +1669,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "給与",
       payrollHint: "スクール全体（オーナーを含む）の給与レポートを見ることだけができます。給与単価の設定はスクールのオーナーだけが行います。",
+      // Decision 442 item 3.
+      groupPayments: "支払い",
+      connectStripe: "Stripeを接続",
+      connectStripeHint: "会員がカードで支払えるように、スクールのStripeアカウントを接続します。Stripeでの設定を開始・完了し、接続済みかどうかを確認できます。支払い、返金、プラン、料金はスクールのオーナーが引き続き管理します。",
       ownerOnly: "お金（支払い、返金、プランと料金）、スクールの設定、オーナーは常にスクールのオーナーが管理します。",
       saved: "{name}のアクセスを保存しました。",
       readOnlyIntro: "あなたの支店のスタッフです。役割やアクセスを変更できるのはスクールのオーナーだけです。",

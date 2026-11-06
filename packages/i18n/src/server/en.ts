@@ -657,6 +657,7 @@ export const SERVER_MESSAGES: string[] = [
   "This date is not valid.",
   "The School owner hasn't let you import data.",
  "The School owner hasn't let you see payroll.",
+ "The School owner hasn't let you connect Stripe.",
   "A row number is past the end of this import.",
   "Import not found",
   "Each row number can only be sent once.",

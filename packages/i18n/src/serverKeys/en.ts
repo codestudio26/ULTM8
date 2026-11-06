@@ -79,6 +79,8 @@ export const server = {
     freezeNotRunning: "This freeze has already ended.",
     freezeNotFound: "This freeze could not be found.",
     freezeFeeNoPayments: "This School charges a freeze fee but has no payments or currency set up. Set them up, or remove the fee, first.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "This School can't take card payments yet. Pay at the School instead, by cash or bank transfer, and staff confirm it.",
     noPackToRecharge: 'This person has no used-up Class Pack to buy again.',
     packNotForSale: 'This pack is no longer sold. Ask at the desk about another plan.',
     rechargeNotPaid: "The pack hasn't been paid for yet.",

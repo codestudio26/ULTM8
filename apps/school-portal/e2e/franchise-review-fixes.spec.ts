@@ -179,7 +179,7 @@ test('billing notice — says why billing can\'t start, and goes once the fee an
 
   await db.franchise.update({ where: { id: franchiseId }, data: { flatFeeAmount: 5000 } });
   await db.paymentAccount.create({
-    data: { id: randomUUID(), franchiseId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+    data: { id: randomUUID(), franchiseId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
   });
   await page.reload();
   await expect(page.getByText(franchiseId)).toBeVisible();
@@ -189,7 +189,7 @@ test('billing notice — says why billing can\'t start, and goes once the fee an
 test('F9 and F14 — a closed member School is labelled, and a charge from a School that left says "Former member School"', async ({ page }) => {
   await seedMemberSchool('Closed Member School', { archivedAt: new Date() });
   const account = await db.paymentAccount.create({
-    data: { id: randomUUID(), franchiseId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+    data: { id: randomUUID(), franchiseId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
   });
   const formerSchool = await db.school.create({ data: { id: randomUUID(), name: 'Left Earlier School' } });
   schoolIds.push(formerSchool.id);

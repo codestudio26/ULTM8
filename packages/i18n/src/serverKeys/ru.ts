@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "Эта заморозка уже закончилась.",
     freezeNotFound: "Заморозка не найдена.",
     freezeFeeNoPayments: "Школа берёт плату за заморозку, но не настроила платежи или валюту. Сначала настройте их или уберите плату.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "Эта школа пока не принимает оплату картой. Оплатите в школе наличными или банковским переводом, и сотрудники это подтвердят.",
     noPackToRecharge: "У этого человека нет израсходованного пакета занятий для повторной покупки.",
     packNotForSale: "Этот пакет больше не продаётся. Спросите на ресепшене о другом абонементе.",
     rechargeNotPaid: "Пакет ещё не оплачен.",

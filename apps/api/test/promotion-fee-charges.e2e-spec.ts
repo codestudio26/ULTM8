@@ -166,7 +166,7 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
       },
     });
     schoolB = await su.school.create({ data: { id: randomUUID(), name: 'Other Charge School', ranksToggle: true, defaultCurrency: 'GBP' } });
-    await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: acct } });
+    await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: acct } });
     bjj = await su.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: 'BJJ', classTypesOffered: [] } });
     // white-0 → white-1 (a stripe priced 15.00) → blue-0.
     for (const [name, order, tiers] of [['white', 0, 2], ['blue', 1, 1]] as Array<[string, number, number]>) {
