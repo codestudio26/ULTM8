@@ -22,7 +22,9 @@ import { fakePaymentCheckoutSession } from './stripe-fakes';
  * - item 9: a plan switches to another when it ends only for a member who
  *   agreed when buying; they are told before; the next plan is charged to
  *   their saved card; without one (or declined) it simply ends, and nothing
- *   is owed.
+ *   is owed. A next plan that is full under its member limit (Decision 435
+ *   items 10-15) also simply ends it, before any charge; a place held for
+ *   the member on its waiting list counts as room.
  */
 const DATABASE_URL = process.env.DATABASE_URL;
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
@@ -141,6 +143,7 @@ describeIfDb('Plan start and end dates (Decision 316 item 4, Decision 435 items 
     await su.class.deleteMany({ where });
     await su.transaction.deleteMany({ where });
     await su.membership.deleteMany({ where });
+    await su.planWaitlistEntry.deleteMany({ where });
     await su.membershipPlan.updateMany({ where, data: { switchToPlanId: null } });
     await su.membershipPlan.deleteMany({ where });
     await su.studentPaymentMethod.deleteMany({ where });
@@ -348,6 +351,11 @@ describeIfDb('Plan start and end dates (Decision 316 item 4, Decision 435 items 
         }
         expect(rows).toHaveLength(1);
       }
+      // The notice before says a full next plan ends it too (Decision 436 item 8).
+      const before = await su.notification.findFirstOrThrow({ where: { userId: m.studentId, title: 'Your plan is about to change' } });
+      expect(before.body).toMatch(
+        /^Your Intro week ends on \d{4}-\d{2}-\d{2}\. Then Ten classes starts and 60\.00 GBP is charged to your saved card\. Without a saved card, or if Ten classes is full, it simply ends and nothing is charged\.$/,
+      );
     });
 
     it('simply ends with no saved card, or a declined one: nothing owed, and the member is told', async () => {
@@ -375,6 +383,116 @@ describeIfDb('Plan start and end dates (Decision 316 item 4, Decision 435 items 
       await switcher.run(new Date());
       expect((await su.membership.findUniqueOrThrow({ where: { id: untold.id } })).switchOutcome).toBe('SWITCHED');
       expect((await su.membership.findUniqueOrThrow({ where: { id: notAgreed.id } })).switchedAt).toBeNull();
+    });
+
+    describe('into a plan that is full (Decision 435 items 10-15)', () => {
+      /** A next plan with a member limit, and a pass that switches into it. */
+      async function limitedPlans(memberLimit: number) {
+        const limited = await mkPlan(card, { type: 'CLASS_PACK', price: 5000, classesIncluded: 8, memberLimit, title: 'Small group' });
+        const intro = await mkPlan(card, { type: 'WEEKLY_PASS', price: 2000, expiryDurationDays: 7, switchToPlanId: limited.id, title: 'Small group intro' });
+        return { limited, intro };
+      }
+      /** A member already on the plan, taking a place. */
+      async function onPlan(label: string, planId: string) {
+        const student = await mkStudent(card, label);
+        await su.membership.create({
+          data: { id: randomUUID(), studentId: student.id, membershipPlanId: planId, schoolId: card.school.id, frequency: 'ONE_TIME', classesRemaining: 8, expiryDate: new Date(Date.now() + 30 * DAY) },
+        });
+        return student;
+      }
+      /** A member with a saved card whose intro pass ended a minute ago, told two days back. */
+      async function endedIntro(label: string, plans: { limited: { id: string }; intro: { id: string } }) {
+        const student = await mkStudent(card, label);
+        await su.studentPaymentMethod.create({ data: { id: randomUUID(), studentId: student.id, schoolId: card.school.id, stripeCustomerId: `cus_${randomUUID().slice(0, 8)}` } as never });
+        return su.membership.create({
+          data: {
+            id: randomUUID(),
+            studentId: student.id,
+            membershipPlanId: plans.intro.id,
+            schoolId: card.school.id,
+            frequency: 'ONE_TIME',
+            startDate: new Date(Date.now() - 7 * DAY - 60_000),
+            expiryDate: new Date(Date.now() - 60_000),
+            switchToPlanId: plans.limited.id,
+            switchAgreedAt: new Date(Date.now() - 7 * DAY),
+            switchNoticeSentAt: new Date(Date.now() - 2 * DAY),
+          },
+        });
+      }
+      async function toldEnded(studentId: string) {
+        let rows: Array<{ body: string }> = [];
+        for (let i = 0; i < 50 && rows.length === 0; i++) {
+          rows = await su.notification.findMany({ where: { userId: studentId, title: 'Membership ended' }, select: { body: true } });
+          if (rows.length === 0) await new Promise((r) => setTimeout(r, 100));
+        }
+        return rows;
+      }
+
+      it('simply ends, with nothing charged, and the member is told as when the plan can no longer be sold', async () => {
+        const plans = await limitedPlans(1);
+        await onPlan('full-holder', plans.limited.id);
+        const m = await endedIntro('switch-full', plans);
+
+        const run = await switcher.run(new Date());
+        expect(run.ended).toBeGreaterThanOrEqual(1);
+        const done = await su.membership.findUniqueOrThrow({ where: { id: m.id } });
+        expect(done).toMatchObject({ switchOutcome: 'NOT_SOLD', switchedToMembershipId: null });
+        expect(done.switchedAt).not.toBeNull();
+        // Checked before the card: no charge was tried, nothing recorded or owed.
+        expect(intents.filter((i) => i.idempotencyKey === `plan-switch-${m.id}`)).toHaveLength(0);
+        expect(await su.transaction.count({ where: { studentId: m.studentId } })).toBe(0);
+        expect(await su.charge.count({ where: { studentId: m.studentId } })).toBe(0);
+        expect(await su.membership.count({ where: { studentId: m.studentId, membershipPlanId: plans.limited.id } })).toBe(0);
+        const told = await toldEnded(m.studentId);
+        expect(told).toHaveLength(1);
+        expect(told[0].body).toBe("Your Small group intro has ended. Small group couldn't be started, so nothing was charged.");
+
+        // Never retried on a later run, even once a place frees up.
+        await su.membershipPlan.update({ where: { id: plans.limited.id }, data: { memberLimit: 5 } });
+        await switcher.run(new Date());
+        expect(await su.membership.count({ where: { studentId: m.studentId, membershipPlanId: plans.limited.id } })).toBe(0);
+        expect(intents.filter((i) => i.idempotencyKey === `plan-switch-${m.id}`)).toHaveLength(0);
+      });
+
+      it("switches when the place held for them on the plan's waiting list is theirs; someone else's held place counts as taken", async () => {
+        const plans = await limitedPlans(2);
+        await onPlan('held-holder', plans.limited.id);
+        const held = await endedIntro('switch-held', plans);
+        const late = await endedIntro('switch-late', plans);
+        // The one free place is held for `held` (Decision 435 item 11).
+        await su.planWaitlistEntry.create({
+          data: {
+            id: randomUUID(),
+            schoolId: card.school.id,
+            membershipPlanId: plans.limited.id,
+            studentId: held.studentId,
+            joinedById: held.studentId,
+            status: 'OFFERED',
+            offeredAt: new Date(Date.now() - 60 * 60_000),
+            offerExpiresAt: new Date(Date.now() + 23 * 60 * 60_000),
+          },
+        });
+
+        await switcher.run(new Date());
+        const [a, b] = await Promise.all([held.id, late.id].map((id) => su.membership.findUniqueOrThrow({ where: { id } })));
+        expect(a.switchOutcome).toBe('SWITCHED');
+        const started = await su.membership.findUniqueOrThrow({ where: { id: a.switchedToMembershipId! } });
+        expect(started).toMatchObject({ membershipPlanId: plans.limited.id, classesRemaining: 8 });
+        expect(intents.filter((i) => i.idempotencyKey === `plan-switch-${held.id}`)).toHaveLength(1);
+
+        expect(b.switchOutcome).toBe('NOT_SOLD');
+        expect(intents.filter((i) => i.idempotencyKey === `plan-switch-${late.id}`)).toHaveLength(0);
+        expect(await su.transaction.count({ where: { studentId: late.studentId } })).toBe(0);
+        expect(await toldEnded(late.studentId)).toHaveLength(1);
+      });
+
+      it('a plan with no limit, or room under it, switches as before', async () => {
+        const plans = await limitedPlans(2);
+        await onPlan('room-holder', plans.limited.id);
+        const m = await endedIntro('switch-room', plans);
+        await switcher.run(new Date());
+        expect((await su.membership.findUniqueOrThrow({ where: { id: m.id } })).switchOutcome).toBe('SWITCHED');
+      });
     });
   });
 });

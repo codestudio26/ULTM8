@@ -10,5 +10,30 @@
       "Bash(git push *)",
       "Bash(git commit -m 'Update Claude Code permissions allowlist *)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/plugin-advisor.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/plugin-advisor.mjs\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

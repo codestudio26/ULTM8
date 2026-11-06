@@ -289,7 +289,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "Освободилось место",
     planPlaceHeldBody: "Место в {plan} закреплено за вами до {until}. Купите его до этого времени, иначе оно перейдёт следующему в листе ожидания.",
     planSwitchNoticeTitle: "Ваш тариф скоро сменится",
-    planSwitchNoticeBody: "Ваш {plan} заканчивается {date}. Затем начнётся {next}, и с сохранённой карты спишут {amount}. Без сохранённой карты он просто закончится.",
+    planSwitchNoticeBody: "Ваш {plan} заканчивается {date}. Затем начнётся {next}, и с сохранённой карты спишут {amount}. Без сохранённой карты или если в {next} нет мест, он просто закончится, и ничего не спишут.",
     planSwitchedTitle: "Ваш тариф сменился",
     planSwitchedBody: "Ваш {plan} закончился, начался {next}. С сохранённой карты списано {amount}.",
     planSwitchEndedTitle: "Абонемент закончился",

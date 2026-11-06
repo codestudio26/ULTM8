@@ -4092,7 +4092,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       guardianName: "Imię i nazwisko rodzica lub opiekuna",
       minorNote: "Gość ma mniej niż 18 lat, więc podpisuje za niego rodzic lub opiekun.",
       signature: "Wpisz swoje imię i nazwisko, aby podpisać",
-      agree: "Przeczytałem te oświadczenia i je akceptuję.",
+      agree: "Przeczytałem(-am) te oświadczenia i je akceptuję.",
       sign: "Podpisz",
       failed: "Nie udało się podpisać. Spróbuj ponownie.",
     },
@@ -4528,7 +4528,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       friend: "Znajomy",
       instagram: "Instagram",
       google: "Google",
-      walkedPast: "Przechodziłem obok",
+      walkedPast: "Przechodząc obok",
     },
     openMat: {
       title: "Rozpocznij open mat",

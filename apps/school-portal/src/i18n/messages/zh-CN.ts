@@ -418,7 +418,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       subtitle: "预约被取消时学员能拿回什么。",
       policyHint: {
         MANUAL: "员工在“待处理的取消”中逐一决定每个被取消的预约。",
-        AUTO_REFUND: "退款：课程包中一节课的份额。银行卡付款通过 Stripe 退款；现金和银行转账付款会列出，由您自行退还。",
+        AUTO_REFUND: "退款：课时包中一节课的份额。银行卡付款通过 Stripe 退款；现金和银行转账付款会列出，由您自行退还。",
         AUTO_CREDIT: "课时退回给学员。不涉及资金。",
       },
       windowLabel: "政策何时适用",
@@ -3195,9 +3195,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       bodyHint: "留空表示没有合同。",
       minimumTermLabel: "最短期限（月）",
       minimumTermHint: "从会员资格开始之日起计算。",
-      earlyExitFeeLabel: "提前退出费",
+      earlyExitFeeLabel: "提前解约费",
       earlyExitFeeHint: "如果会员取消且会员资格在最短期限前结束，将计入会员余额。适用你的税务设置。",
-      subscriptionOnly: "最短期限和提前退出费适用于订阅计划。",
+      subscriptionOnly: "最短期限和提前解约费适用于订阅计划。",
       deskNote: "有合同的计划不能在前台出售：会员在应用内购买时签署。",
       add: "添加合同",
       update: "更新合同",
@@ -3214,7 +3214,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       signedOn: "{name} 于 {date} 签署",
       signedByGuardian: "由家长或监护人签署",
       notUsed: "未用于购买",
-      termsLine: "最短期限 {months} 个月 · 提前退出费 {amount}",
+      termsLine: "最短期限 {months} 个月 · 提前解约费 {amount}",
       viewText: "显示已签署的正文",
       hideText: "隐藏已签署的正文",
       typedSignature: "输入的签名：{signature}",
@@ -4139,7 +4139,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       frozenMembers: "允许已冻结的会员签到",
       frozenMembersHint: "关闭时，会员资格已冻结的会员不能签到。",
       openMatUsesCredit: "开放垫训练使用课程次数",
-      openMatUsesCreditHint: "开启：预约开放垫训练会像其他课程一样使用课程包或好友通行证的次数。关闭：不使用次数，但仍需要有效的会员资格或通行证。",
+      openMatUsesCreditHint: "开启：预约开放垫训练会像其他课程一样使用课时包或好友通行证的次数。关闭：不使用次数，但仍需要有效的会员资格或通行证。",
       withoutBooking: "无需预约即可签到",
       withoutBookingHint: "开启后，会员可以签到未预约的课程。签到时如课程还有名额会占用一个名额，并像预约一样使用其会员资格或课程次数。关闭时，需要先预约。",
       overdue: "逾期付款时禁止签到",
@@ -4789,7 +4789,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     // Decision 435 item 19 — a signed contract's early-exit fee.
     earlyExitFee: {
-      badge: "提前退出费",
+      badge: "提前解约费",
     },
     lateFee: {
       badge: "滞纳金",
