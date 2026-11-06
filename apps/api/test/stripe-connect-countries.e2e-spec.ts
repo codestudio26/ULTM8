@@ -205,6 +205,28 @@ describeIfDb('Stripe Connect only where Stripe can onboard (Decision 437)', () =
     });
   });
 
+  describe("the School's public profile, for the member app", () => {
+    it('says whether the School takes card payments and whether it is in Brazil, to any signed-in member', async () => {
+      const br = await school('BR');
+      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: br.school.id, provider: 'BANK_TRANSFER', accountTitle: 'Pix', country: 'BR' } });
+      const gb = await school('GB');
+      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: gb.school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_pub_${randomUUID()}` } });
+      const none = await school(null);
+      // A member of another School reads them: the profile is public to the signed-in.
+      const reader = (await school('IE')).token;
+
+      const brBody = (await get(`/v1/academies/${br.school.id}`, reader)).body;
+      expect({ cardPayments: brBody.cardPayments, inBrazil: brBody.inBrazil }).toEqual({ cardPayments: false, inBrazil: true });
+      const gbBody = (await get(`/v1/academies/${gb.school.id}`, reader)).body;
+      expect({ cardPayments: gbBody.cardPayments, inBrazil: gbBody.inBrazil }).toEqual({ cardPayments: true, inBrazil: false });
+      const noneBody = (await get(`/v1/academies/${none.school.id}`, reader)).body;
+      expect({ cardPayments: noneBody.cardPayments, inBrazil: noneBody.inBrazil }).toEqual({ cardPayments: false, inBrazil: false });
+      // Nothing else about the payment account or the address leaves.
+      expect(brBody).not.toHaveProperty('addressCountry');
+      expect(JSON.stringify(gbBody)).not.toContain('acct_pub_');
+    });
+  });
+
   describe('Franchise', () => {
     it('connect-status says Connect is not available for a Brazilian Franchise, and onboarding is refused', async () => {
       const { franchise: f, token } = await franchise('BR');

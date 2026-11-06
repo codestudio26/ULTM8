@@ -255,6 +255,14 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Franchise connect-status and Dashboard answers now say whether Connect is
   available. The list is set in code, and the optional
   `STRIPE_CONNECT_COUNTRIES` setting replaces it (comma-separated ISO codes).
+  In the member app, a School without card payments shows a short note under
+  each plan: card payments aren't available there yet, so pay by bank
+  transfer or cash at the School (by Pix too, for a School in Brazil) and
+  staff confirm it. **Purchase** there records a cash/bank-transfer payment
+  waiting for staff (it no longer tries Stripe's card page), and **Pay with
+  saved card** isn't offered. The School's public profile says whether it
+  takes card payments and whether it is in Brazil. **Needs migration
+  `20270228100001_school_card_payments`.**
 - **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
   School's card surcharge applies, a monthly Subscription now carries it too:
   members see it on the plan before subscribing, and it is added to the first

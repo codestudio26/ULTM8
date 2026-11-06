@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaDiscoveryService } from '../common/prisma/prisma-discovery.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
 import { shapeTimetableSlotResponse } from '../timetable/timetable.service';
@@ -252,8 +253,16 @@ export class AcademiesService {
     // Decision 435 item 6: with the School's joining fees off, the amounts
     // stay on the plans but aren't charged, so they aren't shown either.
     const fees = await this.prismaDiscovery.school.findUnique({ where: { id: school.id }, select: { joiningFeesEnabled: true } });
+    // Decision 437: whether the School takes card payments in the app, and
+    // whether it is in Brazil (for "Pix"), through school_card_payments():
+    // the discovery connection sees neither its payment account nor address.
+    const [payments] = (await this.prismaDiscovery.$queryRaw(
+      Prisma.sql`SELECT * FROM "school_card_payments"(${school.id})`,
+    )) as Array<{ cardPayments: boolean; inBrazil: boolean }>;
     return {
       ...school,
+      cardPayments: payments?.cardPayments ?? false,
+      inBrazil: payments?.inBrazil ?? false,
       membershipPlans: school.membershipPlans.map((p) => ({
         ...p,
         joiningFee: fees?.joiningFeesEnabled && p.price > 0 ? p.joiningFee : null,

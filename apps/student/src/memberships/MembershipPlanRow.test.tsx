@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, expect, it, jest, beforeEach } from '@jest/globals';
+import { describe, expect, it, jest, beforeEach, afterEach } from '@jest/globals';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as membershipQueries from './membershipQueries';
@@ -7,9 +7,13 @@ import * as paymentMethodQueries from '../payments/paymentMethodQueries';
 import * as stepUpQueries from '../auth/stepUpQueries';
 import { MembershipPlanRow } from './MembershipPlanRow';
 import * as planContractQueries from './planContractQueries';
+import * as academyQueries from '../academies/academyQueries';
 
 jest.mock('./membershipQueries', () => ({ usePurchaseMembership: jest.fn(), useInvalidateMyMemberships: jest.fn() }));
 jest.mock('../payments/paymentMethodQueries', () => ({ usePaymentMethod: jest.fn() }));
+// Decision 437: the School's profile says whether it takes card payments
+// (unknown, as while it loads, unless a test says otherwise).
+jest.mock('../academies/academyQueries', () => ({ useAcademy: jest.fn(() => ({ data: undefined })) }));
 jest.mock('../auth/stepUpQueries', () => ({ useVerifyStepUp: jest.fn() }));
 // Decision 435 items 10-15: the waiting-list buttons' mutations.
 const mockWaitlistJoin = jest.fn();
@@ -325,5 +329,57 @@ describe('MembershipPlanRow — plan contract', () => {
     await fireEvent.press(getByText('Purchase'));
     expect(purchase.mutate).toHaveBeenCalled();
     expect(signMutate).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Decision 437 — at a School without card payments (no Stripe account; Brazil
+ * for now) the member is told to pay by bank transfer or cash at the School
+ * (Pix too in Brazil), which staff confirm; Purchase then asks for the
+ * School's Cash/Bank payment, never Stripe's hosted Checkout or a saved card.
+ */
+describe('MembershipPlanRow — School without card payments (Decision 437)', () => {
+  let purchase: ReturnType<typeof idlePurchase>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    purchase = idlePurchase();
+    mocked(membershipQueries.usePurchaseMembership).mockReturnValue(purchase);
+    mocked(membershipQueries.useInvalidateMyMemberships).mockReturnValue(jest.fn());
+    mocked(stepUpQueries.useVerifyStepUp).mockReturnValue({ mutate: jest.fn(), isPending: false, isError: false, error: null });
+    mocked(paymentMethodQueries.usePaymentMethod).mockReturnValue({ data: { hasSavedPaymentMethod: true, brand: 'visa', last4: '4242' } } as never);
+  });
+
+  afterEach(() => {
+    mocked(academyQueries.useAcademy).mockReturnValue({ data: undefined });
+  });
+
+  it('a Brazilian School: the note mentions Pix, and Purchase is a Cash/Bank payment with no saved-card option', async () => {
+    mocked(academyQueries.useAcademy).mockReturnValue({ data: { cardPayments: false, inBrazil: true } });
+    const { getByTestId, getByText, queryByText } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" />);
+    expect(academyQueries.useAcademy).toHaveBeenCalledWith('school-1');
+    expect(getByTestId('no-card-payments').props.children).toBe(
+      "Card payments aren't available at this School yet. Pay by Pix, bank transfer or cash at the School, and staff will confirm it.",
+    );
+    expect(queryByText('Pay with saved card')).toBeNull();
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenCalledWith({ planId: 'plan-1', studentId: undefined }, expect.anything());
+  });
+
+  it('elsewhere without card payments the note leaves Pix out', async () => {
+    mocked(academyQueries.useAcademy).mockReturnValue({ data: { cardPayments: false, inBrazil: false } });
+    const { getByTestId } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" />);
+    expect(getByTestId('no-card-payments').props.children).toBe(
+      "Card payments aren't available at this School yet. Pay by bank transfer or cash at the School, and staff will confirm it.",
+    );
+  });
+
+  it('a School that takes cards shows no note and keeps hosted Checkout and the saved card', async () => {
+    mocked(academyQueries.useAcademy).mockReturnValue({ data: { cardPayments: true, inBrazil: false } });
+    const { getByText, queryByTestId } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" />);
+    expect(queryByTestId('no-card-payments')).toBeNull();
+    expect(getByText('Pay with saved card')).toBeTruthy();
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenCalledWith(expect.objectContaining({ planId: 'plan-1', useHostedCheckout: true }), expect.anything());
   });
 });

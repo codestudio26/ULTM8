@@ -13245,6 +13245,10 @@ export interface components {
             medicalInfoEnabled: boolean;
             /** @description Decision 318 item 7: a Guardian may add their child to this School in the app. */
             memberAppAddFamily: boolean;
+            /** @description Decision 437: the School takes card payments in the app (it has a Stripe payment account). When false, members pay by cash or bank transfer at the School and staff confirm it. */
+            cardPayments: boolean;
+            /** @description Decision 437: the School's country is Brazil, so the app mentions Pix with cash and bank transfer. */
+            inBrazil: boolean;
             /** @description The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches. */
             branches: components["schemas"]["AcademyBranchDto"][];
             membershipPlans: components["schemas"]["AcademyMembershipPlanDto"][];

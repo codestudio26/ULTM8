@@ -949,6 +949,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       payWithSavedCard: "Payer avec la carte enregistrée",
       enrolled: "Vous êtes inscrit ✓",
       pendingConfirmation: "Paiement en attente de confirmation par l’école.",
+      noCardPayments: "Les paiements par carte ne sont pas encore disponibles dans cette école. Payez par virement bancaire ou en espèces à l’école, et l’équipe le confirmera.",
+      noCardPaymentsPix: "Les paiements par carte ne sont pas encore disponibles dans cette école. Payez par Pix, virement bancaire ou en espèces à l’école, et l’équipe le confirmera.",
       checkoutSubmitted: "Paiement envoyé — consultez Mes adhésions dans quelques instants, une fois qu’il est confirmé.",
       onlinePaymentUnavailable: "Le paiement en ligne de cette formule n’est pas encore disponible dans l’application.",
     },

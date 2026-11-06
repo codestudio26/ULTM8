@@ -87,6 +87,8 @@ export const memberships = {
     payWithSavedCard: 'Pay with saved card',
     enrolled: "You're enrolled ✓",
     pendingConfirmation: 'Payment pending confirmation by the School.',
+    noCardPayments: "Card payments aren't available at this School yet. Pay by bank transfer or cash at the School, and staff will confirm it.",
+    noCardPaymentsPix: "Card payments aren't available at this School yet. Pay by Pix, bank transfer or cash at the School, and staff will confirm it.",
     checkoutSubmitted: "Payment submitted — check My Memberships shortly once it's confirmed.",
     onlinePaymentUnavailable: "Online payment for this plan isn't available in the app yet.",
   },

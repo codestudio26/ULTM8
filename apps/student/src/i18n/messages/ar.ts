@@ -1003,6 +1003,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       payWithSavedCard: "الدفع بالبطاقة المحفوظة",
       enrolled: "أنت مسجّل ✓",
       pendingConfirmation: "الدفع بانتظار تأكيد المدرسة.",
+      noCardPayments: "الدفع بالبطاقة غير متاح في هذه المدرسة بعد. ادفع بتحويل بنكي أو نقدًا في المدرسة، وسيؤكد الموظفون الدفع.",
+      noCardPaymentsPix: "الدفع بالبطاقة غير متاح في هذه المدرسة بعد. ادفع عبر Pix أو بتحويل بنكي أو نقدًا في المدرسة، وسيؤكد الموظفون الدفع.",
       checkoutSubmitted: "تم إرسال الدفع — راجع «عضوياتي» بعد قليل عند تأكيده.",
       onlinePaymentUnavailable: "الدفع الإلكتروني لهذه الخطة غير متاح في التطبيق بعد.",
     },
