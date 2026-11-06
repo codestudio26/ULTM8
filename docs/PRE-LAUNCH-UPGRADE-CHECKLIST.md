@@ -65,6 +65,24 @@ the fuller prior context) — scoping this is the first step, not the build itse
 
 ---
 
+## Stripe Connect webhook: switch on `account.updated`
+
+**Status:** Ops step for go-live, recorded 6 Nov 2026 (Decision 442 item 7).
+
+**Why:** The School page's "Connect Stripe" card and the setup checklist's "Connect
+Stripe" step tick only once Stripe says the School's account is ready (Decision 441
+item 6, PR #508). Stripe tells ULTM8 through the `account.updated` event on the
+**Connect** webhook endpoint. Until that event is switched on in the live Stripe
+dashboard, readiness only updates when the owner opens the School page or comes back
+from Stripe's onboarding. Card payments also wait for a ready account (Decision 442
+item 2), so a missed update would keep a School from taking cards.
+
+**Done looks like:** in the live Stripe dashboard (Developers → Webhooks), the Connect
+endpoint lists `account.updated`, and a test School's step ticks after it finishes
+onboarding without the owner reopening the page.
+
+---
+
 ## How to use this list
 
 Before declaring the product "launch ready," walk this file top to bottom with the

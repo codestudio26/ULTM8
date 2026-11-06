@@ -135,6 +135,12 @@ Changes are counted as strings changed (a plural message counts once).
 - **Korean**: owners may prefer 관장 (the usual title for the head of a
   dojang) to 도장 원장. Stripes are 그랄 (the Brazilian Jiu-Jitsu word) in most
   strings and 줄무늬 in descriptive text.
+- **Belt template names** (IBJJF template, Decision 441 item 8, PR #506) in
+  `apps/api/src/ranks/templates/ibjjf-names.ts`: the word for a stripe in Korean
+  (그랄), Thai (แถบ, and ดั้ง for degree), Chinese (道杠), Arabic (شريط), Turkish
+  (şerit) and Japanese (ストライプ…本). Coral belts are named by colour and degree
+  (for example "Faixa Vermelha e Preta (7º Grau)"), not "coral". Added for the
+  native review by Decision 442 item 9.
 - **French Guardian**: mostly "tuteur", sometimes "responsable légal". For a
   parent, "parent ou responsable légal" is the safer legal wording.
 - **Long labels** (more than 1.5 times the English) to check on screen:
