@@ -261,7 +261,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "Bir yer açıldı",
     planPlaceHeldBody: "{plan} planında bir yer {until} tarihine kadar sizin için ayrıldı. O zamana kadar satın alın, yoksa sıradaki kişiye geçer.",
     planSwitchNoticeTitle: "Planınız değişmek üzere",
-    planSwitchNoticeBody: "{plan} {date} tarihinde bitiyor. Ardından {next} başlar ve kayıtlı kartınızdan {amount} çekilir. Kayıtlı kart yoksa sadece sona erer.",
+    planSwitchNoticeBody: "{plan} {date} tarihinde bitiyor. Ardından {next} başlar ve kayıtlı kartınızdan {amount} çekilir. Kayıtlı kart yoksa veya {next} doluysa sadece sona erer ve hiçbir ücret alınmaz.",
     planSwitchedTitle: "Planınız değişti",
     planSwitchedBody: "{plan} sona erdi ve {next} başladı. Kayıtlı kartınızdan {amount} çekildi.",
     planSwitchEndedTitle: "Üyelik sona erdi",

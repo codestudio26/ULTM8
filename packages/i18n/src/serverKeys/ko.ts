@@ -247,7 +247,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "자리가 났습니다",
     planPlaceHeldBody: "{plan} 자리를 {until}까지 맡아 두었습니다. 그 전에 구매하지 않으면 다음 대기자에게 넘어갑니다.",
     planSwitchNoticeTitle: "곧 플랜이 바뀝니다",
-    planSwitchNoticeBody: "{plan}이(가) {date}에 끝납니다. 그 후 {next}이(가) 시작되고 저장된 카드로 {amount}이(가) 결제됩니다. 저장된 카드가 없으면 그대로 끝납니다.",
+    planSwitchNoticeBody: "{plan}이(가) {date}에 끝납니다. 그 후 {next}이(가) 시작되고 저장된 카드로 {amount}이(가) 결제됩니다. 저장된 카드가 없거나 {next}이(가) 정원이 차면 그대로 끝나고 아무것도 결제되지 않습니다.",
     planSwitchedTitle: "플랜이 바뀌었습니다",
     planSwitchedBody: "{plan}이(가) 끝나고 {next}이(가) 시작되었습니다. 저장된 카드로 {amount}이(가) 결제되었습니다.",
     planSwitchEndedTitle: "회원권이 끝났습니다",

@@ -275,7 +275,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "Abriu uma vaga",
     planPlaceHeldBody: "Uma vaga em {plan} está reservada para você até {until}. Compre antes disso, ou ela passa para a próxima pessoa na espera.",
     planSwitchNoticeTitle: "Seu plano vai mudar",
-    planSwitchNoticeBody: "Seu {plan} termina em {date}. Depois começa {next} e {amount} é cobrado no seu cartão salvo. Sem cartão salvo, ele simplesmente termina.",
+    planSwitchNoticeBody: "Seu {plan} termina em {date}. Depois começa {next} e {amount} é cobrado no seu cartão salvo. Sem cartão salvo, ou se {next} estiver lotado, ele simplesmente termina e nada é cobrado.",
     planSwitchedTitle: "Seu plano mudou",
     planSwitchedBody: "Seu {plan} terminou e {next} começou. {amount} foi cobrado no seu cartão salvo.",
     planSwitchEndedTitle: "Plano encerrado",

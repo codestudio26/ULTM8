@@ -544,7 +544,13 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^A place on (.+) is held for you until (\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?: UTC)?)\. Buy it before then, or it goes to the next person waiting\.$/s,
     (m, { t, locale }) => n(t, 'planPlaceHeldBody', { plan: m[1], until: formatWhen(m[2], locale) }),
   ],
-  // Decision 435 item 9 — the plan-switch job's notices.
+  // Decision 435 item 9 — the plan-switch job's notices. Since 6 Nov 2026 the
+  // notice also says a full next plan ends it (Decision 436 item 8); the
+  // shape without that is kept for notices already sent.
+  [
+    /^Your (.+) ends on (\d{4}-\d{2}-\d{2})\. Then (.+) starts and ([\d.]+) ([A-Z]{3}) is charged to your saved card\. Without a saved card, or if \3 is full, it simply ends and nothing is charged\.$/s,
+    (m, { t, locale }) => n(t, 'planSwitchNoticeBody', { plan: m[1], date: formatDay(m[2], locale), next: m[3], amount: formatAmount(m[4], m[5], locale) }),
+  ],
   [
     /^Your (.+) ends on (\d{4}-\d{2}-\d{2})\. Then (.+) starts and ([\d.]+) ([A-Z]{3}) is charged to your saved card\. Without a saved card, it simply ends\.$/s,
     (m, { t, locale }) => n(t, 'planSwitchNoticeBody', { plan: m[1], date: formatDay(m[2], locale), next: m[3], amount: formatAmount(m[4], m[5], locale) }),
