@@ -5,7 +5,7 @@ import { computeCharge, formatInvoiceNumber, taxLinesForCharge } from './charge-
 import { insertCharge, lockInvoiceNumbers } from './charge-insert';
 import { MAX_OCCURRENCES_PER_RUN, dayOf, dayValue, planOccurrences, schoolToday, skipThrough, type SeriesState } from './recurring-schedule';
 import { loadEffectiveTax } from './tax-lines';
-import { endSeriesBefore, membershipBillingEndDay } from './membership-series';
+import { endSeriesBefore, membershipBillingEndDay, syncSeriesFreezes } from './membership-series';
 
 type Tx = Prisma.TransactionClient;
 
@@ -63,6 +63,9 @@ async function lockSeries(tx: Tx, id: string): Promise<RecurringCharge | null> {
  *   then are passed over, not made later.
  * - A student who is no longer a current student of the School: the series
  *   stops (STUDENT_LEFT) and nothing is charged.
+ * - A series that bills a membership (Decision 441 item 1) follows it: it
+ *   ends with it, and a freeze on it moves its months (Decision 442 item 5,
+ *   syncSeriesFreezes) before anything is charged.
  *
  * Each charge is put on the balance like any other, so credit pays it at once
  * and the charge-auto-pay job (6am UTC, after this one) picks it up for a
@@ -108,8 +111,12 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
       // Lock order, as every charge write: invoice numbers, then the series,
       // then (in insertCharge) the member's balance.
       await lockInvoiceNumbers(tx, series.schoolId);
-      const row = await lockSeries(tx, seriesId);
-      if (!row || row.stoppedAt || !row.nextDate) return null;
+      const locked = await lockSeries(tx, seriesId);
+      if (!locked || locked.stoppedAt || !locked.nextDate) return null;
+      // Decision 442 item 5: a freeze on the membership moves its months
+      // first, so no month inside a freeze is charged.
+      const row = locked.membershipId ? await syncSeriesFreezes(tx, locked, school.timezone, now) : locked;
+      if (!row.nextDate) return null;
       const state = seriesState(row);
       const plan = planOccurrences(state, today, 1);
       if (plan.due.length === 0) return null;

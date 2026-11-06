@@ -142,9 +142,9 @@ export function StudentMembershipsCard({
     const next = m.switchToPlanId ? plans.data?.items.find((p) => p.id === m.switchToPlanId) : undefined;
     if (next) parts.push(t('membershipPlans.studentCard.switchesTo', { plan: next.title }));
     if (m.giftedById) parts.push(t('membershipPlans.studentCard.given'));
-    // A card Subscription's billing is paused by a freeze (Decision 404); a
-    // monthly plan billed to the balance (Decision 441) isn't.
-    if (m.frozen && m.planType === 'SUBSCRIPTION' && !m.billedToBalance) parts.push(t('membershipPlans.studentCard.freeze.billingPaused'));
+    // A freeze pauses a monthly plan's billing: a card Subscription's
+    // (Decision 404) and, since Decision 442 item 5, one billed to the balance.
+    if (m.frozen && m.planType === 'SUBSCRIPTION') parts.push(t('membershipPlans.studentCard.freeze.billingPaused'));
     return parts.join(' · ') || t('common.none');
   }
 

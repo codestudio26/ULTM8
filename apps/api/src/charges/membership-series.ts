@@ -1,8 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { Prisma, PrismaClient, RecurringCharge } from '@prisma/client';
 import { chargeCurrency } from '../common/school-currency';
-import { dayIn, dayNumber, dayStart } from '../memberships/freeze/membership-freeze';
-import { addDays, dayOf, dayValue, firstIndexOnOrAfter, nextDay, occurrenceDay, schoolToday } from './recurring-schedule';
+import { backDay, dayIn, dayNumber, dayStart, dayString, frozenDays } from '../memberships/freeze/membership-freeze';
+import { addDays, anchorAt, dayOf, dayValue, firstIndexOnOrAfter, nextDay, occurrenceDay, schoolToday } from './recurring-schedule';
 
 /**
  * Decision 441 item 1: a monthly plan (SUBSCRIPTION) at a School that takes
@@ -20,6 +20,8 @@ import { addDays, dayOf, dayValue, firstIndexOnOrAfter, nextDay, occurrenceDay, 
  *   fees as for any charge (Decision 413).
  * - The series follows the membership: no charge is made on or after the day
  *   the membership ends (cancelled, or no longer active).
+ * - A freeze pauses it, as it pauses a card Subscription (Decision 442 item
+ *   5, syncSeriesFreezes below).
  *
  * A School with a Stripe payment account (cards) is untouched: its monthly
  * plans stay card Subscriptions.
@@ -46,11 +48,20 @@ export function isBalanceBilled(plan: { type: string; price: number }, account: 
  * already charged runs out (as a card Subscription's cancel at period end).
  * A billing day that is today stays charged and the membership runs to the
  * next one.
+ *
+ * The billing days are the series' own (its first date, from its next
+ * index) when it has one: a freeze moves them (Decision 442 item 5,
+ * syncSeriesFreezes). Without a series yet, they count from the start date.
  */
-export function balanceBilledCancelAt(startDate: Date, zone: string | null | undefined, now: Date = new Date()): Date {
-  const first = schoolToday(startDate, zone);
+export function balanceBilledCancelAt(
+  startDate: Date,
+  zone: string | null | undefined,
+  now: Date = new Date(),
+  series?: { firstDate: Date; nextIndex: number } | null,
+): Date {
+  const first = series ? dayOf(series.firstDate) : schoolToday(startDate, zone);
   const today = schoolToday(now, zone);
-  const index = firstIndexOnOrAfter(first, 'MONTHLY', addDays(today, 1), 1);
+  const index = firstIndexOnOrAfter(first, 'MONTHLY', addDays(today, 1), series ? series.nextIndex : 1);
   return dayStart(dayNumber(occurrenceDay(first, 'MONTHLY', index)), zone);
 }
 
@@ -185,4 +196,141 @@ export async function healBalanceBilling(db: Db, logger?: Pick<Logger, 'warn'>):
     }
   }
   return made;
+}
+
+// ---------------------------------------------------------------------------
+// Freezing (Decision 442 item 5)
+// ---------------------------------------------------------------------------
+
+type FreezeTx = Pick<Prisma.TransactionClient, 'recurringCharge' | 'membershipFreeze' | 'membership'>;
+
+/**
+ * Moves a series so that its next charge is `day` and the months after it
+ * follow from there (the same day of each month), as a card Subscription's
+ * billing restarts from the day its trial ends. The series' first date and
+ * next index are re-anchored on that day (anchorAt; the index never goes
+ * below the charges already made); its end date (if any) still holds.
+ */
+async function moveSeriesTo(tx: Pick<Prisma.TransactionClient, 'recurringCharge'>, row: RecurringCharge, day: string): Promise<RecurringCharge> {
+  const anchor = anchorAt(day, row.frequency, row.createdCount);
+  const state = {
+    firstDate: anchor.firstDate,
+    frequency: row.frequency,
+    endDate: row.endDate ? dayOf(row.endDate) : null,
+    maxOccurrences: row.maxOccurrences,
+    nextIndex: anchor.index,
+    createdCount: row.createdCount,
+  };
+  const next = nextDay(state);
+  return tx.recurringCharge.update({
+    where: { id: row.id },
+    data: { firstDate: dayValue(anchor.firstDate), nextIndex: anchor.index, nextDate: next ? dayValue(next) : null },
+  });
+}
+
+/**
+ * Decision 442 item 5: freezing a monthly plan billed to the balance pauses
+ * its monthly charge, as freezing a card Subscription does (Decision 404,
+ * freeze-billing.ts), and the charges resume when the freeze ends. The same
+ * rule as the card, on the series instead of Stripe:
+ *
+ * - Approved: the next charge on or after the freeze's first day moves later
+ *   by the freeze's length, and the months after it follow from the new day.
+ *   The member keeps the paid days the freeze took and never pays for frozen
+ *   days, and no month falls inside the freeze. A month due before the first
+ *   frozen day is charged as usual first; the move waits for it (as the card's
+ *   waits for that renewal).
+ * - Ended early: the next charge moves back by the frozen days not used
+ *   (all of them when it ended before it started), never before today. A
+ *   freeze ended before the move was made moves by the days it froze.
+ * - A series that has ended (the membership was cancelled) is not moved.
+ *
+ * Runs with the series row locked (FOR UPDATE), so the charge-recurring job,
+ * an approval and an early end never move it twice: each freeze's
+ * billingShiftAppliedAt and billingRestoredAt (the card's own markers; a
+ * balance-billed membership has no Stripe Subscription, so the card's sweep
+ * never reads them) record the move, in the same transaction. Returns the row
+ * as it is now.
+ */
+export async function syncSeriesFreezes(tx: FreezeTx, row: RecurringCharge, zone: string | null | undefined, now: Date): Promise<RecurringCharge> {
+  if (!row.membershipId) return row;
+  const freezes = await tx.membershipFreeze.findMany({
+    where: {
+      membershipId: row.membershipId,
+      status: 'APPROVED',
+      OR: [{ billingShiftAppliedAt: null }, { endedEarlyAt: { not: null }, billingRestoredAt: null }],
+    },
+    orderBy: [{ startsAt: 'asc' }, { id: 'asc' }],
+  });
+  const today = dayIn(now, zone);
+  let current = row;
+  for (const f of freezes) {
+    if (!f.billingShiftAppliedAt) {
+      const days = frozenDays(f, zone);
+      const ended = !!f.endedEarlyAt;
+      // Nothing frozen (ended before it started), or nothing left to charge: done.
+      if (days === 0 || (!current.nextDate && !current.stoppedAt)) {
+        await tx.membershipFreeze.update({ where: { id: f.id }, data: { billingShiftAppliedAt: now, ...(ended ? { billingRestoredAt: now } : {}) } });
+        continue;
+      }
+      // A month falls before the first frozen day: it is charged first.
+      if (!current.nextDate || dayOf(current.nextDate) < dayString(dayNumber(f.startsAt))) continue;
+      current = await moveSeriesTo(tx, current, addDays(dayOf(current.nextDate), days));
+      // Ended early before the move: it moved by the days it froze, so there is nothing to take back.
+      await tx.membershipFreeze.update({ where: { id: f.id }, data: { billingShiftAppliedAt: now, ...(ended ? { billingRestoredAt: now } : {}) } });
+    } else {
+      const unused = dayNumber(f.endsAt) - backDay(f, zone);
+      if (unused > 0 && current.nextDate) {
+        const back = addDays(dayOf(current.nextDate), -unused);
+        current = await moveSeriesTo(tx, current, back < today ? today : back);
+      }
+      await tx.membershipFreeze.update({ where: { id: f.id }, data: { billingRestoredAt: now } });
+    }
+  }
+  return current;
+}
+
+/**
+ * Applies syncSeriesFreezes to one membership's series, in its own
+ * transaction with the row locked: right after a freeze is approved or ended
+ * early, and from the charge-recurring job. Returns whether the series moved.
+ * A membership without a series yet is left for the job (healBalanceBilling
+ * sets it up, then this moves it).
+ */
+export async function applyBalanceFreezeBilling(db: Pick<PrismaClient, '$transaction'>, membershipId: string, now: Date = new Date()): Promise<boolean> {
+  return db.$transaction(async (tx) => {
+    const found = await tx.recurringCharge.findUnique({ where: { membershipId }, select: { id: true } });
+    if (!found) return false;
+    await tx.$queryRaw`SELECT id FROM "RecurringCharge" WHERE id = ${found.id} FOR UPDATE`;
+    const row = await tx.recurringCharge.findUniqueOrThrow({ where: { id: found.id } });
+    const school = await tx.school.findUnique({ where: { id: row.schoolId }, select: { timezone: true } });
+    const after = await syncSeriesFreezes(tx, row, school?.timezone, now);
+    return after.firstDate.getTime() !== row.firstDate.getTime() || after.nextDate?.getTime() !== row.nextDate?.getTime();
+  });
+}
+
+/**
+ * The charge-recurring job's part: every balance-billed membership with an
+ * approved freeze not moved yet, or ended early and not moved back yet. One
+ * failure is logged and left for the next run.
+ */
+export async function applyDueBalanceFreezes(db: Pick<PrismaClient, '$transaction' | 'membershipFreeze'>, now: Date, logger?: Pick<Logger, 'warn'>): Promise<number> {
+  const due = await db.membershipFreeze.findMany({
+    where: {
+      status: 'APPROVED',
+      membership: { billedToBalance: true },
+      OR: [{ billingShiftAppliedAt: null }, { endedEarlyAt: { not: null }, billingRestoredAt: null }],
+    },
+    select: { membershipId: true },
+    distinct: ['membershipId'],
+  });
+  let moved = 0;
+  for (const f of due) {
+    try {
+      if (await applyBalanceFreezeBilling(db, f.membershipId, now)) moved++;
+    } catch (err) {
+      logger?.warn(`Membership ${f.membershipId}: moving its monthly charges for a freeze failed; tried again on the next run. ${err}`);
+    }
+  }
+  return moved;
 }

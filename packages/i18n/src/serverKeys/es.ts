@@ -246,6 +246,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "El pagador ha disputado {charge} de {amount} (estado: {status}).",
     cashWaitingTitle: "Pago en efectivo pendiente",
     cashWaitingBody: "{name} eligió pagar {amount} por {plan} en efectivo o por transferencia. Márcalo como pagado en la página Transacciones cuando recibas el dinero.",
+    cashWaitingStaffBody: "{name} eligió pagar {amount} por {plan} en efectivo o por transferencia. Márcalo como pagado en su tarjeta Pagos cuando recibas el dinero.",
     paymentConfirmedTitle: "Pago confirmado",
     paymentConfirmedBody: "Se confirmó tu pago de {amount} por {plan}. Tu membresía ya está activa.",
     childPaymentConfirmedBody: "Se confirmó el pago de {amount} por {plan} de {name}. La membresía ya está activa.",

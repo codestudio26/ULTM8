@@ -260,6 +260,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "Плательщик открыл спор по поводу {charge} на сумму {amount} (статус: {status}).",
     cashWaitingTitle: "Ожидается оплата наличными",
     cashWaitingBody: "{name} выбрал(а) оплату {amount} за {plan} наличными или переводом. Отметьте её как оплаченную на странице «Транзакции», когда деньги поступят.",
+    cashWaitingStaffBody: "{name} выбрал(а) оплату {amount} за {plan} наличными или переводом. Отметьте её как оплаченную в карточке «Платежи» этого ученика, когда деньги поступят.",
     paymentConfirmedTitle: "Платёж подтверждён",
     paymentConfirmedBody: "Ваш платёж {amount} за {plan} подтверждён. Абонемент активен.",
     childPaymentConfirmedBody: "Платёж {amount} за {plan} ({name}) подтверждён. Абонемент активен.",

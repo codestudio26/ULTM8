@@ -373,6 +373,22 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   ignores the member's agreement when buying; a next plan a plan already had
   is kept, unused, and works again if the School later takes cards. No
   migration.
+- **Staff hear about Pix and cash orders; freezing pauses a monthly plan
+  billed to the balance** (Decision 442 items 4 and 5) — the "Cash payment
+  waiting" notice for a member's Pix, cash or bank-transfer order now also
+  goes to the Branch Staff who may mark it as paid (the School's "Let Branch
+  Staff record payments" switch is on and the student's home branch is one of
+  theirs), not only to the owners. Their copy says to mark it paid on the
+  student's Payments card and opens the student's page (all 15 languages).
+  Freezing a monthly plan billed to the member's balance (a School without
+  cards) now pauses its monthly charge, as freezing a card Subscription does:
+  the next month is moved later by the freeze's length and the months after
+  it follow from the new day, so nothing is charged while frozen and the
+  member never pays for frozen days. A month due before the freeze starts is
+  charged first, then the next one moves. Ending a freeze early moves the
+  month back by the days not frozen. Cancelling during a freeze ends the plan
+  on the moved billing day. The student's Memberships card shows "Billing
+  paused" for these plans too. No migration.
 - **School owners connect Stripe themselves** (Decision 441 item 6) — the
   School page has a **Stripe account** card with **Connect Stripe**, which
   starts Stripe's own onboarding (the first time, the owner picks the country
