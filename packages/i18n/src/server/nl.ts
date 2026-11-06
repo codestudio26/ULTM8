@@ -18,6 +18,7 @@ export const serverMessages: Record<string, string> = {
   "A plan can't switch to itself.": "Een abonnement kan niet naar zichzelf overstappen.",
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "Het volgende abonnement moet een betaalde rittenkaart, weekpas of proefles zijn, niet gearchiveerd en zonder contract.",
   "This plan doesn't switch to another one when it ends.": "Dit abonnement stapt aan het eind niet over op een ander.",
+  "This School doesn't take card payments, so a plan can't switch to another one when it ends.": "Deze school neemt geen kaartbetalingen aan, dus een abonnement kan aan het eind niet overstappen op een ander.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "Dit abonnement is nog niet begonnen. De lessen zijn te boeken vanaf de eerste dag.",
   "Only a paid plan can have a joining fee.": "Alleen een betaald abonnement kan inschrijfgeld hebben.",
   "The price and the joining fee together are too big.": "De prijs en het inschrijfgeld samen zijn te hoog.",

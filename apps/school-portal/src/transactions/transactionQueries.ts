@@ -82,13 +82,18 @@ export function useTransactionReceiptUrl() {
 }
 
 /** "Mark as paid" (PATCH /transactions/{id}/confirm) for a Pending Cash/Bank
- * Transfer payment — Owner/Manager only (Decision 339, G1). Refreshes the
- * ledger and its tiles. */
+ * Transfer payment (Decision 339, G1): the Owner/Manager, and Branch Staff
+ * who may record payments (Decision 441 item 2). Refreshes the ledger and its
+ * tiles, the student's Payments card and their memberships. */
 export function useConfirmTransaction(schoolId: string | null) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => unwrap(apiClient.PATCH('/v1/transactions/{id}/confirm', { params: { path: { id } } })),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['transactions', schoolId] }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['charges', schoolId] });
+      void queryClient.invalidateQueries({ queryKey: ['studentMemberships', schoolId] });
+      return queryClient.invalidateQueries({ queryKey: ['transactions', schoolId] });
+    },
   });
 }
 

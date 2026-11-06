@@ -349,6 +349,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   its monthly plans are card Subscriptions bought in the app, and still can't
   be sold at the desk. **Needs migration
   `20270301000001_no_card_monthly_plans`.**
+- **Pix and cash orders at a School without cards: staff confirm them, and no
+  plan switch** (Decision 441 items 2 and 3) — Branch Staff whose School lets
+  them record payments (Decision 347) can now also mark a member's Pix, cash or
+  bank-transfer order as paid, for students of their own branches only (the
+  same students they can record a payment for). They do it from the student's
+  Payments card, which now lists the student's waiting orders for them with
+  **Mark as paid** (owners see it there too). Before, only owners could, and
+  Branch Staff got "Transaction not found". Cancelling an order still needs
+  "Can cancel charges", as before. At a School that takes no cards, "When it
+  ends, switch to" is no longer on the plan form and the member app no longer
+  offers the switch when buying: the switch charges a saved card, so there it
+  could only end with no card. The API refuses a new next plan there and
+  ignores the member's agreement when buying; a next plan a plan already had
+  is kept, unused, and works again if the School later takes cards. No
+  migration.
 - **School owners connect Stripe themselves** (Decision 441 item 6) — the
   School page has a **Stripe account** card with **Connect Stripe**, which
   starts Stripe's own onboarding (the first time, the owner picks the country

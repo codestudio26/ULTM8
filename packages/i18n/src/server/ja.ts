@@ -18,6 +18,7 @@ export const serverMessages: Record<string, string> = {
   "A plan can't switch to itself.": "プランを同じプランに切り替えることはできません。",
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "次のプランは、アーカイブされておらず契約のない、有料の回数券、週間パス、体験にしてください。",
   "This plan doesn't switch to another one when it ends.": "このプランは終了時に別のプランへ切り替わりません。",
+  "This School doesn't take card payments, so a plan can't switch to another one when it ends.": "このスクールはカード払いを受け付けていないため、プランは終了時に別のプランへ切り替えられません。",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "このプランはまだ始まっていません。クラスは初日から予約できます。",
   "Only a paid plan can have a joining fee.": "入会金を設定できるのは有料プランだけです。",
   "The price and the joining fee together are too big.": "料金と入会金の合計が大きすぎます。",

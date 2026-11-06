@@ -32,6 +32,7 @@ import { useWaiveLateFee } from './lateFeeQueries';
 import { useFeeRequestAction } from '../grading/gradingQueries';
 import { mayCloseFeeCharge } from '../grading/feeAccess';
 import { CancelPaymentModal } from '../transactions/CancelPaymentModal';
+import { useConfirmTransaction } from '../transactions/transactionQueries';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
@@ -159,6 +160,7 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
   const [cancelling, setCancelling] = useState<Charge | null>(null);
   const [waiving, setWaiving] = useState<Charge | null>(null);
   const [cancellingPayment, setCancellingPayment] = useState<DeskMembershipPayment | null>(null);
+  const [confirmingPayment, setConfirmingPayment] = useState<DeskMembershipPayment | null>(null);
   const [refunding, setRefunding] = useState<ChargePayment | null>(null);
   const [crediting, setCrediting] = useState(false);
   const resend = useResendInvoice(schoolId);
@@ -226,7 +228,13 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
               resending={resend.isPending}
             />
             {charges.data.deskMembershipPayments.length > 0 ? (
-              <DeskMembershipPayments payments={charges.data.deskMembershipPayments} canCancel={charges.data.can.cancel} onCancel={setCancellingPayment} />
+              <DeskMembershipPayments
+                payments={charges.data.deskMembershipPayments}
+                canCancel={charges.data.can.cancel}
+                canConfirm={charges.data.can.confirmPayment}
+                onCancel={setCancellingPayment}
+                onConfirm={setConfirmingPayment}
+              />
             ) : null}
             {recurring.data ? <RecurringChargesList schoolId={schoolId} studentId={studentId} data={recurring.data} /> : null}
           </>
@@ -285,7 +293,64 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
           onClose={() => setCancellingPayment(null)}
         />
       ) : null}
+      {confirmingPayment ? (
+        <MarkPaymentPaidModal
+          schoolId={schoolId}
+          payment={confirmingPayment}
+          studentName={studentName}
+          planTitle={deskPaymentTitle(t, confirmingPayment)}
+          onClose={() => setConfirmingPayment(null)}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/** Decision 441 item 2: "Mark as paid" for a member's Pix, cash or bank
+ * transfer order, from the Payments card. Asks first, naming the student,
+ * plan and amount, as the Transactions page does: it starts the membership. */
+function MarkPaymentPaidModal({
+  schoolId,
+  payment,
+  studentName,
+  planTitle,
+  onClose,
+}: {
+  schoolId: string;
+  payment: DeskMembershipPayment;
+  studentName: string;
+  planTitle: string;
+  onClose: () => void;
+}) {
+  const t = useT();
+  const settle = useConfirmTransaction(schoolId);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleConfirm() {
+    setError(null);
+    try {
+      await settle.mutateAsync(payment.id);
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : t('transactions.settleFailed'));
+    }
+  }
+
+  return (
+    <Modal title={t('transactions.markPaidTitle')} onClose={onClose}>
+      {error ? <ErrorBanner message={error} /> : null}
+      <p style={{ margin: '0 0 16px' }}>
+        {t('transactions.markPaidBody', { student: studentName, plan: planTitle, amount: formatMoney(payment.amount, payment.currency ?? null) })}
+      </p>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <Button variant="secondary" onClick={onClose}>
+          {t('transactions.back')}
+        </Button>
+        <Button variant="primary" loading={settle.isPending} onClick={handleConfirm} data-testid="mark-payment-paid">
+          {t('transactions.markPaid')}
+        </Button>
+      </div>
+    </Modal>
   );
 }
 
@@ -301,18 +366,23 @@ function deskPaymentTitle(t: ReturnType<typeof useT>, p: DeskMembershipPayment):
 /**
  * Decision 338 item 1 (last point): the student's membership payments by cash
  * or bank transfer waiting at the desk, and the ones cancelled. Shown to the
- * owner and staff with "Can cancel charges" (the API sends none to anyone
- * else); Cancel asks for a reason, as for a charge. Marking one as paid stays
- * on the owner's Transactions page.
+ * owner, staff with "Can cancel charges", and (Decision 441 item 2) Branch
+ * Staff who may record payments (the API sends none to anyone else). Cancel
+ * asks for a reason, as for a charge; Mark as paid asks first, as on the
+ * Transactions page.
  */
 function DeskMembershipPayments({
   payments,
   canCancel,
+  canConfirm,
   onCancel,
+  onConfirm,
 }: {
   payments: DeskMembershipPayment[];
   canCancel: boolean;
+  canConfirm: boolean;
   onCancel: (payment: DeskMembershipPayment) => void;
+  onConfirm: (payment: DeskMembershipPayment) => void;
 }) {
   const t = useT();
   return (
@@ -353,10 +423,19 @@ function DeskMembershipPayments({
             key: 'actions',
             header: t('transactions.columnActions'),
             render: (p) =>
-              p.status === 'PENDING' && canCancel ? (
-                <Button variant="danger" onClick={() => onCancel(p)}>
-                  {t('transactions.cancelPayment')}
-                </Button>
+              p.status === 'PENDING' && (canConfirm || canCancel) ? (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {canConfirm ? (
+                    <Button variant="secondary" onClick={() => onConfirm(p)}>
+                      {t('transactions.markPaid')}
+                    </Button>
+                  ) : null}
+                  {canCancel ? (
+                    <Button variant="danger" onClick={() => onCancel(p)}>
+                      {t('transactions.cancelPayment')}
+                    </Button>
+                  ) : null}
+                </div>
               ) : (
                 '—'
               ),

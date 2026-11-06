@@ -18,6 +18,7 @@ export const serverMessages: Record<string, string> = {
   "A plan can't switch to itself.": "لا يمكن للخطة أن تنتقل إلى نفسها.",
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "يجب أن تكون الخطة التالية باقة حصص أو تصريحاً أسبوعياً أو تجربة مدفوعة، غير مؤرشفة وبلا عقد.",
   "This plan doesn't switch to another one when it ends.": "هذه الخطة لا تنتقل إلى خطة أخرى عند انتهائها.",
+  "This School doesn't take card payments, so a plan can't switch to another one when it ends.": "هذه المدرسة لا تقبل الدفع بالبطاقة، لذا لا يمكن أن تنتقل الخطة إلى خطة أخرى عند انتهائها.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "لم تبدأ هذه الخطة بعد. يمكن حجز حصصها بدءاً من يومها الأول.",
   "Only a paid plan can have a joining fee.": "يمكن فقط للخطة المدفوعة أن تتضمن رسوم انضمام.",
   "The price and the joining fee together are too big.": "السعر ورسوم الانضمام معاً أكبر من اللازم.",

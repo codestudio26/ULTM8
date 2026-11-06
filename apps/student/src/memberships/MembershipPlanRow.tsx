@@ -105,7 +105,10 @@ export function MembershipPlanRow({
   const [contractSignatureId, setContractSignatureId] = useState<string | undefined>(undefined);
   // Decision 435 item 9: off until the member (a parent for a child) agrees.
   const [agreeToSwitch, setAgreeToSwitch] = useState(false);
-  const switchTerms = plan.switchToPlanId && switchTo ? { agreeToPlanSwitch: agreeToSwitch } : {};
+  // Decision 441 item 3: not offered at a School that takes no cards, where
+  // the switch (charged to a saved card) could only ever end with no card.
+  const offerSwitch = !!plan.switchToPlanId && !!switchTo && !noCardPayments;
+  const switchTerms = offerSwitch ? { agreeToPlanSwitch: agreeToSwitch } : {};
   const isFriendPass = plan.type === 'FRIEND_PASS';
   const outcome = purchase.isSuccess ? purchase.data.outcome : null;
   // Decision 435 items 11-12: a full plan (or one they're waiting for) offers
@@ -218,7 +221,7 @@ export function MembershipPlanRow({
         <View>
         {placeHeld && availability ? <PlanWaitlistControls planId={plan.id} availability={availability} forStudentId={forStudentId} /> : null}
         {/* Decision 435 item 9: the member agrees to the switch when buying, or it simply ends. */}
-        {plan.switchToPlanId && switchTo ? (
+        {offerSwitch && switchTo ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
             <Switch
               value={agreeToSwitch}

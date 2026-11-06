@@ -24,6 +24,7 @@ export const SERVER_MESSAGES: string[] = [
  "A plan can't switch to itself.",
  "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.",
  "This plan doesn't switch to another one when it ends.",
+ "This School doesn't take card payments, so a plan can't switch to another one when it ends.",
  "This plan hasn't started yet. Its classes can be booked from its first day.",
  "Only a paid plan can have a joining fee.",
  "The price and the joining fee together are too big.",

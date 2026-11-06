@@ -149,6 +149,7 @@ export class MembershipsService {
 
     const id = randomUUID();
     // Decision 435 item 9: the plan it can switch to at its end.
+    await this.assertSwitchNeedsCards(callerId, schoolId, dto.switchToPlanId);
     const switchToPlanId = await this.resolveSwitchTarget(callerId, schoolId, id, dto.type, term, shape.expiryDurationDays, dto.switchToPlanId ?? null);
     return this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.membershipPlan.create({
@@ -183,6 +184,20 @@ export class MembershipsService {
         },
       }),
     );
+  }
+
+  /** Decision 441 item 3: the switch charges the member's saved card, so a
+   * School that takes no cards (no Stripe payment account, the
+   * school_card_payments() rule of Decisions 437 and 439) can't set one. */
+  private async assertSwitchNeedsCards(callerId: string, schoolId: string, switchToPlanId: string | null | undefined): Promise<void> {
+    if (!switchToPlanId) return;
+    const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { schoolId }, select: { provider: true } }));
+    if (account?.provider !== 'STRIPE') {
+      throw new BadRequestException({
+        code: 'SWITCH_NEEDS_CARDS',
+        message: "This School doesn't take card payments, so a plan can't switch to another one when it ends.",
+      });
+    }
   }
 
   /**
@@ -384,6 +399,11 @@ export class MembershipsService {
       dto.fixedEndDate !== undefined ||
       dto.switchToPlanId !== undefined;
     if (termTouched) assertPlanTermValid(nextType, nextTerm, shape.expiryDurationDays);
+    // Decision 441 item 3: a new next plan only where the School takes cards.
+    // One the plan already has is kept as it is.
+    if (dto.switchToPlanId !== existing.switchToPlanId) {
+      await this.assertSwitchNeedsCards(callerId, existing.schoolId, dto.switchToPlanId);
+    }
     const nextSwitchToPlanId = termTouched
       ? await this.resolveSwitchTarget(
           callerId,
@@ -1056,7 +1076,9 @@ export class MembershipsService {
     // here), so this branch is effectively FRIEND_PASS/other-zero-priced plans only.
     // Decision 435 item 9: the switch the member agreed to, kept with the
     // payment and copied onto the Membership it creates.
-    const planSwitchToPlanId = dto?.agreeToPlanSwitch ? plan.switchToPlanId : null;
+    // Decision 441 item 3: ignored at a School that takes no cards, where the
+    // switch could only ever end with no card (the app doesn't offer it there).
+    const planSwitchToPlanId = dto?.agreeToPlanSwitch && paymentAccount.provider === 'STRIPE' ? plan.switchToPlanId : null;
     if (plan.price === 0) {
       return this.createMembershipAndReturn(studentId, plan, null, planSwitchToPlanId);
     }

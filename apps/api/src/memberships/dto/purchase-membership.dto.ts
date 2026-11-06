@@ -70,7 +70,7 @@ export class PurchaseMembershipDto {
 
   @ApiPropertyOptional({
     description:
-      "Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. Omit or false: it simply ends.",
+      "Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. If the next plan is full when it ends, the membership simply ends and nothing is charged (Decision 438). Ignored at a School that takes no cards (Decision 441 item 3). Omit or false: it simply ends.",
   })
   @IsOptional()
   @IsBoolean()
