@@ -450,8 +450,9 @@ export class AttendanceService {
     // "Delete my account": an account being deleted is locked, whichever way in.
     if (!opts.onlySinceRankDate) await assertAccountNotClosing(this.prismaJobs, studentId);
     // The School's check-in rules about the person (Decision 394), for every
-    // way in: waiver, home Branch, visitors.
-    await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id, booking.classBranchId);
+    // way in: waiver, home Branch, visitors. Imported past attendance
+    // (onlySinceRankDate) skips only the waiver (Decision 442 item 1).
+    await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id, booking.classBranchId, { importedPast: !!opts.onlySinceRankDate });
 
     // Optimistic-concurrency guard, same established pattern as every other
     // status transition in this codebase — guards against a double-scan

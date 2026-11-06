@@ -1108,6 +1108,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "ลงนามเอกสารสละสิทธิ์",
     screen: {
       notEnrolled: "คุณยังไม่ได้ลงทะเบียนกับโรงเรียนใด — เอกสารสละสิทธิ์จะแสดงที่นี่เมื่อคุณลงทะเบียนแล้ว",
       loadError: "ไม่สามารถโหลดเอกสารสละสิทธิ์ได้ โปรดลองอีกครั้ง",

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
-import { getApiErrorMessage, isWaitlistNext } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isWaitlistNext, isWaiverRefusal } from '../lib/apiErrorMessage';
 import { formatClassTimes, formatTime } from '../lib/formatDate';
 import { classZone, endsNextDayInZone } from '../lib/classTime';
 import { useBookClass, useMyBookings, useMyFriendPasses } from './bookingQueries';
@@ -10,6 +10,7 @@ import { BookingGuests } from './BookingGuests';
 import { ClassTicketOffer } from './ClassTicketOffer';
 import { useJoinWaitlist, useMyWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 import { useT } from '../i18n/I18nProvider';
+import { SignWaiverButton } from '../waivers/SignWaiverButton';
 
 interface ClassSummary {
   id: string;
@@ -42,19 +43,24 @@ type RowState =
 /** Per-class booking action for AcademyDetailScreen's "Upcoming classes" list
  * (Slice 2). Three real, server-verified gates can reject a booking attempt
  * (apps/api/src/bookings/bookings.service.ts): an unsigned Waiver, rank
- * ineligibility, and a full Class — the first two have no in-app resolution this
- * slice (surfaced as-is via the real error message), the third gets a real "Join
- * waitlist" follow-up action, since apps/api's own error message for it literally
- * names that as the next step. */
+ * ineligibility, and a full Class. Rank ineligibility has no in-app resolution
+ * (surfaced as-is via the real error message); the School's "Waiver must be
+ * signed before booking or check-in" refusal (WAIVER_REQUIRED) gets a "Sign the
+ * waiver" button (Decision 442 item 1); a full Class gets a real "Join
+ * waitlist" follow-up action, since apps/api's own error message for it
+ * literally names that as the next step. */
 export function ClassBookingRow({
   classItem,
   schoolId = null,
   studentId,
+  childName,
 }: {
   classItem: ClassSummary;
   schoolId?: string | null;
   /** Decision 379: a parent booking for this child; guests use the child's Friend Passes. */
   studentId?: string;
+  /** The child's name, for "Sign the waiver" (Decision 442 item 1) when a parent books. */
+  childName?: string;
 }) {
   const t = useT();
   // Decision 427 (SP6): the class's own clock (its Branch's zone, else the School's, else UTC).
@@ -97,6 +103,8 @@ export function ClassBookingRow({
   const [actionError, setActionError] = useState<string | null>(null);
   // Decision 428 (M4): the booking said this one-off Class needs its own ticket.
   const [ticketNeeded, setTicketNeeded] = useState(false);
+  // Decision 442 item 1: the School needs a signed waiver first.
+  const [waiverNeeded, setWaiverNeeded] = useState(false);
   const bookClass = useBookClass(studentId);
   const joinWaitlist = useJoinWaitlist(studentId);
   const withdrawWaitlist = useWithdrawWaitlist(studentId);
@@ -107,6 +115,7 @@ export function ClassBookingRow({
     // synchronously here rather than relied on the UI alone (found on review).
     if (bookClass.isPending) return;
     setActionError(null);
+    setWaiverNeeded(false);
     try {
       const booking = await bookClass.mutateAsync({ classId: classItem.id, guestPassIds: usablePasses.slice(0, guests).map((p) => p.membershipId) });
       setState({ kind: 'booked', bookingId: booking.id });
@@ -121,6 +130,7 @@ export function ClassBookingRow({
       } else {
         setActionError(getApiErrorMessage(err, t('bookings.classRow.bookError')));
         if (err instanceof ApiError && err.code === 'TICKET_REQUIRED') setTicketNeeded(true);
+        setWaiverNeeded(isWaiverRefusal(err));
       }
     }
   }
@@ -128,6 +138,7 @@ export function ClassBookingRow({
   async function handleJoinWaitlist() {
     if (joinWaitlist.isPending) return;
     setActionError(null);
+    setWaiverNeeded(false);
     try {
       const entry = await joinWaitlist.mutateAsync(classItem.id);
       setState({ kind: 'waitlisted', entryId: entry.id, position: entry.position });
@@ -136,12 +147,14 @@ export function ClassBookingRow({
       // keeps "Join waitlist" as the visible next action rather than silently
       // reverting to "Book", which would just 409 again.
       setActionError(getApiErrorMessage(err, t('bookings.classRow.joinWaitlistError')));
+      setWaiverNeeded(isWaiverRefusal(err));
     }
   }
 
   async function handleLeaveWaitlist(entryId: string) {
     if (withdrawWaitlist.isPending) return;
     setActionError(null);
+    setWaiverNeeded(false);
     try {
       await withdrawWaitlist.mutateAsync(entryId);
       setState({ kind: 'idle' });
@@ -169,6 +182,9 @@ export function ClassBookingRow({
       ) : null}
 
       {actionError ? <InlineError message={actionError} /> : null}
+      {actionError && waiverNeeded ? (
+        <SignWaiverButton schoolId={schoolId} child={studentId ? { studentId, name: childName ?? '' } : undefined} />
+      ) : null}
       {ticketNeeded && state.kind === 'idle' && schoolId ? (
         <ClassTicketOffer classId={classItem.id} schoolId={schoolId} studentId={studentId} />
       ) : null}

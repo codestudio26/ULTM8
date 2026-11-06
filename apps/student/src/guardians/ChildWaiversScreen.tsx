@@ -14,7 +14,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'ChildWaivers'>;
  * child's waivers at each of the child's Schools. A School that needs a
  * signed waiver before booking refuses the child's booking until then. */
 export function ChildWaiversScreen({ route }: Props) {
-  const { studentId, name } = route.params;
+  const { studentId, name, schoolId: onlySchoolId } = route.params;
   const t = useT();
   const waivers = useMinorWaivers(studentId);
 
@@ -33,7 +33,9 @@ export function ChildWaiversScreen({ route }: Props) {
     );
   }
 
-  const items = waivers.data?.items ?? [];
+  // From "Sign the waiver" (Decision 442 item 1): only that School's waivers.
+  const all = waivers.data?.items ?? [];
+  const items = onlySchoolId && all.some((w) => w.schoolId === onlySchoolId) ? all.filter((w) => w.schoolId === onlySchoolId) : all;
   if (items.length === 0) {
     return (
       <Screen>

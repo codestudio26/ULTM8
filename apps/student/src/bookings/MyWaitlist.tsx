@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
-import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isWaiverRefusal } from '../lib/apiErrorMessage';
 import { formatClassTimes } from '../lib/formatDate';
 import { classZone, formatInZone } from '../lib/classTime';
 import { useT } from '../i18n/I18nProvider';
+import { SignWaiverButton } from '../waivers/SignWaiverButton';
 import { useClaimWaitlist, useMyWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 
 type Entry = components['schemas']['MyWaitlistEntryDto'];
@@ -36,14 +37,18 @@ function WaitlistRow({ entry }: { entry: Entry }) {
   const claim = useClaimWaitlist();
   const leave = useWithdrawWaitlist();
   const [error, setError] = useState<string | null>(null);
+  // Decision 442 item 1: claiming was refused for want of a signed waiver.
+  const [waiverNeeded, setWaiverNeeded] = useState(false);
   const offered = entry.status === 'NOTIFIED';
 
   async function run(action: () => Promise<unknown>, fallback: string) {
     setError(null);
+    setWaiverNeeded(false);
     try {
       await action();
     } catch (err) {
       setError(getApiErrorMessage(err, fallback));
+      setWaiverNeeded(isWaiverRefusal(err));
     }
   }
 
@@ -60,6 +65,7 @@ function WaitlistRow({ entry }: { entry: Entry }) {
         <Text style={{ color: '#5F6368', fontSize: 13, marginTop: 4 }}>{t('bookings.classRow.waitlistPosition', { position: entry.position })}</Text>
       )}
       {error ? <InlineError message={error} /> : null}
+      {error && waiverNeeded ? <SignWaiverButton schoolId={entry.schoolId} /> : null}
       <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
         {offered ? (
           <View style={{ flex: 1 }}>

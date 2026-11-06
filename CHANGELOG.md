@@ -252,6 +252,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   for one at booking, as before. The refusal has its own message in the
   portal and the member app, in every language. Needs migration
   `20270303000001_waiver_before_booking`.
+- **Waiver before booking: past attendance and a "Sign the waiver" button**
+  (Decision 442 item 1) — importing past attendance is no longer refused by
+  "Waiver must be signed before booking or check-in": those visits already
+  happened. The School's other check-in rules (home Branch only, overdue
+  payment) still apply to imported visits. In the member app, the waiver
+  refusal (booking a class, joining or claiming a waiting-list place, checking
+  in by scan or code) now has a **"Sign the waiver"** button that opens the
+  School's waivers to sign, or, for a parent booking for a child, the child's
+  waivers at that School. In every language.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The

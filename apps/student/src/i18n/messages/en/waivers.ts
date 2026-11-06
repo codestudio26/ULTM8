@@ -1,5 +1,7 @@
 /** English text: waivers (Decision 323). */
 export const waivers = {
+  /** Decision 442 item 1: next to a "needs a signed waiver" refusal (booking, the waiting list, check-in). */
+  signTheWaiver: 'Sign the waiver',
   screen: {
     notEnrolled: "You're not enrolled at a School yet — waivers appear here once you are.",
     loadError: 'Failed to load waivers — please try again.',

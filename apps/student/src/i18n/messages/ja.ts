@@ -1109,6 +1109,8 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    /** Decision 442 item 1: next to a "needs a signed waiver" refusal. */
+    signTheWaiver: "免責同意書に署名する",
     screen: {
       notEnrolled: "まだどのスクールにも在籍していません。在籍すると、免責同意書がここに表示されます。",
       loadError: "免責同意書を読み込めませんでした。もう一度お試しください。",
