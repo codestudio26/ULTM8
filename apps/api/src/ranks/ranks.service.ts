@@ -12,6 +12,7 @@ import { UpdateRankDto } from './dto/update-rank.dto';
 import { ReorderRanksDto, ReorderSkillsDto } from './dto/ladder.dto';
 import { CreateStyleFromTemplateDto } from './dto/style-template.dto';
 import { buildIbjjfTemplate, IBJJF_CLASS_TYPES, TEMPLATES } from './templates/ibjjf';
+import { templateNamesFor } from './templates/ibjjf-names';
 import { CreateSkillDto } from './dto/create-skill.dto';
 import { UpdateSkillDto } from './dto/update-skill.dto';
 import { assertSchoolCurrencySet, setsNewPrice } from '../common/school-currency';
@@ -157,12 +158,13 @@ export class RanksService {
    * belts, rungs, numbers and class types, as the school's own copy to edit
    * freely. The owner, or Branch Staff who manage disciplines (Decision 383). */
   async createFromTemplate(callerId: string, schoolId: string, dto: CreateStyleFromTemplateDto) {
-    await this.schoolsService.findOne(callerId, schoolId);
+    const school = await this.schoolsService.findOne(callerId, schoolId);
     const actor = await this.disciplineManager(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.assertRanksEnabled(callerId, schoolId);
     const template = TEMPLATES.find((t) => t.id === dto.templateId)!;
-    const belts = buildIbjjfTemplate(dto.templateId);
+    // Decision 441 item 8: the belts are named in the School's language.
+    const belts = buildIbjjfTemplate(dto.templateId, templateNamesFor(school.defaultLanguage));
 
     return this.prismaApp.withTenantContext(actor, async (tx) => {
       // A name the owner typed must be free; the default one is numbered

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, Table, TextField, ViewToggle, formatTimezone, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { foldForSearch } from '@ultm8/i18n';
+import { foldForSearch, localizeAddressCountry } from '@ultm8/i18n';
 import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useBranches, useCreateBranch, useUnarchiveBranch, type BranchListItem } from './branchQueries';
@@ -148,7 +148,7 @@ export function BranchesPage() {
                       {b.timezone ? <Badge>{timezoneLabel(b.timezone)}</Badge> : null}
                     </div>
                   </div>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.address ?? '—'}</p>
+                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{localizeAddressCountry(b.address, formatLocale(), b.addressCountry) ?? '—'}</p>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.contactPhone ?? '—'}</p>
                   <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
                     {t('branches.cardCounts', { students: b.studentCount, classes: b.upcomingClassCount })}
@@ -176,7 +176,7 @@ export function BranchesPage() {
               rows={branches}
               columns={[
                 { key: 'name', header: t('branches.columnName'), render: (b) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{b.name}{b.archivedAt ? <Badge variant="default">{t('branches.archivedBadge')}</Badge> : null}</div>) },
-                { key: 'address', header: t('branches.columnAddress'), render: (b) => b.address ?? '—' },
+                { key: 'address', header: t('branches.columnAddress'), render: (b) => localizeAddressCountry(b.address, formatLocale(), b.addressCountry) ?? '—' },
                 { key: 'phone', header: t('branches.columnContactPhone'), render: (b) => b.contactPhone ?? '—' },
                 { key: 'timezone', header: t('branches.columnTimezone'), render: (b) => (b.timezone ? <Badge>{timezoneLabel(b.timezone)}</Badge> : '—') },
                 { key: 'students', header: t('branches.columnStudents'), render: (b) => b.studentCount },
