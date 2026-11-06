@@ -7795,3 +7795,17 @@ User (Code), 5 Nov 2026: "go with the recommendations", on the recommendations g
 ### Recorded by
 
 User (Code), 6 Nov 2026: "go with your recommendations for all", on the recommendations given in chat for each question above.
+
+## Decision 437 — Brazil launches without card payments; the Connect Stripe button only shows where Stripe can onboard the School
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 86, 407, the launch countries (UK and Brazil first, then Europe and South America)
+
+**Background:** the live platform account is a UK Stripe account. Stripe Connect lets it onboard Express accounts in the UK, every EU country, Norway, Switzerland, Liechtenstein and Gibraltar (all 32 ticked), plus some others that are not ticked (US, Canada, Australia, Mexico, UAE and more). **Brazil is not on the list**, and nor is most of South America. The platform profile and verification will be done closer to launch.
+
+1. **Brazil launches without card payments in the app.** Members at a Brazilian School pay by Pix (as a bank transfer) or cash, and the School confirms the payment in the portal, using the Cash/Bank flow that is already built. Card payments in Brazil are left for later. The options then are a Brazilian Stripe platform account (needs a Brazilian company with a CNPJ, and the app would have to support two Stripe platforms) or a local provider with in-app Pix. The question to Stripe support also stays open: can a UK platform onboard Brazilian connected accounts with any account type?
+2. **The Connect Stripe button only shows where Stripe can onboard the School.** For a School or Franchise in any other country, the portal hides it and explains that payments there are by cash or bank transfer. The API also refuses to start onboarding there, with a translated reason.
+3. Countries Stripe offers but we haven't ticked (US, Canada, Australia, the UAE, Mexico and so on) stay off until there is a launch there.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "option 1 for Brazil, and yes build the fix", on the recommendation given in chat after the Connect countries check.
