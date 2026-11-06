@@ -7906,3 +7906,41 @@ User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #497's c
 ### Recorded by
 
 User (Code), 6 Nov 2026: "Ok", on the recommendations given in chat for D1–D6 and the small fixes.
+
+---
+
+## Decision 442 — The build choices of Decision 441 (PRs #506–#510)
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 441 (PRs #506, #507, #508, #509, #510), Decisions 394, 404, 412, 423, 437, 439
+
+### Decision
+
+**Waiver before booking or check-in (#507)**
+1. **Imported past attendance skips the waiver check.** Those visits already happened, so the "Waiver must be signed before booking or check-in" setting doesn't refuse an imported row. The other check-in rules still apply to imports, as Decision 423 item 6 says. To be built.
+   - Kept as built: one switch for booking and check-in; every School switched on, including those that had the old check-in-only rule off; staff with "Change check-in rules" can change it; signing any one of the School's waivers counts; staff can't override it; joining and claiming a waiting-list place are refused too; with no waiver in use nobody is stopped; guests keep their own waiver flow.
+   - **A "Sign the waiver" button** next to the refusal in the member app, taking the member (or parent) to the waiver. To be built.
+
+**Connecting Stripe (#508)**
+2. **Card payments wait until Stripe says the School's account is ready** (onboarding finished and charges enabled, the same test as the checklist). Before that, a card purchase is refused with a clear message, and the School takes Pix/cash/bank orders as a School without cards does. To be built.
+3. **Who can connect Stripe: the School's owners (co-owners included) and staff the School has given a new "Can connect Stripe" permission**, off by default. Owner's words: "owners and those is granted permission". To be built.
+   - Kept as built: Schools already connected show "not ready" until Stripe next updates them or the owner opens the School page; a School set up for cash or bank transfer can't switch to Stripe from the portal.
+
+**Staff confirm Pix and cash orders (#509)**
+4. **The "new order waiting" notice also goes to the Branch Staff who may confirm that order** (the School's "record payments" switch is on and the student is in one of their branches), not only to owners. To be built.
+   - Kept as built: cancelling still needs "Can cancel charges"; a student with no home branch is confirmed by the owner; plans that already have a next plan at a School without cards keep it hidden and unused; "takes no cards" means no Stripe account.
+
+**Monthly plans at a School without cards (#510)**
+5. **Freezing such a monthly plan pauses its monthly charge**, as freezing a card Subscription does, and the charges resume when the freeze ends. To be built.
+   - Kept as built: an unpaid month doesn't stop training (the overdue and late-fee rules apply); cancelling stops at the next billing day and keeps a month already charged; the member keeps the price they bought at; plans with one shared billing day bill these members on their joining day, with no part-month price; staff can stop the monthly charge without ending the plan; existing members stay on balance billing if the School later connects Stripe; members imports still don't accept monthly plans.
+
+**Small fixes (#506)**
+6. Kept as built: the deletion notice uses the phone's or browser's time zone (push and email stay English with UTC, like every notice); translated country names apply in the member app and the portal only; coral belts are named by colour and degree.
+
+**Ops and review notes**
+7. **Go-live step:** switch on `account.updated` for the Stripe Connect webhook endpoint. Added to `docs/PRE-LAUNCH-UPGRADE-CHECKLIST.md`.
+8. Nothing else in #506–#510 changes.
+9. **The belt-template stripe words** in Korean, Thai, Chinese, Arabic, Turkish and Japanese go to the native-speaker review. Added to `docs/translations/REVIEW-other-languages.md`.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "Ok to all a part from 3 - here will be owners and those is granted permission", on the recommendations given in chat for the choices of #506–#510. Item 3 was the suggestion "main owner only"; the owner chose owners plus staff given the permission instead.
