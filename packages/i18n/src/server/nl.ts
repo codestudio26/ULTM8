@@ -471,6 +471,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "Er zijn leerlingen met deze band ({v1} student{v2}), dus deze kan niet worden verwijderd of gearchiveerd ({v3}).",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Deze instructeur is gearchiveerd. Zet hem terug op de pagina Instructeurs of kies een andere instructeur.",
   "This person is no longer an instructor at this School.": "Deze persoon is geen instructeur meer bij deze school.",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "Deze persoon heeft geen instructeursrol bij deze school. Geef eerst de rol op de pagina Personeel.",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "Deze persoon geeft hier nog komende lessen of wekelijkse roosterblokken. Gebruik eerst ‘Lessen overdragen’ op de instructeurspagina en verwijder daarna de rol.",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "Je geeft hier nog komende lessen of wekelijkse roosterblokken. Vraag de schooleigenaar ze eerst over te dragen.",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "Deze persoon is hier geen instructeur meer. Geef eerst de instructeursrol terug.",

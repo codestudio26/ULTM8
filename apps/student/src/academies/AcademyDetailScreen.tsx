@@ -4,6 +4,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Screen } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
+import { localizeAddressCountry } from '@ultm8/i18n';
 import { useAuth, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
 import { ClassBookingRow } from '../bookings/ClassBookingRow';
 import { MembershipPlanRow } from '../memberships/MembershipPlanRow';
@@ -98,7 +100,7 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
     <ScrollView>
       <Screen>
         <Text style={{ fontSize: 22, fontWeight: '700' }}>{academy.name}</Text>
-        {academy.address ? <Text style={{ color: '#5F6368', marginTop: 4 }}>{academy.address}</Text> : null}
+        {academy.address ? <Text style={{ color: '#5F6368', marginTop: 4 }}>{localizeAddressCountry(academy.address, formatLocale())}</Text> : null}
         {academy.description ? <Text style={{ marginTop: 12 }}>{academy.description}</Text> : null}
 
         {!enrolled || isGuardian ? (

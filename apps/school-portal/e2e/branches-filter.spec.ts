@@ -148,3 +148,16 @@ test('toggling to Grid view shows the same Branches as cards, and toggling back 
   await expect(page.getByRole('cell', { name: 'Downtown Toronto', exact: true })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Vaughan Mills', exact: true })).toBeVisible();
 });
+
+test("the address shows its country in the reader's language (Decision 441 item 7)", async ({ page }) => {
+  await mkStructured('Augusta', { line1: 'Rua Augusta, 1500', city: 'São Paulo', postalCode: '01304-001', country: 'BR', address: 'Rua Augusta, 1500, São Paulo-SP, 01304-001, Brazil' });
+  await db.user.update({ where: { id: s.ownerId }, data: { language: 'pt-BR' } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/branches');
+
+  await expect(page.getByRole('cell', { name: 'Rua Augusta, 1500, São Paulo-SP, 01304-001, Brasil', exact: true })).toBeVisible();
+  // A free-text address is shown as it was typed.
+  await expect(page.getByRole('cell', { name: '123 Main St, Toronto, ON', exact: true })).toBeVisible();
+  // Stored as it was.
+  expect((await db.branch.findFirstOrThrow({ where: { schoolId: s.schoolId, name: 'Augusta' } })).address).toBe('Rua Augusta, 1500, São Paulo-SP, 01304-001, Brazil');
+});

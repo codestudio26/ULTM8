@@ -76,6 +76,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   six questions for the product owner. Report in
   `docs/handover/LAUNCH-REHEARSAL-1.md`, scripts in
   `apps/api/scripts/rehearsal/`. No product change.
+- **Launch rehearsal 1: four small fixes** (Track A and Track B, Decision 441
+  items 7–10). An address shows its country in the reader's language
+  ("…, Brasil" in Portuguese); the stored text is unchanged. A style made
+  from an IBJJF template names its belts and stripes in the School's
+  language ("Faixa Branca · 1 Grau"); styles made before keep their names.
+  The "Delete my account" notice gives the date and time in the member's own
+  time zone instead of UTC. Adding a coach profile for someone who never had
+  the Instructor role now says to give them the role first (error code
+  `NOT_AN_INSTRUCTOR`), in all 15 languages.
 - **Translation review: 12 languages** (School Portal, member app and server
   text; `docs/translations/REVIEW-other-languages.md`). Covers Arabic, German,
   French, Italian, Japanese, Korean, Dutch, Polish, Russian, Thai, Turkish and

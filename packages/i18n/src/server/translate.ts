@@ -241,6 +241,35 @@ export function formatWhen(when: string, locale: string): string {
   }
 }
 
+/**
+ * A moment the API wrote in UTC ("YYYY-MM-DD HH:mm UTC"), in the reader's
+ * language and their own time zone, with no "UTC" after it (Decision 441
+ * item 9: the account-deletion notice). The reader's zone is the one their
+ * device or browser is set to; `timeZone` is only for tests. Anything else,
+ * or a zone the engine can't use, is shown as `formatWhen` shows it.
+ */
+export function formatInstant(when: string, locale: string, timeZone?: string): string {
+  const m = when.match(WALL_TIME);
+  if (!m || !m[4]) return formatWhen(when, locale);
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      ...(timeZone ? { timeZone } : {}),
+    }).format(new Date(`${m[1]}T${m[2]}:${m[3]}:00.000Z`));
+  } catch {
+    return formatWhen(when, locale);
+  }
+}
+
+/** "Delete my account"'s notice to the member; its date is a moment, shown in
+ * the reader's own time zone (`formatInstant`). */
+const DELETION_REQUESTED = /^Your ULTM8 account will be deleted on /;
+
 const NOTIFICATION_TITLES: Record<string, string> = {
   // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
   'Account deletion requested': 'accountDeletionRequestedTitle',
@@ -354,11 +383,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
   [
     /^Your ULTM8 account will be deleted on (.+?)\. Until then it is locked\. These children's accounts will be deleted with it: (.+)\. To keep it, sign in again before then\.$/s,
-    (m, { t, locale }) => n(t, 'accountDeletionRequestedChildrenBody', { when: formatWhen(m[1], locale), children: m[2] }),
+    (m, { t, locale }) => n(t, 'accountDeletionRequestedChildrenBody', { when: formatInstant(m[1], locale), children: m[2] }),
   ],
   [
     /^Your ULTM8 account will be deleted on (.+?)\. Until then it is locked\. To keep it, sign in again before then\.$/s,
-    (m, { t, locale }) => n(t, 'accountDeletionRequestedBody', { when: formatWhen(m[1], locale) }),
+    (m, { t, locale }) => n(t, 'accountDeletionRequestedBody', { when: formatInstant(m[1], locale) }),
   ],
   [/^A member deleted their ULTM8 account and left your School\. Their details have been removed\. Their payments, waivers and belt history stay with your School under "Erased User"\.$/, (_m, { t }) => n(t, 'memberLeftBody')],
   // Decision 291 — CancellationService (apps/api/src/bookings/cancellation.service.ts).
@@ -722,7 +751,8 @@ export function createEnglishServerTextTranslator(locale: string): ServerTextTra
       const forChild = body.match(/^For [^:]+: /)?.[0] ?? '';
       const oldWaiverRequest = body.slice(forChild.length).match(OLD_WAIVER_REQUEST);
       if (oldWaiverRequest) return { title, body: forChild + englishServer.notifications.waiverRequestBody.replace('{waiver}', oldWaiverRequest[1]) };
-      return { title, body: body.replace(times, (_m, when: string, utc?: string) => formatWhen(`${when}${utc ?? ''}`, locale)) };
+      const format = DELETION_REQUESTED.test(body.slice(forChild.length)) ? formatInstant : formatWhen;
+      return { title, body: body.replace(times, (_m, when: string, utc?: string) => format(`${when}${utc ?? ''}`, locale)) };
     },
   };
 }

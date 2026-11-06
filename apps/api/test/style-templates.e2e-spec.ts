@@ -149,6 +149,36 @@ describeIfDb('Style templates and duplicate (Decisions 131, 182)', () => {
     expect(res.body.name).toBe('IBJJF Adult & Kid (White Stripes)');
   });
 
+  it("names the belts in the School's language (Decision 441 item 8); styles made before keep their names", async () => {
+    const before = await fromTemplate('owner', { templateId: 'ibjjf_kids_red', name: 'Before pt-BR' });
+    expect(before.status).toBe(201);
+    await superuser.school.update({ where: { id: school.id }, data: { defaultLanguage: 'pt-BR' } });
+    try {
+      const res = await fromTemplate('owner', { templateId: 'ibjjf_kids_red', name: 'Jiu-Jitsu pt-BR' });
+      expect(res.status).toBe(201);
+      const belts = await ladder(res.body.id);
+      expect(belts.reduce((n, b) => n + b.stripeTiers.length, 0)).toBe(139);
+      expect(belts[0].name).toBe('Faixa Branca');
+      expect(belts[0].stripeTiers.map((t) => t.name)).toEqual([
+        'Faixa Branca',
+        'Faixa Branca · 1 Grau',
+        'Faixa Branca · 2 Graus',
+        'Faixa Branca · 3 Graus',
+        'Faixa Branca · 4 Graus',
+        'Faixa Branca · Grau Vermelho',
+      ]);
+      expect(belts[1].stripeTiers[5].name).toBe('Faixa Cinza e Branca · 1 Grau Vermelho');
+      expect(belts.find((b) => b.order === 16)!.name).toBe('Faixa Preta');
+      expect(belts[19].name).toBe('Faixa Vermelha (9º Grau)');
+
+      const old = await ladder(before.body.id);
+      expect(old[0].name).toBe('White Belt');
+      expect(old[0].stripeTiers[5].name).toBe('White Belt · Red Stripe');
+    } finally {
+      await superuser.school.update({ where: { id: school.id }, data: { defaultLanguage: null } });
+    }
+  });
+
   it('refuses an unknown template, and anyone but the owner', async () => {
     expect((await fromTemplate('owner', { templateId: 'karate' })).status).toBe(400);
     expect((await fromTemplate('coach', { templateId: 'ibjjf' })).status).toBe(403);

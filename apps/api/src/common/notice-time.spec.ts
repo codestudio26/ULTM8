@@ -1,4 +1,4 @@
-import { SERVER_KEY_LOADERS, createEnglishServerTextTranslator, createServerTextTranslator, formatWhen } from '@ultm8/i18n';
+import { SERVER_KEY_LOADERS, createEnglishServerTextTranslator, createServerTextTranslator, formatInstant, formatWhen } from '@ultm8/i18n';
 import { noticeWallTime } from './notice-time';
 
 /**
@@ -75,5 +75,40 @@ describe('formatWhen in the apps (Decision 434, TXT-3)', () => {
     const broadcast = { title: 'Gala', body: 'See you 2026-11-12 20:00!', type: 'SCHOOL_BROADCAST' };
     expect(createEnglishServerTextTranslator('en-US').notification(broadcast).body).toBe('See you 2026-11-12 20:00!');
     expect(createEnglishServerTextTranslator('en-GB').error(400, '', 'Nope.')).toBe('Nope.');
+  });
+});
+
+describe('formatInstant: the account-deletion date in the reader\'s own time zone (Decision 441 item 9)', () => {
+  it('shifts the UTC moment to the reader\'s zone and drops "UTC"', () => {
+    expect(formatInstant('2026-12-06 17:14 UTC', 'pt-BR', 'America/Sao_Paulo')).toMatch(/^dom\., 6 de dez\. de 2026,? 14:14$/);
+    expect(formatInstant('2026-12-06 17:14 UTC', 'en-GB', 'Asia/Tokyo')).toMatch(/^Mon,? 7 Dec 2026,? 0?2:14$/);
+    expect(formatInstant('2026-12-06 17:14 UTC', 'en-GB', 'Asia/Tokyo')).not.toContain('UTC');
+  });
+
+  it('uses the zone the device is set to when none is given', () => {
+    const own = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' }).format(
+      new Date('2026-12-06T17:14:00.000Z'),
+    );
+    expect(formatInstant('2026-12-06 17:14 UTC', 'en-GB')).toBe(own);
+  });
+
+  it('anything that is not a UTC moment is shown as formatWhen shows it', () => {
+    expect(formatInstant('2026-11-12 20:00', 'en-GB', 'Asia/Tokyo')).toBe(formatWhen('2026-11-12 20:00', 'en-GB'));
+    expect(formatInstant('Sun, 6 Dec 2026, 17:14 UTC', 'de')).toBe('Sun, 6 Dec 2026, 17:14 UTC');
+    expect(formatInstant('2026-12-06 17:14 UTC', 'de', 'Not/AZone')).toBe(formatWhen('2026-12-06 17:14 UTC', 'de'));
+  });
+
+  it('the deletion notice is translated with the local date, in every language and in English', async () => {
+    const body = 'Your ULTM8 account will be deleted on 2026-12-06 17:14 UTC. Until then it is locked. To keep it, sign in again before then.';
+    const local = formatInstant('2026-12-06 17:14 UTC', 'pt-BR');
+    const pt = (await translatorFor('pt-BR')).notification({ title: 'Account deletion requested', body, type: 'ACCOUNT_DELETION' }).body;
+    expect(pt).toContain(local);
+    expect(pt).not.toContain('UTC');
+    const children = 'Your ULTM8 account will be deleted on 2026-12-06 17:14 UTC. Until then it is locked. These children\'s accounts will be deleted with it: Ana Silva. To keep it, sign in again before then.';
+    expect((await translatorFor('pt-BR')).notification({ title: 'x', body: children, type: 'ACCOUNT_DELETION' }).body).toContain(local);
+    const en = createEnglishServerTextTranslator('en-GB').notification({ title: 'Account deletion requested', body, type: 'ACCOUNT_DELETION' }).body;
+    expect(en).toBe(`Your ULTM8 account will be deleted on ${formatInstant('2026-12-06 17:14 UTC', 'en-GB')}. Until then it is locked. To keep it, sign in again before then.`);
+    // Other notices keep a class's "UTC" fallback as before.
+    expect(createEnglishServerTextTranslator('en-GB').notification({ title: 'x', body: 'Sparring on 2026-11-12 16:00 UTC has been cancelled by the school.', type: null }).body).toMatch(/UTC has been/);
   });
 });
