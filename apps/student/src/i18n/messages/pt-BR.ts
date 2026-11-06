@@ -64,7 +64,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   home: {
-    changePasscode: "Alterar senha",
+    changePasscode: "Alterar código de acesso",
     joinPick: {
       notNow: "Agora não",
       join: "Entrar",
@@ -97,11 +97,11 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   auth: {
     changePasscode: {
-      done: "Senha alterada. Seus outros aparelhos foram desconectados.",
-      submit: "Alterar senha",
-      current: "Senha atual",
-      intro: "Digite sua senha atual e escolha uma nova de 6 dígitos. Seus outros aparelhos serão desconectados.",
-      title: "Alterar senha",
+      done: "Código de acesso alterado. Seus outros aparelhos foram desconectados.",
+      submit: "Alterar código de acesso",
+      current: "Código de acesso atual",
+      intro: "Digite seu código de acesso atual e escolha um novo de 6 dígitos. Seus outros aparelhos serão desconectados.",
+      title: "Alterar código de acesso",
     },
     errors: {
       generic: "Algo deu errado — tente novamente.",
@@ -198,10 +198,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       SUNDAY: "Dom",
     },
     signUpInvites: {
-      title: "Entrar na {school}?",
-      body: "A {school} aprovou seu cadastro na recepção. Aceite para se tornar aluno de lá.",
-      bodyVisitor: "A {school} aprovou seu cadastro na recepção. Aceite para entrar como Visitante, com um passe de visitante grátis.",
-      homeBranch: "Sua filial principal",
+      title: "Entrar em {school}?",
+      body: "{school} aprovou seu cadastro na recepção. Aceite para se tornar aluno de lá.",
+      bodyVisitor: "{school} aprovou seu cadastro na recepção. Aceite para entrar como Visitante, com um passe de visitante grátis.",
+      homeBranch: "Sua unidade principal",
       accept: "Aceitar",
       decline: "Não, obrigado",
       failed: "Não foi possível responder ao convite. Tente de novo.",
@@ -210,7 +210,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       guardianTitle: "Ser responsável por {child} em {school}?",
       guardianBody: "{school} gostaria de adicionar você como outro responsável por {child}. Aceite para ver {child} na sua conta. Os outros responsáveis são avisados.",
       consent: "Dou consentimento para {child} conforme o aviso de privacidade do ULTM8.",
-      title: "Adicionar {child} à {school}?",
+      title: "Adicionar {child} a {school}?",
       body: "{school} quer adicionar {child} como aluno, com você como responsável. Aceite para adicionar {child} à sua conta e fazer a matrícula.",
     },
     join: {
@@ -221,8 +221,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       alreadyStudentOther: "{name} já é aluno aqui.",
       title: "Entrar em {name}",
       whoIsJoining: "Quem vai entrar?",
-      homeBranch: "Filial principal",
-      homeBranchHelp: "A filial onde você treina mais. Os professores dela cuidam da sua graduação.",
+      homeBranch: "Unidade principal",
+      homeBranchHelp: "A unidade onde você treina mais. Os professores dela cuidam da sua graduação.",
       medicalTitle: "Informações médicas",
       medicalLabelMe: "Algo que os instrutores devem saber (opcional)",
       medicalLabelOther: "Algo que os instrutores devem saber sobre {name} (opcional)",
@@ -436,7 +436,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       noRank: "Ainda sem graduação em {style}. Dê uma primeira graduação pelo portal web.",
       since: "Desde {date}",
       unverified: "Declarada pelo aluno, ainda não verificada.",
-      topOfLadder: "Topo da escada: não há próxima graduação.",
+      topOfLadder: "Topo da escala: não há próxima graduação.",
       toNextGrade: "{percent}% até a próxima graduação",
       toNextGradeReady: "{percent}% até a próxima graduação · Pronto para graduar",
       classTypeLine: {
@@ -604,7 +604,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleAtSchool: "{style} em {school}",
       since: "Desde {date}",
       unverified: "Aguardando a Escola verificar esta faixa.",
-      topOfLadder: "Topo da escada.",
+      topOfLadder: "Topo da escala.",
       noLongerTaught: "Não é mais ensinado nesta escola. Sua faixa e seu histórico continuam.",
       next: "Próxima: {rank}",
       progress: "{percent}% do caminho",
@@ -627,7 +627,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       skills: "{tick} Habilidades aprovadas: {signedOff} de {required} · {percent}% · também exigido, fora do %",
       timeOnlyNote: "O % é dias nesta graduação sobre os dias exigidos.",
       classesNote: "O % é aulas sobre as aulas exigidas.",
-      skillsCounts: "{tick} Técnicas aprovadas: {signedOff} de {required} · {percent}% · conta para o %",
+      skillsCounts: "{tick} Habilidades aprovadas: {signedOff} de {required} · {percent}% · conta para o %",
       hours: "{tick} Horas: {done} de {required} h · {percent}% · conta para o %",
       daysAttended: "{tick} Dias de presença: {attended} de {required} · {percent}% · conta para o %",
       minimumAge: "{tick} Idade mínima: a partir de {age} · não entra no %",
@@ -705,9 +705,9 @@ export const messages: PartialMessages<EnglishMessages> = {
   },
   guardians: {
     childCard: {
-      title: "Cartão de membro de {name}",
+      title: "Carteirinha de {name}",
       intro: "Na recepção, {name} pode informar este código de check-in para fazer o check-in.",
-      loadError: "Não foi possível carregar o cartão de membro — tente novamente.",
+      loadError: "Não foi possível carregar a carteirinha — tente novamente.",
     },
     childPlans: {
       loadError: "Não foi possível carregar os planos. Tente novamente.",
@@ -741,7 +741,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       adultUntil: "{name} já tem 18 anos e assina por si. Pode criar a própria conta no ULTM8. Você ainda pode ver as reservas e pagar até {date}.",
       consentPending: "{name} não pode reservar nem fazer check-in até você dar consentimento. Abra as configurações para dar.",
       consentWithdrawn: "O consentimento para {name} foi retirado, então não pode reservar nem fazer check-in até um responsável dar novamente.",
-      card: "Cartão de membro",
+      card: "Carteirinha",
       plans: "Comprar um plano",
       waivers: "Termos",
       empty: "Nenhum menor vinculado ainda.",
@@ -761,7 +761,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       bookAClass: "Reservar uma aula",
     },
     minorConsent: {
-      adult: "{name} já tem 18 anos, então o consentimento e o Modo Criança são geridos por ela, não por um responsável.",
+      adult: "{name} já tem 18 anos, então o consentimento e o Modo Criança passam a ser geridos pela própria pessoa, não por um responsável.",
       othersTitle: "Outros responsáveis",
       otherNone: "Ainda sem consentimento",
       otherGiven: "Consentimento dado em {date}",
@@ -878,9 +878,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       signError: "Não foi possível assinar o contrato.",
       loadError: "Não foi possível carregar o contrato.",
       // Decision 435 item 16.
-      endsAfterTerm: "Esta assinatura termina quando o prazo mínimo acaba. Ela não renova.",
+      endsAfterTerm: "Este plano termina quando o prazo mínimo acaba. Ele não renova.",
       endsOn: "Termina após o prazo mínimo, em {date}. Não renova.",
-      cancelFee: "O prazo mínimo do seu contrato vai até {date}. Se sua assinatura terminar antes, a multa por saída antecipada de {amount} é lançada no seu saldo.",
+      cancelFee: "O prazo mínimo do seu contrato vai até {date}. Se seu plano terminar antes, a multa por saída antecipada de {amount} é lançada no seu saldo.",
     },
     recharge: {
       title: "Seu pacote de aulas acabou",
@@ -1211,7 +1211,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     toward: "Aplicado em {invoices}",
     toCredit: "{amount} foram para o seu saldo como crédito",
     payAtDesk: "Para pagar, fale com a recepção da sua Escola.",
-    receiptSurcharge: "Inclui uma taxa de cartão de {amount}",
+    receiptSurcharge: "Inclui um acréscimo no cartão de {amount}",
     address: "Endereço: {address}",
     paymentInstructions: "Como pagar: {instructions}",
     refunded: "Reembolsado",
@@ -1230,7 +1230,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     pay: {
       balance: "Pagar saldo ({amount})",
       charge: "Pagar {amount}",
-      surcharge: "Inclui uma taxa de cartão de {amount}",
+      surcharge: "Inclui um acréscimo no cartão de {amount}",
       failed: "Não foi possível iniciar o pagamento — tente de novo.",
       submitted: "Pagamento enviado. Ele aparece aqui quando o pagamento com cartão for confirmado.",
       restricted: "Esta conta só pode pagar em dinheiro ou transferência bancária. Pague na recepção.",
@@ -1263,7 +1263,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       itemBalance: "Pagamento no seu saldo",
     },
     promotionFee: {
-      label: "Taxa de graduação",
+      label: "Taxa de promoção",
       forRank: "{rank} · {style}",
     },
     // Decision 435 item 19.
