@@ -7820,3 +7820,18 @@ User (Code), 6 Nov 2026: "option 1 for Brazil, and yes build the fix", on the re
 ### Recorded by
 
 User (Code), 6 Nov 2026: "This should be the decision of the school owner" (pay rates in the report) and "go with recommendation" (the notice).
+
+## Decision 439 — The Connect Stripe country gate: the six build choices of #496
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 437
+
+1. **The country list lives in code.** The 32 countries (the UK, the EU27, Norway, Switzerland, Liechtenstein and Gibraltar) are a code constant that a server setting can replace. Changing them needs a deploy; Platform Admin doesn't edit them.
+2. **The setup checklist leaves the Connect Stripe step out** for a School in a country without card payments, so the School can still finish its checklist.
+3. **A School or Franchise with no country yet still sees Connect.** The country picker offers only the 32 countries, and the API checks again when onboarding starts.
+4. **Only onboarding is refused.** A Stripe-type payment account in another country can still be created, but onboarding can't start; the portal never creates one.
+5. **The member app says so too.** Members at a School without card payments see a short note where they would pay: card payments aren't available there yet, so they pay by bank transfer (Pix in Brazil) or cash at the School and staff confirm it. The note is in all 15 languages.
+6. **Wording kept as built.** The Brazilian Portuguese text names Pix.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #496's choices.
