@@ -45,9 +45,9 @@ export async function holdsPlace(db: Pick<Prisma.TransactionClient, 'membership'
 }
 
 /** Whether the plan has no room for `studentId` (false when it has no limit). */
-export async function planFullFor(db: Reader, plan: { id: string; memberLimit: number | null }, studentId: string): Promise<boolean> {
+export async function planFullFor(db: Reader, plan: { id: string; memberLimit: number | null }, studentId: string, now: Date = new Date()): Promise<boolean> {
   if (plan.memberLimit == null) return false;
-  if (await holdsPlace(db, plan.id, studentId)) return false;
+  if (await holdsPlace(db, plan.id, studentId, now)) return false;
   return (await placesTaken(db, plan.id, studentId)) >= plan.memberLimit;
 }
 

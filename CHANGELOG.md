@@ -67,6 +67,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     and printouts lay out correctly. A "Has only one name" tick replaces "." as
     a surname. Two sign-ups at once no longer duplicate. Approving a walk-in
     keeps the phone and emergency contact they gave at the desk.
+- **Translation review: 12 languages** (School Portal, member app and server
+  text; `docs/translations/REVIEW-other-languages.md`). Covers Arabic, German,
+  French, Italian, Japanese, Korean, Dutch, Polish, Russian, Thai, Turkish and
+  Chinese. 867 strings corrected:
+  - one form of address per language: German "du", French "vous", Turkish
+    "siz", Korean 합니다 statements;
+  - one word per term: German "Graduierung" for grading (not "Beförderung"),
+    Italian "striscia" for a stripe (it was "grado", the same word as rank),
+    Korean 도장/수련생 for School/Student;
+  - Arabic "back" arrows now point the right way in right-to-left text;
+  - clearer early-exit fee wording in ar, ru, tr and zh-CN.
+
+  The review lists the terms each language uses, and the legal and payment
+  strings a native speaker should check before each market launches. Only
+  text values changed; no keys or placeholders. No migration.
 - **Student portal: parents and passcodes** (Track B, `apps/student`;
   Decision 428) — a parent signs their child's waivers and buys their child a
   plan from "My children". Change passcode is on Home (other devices are
@@ -888,6 +903,16 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Student's page and the app show a membership waiting for its first check-in
   and the plan it switches to. **Needs a database migration**
   (`20270225100100_plan_dates`).
+- **A plan switch into a full plan ends instead** (Decision 316 items 4-5,
+  owner's answer of 6 Nov 2026) — when a membership ends and the plan it
+  switches to is full under its member limit, the switch doesn't happen: the
+  membership simply ends, nothing is charged (the limit is checked before the
+  card), and the member gets the usual "Membership ended" notice, as when the
+  next plan can no longer be sold. A place held for the member on that plan's
+  waiting list counts as room, so they still switch. The "Your plan is about
+  to change" notice 7 days before (push, email and in-app) now says so too:
+  "Without a saved card, or if {next plan} is full, it simply ends and nothing
+  is charged." (all 15 languages). No migration.
 - **Contracts on plans: ending after the minimum term, freezes and the
   early-exit label** (Decision 435 items 16, 17, 19) — the Contract card has a
   new **End the Subscription after the minimum term** option: the member is

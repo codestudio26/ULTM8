@@ -247,7 +247,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "有名额空出",
     planPlaceHeldBody: "{plan}的名额为你保留到{until}。请在此之前购买，否则将转给下一位候补者。",
     planSwitchNoticeTitle: "你的方案即将变更",
-    planSwitchNoticeBody: "你的{plan}将于{date}结束。之后{next}开始，并从你保存的卡中扣款{amount}。没有保存的卡则直接结束。",
+    planSwitchNoticeBody: "你的{plan}将于{date}结束。之后{next}开始，并从你保存的卡中扣款{amount}。没有保存的卡或{next}已满时，则直接结束，不会扣款。",
     planSwitchedTitle: "你的方案已变更",
     planSwitchedBody: "你的{plan}已结束，{next}已开始。已从你保存的卡中扣款{amount}。",
     planSwitchEndedTitle: "会员已结束",

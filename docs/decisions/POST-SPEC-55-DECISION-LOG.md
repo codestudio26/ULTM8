@@ -7809,3 +7809,29 @@ User (Code), 6 Nov 2026: "go with your recommendations for all", on the recommen
 ### Recorded by
 
 User (Code), 6 Nov 2026: "option 1 for Brazil, and yes build the fix", on the recommendation given in chat after the Connect countries check.
+
+## Decision 438 — Pay rates in the payroll report are the School owner's choice; the plan-switch notice warns about a full plan
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 436 items 7 and 8, 435 items 9 and 22
+
+1. **Pay rates in the payroll report.** Staff with the **Payroll** switch see the payroll report. Whether that report shows pay rates (each person's hourly and per-class rate, owners included) is **the School owner's choice**, through an owner-only School setting that is **off by default**. When it's off, those staff see hours, classes and totals only, on the page and in the CSV. When it's on, they see the rates read-only. Only owners can change rates, as Decision 436 item 7 says.
+2. **The plan-switch notice.** The notice sent 7 days before a membership switches to its next plan also says that if the next plan is full, the membership simply ends and nothing is charged (Decision 436 item 8). It is in all 15 languages.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "This should be the decision of the school owner" (pay rates in the report) and "go with recommendation" (the notice).
+
+## Decision 439 — The Connect Stripe country gate: the six build choices of #496
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 437
+
+1. **The country list lives in code.** The 32 countries (the UK, the EU27, Norway, Switzerland, Liechtenstein and Gibraltar) are a code constant that a server setting can replace. Changing them needs a deploy; Platform Admin doesn't edit them.
+2. **The setup checklist leaves the Connect Stripe step out** for a School in a country without card payments, so the School can still finish its checklist.
+3. **A School or Franchise with no country yet still sees Connect.** The country picker offers only the 32 countries, and the API checks again when onboarding starts.
+4. **Only onboarding is refused.** A Stripe-type payment account in another country can still be created, but onboarding can't start; the portal never creates one.
+5. **The member app says so too.** Members at a School without card payments see a short note where they would pay: card payments aren't available there yet, so they pay by bank transfer (Pix in Brazil) or cash at the School and staff confirm it. The note is in all 15 languages.
+6. **Wording kept as built.** The Brazilian Portuguese text names Pix.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #496's choices.

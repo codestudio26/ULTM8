@@ -10,6 +10,7 @@ import { resolveChargeCurrency } from '../common/school-currency';
 import { noticeMoney } from '../charges/charge-ledger';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 import { fixedPlanOver, membershipTerm, TERM_PLAN_TYPES } from '../memberships/plan-term';
+import { planFullFor } from '../memberships/waitlist/plan-capacity';
 import { dayIn } from '../memberships/freeze/membership-freeze';
 import { trialEndedUnpaid } from '../subscription-plans/subscription-gate.service';
 import { NOTIFICATION_FANOUT_QUEUE, PLAN_SWITCH_QUEUE } from './queue.constants';
@@ -27,7 +28,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function planSwitchNotice(planTitle: string, endDay: string, nextTitle: string, amount: string) {
   return {
     title: 'Your plan is about to change',
-    body: `Your ${planTitle} ends on ${endDay}. Then ${nextTitle} starts and ${amount} is charged to your saved card. Without a saved card, it simply ends.`,
+    body: `Your ${planTitle} ends on ${endDay}. Then ${nextTitle} starts and ${amount} is charged to your saved card. Without a saved card, or if ${nextTitle} is full, it simply ends and nothing is charged.`,
   };
 }
 export function planSwitchedNotice(planTitle: string, nextTitle: string, amount: string) {
@@ -75,9 +76,13 @@ export type PlanSwitchRunOutcome = { noticesSent: number; switched: number; ende
  *    at its price then plus the School's card surcharge (Decision 406), and its
  *    Membership starts. Its own start and end rules apply (plan-term.ts).
  * 3. With no saved card, a declined card, or a next plan that can't be sold
- *    any more (archived, hidden, given a contract, its dates over, or the
- *    member already holds general access), the membership simply ends: nothing
- *    is charged and nothing goes on their balance. They are told.
+ *    any more (archived, hidden, given a contract, its dates over, full under
+ *    its member limit, or the member already holds general access), the
+ *    membership simply ends: nothing is charged and nothing goes on their
+ *    balance. They are told. A full plan (Decision 435 items 10-15, the
+ *    owner's answer of 6 Nov 2026) is checked before the card is charged, by
+ *    the same rule as a member's own purchase (planFullFor): a place held for
+ *    this member on its waiting list is theirs, so it counts as room.
  * 4. Only once: Membership.switchedAt is claimed before any charge, and the
  *    charge's idempotency key is the membership's, so a retried run never
  *    charges twice. The new Membership doesn't switch on in turn: the member
@@ -213,6 +218,9 @@ export class PlanSwitchProcessor extends WorkerHost {
       (TERM_PLAN_TYPES as readonly string[]).includes(next.type) &&
       !fixedPlanOver(next, school.timezone, now);
     if (!nextSellable) return end('NOT_SOLD');
+    // No room under the next plan's member limit: it can't be sold to them
+    // now, so it ends as above, before anything is charged.
+    if (await planFullFor(this.prismaJobs, next, m.studentId, now)) return end('NOT_SOLD');
     const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: m.schoolId } });
     const student = await this.prismaJobs.user.findUniqueOrThrow({ where: { id: m.studentId }, select: { paymentRestrictedAt: true } });
     if (!account || account.provider !== 'STRIPE' || student.paymentRestrictedAt) return end('NO_CARD');

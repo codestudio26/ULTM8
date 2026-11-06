@@ -261,7 +261,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "Er is een plek vrij",
     planPlaceHeldBody: "Er is een plek in {plan} voor je vastgehouden tot {until}. Koop hem daarvoor, anders gaat hij naar de volgende op de wachtlijst.",
     planSwitchNoticeTitle: "Je abonnement verandert binnenkort",
-    planSwitchNoticeBody: "Je {plan} eindigt op {date}. Daarna begint {next} en wordt {amount} van je opgeslagen kaart afgeschreven. Zonder opgeslagen kaart eindigt het gewoon.",
+    planSwitchNoticeBody: "Je {plan} eindigt op {date}. Daarna begint {next} en wordt {amount} van je opgeslagen kaart afgeschreven. Zonder opgeslagen kaart, of als {next} vol is, eindigt het gewoon en wordt er niets afgeschreven.",
     planSwitchedTitle: "Je abonnement is veranderd",
     planSwitchedBody: "Je {plan} is afgelopen en {next} is begonnen. {amount} is van je opgeslagen kaart afgeschreven.",
     planSwitchEndedTitle: "Lidmaatschap afgelopen",
