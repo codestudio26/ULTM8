@@ -9889,12 +9889,18 @@ export interface components {
             mode: string;
             /** @description Null until Stripe Connect onboarding is initiated (POST .../connect/onboard). */
             stripeConnectedAccountId?: string | null;
+            /** @description Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country. */
+            connectAvailable: boolean;
             createdAt: string;
             updatedAt: string;
         };
         ConnectStatusResponseDto: {
             /** @enum {string} */
             status: "CONNECTED" | "ACTION_NEEDED" | "NOT_CONNECTED";
+            /** @description Decision 437 — whether Stripe can onboard this Franchise, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, the Franchise's address country (none set: available). */
+            connectAvailable: boolean;
+            /** @description Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker. */
+            connectCountries: string[];
         };
         ConnectOnboardingResponseDto: {
             /** @description Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics. */
@@ -13600,6 +13606,7 @@ export interface components {
         };
         SetupChecklistDto: {
             hidden: boolean;
+            stripeConnectAvailable: boolean;
             steps: components["schemas"]["SetupStepDto"][];
         };
         DashboardOverviewDto: {

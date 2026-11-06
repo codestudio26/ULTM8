@@ -154,6 +154,8 @@ export const serverMessages: Record<string, string> = {
   "Only a Full Platform Admin may close or reactivate a tenant account.": "只有完全权限平台管理员可以关闭或重新启用租户账户。",
   "Only a Full Platform Admin may manage other Platform Admin accounts.": "只有完全权限平台管理员可以管理其他平台管理员账户。",
   "Only a STRIPE-provider PaymentAccount can onboard through Stripe Connect": "只有提供方为 STRIPE 的支付账户才能通过 Stripe Connect 完成入驻",
+  "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.": "此国家/地区暂不支持通过 Stripe 进行银行卡付款。会员以现金或银行转账付款，由工作人员确认付款。",
+  "This payment account's country isn't a valid two-letter country code (ISO 3166-1 alpha-2).": "此收款账户的国家/地区不是有效的两位字母国家代码（ISO 3166-1 alpha-2）。",
   "Only a STRIPE-provider PaymentAccount has a Stripe Connect credential to rotate.": "只有提供方为 STRIPE 的支付账户才有可轮换的 Stripe Connect 凭据。",
   "Only a Student of this School can declare a belt here.": "只有此学校的学员可以在此登记腰带。",
   "Only a Student of this School can declare a rank here.": "只有此学校的学员可以在此登记段位。",

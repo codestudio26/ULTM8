@@ -1346,6 +1346,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "Define una cuota fija: pulsa Editar en la página Franquicias.",
       billingNoticeNoRate: "Define una tarifa por alumno: pulsa Editar en la página Franquicias.",
       billingNoticeNoStripe: "Esta franquicia aún no tiene una cuenta de Stripe conectada. Usa «Conectar Stripe» más abajo.",
+      billingNoticeStripeUnavailable: "El cobro con tarjeta a través de Stripe aún no está disponible en el país de esta franquicia.",
       formerMember: "Antigua escuela miembro",
       columnBillingPeriod: "Periodo de facturación",
       columnSchool: "Escuela",
@@ -1389,6 +1390,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe lo necesita para configurar la cuenta y no se puede cambiar después.",
       chooseCountry: "Selecciona un país",
       goToStripe: "Continuar a Stripe",
+      unavailableHint: "Los pagos con tarjeta en la app aún no están disponibles en el país de esta franquicia, así que no se puede conectar Stripe. Los pagos se hacen en efectivo o por transferencia bancaria (Pix en Brasil) y el personal los confirma.",
     },
     refundModal: {
       title: "Reembolsar cargo de cuota",
@@ -2482,6 +2484,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "Hecho",
       todoLabel: "Pendiente",
       stripeHint: "El soporte de ULTM8 conecta tu cuenta de Stripe por ti.",
+      stripeUnavailable: "Los pagos con tarjeta en la app aún no están disponibles en tu país, así que los miembros pagan en efectivo o por transferencia bancaria (Pix en Brasil) y el personal lo confirma.",
       steps: {
         BRANCH: "Añade una sede",
         STYLE_AND_BELTS: "Añade una disciplina y sus cinturones",

@@ -1346,6 +1346,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "Lege eine Pauschalgebühr fest: Klicke auf der Franchise-Seite auf Bearbeiten.",
       billingNoticeNoRate: "Lege einen Satz pro Schüler fest: Klicke auf der Franchise-Seite auf Bearbeiten.",
       billingNoticeNoStripe: "Dieses Franchise hat noch kein verbundenes Stripe-Konto. Nutze unten „Stripe verbinden“.",
+      billingNoticeStripeUnavailable: "Die Abrechnung per Karte über Stripe ist im Land dieses Franchise noch nicht verfügbar.",
       formerMember: "Ehemalige Mitgliedsschule",
       columnBillingPeriod: "Abrechnungszeitraum",
       columnSchool: "Schule",
@@ -1389,6 +1390,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe braucht diese Angabe für die Einrichtung, und sie kann später nicht geändert werden.",
       chooseCountry: "Land auswählen",
       goToStripe: "Weiter zu Stripe",
+      unavailableHint: "Kartenzahlungen in der App sind im Land dieses Franchise noch nicht verfügbar, daher kann Stripe nicht verbunden werden. Gezahlt wird bar oder per Banküberweisung (Pix in Brasilien), und das Team bestätigt die Zahlung.",
     },
     refundModal: {
       title: "Gebührenbelastung erstatten",
@@ -2482,6 +2484,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "Erledigt",
       todoLabel: "Noch offen",
       stripeHint: "Der ULTM8-Support verbindet dein Stripe-Konto für dich.",
+      stripeUnavailable: "Kartenzahlungen in der App sind in deinem Land noch nicht verfügbar. Mitglieder zahlen bar oder per Banküberweisung (Pix in Brasilien), und das Team bestätigt es.",
       steps: {
         BRANCH: "Filiale hinzufügen",
         STYLE_AND_BELTS: "Disziplin mit Gürteln hinzufügen",

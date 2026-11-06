@@ -1372,6 +1372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "Укажите фиксированный взнос: нажмите «Изменить» на странице «Франшизы».",
       billingNoticeNoRate: "Укажите ставку за ученика: нажмите «Изменить» на странице «Франшизы».",
       billingNoticeNoStripe: "У этой франшизы ещё нет подключённого аккаунта Stripe. Нажмите «Подключить Stripe» ниже.",
+      billingNoticeStripeUnavailable: "Списание оплаты картой через Stripe в стране этой франшизы пока недоступно.",
       formerMember: "Бывшая школа-участник",
       columnBillingPeriod: "Расчётный период",
       columnSchool: "Школа",
@@ -1415,6 +1416,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe нужна эта информация для настройки аккаунта, и изменить её потом нельзя.",
       chooseCountry: "Выберите страну",
       goToStripe: "Перейти в Stripe",
+      unavailableHint: "Оплата картой в приложении в стране этой франшизы пока недоступна, поэтому Stripe подключить нельзя. Оплата производится наличными или банковским переводом (Pix в Бразилии), а сотрудники её подтверждают.",
     },
     refundModal: {
       title: "Возврат списания взноса",
@@ -2554,6 +2556,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "Сделано",
       todoLabel: "Не сделано",
       stripeHint: "Поддержка ULTM8 подключит ваш аккаунт Stripe за вас.",
+      stripeUnavailable: "Оплата картой в приложении в вашей стране пока недоступна, поэтому участники платят наличными или банковским переводом (Pix в Бразилии), а сотрудники это подтверждают.",
       steps: {
         BRANCH: "Добавьте филиал",
         STYLE_AND_BELTS: "Добавьте дисциплину и её пояса",

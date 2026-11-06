@@ -34,6 +34,12 @@ export class PaymentAccountResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Null until Stripe Connect onboarding is initiated (POST .../connect/onboard).' })
   stripeConnectedAccountId!: string | null;
 
+  @ApiProperty({
+    description:
+      "Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country.",
+  })
+  connectAvailable!: boolean;
+
   @ApiProperty()
   createdAt!: string;
 
@@ -52,4 +58,13 @@ export class ConnectOnboardingResponseDto {
 export class ConnectStatusResponseDto {
   @ApiProperty({ enum: ['CONNECTED', 'ACTION_NEEDED', 'NOT_CONNECTED'] })
   status!: 'CONNECTED' | 'ACTION_NEEDED' | 'NOT_CONNECTED';
+
+  @ApiProperty({
+    description:
+      "Decision 437 — whether Stripe can onboard this Franchise, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, the Franchise's address country (none set: available).",
+  })
+  connectAvailable!: boolean;
+
+  @ApiProperty({ type: [String], description: 'Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker.' })
+  connectCountries!: string[];
 }

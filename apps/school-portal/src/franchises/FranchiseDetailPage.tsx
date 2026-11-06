@@ -95,6 +95,8 @@ export function FranchiseDetailPage() {
   const { data: schoolData, isLoading: schoolsLoading, error: schoolsError } = useFranchiseSchools(franchiseId);
   const { data: chargeData, isLoading: chargesLoading, error: chargesError } = useFranchiseFeeCharges(franchiseId);
   const { data: paymentAccount, isLoading: paymentAccountLoading } = useFranchisePaymentAccount(franchiseId);
+  // Decision 437 — the same query StripeConnectCard reads (shared cache).
+  const { data: connectStatus } = useFranchiseConnectStatus(franchiseId);
   const refundCharge = useRefundFeeCharge(franchiseId ?? '');
   const [refunding, setRefunding] = useState<FranchiseFeeChargeResponse | null>(null);
   // Decision 352 — remove a member School (asks first) and close the Franchise.
@@ -166,7 +168,13 @@ export function FranchiseDetailPage() {
                   {feeMissing ? (
                     <li>{franchise?.feeModel === 'PER_HEADCOUNT' ? t('franchises.detail.billingNoticeNoRate') : t('franchises.detail.billingNoticeNoFlatFee')}</li>
                   ) : null}
-                  {stripeMissing ? <li>{t('franchises.detail.billingNoticeNoStripe')}</li> : null}
+                  {stripeMissing ? (
+                    <li>
+                      {connectStatus?.connectAvailable === false
+                        ? t('franchises.detail.billingNoticeStripeUnavailable')
+                        : t('franchises.detail.billingNoticeNoStripe')}
+                    </li>
+                  ) : null}
                 </ul>
               </div>
             ) : null}
@@ -559,10 +567,18 @@ function StripeConnectCard({
   const [askingCountry, setAskingCountry] = useState(false);
   const [country, setCountry] = useState(defaultCountry ?? guessDefaultCountry() ?? '');
   const [error, setError] = useState<string | null>(null);
-  const countries = React.useMemo(localCountryNames, []);
+  // Decision 437 — the picker offers only the countries where Stripe can
+  // onboard the Franchise (the API's list), and the button is hidden where
+  // it can't.
+  const allowed = data?.connectCountries;
+  const countries = React.useMemo(() => {
+    const all = localCountryNames();
+    return allowed ? all.filter((c) => allowed.includes(c.value)) : all;
+  }, [allowed]);
   // A cash or bank-transfer account can't go through Stripe.
   const stripeAccountId = paymentAccount?.provider === 'STRIPE' ? paymentAccount.id : null;
-  const canConnect = !paymentAccount || !!stripeAccountId;
+  const connectAvailable = data?.connectAvailable !== false;
+  const canConnect = connectAvailable && (!paymentAccount || !!stripeAccountId);
 
   async function start(chosenCountry: string) {
     setError(null);
@@ -595,15 +611,27 @@ function StripeConnectCard({
         ) : status ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
             <span data-testid="stripe-connect-status">{connectStatusBadge(status, t)}</span>
-            <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13, margin: 0 }}>
+            <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13, margin: 0 }} data-testid="stripe-connect-hint">
               {status === 'CONNECTED'
                 ? t('franchises.stripe.connectedHint')
-                : status === 'ACTION_NEEDED'
-                  ? t('franchises.stripe.actionNeededHint')
-                  : t('franchises.stripe.notConnectedHint')}
+                : !connectAvailable
+                  ? t('franchises.stripe.unavailableHint')
+                  : status === 'ACTION_NEEDED'
+                    ? t('franchises.stripe.actionNeededHint')
+                    : t('franchises.stripe.notConnectedHint')}
             </p>
             {status !== 'CONNECTED' && canConnect ? (
-              <Button onClick={() => (stripeAccountId ? start('') : setAskingCountry(true))} loading={connect.isPending}>
+              <Button
+                onClick={() => {
+                  if (stripeAccountId) {
+                    void start('');
+                    return;
+                  }
+                  if (allowed && !allowed.includes(country)) setCountry('');
+                  setAskingCountry(true);
+                }}
+                loading={connect.isPending}
+              >
                 {status === 'ACTION_NEEDED' ? t('franchises.stripe.continue') : t('franchises.stripe.connect')}
               </Button>
             ) : null}

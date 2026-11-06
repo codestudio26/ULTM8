@@ -240,7 +240,7 @@ describeIfDb('Franchise fee paid by card (Decision 407)', () => {
     it('Not connected, then Action needed, then Connected', async () => {
       const { franchise, fOwner } = await seed({ connected: false });
       const statusUrl = `/v1/franchises/${franchise.id}/payment-account/connect-status`;
-      expect((await get(statusUrl, fOwner.token)).body).toEqual({ status: 'NOT_CONNECTED' });
+      expect((await get(statusUrl, fOwner.token)).body).toEqual({ status: 'NOT_CONNECTED', connectAvailable: true, connectCountries: expect.arrayContaining(['GB', 'IE']) });
 
       const created = await post(`/v1/franchises/${franchise.id}/payment-accounts`, fOwner.token, { provider: 'STRIPE', accountTitle: 'Card Franchise', country: 'GB' });
       expect(created.status).toBe(201);
@@ -249,9 +249,9 @@ describeIfDb('Franchise fee paid by card (Decision 407)', () => {
       expect(onboard.body.onboardingUrl).toBe('https://connect.stripe.test/onboarding');
 
       stripe.state.account = { details_submitted: true, charges_enabled: false };
-      expect((await get(statusUrl, fOwner.token)).body).toEqual({ status: 'ACTION_NEEDED' });
+      expect((await get(statusUrl, fOwner.token)).body).toEqual({ status: 'ACTION_NEEDED', connectAvailable: true, connectCountries: expect.arrayContaining(['GB', 'IE']) });
       stripe.state.account = { details_submitted: true, charges_enabled: true };
-      expect((await get(statusUrl, fOwner.token)).body).toEqual({ status: 'CONNECTED' });
+      expect((await get(statusUrl, fOwner.token)).body).toEqual({ status: 'CONNECTED', connectAvailable: true, connectCountries: expect.arrayContaining(['GB', 'IE']) });
     });
 
     it("only that Franchise's Owner — not another Franchise's Owner, not a member School's Owner", async () => {

@@ -56,4 +56,11 @@ describe('validateEnv', () => {
     expect(problems).toMatch(/QR_CLASS_TOKEN_SECRET must be at least 32/);
     expect(problems).toMatch(/QR_STUDENT_TOKEN_SECRET must differ from JWT_ACCESS_SECRET/);
   });
+
+  it('accepts a valid STRIPE_CONNECT_COUNTRIES override and refuses one that is not ISO alpha-2 codes (Decision 437)', () => {
+    expect(findEnvProblems({ ...goodEnv(), STRIPE_CONNECT_COUNTRIES: 'GB, ie,FR' })).toEqual([]);
+    expect(findEnvProblems({ ...goodEnv(), STRIPE_CONNECT_COUNTRIES: 'GB,United Kingdom,XX' }).join()).toMatch(
+      /STRIPE_CONNECT_COUNTRIES must be comma-separated ISO 3166-1 alpha-2 country codes \(not: UNITED KINGDOM, XX\)/,
+    );
+  });
 });

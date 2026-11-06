@@ -154,6 +154,8 @@ export const serverMessages: Record<string, string> = {
   "Only a Full Platform Admin may close or reactivate a tenant account.": "테넌트 계정의 해지 또는 재활성화는 전체 권한 플랫폼 관리자만 할 수 있습니다.",
   "Only a Full Platform Admin may manage other Platform Admin accounts.": "다른 플랫폼 관리자 계정은 전체 권한 플랫폼 관리자만 관리할 수 있습니다.",
   "Only a STRIPE-provider PaymentAccount can onboard through Stripe Connect": "Stripe Connect 온보딩은 제공자가 STRIPE인 결제 계정만 진행할 수 있습니다",
+  "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.": "이 국가에서는 아직 Stripe를 통한 카드 결제를 사용할 수 없습니다. 회원은 현금이나 계좌이체로 결제하고, 직원이 결제를 확인합니다.",
+  "This payment account's country isn't a valid two-letter country code (ISO 3166-1 alpha-2).": "이 결제 계정의 국가는 유효한 두 글자 국가 코드(ISO 3166-1 alpha-2)가 아닙니다.",
   "Only a STRIPE-provider PaymentAccount has a Stripe Connect credential to rotate.": "교체할 Stripe Connect 자격 증명은 제공자가 STRIPE인 결제 계정에만 있습니다.",
   "Only a Student of this School can declare a belt here.": "여기서 띠를 등록할 수 있는 사람은 이 도장의 수련생뿐입니다.",
   "Only a Student of this School can declare a rank here.": "여기서 급을 등록할 수 있는 사람은 이 도장의 수련생뿐입니다.",

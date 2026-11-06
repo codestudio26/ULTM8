@@ -1372,6 +1372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "Ustaw stałą opłatę: kliknij Edytuj na stronie Franczyzy.",
       billingNoticeNoRate: "Ustaw stawkę za ucznia: kliknij Edytuj na stronie Franczyzy.",
       billingNoticeNoStripe: "Ta franczyza nie ma jeszcze połączonego konta Stripe. Użyj poniżej „Połącz Stripe”.",
+      billingNoticeStripeUnavailable: "Rozliczenia kartą przez Stripe nie są jeszcze dostępne w kraju tej franczyzy.",
       formerMember: "Była szkoła członkowska",
       columnBillingPeriod: "Okres rozliczeniowy",
       columnSchool: "Szkoła",
@@ -1415,6 +1416,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe potrzebuje tej informacji do założenia konta i nie można jej później zmienić.",
       chooseCountry: "Wybierz kraj",
       goToStripe: "Przejdź do Stripe",
+      unavailableHint: "Płatności kartą w aplikacji nie są jeszcze dostępne w kraju tej franczyzy, więc nie można połączyć Stripe. Płaci się gotówką lub przelewem bankowym (Pix w Brazylii), a personel to potwierdza.",
     },
     refundModal: {
       title: "Zwrot obciążenia opłatą",
@@ -2554,6 +2556,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "Zrobione",
       todoLabel: "Do zrobienia",
       stripeHint: "Pomoc ULTM8 połączy Twoje konto Stripe za Ciebie.",
+      stripeUnavailable: "Płatności kartą w aplikacji nie są jeszcze dostępne w Twoim kraju, więc członkowie płacą gotówką lub przelewem bankowym (Pix w Brazylii), a personel to potwierdza.",
       steps: {
         BRANCH: "Dodaj oddział",
         STYLE_AND_BELTS: "Dodaj dyscyplinę i jej pasy",

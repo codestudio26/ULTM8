@@ -154,6 +154,8 @@ export const serverMessages: Record<string, string> = {
   "Only a Full Platform Admin may close or reactivate a tenant account.": "Konto klienta może zamknąć lub ponownie aktywować tylko administrator platformy z pełnym dostępem.",
   "Only a Full Platform Admin may manage other Platform Admin accounts.": "Innymi kontami administratorów platformy może zarządzać tylko administrator platformy z pełnym dostępem.",
   "Only a STRIPE-provider PaymentAccount can onboard through Stripe Connect": "Tylko PaymentAccount z dostawcą STRIPE może zostać podłączony przez Stripe Connect",
+  "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.": "Płatności kartą przez Stripe nie są jeszcze dostępne w tym kraju. Członkowie płacą gotówką lub przelewem bankowym, a personel potwierdza płatność.",
+  "This payment account's country isn't a valid two-letter country code (ISO 3166-1 alpha-2).": "Kraj tego konta płatniczego nie jest prawidłowym dwuliterowym kodem kraju (ISO 3166-1 alfa-2).",
   "Only a STRIPE-provider PaymentAccount has a Stripe Connect credential to rotate.": "Tylko PaymentAccount z dostawcą STRIPE ma dane uwierzytelniające Stripe Connect, które można odnowić.",
   "Only a Student of this School can declare a belt here.": "Tylko uczeń tej szkoły może tutaj zadeklarować pas.",
   "Only a Student of this School can declare a rank here.": "Tylko uczeń tej szkoły może tutaj zadeklarować stopień.",

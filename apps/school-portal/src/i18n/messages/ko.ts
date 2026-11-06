@@ -1333,6 +1333,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "정액 수수료를 설정하세요. 프랜차이즈 페이지에서 편집을 누르세요.",
       billingNoticeNoRate: "수련생당 요금을 설정하세요. 프랜차이즈 페이지에서 편집을 누르세요.",
       billingNoticeNoStripe: "이 프랜차이즈에는 아직 연결된 Stripe 계정이 없습니다. 아래의 \"Stripe 연결\"을 사용하세요.",
+      billingNoticeStripeUnavailable: "이 프랜차이즈의 국가에서는 아직 Stripe를 통한 카드 청구를 사용할 수 없습니다.",
       formerMember: "이전 회원 학교",
       columnBillingPeriod: "청구 기간",
       columnSchool: "도장",
@@ -1376,6 +1377,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "계정을 설정하는 데 필요하며 나중에 변경할 수 없습니다.",
       chooseCountry: "국가 선택",
       goToStripe: "Stripe로 계속",
+      unavailableHint: "이 프랜차이즈의 국가에서는 아직 앱 카드 결제를 사용할 수 없어 Stripe를 연결할 수 없습니다. 결제는 현금이나 계좌이체(브라질은 Pix)로 하고 직원이 확인합니다.",
     },
     refundModal: {
       title: "수수료 청구 환불",
@@ -2446,6 +2448,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "완료",
       todoLabel: "미완료",
       stripeHint: "Stripe 계정 연결은 ULTM8 지원팀이 해 드립니다.",
+      stripeUnavailable: "회원님의 국가에서는 아직 앱 카드 결제를 사용할 수 없어, 회원은 현금이나 계좌이체(브라질은 Pix)로 결제하고 직원이 확인합니다.",
       steps: {
         BRANCH: "지점 추가",
         STYLE_AND_BELTS: "종목과 띠 추가",

@@ -1333,6 +1333,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "定額料金を設定してください。フランチャイズページで「編集」を押します。",
       billingNoticeNoRate: "生徒1人あたりの料金を設定してください。フランチャイズページで「編集」を押します。",
       billingNoticeNoStripe: "このフランチャイズにはまだ接続済みの Stripe アカウントがありません。下の「Stripe を接続」を使ってください。",
+      billingNoticeStripeUnavailable: "このフランチャイズの国では、Stripe によるカード請求はまだご利用いただけません。",
       formerMember: "以前の加盟スクール",
       columnBillingPeriod: "請求期間",
       columnSchool: "スクール",
@@ -1376,6 +1377,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "アカウントの設定に必要で、後から変更できません。",
       chooseCountry: "国を選択",
       goToStripe: "Stripe へ進む",
+      unavailableHint: "このフランチャイズの国では、アプリでのカード決済はまだご利用いただけないため、Stripe を接続できません。支払いは現金または銀行振込（ブラジルでは Pix）で行い、スタッフが確認します。",
     },
     refundModal: {
       title: "料金請求を返金",
@@ -2446,6 +2448,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "完了",
       todoLabel: "未完了",
       stripeHint: "Stripe アカウントの接続は ULTM8 サポートが行います。",
+      stripeUnavailable: "お住まいの国では、アプリでのカード決済はまだご利用いただけません。会員は現金または銀行振込（ブラジルでは Pix）で支払い、スタッフが確認します。",
       steps: {
         BRANCH: "支部を追加",
         STYLE_AND_BELTS: "種目と帯を追加",

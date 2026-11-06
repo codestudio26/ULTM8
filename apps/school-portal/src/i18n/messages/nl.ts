@@ -1346,6 +1346,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "Stel een vast bedrag in: klik op Bewerken op de pagina Franchises.",
       billingNoticeNoRate: "Stel een tarief per leerling in: klik op Bewerken op de pagina Franchises.",
       billingNoticeNoStripe: "Deze franchise heeft nog geen gekoppeld Stripe-account. Gebruik hieronder \"Stripe koppelen\".",
+      billingNoticeStripeUnavailable: "Factureren per kaart via Stripe is in het land van deze franchise nog niet beschikbaar.",
       formerMember: "Voormalige aangesloten school",
       columnBillingPeriod: "Factuurperiode",
       columnSchool: "School",
@@ -1389,6 +1390,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe heeft dit nodig om het account in te stellen, en het kan later niet worden gewijzigd.",
       chooseCountry: "Kies een land",
       goToStripe: "Verder naar Stripe",
+      unavailableHint: "Kaartbetalingen in de app zijn in het land van deze franchise nog niet beschikbaar, dus Stripe kan niet worden gekoppeld. Er wordt contant of per bankoverschrijving betaald (Pix in Brazilië) en het personeel bevestigt dat.",
     },
     refundModal: {
       title: "Kostenafschrijving terugbetalen",
@@ -2482,6 +2484,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "Klaar",
       todoLabel: "Nog te doen",
       stripeHint: "ULTM8-support koppelt je Stripe-account voor je.",
+      stripeUnavailable: "Kaartbetalingen in de app zijn in jouw land nog niet beschikbaar, dus leden betalen contant of per bankoverschrijving (Pix in Brazilië) en het personeel bevestigt dat.",
       steps: {
         BRANCH: "Voeg een vestiging toe",
         STYLE_AND_BELTS: "Voeg een discipline en de banden toe",

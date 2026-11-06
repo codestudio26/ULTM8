@@ -5,6 +5,7 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { loadActiveStudents } from './active-students';
 import { daysInRange, defaultWeekRange, safeZone } from '../bookings/booking-week';
 import { localDay } from '../ranks/engine';
+import { stripeConnectAvailable as stripeConnectAvailableFor } from '../payments/stripe-connect-countries';
 import { BirthdaysResponseDto, DashboardOverviewDto, SetupStepKey } from './dto/dashboard.dto';
 
 /**
@@ -25,8 +26,8 @@ export class DashboardService {
   async getOverview(callerId: string, schoolId: string): Promise<DashboardOverviewDto> {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const [school, { active }, branch, style, cls, slot, plan, waiver, account, staff, invite] = await Promise.all([
-        tx.school.findUnique({ where: { id: schoolId }, select: { setupChecklistHiddenAt: true } }),
+      const [school, { active }, branch, style, cls, slot, plan, waiver, account, staff, invite, paymentAccount] = await Promise.all([
+        tx.school.findUnique({ where: { id: schoolId }, select: { setupChecklistHiddenAt: true, addressCountry: true } }),
         // Decision 317 item 5: the same count Students → Growth shows, frozen
         // members left out (Decision 422 item 5). Freezes are read on the jobs
         // connection, after the owner check above.
@@ -41,19 +42,24 @@ export class DashboardService {
         tx.paymentAccount.findFirst({ where: { schoolId, status: 'ACTIVE', stripeConnectedAccountId: { not: null } }, select: { id: true } }),
         tx.roleGrant.findFirst({ where: { schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null }, select: { id: true } }),
         tx.coachInvite.findFirst({ where: { schoolId, acceptedAt: null, cancelledAt: null, expiresAt: { gt: new Date() } }, select: { id: true } }),
+        tx.paymentAccount.findUnique({ where: { schoolId }, select: { provider: true, country: true, stripeConnectedAccountId: true } }),
       ]);
+      // Decision 437: where Stripe can't onboard the School, connecting it
+      // isn't a step it can take.
+      const stripeConnectAvailable = stripeConnectAvailableFor(paymentAccount, school?.addressCountry);
 
       return {
         activeStudents: active.size,
         setupChecklist: {
           hidden: !!school?.setupChecklistHiddenAt,
+          stripeConnectAvailable,
           steps: [
             { key: SetupStepKey.BRANCH, done: !!branch },
             { key: SetupStepKey.STYLE_AND_BELTS, done: !!style },
             { key: SetupStepKey.CLASS, done: !!cls || !!slot },
             { key: SetupStepKey.MEMBERSHIP_PLAN, done: !!plan },
             { key: SetupStepKey.WAIVER, done: !!waiver },
-            { key: SetupStepKey.STRIPE, done: !!account },
+            ...(stripeConnectAvailable ? [{ key: SetupStepKey.STRIPE, done: !!account }] : []),
             // An invite still waiting counts: the owner has done their part.
             { key: SetupStepKey.STAFF, done: !!staff || !!invite },
           ],

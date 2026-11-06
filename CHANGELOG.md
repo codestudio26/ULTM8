@@ -240,6 +240,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   that already has them is left as it is), so Stripe's onboarding then collects
   whatever card payments still need. Until that is done the account shows
   Action needed, as before.
+- **Connect Stripe only where Stripe can onboard the School** (Decision 437)
+  — ULTM8's Stripe platform is a UK account, which can onboard Schools and
+  Franchises in the United Kingdom, the 27 EU countries, Norway, Switzerland,
+  Liechtenstein and Gibraltar only. Elsewhere (Brazil, for one) the
+  Franchise page's Stripe card has no **Connect Stripe** button and explains
+  that card payments in the app aren't available in that country yet, so
+  payments are by cash or bank transfer (Pix in Brazil) and staff confirm
+  them; a School's setup checklist leaves out the Connect Stripe step and says
+  the same. The country picker offers only those 32 countries. The API refuses
+  to start Stripe onboarding for any other country (or a country that isn't a
+  two-letter ISO code), with the reason in all 15 languages; an account
+  already connected keeps working wherever it is. The payment-account,
+  Franchise connect-status and Dashboard answers now say whether Connect is
+  available. The list is set in code, and the optional
+  `STRIPE_CONNECT_COUNTRIES` setting replaces it (comma-separated ISO codes).
 - **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
   School's card surcharge applies, a monthly Subscription now carries it too:
   members see it on the plan before subscribing, and it is added to the first
