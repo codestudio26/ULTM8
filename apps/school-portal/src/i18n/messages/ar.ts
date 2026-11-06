@@ -1398,6 +1398,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "حدّد رسمًا ثابتًا: اضغط تعديل في صفحة الامتيازات.",
       billingNoticeNoRate: "حدّد سعرًا لكل طالب: اضغط تعديل في صفحة الامتيازات.",
       billingNoticeNoStripe: "لا يملك هذا الامتياز حساب Stripe مربوطًا بعد. استخدم «ربط Stripe» أدناه.",
+      billingNoticeStripeUnavailable: "الفوترة بالبطاقة عبر Stripe غير متاحة بعد في بلد هذا الامتياز.",
       formerMember: "مدرسة عضو سابقة",
       columnBillingPeriod: "فترة الفوترة",
       columnSchool: "المدرسة",
@@ -1441,6 +1442,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "يحتاج Stripe إلى هذا لإعداد الحساب، ولا يمكن تغييره لاحقًا.",
       chooseCountry: "اختر بلدًا",
       goToStripe: "المتابعة إلى Stripe",
+      unavailableHint: "الدفع بالبطاقة في التطبيق غير متاح بعد في بلد هذا الامتياز، لذا لا يمكن ربط Stripe. تتم المدفوعات نقدًا أو بتحويل بنكي (Pix في البرازيل) ويؤكدها الموظفون.",
     },
     refundModal: {
       title: "استرداد رسوم",
@@ -2626,6 +2628,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "تم",
       todoLabel: "لم يتم بعد",
       stripeHint: "يربط دعم ULTM8 حساب Stripe الخاص بك نيابةً عنك.",
+      stripeUnavailable: "الدفع بالبطاقة في التطبيق غير متاح بعد في بلدك، لذا يدفع الأعضاء نقدًا أو بتحويل بنكي (Pix في البرازيل) ويؤكد الموظفون الدفع.",
       steps: {
         BRANCH: "أضف فرعًا",
         STYLE_AND_BELTS: "أضف رياضة وأحزمتها",

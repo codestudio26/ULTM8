@@ -932,6 +932,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       payWithSavedCard: "Kayıtlı kartla öde",
       enrolled: "Kaydınız yapıldı ✓",
       pendingConfirmation: "Ödeme, okulun onayını bekliyor.",
+      noCardPayments: "Bu okulda kartla ödeme henüz kullanılamıyor. Banka havalesiyle veya okulda nakit öde, personel onaylayacak.",
+      noCardPaymentsPix: "Bu okulda kartla ödeme henüz kullanılamıyor. Pix, banka havalesi veya okulda nakit ile öde, personel onaylayacak.",
       checkoutSubmitted: "Ödeme gönderildi — onaylandığında kısa süre içinde Üyeliklerim'i kontrol edin.",
       onlinePaymentUnavailable: "Bu plan için çevrimiçi ödeme henüz uygulamada kullanılamıyor.",
     },

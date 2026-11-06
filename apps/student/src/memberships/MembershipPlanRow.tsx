@@ -8,6 +8,7 @@ import { formatMoney } from '../lib/formatMoney';
 import { formatDateOnly } from '../lib/formatDate';
 import { StepUpPrompt } from '../auth/StepUpPrompt';
 import { usePaymentMethod } from '../payments/paymentMethodQueries';
+import { useAcademy } from '../academies/academyQueries';
 import { useInvalidateMyMemberships, usePurchaseMembership } from './membershipQueries';
 import { useT } from '../i18n/I18nProvider';
 import { PlanContractSigner } from './PlanContractSigner';
@@ -89,6 +90,13 @@ export function MembershipPlanRow({
   const purchase = usePurchaseMembership();
   const invalidateMyMemberships = useInvalidateMyMemberships();
   const { data: paymentMethod } = usePaymentMethod(schoolId);
+  // Decision 437: a School without card payments (Brazil, for now) is paid
+  // by cash or bank transfer at the School, which staff confirm. Read from
+  // the School's profile (cached: the screens above load the same one).
+  // Unknown while it loads: treated as taking cards, as before.
+  const { data: school } = useAcademy(schoolId);
+  const noCardPayments = school?.cardPayments === false;
+  const payByCard = noCardPayments ? {} : { useHostedCheckout: true };
   const [steppingUp, setSteppingUp] = useState(false);
   // Decision 316 item 6: a plan with a contract is signed first; the
   // signature then goes with the purchase (and the step-up, for a saved card).
@@ -104,7 +112,7 @@ export function MembershipPlanRow({
   // its waiting list; a place held for them shows until when, beside Purchase.
   const waitlisted = !!availability && (availability.full || availability.waitlist?.status === 'WAITING');
   const placeHeld = availability?.waitlist?.status === 'OFFERED';
-  const canPayWithSavedCard = !forStudentId && !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
+  const canPayWithSavedCard = !noCardPayments && !forStudentId && !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
 
   async function openCheckoutAndRefetch(checkoutUrl: string) {
     try {
@@ -123,7 +131,7 @@ export function MembershipPlanRow({
   function handlePurchase() {
     if (purchase.isPending) return;
     if (hasContract) return setSigning('checkout');
-    purchase.mutate({ planId: plan.id, useHostedCheckout: true, studentId: forStudentId, ...switchTerms }, { onSuccess: handlePurchaseSuccess });
+    purchase.mutate({ planId: plan.id, ...payByCard, studentId: forStudentId, ...switchTerms }, { onSuccess: handlePurchaseSuccess });
   }
 
   function openPayWithSavedCard() {
@@ -141,7 +149,7 @@ export function MembershipPlanRow({
       return;
     }
     purchase.mutate(
-      { planId: plan.id, useHostedCheckout: true, studentId: forStudentId, contractSignatureId: signatureId, ...switchTerms },
+      { planId: plan.id, ...payByCard, studentId: forStudentId, contractSignatureId: signatureId, ...switchTerms },
       { onSuccess: handlePurchaseSuccess },
     );
   }
@@ -221,6 +229,11 @@ export function MembershipPlanRow({
               {t('memberships.planRow.agreeToSwitch', { plan: switchTo.title, price: formatMoney(switchTo.price, switchTo.currency) })}
             </Text>
           </View>
+        ) : null}
+        {noCardPayments && plan.price > 0 ? (
+          <Text testID="no-card-payments" style={{ color: '#5F6368', fontSize: 12, marginTop: 4 }}>
+            {t(school?.inBrazil ? 'memberships.planRow.noCardPaymentsPix' : 'memberships.planRow.noCardPayments')}
+          </Text>
         ) : null}
         <View style={{ flexDirection: 'row', marginTop: 4, gap: 8 }}>
           <Button title={hasContract ? t('memberships.contract.readAndSign') : t('memberships.planRow.purchase')} onPress={handlePurchase} loading={purchase.isPending} />

@@ -923,6 +923,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       payWithSavedCard: "저장된 카드로 결제",
       enrolled: "등록 완료 ✓",
       pendingConfirmation: "도장의 결제 확인을 기다리는 중입니다.",
+      noCardPayments: "이 도장에서는 아직 카드 결제를 사용할 수 없습니다. 계좌이체나 도장에서 현금으로 결제하면 직원이 확인합니다.",
+      noCardPaymentsPix: "이 도장에서는 아직 카드 결제를 사용할 수 없습니다. Pix, 계좌이체 또는 도장에서 현금으로 결제하면 직원이 확인합니다.",
       checkoutSubmitted: "결제를 제출했습니다. 확인되면 곧 ‘내 회원권’에서 확인하세요.",
       onlinePaymentUnavailable: "이 플랜은 아직 앱에서 온라인 결제를 할 수 없습니다.",
     },

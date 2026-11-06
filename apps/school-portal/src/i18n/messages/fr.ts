@@ -1346,6 +1346,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "Définissez un forfait : cliquez sur Modifier dans la page Franchises.",
       billingNoticeNoRate: "Définissez un tarif par élève : cliquez sur Modifier dans la page Franchises.",
       billingNoticeNoStripe: "Cette franchise n'a pas encore de compte Stripe connecté. Utilisez « Connecter Stripe » ci-dessous.",
+      billingNoticeStripeUnavailable: "La facturation par carte via Stripe n'est pas encore disponible dans le pays de cette franchise.",
       formerMember: "Ancienne école membre",
       columnBillingPeriod: "Période de facturation",
       columnSchool: "École",
@@ -1389,6 +1390,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe en a besoin pour configurer le compte, et il ne pourra pas être modifié ensuite.",
       chooseCountry: "Choisissez un pays",
       goToStripe: "Continuer vers Stripe",
+      unavailableHint: "Les paiements par carte dans l'app ne sont pas encore disponibles dans le pays de cette franchise, Stripe ne peut donc pas être connecté. Les paiements se font en espèces ou par virement bancaire (Pix au Brésil) et l'équipe les confirme.",
     },
     refundModal: {
       title: "Rembourser un prélèvement",
@@ -2482,6 +2484,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "Fait",
       todoLabel: "À faire",
       stripeHint: "Le support ULTM8 connecte votre compte Stripe pour vous.",
+      stripeUnavailable: "Les paiements par carte dans l'app ne sont pas encore disponibles dans votre pays : les membres paient en espèces ou par virement bancaire (Pix au Brésil) et l'équipe le confirme.",
       steps: {
         BRANCH: "Ajouter un établissement",
         STYLE_AND_BELTS: "Ajouter une discipline et ses ceintures",

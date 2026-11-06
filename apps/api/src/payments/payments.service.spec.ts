@@ -517,11 +517,11 @@ describe('PaymentsService — initiateConnectOnboarding requests card_payments (
     }
   });
 
-  function makeService(stripeConnectedAccountId: string | null, existingCapabilities: Record<string, string> = {}) {
+  function makeService(stripeConnectedAccountId: string | null, existingCapabilities: Record<string, string> = {}, country = 'GB') {
     const tx = {
       paymentAccount: {
         findUnique: jest.fn().mockResolvedValue({
-          id: 'pa-1', schoolId: 'school-1', franchiseId: null, provider: 'STRIPE', country: 'GB', stripeConnectedAccountId,
+          id: 'pa-1', schoolId: 'school-1', franchiseId: null, provider: 'STRIPE', country, stripeConnectedAccountId,
         }),
         update: jest.fn().mockResolvedValue({}),
       },
@@ -576,6 +576,35 @@ describe('PaymentsService — initiateConnectOnboarding requests card_payments (
     expect(stripe.accounts.retrieve).toHaveBeenCalledWith('acct_existing');
     expect(stripe.accounts.update).not.toHaveBeenCalled();
     expect(stripe.accountLinks.create).toHaveBeenCalledWith(expect.objectContaining({ account: 'acct_existing', type: 'account_onboarding' }));
+  });
+
+  describe('only where Stripe can onboard the School (Decision 437)', () => {
+    it('refuses a Brazilian payment account before anything reaches Stripe', async () => {
+      const { service, stripe } = makeService(null, {}, 'BR');
+      await expect(service.initiateConnectOnboarding('owner', 'pa-1')).rejects.toThrow(
+        "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.",
+      );
+      expect(stripe.accounts.create).not.toHaveBeenCalled();
+      expect(stripe.accountLinks.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses a country that is not an ISO 3166-1 alpha-2 code', async () => {
+      const { service, stripe } = makeService(null, {}, 'United Kingdom');
+      await expect(service.initiateConnectOnboarding('owner', 'pa-1')).rejects.toThrow(/valid two-letter country code/);
+      expect(stripe.accounts.create).not.toHaveBeenCalled();
+    });
+
+    it('passes the country to Stripe in capitals for an allowed one', async () => {
+      const { service, stripe } = makeService(null, {}, 'ie');
+      await service.initiateConnectOnboarding('owner', 'pa-1');
+      expect(stripe.accounts.create).toHaveBeenCalledWith({ type: 'express', country: 'IE', capabilities: CAPABILITIES });
+    });
+
+    it('keeps an account already connected in another country working', async () => {
+      const { service, stripe } = makeService('acct_existing', { card_payments: 'active' }, 'BR');
+      await expect(service.initiateConnectOnboarding('owner', 'pa-1')).resolves.toEqual({ onboardingUrl: 'https://connect.stripe.com/setup/e/acct/abc' });
+      expect(stripe.accounts.create).not.toHaveBeenCalled();
+    });
   });
 });
 

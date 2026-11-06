@@ -1333,6 +1333,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "请设置固定费用：在加盟品牌页面点击“编辑”。",
       billingNoticeNoRate: "请设置每名学员费率：在加盟品牌页面点击“编辑”。",
       billingNoticeNoStripe: "这个加盟品牌还没有关联 Stripe 账户。请使用下方的“关联 Stripe”。",
+      billingNoticeStripeUnavailable: "此加盟品牌所在国家/地区暂不支持通过 Stripe 进行银行卡收费。",
       formerMember: "原成员学校",
       columnBillingPeriod: "结算周期",
       columnSchool: "学校",
@@ -1376,6 +1377,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe 设置账户需要此信息，之后无法更改。",
       chooseCountry: "选择国家/地区",
       goToStripe: "前往 Stripe",
+      unavailableHint: "此加盟品牌所在国家/地区暂不支持在应用内用银行卡付款，因此无法关联 Stripe。付款通过现金或银行转账（巴西为 Pix）完成，并由工作人员确认。",
     },
     refundModal: {
       title: "退还加盟费扣款",
@@ -2446,6 +2448,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "已完成",
       todoLabel: "未完成",
       stripeHint: "ULTM8 支持团队会为你连接 Stripe 账户。",
+      stripeUnavailable: "你所在的国家/地区暂不支持在应用内用银行卡付款，会员以现金或银行转账（巴西为 Pix）付款，由工作人员确认。",
       steps: {
         BRANCH: "添加分校",
         STYLE_AND_BELTS: "添加项目及其腰带",

@@ -9889,12 +9889,18 @@ export interface components {
             mode: string;
             /** @description Null until Stripe Connect onboarding is initiated (POST .../connect/onboard). */
             stripeConnectedAccountId?: string | null;
+            /** @description Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country. */
+            connectAvailable: boolean;
             createdAt: string;
             updatedAt: string;
         };
         ConnectStatusResponseDto: {
             /** @enum {string} */
             status: "CONNECTED" | "ACTION_NEEDED" | "NOT_CONNECTED";
+            /** @description Decision 437 — whether Stripe can onboard this Franchise, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, the Franchise's address country (none set: available). */
+            connectAvailable: boolean;
+            /** @description Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker. */
+            connectCountries: string[];
         };
         ConnectOnboardingResponseDto: {
             /** @description Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics. */
@@ -13239,6 +13245,10 @@ export interface components {
             medicalInfoEnabled: boolean;
             /** @description Decision 318 item 7: a Guardian may add their child to this School in the app. */
             memberAppAddFamily: boolean;
+            /** @description Decision 437: the School takes card payments in the app (it has a Stripe payment account). When false, members pay by cash or bank transfer at the School and staff confirm it. */
+            cardPayments: boolean;
+            /** @description Decision 437: the School's country is Brazil, so the app mentions Pix with cash and bank transfer. */
+            inBrazil: boolean;
             /** @description The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches. */
             branches: components["schemas"]["AcademyBranchDto"][];
             membershipPlans: components["schemas"]["AcademyMembershipPlanDto"][];
@@ -13600,6 +13610,7 @@ export interface components {
         };
         SetupChecklistDto: {
             hidden: boolean;
+            stripeConnectAvailable: boolean;
             steps: components["schemas"]["SetupStepDto"][];
         };
         DashboardOverviewDto: {

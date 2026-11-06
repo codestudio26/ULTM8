@@ -67,6 +67,13 @@ export function SetupChecklist({ schoolId, checklist }: { schoolId: string; chec
             );
           })}
         </ul>
+        {/* Decision 437 — where Stripe can't onboard the School, the API leaves
+            the Stripe step out; say how members pay instead. */}
+        {checklist.stripeConnectAvailable === false ? (
+          <p data-testid="stripe-unavailable" style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)' }}>
+            {t('dashboard.setup.stripeUnavailable')}
+          </p>
+        ) : null}
       </Card>
     </section>
   );
