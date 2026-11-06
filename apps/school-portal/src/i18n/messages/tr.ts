@@ -1346,6 +1346,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "Sabit ücret belirleyin: Franchise'lar sayfasında Düzenle'ye basın.",
       billingNoticeNoRate: "Öğrenci başı ücret belirleyin: Franchise'lar sayfasında Düzenle'ye basın.",
       billingNoticeNoStripe: "Bu franchise'ın henüz bağlı bir Stripe hesabı yok. Aşağıdaki \"Stripe'ı bağla\" seçeneğini kullanın.",
+      billingNoticeStripeUnavailable: "Stripe üzerinden kartla faturalandırma bu franchise'ın ülkesinde henüz kullanılamıyor.",
       formerMember: "Eski üye okul",
       columnBillingPeriod: "Fatura dönemi",
       columnSchool: "Okul",
@@ -1389,6 +1390,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe hesabı kurmak için buna ihtiyaç duyar ve daha sonra değiştirilemez.",
       chooseCountry: "Bir ülke seçin",
       goToStripe: "Stripe'a devam et",
+      unavailableHint: "Uygulamada kartla ödeme bu franchise'ın ülkesinde henüz kullanılamıyor, bu yüzden Stripe bağlanamaz. Ödemeler nakit veya banka havalesiyle (Brezilya'da Pix) yapılır ve personel onaylar.",
     },
     refundModal: {
       title: "Ücret tahsilatını iade et",
@@ -2482,6 +2484,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "Tamam",
       todoLabel: "Yapılacak",
       stripeHint: "ULTM8 desteği Stripe hesabını senin için bağlar.",
+      stripeUnavailable: "Uygulamada kartla ödeme ülkende henüz kullanılamıyor; üyeler nakit veya banka havalesiyle (Brezilya'da Pix) öder, personel de onaylar.",
       steps: {
         BRANCH: "Şube ekle",
         STYLE_AND_BELTS: "Branş ve kuşaklarını ekle",

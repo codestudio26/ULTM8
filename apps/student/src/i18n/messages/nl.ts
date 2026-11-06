@@ -932,6 +932,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       payWithSavedCard: "Betalen met opgeslagen kaart",
       enrolled: "Je bent ingeschreven ✓",
       pendingConfirmation: "Betaling wacht op bevestiging door de school.",
+      noCardPayments: "Kaartbetalingen zijn bij deze school nog niet mogelijk. Betaal per bankoverschrijving of contant bij de school, en het personeel bevestigt het.",
+      noCardPaymentsPix: "Kaartbetalingen zijn bij deze school nog niet mogelijk. Betaal met Pix, per bankoverschrijving of contant bij de school, en het personeel bevestigt het.",
       checkoutSubmitted: "Betaling verstuurd — kijk zo bij Mijn lidmaatschappen zodra die bevestigd is.",
       onlinePaymentUnavailable: "Online betalen voor dit lidmaatschap is nog niet beschikbaar in de app.",
     },

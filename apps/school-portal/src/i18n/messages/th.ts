@@ -1333,6 +1333,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       billingNoticeNoFlatFee: "กำหนดค่าธรรมเนียมคงที่: กดแก้ไขในหน้าแฟรนไชส์",
       billingNoticeNoRate: "กำหนดอัตราต่อนักเรียน: กดแก้ไขในหน้าแฟรนไชส์",
       billingNoticeNoStripe: "แฟรนไชส์นี้ยังไม่มีบัญชี Stripe ที่เชื่อมต่อ ใช้ \"เชื่อมต่อ Stripe\" ด้านล่าง",
+      billingNoticeStripeUnavailable: "ยังไม่รองรับการเรียกเก็บเงินด้วยบัตรผ่าน Stripe ในประเทศของแฟรนไชส์นี้",
       formerMember: "โรงเรียนสมาชิกเดิม",
       columnBillingPeriod: "รอบการเรียกเก็บ",
       columnSchool: "โรงเรียน",
@@ -1376,6 +1377,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       countryHint: "Stripe ต้องใช้ข้อมูลนี้ในการตั้งค่าบัญชี และเปลี่ยนภายหลังไม่ได้",
       chooseCountry: "เลือกประเทศ",
       goToStripe: "ไปต่อที่ Stripe",
+      unavailableHint: "ยังไม่รองรับการชำระเงินด้วยบัตรในแอปในประเทศของแฟรนไชส์นี้ จึงเชื่อมต่อ Stripe ไม่ได้ การชำระเงินทำเป็นเงินสดหรือโอนเงินผ่านธนาคาร (Pix ในบราซิล) และเจ้าหน้าที่จะยืนยัน",
     },
     refundModal: {
       title: "คืนเงินค่าธรรมเนียม",
@@ -2446,6 +2448,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       doneLabel: "เสร็จแล้ว",
       todoLabel: "ยังไม่เสร็จ",
       stripeHint: "ฝ่ายสนับสนุน ULTM8 จะเชื่อมบัญชี Stripe ให้คุณ",
+      stripeUnavailable: "ยังไม่รองรับการชำระเงินด้วยบัตรในแอปในประเทศของคุณ สมาชิกจึงชำระเป็นเงินสดหรือโอนเงินผ่านธนาคาร (Pix ในบราซิล) และเจ้าหน้าที่จะยืนยัน",
       steps: {
         BRANCH: "เพิ่มสาขา",
         STYLE_AND_BELTS: "เพิ่มประเภทกีฬาและสายคาด",

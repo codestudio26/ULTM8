@@ -166,6 +166,8 @@ export const SERVER_MESSAGES: string[] = [
  "Only a Full Platform Admin may close or reactivate a tenant account.",
  "Only a Full Platform Admin may manage other Platform Admin accounts.",
  "Only a STRIPE-provider PaymentAccount can onboard through Stripe Connect",
+ "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.",
+ "This payment account's country isn't a valid two-letter country code (ISO 3166-1 alpha-2).",
  "Only a STRIPE-provider PaymentAccount has a Stripe Connect credential to rotate.",
  "Only a Student of this School can declare a belt here.",
  "Only a Student of this School can declare a rank here.",

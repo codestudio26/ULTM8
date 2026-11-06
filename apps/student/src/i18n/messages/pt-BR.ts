@@ -948,6 +948,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       payWithSavedCard: "Pagar com cartão salvo",
       enrolled: "Você está matriculado ✓",
       pendingConfirmation: "Pagamento aguardando confirmação da Escola.",
+      noCardPayments: "Pagamentos com cartão ainda não estão disponíveis nesta Escola. Pague por transferência bancária ou em dinheiro na Escola, e a equipe vai confirmar.",
+      noCardPaymentsPix: "Pagamentos com cartão ainda não estão disponíveis nesta Escola. Pague por Pix, transferência bancária ou em dinheiro na Escola, e a equipe vai confirmar.",
       checkoutSubmitted: "Pagamento enviado — confira Minhas matrículas em instantes, assim que ele for confirmado.",
       onlinePaymentUnavailable: "O pagamento on-line deste plano ainda não está disponível no app.",
     },

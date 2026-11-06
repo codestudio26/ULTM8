@@ -154,6 +154,8 @@ export const serverMessages: Record<string, string> = {
   "Only a Full Platform Admin may close or reactivate a tenant account.": "テナントアカウントの閉鎖または再開ができるのはフル権限のプラットフォーム管理者のみです。",
   "Only a Full Platform Admin may manage other Platform Admin accounts.": "他のプラットフォーム管理者アカウントを管理できるのはフル権限のプラットフォーム管理者のみです。",
   "Only a STRIPE-provider PaymentAccount can onboard through Stripe Connect": "Stripe Connect でオンボーディングできるのは、プロバイダーが STRIPE の決済アカウントのみです",
+  "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.": "この国では、Stripe によるカード決済はまだご利用いただけません。会員は現金または銀行振込で支払い、スタッフが支払いを確認します。",
+  "This payment account's country isn't a valid two-letter country code (ISO 3166-1 alpha-2).": "この支払いアカウントの国は、有効な 2 文字の国コード（ISO 3166-1 alpha-2）ではありません。",
   "Only a STRIPE-provider PaymentAccount has a Stripe Connect credential to rotate.": "ローテーションできる Stripe Connect の認証情報を持つのは、プロバイダーが STRIPE の決済アカウントのみです。",
   "Only a Student of this School can declare a belt here.": "ここで帯を登録できるのは、このスクールの生徒のみです。",
   "Only a Student of this School can declare a rank here.": "ここで段級を登録できるのは、このスクールの生徒のみです。",

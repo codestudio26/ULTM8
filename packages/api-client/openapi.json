@@ -30590,6 +30590,10 @@
             "nullable": true,
             "description": "Null until Stripe Connect onboarding is initiated (POST .../connect/onboard)."
           },
+          "connectAvailable": {
+            "type": "boolean",
+            "description": "Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -30604,6 +30608,7 @@
           "country",
           "status",
           "mode",
+          "connectAvailable",
           "createdAt",
           "updatedAt"
         ]
@@ -30618,10 +30623,23 @@
               "ACTION_NEEDED",
               "NOT_CONNECTED"
             ]
+          },
+          "connectAvailable": {
+            "type": "boolean",
+            "description": "Decision 437 — whether Stripe can onboard this Franchise, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, the Franchise's address country (none set: available)."
+          },
+          "connectCountries": {
+            "description": "Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
-          "status"
+          "status",
+          "connectAvailable",
+          "connectCountries"
         ]
       },
       "ConnectOnboardingResponseDto": {
@@ -41175,6 +41193,14 @@
             "type": "boolean",
             "description": "Decision 318 item 7: a Guardian may add their child to this School in the app."
           },
+          "cardPayments": {
+            "type": "boolean",
+            "description": "Decision 437: the School takes card payments in the app (it has a Stripe payment account). When false, members pay by cash or bank transfer at the School and staff confirm it."
+          },
+          "inBrazil": {
+            "type": "boolean",
+            "description": "Decision 437: the School's country is Brazil, so the app mentions Pix with cash and bank transfer."
+          },
           "branches": {
             "description": "The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches.",
             "type": "array",
@@ -41202,6 +41228,8 @@
           "facilities",
           "medicalInfoEnabled",
           "memberAppAddFamily",
+          "cardPayments",
+          "inBrazil",
           "branches",
           "membershipPlans",
           "upcomingClasses"
@@ -42469,6 +42497,9 @@
           "hidden": {
             "type": "boolean"
           },
+          "stripeConnectAvailable": {
+            "type": "boolean"
+          },
           "steps": {
             "type": "array",
             "items": {
@@ -42478,6 +42509,7 @@
         },
         "required": [
           "hidden",
+          "stripeConnectAvailable",
           "steps"
         ]
       },

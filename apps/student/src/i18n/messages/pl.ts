@@ -975,6 +975,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       payWithSavedCard: "Zapłać zapisaną kartą",
       enrolled: "Zapisano ✓",
       pendingConfirmation: "Płatność czeka na potwierdzenie przez Szkołę.",
+      noCardPayments: "Płatności kartą nie są jeszcze dostępne w tej Szkole. Zapłać przelewem bankowym lub gotówką w Szkole, a personel to potwierdzi.",
+      noCardPaymentsPix: "Płatności kartą nie są jeszcze dostępne w tej Szkole. Zapłać przez Pix, przelewem bankowym lub gotówką w Szkole, a personel to potwierdzi.",
       checkoutSubmitted: "Płatność wysłana — zajrzyj wkrótce do sekcji Moje członkostwa, gdy zostanie potwierdzona.",
       onlinePaymentUnavailable: "Płatność online za ten plan nie jest jeszcze dostępna w aplikacji.",
     },

@@ -10,6 +10,7 @@ import { SchoolsService } from '../tenants/schools/schools.service';
 import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
+import { isStripeConnectCountry, normalizeCountryCode, stripeConnectAvailable, stripeConnectCountries } from './stripe-connect-countries';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -126,7 +127,7 @@ export class PaymentsService {
 
   /** School Owner/Manager only (Spec §8.2) — same gate as every other write. */
   async createForSchool(callerId: string, schoolId: string, dto: CreatePaymentAccountDto) {
-    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     // "has one PaymentAccount set" (School's own confirmed entity row) — pre-checked
@@ -141,7 +142,7 @@ export class PaymentsService {
     }
 
     const id = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const created = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.create({
         data: {
           id,
@@ -152,6 +153,7 @@ export class PaymentsService {
         },
       }),
     );
+    return { ...created, connectAvailable: stripeConnectAvailable(created, school.addressCountry) };
   }
 
   /**
@@ -176,7 +178,7 @@ export class PaymentsService {
    * literally, not by extension.
    */
   async findForSchool(callerId: string, schoolId: string) {
-    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.findUnique({ where: { schoolId } }),
     );
@@ -188,7 +190,8 @@ export class PaymentsService {
     if (!found) {
       throw new NotFoundException('PaymentAccount not found');
     }
-    return found;
+    // Decision 437: whether the Connect Stripe button may show for this School.
+    return { ...found, connectAvailable: stripeConnectAvailable(found, school.addressCountry) };
   }
 
   // ---------------------------------------------------------------------------
@@ -227,7 +230,7 @@ export class PaymentsService {
     // opposite call for a different reason — see that method's own comment for why the
     // redundant check there was replaced with a genuine second layer instead of just
     // dropped.
-    await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
+    const franchise = await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
 
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -238,7 +241,7 @@ export class PaymentsService {
     }
 
     const id = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const created = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.create({
         data: {
           id,
@@ -249,6 +252,7 @@ export class PaymentsService {
         },
       }),
     );
+    return { ...created, connectAvailable: stripeConnectAvailable(created, franchise.addressCountry) };
   }
 
   /**
@@ -275,13 +279,17 @@ export class PaymentsService {
    * a pure extra DB round-trip for identical observable behavior — removed.
    */
   async findForFranchise(callerId: string, franchiseId: string) {
-    const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.paymentAccount.findUnique({ where: { franchiseId } }),
-    );
+    const { found, franchise } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
+      found: await tx.paymentAccount.findUnique({ where: { franchiseId } }),
+      // Decision 437 — only read for connectAvailable, and only when the account
+      // isn't a Stripe one (a Stripe account's own country decides). Under the
+      // same RLS: a caller who can't see the Franchise gets null here.
+      franchise: await tx.franchise.findUnique({ where: { id: franchiseId }, select: { addressCountry: true } }),
+    }));
     if (!found) {
       throw new NotFoundException('PaymentAccount not found');
     }
-    return found;
+    return { ...found, connectAvailable: stripeConnectAvailable(found, franchise?.addressCountry) };
   }
 
   /**
@@ -293,15 +301,21 @@ export class PaymentsService {
    * while onboarding was started but isn't finished (or Stripe wants more
    * details), NOT_CONNECTED before it starts.
    */
-  async getFranchiseConnectStatus(callerId: string, franchiseId: string): Promise<{ status: 'CONNECTED' | 'ACTION_NEEDED' | 'NOT_CONNECTED' }> {
-    await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
+  async getFranchiseConnectStatus(
+    callerId: string,
+    franchiseId: string,
+  ): Promise<{ status: 'CONNECTED' | 'ACTION_NEEDED' | 'NOT_CONNECTED'; connectAvailable: boolean; connectCountries: string[] }> {
+    const franchise = await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
     const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { franchiseId } }));
+    // Decision 437: where Stripe can onboard this Franchise, and the countries
+    // the portal's country picker offers.
+    const connect = { connectAvailable: stripeConnectAvailable(account, franchise.addressCountry), connectCountries: stripeConnectCountries() };
     if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) {
-      return { status: 'NOT_CONNECTED' };
+      return { status: 'NOT_CONNECTED', ...connect };
     }
     const stripeAccount = await this.stripeClient.platformClient().accounts.retrieve(account.stripeConnectedAccountId);
-    return { status: stripeAccount.details_submitted && stripeAccount.charges_enabled ? 'CONNECTED' : 'ACTION_NEEDED' };
+    return { status: stripeAccount.details_submitted && stripeAccount.charges_enabled ? 'CONNECTED' : 'ACTION_NEEDED', ...connect };
   }
 
   // ---------------------------------------------------------------------------
@@ -349,6 +363,21 @@ export class PaymentsService {
     if (account.provider !== 'STRIPE') {
       throw new BadRequestException('Only a STRIPE-provider PaymentAccount can onboard through Stripe Connect');
     }
+    // Decision 437 — a new connected account only where the UK platform can
+    // onboard one: PaymentAccount.country is the country accounts.create()
+    // below passes to Stripe. An account already connected keeps working
+    // wherever it is (re-issuing its Account Link creates nothing).
+    const country = normalizeCountryCode(account.country);
+    if (!account.stripeConnectedAccountId) {
+      if (!country) {
+        throw new BadRequestException("This payment account's country isn't a valid two-letter country code (ISO 3166-1 alpha-2).");
+      }
+      if (!isStripeConnectCountry(country)) {
+        throw new BadRequestException(
+          "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.",
+        );
+      }
+    }
 
     const returnUrl = process.env.STRIPE_CONNECT_RETURN_URL;
     const refreshUrl = process.env.STRIPE_CONNECT_REFRESH_URL;
@@ -367,7 +396,7 @@ export class PaymentsService {
       // refuses without `card_payments`.
       const created = await stripe.accounts.create({
         type: 'express',
-        country: account.country,
+        country: country ?? account.country,
         capabilities: CONNECT_ACCOUNT_CAPABILITIES,
       });
       stripeAccountId = created.id;

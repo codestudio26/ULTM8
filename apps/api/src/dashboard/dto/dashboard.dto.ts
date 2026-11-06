@@ -25,6 +25,12 @@ export class SetupChecklistDto {
   @ApiProperty()
   hidden!: boolean;
 
+  /** Decision 437 — Stripe can onboard this School (its country). When false
+   * the STRIPE step is left out of `steps`: members pay by cash or bank
+   * transfer and staff confirm it. */
+  @ApiProperty()
+  stripeConnectAvailable!: boolean;
+
   @ApiProperty({ type: [SetupStepDto] })
   steps!: SetupStepDto[];
 }

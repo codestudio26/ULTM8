@@ -55,6 +55,7 @@ export const franchises = {
     billingNoticeNoFlatFee: 'Set a flat fee: press Edit on the Franchises page.',
     billingNoticeNoRate: 'Set a per-headcount rate: press Edit on the Franchises page.',
     billingNoticeNoStripe: 'This Franchise has no connected Stripe account yet. Use Connect Stripe below.',
+    billingNoticeStripeUnavailable: "Card billing through Stripe isn't available in this Franchise's country yet.",
     formerMember: 'Former member School',
     columnBillingPeriod: 'Billing period',
     columnSchool: 'School',
@@ -98,6 +99,7 @@ export const franchises = {
     countryHint: "Stripe needs this to set up the account, and it can't be changed later.",
     chooseCountry: 'Select a country',
     goToStripe: 'Continue to Stripe',
+    unavailableHint: "Card payments in the app aren't available in this Franchise's country yet, so Stripe can't be connected. Payments are made by cash or bank transfer (Pix in Brazil) and confirmed by staff.",
   },
   refundModal: {
     title: 'Refund fee charge',
