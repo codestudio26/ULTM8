@@ -18,6 +18,7 @@ export const serverMessages: Record<string, string> = {
   "A plan can't switch to itself.": "Un piano non può passare a se stesso.",
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "Il piano successivo deve essere un carnet, pass settimanale o prova a pagamento, non archiviato e senza contratto.",
   "This plan doesn't switch to another one when it ends.": "Questo piano non passa a un altro alla scadenza.",
+  "This School doesn't take card payments, so a plan can't switch to another one when it ends.": "Questa scuola non accetta pagamenti con carta, quindi un piano non può passare a un altro alla scadenza.",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "Questo piano non è ancora iniziato. Le sue lezioni si prenotano dal primo giorno.",
   "Only a paid plan can have a joining fee.": "Solo un piano a pagamento può avere una quota di iscrizione.",
   "The price and the joining fee together are too big.": "Il prezzo e la quota di iscrizione insieme sono troppo alti.",

@@ -109,7 +109,7 @@ export class UpdateMembershipPlanDto extends PartialType(OmitType(CreateMembersh
   @Matches(PLAN_DAY_PATTERN, { message: 'fixedEndDate must be a day, YYYY-MM-DD.' })
   fixedEndDate?: string | null;
 
-  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to.' })
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to. A new next plan is refused at a School that takes no cards (Decision 441 item 3); one the plan already has is kept.' })
   @IsOptional()
   @IsUUID()
   switchToPlanId?: string | null;

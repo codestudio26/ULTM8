@@ -3,7 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
 import Stripe from 'stripe';
-import { Prisma } from '@prisma/client';
+import { Prisma, Transaction } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -22,7 +22,7 @@ import { fromStripeAmount, toStripeAmount } from './stripe-amount';
 import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from './stripe-first-invoice';
 import { cardSurchargeAmount } from './card-surcharge';
 import { SUBSCRIPTION_SURCHARGE_METADATA, invoiceSurchargeAmount, splitSubscriptionItems } from './stripe-subscription-surcharge';
-import { chargeAbilities } from '../charges/charge-abilities';
+import { chargeAbilities, mayConfirmDeskOrder } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 import { dayIn } from '../memberships/freeze/membership-freeze';
@@ -1313,7 +1313,9 @@ export class PaymentsService {
   // ---------------------------------------------------------------------------
 
   /**
-   * PATCH /transactions/{id}/confirm — School Owner/Manager only, idempotent.
+   * PATCH /transactions/{id}/confirm — the School Owner/Manager, and (Decision
+   * 441 item 2) Branch Staff whose School lets them record payments, for their
+   * own branches' students (mayConfirmDeskOrder). Idempotent.
    * Atomically flips a PENDING Cash/Bank Transaction to SUCCESSFUL and creates the
    * resulting Membership Active, in one DB transaction (withTenantContext already
    * wraps its callback in `$transaction`, so both writes commit-or-rollback
@@ -1339,85 +1341,110 @@ export class PaymentsService {
   }
 
   private async confirmTransactionInner(callerId: string, transactionId: string) {
+    // Decision 441 item 2: Branch Staff can't read Transaction rows under
+    // their own context (Spec 55 §8.2), so for them the row is read and
+    // settled on the jobs connection once mayConfirmDeskOrder() says yes, as
+    // cancelTransaction() does. Everyone else takes the owner's path below,
+    // unchanged: 404 when the row can't be seen, 403 for a member.
+    const row = await this.prismaJobs.transaction.findUnique({ where: { id: transactionId }, select: { schoolId: true, studentId: true } });
+    if (
+      row &&
+      !(await this.tenantAuth.isSchoolOwner(callerId, row.schoolId)) &&
+      (await mayConfirmDeskOrder(this.prismaApp, callerId, row.schoolId, row.studentId))
+    ) {
+      return this.prismaJobs.$transaction(
+        async (tx) => {
+          const transaction = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
+          return this.settleCashPayment(tx, transaction);
+        },
+        { maxWait: CASH_SETTLE_TX_OPTIONS.maxWaitMs },
+      );
+    }
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
       if (!transaction) {
         throw new NotFoundException('Transaction not found');
       }
       await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
-
-      if (transaction.status !== 'PENDING') {
-        // Already confirmed (a double click, or a Stripe-paid Transaction): an
-        // idempotent no-op. Anything else (FAILED, which includes a cancelled
-        // cash payment, REFUNDED, DISPUTED) can't be confirmed, and saying 200
-        // there made the owner think it worked (billing stress test, B1).
-        assertConfirmable(transaction.status);
-        return { transaction, membershipCreated: false };
-      }
-      if (transaction.paymentMethod === 'STRIPE') {
-        throw new BadRequestException('Only Cash/Bank Transfer Transactions are confirmed through this endpoint — Stripe Transactions settle via webhook.');
-      }
-      // A closed School, or a Student who has left it: Decisions 339 (T8, T9)
-      // and 334 (M13, M18) both asked for these two checks.
-      await this.assertCashPaymentCanBeSettled(tx, transaction);
-
-      const updateResult = await tx.transaction.updateMany({
-        where: { id: transactionId, status: 'PENDING' },
-        data: { status: 'SUCCESSFUL' },
-      });
-      if (updateResult.count === 0) {
-        // Lost a race between the findUnique above and this updateMany. A
-        // concurrent confirm already won: a no-op, as above. A concurrent
-        // Cancel won: refused, as above.
-        const now = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
-        assertConfirmable(now.status);
-        return { transaction: now, membershipCreated: false };
-      }
-
-      // Decision 404: a freeze fee collected at the desk is only marked paid;
-      // its membership already exists.
-      if (transaction.kind === 'FREEZE_FEE') {
-        return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membershipCreated: false };
-      }
-      if (!transaction.membershipPlanId) {
-        throw new BadRequestException('This payment is not for a membership plan.');
-      }
-      const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
-      // Decision 334 (Memberships review M1/M20/M3) — replaces the old partial
-      // unique index; see assertCanCreateMembership's own comment. A refusal
-      // throws, which rolls back the status flip above with it.
-      try {
-        await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
-      } catch (err) {
-        if (err instanceof GeneralAccessConflictError) {
-          throw new ConflictException(err.message);
-        }
-        throw err;
-      }
-      // Decision 432 item 8: calendar days in the School's zone; Decision 435
-      // items 7-8: or the first check-in, or the plan's fixed dates.
-      const term = membershipTerm(plan, await schoolZoneFor(tx, transaction.schoolId));
-      const membership = await tx.membership.create({
-        data: {
-          id: randomUUID(),
-          studentId: transaction.studentId,
-          membershipPlanId: transaction.membershipPlanId,
-          schoolId: transaction.schoolId,
-          frequency: 'ONE_TIME', // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1)
-          classesRemaining: plan.classesIncluded ?? undefined,
-          startDate: term.startDate,
-          expiryDate: term.expiryDate,
-          awaitingFirstCheckIn: term.awaitingFirstCheckIn,
-          scopedClassId: plan.scopedClassId,
-          // Decision 435 item 9: the switch the member agreed to when buying.
-          ...(transaction.planSwitchToPlanId ? { switchToPlanId: transaction.planSwitchToPlanId, switchAgreedAt: transaction.createdAt } : {}),
-        },
-      });
-
-      await tx.transaction.update({ where: { id: transactionId }, data: { membershipId: membership.id } });
-
-      return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membership, membershipCreated: true };
+      return this.settleCashPayment(tx, transaction);
     }, CASH_SETTLE_TX_OPTIONS);
+  }
+
+  /** The confirm itself, once the caller may: flips the Pending row to
+   * SUCCESSFUL and creates its Membership, in the caller's transaction. */
+  private async settleCashPayment(tx: Prisma.TransactionClient, transaction: Transaction) {
+    const transactionId = transaction.id;
+    if (transaction.status !== 'PENDING') {
+      // Already confirmed (a double click, or a Stripe-paid Transaction): an
+      // idempotent no-op. Anything else (FAILED, which includes a cancelled
+      // cash payment, REFUNDED, DISPUTED) can't be confirmed, and saying 200
+      // there made the owner think it worked (billing stress test, B1).
+      assertConfirmable(transaction.status);
+      return { transaction, membershipCreated: false };
+    }
+    if (transaction.paymentMethod === 'STRIPE') {
+      throw new BadRequestException('Only Cash/Bank Transfer Transactions are confirmed through this endpoint — Stripe Transactions settle via webhook.');
+    }
+    // A closed School, or a Student who has left it: Decisions 339 (T8, T9)
+    // and 334 (M13, M18) both asked for these two checks.
+    await this.assertCashPaymentCanBeSettled(tx, transaction);
+
+    const updateResult = await tx.transaction.updateMany({
+      where: { id: transactionId, status: 'PENDING' },
+      data: { status: 'SUCCESSFUL' },
+    });
+    if (updateResult.count === 0) {
+      // Lost a race between the findUnique above and this updateMany. A
+      // concurrent confirm already won: a no-op, as above. A concurrent
+      // Cancel won: refused, as above.
+      const now = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
+      assertConfirmable(now.status);
+      return { transaction: now, membershipCreated: false };
+    }
+
+    // Decision 404: a freeze fee collected at the desk is only marked paid;
+    // its membership already exists.
+    if (transaction.kind === 'FREEZE_FEE') {
+      return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membershipCreated: false };
+    }
+    if (!transaction.membershipPlanId) {
+      throw new BadRequestException('This payment is not for a membership plan.');
+    }
+    const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
+    // Decision 334 (Memberships review M1/M20/M3) — replaces the old partial
+    // unique index; see assertCanCreateMembership's own comment. A refusal
+    // throws, which rolls back the status flip above with it.
+    try {
+      await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
+    } catch (err) {
+      if (err instanceof GeneralAccessConflictError) {
+        throw new ConflictException(err.message);
+      }
+      throw err;
+    }
+    // Decision 432 item 8: calendar days in the School's zone; Decision 435
+    // items 7-8: or the first check-in, or the plan's fixed dates.
+    const term = membershipTerm(plan, await schoolZoneFor(tx, transaction.schoolId));
+    const membership = await tx.membership.create({
+      data: {
+        id: randomUUID(),
+        studentId: transaction.studentId,
+        membershipPlanId: transaction.membershipPlanId,
+        schoolId: transaction.schoolId,
+        frequency: 'ONE_TIME', // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1)
+        classesRemaining: plan.classesIncluded ?? undefined,
+        startDate: term.startDate,
+        expiryDate: term.expiryDate,
+        awaitingFirstCheckIn: term.awaitingFirstCheckIn,
+        scopedClassId: plan.scopedClassId,
+        // Decision 435 item 9: the switch the member agreed to when buying.
+        ...(transaction.planSwitchToPlanId ? { switchToPlanId: transaction.planSwitchToPlanId, switchAgreedAt: transaction.createdAt } : {}),
+      },
+    });
+
+    await tx.transaction.update({ where: { id: transactionId }, data: { membershipId: membership.id } });
+
+    return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membership, membershipCreated: true };
   }
 
   /**

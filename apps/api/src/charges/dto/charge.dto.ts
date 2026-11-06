@@ -451,6 +451,12 @@ export class ChargeAbilitiesDto {
   @ApiProperty()
   recordPayment!: boolean;
 
+  @ApiProperty({
+    description:
+      "Decision 441 item 2: mark the student's Pix, cash or bank-transfer membership payment as paid (PATCH /transactions/{id}/confirm): the owner, and Branch Staff whose School lets them record payments, for their own branches' students.",
+  })
+  confirmPayment!: boolean;
+
   @ApiProperty({ description: 'Refund a payment (owner only, Decision 303 item 3).' })
   refund!: boolean;
 
@@ -510,7 +516,8 @@ export class ChargeSettingsDto {
 
 /** Decision 338 item 1 (last point): a membership's cash or bank-transfer
  * payment waiting at the desk, or one that was cancelled. Staff only, and only
- * for those who may cancel it (the owner, staff with "Can cancel charges"). */
+ * for those who may cancel it (the owner, staff with "Can cancel charges") or
+ * mark it paid (Decision 441 item 2). */
 export class DeskMembershipPaymentDto {
   @ApiProperty({ description: 'The Transaction id.' })
   id!: string;
@@ -562,7 +569,7 @@ export class StudentChargesResponseDto {
 
   @ApiProperty({
     type: [DeskMembershipPaymentDto],
-    description: "Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them.",
+    description: "Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them or mark them paid (can.cancel, can.confirmPayment).",
   })
   deskMembershipPayments!: DeskMembershipPaymentDto[];
 

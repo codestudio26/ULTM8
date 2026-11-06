@@ -18,6 +18,7 @@ export const serverMessages: Record<string, string> = {
   "A plan can't switch to itself.": "แพ็กเกจเปลี่ยนเป็นตัวเองไม่ได้",
   "The next plan must be a paid Class Pack, Weekly Pass or Trial that is not archived and has no contract.": "แพ็กเกจถัดไปต้องเป็นแพ็กคลาส บัตรรายสัปดาห์ หรือทดลองเรียนแบบชำระเงิน ที่ไม่ได้เก็บถาวรและไม่มีสัญญา",
   "This plan doesn't switch to another one when it ends.": "แพ็กเกจนี้ไม่เปลี่ยนเป็นแพ็กเกจอื่นเมื่อหมด",
+  "This School doesn't take card payments, so a plan can't switch to another one when it ends.": "โรงเรียนนี้ไม่รับชำระด้วยบัตร จึงไม่สามารถเปลี่ยนแพ็กเกจเป็นแพ็กเกจอื่นเมื่อหมดได้",
   "This plan hasn't started yet. Its classes can be booked from its first day.": "แพ็กเกจนี้ยังไม่เริ่ม จองคลาสได้ตั้งแต่วันแรก",
   "Only a paid plan can have a joining fee.": "เฉพาะแพ็กเกจแบบชำระเงินเท่านั้นที่มีค่าแรกเข้าได้",
   "The price and the joining fee together are too big.": "ราคาและค่าแรกเข้ารวมกันสูงเกินไป",
