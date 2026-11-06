@@ -22,6 +22,7 @@ import { fromStripeAmount, toStripeAmount } from './stripe-amount';
 import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from './stripe-first-invoice';
 import { cardSurchargeAmount } from './card-surcharge';
 import { ConnectStatus, isStripeAccountReady } from './stripe-account-ready';
+import { cardPaymentsNotReady, takesCards } from './takes-cards';
 import { SUBSCRIPTION_SURCHARGE_METADATA, invoiceSurchargeAmount, splitSubscriptionItems } from './stripe-subscription-surcharge';
 import { chargeAbilities, mayConfirmDeskOrder } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
@@ -44,6 +45,13 @@ export const JOINING_FEE_LINE_NAME = 'Joining fee';
  * the same shape MembershipCollisionError (stripe-webhook-processing.processor.ts)
  * already established for a signal-not-a-generic-failure error in this codebase. */
 export class NoSavedPaymentMethodError extends Error {}
+
+/** Decision 442 item 2: chargeOffSession() at a School whose Stripe account
+ * Stripe hasn't said is ready. Nothing is charged. A NoSavedPaymentMethodError,
+ * so every off-session caller (late-cancel and no-show fees, freeze fees, plan
+ * switches) already treats it as "no card here": the School behaves as one
+ * that takes no cards. */
+export class CardPaymentsNotReadyError extends NoSavedPaymentMethodError {}
 
 /**
  * Runs a Stripe create call made with an idempotency key, retrying while
@@ -127,10 +135,16 @@ export class PaymentsService {
   // School-side PaymentAccount CRUD — fully reachable this phase.
   // ---------------------------------------------------------------------------
 
-  /** School Owner/Manager only (Spec §8.2) — same gate as every other write. */
+  /** School Owner/Manager (Spec §8.2), and (Decision 442 item 3) Branch
+   * Staff with "Can connect Stripe", who may only create a Stripe account:
+   * choosing cash or bank transfer stays the owners'. */
   async createForSchool(callerId: string, schoolId: string, dto: CreatePaymentAccountDto) {
     const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    if (dto.provider === 'STRIPE') {
+      await this.tenantAuth.assertMayConnectStripe(callerId, schoolId);
+    } else {
+      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    }
 
     // "has one PaymentAccount set" (School's own confirmed entity row) — pre-checked
     // explicitly (same convention InstructorsService.create()/RoleGrantsService.create()
@@ -155,7 +169,7 @@ export class PaymentsService {
         },
       }),
     );
-    return { ...created, connectAvailable: stripeConnectAvailable(created, school.addressCountry) };
+    return { ...created, connectAvailable: stripeConnectAvailable(created, school.addressCountry), cardPayments: takesCards(created) };
   }
 
   /**
@@ -193,7 +207,7 @@ export class PaymentsService {
       throw new NotFoundException('PaymentAccount not found');
     }
     // Decision 437: whether the Connect Stripe button may show for this School.
-    return { ...found, connectAvailable: stripeConnectAvailable(found, school.addressCountry) };
+    return { ...found, connectAvailable: stripeConnectAvailable(found, school.addressCountry), cardPayments: takesCards(found) };
   }
 
   // ---------------------------------------------------------------------------
@@ -254,7 +268,7 @@ export class PaymentsService {
         },
       }),
     );
-    return { ...created, connectAvailable: stripeConnectAvailable(created, franchise.addressCountry) };
+    return { ...created, connectAvailable: stripeConnectAvailable(created, franchise.addressCountry), cardPayments: takesCards(created) };
   }
 
   /**
@@ -291,7 +305,7 @@ export class PaymentsService {
     if (!found) {
       throw new NotFoundException('PaymentAccount not found');
     }
-    return { ...found, connectAvailable: stripeConnectAvailable(found, franchise?.addressCountry) };
+    return { ...found, connectAvailable: stripeConnectAvailable(found, franchise?.addressCountry), cardPayments: takesCards(found) };
   }
 
   /**
@@ -309,14 +323,15 @@ export class PaymentsService {
   /**
    * GET /schools/:schoolId/payment-account/connect-status — Decision 441 item
    * 6: the School page's Stripe card, the same Connected / Action needed / Not
-   * connected as the Franchise's (Decision 407). School owners only, the same
-   * gate as creating the payment account and starting onboarding. The portal
+   * connected as the Franchise's (Decision 407). School owners, and Branch
+   * Staff with "Can connect Stripe" (Decision 442 item 3): the same gate as
+   * creating the Stripe payment account and starting onboarding. The portal
    * reads it when the owner comes back from Stripe, so the setup checklist is
    * up to date even before Stripe's account.updated arrives.
    */
   async getSchoolConnectStatus(callerId: string, schoolId: string): Promise<ConnectStatus> {
     const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    await this.tenantAuth.assertMayConnectStripe(callerId, schoolId);
     const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { schoolId } }));
     return this.readConnectStatus(callerId, account, school.addressCountry);
   }
@@ -382,7 +397,8 @@ export class PaymentsService {
       throw new NotFoundException('PaymentAccount not found');
     }
     if (account.schoolId) {
-      await this.tenantAuth.assertSchoolOwner(callerId, account.schoolId);
+      // Decision 442 item 3: owners, and Branch Staff with "Can connect Stripe".
+      await this.tenantAuth.assertMayConnectStripe(callerId, account.schoolId);
     } else if (account.franchiseId) {
       await this.tenantAuth.assertFranchiseOwner(callerId, account.franchiseId);
     } else {
@@ -599,7 +615,7 @@ export class PaymentsService {
     // PaymentIntent has no separate lines.
     surchargeAmount = 0,
   ): Promise<{ paymentIntentId: string; clientSecret: string }> {
-    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const account = await this.resolveCardPaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const intent = await withIdempotencyRetry(() =>
       stripe.paymentIntents.create(
@@ -685,7 +701,7 @@ export class PaymentsService {
     // both. `undefined` leaves the Subscription as before.
     joiningFee?: { amount: number; surcharge: number },
   ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string; surchargeAmount: number }> {
-    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const account = await this.resolveCardPaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const key = (part: string) => (idempotencyKey ? { idempotencyKey: `${idempotencyKey}-${part}` } : undefined);
     const customer = await withIdempotencyRetry(() => stripe.customers.create({ email: studentEmail }, key('customer')));
@@ -1016,7 +1032,7 @@ export class PaymentsService {
    * establishes.
    */
   async createSetupSession(callerId: string, schoolId: string): Promise<{ checkoutUrl: string }> {
-    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const account = await this.resolveCardPaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: callerId, schoolId } } }),
@@ -1171,7 +1187,7 @@ export class PaymentsService {
     // line beside the plan's (0 = none). `surchargeAmount` already covers it.
     joiningFeeAmount = 0,
   ): Promise<{ checkoutUrl: string }> {
-    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const account = await this.resolveCardPaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const metadata = { transactionId };
     const session = await withIdempotencyRetry(() => stripe.checkout.sessions.create({
@@ -1248,6 +1264,9 @@ export class PaymentsService {
       throw new NoSavedPaymentMethodError(`Student ${studentId} has no saved payment method at School ${schoolId}.`);
     }
     const account = await this.resolveStripePaymentAccount(studentId, schoolId);
+    if (!account.stripeAccountReady) {
+      throw new CardPaymentsNotReadyError(`School ${schoolId}'s Stripe account isn't ready to take card payments yet.`);
+    }
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const customer = await stripe.customers.retrieve(saved.stripeCustomerId);
     const pmId = (customer as { invoice_settings?: { default_payment_method?: string } }).invoice_settings?.default_payment_method;
@@ -1337,6 +1356,19 @@ export class PaymentsService {
         'This School has no fully-onboarded Stripe PaymentAccount — Stripe Connect onboarding must complete before Stripe-paid purchases are possible.',
       );
     }
+    return account;
+  }
+
+  /**
+   * resolveStripePaymentAccount() for a NEW card payment, or saving a card:
+   * Decision 442 item 2, the School takes cards only once Stripe says its
+   * account is ready (takesCards()). Refused with CARD_PAYMENTS_NOT_READY
+   * until then. Managing what is already on Stripe (refunds, a saved card's
+   * details or removal, existing Subscriptions) doesn't wait for it.
+   */
+  private async resolveCardPaymentAccount(callerId: string, schoolId: string) {
+    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    if (!takesCards(account)) throw cardPaymentsNotReady();
     return account;
   }
 

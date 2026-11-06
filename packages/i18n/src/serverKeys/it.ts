@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "Questa sospensione è già terminata.",
     freezeNotFound: "Sospensione non trovata.",
     freezeFeeNoPayments: "Questa scuola applica una quota di sospensione ma non ha pagamenti o valuta configurati. Configurali o rimuovi prima la quota.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "Questa scuola non accetta ancora pagamenti con carta. Paga alla scuola, in contanti o con bonifico, e lo staff lo conferma.",
     noPackToRecharge: "Questa persona non ha un pacchetto lezioni esaurito da riacquistare.",
     packNotForSale: "Questo pacchetto non è più in vendita. Chiedi alla reception un altro piano.",
     rechargeNotPaid: "Il pacchetto non è ancora stato pagato.",

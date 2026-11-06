@@ -86,7 +86,7 @@ describeIfDb('Closed School member data purge (Decision 433, PRIV-1)', () => {
       data: { id: randomUUID(), studentId: student.id, schoolId: school.id, membershipPlanId: plan.id, frequency: 'RECURRING' },
     });
     const account = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'DE', stripeConnectedAccountId: `acct_${tag}_${randomUUID().slice(0, 6)}` },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'DE', stripeAccountReady: true, stripeConnectedAccountId: `acct_${tag}_${randomUUID().slice(0, 6)}` },
     });
     const style = await superuser.discipline.create({ data: { id: randomUUID(), schoolId: school.id, name: `Judo ${tag}`, classTypesOffered: [] } });
     const cls = await superuser.class.create({

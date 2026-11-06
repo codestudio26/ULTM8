@@ -1,6 +1,6 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { cleanup, db, seedGradingSchool, signIn } from './fixtures';
+import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn } from './fixtures';
 
 /**
  * Decision 441 item 6 — the School owner connects Stripe from the School page
@@ -116,4 +116,83 @@ test('a School whose payment account is for cash or bank transfer sees no Connec
   const card = page.getByTestId('school-stripe-connect');
   await expect(card.getByTestId('school-stripe-connect-hint')).toHaveText("This School's payment account is for cash or bank transfer, so Stripe can't be connected here.");
   await expect(card.getByRole('button')).toHaveCount(0);
+});
+
+test('Decision 442 item 3: Branch Staff connect Stripe only once an owner switches "Connect Stripe" on', async ({ page }) => {
+  const s = await gbSchool();
+  const north = await addBranch(s, 'North');
+  const dee = await addPerson('Dee', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
+  let onboardCalled = false;
+  await page.route('**/v1/payment-accounts/*/connect/onboard', (route) => {
+    onboardCalled = true;
+    return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify({ onboardingUrl: 'https://connect.stripe.test/onboarding' }) });
+  });
+  await page.route('https://connect.stripe.test/**', (route) => route.fulfill({ status: 200, contentType: 'text/html', body: '<p>Stripe onboarding</p>' }));
+
+  // Off by default: nothing in their menu, and the School page stays the owners'.
+  await signIn(page, dee.token);
+  await page.goto('/timetable');
+  await expect(page.getByRole('link', { name: 'Stripe account' })).toHaveCount(0);
+  await page.goto('/school');
+  await expect(page.getByTestId('school-owners-only')).toBeVisible();
+  await expect(page.getByTestId('school-stripe-connect')).toHaveCount(0);
+
+  // An owner switches it on in the Access window; it is in neither preset.
+  await signIn(page, s.ownerToken);
+  await page.goto('/staff');
+  const row = page.locator('.ultm8-card').filter({ hasText: 'Your staff' }).getByRole('row').filter({ hasText: 'Dee Desk' });
+  await row.getByRole('button', { name: 'Actions for Dee Desk' }).click();
+  await page.getByRole('menuitem', { name: 'Access' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Access for Dee Desk' });
+  await expect(dialog.getByText('Payments', { exact: true })).toBeVisible();
+  const toggle = dialog.getByLabel('Connect Stripe', { exact: true });
+  await expect(toggle).not.toBeChecked();
+  await toggle.check();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Access saved for Dee Desk.')).toBeVisible();
+  expect((await db.staffPermission.findFirstOrThrow({ where: { userId: dee.id, schoolId: s.schoolId } })).canConnectStripe).toBe(true);
+
+  // Now "Stripe account" is in their menu, with the Stripe card and nothing else of the School page.
+  await signIn(page, dee.token);
+  await page.goto('/timetable');
+  await page.getByRole('link', { name: 'Stripe account' }).click();
+  await expect(page).toHaveURL(/\/school$/);
+  await expect(page.getByTestId('school-settings')).toHaveCount(0);
+  const card = page.getByTestId('school-stripe-connect');
+  await expect(card.getByTestId('school-stripe-connect-status')).toHaveText('Not connected');
+  await card.getByRole('button', { name: 'Connect Stripe' }).click();
+  await page.getByRole('button', { name: 'Continue to Stripe' }).click();
+  await page.waitForURL('https://connect.stripe.test/onboarding');
+  expect(onboardCalled).toBe(true);
+  expect(await db.paymentAccount.findUniqueOrThrow({ where: { schoolId: s.schoolId } })).toMatchObject({ provider: 'STRIPE', country: 'GB', stripeAccountReady: false });
+});
+
+test('Decision 442 item 2: until Stripe says the account is ready, the School is one without cards in the portal too', async ({ page }) => {
+  const s = await gbSchool();
+  await db.school.update({ where: { id: s.schoolId }, data: { defaultCurrency: 'GBP' } });
+  const account = await db.paymentAccount.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_e2e_${randomUUID()}` },
+  });
+  await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Ten classes', price: 9000, currency: 'GBP', classesIncluded: 10 } });
+  await signIn(page, s.ownerToken);
+
+  // A plan's "switch to another plan" needs a saved card, so it isn't offered yet.
+  async function policies() {
+    await page.goto('/membership-plans');
+    await page.getByRole('button', { name: 'Add plan' }).click();
+    await page.getByLabel('Title').fill('Intro week');
+    await page.getByLabel('Type').selectOption('WEEKLY_PASS');
+    await page.getByRole('button', { name: '2. Pricing & Access' }).click();
+    await page.getByLabel('Price').fill('20');
+    await page.getByLabel('Expiry duration (days)').fill('7');
+    await page.getByRole('button', { name: '3. Policies' }).click();
+    await expect(page.getByLabel('Requires signed waiver/terms to purchase')).toBeVisible();
+  }
+  await policies();
+  await expect(page.getByLabel('When it ends, switch to')).toHaveCount(0);
+
+  // Stripe says the account is ready: the School takes cards.
+  await db.paymentAccount.update({ where: { id: account.id }, data: { stripeAccountReady: true } });
+  await policies();
+  await expect(page.getByLabel('When it ends, switch to')).toBeVisible();
 });

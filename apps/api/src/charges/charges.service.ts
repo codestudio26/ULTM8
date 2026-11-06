@@ -38,6 +38,7 @@ import { cancelChargeInTx, chargeCancelledNotice } from './charge-cancel';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 import { PaymentsService, checkoutTransactionId } from '../payments/payments.service';
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
+import { CARD_ACCOUNT_SELECT, cardPaymentsNotReady, stripeNotReady, takesCards } from '../payments/takes-cards';
 import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { assertWithinChargeCap } from './charge-cap';
 import { StepUpService } from '../auth/step-up.service';
@@ -702,8 +703,10 @@ export class ChargesService {
     // membership purchase is.
     await this.tenantAuth.assertSchoolNotArchived(studentId, schoolId);
     await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
-    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, provider: true, stripeConnectedAccountId: true } });
-    if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) {
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, ...CARD_ACCOUNT_SELECT } });
+    // Decision 442 item 2: a Stripe account not ready yet takes no cards.
+    if (stripeNotReady(account)) throw cardPaymentsNotReady();
+    if (!account || !takesCards(account)) {
       throw new BadRequestException({ code: 'CHARGE_NO_CARD_PAYMENTS', message: "This School doesn't take card payments in the app. Pay at the front desk." });
     }
     // Decision 68/112: restricted to cash and bank transfer, as a membership purchase is.
@@ -821,8 +824,9 @@ export class ChargesService {
 
   /** What the member's Payments screen offers at one School. */
   private async payInApp(callerId: string, studentId: string, schoolId: string, restricted: boolean) {
-    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { provider: true, stripeConnectedAccountId: true } });
-    const cards = !!account && account.provider === 'STRIPE' && !!account.stripeConnectedAccountId;
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: CARD_ACCOUNT_SELECT });
+    // Decision 442 item 2: only once Stripe says the School's account is ready.
+    const cards = takesCards(account);
     const blockedReason: 'NO_CARD_PAYMENTS' | 'RESTRICTED' | null = !cards ? 'NO_CARD_PAYMENTS' : restricted ? 'RESTRICTED' : null;
     // Self-only RLS: read under the student's context; a child never has one.
     const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>

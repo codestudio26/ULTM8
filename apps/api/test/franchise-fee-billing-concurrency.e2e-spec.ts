@@ -175,7 +175,7 @@ describeIfDb('Franchise-fee billing — concurrent-run idempotency (Round 3)', (
     });
     franchiseIds.push(franchise.id);
     await superuser.paymentAccount.create({
-      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     const school = await superuser.school.create({
       data: {
@@ -207,7 +207,7 @@ describeIfDb('Franchise-fee billing — concurrent-run idempotency (Round 3)', (
     });
     franchiseIds.push(franchise.id);
     const paymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     const school = await superuser.school.create({
       data: { id: randomUUID(), name: `Concurrency Fixture School (ensure) ${randomUUID()}`, franchiseId: franchise.id },

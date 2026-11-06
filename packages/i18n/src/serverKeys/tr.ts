@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "Bu dondurma zaten sona erdi.",
     freezeNotFound: "Bu dondurma bulunamadı.",
     freezeFeeNoPayments: "Bu okul dondurma ücreti alıyor ancak ödeme veya para birimi ayarlanmamış. Önce bunları ayarlayın ya da ücreti kaldırın.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "Bu okul henüz kartla ödeme kabul etmiyor. Bunun yerine okulda nakit veya banka havalesiyle ödeyin; personel onaylar.",
     noPackToRecharge: "Bu kişinin tekrar satın alınacak bitmiş bir ders paketi yok.",
     packNotForSale: "Bu paket artık satılmıyor. Başka bir plan için resepsiyona sorun.",
     rechargeNotPaid: "Paketin ödemesi henüz yapılmadı.",

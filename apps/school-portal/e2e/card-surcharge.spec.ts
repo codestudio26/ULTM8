@@ -57,7 +57,7 @@ test('where allowed, the owner switches it on only after confirming it is legal'
 
 test('a card payment shows its surcharge as its own line on Transactions', async ({ page }) => {
   const account = await db.paymentAccount.create({
-    data: { id: randomUUID(), schoolId: s.schoolId, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+    data: { id: randomUUID(), schoolId: s.schoolId, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
   });
   const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: 'Surcharged Pack', price: 2000, classesIncluded: 5, currency: 'USD' } });
   await db.transaction.create({

@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "该冻结已经结束。",
     freezeNotFound: "找不到该冻结。",
     freezeFeeNoPayments: "本学校收取冻结费，但尚未设置付款方式或货币。请先设置，或删除冻结费。",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "这所学校暂时还不接受银行卡付款。请改为在学校以现金或银行转账付款，由工作人员确认。",
     noPackToRecharge: "此人没有可再次购买的已用完课时包。",
     packNotForSale: "此课时包已停售。请到前台咨询其他方案。",
     rechargeNotPaid: "课时包尚未付款。",

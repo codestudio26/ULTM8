@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "この休会はすでに終了しています。",
     freezeNotFound: "この休会が見つかりませんでした。",
     freezeFeeNoPayments: "このスクールは休会手数料を設定していますが、支払いまたは通貨が設定されていません。先に設定するか、手数料を削除してください。",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "このスクールはまだカード払いを受け付けていません。代わりにスクールで現金または銀行振込でお支払いください。スタッフが確認します。",
     noPackToRecharge: "この方には再購入できる使い切った回数券がありません。",
     packNotForSale: "この回数券は販売を終了しました。ほかのプランについては受付でお尋ねください。",
     rechargeNotPaid: "回数券の支払いがまだ済んでいません。",

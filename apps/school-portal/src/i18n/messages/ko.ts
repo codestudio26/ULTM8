@@ -1669,6 +1669,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "급여",
       payrollHint: "도장 전체(원장 포함)의 급여 보고서만 볼 수 있습니다. 급여 단가는 도장 원장만 정합니다.",
+      // Decision 442 item 3.
+      groupPayments: "결제",
+      connectStripe: "Stripe 연결",
+      connectStripeHint: "회원이 카드로 결제할 수 있도록 도장의 Stripe 계정을 연결합니다. Stripe 설정을 시작하거나 마치고 연결 여부를 확인합니다. 결제, 환불, 플랜, 가격은 계속 도장 원장이 관리합니다.",
       ownerOnly: "돈(결제, 환불, 요금제와 가격), 도장 설정, 소유자는 항상 도장 원장에게 남습니다.",
       saved: "{name}의 권한을 저장했습니다.",
       readOnlyIntro: "내 지점의 직원입니다. 역할이나 권한은 도장 원장만 바꿀 수 있습니다.",

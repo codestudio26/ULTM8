@@ -165,7 +165,7 @@ describeIfDb('School self-close and Franchise notices (Decision 364)', () => {
     if (opts.stripeAccount) {
       connectedAccountId = `acct_fake_${randomUUID()}`;
       await superuser.paymentAccount.create({
-        data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: connectedAccountId },
+        data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: connectedAccountId },
       });
     }
     return { school, owner, token, connectedAccountId };

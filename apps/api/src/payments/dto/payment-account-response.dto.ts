@@ -46,6 +46,12 @@ export class PaymentAccountResponseDto {
   })
   connectAvailable!: boolean;
 
+  @ApiProperty({
+    description:
+      'Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready (stripeAccountReady). Until then the School takes cash, bank transfer or Pix orders, as a School without cards does.',
+  })
+  cardPayments!: boolean;
+
   @ApiProperty()
   createdAt!: string;
 

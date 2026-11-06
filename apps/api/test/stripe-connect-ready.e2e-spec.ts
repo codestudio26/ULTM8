@@ -230,7 +230,7 @@ describeIfDb('Connect Stripe from the portal; the checklist ticks once Stripe sa
     expect(await stripeStep(schoolId, token)).toBe(false);
   });
 
-  it('only School owners read the connect status; staff, coaches and other Schools cannot', async () => {
+  it('School owners read the connect status; staff without "Can connect Stripe" (Decision 442 item 3), coaches and other Schools cannot', async () => {
     const { schoolId, token } = await school();
     expect((await get(`/v1/schools/${schoolId}/payment-account/connect-status`, token)).status).toBe(200);
     expect((await get(`/v1/schools/${schoolId}/payment-account/connect-status`, await person('BRANCH_STAFF', schoolId))).status).toBe(403);

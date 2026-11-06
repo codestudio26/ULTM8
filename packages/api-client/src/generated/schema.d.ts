@@ -8941,6 +8941,8 @@ export interface components {
             seeMedicalInfo: boolean;
             /** @description See the payroll report, for the whole School. Setting the pay rates stays with the School owners (off by default, in no preset; Decision 435 item 22). */
             payroll: boolean;
+            /** @description Connect the School's Stripe account: start or continue Stripe's onboarding and see whether it is connected (off by default, in no preset; Decision 442 item 3). */
+            connectStripe: boolean;
             /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
             memberFiles: boolean;
             /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */
@@ -9935,6 +9937,8 @@ export interface components {
             stripeAccountReady: boolean;
             /** @description Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country. */
             connectAvailable: boolean;
+            /** @description Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready (stripeAccountReady). Until then the School takes cash, bank transfer or Pix orders, as a School without cards does. */
+            cardPayments: boolean;
             createdAt: string;
             updatedAt: string;
         };

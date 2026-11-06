@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "이 일시정지는 이미 끝났습니다.",
     freezeNotFound: "이 일시정지를 찾을 수 없습니다.",
     freezeFeeNoPayments: "이 도장은 일시정지 수수료를 받지만 결제나 통화가 설정되지 않았습니다. 먼저 설정하거나 수수료를 삭제하세요.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "이 도장은 아직 카드 결제를 받지 않습니다. 대신 도장에서 현금이나 계좌 이체로 결제하세요. 직원이 확인합니다.",
     noPackToRecharge: "이 사람에게는 다시 구매할 소진된 수업 패키지가 없습니다.",
     packNotForSale: "이 패키지는 더 이상 판매되지 않습니다. 다른 플랜은 데스크에 문의하세요.",
     rechargeNotPaid: "아직 패키지 결제가 완료되지 않았습니다.",

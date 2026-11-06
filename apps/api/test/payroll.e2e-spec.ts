@@ -261,7 +261,7 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
       });
     const DEFAULTS = {
       classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false,
-      exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false,
+      exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false,
     };
     const setAccess = (access: Record<string, boolean>) => as('owner').put(`/v1/schools/${schoolA}/staff/${users.desk.id}/access`).send(access);
 

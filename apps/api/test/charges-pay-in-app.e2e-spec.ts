@@ -198,7 +198,7 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
     card = await su.school.create({ data: { id: randomUUID(), name: 'Pay In App School', defaultCurrency: 'BRL', addressCountry: COUNTRY, timezone: 'UTC' } });
     cash = await su.school.create({ data: { id: randomUUID(), name: 'Cash Only School', defaultCurrency: 'BRL', timezone: 'UTC' } });
     schoolIds.push(card.id, cash.id);
-    await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: card.id, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeConnectedAccountId: acct } });
+    await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: card.id, provider: 'STRIPE', accountTitle: 'Card', country: COUNTRY, stripeAccountReady: true, stripeConnectedAccountId: acct } });
     await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: cash.id, provider: 'CASH', accountTitle: 'Desk', country: 'BR' } });
 
     const owner = await mkUser('owner');

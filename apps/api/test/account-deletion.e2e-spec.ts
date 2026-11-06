@@ -126,7 +126,7 @@ describeIfDb('Delete my account', () => {
     await superuser.school.create({ data: { id: school.id, name: `${TAG} Dojo`, timezone: 'UTC' } });
     await superuser.school.create({ data: { id: closedSchool.id, name: `${TAG} Closed`, timezone: 'UTC', archivedAt: new Date() } });
     paymentAccountId = (
-      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' } })
+      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: 'acct_fixture' } })
     ).id;
     subscriptionPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'SUBSCRIPTION', title: 'Monthly', price: 5000 } })).id;
     owner = await person('owner', { ownerAt: school.id, mainOwner: true });

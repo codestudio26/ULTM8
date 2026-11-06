@@ -7,6 +7,7 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
+import { CARD_ACCOUNT_SELECT, takesCards } from '../payments/takes-cards';
 import { trialEndedUnpaid } from '../subscription-plans/subscription-gate.service';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { allocate, chargeNoticeSwitches, chargeRemaining, freeCredit, lockBalance, noticeMoney, receiptNotice, settleChargePayment } from '../charges/charge-ledger';
@@ -137,8 +138,10 @@ export class ChargeAutoPayProcessor extends WorkerHost {
       select: { archivedAt: true, timezone: true, platformSubscriptionStatus: true, platformTrialEndsAt: true },
     });
     if (!school || school.archivedAt || school.platformSubscriptionStatus === 'CANCELED' || trialEndedUnpaid(school, now)) return outcome;
-    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, provider: true, stripeConnectedAccountId: true } });
-    if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) return outcome;
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, ...CARD_ACCOUNT_SELECT } });
+    // Decision 442 item 2: no card is charged until Stripe says the School's
+    // account is ready (or while Stripe wants more details again).
+    if (!account || !takesCards(account)) return outcome;
     const user = await this.prismaApp.withTenantContext(studentId, (tx) => tx.user.findUnique({ where: { id: studentId }, select: { paymentRestrictedAt: true } }));
     if (!user || user.paymentRestrictedAt) return outcome;
     const paying = await this.prismaJobs.transaction.findFirst({

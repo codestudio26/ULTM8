@@ -348,7 +348,7 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
       const stripeUpdate = jest.fn().mockResolvedValue({ cancel_at: Math.floor(periodEnd.getTime() / 1000), items: { data: [] } });
       // Every StripeClientService instance (TenantsModule registers its own).
       const spy = jest.spyOn(StripeClientService.prototype, 'scopedClient').mockReturnValue({ subscriptions: { update: stripeUpdate } } as never);
-      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' } });
+      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: 'acct_fixture' } });
       await person('quitter', [{ role: 'STUDENT', schoolId }], { home: { schoolId, branchId: north } });
       await person('stayer', [{ role: 'STUDENT', schoolId }], { home: { schoolId, branchId: north } });
       const at = (hours: number) => new Date(Date.now() + hours * 3_600_000);

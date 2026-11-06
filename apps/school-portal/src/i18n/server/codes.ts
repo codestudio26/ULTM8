@@ -150,6 +150,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.freezeNotFound');
     case 'FREEZE_FEE_NO_PAYMENTS':
       return t('server.codes.freezeFeeNoPayments');
+    // Decision 442 item 2: no card payments until Stripe says the account is ready.
+    case 'CARD_PAYMENTS_NOT_READY':
+      return t('server.codes.cardPaymentsNotReady');
     // Merge duplicate members (Decision 315 item 13): the preview lists why.
     case 'MERGE_BLOCKED':
       return t('server.codes.mergeBlocked');

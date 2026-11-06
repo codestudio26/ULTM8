@@ -2,15 +2,24 @@ import { balanceBilledCancelAt, isBalanceBilled, membershipBillingEndDay, takesC
 
 describe('membership-series (Decision 441 item 1)', () => {
   describe('isBalanceBilled', () => {
-    it('only a paid monthly plan at a School whose payment account is not Stripe', () => {
-      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 100 }, { provider: 'BANK_TRANSFER' })).toBe(true);
-      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 100 }, { provider: 'CASH' })).toBe(true);
-      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 100 }, { provider: 'STRIPE' })).toBe(false);
+    const ready = { provider: 'STRIPE', stripeConnectedAccountId: 'acct_1', stripeAccountReady: true };
+    const none = { stripeConnectedAccountId: null, stripeAccountReady: false };
+    it('only a paid monthly plan at a School that takes no cards', () => {
+      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 100 }, { provider: 'BANK_TRANSFER', ...none })).toBe(true);
+      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 100 }, { provider: 'CASH', ...none })).toBe(true);
+      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 100 }, ready)).toBe(false);
       expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 100 }, null)).toBe(false);
-      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 0 }, { provider: 'CASH' })).toBe(false);
-      expect(isBalanceBilled({ type: 'CLASS_PACK', price: 100 }, { provider: 'CASH' })).toBe(false);
-      expect(takesCards({ provider: 'STRIPE' })).toBe(true);
+      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 0 }, { provider: 'CASH', ...none })).toBe(false);
+      expect(isBalanceBilled({ type: 'CLASS_PACK', price: 100 }, { provider: 'CASH', ...none })).toBe(false);
+    });
+
+    it('Decision 442 item 2: a Stripe account takes cards only once Stripe says it is ready', () => {
+      expect(takesCards(ready)).toBe(true);
       expect(takesCards(null)).toBe(false);
+      expect(takesCards({ ...ready, stripeAccountReady: false })).toBe(false);
+      expect(takesCards({ ...ready, stripeConnectedAccountId: null })).toBe(false);
+      expect(takesCards({ ...ready, provider: 'CASH' })).toBe(false);
+      expect(isBalanceBilled({ type: 'SUBSCRIPTION', price: 100 }, { ...ready, stripeAccountReady: false })).toBe(true);
     });
   });
 

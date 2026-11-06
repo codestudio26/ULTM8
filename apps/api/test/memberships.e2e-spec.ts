@@ -552,7 +552,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
     // comment) — no live Stripe call is actually made.
     const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School', defaultCurrency: 'GBP' } });
     const stripePaymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     const restrictedStudent = await superuser.user.create({
       data: {
@@ -633,7 +633,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   it('payWithSavedCard requires a fresh step-up proof, then 400s with no Stripe call when nothing is saved', async () => {
     const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (saved-card)', defaultCurrency: 'GBP' } });
     const stripePaymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentA.id, schoolId: stripeSchool.id } });
     const tokenStudentAAtStripeSchool = signAccessToken(studentA, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);
@@ -679,7 +679,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   it('payWithSavedCard on a SUBSCRIPTION plan is rejected — 400, before any step-up check or Stripe call', async () => {
     const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (subscription)', defaultCurrency: 'GBP' } });
     const stripePaymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: stripeSchool.id } });
     const tokenStudentBAtStripeSchool = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);
@@ -769,7 +769,7 @@ describeIfDb('MembershipsModule + TransactionsModule — HTTP-level CRUD, purcha
   it('useHostedCheckout on a SUBSCRIPTION plan is rejected — 400, before any Stripe call', async () => {
     const stripeSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Memberships HTTP Stripe School (hosted-checkout subscription)', defaultCurrency: 'GBP' } });
     const stripePaymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), schoolId: stripeSchool.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: stripeSchool.id } });
     const tokenStudentBAtStripeSchool = signAccessToken(studentB, [{ role: 'STUDENT', franchiseId: null, schoolId: stripeSchool.id, branchId: null }]);

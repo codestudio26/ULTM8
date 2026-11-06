@@ -84,7 +84,7 @@ describeIfDb('franchise-fee-usage-reporting job', () => {
     const franchise = await superuser.franchise.create({ data: { id: randomUUID(), name: 'Usage-Reporting Fixture Franchise (no rate)', feeModel: 'FLAT' } });
     franchiseIds.push(franchise.id);
     await superuser.paymentAccount.create({
-      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Usage-Reporting Fixture School B', franchiseId: franchise.id } });
     schoolIds.push(school.id);

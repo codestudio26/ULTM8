@@ -78,7 +78,7 @@ test('Decision 441: a School without card payments sells its monthly plan at the
 });
 
 test('a School that takes cards still sells no Subscription at the desk', async ({ page }) => {
-  await db.paymentAccount.update({ where: { schoolId: s.schoolId }, data: { provider: 'STRIPE', stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` } });
+  await db.paymentAccount.update({ where: { schoolId: s.schoolId }, data: { provider: 'STRIPE', stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` } });
   await mkPlan({ title: 'Ten classes', type: 'CLASS_PACK', price: 6000, classesIncluded: 10, expiryDurationDays: 90 });
   await mkPlan({ title: 'Monthly', type: 'SUBSCRIPTION', price: 5000 });
   await page.goto(`/students/${s.student.id}`);

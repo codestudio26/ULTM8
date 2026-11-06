@@ -5,6 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as membershipQueries from './membershipQueries';
 import * as paymentMethodQueries from '../payments/paymentMethodQueries';
 import * as stepUpQueries from '../auth/stepUpQueries';
+import { ApiError } from '@ultm8/api-client';
 import { MembershipPlanRow } from './MembershipPlanRow';
 import * as planContractQueries from './planContractQueries';
 import * as academyQueries from '../academies/academyQueries';
@@ -407,6 +408,25 @@ describe('MembershipPlanRow — School without card payments (Decision 437)', ()
     expect(queryByText('Pay with saved card')).toBeNull();
     await fireEvent.press(getByText('Purchase'));
     expect(purchase.mutate).toHaveBeenCalledWith({ planId: 'plan-1', studentId: undefined }, expect.anything());
+  });
+
+  it('Decision 442 item 2: a Stripe account not ready yet is a School without cards, and a card purchase refused says so in the member\'s words', async () => {
+    // The School's profile says no cards until Stripe says its account is ready.
+    mocked(academyQueries.useAcademy).mockReturnValue({ data: { cardPayments: false, inBrazil: false } });
+    const { getByText, getByTestId, queryByText, unmount } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" />);
+    expect(getByTestId('no-card-payments')).toBeTruthy();
+    expect(queryByText('Pay with saved card')).toBeNull();
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenCalledWith({ planId: 'plan-1', studentId: undefined }, expect.anything());
+    await unmount();
+    // An older screen that still asked for a card gets the API's refusal, in the app's own wording.
+    mocked(membershipQueries.usePurchaseMembership).mockReturnValue({
+      ...idlePurchase(),
+      isError: true,
+      error: new ApiError(400, 'CARD_PAYMENTS_NOT_READY', 'Technical text'),
+    });
+    const { getByText: text } = await render(<MembershipPlanRow plan={{ ...CLASS_PACK, cardSurchargeAmount: 0 } as never} schoolId="school-1" />);
+    expect(text("This School can't take card payments yet. Pay at the School instead, by cash or bank transfer, and staff confirm it.")).toBeTruthy();
   });
 
   it('a monthly plan at a School that takes cards has no balance note', async () => {

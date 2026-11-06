@@ -36,7 +36,7 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
     null as never, null as never, null as never);
   jest
     .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-    .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+    .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
 
   const PLATFORM_CUT = ['application_fee_amount', 'application_fee_percent', 'transfer_data', 'on_behalf_of'];
 
@@ -105,7 +105,7 @@ describe('PaymentsService — card surcharge on a Subscription (Decision 406)', 
     const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient: jest.fn().mockReturnValue(stripe) } as never, null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+      .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
     return service;
   }
 
@@ -253,7 +253,7 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
       null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+      .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
     return { service, scopedClient, prismaApp };
   }
 
@@ -401,7 +401,7 @@ describe('PaymentsService — createPurchaseCheckoutSession (Decision 243)', () 
     const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+      .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
     return { service, scopedClient };
   }
 
@@ -486,7 +486,7 @@ describe('PaymentsService — refundOffSessionCharge (Decision 236)', () => {
     const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+      .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
 
     await service.refundOffSessionCharge('student', 'school', 'pi_1');
 
@@ -527,7 +527,7 @@ describe('PaymentsService — initiateConnectOnboarding requests card_payments (
       },
     };
     const prismaApp = { withTenantContext: jest.fn((_caller: string, fn: (t: typeof tx) => unknown) => fn(tx)) };
-    const tenantAuth = { assertSchoolOwner: jest.fn().mockResolvedValue(undefined) };
+    const tenantAuth = { assertMayConnectStripe: jest.fn().mockResolvedValue(undefined) };
     const stripe = {
       accounts: {
         create: jest.fn().mockResolvedValue({ id: 'acct_new' }),
@@ -548,7 +548,7 @@ describe('PaymentsService — initiateConnectOnboarding requests card_payments (
 
     const result = await service.initiateConnectOnboarding('owner', 'pa-1');
 
-    expect(tenantAuth.assertSchoolOwner).toHaveBeenCalledWith('owner', 'school-1');
+    expect(tenantAuth.assertMayConnectStripe).toHaveBeenCalledWith('owner', 'school-1');
     expect(stripe.accounts.create).toHaveBeenCalledWith({ type: 'express', country: 'GB', capabilities: CAPABILITIES });
     expect(stripe.accounts.update).not.toHaveBeenCalled();
     expect(tx.paymentAccount.update).toHaveBeenCalledWith({ where: { id: 'pa-1' }, data: { stripeConnectedAccountId: 'acct_new' } });

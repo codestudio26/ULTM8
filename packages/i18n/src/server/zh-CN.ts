@@ -832,6 +832,7 @@ export const serverMessages: Record<string, string> = {
   "Attendance can only be logged from {v1} to {v2}.": "只能记录 {v1} 至 {v2} 的出勤。",
   "The School owner hasn't let you import data.": "学校所有者尚未允许你导入数据。",
   "The School owner hasn't let you see payroll.": "学校所有者未允许你查看工资。",
+  "The School owner hasn't let you connect Stripe.": "学校所有者未允许你连接 Stripe。",
   "A row number is past the end of this import.": "某个行号超出了此次导入的末尾。",
   "Import not found": "未找到导入",
   "Each row number can only be sent once.": "每个行号只能发送一次。",

@@ -1684,6 +1684,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "Nómina",
       payrollHint: "Ver solo el informe de nómina, para toda la escuela, propietarios incluidos. Fijar las tarifas de pago sigue siendo cosa de los propietarios de la escuela.",
+      // Decision 442 item 3.
+      groupPayments: "Pagos",
+      connectStripe: "Conectar Stripe",
+      connectStripeHint: "Conectar la cuenta de Stripe de la escuela para que los miembros paguen con tarjeta: iniciar o terminar la configuración en Stripe y ver si está conectada. Los pagos, reembolsos, planes y precios siguen siendo de los propietarios.",
       ownerOnly: "El dinero (pagos, reembolsos, planes y precios), la configuración de la Escuela y los propietarios quedan siempre en manos de los propietarios de la Escuela.",
       saved: "Acceso guardado para {name}.",
       readOnlyIntro: "El personal de tus sedes. Solo los propietarios de la Escuela pueden cambiar roles o accesos.",

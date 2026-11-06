@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "انتهى هذا التجميد بالفعل.",
     freezeNotFound: "تعذر العثور على هذا التجميد.",
     freezeFeeNoPayments: "تفرض هذه المدرسة رسوم تجميد لكن لم تُعِد المدفوعات أو العملة. أعِدّها أو احذف الرسوم أولًا.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "لا تقبل هذه المدرسة الدفع بالبطاقة بعد. ادفع في المدرسة بدلاً من ذلك نقدًا أو بتحويل بنكي، ويؤكد الموظفون ذلك.",
     noPackToRecharge: "لا توجد لدى هذا الشخص باقة حصص منتهية لإعادة شرائها.",
     packNotForSale: "لم تعد هذه الباقة متاحة للبيع. اسأل عند الاستقبال عن خطة أخرى.",
     rechargeNotPaid: "لم يتم دفع ثمن الباقة بعد.",

@@ -48,6 +48,9 @@ const STUDENTS_NAV: NavItem = { label: 'layout.nav.students', to: '/students' };
 const STAFF_NAV: NavItem = { label: 'layout.nav.staff', to: '/staff' };
 /** Decision 435 item 22 — Branch Staff with the "Payroll" switch. */
 const PAYROLL_NAV: NavItem = { label: 'payroll.nav', to: '/payroll' };
+/** Decision 442 item 3 — Branch Staff with "Can connect Stripe": the School
+ * page, which shows them its Stripe card only. */
+const STRIPE_NAV: NavItem = { label: 'schools.stripeConnect.title', to: '/school' };
 
 const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.dashboard', to: '/dashboard' },
@@ -91,6 +94,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
         ...(access?.students ? [STUDENTS_NAV] : []),
         ...(access?.staffList ? [STAFF_NAV] : []),
         ...(access?.payroll ? [PAYROLL_NAV] : []),
+        ...(access?.connectStripe ? [STRIPE_NAV] : []),
       ]
     : [];
   return (

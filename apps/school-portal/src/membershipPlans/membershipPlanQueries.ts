@@ -10,7 +10,8 @@ export type UpdateMembershipPlanInput = components['schemas']['UpdateMembershipP
 
 /**
  * Decision 441 item 1: whether the School takes no card payments in the app
- * (its payment account isn't Stripe), so its monthly plans are sold at the
+ * (its payment account isn't Stripe, or (Decision 442 item 2) its Stripe
+ * account isn't ready yet), so its monthly plans are sold at the
  * desk too and billed to the member's balance after the first month. False
  * while loading, with no payment account (the API answers 404), or at a
  * School that takes cards, so the desk stays as it was there.
@@ -28,7 +29,8 @@ export function useSchoolTakesNoCards(schoolId: string | null) {
     },
     enabled: !!schoolId,
   });
-  return !!account.data && account.data.provider !== 'STRIPE';
+  // Decision 442 item 2: a Stripe account not ready yet takes no cards either.
+  return !!account.data && !account.data.cardPayments;
 }
 
 /** Every plan of the School, all pages. The API returns 20 a page by

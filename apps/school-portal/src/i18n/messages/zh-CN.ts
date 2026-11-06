@@ -1669,6 +1669,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "工资",
       payrollHint: "仅可查看全校（包括所有者）的工资报表。工资标准仍只由学校所有者设置。",
+      // Decision 442 item 3.
+      groupPayments: "付款",
+      connectStripe: "连接 Stripe",
+      connectStripeHint: "连接学校的 Stripe 账户，让会员可以用银行卡付款：开始或完成 Stripe 上的设置，并查看是否已连接。付款、退款、套餐和价格仍由学校所有者管理。",
       ownerOnly: "资金（付款、退款、套餐和价格）、学校设置以及所有者始终由学校所有者掌管。",
       saved: "已保存 {name} 的权限。",
       readOnlyIntro: "你所在分校的员工。只有学校所有者可以更改角色或权限。",

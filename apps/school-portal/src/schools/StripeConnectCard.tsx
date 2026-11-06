@@ -11,7 +11,8 @@ import { useConnectSchoolStripe, useSchoolConnectStatus, useSchoolPaymentAccount
 export const STRIPE_CONNECT_ANCHOR = 'stripe-connect';
 
 /**
- * Decision 441 item 6 — the School owner connects the School's Stripe account
+ * Decision 441 item 6 — the School owner (Decision 442 item 3: or Branch Staff
+ * with "Can connect Stripe") connects the School's Stripe account
  * through Stripe's own onboarding, instead of ULTM8 support doing it (the
  * existing payment-account endpoints, as the Franchise page does, Decision
  * 407). Shows Connected (Stripe has confirmed the account is ready), Action

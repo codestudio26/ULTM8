@@ -832,6 +832,7 @@ export const serverMessages: Record<string, string> = {
   "Attendance can only be logged from {v1} to {v2}.": "Anwesenheit kann nur vom {v1} bis zum {v2} eingetragen werden.",
   "The School owner hasn't let you import data.": "Der Schulinhaber hat dir nicht erlaubt, Daten zu importieren.",
   "The School owner hasn't let you see payroll.": "Der Schulinhaber hat dir den Zugriff auf die Lohnabrechnung nicht erlaubt.",
+  "The School owner hasn't let you connect Stripe.": "Der Schulinhaber hat dir nicht erlaubt, Stripe zu verbinden.",
   "A row number is past the end of this import.": "Eine Zeilennummer liegt hinter dem Ende dieses Imports.",
   "Import not found": "Import nicht gefunden",
   "Each row number can only be sent once.": "Jede Zeilennummer kann nur einmal gesendet werden.",

@@ -71,6 +71,8 @@ export const server: PartialMessages<ServerKeys> = {
     freezeNotRunning: "Deze bevriezing is al voorbij.",
     freezeNotFound: "Deze bevriezing is niet gevonden.",
     freezeFeeNoPayments: "Deze school rekent kosten voor bevriezen, maar heeft geen betalingen of valuta ingesteld. Stel die eerst in of verwijder de kosten.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "Deze school neemt nog geen kaartbetalingen aan. Betaal in plaats daarvan op de school, contant of per bankoverschrijving, en het personeel bevestigt het.",
     noPackToRecharge: "Deze persoon heeft geen opgebruikte lessenkaart om opnieuw te kopen.",
     packNotForSale: "Deze kaart wordt niet meer verkocht. Vraag bij de balie naar een ander abonnement.",
     rechargeNotPaid: "De kaart is nog niet betaald.",

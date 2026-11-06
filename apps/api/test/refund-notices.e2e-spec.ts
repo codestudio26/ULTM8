@@ -83,7 +83,7 @@ describeIfDb('The "Refund" notice for every refund (Decision 415 item 4)', () =>
     const school = await su.school.create({ data: { id: randomUUID(), name: `Refund notices ${label}`, defaultCurrency: 'GBP' } });
     schoolIds.push(school.id);
     const account = await su.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
     });
     const owner = await mkUser(`${label}Owner`);
     await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id, isMainOwner: true } });

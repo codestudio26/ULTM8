@@ -170,7 +170,7 @@ describeIfDb('Stripe Connect only where Stripe can onboard (Decision 437)', () =
     it('an account already connected in another country keeps working', async () => {
       const { school: s, token } = await school('BR');
       const account = await superuser.paymentAccount.create({
-        data: { id: randomUUID(), schoolId: s.id, provider: 'STRIPE', accountTitle: 'Legacy', country: 'BR', stripeConnectedAccountId: `acct_legacy_${randomUUID()}` },
+        data: { id: randomUUID(), schoolId: s.id, provider: 'STRIPE', accountTitle: 'Legacy', country: 'BR', stripeAccountReady: true, stripeConnectedAccountId: `acct_legacy_${randomUUID()}` },
       });
       expect((await get(`/v1/schools/${s.id}/payment-account`, token)).body.connectAvailable).toBe(true);
       const before = accountsCreate.length;
@@ -210,7 +210,7 @@ describeIfDb('Stripe Connect only where Stripe can onboard (Decision 437)', () =
       const br = await school('BR');
       await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: br.school.id, provider: 'BANK_TRANSFER', accountTitle: 'Pix', country: 'BR' } });
       const gb = await school('GB');
-      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: gb.school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_pub_${randomUUID()}` } });
+      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: gb.school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_pub_${randomUUID()}` } });
       const none = await school(null);
       // A member of another School reads them: the profile is public to the signed-in.
       const reader = (await school('IE')).token;

@@ -1684,6 +1684,10 @@ export const messages: PartialMessages<EnglishMessages> = {
       // Decision 435 item 22.
       payroll: "Salarisoverzicht",
       payrollHint: "Alleen het salarisoverzicht zien, voor de hele school, eigenaren inbegrepen. De tarieven blijven door de eigenaren van de school ingesteld.",
+      // Decision 442 item 3.
+      groupPayments: "Betalingen",
+      connectStripe: "Stripe koppelen",
+      connectStripeHint: "Het Stripe-account van de school koppelen zodat leden met een kaart kunnen betalen: de instelling bij Stripe starten of afronden en zien of het gekoppeld is. Betalingen, terugbetalingen, abonnementen en prijzen blijven bij de eigenaren van de school.",
       ownerOnly: "Geld (betalingen, terugbetalingen, abonnementen en prijzen), Schoolinstellingen en eigenaren blijven altijd bij de eigenaren van de School.",
       saved: "Toegang opgeslagen voor {name}.",
       readOnlyIntro: "Het team van jouw filialen. Alleen de eigenaren van de School kunnen rollen of toegang wijzigen.",
