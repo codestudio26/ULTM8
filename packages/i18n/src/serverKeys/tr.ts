@@ -232,6 +232,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "Ödeyen kişi {amount} tutarındaki {charge} için itirazda bulundu (durum: {status}).",
     cashWaitingTitle: "Nakit ödeme bekleniyor",
     cashWaitingBody: "{name}, {plan} için {amount} tutarını nakit veya havale ile ödemeyi seçti. Para ulaştığında İşlemler sayfasında ödendi olarak işaretle.",
+    cashWaitingStaffBody: "{name}, {plan} için {amount} tutarını nakit veya havale ile ödemeyi seçti. Para ulaştığında kişinin Ödemeler kartında ödendi olarak işaretle.",
     paymentConfirmedTitle: "Ödeme onaylandı",
     paymentConfirmedBody: "{plan} için {amount} tutarındaki ödemen onaylandı. Üyeliğin artık aktif.",
     childPaymentConfirmedBody: "{name} için {plan} karşılığındaki {amount} tutarındaki ödeme onaylandı. Üyelik artık aktif.",

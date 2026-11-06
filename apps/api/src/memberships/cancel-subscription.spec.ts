@@ -15,6 +15,7 @@ describe('cancelSubscriptionAtPeriodEnd (Decision 348)', () => {
       paymentAccount: { findUnique: jest.fn().mockResolvedValue({ stripeConnectedAccountId: 'acct_school' }) },
       membership: { update: jest.fn(async ({ data }) => ({ ...live, ...data })), findUniqueOrThrow: jest.fn().mockResolvedValue(row) },
       school: { findUnique: jest.fn().mockResolvedValue({ timezone: 'UTC' }) },
+      recurringCharge: { findUnique: jest.fn().mockResolvedValue(null) },
     };
     return { update, scopedClient, tx };
   }

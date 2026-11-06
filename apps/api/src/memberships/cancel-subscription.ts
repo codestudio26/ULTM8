@@ -47,7 +47,9 @@ export async function cancelSubscriptionAtPeriodEnd(
     return current;
   }
   if (current.billedToBalance) {
-    const endsAt = balanceBilledCancelAt(current.startDate, await schoolZoneFor(tx, current.schoolId));
+    // Its billing days are its series' (a freeze moves them, Decision 442 item 5).
+    const series = await tx.recurringCharge.findUnique({ where: { membershipId: current.id }, select: { firstDate: true, nextIndex: true } });
+    const endsAt = balanceBilledCancelAt(current.startDate, await schoolZoneFor(tx, current.schoolId), new Date(), series);
     // expiryDate too: nothing else ends it (no Stripe event), and a
     // membership past its expiry date is no longer in effect (Decision 26).
     return tx.membership.update({ where: { id: current.id }, data: { cancelAt: endsAt, expiryDate: endsAt, cancelledById } });

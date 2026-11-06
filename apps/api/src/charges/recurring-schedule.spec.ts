@@ -1,4 +1,4 @@
-import { addDays, firstIndexOnOrAfter, nextDay, occurrenceDay, planOccurrences, schoolToday, skipThrough, type SeriesState } from './recurring-schedule';
+import { addDays, anchorAt, firstIndexOnOrAfter, nextDay, occurrenceDay, planOccurrences, schoolToday, skipThrough, type SeriesState } from './recurring-schedule';
 
 const series = (over: Partial<SeriesState>): SeriesState => ({
   firstDate: '2027-01-31',
@@ -147,6 +147,29 @@ describe('recurring charge calendar (Decision 412)', () => {
     it('falls back to UTC for no or an unknown zone', () => {
       expect(schoolToday(instant, null)).toBe('2027-03-10');
       expect(schoolToday(instant, 'Not/AZone')).toBe('2027-03-10');
+    });
+  });
+
+  describe('anchorAt (Decision 442 item 5: a freeze moves the billing day)', () => {
+    it('puts the next occurrence on the day, never below the index given, and the months after follow from it', () => {
+      const a = anchorAt('2027-04-14', 'MONTHLY', 3);
+      expect(a).toEqual({ firstDate: '2027-01-14', index: 3 });
+      expect(occurrenceDay(a.firstDate, 'MONTHLY', a.index + 1)).toBe('2027-05-14');
+    });
+
+    it('a 31st: steps back to a month that has one, so later months keep the 31st or the month end', () => {
+      const a = anchorAt('2027-03-31', 'MONTHLY', 1);
+      expect(occurrenceDay(a.firstDate, 'MONTHLY', a.index)).toBe('2027-03-31');
+      expect(a.index).toBeGreaterThanOrEqual(1);
+      expect(occurrenceDay(a.firstDate, 'MONTHLY', a.index + 1)).toBe('2027-04-30');
+      expect(occurrenceDay(a.firstDate, 'MONTHLY', a.index + 2)).toBe('2027-05-31');
+    });
+
+    it('index 0 is the day itself; weekly and yearly too', () => {
+      expect(anchorAt('2027-03-31', 'MONTHLY', 0)).toEqual({ firstDate: '2027-03-31', index: 0 });
+      expect(anchorAt('2027-03-10', 'WEEKLY', 2)).toEqual({ firstDate: '2027-02-24', index: 2 });
+      const leap = anchorAt('2028-02-29', 'YEARLY', 1);
+      expect(occurrenceDay(leap.firstDate, 'YEARLY', leap.index)).toBe('2028-02-29');
     });
   });
 });

@@ -232,6 +232,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "De betaler heeft {charge} van {amount} betwist (status: {status}).",
     cashWaitingTitle: "Contante betaling wacht",
     cashWaitingBody: "{name} betaalt {amount} voor {plan} contant of per overschrijving. Markeer het als betaald op de pagina Transacties zodra het geld binnen is.",
+    cashWaitingStaffBody: "{name} betaalt {amount} voor {plan} contant of per overschrijving. Markeer het als betaald op hun kaart Betalingen zodra het geld binnen is.",
     paymentConfirmedTitle: "Betaling bevestigd",
     paymentConfirmedBody: "Je betaling van {amount} voor {plan} is bevestigd. Je lidmaatschap is nu actief.",
     childPaymentConfirmedBody: "De betaling van {amount} voor {plan} van {name} is bevestigd. Het lidmaatschap is nu actief.",

@@ -134,6 +134,29 @@ export function firstIndexOnOrAfter(firstDay: string, frequency: RecurringFreque
   return index;
 }
 
+/**
+ * A first date and index that put occurrence `index` on `day`, with the
+ * occurrences after it every period from `day` (the same day of the month for
+ * monthly, the last day of a shorter month for the 29th to 31st): where a
+ * series picks up when its billing day moves (Decision 442 item 5, a freeze).
+ * The index is the smallest one from `minIndex` on that lands exactly on
+ * `day` (a series' index never goes below the charges it has made). Only the
+ * schedule reads the first date, so it may fall before the series began.
+ */
+export function anchorAt(day: string, frequency: RecurringFrequency, minIndex: number): { firstDate: string; index: number } {
+  const { y, m, d } = parts(day);
+  for (let index = Math.max(0, minIndex); ; index++) {
+    if (frequency === 'WEEKLY') return { firstDate: addDays(day, -7 * index), index };
+    const total = y * 12 + (m - 1) - (frequency === 'MONTHLY' ? index : index * 12);
+    const year = Math.floor(total / 12);
+    const month = (total % 12) + 1;
+    if (d <= daysInMonth(year, month)) {
+      const firstDate = format(year, month, d);
+      if (occurrenceDay(firstDate, frequency, index) === day) return { firstDate, index };
+    }
+  }
+}
+
 /** `day` plus `n` calendar days. */
 export function addDays(day: string, n: number): string {
   const { y, m, d } = parts(day);

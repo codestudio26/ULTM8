@@ -260,6 +260,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "Płatnik otworzył spór dotyczący {charge} w kwocie {amount} (status: {status}).",
     cashWaitingTitle: "Płatność gotówką oczekuje",
     cashWaitingBody: "{name} wybiera płatność {amount} za {plan} gotówką lub przelewem. Oznacz ją jako opłaconą na stronie Transakcje, gdy pieniądze dotrą.",
+    cashWaitingStaffBody: "{name} wybiera płatność {amount} za {plan} gotówką lub przelewem. Oznacz ją jako opłaconą na karcie Płatności tej osoby, gdy pieniądze dotrą.",
     paymentConfirmedTitle: "Płatność potwierdzona",
     paymentConfirmedBody: "Twoja płatność {amount} za {plan} została potwierdzona. Twoje członkostwo jest już aktywne.",
     childPaymentConfirmedBody: "Płatność {amount} za {plan} ({name}) została potwierdzona. Członkostwo jest już aktywne.",

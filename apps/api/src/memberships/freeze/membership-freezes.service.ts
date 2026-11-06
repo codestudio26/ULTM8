@@ -12,6 +12,7 @@ import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types'
 import { BookingsService } from '../../bookings/bookings.service';
 import { isMembershipLive } from '../membership-creation-guard';
 import { applyFreezeBillingShift, restoreFreezeBilling } from './freeze-billing';
+import { applyBalanceFreezeBilling } from '../../charges/membership-series';
 import {
   assertFreezeAllowed,
   backDay,
@@ -477,6 +478,9 @@ export class MembershipFreezesService {
     } catch (err) {
       this.logger.error(`Freeze ${freeze.id}: moving the Subscription's next charge failed; the membership sweep tries again.`, err as Error);
     }
+    // Decision 442 item 5: a monthly plan billed to the balance (no Stripe
+    // Subscription) has its monthly charges moved the same way.
+    await this.moveBalanceBilling(freeze.membershipId, freeze.id);
     try {
       await this.chargeFee(freeze.id);
     } catch (err) {
@@ -663,7 +667,21 @@ export class MembershipFreezesService {
     } catch (err) {
       this.logger.error(`Freeze ${freezeId}: moving the Subscription's next charge back failed; the membership sweep tries again.`, err as Error);
     }
-    return this.reload(freezeId);
+    const ended = await this.reload(freezeId);
+    await this.moveBalanceBilling(ended.membershipId, freezeId);
+    return ended;
+  }
+
+  /** Decision 442 item 5 (membership-series.ts syncSeriesFreezes): a
+   * balance-billed membership's monthly charges follow its freezes. Only
+   * such a membership has a series tied to it. Best-effort: the
+   * charge-recurring job applies it before charging either way. */
+  private async moveBalanceBilling(membershipId: string, freezeId: string) {
+    try {
+      await applyBalanceFreezeBilling(this.prismaJobs, membershipId);
+    } catch (err) {
+      this.logger.error(`Freeze ${freezeId}: moving the monthly charges billed to the balance failed; the charge-recurring job does it.`, err as Error);
+    }
   }
 
   /**

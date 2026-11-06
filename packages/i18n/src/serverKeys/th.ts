@@ -218,6 +218,7 @@ export const server: PartialMessages<ServerKeys> = {
     disputeOpenedBody: "ผู้ชำระเงินได้โต้แย้ง{charge}จำนวน {amount} (สถานะ: {status})",
     cashWaitingTitle: "รอยืนยันการชำระเงินสด",
     cashWaitingBody: "{name} เลือกชำระ {amount} สำหรับ {plan} ด้วยเงินสดหรือโอนเงิน ทำเครื่องหมายว่าชำระแล้วในหน้าธุรกรรมเมื่อได้รับเงิน",
+    cashWaitingStaffBody: "{name} เลือกชำระ {amount} สำหรับ {plan} ด้วยเงินสดหรือโอนเงิน ทำเครื่องหมายว่าชำระแล้วในการ์ดการชำระเงินของสมาชิกคนนี้เมื่อได้รับเงิน",
     paymentConfirmedTitle: "ยืนยันการชำระเงินแล้ว",
     paymentConfirmedBody: "ยืนยันการชำระเงิน {amount} สำหรับ {plan} ของคุณแล้ว สมาชิกภาพของคุณใช้งานได้แล้ว",
     childPaymentConfirmedBody: "ยืนยันการชำระเงิน {amount} สำหรับ {plan} ของ {name} แล้ว สมาชิกภาพใช้งานได้แล้ว",

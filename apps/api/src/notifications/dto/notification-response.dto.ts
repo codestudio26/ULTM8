@@ -48,12 +48,12 @@ export class NotificationResponseDto {
   @ApiPropertyOptional({
     type: String,
     nullable: true,
-    enum: ['CLASS', 'WAIVER', 'PAYMENT', 'CANCELLATIONS', 'GRADING', 'FRANCHISE', 'SCHOOL'],
+    enum: ['CLASS', 'WAIVER', 'PAYMENT', 'CANCELLATIONS', 'GRADING', 'FRANCHISE', 'SCHOOL', 'STUDENT'],
     description: 'What clicking the notification opens (Decision 355), or null for nothing.',
   })
   targetType!: string | null;
 
-  @ApiPropertyOptional({ type: String, nullable: true, description: 'The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364).' })
+  @ApiPropertyOptional({ type: String, nullable: true, description: 'The Class, Waiver, Franchise or student id, for CLASS, WAIVER, FRANCHISE and STUDENT targets (Decisions 355, 364, 442).' })
   targetId!: string | null;
 }
 

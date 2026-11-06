@@ -529,6 +529,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^(.+) chose to pay ([\d.]+) ([A-Z]{3}) for (.+) by cash or bank transfer\. Mark it as paid on the Transactions page once the money arrives\.$/s,
     (m, { t, locale }) => n(t, 'cashWaitingBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
   ],
+  // Decision 442 item 4: the Branch Staff's copy (they mark it paid on the student's Payments card).
+  [
+    /^(.+) chose to pay ([\d.]+) ([A-Z]{3}) for (.+) by cash or bank transfer\. Mark it as paid on their Payments card once the money arrives\.$/s,
+    (m, { t, locale }) => n(t, 'cashWaitingStaffBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
   [
     /^Your payment of ([\d.]+) ([A-Z]{3}) for (.+) was confirmed\. Your membership is now active\.$/s,
     (m, { t, locale }) => n(t, 'paymentConfirmedBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),
