@@ -84,7 +84,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   say "Join this School to buy" to non-members, status words read as words,
   the sign-in screen shows the picked School, and removing a card asks first.
 - **Delete my account** (Track B, `apps/student`, and `apps/api`; Decision
-  427 item 5, required by Apple; the product owner's six rules of 6 Nov 2026)
+  427 item 5, required by Apple; Decision 436 items 1–6)
   — My profile → "Delete my account" says what happens, names the children
   deleted too, and asks for the passcode again. The account is locked at once
   (signed out everywhere; no booking, check-in or purchase, by anyone), its
