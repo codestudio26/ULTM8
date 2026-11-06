@@ -2613,6 +2613,15 @@ model Membership {
   cancelledById String?
   cancelledBy   User?     @relation("MembershipCancelledBy", fields: [cancelledById], references: [id])
 
+  /// Decision 441 item 1: a monthly plan (SUBSCRIPTION) at a School that takes
+  /// no cards. Its first month was a cash or bank-transfer payment; each month
+  /// after that is a charge on the member's balance, made by its own
+  /// RecurringCharge (membershipId). It has no stripeSubscriptionId. Cancelling
+  /// sets cancelAt and expiryDate to the next billing day, and the series ends.
+  billedToBalance Boolean          @default(false)
+  /// The series that bills it, for billedToBalance only.
+  recurringCharge RecurringCharge?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -6632,6 +6641,13 @@ model RecurringCharge {
 
   createdById String?
   createdBy   User?   @relation("RecurringChargeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  /// Decision 441 item 1: the monthly membership this series bills, at a
+  /// School that takes no cards (Membership.billedToBalance). Its price is
+  /// the plan's at purchase, never taxed on top (as a membership payment), and
+  /// it follows the membership: no charge on or after the day it ends.
+  membershipId String?     @unique
+  membership   Membership? @relation(fields: [membershipId], references: [id], onDelete: Restrict)
 
   charges Charge[]
 

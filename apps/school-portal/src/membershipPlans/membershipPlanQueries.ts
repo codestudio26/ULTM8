@@ -1,5 +1,5 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import { unwrap } from '@ultm8/api-client';
+import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { ALL_PAGES_LIMIT, fetchAllPages } from '../lib/fetchAllPages';
@@ -7,6 +7,29 @@ import { ALL_PAGES_LIMIT, fetchAllPages } from '../lib/fetchAllPages';
 export type MembershipPlanResponse = components['schemas']['MembershipPlanResponseDto'];
 export type CreateMembershipPlanInput = components['schemas']['CreateMembershipPlanDto'];
 export type UpdateMembershipPlanInput = components['schemas']['UpdateMembershipPlanDto'];
+
+/**
+ * Decision 441 item 1: whether the School takes no card payments in the app
+ * (its payment account isn't Stripe), so its monthly plans are sold at the
+ * desk too and billed to the member's balance after the first month. False
+ * while loading, with no payment account (the API answers 404), or at a
+ * School that takes cards, so the desk stays as it was there.
+ */
+export function useSchoolTakesNoCards(schoolId: string | null) {
+  const account = useQuery({
+    queryKey: ['school-payment-account', schoolId],
+    queryFn: async () => {
+      try {
+        return await unwrap(apiClient.GET('/v1/schools/{schoolId}/payment-account', { params: { path: { schoolId: schoolId! } } }));
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) return null;
+        throw err;
+      }
+    },
+    enabled: !!schoolId,
+  });
+  return !!account.data && account.data.provider !== 'STRIPE';
+}
 
 /** Every plan of the School, all pages. The API returns 20 a page by
  * default, and this list used to stop there, so a School's 21st plan never

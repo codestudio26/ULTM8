@@ -178,7 +178,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "リフレッシュトークンの有効期限が切れています。もう一度ログインしてください。",
   "RoleGrant not found": "ロールの付与が見つかりません",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "SUBSCRIPTION プランの価格は 0 より大きくする必要があります。無料で提供する場合は TRIAL_MEMBERSHIP を使用してください。",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "SUBSCRIPTION プランには、スクールに STRIPE の決済アカウントが必要です。このスクールは現金／銀行振込のみに設定されています。",
   "School not found": "スクールが見つかりません",
   "Send a note, or hidden, or both.": "メモ、非表示、またはその両方を送信してください。",
   "Send every belt of this style exactly once, in the new order.": "この種目のすべての帯を、新しい順序で 1 回ずつ送信してください。",

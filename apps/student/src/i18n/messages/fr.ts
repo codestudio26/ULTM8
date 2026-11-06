@@ -951,6 +951,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       pendingConfirmation: "Paiement en attente de confirmation par l’école.",
       noCardPayments: "Les paiements par carte ne sont pas encore disponibles dans cette école. Payez par virement bancaire ou en espèces à l’école, et l’équipe le confirmera.",
       noCardPaymentsPix: "Les paiements par carte ne sont pas encore disponibles dans cette école. Payez par Pix, virement bancaire ou en espèces à l’école, et l’équipe le confirmera.",
+      monthlyToBalance: "Vous payez le premier mois maintenant. Ensuite, chaque mois est ajouté à votre solde, et vous le payez de la même façon.",
       checkoutSubmitted: "Paiement envoyé — consultez Mes adhésions dans quelques instants, une fois qu’il est confirmé.",
       onlinePaymentUnavailable: "Le paiement en ligne de cette formule n’est pas encore disponible dans l’application.",
     },

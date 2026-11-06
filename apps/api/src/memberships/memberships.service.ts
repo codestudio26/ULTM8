@@ -3,7 +3,7 @@ import { assertSelfAttestedAdult } from '../common/self-attested-adult';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
-import { Prisma, type Membership } from '@prisma/client';
+import { Prisma, type Membership, type MembershipPlanType } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
@@ -44,6 +44,7 @@ import { assertPlanHasRoom } from './waitlist/plan-capacity';
 import { assertPlanTermValid, fixedPlanOver, membershipTerm, planDay, PLAN_OVER, TERM_PLAN_TYPES } from './plan-term';
 import { assertJoiningFeeAllowed, joiningFeeDue, NO_JOINING_FEE, type JoiningFeeDue } from './joining-fee';
 import { assertAccountNotClosing } from '../account-deletion/account-closing';
+import { endBalanceBilling, isBalanceBilled, startBalanceBilling, takesCards } from '../charges/membership-series';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -53,6 +54,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // Types a Cash/Bank-eligible MembershipPlan may be — everything except SUBSCRIPTION,
 // which requires Stripe (Spec 55 §6.1: "requires Stripe as the payment method when
 // type=Subscription... auto-recurring billing has no Cash/Bank Transfer equivalent").
+// Decision 441 item 1: except at a School that takes no cards, where a
+// SUBSCRIPTION's first month is a Cash/Bank payment and each month after it a
+// charge on the balance (charges/membership-series.ts). A card School's
+// Subscription stays card-only.
 const CASH_BANK_ELIGIBLE_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'FRIEND_PASS', 'TRIAL_MEMBERSHIP'] as const;
 
 // Re-exported: grading and curriculum import it from here.
@@ -1017,9 +1022,9 @@ export class MembershipsService {
     if (!paymentAccount) {
       throw new BadRequestException('This School has no configured PaymentAccount — nothing can be purchased here yet.');
     }
-    if (plan.type === 'SUBSCRIPTION' && paymentAccount.provider !== 'STRIPE') {
-      throw new BadRequestException('SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.');
-    }
+    // Decision 441 item 1: at a School that takes no cards, a SUBSCRIPTION is
+    // bought like any plan there (the Cash/Bank path below); after the first
+    // month it is billed to the member's balance.
     // Decision 236's own follow-up, scoped deliberately: PaymentsService.
     // subscribe()'s own header comment already flags that it creates a
     // throwaway Stripe Customer on every call, never wired to
@@ -1206,7 +1211,7 @@ export class MembershipsService {
 
     // Cash/Bank Transfer path — Transaction created Pending, Membership created
     // later via PaymentsService.confirmTransaction (PATCH /transactions/{id}/confirm).
-    if (!CASH_BANK_ELIGIBLE_TYPES.includes(plan.type as (typeof CASH_BANK_ELIGIBLE_TYPES)[number])) {
+    if (!CASH_BANK_ELIGIBLE_TYPES.includes(plan.type as (typeof CASH_BANK_ELIGIBLE_TYPES)[number]) && plan.type !== 'SUBSCRIPTION') {
       throw new BadRequestException(`${plan.type} is not Cash/Bank Transfer-eligible.`);
     }
     // Decision 339 (T10) — one open Cash/Bank payment per Student per plan: a
@@ -1581,9 +1586,17 @@ export class MembershipsService {
     if (plan.type === 'FRIEND_PASS') {
       throw new BadRequestException('A Friend Pass is given, not sold. Use Give a Friend Pass instead.');
     }
-    if (plan.type === 'SUBSCRIPTION') {
+    const paymentAccount = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, provider: true } }),
+    );
+    // Decision 441 item 1: a School that takes no cards sells its monthly
+    // plans at the desk, billed to the balance after this first month. At a
+    // School that takes cards (or has no payments set up) a Subscription is
+    // still bought by card in the app.
+    if (plan.type === 'SUBSCRIPTION' && (!paymentAccount || takesCards(paymentAccount))) {
       throw new BadRequestException('A Subscription is paid by card in the app, so it can\'t be sold at the desk.');
     }
+    const billedToBalance = isBalanceBilled(plan, paymentAccount);
     // Decision 316 item 6: the member signs the plan's contract when buying
     // it, in the app.
     if (plan.contractVersion != null) {
@@ -1599,9 +1612,6 @@ export class MembershipsService {
         throw new BadRequestException('This Student must sign this School\'s waiver before buying this plan.');
       }
     }
-    const paymentAccount = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.paymentAccount.findUnique({ where: { schoolId }, select: { id: true } }),
-    );
     if (plan.price > 0 && !paymentAccount) {
       throw new BadRequestException('Set up this School\'s payments before recording a sale.');
     }
@@ -1618,7 +1628,7 @@ export class MembershipsService {
         // exists, so a first plan sold at the desk carries the joining fee in
         // the money taken now. Staff collect price + fee.
         const joiningFee = plan.price > 0 ? await joiningFeeDue(tx, studentId, plan) : NO_JOINING_FEE;
-        const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan, schoolZone) });
+        const membership = await tx.membership.create({ data: this.newMembershipData(studentId, plan, schoolZone, billedToBalance) });
         if (plan.price === 0) {
           // Spec 55 §6.1: a £0 plan has no Transaction, as in purchase().
           return { membership, transactionId: null, amount: 0 };
@@ -1654,6 +1664,13 @@ export class MembershipsService {
       await this.paymentsService.notifyCashPayment(
         { id: sale.transactionId, schoolId, studentId, membershipPlanId: plan.id, amount: sale.amount, currency },
         'confirmed',
+      );
+    }
+    // Decision 441 item 1: the months after this one, on the balance. If this
+    // fails, the charge-recurring job sets the series up (healBalanceBilling).
+    if (billedToBalance) {
+      await startBalanceBilling(this.prismaJobs, sale.membership.id, { createdById: recordedById, price: plan.price, currency }).catch((err) =>
+        this.logger.warn(`Membership ${sale.membership.id}: setting up its monthly charges failed; the charge-recurring job does it. ${err}`),
       );
     }
     return { membership: sale.membership, transactionId: sale.transactionId };
@@ -1831,6 +1848,7 @@ export class MembershipsService {
       fixedEndDate?: Date | null;
     },
     schoolZone: string | null,
+    billedToBalance = false,
   ) {
     // Decision 435 items 7-8: the plan's own start and end (membershipTerm).
     const term = membershipTerm(plan, schoolZone);
@@ -1839,7 +1857,9 @@ export class MembershipsService {
       studentId,
       membershipPlanId: plan.id,
       schoolId: plan.schoolId,
-      frequency: 'ONE_TIME' as const,
+      // Decision 441 item 1: a monthly plan sold at a School without cards.
+      frequency: plan.type === 'SUBSCRIPTION' ? ('RECURRING' as const) : ('ONE_TIME' as const),
+      billedToBalance,
       classesRemaining: plan.classesIncluded ?? undefined,
       startDate: term.startDate,
       expiryDate: term.expiryDate,
@@ -1884,6 +1904,11 @@ export class MembershipsService {
     }
     const found = membership;
     const cancelled = await this.prismaApp.withTenantContext(contextUserId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, found, callerId));
+    // Decision 441 item 1: a monthly plan billed to the balance stops being
+    // charged from the day it ends.
+    if (cancelled.billedToBalance && cancelled.cancelAt) {
+      await endBalanceBilling(this.prismaJobs, cancelled.id, cancelled.cancelAt, this.logger);
+    }
     // Decision 316 item 6: the member (or their Guardian) cancelling before
     // the signed minimum term ends puts the School's early-exit fee on their
     // balance. Only when this call is the one that cancelled (asking twice
@@ -2031,9 +2056,15 @@ export class MembershipsService {
     const as = await this.assertMayRecordDeskPayment(callerId, schoolId, school.branchStaffCanRecordPayments);
     const students = await this.deskPayableStudents(callerId, schoolId, as);
     students.sort((a, b) => `${a.firstName} ${a.surname}`.localeCompare(`${b.firstName} ${b.surname}`));
+    // Decision 441 item 1: a School that takes no cards also sells its monthly
+    // plans at the desk. Read on the jobs connection (Branch Staff can't see
+    // the payment account), only its provider.
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { provider: true } });
+    const types: MembershipPlanType[] = CASH_BANK_ELIGIBLE_TYPES.filter((type) => type !== 'FRIEND_PASS');
+    if (account && !takesCards(account)) types.push('SUBSCRIPTION');
     const plans = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.membershipPlan.findMany({
-        where: { schoolId, archivedAt: null, type: { in: CASH_BANK_ELIGIBLE_TYPES.filter((type) => type !== 'FRIEND_PASS') } },
+        where: { schoolId, archivedAt: null, type: { in: types } },
         orderBy: [{ title: 'asc' }, { id: 'asc' }],
         select: { id: true, title: true, type: true, price: true, currency: true },
       }),

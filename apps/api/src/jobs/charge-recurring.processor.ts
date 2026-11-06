@@ -3,6 +3,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { runSeries } from '../charges/recurring-occurrences';
+import { healBalanceBilling } from '../charges/membership-series';
 import { addDays, dayValue, schoolToday } from '../charges/recurring-schedule';
 import { CHARGE_RECURRING_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
@@ -76,6 +77,14 @@ export class ChargeRecurringProcessor extends WorkerHost {
 
   /** Separate from process() so tests can pass the date. */
   async run(now: Date): Promise<ChargeRecurringOutcome> {
+    // Decision 441 item 1: a monthly membership billed to the balance whose
+    // series wasn't set up right after the sale gets it first.
+    try {
+      const healed = await healBalanceBilling(this.prismaJobs, this.logger);
+      if (healed > 0) this.logger.warn(`charge-recurring: set up ${healed} missing monthly membership series.`);
+    } catch (err) {
+      this.logger.error('charge-recurring: looking for missing monthly membership series failed.', err as Error);
+    }
     const latestDay = addDays(schoolToday(now, 'UTC'), 1);
     const series = await this.prismaJobs.recurringCharge.findMany({
       where: { stoppedAt: null, nextDate: { not: null, lte: dayValue(latestDay) } },

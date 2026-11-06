@@ -89,6 +89,8 @@ export const memberships = {
     pendingConfirmation: 'Payment pending confirmation by the School.',
     noCardPayments: "Card payments aren't available at this School yet. Pay by bank transfer or cash at the School, and staff will confirm it.",
     noCardPaymentsPix: "Card payments aren't available at this School yet. Pay by Pix, bank transfer or cash at the School, and staff will confirm it.",
+    // Decision 441 item 1: a monthly plan at a School without cards.
+    monthlyToBalance: 'You pay the first month now. After that, each month is added to your balance, and you pay it the same way.',
     checkoutSubmitted: "Payment submitted — check My Memberships shortly once it's confirmed.",
     onlinePaymentUnavailable: "Online payment for this plan isn't available in the app yet.",
   },

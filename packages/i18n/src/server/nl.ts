@@ -178,7 +178,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "Vernieuwingstoken verlopen. Log opnieuw in.",
   "RoleGrant not found": "Roltoekenning niet gevonden",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "SUBSCRIPTION-abonnementen moeten meer dan 0 kosten. Gebruik TRIAL_MEMBERSHIP voor een gratis aanbod.",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "SUBSCRIPTION-abonnementen vereisen dat de school een STRIPE-PaymentAccount heeft. Deze school accepteert alleen contant geld of bankoverschrijving.",
   "School not found": "School niet gevonden",
   "Send a note, or hidden, or both.": "Stuur een notitie, de verborgen-status of allebei.",
   "Send every belt of this style exactly once, in the new order.": "Stuur elke band van deze stijl precies één keer, in de nieuwe volgorde.",

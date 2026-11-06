@@ -925,6 +925,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       pendingConfirmation: "スクールによる支払いの確認待ちです。",
       noCardPayments: "このスクールではまだカード決済をご利用いただけません。銀行振込またはスクールで現金でお支払いください。スタッフが確認します。",
       noCardPaymentsPix: "このスクールではまだカード決済をご利用いただけません。Pix、銀行振込、またはスクールで現金でお支払いください。スタッフが確認します。",
+      monthlyToBalance: "最初の1か月分は今お支払いください。その後は毎月の料金が残高に追加され、同じ方法でお支払いいただけます。",
       checkoutSubmitted: "支払いを送信しました。確認が済んだら、まもなく「マイ会員プラン」でご確認ください。",
       onlinePaymentUnavailable: "このプランのオンライン支払いは、まだアプリでは利用できません。",
     },

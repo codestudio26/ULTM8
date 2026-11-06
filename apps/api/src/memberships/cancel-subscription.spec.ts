@@ -14,6 +14,7 @@ describe('cancelSubscriptionAtPeriodEnd (Decision 348)', () => {
       $queryRaw: jest.fn().mockResolvedValue([]),
       paymentAccount: { findUnique: jest.fn().mockResolvedValue({ stripeConnectedAccountId: 'acct_school' }) },
       membership: { update: jest.fn(async ({ data }) => ({ ...live, ...data })), findUniqueOrThrow: jest.fn().mockResolvedValue(row) },
+      school: { findUnique: jest.fn().mockResolvedValue({ timezone: 'UTC' }) },
     };
     return { update, scopedClient, tx };
   }
@@ -41,5 +42,22 @@ describe('cancelSubscriptionAtPeriodEnd (Decision 348)', () => {
     await expect(cancelSubscriptionAtPeriodEnd({ scopedClient } as never, tx as never, { ...live, stripeSubscriptionId: null }, 'x')).rejects.toBeInstanceOf(BadRequestException);
     const ended = setup({}, { ...live, status: 'EXPIRED' });
     await expect(cancelSubscriptionAtPeriodEnd({ scopedClient } as never, ended.tx as never, live, 'x')).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('Decision 441: a monthly plan billed to the balance ends at its next billing day, with no Stripe call', async () => {
+    const startDate = new Date(Date.UTC(2027, 0, 15, 10));
+    const balance = { ...live, stripeSubscriptionId: null, billedToBalance: true, startDate };
+    const { tx, scopedClient, update } = setup({}, balance);
+    jest.useFakeTimers({ now: new Date(Date.UTC(2027, 1, 20, 12)) });
+    try {
+      const result = await cancelSubscriptionAtPeriodEnd({ scopedClient } as never, tx as never, balance, 'student-1');
+      const endsAt = new Date(Date.UTC(2027, 2, 15));
+      expect(tx.membership.update).toHaveBeenCalledWith({ where: { id: 'm-1' }, data: { cancelAt: endsAt, expiryDate: endsAt, cancelledById: 'student-1' } });
+      expect(result.cancelAt).toEqual(endsAt);
+      expect(scopedClient).not.toHaveBeenCalled();
+      expect(update).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

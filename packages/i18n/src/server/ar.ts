@@ -178,7 +178,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "انتهت صلاحية رمز التحديث — يُرجى تسجيل الدخول مجددًا.",
   "RoleGrant not found": "تعيين الدور غير موجود",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "يجب أن يكون سعر خطط SUBSCRIPTION أكبر من صفر — استخدم TRIAL_MEMBERSHIP للعروض المجانية.",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "تتطلب خطط SUBSCRIPTION أن يكون للمدرسة حساب دفع STRIPE — هذه المدرسة تقبل الدفع النقدي أو التحويل البنكي فقط.",
   "School not found": "المدرسة غير موجودة",
   "Send a note, or hidden, or both.": "أرسل ملاحظة أو حالة الإخفاء أو كليهما.",
   "Send every belt of this style exactly once, in the new order.": "أرسل كل أحزمة هذا الأسلوب مرة واحدة بالضبط، بالترتيب الجديد.",

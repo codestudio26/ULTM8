@@ -950,6 +950,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       pendingConfirmation: "Pago pendiente de confirmación por la Escuela.",
       noCardPayments: "Los pagos con tarjeta aún no están disponibles en esta Escuela. Paga por transferencia bancaria o en efectivo en la Escuela, y el personal lo confirmará.",
       noCardPaymentsPix: "Los pagos con tarjeta aún no están disponibles en esta Escuela. Paga por Pix, transferencia bancaria o en efectivo en la Escuela, y el personal lo confirmará.",
+      monthlyToBalance: "Pagas el primer mes ahora. Después, cada mes se añade a tu saldo y lo pagas de la misma forma.",
       checkoutSubmitted: "Pago enviado — revisa Mis membresías en breve, cuando se confirme.",
       onlinePaymentUnavailable: "El pago en línea de este plan aún no está disponible en la app.",
     },

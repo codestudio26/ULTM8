@@ -11003,6 +11003,8 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment. */
+            billedToBalance: boolean;
             /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
             awaitingFirstCheckIn: boolean;
             /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */
@@ -11050,6 +11052,8 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment. */
+            billedToBalance: boolean;
             /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
             awaitingFirstCheckIn: boolean;
             /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */
@@ -11144,6 +11148,8 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment. */
+            billedToBalance: boolean;
             /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
             awaitingFirstCheckIn: boolean;
             /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */

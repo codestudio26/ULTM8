@@ -26,6 +26,7 @@ import { chargeAbilities } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 import { dayIn } from '../memberships/freeze/membership-freeze';
+import { startBalanceBilling } from '../charges/membership-series';
 
 /** Decision 406: the name of the card-surcharge line on a hosted Checkout
  * page and its Stripe receipt, beside the plan's own title (also untranslated,
@@ -1334,6 +1335,17 @@ export class PaymentsService {
     const result = await this.confirmTransactionInner(callerId, transactionId);
     if (result.membershipCreated) {
       await this.notifyCashPayment(result.transaction, 'confirmed');
+      // Decision 441 item 1: a monthly plan at a School that takes no cards;
+      // this payment was its first month, the months after it go on the
+      // balance. If this fails, the charge-recurring job sets it up.
+      if (result.membership?.billedToBalance) {
+        const { transaction, membership } = result;
+        await startBalanceBilling(this.prismaJobs, membership.id, {
+          createdById: callerId,
+          price: transaction.amount - transaction.joiningFeeAmount,
+          currency: transaction.currency,
+        }).catch((err) => this.logger.warn(`Membership ${membership.id}: setting up its monthly charges failed; the charge-recurring job does it. ${err}`));
+      }
     }
     return result;
   }
@@ -1403,7 +1415,11 @@ export class PaymentsService {
           studentId: transaction.studentId,
           membershipPlanId: transaction.membershipPlanId,
           schoolId: transaction.schoolId,
-          frequency: 'ONE_TIME', // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1)
+          // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1),
+          // except at a School that takes no cards (Decision 441 item 1): a
+          // monthly plan's first month, the rest billed to the balance.
+          frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
+          billedToBalance: plan.type === 'SUBSCRIPTION',
           classesRemaining: plan.classesIncluded ?? undefined,
           startDate: term.startDate,
           expiryDate: term.expiryDate,

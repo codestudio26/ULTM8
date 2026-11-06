@@ -951,6 +951,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       pendingConfirmation: "Pagamento in attesa di conferma da parte della scuola.",
       noCardPayments: "I pagamenti con carta non sono ancora disponibili in questa scuola. Paga con bonifico bancario o in contanti alla scuola, e lo staff lo confermerà.",
       noCardPaymentsPix: "I pagamenti con carta non sono ancora disponibili in questa scuola. Paga con Pix, bonifico bancario o in contanti alla scuola, e lo staff lo confermerà.",
+      monthlyToBalance: "Paghi ora il primo mese. Poi ogni mese viene aggiunto al tuo saldo, e lo paghi allo stesso modo.",
       checkoutSubmitted: "Pagamento inviato — controlla tra poco Le mie iscrizioni, una volta confermato.",
       onlinePaymentUnavailable: "Il pagamento online per questo piano non è ancora disponibile nell’app.",
     },

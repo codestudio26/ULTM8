@@ -12,6 +12,7 @@ import {
   useCancelMembership,
   useGiftFriendPass,
   useMembershipPlans,
+  useSchoolTakesNoCards,
   useSellMembership,
   useStudentMemberships,
   type DeskPaymentMethod,
@@ -40,8 +41,10 @@ const TYPE_LABELS: Record<string, TranslationKey> = {
 };
 
 /** Plans the owner can sell at the desk: not a Subscription (card only) or a
- * Friend Pass (given, not sold). */
+ * Friend Pass (given, not sold). Decision 441 item 1: a School that takes no
+ * cards sells its monthly plans here too (DESK_TYPES_NO_CARDS). */
 const DESK_TYPES = ['CLASS_PACK', 'WEEKLY_PASS', 'TRIAL_MEMBERSHIP'];
+const DESK_TYPES_NO_CARDS = [...DESK_TYPES, 'SUBSCRIPTION'];
 
 function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
@@ -56,6 +59,7 @@ type MembershipRow = Pick<StudentMembershipResponse, 'id' | 'planTitle' | 'planT
   giftedById?: string | null;
   awaitingFirstCheckIn?: boolean;
   switchToPlanId?: string | null;
+  billedToBalance?: boolean;
 };
 
 /**
@@ -86,6 +90,7 @@ export function StudentMembershipsCard({
     ? { ...freezable, data: freezable.data ? { items: freezable.data.items.map((m): MembershipRow => ({ ...m, live: true })) } : undefined }
     : full;
   const plans = useMembershipPlans(freezeOnly ? null : schoolId);
+  const noCards = useSchoolTakesNoCards(freezeOnly ? null : schoolId);
   const cancel = useCancelMembership(schoolId, studentId);
   const [dialog, setDialog] = useState<'sell' | 'gift' | null>(null);
   const [cancelling, setCancelling] = useState<MembershipRow | null>(null);
@@ -106,7 +111,8 @@ export function StudentMembershipsCard({
 
   const activePlans = (plans.data?.items ?? []).filter((p) => !p.archivedAt);
   // Decision 316 item 6: a plan with a contract is signed and bought in the app.
-  const sellable = activePlans.filter((p) => DESK_TYPES.includes(p.type) && p.contractVersion == null);
+  const deskTypes = noCards ? DESK_TYPES_NO_CARDS : DESK_TYPES;
+  const sellable = activePlans.filter((p) => deskTypes.includes(p.type) && p.contractVersion == null);
   const friendPasses = activePlans.filter((p) => p.type === 'FRIEND_PASS');
 
   function statusOf(m: MembershipRow) {
@@ -128,13 +134,17 @@ export function StudentMembershipsCard({
   function detailsOf(m: MembershipRow) {
     const parts: string[] = [];
     if (m.classesRemaining !== null && m.classesRemaining !== undefined) parts.push(t('membershipPlans.studentCard.classesLeft', { count: m.classesRemaining }));
-    if (m.expiryDate) parts.push(t('membershipPlans.studentCard.expires', { date: formatDay(m.expiryDate) }));
+    // Decision 441 item 1: a cancelled monthly plan billed to the balance ends
+    // on its cancel date, already shown as its status.
+    if (m.expiryDate && !(m.billedToBalance && m.cancelAt)) parts.push(t('membershipPlans.studentCard.expires', { date: formatDay(m.expiryDate) }));
     // Decision 435 items 7 and 9: not started yet, and the plan it switches to.
     if (m.awaitingFirstCheckIn) parts.push(t('membershipPlans.studentCard.awaitingFirstCheckIn'));
     const next = m.switchToPlanId ? plans.data?.items.find((p) => p.id === m.switchToPlanId) : undefined;
     if (next) parts.push(t('membershipPlans.studentCard.switchesTo', { plan: next.title }));
     if (m.giftedById) parts.push(t('membershipPlans.studentCard.given'));
-    if (m.frozen && m.planType === 'SUBSCRIPTION') parts.push(t('membershipPlans.studentCard.freeze.billingPaused'));
+    // A card Subscription's billing is paused by a freeze (Decision 404); a
+    // monthly plan billed to the balance (Decision 441) isn't.
+    if (m.frozen && m.planType === 'SUBSCRIPTION' && !m.billedToBalance) parts.push(t('membershipPlans.studentCard.freeze.billingPaused'));
     return parts.join(' · ') || t('common.none');
   }
 

@@ -235,6 +235,12 @@ export function MembershipPlanRow({
             {t(school?.inBrazil ? 'memberships.planRow.noCardPaymentsPix' : 'memberships.planRow.noCardPayments')}
           </Text>
         ) : null}
+        {/* Decision 441 item 1: at a School without cards, a monthly plan's later months go on the balance. */}
+        {noCardPayments && plan.type === 'SUBSCRIPTION' && plan.price > 0 ? (
+          <Text testID="monthly-to-balance" style={{ color: '#5F6368', fontSize: 12, marginTop: 4 }}>
+            {t('memberships.planRow.monthlyToBalance')}
+          </Text>
+        ) : null}
         <View style={{ flexDirection: 'row', marginTop: 4, gap: 8 }}>
           <Button title={hasContract ? t('memberships.contract.readAndSign') : t('memberships.planRow.purchase')} onPress={handlePurchase} loading={purchase.isPending} />
           {canPayWithSavedCard ? (

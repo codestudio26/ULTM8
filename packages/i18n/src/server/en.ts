@@ -195,7 +195,6 @@ export const SERVER_MESSAGES: string[] = [
  "Refresh token expired — please log in again.",
  "RoleGrant not found",
  "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.",
- "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.",
  "School not found",
  "Send a note, or hidden, or both.",
  "Send every belt of this style exactly once, in the new order.",
