@@ -101,7 +101,7 @@ export const server: PartialMessages<ServerKeys> = {
     ticketRequired: "Ce cours ponctuel nécessite son propre billet. Un abonnement, un pass semaine ou un carnet de cours général ne le couvre pas.",
     classBranchBooked: "Des élèves sont inscrits ou en liste d'attente pour ce cours. Annule leurs réservations avant de le déplacer vers un autre site.",
     classMovedToPast: "Des élèves sont inscrits ou en liste d'attente pour ce cours : il ne peut être déplacé qu'à un horaire qui n'est pas encore passé.",
-    classAlreadyEnded: "Ce cours est déjà terminé. Choisis une heure de fin dans le futur.",
+    classAlreadyEnded: "Ce cours est déjà terminé. Choisissez une heure de fin dans le futur.",
     schoolCurrencyChange: "Formules facturées dans la devise de l'école : {count}. Elles sont désormais facturées en {currency}, avec les mêmes montants.",
     schoolCurrencyInUse: "Formules facturées dans la devise de l'école : {count}. Donnez-leur leur propre devise avant de l'effacer.",
     // Decision 414 item 6.

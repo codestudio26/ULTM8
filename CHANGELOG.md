@@ -67,6 +67,21 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     and printouts lay out correctly. A "Has only one name" tick replaces "." as
     a surname. Two sign-ups at once no longer duplicate. Approving a walk-in
     keeps the phone and emergency contact they gave at the desk.
+- **Translation review: 12 languages** (School Portal, member app and server
+  text; `docs/translations/REVIEW-other-languages.md`). Covers Arabic, German,
+  French, Italian, Japanese, Korean, Dutch, Polish, Russian, Thai, Turkish and
+  Chinese. 867 strings corrected:
+  - one form of address per language: German "du", French "vous", Turkish
+    "siz", Korean 합니다 statements;
+  - one word per term: German "Graduierung" for grading (not "Beförderung"),
+    Italian "striscia" for a stripe (it was "grado", the same word as rank),
+    Korean 도장/수련생 for School/Student;
+  - Arabic "back" arrows now point the right way in right-to-left text;
+  - clearer early-exit fee wording in ar, ru, tr and zh-CN.
+
+  The review lists the terms each language uses, and the legal and payment
+  strings a native speaker should check before each market launches. Only
+  text values changed; no keys or placeholders. No migration.
 - **Student portal: parents and passcodes** (Track B, `apps/student`;
   Decision 428) — a parent signs their child's waivers and buys their child a
   plan from "My children". Change passcode is on Home (other devices are
