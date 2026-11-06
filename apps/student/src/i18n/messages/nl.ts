@@ -934,6 +934,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       pendingConfirmation: "Betaling wacht op bevestiging door de school.",
       noCardPayments: "Kaartbetalingen zijn bij deze school nog niet mogelijk. Betaal per bankoverschrijving of contant bij de school, en het personeel bevestigt het.",
       noCardPaymentsPix: "Kaartbetalingen zijn bij deze school nog niet mogelijk. Betaal met Pix, per bankoverschrijving of contant bij de school, en het personeel bevestigt het.",
+      monthlyToBalance: "Je betaalt nu de eerste maand. Daarna wordt elke maand aan je saldo toegevoegd, en betaal je die op dezelfde manier.",
       checkoutSubmitted: "Betaling verstuurd — kijk zo bij Mijn lidmaatschappen zodra die bevestigd is.",
       onlinePaymentUnavailable: "Online betalen voor dit lidmaatschap is nog niet beschikbaar in de app.",
     },

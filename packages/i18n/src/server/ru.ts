@@ -179,7 +179,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "Срок действия токена обновления истёк — войдите снова.",
   "RoleGrant not found": "Назначение роли не найдено",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "Цена тарифа SUBSCRIPTION должна быть больше 0 — для бесплатного предложения используйте TRIAL_MEMBERSHIP.",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "Для тарифов SUBSCRIPTION у школы должен быть платёжный аккаунт STRIPE — эта школа принимает только наличные или банковский перевод.",
   "School not found": "Школа не найдена",
   "Send a note, or hidden, or both.": "Отправьте заметку, признак скрытия или и то, и другое.",
   "Send every belt of this style exactly once, in the new order.": "Отправьте каждый пояс этого стиля ровно один раз, в новом порядке.",

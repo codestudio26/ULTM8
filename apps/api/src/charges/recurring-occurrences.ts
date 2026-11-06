@@ -5,6 +5,7 @@ import { computeCharge, formatInvoiceNumber, taxLinesForCharge } from './charge-
 import { insertCharge, lockInvoiceNumbers } from './charge-insert';
 import { MAX_OCCURRENCES_PER_RUN, dayOf, dayValue, planOccurrences, schoolToday, skipThrough, type SeriesState } from './recurring-schedule';
 import { loadEffectiveTax } from './tax-lines';
+import { endSeriesBefore, membershipBillingEndDay } from './membership-series';
 
 type Tx = Prisma.TransactionClient;
 
@@ -114,6 +115,17 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
       if (plan.due.length === 0) return null;
       const occurrence = plan.due[0];
       const occurrenceDate = dayValue(occurrence.day);
+      // Decision 441 item 1: a series that bills a monthly membership follows
+      // it. Nothing is charged on or after the day it ends (cancelled, or no
+      // longer active); the series ends there instead.
+      if (row.membershipId) {
+        const membership = await tx.membership.findUnique({ where: { id: row.membershipId }, select: { status: true, cancelAt: true, expiryDate: true } });
+        const endDay = membershipBillingEndDay(membership, school.timezone, today);
+        if (endDay !== null && occurrence.day >= endDay) {
+          await endSeriesBefore(tx, row, endDay);
+          return null;
+        }
+      }
       const advance = (created: number) =>
         tx.recurringCharge.update({
           where: { id: seriesId },
@@ -127,8 +139,12 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
       // The School's tax at this moment (Decision 411), kept on the charge;
       // none for a series set up with "No tax on this item" (Decision 414 item 5).
       // Decision 431 (MON-6): the member's home Branch's lines when it overrides.
-      const school = await loadEffectiveTax(tx, row.schoolId, row.studentId);
-      const tax = taxLinesForCharge(school, row.taxExempt);
+      const effectiveTax = await loadEffectiveTax(tx, row.schoolId, row.studentId);
+      // Decision 441 item 1: a membership's month costs the plan's price, as
+      // its card renewal would: tax is never added on top of a membership
+      // price (Decision 431, MON-6), so it shows only as included.
+      const taxExempt = row.taxExempt || (!!row.membershipId && !effectiveTax.taxInclusive);
+      const tax = taxLinesForCharge(effectiveTax, taxExempt);
       const totals = computeCharge({
         unitAmount: row.unitAmount,
         discount: row.discountType ? { type: row.discountType, value: row.discountValue! } : null,
@@ -142,9 +158,9 @@ export async function runSeries(prisma: PrismaClient, seriesId: string, now: Dat
         unitAmount: row.unitAmount,
         discountType: row.discountType,
         discountValue: row.discountValue,
-        taxCountry: school.taxCountry,
+        taxCountry: effectiveTax.taxCountry,
         ...tax,
-        taxExempt: row.taxExempt,
+        taxExempt,
         totals,
         currency: row.currency,
         dueDate: occurrenceDate,

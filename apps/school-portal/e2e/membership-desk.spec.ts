@@ -26,6 +26,7 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
   await db.transaction.deleteMany({ where });
+  await db.recurringCharge.deleteMany({ where });
   await db.membership.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where });
   await db.paymentAccount.deleteMany({ where });
@@ -37,14 +38,12 @@ test.afterAll(async () => {
 
 test('the owner sells a Class Pack at the desk (cash, bank transfer or card terminal), paid by bank transfer, and it shows straight away', async ({ page }) => {
   await mkPlan({ title: 'Ten classes', type: 'CLASS_PACK', price: 6000, classesIncluded: 10, expiryDurationDays: 90 });
-  await mkPlan({ title: 'Monthly', type: 'SUBSCRIPTION', price: 5000 });
 
   await page.goto(`/students/${s.student.id}`);
   await expect(page.getByRole('heading', { name: 'Memberships' })).toBeVisible();
   await expect(page.getByText('No memberships yet')).toBeVisible();
 
   await page.getByRole('button', { name: 'Sell a plan' }).click();
-  // A Subscription is card only, so it isn't offered.
   await expect(page.locator('#desk-plan option')).toHaveText(['Ten classes (60.00 GBP)']);
   // Decision 431 item 11: Pix is offered only to a School in Brazil or pricing in reais; this one prices in pounds.
   await expect(page.locator('#desk-paid-by option')).toHaveText(['Cash', 'Bank transfer', 'Card terminal']);
@@ -57,6 +56,35 @@ test('the owner sells a Class Pack at the desk (cash, bank transfer or card term
 
   const tx = await db.transaction.findFirstOrThrow({ where: { schoolId: s.schoolId, studentId: s.student.id } });
   expect(tx).toMatchObject({ status: 'SUCCESSFUL', paymentMethod: 'BANK_TRANSFER', amount: 6000 });
+});
+
+test('Decision 441: a School without card payments sells its monthly plan at the desk; later months go on the balance', async ({ page }) => {
+  await mkPlan({ title: 'Ten classes', type: 'CLASS_PACK', price: 6000, classesIncluded: 10, expiryDurationDays: 90 });
+  const monthly = await mkPlan({ title: 'Monthly', type: 'SUBSCRIPTION', price: 5000 });
+
+  await page.goto(`/students/${s.student.id}`);
+  await page.getByRole('button', { name: 'Sell a plan' }).click();
+  await expect.poll(async () => (await page.locator('#desk-plan option').allTextContents()).sort()).toEqual(['Monthly (50.00 GBP)', 'Ten classes (60.00 GBP)']);
+  await page.locator('#desk-plan').selectOption(monthly.id);
+  await page.getByLabel('Paid by').selectOption('CASH');
+  await page.getByRole('button', { name: 'Record sale' }).click();
+
+  const row = page.getByRole('row', { name: /Monthly/ });
+  await expect(row).toContainText('Active');
+  await expect(row.getByRole('button', { name: 'Cancel subscription' })).toBeVisible();
+  const membership = await db.membership.findFirstOrThrow({ where: { schoolId: s.schoolId, studentId: s.student.id } });
+  expect(membership).toMatchObject({ frequency: 'RECURRING', billedToBalance: true });
+  await expect.poll(async () => db.recurringCharge.count({ where: { membershipId: membership.id } })).toBe(1);
+});
+
+test('a School that takes cards still sells no Subscription at the desk', async ({ page }) => {
+  await db.paymentAccount.update({ where: { schoolId: s.schoolId }, data: { provider: 'STRIPE', stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` } });
+  await mkPlan({ title: 'Ten classes', type: 'CLASS_PACK', price: 6000, classesIncluded: 10, expiryDurationDays: 90 });
+  await mkPlan({ title: 'Monthly', type: 'SUBSCRIPTION', price: 5000 });
+  await page.goto(`/students/${s.student.id}`);
+  await page.getByRole('button', { name: 'Sell a plan' }).click();
+  // A Subscription is paid by card in the app there, so it isn't offered.
+  await expect(page.locator('#desk-plan option')).toHaveText(['Ten classes (60.00 GBP)']);
 });
 
 test('the owner gives a Friend Pass', async ({ page }) => {

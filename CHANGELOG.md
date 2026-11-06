@@ -329,6 +329,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   saved card** isn't offered. The School's public profile says whether it
   takes card payments and whether it is in Brazil. **Needs migration
   `20270228100001_school_card_payments`.**
+- **Monthly plans at a School without card payments** (Decision 441 item 1;
+  launch rehearsal D1 and F4) — a School that takes no cards (Brazil, for now)
+  can now sell its monthly plans. The member buys one in the app like any plan
+  there: a Pix/bank-transfer or cash order that staff confirm. Staff can also
+  sell it at the desk (the student's Memberships card, and Record a payment).
+  That first payment is the first month; after it, each month is added to the
+  member's balance as a normal charge (a monthly recurring charge tied to the
+  membership, from the same day of the month), with its own invoice and the
+  "New invoice" notice, paid by Pix or cash and recorded by staff, and
+  overdue and late fees as for any charge. The month costs the plan's price,
+  as a card renewal would: tax is never added on top. Cancelling (the member,
+  a parent, or the owner; or removing the student, or asking to delete the account) ends the membership at its
+  next billing day, so the month already charged runs out and no further
+  month is charged; the recurring charge then shows as ended. The member app
+  says, under such a plan, that later months go on the balance (all 15
+  languages). The old refusal with technical words ("SUBSCRIPTION",
+  "PaymentAccount STRIPE") is gone. A School that takes cards is unchanged:
+  its monthly plans are card Subscriptions bought in the app, and still can't
+  be sold at the desk. **Needs migration
+  `20270301000001_no_card_monthly_plans`.**
 - **Pix and cash orders at a School without cards: staff confirm them, and no
   plan switch** (Decision 441 items 2 and 3) — Branch Staff whose School lets
   them record payments (Decision 347) can now also mark a member's Pix, cash or

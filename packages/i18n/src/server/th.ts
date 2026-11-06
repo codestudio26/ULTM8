@@ -179,7 +179,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "โทเค็นรีเฟรชหมดอายุแล้ว — โปรดเข้าสู่ระบบอีกครั้ง",
   "RoleGrant not found": "ไม่พบการมอบบทบาท",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "แพ็กเกจ SUBSCRIPTION ต้องมีราคามากกว่า 0 — หากต้องการให้ใช้ฟรี โปรดใช้ TRIAL_MEMBERSHIP",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "แพ็กเกจ SUBSCRIPTION ต้องให้โรงเรียนมีบัญชีรับชำระเงิน STRIPE — โรงเรียนนี้รับเฉพาะเงินสดหรือโอนเงินผ่านธนาคาร",
   "School not found": "ไม่พบโรงเรียน",
   "Send a note, or hidden, or both.": "โปรดส่งบันทึก สถานะการซ่อน หรือทั้งสองอย่าง",
   "Send every belt of this style exactly once, in the new order.": "โปรดส่งสายคาดทุกเส้นของสไตล์นี้ เส้นละหนึ่งครั้งพอดี ตามลำดับใหม่",

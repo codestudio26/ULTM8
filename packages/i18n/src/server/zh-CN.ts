@@ -179,7 +179,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "刷新令牌已过期——请重新登录。",
   "RoleGrant not found": "未找到角色授权",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "SUBSCRIPTION 方案的价格必须大于 0——如需免费提供，请使用 TRIAL_MEMBERSHIP。",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "SUBSCRIPTION 方案要求学校拥有 STRIPE 支付账户——此学校仅支持现金/银行转账。",
   "School not found": "未找到学校",
   "Send a note, or hidden, or both.": "请发送备注、隐藏设置或两者。",
   "Send every belt of this style exactly once, in the new order.": "请按新顺序发送此项目的每条腰带，每条一次。",

@@ -396,4 +396,23 @@ describe('MembershipPlanRow — School without card payments (Decision 437)', ()
     await fireEvent.press(getByText('Purchase'));
     expect(purchase.mutate).toHaveBeenCalledWith(expect.objectContaining({ planId: 'plan-1', useHostedCheckout: true }), expect.anything());
   });
+
+  it('Decision 441: a monthly plan there says later months go on the balance, and is bought as a Cash/Bank order', async () => {
+    mocked(academyQueries.useAcademy).mockReturnValue({ data: { cardPayments: false, inBrazil: true } });
+    const monthly = { ...CLASS_PACK, type: 'SUBSCRIPTION', classesIncluded: null, cardSurchargeAmount: 0 };
+    const { getByTestId, getByText, queryByText } = await render(<MembershipPlanRow plan={monthly as never} schoolId="school-1" />);
+    expect(getByTestId('monthly-to-balance').props.children).toBe(
+      'You pay the first month now. After that, each month is added to your balance, and you pay it the same way.',
+    );
+    expect(queryByText('Pay with saved card')).toBeNull();
+    await fireEvent.press(getByText('Purchase'));
+    expect(purchase.mutate).toHaveBeenCalledWith({ planId: 'plan-1', studentId: undefined }, expect.anything());
+  });
+
+  it('a monthly plan at a School that takes cards has no balance note', async () => {
+    mocked(academyQueries.useAcademy).mockReturnValue({ data: { cardPayments: true, inBrazil: false } });
+    const monthly = { ...CLASS_PACK, type: 'SUBSCRIPTION', classesIncluded: null, cardSurchargeAmount: 0 };
+    const { queryByTestId } = await render(<MembershipPlanRow plan={monthly as never} schoolId="school-1" />);
+    expect(queryByTestId('monthly-to-balance')).toBeNull();
+  });
 });

@@ -179,7 +179,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "Yenileme belirtecinin süresi doldu — lütfen yeniden giriş yapın.",
   "RoleGrant not found": "Rol ataması bulunamadı",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "SUBSCRIPTION planlarının fiyatı 0'dan büyük olmalıdır — ücretsiz bir teklif için TRIAL_MEMBERSHIP kullanın.",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "SUBSCRIPTION planları, okulun bir STRIPE PaymentAccount'u olmasını gerektirir — bu okul yalnızca nakit/banka havalesi kabul ediyor.",
   "School not found": "Okul bulunamadı",
   "Send a note, or hidden, or both.": "Bir not, gizleme durumu veya ikisini birden gönderin.",
   "Send every belt of this style exactly once, in the new order.": "Bu stilin her kuşağını yeni sırasıyla tam olarak bir kez gönderin.",

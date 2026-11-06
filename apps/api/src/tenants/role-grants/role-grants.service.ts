@@ -32,6 +32,7 @@ import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../../jobs/queue.constants';
 import { cancelPlacesOfLeavingStudent } from '../../bookings/leaving-student-cancellation';
 import { cancelSubscriptionAtPeriodEnd } from '../../memberships/cancel-subscription';
+import { endBalanceBilling } from '../../charges/membership-series';
 import { StripeClientService } from '../../payments/stripe-client.service';
 import { CreateRoleGrantDto } from './dto/create-role-grant.dto';
 import { LookupInviteCandidateQueryDto } from './dto/lookup-invite-candidate-query.dto';
@@ -682,16 +683,21 @@ export class RoleGrantsService {
           schoolId,
           studentId,
           status: 'ACTIVE',
-          stripeSubscriptionId: { not: null },
           cancelAt: null,
-          OR: [{ expiryDate: null }, { expiryDate: { gte: now } }],
+          AND: [
+            // Decision 441 item 1: a monthly plan billed to the balance (a
+            // School that takes no cards) ends the same way.
+            { OR: [{ stripeSubscriptionId: { not: null } }, { billedToBalance: true }] },
+            { OR: [{ expiryDate: null }, { expiryDate: { gte: now } }] },
+          ],
         },
-        select: { id: true, schoolId: true, status: true, stripeSubscriptionId: true, cancelAt: true },
+        select: { id: true, schoolId: true, status: true, stripeSubscriptionId: true, cancelAt: true, billedToBalance: true },
       });
     });
     for (const membership of subscriptions) {
       try {
-        await this.prismaApp.withTenantContext(callerId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, membership, callerId));
+        const cancelled = await this.prismaApp.withTenantContext(callerId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, membership, callerId));
+        if (cancelled.billedToBalance && cancelled.cancelAt) await endBalanceBilling(this.prismaJobs, cancelled.id, cancelled.cancelAt, this.logger);
       } catch (err) {
         // Nothing here can cancel it (e.g. the School's Stripe account is
         // gone): the owner deals with it in Stripe; it mustn't block leaving.

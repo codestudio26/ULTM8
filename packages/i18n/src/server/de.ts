@@ -179,7 +179,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "Aktualisierungstoken abgelaufen — bitte melde dich erneut an.",
   "RoleGrant not found": "RoleGrant nicht gefunden",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "SUBSCRIPTION-Tarife müssen einen Preis über 0 haben — nutze TRIAL_MEMBERSHIP für ein kostenloses Angebot.",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "SUBSCRIPTION-Tarife erfordern, dass die Schule eine STRIPE-PaymentAccount hat — diese Schule akzeptiert nur Barzahlung/Banküberweisung.",
   "School not found": "Schule nicht gefunden",
   "Send a note, or hidden, or both.": "Sende eine Notiz, hidden oder beides.",
   "Send every belt of this style exactly once, in the new order.": "Sende jeden Gürtel dieses Stils genau einmal, in der neuen Reihenfolge.",

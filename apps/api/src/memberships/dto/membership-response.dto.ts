@@ -42,6 +42,12 @@ export class MembershipResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true })
   cancelledById!: string | null;
 
+  @ApiProperty({
+    description:
+      "Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment.",
+  })
+  billedToBalance!: boolean;
+
   @ApiProperty({ description: 'Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then.' })
   awaitingFirstCheckIn!: boolean;
 

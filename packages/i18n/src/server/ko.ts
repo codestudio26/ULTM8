@@ -179,7 +179,6 @@ export const serverMessages: Record<string, string> = {
   "Refresh token expired — please log in again.": "리프레시 토큰이 만료되었습니다. 다시 로그인하세요.",
   "RoleGrant not found": "역할 부여를 찾을 수 없습니다",
   "SUBSCRIPTION plans must be priced above 0 — use TRIAL_MEMBERSHIP for a free offering.": "SUBSCRIPTION 플랜의 가격은 0보다 커야 합니다. 무료로 제공하려면 TRIAL_MEMBERSHIP을 사용하세요.",
-  "SUBSCRIPTION plans require the School to have a STRIPE PaymentAccount — this School is configured for Cash/Bank Transfer only.": "SUBSCRIPTION 플랜을 사용하려면 도장에 STRIPE 결제 계정이 있어야 합니다. 이 도장은 현금/계좌이체만 사용하도록 설정되어 있습니다.",
   "School not found": "도장을 찾을 수 없습니다",
   "Send a note, or hidden, or both.": "메모나 숨김 중 하나 또는 둘 다 보내세요.",
   "Send every belt of this style exactly once, in the new order.": "이 종목의 모든 띠를 새 순서대로 한 번씩 보내세요.",

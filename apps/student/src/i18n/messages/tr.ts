@@ -934,6 +934,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       pendingConfirmation: "Ödeme, okulun onayını bekliyor.",
       noCardPayments: "Bu okulda kartla ödeme henüz kullanılamıyor. Banka havalesiyle veya okulda nakit olarak ödeyin; personel ödemeyi onaylayacaktır.",
       noCardPaymentsPix: "Bu okulda kartla ödeme henüz kullanılamıyor. Pix, banka havalesi veya okulda nakit ile ödeyin; personel ödemeyi onaylayacaktır.",
+      monthlyToBalance: "İlk ayı şimdi ödersiniz. Sonrasında her ay bakiyenize eklenir ve aynı şekilde ödersiniz.",
       checkoutSubmitted: "Ödeme gönderildi — onaylandığında kısa süre içinde Üyeliklerim'i kontrol edin.",
       onlinePaymentUnavailable: "Bu plan için çevrimiçi ödeme henüz uygulamada kullanılamıyor.",
     },

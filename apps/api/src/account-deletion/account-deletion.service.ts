@@ -267,11 +267,15 @@ export class AccountDeletionService {
         where: {
           studentId: personId,
           status: 'ACTIVE',
-          stripeSubscriptionId: { not: null },
           cancelAt: null,
-          OR: [{ expiryDate: null }, { expiryDate: { gte: now } }],
+          AND: [
+            // Decision 441 item 1: a monthly plan billed to the balance (a
+            // School that takes no cards) ends at its next billing day too.
+            { OR: [{ stripeSubscriptionId: { not: null } }, { billedToBalance: true }] },
+            { OR: [{ expiryDate: null }, { expiryDate: { gte: now } }] },
+          ],
         },
-        select: { id: true, schoolId: true, status: true, stripeSubscriptionId: true, cancelAt: true },
+        select: { id: true, schoolId: true, status: true, stripeSubscriptionId: true, cancelAt: true, billedToBalance: true },
       }),
     );
     for (const membership of subscriptions) {

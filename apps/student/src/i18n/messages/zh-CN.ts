@@ -924,6 +924,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       pendingConfirmation: "付款等待学校确认。",
       noCardPayments: "这所学校暂不支持银行卡付款。请通过银行转账付款，或在学校用现金付款，工作人员会进行确认。",
       noCardPaymentsPix: "这所学校暂不支持银行卡付款。请通过 Pix、银行转账付款，或在学校用现金付款，工作人员会进行确认。",
+      monthlyToBalance: "现在支付第一个月。之后每个月的费用会计入你的余额，按同样的方式支付。",
       checkoutSubmitted: "付款已提交 — 确认后请稍后在“我的会员”中查看。",
       onlinePaymentUnavailable: "此方案暂不支持在应用内在线付款。",
     },
