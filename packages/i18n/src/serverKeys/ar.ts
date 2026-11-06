@@ -50,6 +50,7 @@ export const server: PartialMessages<ServerKeys> = {
     adultAlready: "لدى هذا الطالب رتبة في برنامج البالغين بالفعل.",
     adultFirstBelt: "اختر رتبة بالغين أعلى من أول حزام في برنامج البالغين.",
     checkInWaiverRequired: "تتطلب هذه المدرسة إقرارًا موقّعًا قبل تسجيل الحضور.",
+    waiverRequired: "تتطلب هذه المدرسة إقرارًا موقّعًا قبل حجز حصة أو تسجيل الحضور.",
     checkInHomeBranchOnly: "تسجّل هذه المدرسة حضور الأعضاء في فرعهم الرئيسي فقط.",
     checkInVisitorsOff: "لا تسجّل هذه المدرسة حضور الزوار بتصريح الزيارة حاليًا.",
     checkInOneClass: "تسجّل هذه المدرسة الحضور في حصة واحدة في كل مرة.",

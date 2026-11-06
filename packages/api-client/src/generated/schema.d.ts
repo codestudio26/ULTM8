@@ -7999,7 +7999,7 @@ export interface components {
             checkInOpensMinutesBeforeStart: number;
             /** @description Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends. */
             checkInClosesMinutesAfterStart?: number | null;
-            /** @description Decision 394: a signed waiver is needed to check in, whatever the Class says. */
+            /** @description Decisions 394 and 441: a signed waiver is needed to book a class or check in, whatever the Class says (on by default; a School with no waiver in use stops nobody). */
             checkInRequireWaiver: boolean;
             /** @description Decision 394: members with a home Branch may check in at the School's other Branches. */
             checkInOtherBranches: boolean;
@@ -13143,7 +13143,7 @@ export interface components {
             opensMinutesBeforeStart: number;
             /** @description Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time. */
             closesMinutesAfterStart?: number | null;
-            /** @description A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking). */
+            /** @description Waiver must be signed before booking or check-in (default on): a member, or a child through their parent, needs a signed waiver for the School to book a class, join its waiting list, claim an offered place or check in, whatever the Class says. A School with no waiver in use stops nobody. Off: only a Class that needs a waiver asks for one, at booking. Buying a plan isn't affected. */
             requireWaiver: boolean;
             /** @description Members with a home Branch may check in at the School's other Branches (default on). */
             otherBranches: boolean;

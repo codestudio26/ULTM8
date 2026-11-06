@@ -24621,7 +24621,7 @@
           },
           "checkInRequireWaiver": {
             "type": "boolean",
-            "description": "Decision 394: a signed waiver is needed to check in, whatever the Class says."
+            "description": "Decisions 394 and 441: a signed waiver is needed to book a class or check in, whatever the Class says (on by default; a School with no waiver in use stops nobody)."
           },
           "checkInOtherBranches": {
             "type": "boolean",
@@ -40869,7 +40869,7 @@
           },
           "requireWaiver": {
             "type": "boolean",
-            "description": "A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking)."
+            "description": "Waiver must be signed before booking or check-in (default on): a member, or a child through their parent, needs a signed waiver for the School to book a class, join its waiting list, claim an offered place or check in, whatever the Class says. A School with no waiver in use stops nobody. Off: only a Class that needs a waiver asks for one, at booking. Buying a plan isn't affected."
           },
           "otherBranches": {
             "type": "boolean",

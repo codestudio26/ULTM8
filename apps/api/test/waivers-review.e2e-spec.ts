@@ -73,7 +73,9 @@ describeIfDb('Waivers review fixes', () => {
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    await superuser.school.create({ data: { id: school.id, name: 'Review Dojo', timezone: 'UTC' } });
+    // A Class's own "needs a waiver" is tested here, with the School-wide
+    // "Waiver must be signed before booking or check-in" off (Decision 441).
+    await superuser.school.create({ data: { id: school.id, name: 'Review Dojo', timezone: 'UTC', checkInRequireWaiver: false } });
     await superuser.school.create({ data: { id: emptySchool.id, name: 'Empty Dojo', timezone: 'UTC' } });
     owner = await mkUser('owner', school.id, 'SCHOOL_OWNER_MANAGER');
     emptyOwner = await mkUser('empty-owner', emptySchool.id, 'SCHOOL_OWNER_MANAGER');

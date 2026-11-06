@@ -50,6 +50,7 @@ export const server: PartialMessages<ServerKeys> = {
     adultAlready: "Deze leerling heeft al een graad in het volwassenenprogramma.",
     adultFirstBelt: "Kies een volwassenengraad boven de eerste band van het volwassenenprogramma.",
     checkInWaiverRequired: "Deze School vraagt een ondertekende verklaring voordat je incheckt.",
+    waiverRequired: "Deze School vraagt een ondertekende verklaring voordat je een les boekt of incheckt.",
     checkInHomeBranchOnly: "Deze School checkt leden alleen in bij hun eigen Vestiging.",
     checkInVisitorsOff: "Deze School checkt bezoekers met een bezoekerspas op dit moment niet in.",
     checkInOneClass: "Deze School checkt mensen in voor één les tegelijk.",

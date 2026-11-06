@@ -50,6 +50,7 @@ export const server: PartialMessages<ServerKeys> = {
     adultAlready: "该学员在成人项目中已有段位。",
     adultFirstBelt: "请选择高于成人项目第一条腰带的成人段位。",
     checkInWaiverRequired: "本学校要求签署免责声明后才能签到。",
+    waiverRequired: "本学校要求签署免责声明后才能预约课程或签到。",
     checkInHomeBranchOnly: "本学校只在会员的所属分校为其签到。",
     checkInVisitorsOff: "本学校目前不为持访客通行证的访客签到。",
     checkInOneClass: "本学校一次只签到一节课。",

@@ -50,6 +50,7 @@ export const server: PartialMessages<ServerKeys> = {
     adultAlready: "Este aluno já tem uma graduação no programa adulto.",
     adultFirstBelt: "Escolha uma graduação adulta acima da primeira faixa do programa adulto.",
     checkInWaiverRequired: "Esta Escola exige um termo assinado antes do check-in.",
+    waiverRequired: "Esta Escola exige um termo assinado antes de reservar uma aula ou fazer check-in.",
     checkInHomeBranchOnly: "Esta Escola faz o check-in de membros apenas na Unidade principal deles.",
     checkInVisitorsOff: "Esta Escola não faz o check-in de visitantes com passe de visita no momento.",
     checkInOneClass: "Esta Escola faz o check-in em uma aula por vez.",

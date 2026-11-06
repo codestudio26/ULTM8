@@ -1,7 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
-import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { hasCountingWaiverSignature, schoolHasWaiverInUse } from '../waivers/waiver-signed-check';
 import { frozenMembershipIds, MEMBERSHIP_FROZEN } from '../memberships/freeze/frozen-lookup';
 import { dayIn, dayNumber, dayString, dayToDate } from '../memberships/freeze/membership-freeze';
 import { chargeRemaining } from '../charges/charge-ledger';
@@ -24,7 +24,10 @@ export interface CheckInRules {
   opensMinutesBeforeStart: number;
   /** Closes this many minutes after the start (0 = at the start); null = when the Class ends. */
   closesMinutesAfterStart: number | null;
-  /** A signed waiver for the School is needed to check in, whatever the Class says. */
+  /** "Waiver must be signed before booking or check-in" (Decision 441 item
+   * 5; on by default): a signed waiver for the School is needed to check in,
+   * and to book (bookingWaiverRefusal), whatever the Class says. A School
+   * with no waiver in use stops nobody. */
   requireWaiver: boolean;
   /** Members with a home Branch may check in at the School's other Branches. */
   otherBranches: boolean;
@@ -76,11 +79,12 @@ type RuleColumns = {
   openMatUsesClassCredit: boolean;
 };
 
-/** What check-in did before the rules: the column defaults. */
+/** The column defaults: what check-in did before the rules, except the
+ * waiver, on by default since Decision 441 item 5. */
 export const DEFAULT_CHECK_IN_RULES: CheckInRules = {
   opensMinutesBeforeStart: 30,
   closesMinutesAfterStart: null,
-  requireWaiver: false,
+  requireWaiver: true,
   otherBranches: true,
   visitors: true,
   severalClasses: true,
@@ -180,7 +184,12 @@ export async function personCheckInRefusal(
       ? classBranchId
       : (await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, select: { class: { select: { branchId: true } } } })).class.branchId;
   const rules = await loadCheckInRules(prismaJobs, booking.schoolId);
-  if (rules.requireWaiver && !(await hasCountingWaiverSignature(tx, studentId, booking.schoolId))) {
+  // Decision 441 item 5: a School with no waiver in use stops nobody.
+  if (
+    rules.requireWaiver &&
+    !(await hasCountingWaiverSignature(tx, studentId, booking.schoolId)) &&
+    (await schoolHasWaiverInUse(prismaJobs, booking.schoolId))
+  ) {
     return { code: 'CHECK_IN_WAIVER_REQUIRED', message: CHECK_IN_RULE_MESSAGES.waiver };
   }
   if (!rules.otherBranches && branchId) {

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Prisma, PrismaClient } from '@prisma/client';
 import { assertBookingUnlocked } from '../ranks/booking-unlocks';
@@ -19,7 +19,7 @@ import { assertClassBookable, assertNotAlreadyAttended, lockClassSeats, lockClas
 import { bookingUsesCredit } from './open-mat-credit';
 import { classTimeZones } from '../classes/class-time-zone';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
-import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { bookingWaiverRefusal, WAIVER_REQUIRED_TO_BOOK } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 import { assertAccountNotClosing } from '../account-deletion/account-closing';
@@ -127,10 +127,14 @@ export class WaitlistService {
       await assertWhoCanBook(tx, studentId, resolvedClass);
       // Waivers review W15: the claim step needs a signed Waiver, so a
       // student without one would hold an offered seat they can never take.
-      if (resolvedClass.termsWaiverRequired) {
-        if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
-          throw new BadRequestException('This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.');
-        }
+      // Decision 441 item 5: the School's "Waiver must be signed before
+      // booking or check-in" stops joining too, for the same reason.
+      const waiverRefusal = await bookingWaiverRefusal(this.prismaJobs, tx, studentId, resolvedClass.schoolId, resolvedClass.termsWaiverRequired);
+      if (waiverRefusal === 'school') {
+        throw new ForbiddenException({ ...WAIVER_REQUIRED_TO_BOOK });
+      }
+      if (waiverRefusal === 'class') {
+        throw new BadRequestException('This Student must hold a Signed Waiver for this School before joining the waitlist for this Class.');
       }
       const [booked, guests, queued] = await Promise.all([
         this.prismaJobs.booking.count({ where: { classId, status: SEAT_HOLDING_STATUSES } }),
@@ -296,10 +300,13 @@ export class WaitlistService {
       // an archived or ended Class still can't be claimed into.
       assertClassBookable(cls, { byStaff: true });
 
-      if (cls.termsWaiverRequired) {
-        if (!(await hasCountingWaiverSignature(tx, studentId, cls.schoolId))) {
-          throw new BadRequestException('This Student must hold a Signed Waiver for this School before claiming this Booking.');
-        }
+      // Decision 441 item 5: a claim is a booking.
+      const waiverRefusal = await bookingWaiverRefusal(this.prismaJobs, tx, studentId, cls.schoolId, cls.termsWaiverRequired);
+      if (waiverRefusal === 'school') {
+        throw new ForbiddenException({ ...WAIVER_REQUIRED_TO_BOOK });
+      }
+      if (waiverRefusal === 'class') {
+        throw new BadRequestException('This Student must hold a Signed Waiver for this School before claiming this Booking.');
       }
 
       await this.assertRankEligible(tx, studentId, cls);

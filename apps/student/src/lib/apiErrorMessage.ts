@@ -56,6 +56,9 @@ function codedMessage(err: ApiError): string | null {
     // The School's check-in rules (Decision 394, backlog §3.5): the shared wording in @ultm8/i18n.
     case 'CHECK_IN_WAIVER_REQUIRED':
       return translate('server.codes.checkInWaiverRequired');
+    // Decision 441: "Waiver must be signed before booking or check-in".
+    case 'WAIVER_REQUIRED':
+      return translate('server.codes.waiverRequired');
     case 'CHECK_IN_HOME_BRANCH_ONLY':
       return translate('server.codes.checkInHomeBranchOnly');
     case 'CHECK_IN_VISITORS_OFF':
