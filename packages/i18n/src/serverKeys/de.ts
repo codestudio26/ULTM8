@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "Etwas ist schiefgelaufen – bitte versuche es erneut.",
   },
   codes: {
+    accountClosing: "Dieses Konto wird gelöscht und kann nicht mehr buchen, einchecken oder kaufen.",
+    accountLocked: "Dieses Konto wird gelöscht. Melde dich erneut an, um es zu behalten.",
+    mainOwnerMustHandOver: "Du bist Hauptinhaber einer Schule oder eines Franchise. Übergib sie an einen anderen Inhaber (der ULTM8-Support kann das erledigen) oder schließe sie, bevor du dein Konto löschst.",
+    subscriptionNotStopped: "Eine wiederkehrende Zahlung konnte gerade nicht gestoppt werden, daher wurde dein Konto nicht gelöscht. Bitte versuche es gleich noch einmal.",
     classFull: "Dieser Kurs ist voll. Du kannst den Schüler stattdessen auf die Warteliste setzen.",
     waitlistFirst: "Für diesen Kurs warten bereits Schüler auf einen Platz. Trag dich in die Warteliste ein, um an die Reihe zu kommen.",
     bookingClosed: "Die Buchung für diesen Kurs ist geschlossen. Ein Mitarbeiter kann dich weiterhin eintragen.",
@@ -184,6 +188,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "Kontolöschung beantragt",
+    accountDeletionRequestedBody: "Dein ULTM8-Konto wird am {when} gelöscht. Bis dahin ist es gesperrt. Wenn du es behalten möchtest, melde dich vorher erneut an.",
+    accountDeletionRequestedChildrenBody: "Dein ULTM8-Konto wird am {when} gelöscht. Bis dahin ist es gesperrt. Die Konten dieser Kinder werden mit ihm gelöscht: {children}. Wenn du es behalten möchtest, melde dich vorher erneut an.",
+    memberLeftTitle: "Ein Mitglied ist gegangen",
+    memberLeftBody: "Ein Mitglied hat sein ULTM8-Konto gelöscht und deine Schule verlassen. Seine Daten wurden entfernt. Seine Zahlungen, Verzichtserklärungen und Gurtgeschichte bleiben bei deiner Schule unter „Erased User“.",
     classCancelledBySchoolBody: "{class} am {when} wurde von der Schule abgesagt.",
     classCancelledBySchoolBodyWithReason: "{class} am {when} wurde von der Schule abgesagt. Grund: {reason}",
     cancellationsTitle: "Offene Stornierungen",

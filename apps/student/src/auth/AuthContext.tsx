@@ -75,6 +75,10 @@ interface AuthContextValue {
   pendingSchoolPick: PendingSchoolPick | null;
   setPendingSchoolPick: (school: PendingSchoolPick) => void;
   clearPendingSchoolPick: () => void;
+  /** "Delete my account": true after a sign-in cancelled a pending account
+   * deletion, so Home can say so; cleared by dismissDeletionCancelled. */
+  deletionCancelled: boolean;
+  dismissDeletionCancelled: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -88,6 +92,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [activeCoachSchoolId, setActiveCoachSchoolIdState] = useState<string | null>(null);
   const [pendingSchoolPick, setPendingSchoolPickState] = useState<PendingSchoolPick | null>(null);
+  const [deletionCancelled, setDeletionCancelled] = useState(false);
+  const dismissDeletionCancelled = useCallback(() => setDeletionCancelled(false), []);
 
   // Derived, not its own state — claims are 100% a function of accessToken, so keeping
   // it in a separate useState risked a future call site updating one and forgetting the
@@ -176,6 +182,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(
     async (email: string, passcode: string) => {
       const result = await unwrap(authClient.POST('/v1/auth/login', { body: { email, passcode } }));
+      // Signing in again within the 30 days cancels a pending account deletion.
+      if (result.deletionCancelled) setDeletionCancelled(true);
       // A temporary passcode (Decisions 1/230; a student the owner added by
       // hand, Decision 371): the caller asks for a new one, then calls
       // completeFirstLogin. LoginResponseDto's own header comment confirms
@@ -374,6 +382,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       pendingSchoolPick,
       setPendingSchoolPick,
       clearPendingSchoolPick,
+      deletionCancelled,
+      dismissDeletionCancelled,
     }),
     [
       loading,
@@ -389,6 +399,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       pendingSchoolPick,
       setPendingSchoolPick,
       clearPendingSchoolPick,
+      deletionCancelled,
+      dismissDeletionCancelled,
     ],
   );
 

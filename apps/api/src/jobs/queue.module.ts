@@ -34,6 +34,7 @@ import {
   MEMBERSHIP_ENDING_REPORT_QUEUE,
   SIGNED_DOCUMENTS_EXPORT_QUEUE,
   CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE,
+  ACCOUNT_ERASURE_QUEUE,
 } from './queue.constants';
 
 const logger = new Logger('QueueModule');
@@ -124,6 +125,7 @@ export {
   MEMBERSHIP_ENDING_REPORT_QUEUE,
   SIGNED_DOCUMENTS_EXPORT_QUEUE,
   CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE,
+  ACCOUNT_ERASURE_QUEUE,
 };
 
 @Module({
@@ -161,6 +163,7 @@ export {
       { name: MEMBERSHIP_ENDING_REPORT_QUEUE },
       { name: SIGNED_DOCUMENTS_EXPORT_QUEUE },
       { name: CARD_SURCHARGE_COUNTRY_REMOVAL_QUEUE },
+      { name: ACCOUNT_ERASURE_QUEUE },
     ),
   ],
   exports: [BullModule],

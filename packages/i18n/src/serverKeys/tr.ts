@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "Bir şeyler ters gitti — lütfen tekrar deneyin.",
   },
   codes: {
+    accountClosing: "Bu hesap siliniyor; artık rezervasyon yapamaz, giriş yapamaz veya satın alamaz.",
+    accountLocked: "Bu hesap siliniyor. Hesabı korumak için tekrar oturum açın.",
+    mainOwnerMustHandOver: "Bir okulun veya franchise'ın ana sahibisiniz. Hesabınızı silmeden önce onu başka bir sahibe devredin (ULTM8 desteği bunu yapabilir) veya kapatın.",
+    subscriptionNotStopped: "Şu anda tekrarlanan bir ödemeyi durduramadık, bu yüzden hesabınız silinmedi. Lütfen birazdan tekrar deneyin.",
     classFull: "Bu ders dolu. Bunun yerine öğrenciyi bekleme listesine ekleyebilirsiniz.",
     waitlistFirst: "Bu derste yer bekleyen öğrenciler zaten var. Sıranızı almak için bekleme listesine katılın.",
     bookingClosed: "Bu ders için rezervasyonlar kapandı. Bir personel üyesi sizi yine de ekleyebilir.",
@@ -184,6 +188,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "Hesap silme talep edildi",
+    accountDeletionRequestedBody: "ULTM8 hesabınız {when} tarihinde silinecek. O zamana kadar kilitli kalır. Hesabı korumak için bu tarihten önce tekrar oturum açın.",
+    accountDeletionRequestedChildrenBody: "ULTM8 hesabınız {when} tarihinde silinecek. O zamana kadar kilitli kalır. Bu çocukların hesapları da onunla birlikte silinecek: {children}. Hesabı korumak için bu tarihten önce tekrar oturum açın.",
+    memberLeftTitle: "Bir üye ayrıldı",
+    memberLeftBody: "Bir üye ULTM8 hesabını sildi ve okulunuzdan ayrıldı. Bilgileri kaldırıldı. Ödemeleri, feragatnameleri ve kuşak geçmişi okulunuzda \"Erased User\" adıyla kalır.",
     classCancelledBySchoolBody: "{when} tarihli {class} okul tarafından iptal edildi.",
     classCancelledBySchoolBodyWithReason: "{when} tarihli {class} okul tarafından iptal edildi. Neden: {reason}",
     cancellationsTitle: "Çözülecek iptaller",

@@ -18,6 +18,10 @@ export const server: PartialMessages<ServerKeys> = {
     unexpected: "Une erreur s’est produite — veuillez réessayer.",
   },
   codes: {
+    accountClosing: "Ce compte est en cours de suppression : il ne peut plus réserver, pointer ni acheter.",
+    accountLocked: "Ce compte est en cours de suppression. Reconnectez-vous pour le conserver.",
+    mainOwnerMustHandOver: "Vous êtes le propriétaire principal d’une école ou d’une franchise. Confiez-la à un autre propriétaire (le support ULTM8 peut le faire) ou fermez-la avant de supprimer votre compte.",
+    subscriptionNotStopped: "Un paiement récurrent n’a pas pu être arrêté pour le moment, votre compte n’a donc pas été supprimé. Réessayez dans un instant.",
     classFull: "Ce cours est complet. Vous pouvez plutôt ajouter l’élève à la liste d’attente.",
     waitlistFirst: "Des élèves attendent déjà une place dans ce cours. Inscrivez-vous sur la liste d’attente pour attendre votre tour.",
     bookingClosed: "Les réservations pour ce cours sont closes. Un membre du personnel peut encore vous inscrire.",
@@ -198,6 +202,11 @@ export const server: PartialMessages<ServerKeys> = {
     },
   },
   notifications: {
+    accountDeletionRequestedTitle: "Suppression du compte demandée",
+    accountDeletionRequestedBody: "Votre compte ULTM8 sera supprimé le {when}. D’ici là, il est bloqué. Pour le conserver, reconnectez-vous avant cette date.",
+    accountDeletionRequestedChildrenBody: "Votre compte ULTM8 sera supprimé le {when}. D’ici là, il est bloqué. Les comptes de ces enfants seront supprimés avec lui : {children}. Pour le conserver, reconnectez-vous avant cette date.",
+    memberLeftTitle: "Un membre est parti",
+    memberLeftBody: "Un membre a supprimé son compte ULTM8 et quitté votre école. Ses informations ont été effacées. Ses paiements, décharges et son historique de ceintures restent dans votre école sous « Erased User ».",
     classCancelledBySchoolBody: "{class} du {when} a été annulé par l'école.",
     classCancelledBySchoolBodyWithReason: "{class} du {when} a été annulé par l'école. Motif : {reason}",
     cancellationsTitle: "Annulations à traiter",

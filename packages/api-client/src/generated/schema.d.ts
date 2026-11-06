@@ -2724,6 +2724,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/users/me/deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AccountDeletionController_preview"];
+        put?: never;
+        post: operations["AccountDeletionController_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/settings/languages": {
         parameters: {
             query?: never;
@@ -7737,6 +7753,8 @@ export interface components {
             mustChangePasscode?: boolean;
             /** @description Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else. */
             passcodeChangeToken?: string;
+            /** @description True when this sign-in cancelled the account deletion the member had asked for. */
+            deletionCancelled?: boolean;
         };
         RefreshTokenDto: {
             refreshToken: string;
@@ -10679,6 +10697,46 @@ export interface components {
             uploadUrl: string;
             /** @description Pass this back as certificationKey when calling PATCH /instructors/me/profile. */
             objectKey: string;
+        };
+        DeletionBlockDto: {
+            /** @enum {string} */
+            kind: "SCHOOL" | "FRANCHISE";
+            id: string;
+            name: string;
+        };
+        DeletionChildDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+        };
+        DeletionKeptChildDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            /**
+             * @description Why the child stays: another active parent is linked, or the child has a login of their own. Only this parent's link ends.
+             * @enum {string}
+             */
+            reason: "OTHER_PARENT" | "OWN_LOGIN";
+        };
+        AccountDeletionStateDto: {
+            /** @description True once deletion has been asked for and not cancelled. */
+            pending: boolean;
+            /** Format: date-time */
+            requestedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the account is anonymised for good, unless the member signs in again before then.
+             */
+            dueAt: string | null;
+            /** @description Days between asking and the deletion becoming final. */
+            graceDays: number;
+            /** @description Open Schools and Franchises this member is the main owner of. While any is listed, deletion is refused (MAIN_OWNER_MUST_HAND_OVER). */
+            blockedBy: components["schemas"]["DeletionBlockDto"][];
+            /** @description Children deleted with this account (no other active parent and no login of their own). */
+            childrenDeleted: components["schemas"]["DeletionChildDto"][];
+            /** @description Children who keep their account; only this parent's link to them ends. */
+            childrenKept: components["schemas"]["DeletionKeptChildDto"][];
         };
         CodeNameResponseDto: {
             code: string;
@@ -19976,6 +20034,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CertificationUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AccountDeletionController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDeletionStateDto"];
+                };
+            };
+        };
+    };
+    AccountDeletionController_request: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify. */
+                "x-step-up-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDeletionStateDto"];
                 };
             };
         };

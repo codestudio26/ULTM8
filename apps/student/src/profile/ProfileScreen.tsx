@@ -20,6 +20,8 @@ import {
   type UserProfile,
 } from './profileQueries';
 import { AddressSearch } from './AddressSearch';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { AppStackParamList } from '../navigation/types';
 import type { AddressDetails } from './addressLookupQueries';
 
 /** Same 5MB/PNG+JPEG+WebP limits `PhotoUploadField` (packages/ui, the web
@@ -115,7 +117,9 @@ function formFrom(profile: UserProfile): Form {
  * not silently expanded scope: closing it means deciding what an "unset"
  * language/currency state should even look like in the picker UI, which is a
  * product/UX call this task doesn't make on its own. */
-export function ProfileScreen() {
+type Props = Partial<NativeStackScreenProps<AppStackParamList, 'Profile'>>;
+
+export function ProfileScreen({ navigation }: Props = {}) {
   const t = useT();
   const profile = useMyProfile();
   const languages = useLanguages();
@@ -382,6 +386,13 @@ export function ProfileScreen() {
 
       {/* Decision 419 item 1: which Schools hold medical information, and withdrawing consent. */}
       <MedicalInfoSharing studentId={profile.data.id} />
+
+      {/* "Delete my account" (Decision 427 item 5): required by Apple. */}
+      {navigation ? (
+        <View style={{ marginTop: spacing[6] }}>
+          <Button title={t('profile.deleteAccount.open')} variant="destructive" onPress={() => navigation.navigate('DeleteAccount')} />
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
