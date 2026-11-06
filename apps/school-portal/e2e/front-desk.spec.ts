@@ -427,7 +427,11 @@ test('each guest is ticked on their own; the member\'s check-in doesn\'t check t
   for (let i = 0; i < 2; i++) {
     guests.push(await db.bookingAttendee.create({ data: { id: randomUUID(), bookingId: booking.id, schoolId: s.schoolId, membershipId: m.id, createdAt: at(i * 1000) } }));
   }
-  await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Liability', body: 'Text' } });
+  const liability = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Liability', body: 'Text' } });
+  // The member has signed it (Decision 441: needed to check in); the guests haven't.
+  await db.waiverSignature.create({
+    data: { id: randomUUID(), waiverId: liability.id, studentId: s.student.id, signedById: s.student.id, schoolId: s.schoolId, status: 'SIGNED', signerFullName: 'Sam Lee', signatureText: 'Sam Lee', signedDate: new Date() },
+  });
   await signIn(page, s.ownerToken);
   await page.goto('/check-in');
   await page.getByRole('tab', { name: 'Name' }).click();
@@ -559,21 +563,16 @@ test('a check-in rule the person breaks is shown as its reason (Decisions 394, 4
   // Decision 441 item 5: "Waiver must be signed before booking or check-in" is
   // on by default, and stops someone only once the School has a waiver in use.
   expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).checkInRequireWaiver).toBe(true);
-  const waiver = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Liability', body: 'Text' } });
-  try {
-    await signIn(page, s.ownerToken);
-    await page.goto('/check-in');
-    await page.getByRole('tab', { name: 'Name' }).click();
-    await page.getByLabel('First or last name').fill('Sam');
-    await page.getByRole('button', { name: /Sam Lee/ }).click();
-    const card = page.getByTestId('fd-welcome');
-    await card.getByRole('button', { name: 'Check in to 1 class' }).click();
-    await expect(card.getByRole('alert')).toContainText('This School needs a signed waiver before checking in.');
-    expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } })).status).toBe('UPCOMING');
-  } finally {
-    // The other tests here aren't about the waiver.
-    await db.waiver.delete({ where: { id: waiver.id } });
-  }
+  await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Liability', body: 'Text' } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/check-in');
+  await page.getByRole('tab', { name: 'Name' }).click();
+  await page.getByLabel('First or last name').fill('Sam');
+  await page.getByRole('button', { name: /Sam Lee/ }).click();
+  const card = page.getByTestId('fd-welcome');
+  await card.getByRole('button', { name: 'Check in to 1 class' }).click();
+  await expect(card.getByRole('alert')).toContainText('This School needs a signed waiver before checking in.');
+  expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id, studentId: s.student.id } })).status).toBe('UPCOMING');
 });
 
 test('a used-up Class Pack can be sold at the desk, and the card then checks the student in (Decision 395)', async ({ page }) => {
