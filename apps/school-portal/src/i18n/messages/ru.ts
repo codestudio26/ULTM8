@@ -3315,9 +3315,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       bodyHint: "Оставьте пустым, если договора нет.",
       minimumTermLabel: "Минимальный срок (месяцы)",
       minimumTermHint: "Считается со дня начала членства.",
-      earlyExitFeeLabel: "Плата за досрочный выход",
+      earlyExitFeeLabel: "Плата за досрочное расторжение",
       earlyExitFeeHint: "Добавляется к балансу участника, если он отменит подписку и членство закончится раньше минимального срока. Действуют ваши налоговые настройки.",
-      subscriptionOnly: "Минимальный срок и плата за досрочный выход бывают только у подписок.",
+      subscriptionOnly: "Минимальный срок и плата за досрочное расторжение бывают только у подписок.",
       deskNote: "Тариф с договором нельзя продать на ресепшене: участник подписывает договор при покупке в приложении.",
       add: "Добавить договор",
       update: "Обновить договор",
@@ -3334,7 +3334,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       signedOn: "Подписан {date}, {name}",
       signedByGuardian: "подписан родителем или опекуном",
       notUsed: "не использован для покупки",
-      termsLine: "Минимальный срок {months} мес. · плата за досрочный выход {amount}",
+      termsLine: "Минимальный срок {months} мес. · плата за досрочное расторжение {amount}",
       viewText: "Показать подписанный текст",
       hideText: "Скрыть подписанный текст",
       typedSignature: "Напечатанная подпись: {signature}",
@@ -4950,7 +4950,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
     // Decision 435 item 19 — a signed contract's early-exit fee.
     earlyExitFee: {
-      badge: "Плата за досрочный выход",
+      badge: "Плата за досрочное расторжение",
     },
     lateFee: {
       badge: "Пеня за просрочку",

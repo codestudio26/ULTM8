@@ -90,7 +90,7 @@ export const serverMessages: Record<string, string> = {
   "Device token not found": "Token del dispositivo non trovato",
   "Discipline not found": "Disciplina non trovata",
   "This Student has no existing rank in this Discipline to grade from.": "Questo allievo non ha ancora un grado in questo stile da cui promuoverlo.",
-  "targetRungId is not a belt or stripe of the Adult program.": "Non è una cintura o un grado del programma adulti.",
+  "targetRungId is not a belt or stripe of the Adult program.": "Non è una cintura o una striscia del programma adulti.",
   "A style can't be its own Adult program.": "Uno stile non può essere il proprio programma adulti.",
   "Pick an Adult style of this School that is in use.": "Scegli uno stile adulti di questa scuola in uso.",
   "That style is a Kids program itself, so it can't be an Adult program.": "Quello stile è già un programma bambini, quindi non può essere un programma adulti.",
