@@ -472,6 +472,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "수련생 {v1}명{v2}이 이 띠를 보유하고 있어 {v3} 처리할 수 없습니다.",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "이 강사는 보관되었습니다. 강사 페이지에서 보관을 해제하거나 다른 강사를 선택하세요.",
   "This person is no longer an instructor at this School.": "이 사람은 더 이상 이 도장의 강사가 아닙니다.",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "이 사람은 이 도장에서 강사 역할이 없습니다. 먼저 직원 페이지에서 역할을 부여하세요.",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "이 강사는 아직 예정된 수업이나 주간 시간표 슬롯을 맡고 있습니다. 먼저 강사 페이지에서 \"수업 넘기기\"를 사용한 후 역할을 제거하세요.",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "아직 이곳에서 예정된 수업이나 주간 시간표 슬롯을 가르치고 있습니다. 먼저 도장 원장에게 인계를 요청하세요.",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "이 사람은 더 이상 이곳의 강사가 아닙니다. 먼저 강사 역할을 다시 부여하세요.",

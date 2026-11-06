@@ -19,6 +19,7 @@ import {
 import { GiveRoleBackModal, HandOverClassesModal, ResendPasscodeModal, RevokeBlockedModal } from './InstructorDetailActions';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { localizeAddressCountry } from '@ultm8/i18n';
 
 const PAST_SHOWN = 10;
 
@@ -195,7 +196,7 @@ export function InstructorDetailPage() {
               ) : null}
               {instructor.address ? (
                 <span>
-                  <strong>{t('instructors.detail.address')}</strong> {instructor.address}
+                  <strong>{t('instructors.detail.address')}</strong> {localizeAddressCountry(instructor.address, formatLocale(), instructor.addressCountry)}
                 </span>
               ) : null}
               {instructor.certificationKey ? (

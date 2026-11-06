@@ -3,16 +3,17 @@ import { Link } from 'react-router-dom';
 import { Button, Card } from '@ultm8/ui';
 import { useSetSetupChecklistHidden, type DashboardOverview, type SetupStepKey } from './dashboardQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { STRIPE_CONNECT_ANCHOR } from '../schools/StripeConnectCard';
 
-/** Where each step is done. Stripe has no portal screen yet: ULTM8 support
- * connects it, so it has no link. */
+/** Where each step is done. Stripe is connected from the Stripe card on the
+ * School page (Decision 441 item 6). */
 const STEPS: Record<SetupStepKey, { label: TranslationKey; to: string | null }> = {
   BRANCH: { label: 'dashboard.setup.steps.BRANCH', to: '/branches' },
   STYLE_AND_BELTS: { label: 'dashboard.setup.steps.STYLE_AND_BELTS', to: '/disciplines' },
   CLASS: { label: 'dashboard.setup.steps.CLASS', to: '/timetable' },
   MEMBERSHIP_PLAN: { label: 'dashboard.setup.steps.MEMBERSHIP_PLAN', to: '/membership-plans' },
   WAIVER: { label: 'dashboard.setup.steps.WAIVER', to: '/waivers' },
-  STRIPE: { label: 'dashboard.setup.steps.STRIPE', to: null },
+  STRIPE: { label: 'dashboard.setup.steps.STRIPE', to: `/school#${STRIPE_CONNECT_ANCHOR}` },
   STAFF: { label: 'dashboard.setup.steps.STAFF', to: '/staff' },
 };
 

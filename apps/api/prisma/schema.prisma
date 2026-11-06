@@ -1230,11 +1230,17 @@ model School {
   /// can't go back to 4 (Decision 417).
   checkInCodeDigits              Int                             @default(4)
   /// Check-in rules (Decision 394, Decision 317 item 1, handover F9). Each
-  /// default is what check-in did before the rules existed. Applied to every
+  /// default is what check-in did before the rules existed (except the
+  /// waiver, Decision 441 item 5). Applied to every
   /// way in: app QR and code, the coach's scan, the front desk and the tablet.
-  /// A School-wide signed waiver needed at check-in, beyond a Class's own
-  /// "needs a waiver" (which is checked at booking). Off: only the Class's.
-  checkInRequireWaiver           Boolean                         @default(false)
+  /// Decision 441 item 5: "Waiver must be signed before booking or
+  /// check-in", on by default (existing Schools were switched on too). A
+  /// member (a child through their parent) needs a signed waiver for the
+  /// School to book a class, join its waiting list, claim an offered place
+  /// or check in, whatever the Class says. A School with no waiver in use
+  /// blocks nobody. Off: only a Class's own "needs a waiver" (at booking).
+  /// Buying a plan isn't affected. Was check-in only (Decision 394).
+  checkInRequireWaiver           Boolean                         @default(true)
   /// Members with a home Branch may check in at the School's other Branches.
   checkInOtherBranches           Boolean                         @default(true)
   /// Visitors may check in on their visit pass (Decision 391).
@@ -2150,6 +2156,15 @@ model PaymentAccount {
   /// method: accounts.create() returns the new Connected Account's id synchronously,
   /// no webhook needed for that specific value. See that method's own comment.)
   stripeConnectedAccountId String? @unique
+
+  /// Decision 441 item 6: Stripe has confirmed the connected account is ready —
+  /// onboarding finished (`details_submitted`) and it can take charges
+  /// (`charges_enabled`). Kept current by the `account.updated` webhook and by
+  /// the School's connect-status read when the owner comes back from Stripe;
+  /// it goes back to false if Stripe later asks for more details. The setup
+  /// checklist ticks "Connect Stripe" from this. Only the API writes it, from
+  /// what Stripe says; never client-settable.
+  stripeAccountReady Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

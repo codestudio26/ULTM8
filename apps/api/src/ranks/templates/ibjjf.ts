@@ -11,6 +11,8 @@
  * grading engine; a time-only rung holds the days to stay on it.
  */
 
+import { ENGLISH_TEMPLATE_NAMES, IbjjfBeltName, TemplateNames } from './ibjjf-names';
+
 export type TemplateId = 'ibjjf' | 'ibjjf_kids_red' | 'ibjjf_kids_yellow';
 
 export const TEMPLATES: Array<{ id: TemplateId; name: string; description: string }> = [
@@ -60,7 +62,7 @@ const AS = ['Adult Fundamentals', 'Adult Sparring'];
 const COMP = ['Adult Sparring', 'Competition Team'];
 
 // [name, colour, secondary colour, total classes, total days, weekly cap, class types]
-type BeltRow = [string, string, string | null, number, number, number, string[]];
+type BeltRow = [IbjjfBeltName, string, string | null, number, number, number, string[]];
 
 const KIDS: BeltRow[] = [
   ['White Belt', '#FFFFFF', null, 40, 180, 3, K],
@@ -84,8 +86,6 @@ const ADULT: BeltRow[] = [
   ['Brown Belt', '#7A4A22', null, 130, 365, 4, AS],
 ];
 
-const plural = (n: number) => (n === 1 ? '' : 's');
-
 function rung(belt: BeltRow, name: string, segments: TemplateRung['segments']): TemplateRung {
   return {
     name,
@@ -99,28 +99,31 @@ function rung(belt: BeltRow, name: string, segments: TemplateRung['segments']): 
   };
 }
 
-function whiteRungs(belt: BeltRow): TemplateRung[] {
+function whiteRungs(belt: BeltRow, names: TemplateNames): TemplateRung[] {
   const rows: TemplateRung[] = [];
+  const beltName = names.belts[belt[0]];
   for (let n = 0; n <= 4; n++) {
-    rows.push(rung(belt, n === 0 ? belt[0] : `${belt[0]} · ${n} Stripe${plural(n)}`, n > 0 ? [{ count: n, colour: WHITE }] : []));
+    rows.push(rung(belt, n === 0 ? beltName : `${beltName} · ${names.stripes(n)}`, n > 0 ? [{ count: n, colour: WHITE }] : []));
   }
   return rows;
 }
 
-function redRungs(belt: BeltRow, maxRed: number): TemplateRung[] {
+function redRungs(belt: BeltRow, maxRed: number, names: TemplateNames): TemplateRung[] {
+  const beltName = names.belts[belt[0]];
   const rows: TemplateRung[] = [];
   for (let n = 1; n <= maxRed; n++) {
     const segments = [{ count: n, colour: RED }];
     if (4 - n > 0) segments.push({ count: 4 - n, colour: WHITE });
-    rows.push(rung(belt, maxRed === 1 ? `${belt[0]} · Red Stripe` : `${belt[0]} · ${n} Red Stripe${plural(n)}`, segments));
+    rows.push(rung(belt, maxRed === 1 ? `${beltName} · ${names.redStripe}` : `${beltName} · ${names.redStripes(n)}`, segments));
   }
   return rows;
 }
 
-function yellowRungs(belt: BeltRow): TemplateRung[] {
+function yellowRungs(belt: BeltRow, names: TemplateNames): TemplateRung[] {
   const rows: TemplateRung[] = [];
+  const beltName = names.belts[belt[0]];
   for (let n = 1; n <= 3; n++) {
-    rows.push(rung(belt, `${belt[0]} · ${n} Yellow Stripe${plural(n)}`, [{ count: n, colour: YELLOW }, { count: 4 - n, colour: RED }]));
+    rows.push(rung(belt, `${beltName} · ${names.yellowStripes(n)}`, [{ count: n, colour: YELLOW }, { count: 4 - n, colour: RED }]));
   }
   return rows;
 }
@@ -129,37 +132,40 @@ function timeRung(name: string, segments: TemplateRung['segments'], days: number
   return { name, segments, timeOnly: true, classesRequired: null, minimumDaysInRank: days, weeklyClassCountCap: null, eligibleClassTypes: [...COMP] };
 }
 
-function belt(row: BeltRow, rungs: TemplateRung[]): TemplateBelt {
-  return { name: row[0], primaryColour: row[1], secondaryColour: row[2], tagColour: BLACK, coralAccent: null, rungs };
+function belt(row: BeltRow, rungs: TemplateRung[], names: TemplateNames): TemplateBelt {
+  return { name: names.belts[row[0]], primaryColour: row[1], secondaryColour: row[2], tagColour: BLACK, coralAccent: null, rungs };
 }
 
-/** The belts of one IBJJF template, lowest first. */
-export function buildIbjjfTemplate(id: TemplateId): TemplateBelt[] {
+/** The belts of one IBJJF template, lowest first, named in `names`' language
+ * (Decision 441 item 8; English by default). */
+export function buildIbjjfTemplate(id: TemplateId, names: TemplateNames = ENGLISH_TEMPLATE_NAMES): TemplateBelt[] {
   const opts = VARIANTS[id];
   const belts: TemplateBelt[] = [];
   KIDS.forEach((row, i) => {
-    let rungs = whiteRungs(row);
-    if (opts.red) rungs = rungs.concat(redRungs(row, i === 0 ? 1 : 4));
-    if (opts.yellow && i > 0) rungs = rungs.concat(yellowRungs(row));
-    belts.push(belt(row, rungs));
+    let rungs = whiteRungs(row, names);
+    if (opts.red) rungs = rungs.concat(redRungs(row, i === 0 ? 1 : 4, names));
+    if (opts.yellow && i > 0) rungs = rungs.concat(yellowRungs(row, names));
+    belts.push(belt(row, rungs, names));
   });
-  ADULT.forEach((row) => belts.push(belt(row, whiteRungs(row))));
+  ADULT.forEach((row) => belts.push(belt(row, whiteRungs(row, names), names)));
 
   const blackDays = [1095, 1095, 1095, 1825, 1825, 1825, 2555];
+  const black = names.belts['Black Belt'];
   belts.push({
-    name: 'Black Belt',
+    name: black,
     primaryColour: BLACK,
     secondaryColour: null,
     tagColour: RED,
     coralAccent: null,
-    rungs: blackDays.map((days, n) => timeRung(n === 0 ? 'Black Belt' : `Black Belt · ${n} Stripe${plural(n)}`, n > 0 ? [{ count: n, colour: WHITE }] : [], days)),
+    rungs: blackDays.map((days, n) => timeRung(n === 0 ? black : `${black} · ${names.stripes(n)}`, n > 0 ? [{ count: n, colour: WHITE }] : [], days)),
   });
-  const coral: Array<[string, string, string | null, number, string]> = [
+  const coral: Array<[IbjjfBeltName, string, string | null, number, string]> = [
     ['Red/Black Belt (7th Degree)', '#C23B3B', '#17181A', 2555, SILVER],
     ['Red/White Belt (8th Degree)', '#C23B3B', '#FFFFFF', 3650, SILVER],
     ['Red Belt (9th Degree)', '#C23B3B', null, 0, GOLD],
   ];
-  for (const [name, colour, second, days, accent] of coral) {
+  for (const [key, colour, second, days, accent] of coral) {
+    const name = names.belts[key];
     belts.push({ name, primaryColour: colour, secondaryColour: second, tagColour: null, coralAccent: accent, rungs: [timeRung(name, [], days)] });
   }
   return belts;

@@ -6,6 +6,8 @@ import { Button, ErrorBanner, Field, InlineError, SearchablePickerField, Success
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { theme, spacing, fontSize, fontWeight, radius } from '../theme/tokens';
 import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
+import { localizeAddressCountry } from '@ultm8/i18n';
 import { MedicalInfoSharing } from './MedicalInfoSharing';
 import { OneNameSwitch } from '../components/OneNameSwitch';
 import { useMemberAppSettings } from '../lib/memberAppQueries';
@@ -70,7 +72,8 @@ function formFrom(profile: UserProfile): Form {
     dateOfBirth: profile.dateOfBirth.slice(0, 10),
     gender: profile.gender ?? '',
     nationality: profile.nationality ?? '',
-    address: profile.address ?? '',
+    // Decision 441 item 7: the country in the app's language; saved only if edited.
+    address: localizeAddressCountry(profile.address ?? '', formatLocale(), profile.addressCountry),
     language: profile.language ?? '',
     currency: profile.currency ?? '',
     weightCategory: profile.weightCategory ?? '',
@@ -180,7 +183,7 @@ export function ProfileScreen({ navigation }: Props = {}) {
         // is saved with its separate fields (Decision 276), like the School Portal does.
         ...(usePicked
           ? { postalAddress: pickedAddress!.postalAddress }
-          : { address: form.address.trim() === (profile.data?.address ?? '') ? undefined : form.address.trim() || null }),
+          : { address: form.address.trim() === (initial?.address ?? '') ? undefined : form.address.trim() || null }),
         // Still `undefined`, not `null`, for these two — neither picker offers
         // a "none" selection, so an empty `form.language`/`form.currency`
         // genuinely can't happen via this screen's own UI today; see this

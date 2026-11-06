@@ -472,6 +472,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "عدد الطلاب الذين يحملون هذا الحزام: {v1}{v2}، لذا لا يمكن تنفيذ «{v3}» عليه.",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "هذا المدرّب مؤرشف. ألغِ أرشفته في صفحة المدرّبين أو اختر مدرّبًا آخر.",
   "This person is no longer an instructor at this School.": "هذا الشخص لم يعد مدرّبًا في هذه المدرسة.",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "ليس لدى هذا الشخص دور المدرّب في هذه المدرسة. امنحه الدور أولًا في صفحة الموظفين.",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "لا يزال يدرّس هنا حصصًا قادمة أو فترات أسبوعية في الجدول. استخدم أولًا «تسليم الحصص» في صفحة المدرّب، ثم أزل الدور.",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "ما زلت تدرّس حصصًا قادمة أو مواعيد أسبوعية في الجدول هنا. اطلب من مالك المدرسة تسليمها لمدرب آخر أولًا.",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "لم يعد هذا الشخص مدرّبًا هنا. أعد له دور المدرّب أولًا.",

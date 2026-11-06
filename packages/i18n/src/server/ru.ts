@@ -472,6 +472,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "Учеников с этим поясом: {v1}{v2}, поэтому действие «{v3}» недоступно.",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Этот инструктор в архиве. Верните его из архива на странице «Инструкторы» или выберите другого инструктора.",
   "This person is no longer an instructor at this School.": "Этот человек больше не инструктор в этой школе.",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "У этого человека нет роли инструктора в этой школе. Сначала выдайте роль на странице «Персонал».",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "Этот человек всё ещё ведёт здесь предстоящие занятия или еженедельные слоты расписания. Сначала используйте «Передать занятия» на странице инструктора, затем снимите роль.",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "Вы всё ещё ведёте здесь предстоящие занятия или еженедельные слоты расписания. Сначала попросите владельца школы передать их.",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "Этот человек здесь больше не инструктор. Сначала верните ему роль инструктора.",

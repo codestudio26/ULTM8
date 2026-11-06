@@ -376,6 +376,9 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       .set('Authorization', `Bearer ${tokenOwnerA}`)
       .send(profileBody(ungranted.id));
     expect(res.status).toBe(400);
+    // Decision 441 item 10: told to give them the role, not that they "no longer" have it.
+    expect(res.body.error.code).toBe('NOT_AN_INSTRUCTOR');
+    expect(res.body.error.message).toBe("This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.");
   });
 
   it('a School-scoped INSTRUCTOR grant CAN back a Branch-specific profile', async () => {

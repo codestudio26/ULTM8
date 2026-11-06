@@ -58,6 +58,7 @@ export const server = {
     adultAlready: "This student already has a rank in the Adult program.",
     adultFirstBelt: "Pick an adult rank above the Adult program's first belt.",
     checkInWaiverRequired: "This School needs a signed waiver before checking in.",
+    waiverRequired: "This School needs a signed waiver before booking a class or checking in.",
     checkInHomeBranchOnly: "This School checks members in only at their home Branch.",
     checkInVisitorsOff: "This School doesn't check visitors in on a visit pass at the moment.",
     checkInOneClass: "This School checks people in to one class at a time.",

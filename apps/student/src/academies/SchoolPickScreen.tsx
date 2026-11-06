@@ -4,6 +4,8 @@ import { ApiError, type components } from '@ultm8/api-client';
 import { Button, ErrorBanner, Field, Screen, TextField } from '../components/ui';
 import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
+import { localizeAddressCountry } from '@ultm8/i18n';
 import { useAuth } from '../auth/AuthContext';
 import { theme, spacing, fontSize, fontWeight, radius, minTouchTarget } from '../theme/tokens';
 import { useSchoolByJoinCode, useSchoolSearch } from './publicSchoolQueries';
@@ -82,7 +84,7 @@ function SchoolRow({ school, onPress }: { school: { id: string; name: string; ad
       style={{ minHeight: minTouchTarget, paddingVertical: spacing[3], borderBottomWidth: 1, borderBottomColor: theme.border }}
     >
       <Text style={{ fontSize: fontSize.body, fontWeight: fontWeight.emphasis }}>{school.name}</Text>
-      {school.address ? <Text style={{ color: theme.textSecondary, marginTop: 2 }}>{school.address}</Text> : null}
+      {school.address ? <Text style={{ color: theme.textSecondary, marginTop: 2 }}>{localizeAddressCountry(school.address, formatLocale())}</Text> : null}
     </Pressable>
   );
 }

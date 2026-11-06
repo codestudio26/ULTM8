@@ -472,6 +472,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "Bu kuşağa sahip öğrenciler var ({v1} student{v2}), bu nedenle kuşak silinemez veya arşivlenemez ({v3}).",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Bu eğitmen arşivlendi. Eğitmenler sayfasında arşivden çıkarın veya başka bir eğitmen seçin.",
   "This person is no longer an instructor at this School.": "Bu kişi artık bu okulda eğitmen değil.",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "Bu kişinin bu okulda eğitmen rolü yok. Önce Personel sayfasında rol verin.",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "Burada hâlâ yaklaşan dersleri veya haftalık program saatleri var. Önce eğitmen sayfasında \"Dersleri devret\"i kullanın, sonra rolü kaldırın.",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "Burada hâlâ yaklaşan dersler veya haftalık program saatleri veriyorsunuz. Önce okul sahibinden bunları devretmesini isteyin.",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "Bu kişi artık burada eğitmen değil. Önce eğitmen rolünü geri verin.",

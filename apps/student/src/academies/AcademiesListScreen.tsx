@@ -5,6 +5,8 @@ import { type components } from '@ultm8/api-client';
 import { PaginatedListScreen } from '../components/PaginatedListScreen';
 import { useAcademies } from './academyQueries';
 import { useT } from '../i18n/I18nProvider';
+import { formatLocale } from '../i18n/format';
+import { localizeAddressCountry } from '@ultm8/i18n';
 import type { AppStackParamList } from '../navigation/types';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Academies'>;
@@ -23,7 +25,7 @@ export function AcademiesListScreen({ navigation }: Props) {
           style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#EEE' }}
         >
           <Text style={{ fontSize: 16, fontWeight: '600' }}>{item.name}</Text>
-          {item.address ? <Text style={{ color: '#5F6368', marginTop: 2 }}>{item.address}</Text> : null}
+          {item.address ? <Text style={{ color: '#5F6368', marginTop: 2 }}>{localizeAddressCountry(item.address, formatLocale())}</Text> : null}
           {item.activities.length ? (
             <Text style={{ color: '#5F6368', marginTop: 2, fontSize: 12 }}>{item.activities.join(' · ')}</Text>
           ) : null}

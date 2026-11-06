@@ -21,6 +21,8 @@ import { addressWriteData } from '../common/address/postal-address.dto';
 
 const BCRYPT_ROUNDS = 12;
 const RETENTION_WINDOW_DAYS = 90;
+/** Decision 441 item 10: a coach profile for someone who never had the Instructor role here. */
+export const NOT_AN_INSTRUCTOR = "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.";
 
 /** Decision 331 — an instructor's home address and certification, seen only by
  * the School Owner/Manager and the instructor themselves; colleagues reading
@@ -833,6 +835,14 @@ export class InstructorsService {
       tx.roleGrant.findMany({ where: { userId, schoolId, role: 'INSTRUCTOR', revokedAt: null }, select: { branchId: true } }),
     );
     if (grants.length === 0) {
+      // Decision 441 item 10: someone who never had the role here is told to
+      // give it to them first; "no longer" is only for a role that was revoked.
+      const hadRole = await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'INSTRUCTOR' }, select: { id: true } }),
+      );
+      if (!hadRole) {
+        throw new BadRequestException({ code: 'NOT_AN_INSTRUCTOR', message: NOT_AN_INSTRUCTOR });
+      }
       throw new BadRequestException('This person is no longer an instructor at this School.');
     }
     if (grants.some((g) => g.branchId === null)) return;

@@ -137,7 +137,7 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends.' })
   checkInClosesMinutesAfterStart!: number | null;
 
-  @ApiProperty({ description: 'Decision 394: a signed waiver is needed to check in, whatever the Class says.' })
+  @ApiProperty({ description: 'Decisions 394 and 441: a signed waiver is needed to book a class or check in, whatever the Class says (on by default; a School with no waiver in use stops nobody).' })
   checkInRequireWaiver!: boolean;
 
   @ApiProperty({ description: "Decision 394: members with a home Branch may check in at the School's other Branches." })

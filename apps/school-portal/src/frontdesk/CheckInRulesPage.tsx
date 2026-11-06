@@ -127,6 +127,7 @@ export function CheckInRulesPage() {
               checked={form.withoutBooking}
               onChange={(on) => set('withoutBooking', on)}
             />
+            {/* Decision 441 item 5: "Waiver must be signed before booking or check-in", on by default. */}
             <Switch
               id="rules-waiver"
               label={t('frontDesk.rules.requireWaiver')}

@@ -472,6 +472,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "นักเรียนที่ได้สายคาดนี้: {v1}{v2} จึงไม่สามารถ{v3}ได้",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "ครูฝึกคนนี้ถูกเก็บถาวรแล้ว ยกเลิกการเก็บถาวรในหน้าครูฝึก หรือเลือกครูฝึกคนอื่น",
   "This person is no longer an instructor at this School.": "บุคคลนี้ไม่ได้เป็นครูฝึกของโรงเรียนนี้แล้ว",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "บุคคลนี้ไม่มีบทบาทครูฝึกในโรงเรียนนี้ ให้บทบาทในหน้าพนักงานก่อน",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "ยังมีคลาสที่กำลังจะมาถึงหรือช่วงเวลาประจำสัปดาห์ในตารางที่สอนอยู่ที่นี่ ใช้ \"ส่งต่อคลาส\" ในหน้าครูฝึกก่อน แล้วจึงนำบทบาทออก",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "คุณยังสอนคลาสที่กำลังจะมาถึงหรือช่วงเวลาประจำสัปดาห์ในตารางที่นี่ โปรดขอให้เจ้าของโรงเรียนส่งต่อให้ผู้อื่นก่อน",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "บุคคลนี้ไม่ได้เป็นครูฝึกที่นี่แล้ว ให้บทบาทครูฝึกคืนก่อน",
