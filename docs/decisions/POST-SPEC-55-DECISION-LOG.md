@@ -7809,3 +7809,14 @@ User (Code), 6 Nov 2026: "go with your recommendations for all", on the recommen
 ### Recorded by
 
 User (Code), 6 Nov 2026: "option 1 for Brazil, and yes build the fix", on the recommendation given in chat after the Connect countries check.
+
+## Decision 438 — Pay rates in the payroll report are the School owner's choice; the plan-switch notice warns about a full plan
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 436 items 7 and 8, 435 items 9 and 22
+
+1. **Pay rates in the payroll report.** Staff with the **Payroll** switch see the payroll report. Whether that report shows pay rates (each person's hourly and per-class rate, owners included) is **the School owner's choice**, through an owner-only School setting that is **off by default**. When it's off, those staff see hours, classes and totals only, on the page and in the CSV. When it's on, they see the rates read-only. Only owners can change rates, as Decision 436 item 7 says.
+2. **The plan-switch notice.** The notice sent 7 days before a membership switches to its next plan also says that if the next plan is full, the membership simply ends and nothing is charged (Decision 436 item 8). It is in all 15 languages.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "This should be the decision of the school owner" (pay rates in the report) and "go with recommendation" (the notice).
