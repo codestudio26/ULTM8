@@ -7761,3 +7761,37 @@ User (Code), 5 Nov 2026: "all recommended and fix all the bugs with best solutio
 ### Recorded by
 
 User (Code), 5 Nov 2026: "go with the recommendations", on the recommendations given in chat for each of the questions above.
+
+## Decision 436 — Answers from 6 Nov 2026: account deletion, payroll access, a plan switch into a full plan, and the as-built choices of #485–#491
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 245, 427 item 5, 92, 320, 435 · **Built so far in:** #485, #486, #487, #488, #489, #491
+
+### Account deletion ("Delete my account", Decision 427 item 5)
+
+1. **Anonymise, don't wipe** (Decision 245). The login, name, email, phone, date of birth, photo, passcode and medical notes are removed for good, and the person shows as "Erased User" everywhere. Payments, signed waivers, contracts and grading history stay with the School without naming them, and are deleted when their normal retention runs out. The lawyer is still to confirm that this counts as deletion under UK, EU and Brazil law.
+2. **30-day grace period.** The account is locked at once. Signing back in within 30 days cancels the deletion; after 30 days it is anonymised for good.
+3. **Money.** Recurring plan payments stop at once. An unpaid balance stays on the School's books as a debt from "Erased User" and does not block deletion.
+4. **Children.** A child with another active parent linked, or with their own login, keeps their account, and only this parent's link is removed. A child whose only active parent is this one, and who has no login of their own, is named on the confirmation screen and deleted too, with the same 30-day grace.
+5. **School owners.** A School's main owner can't delete their account until they have handed the School to another owner or closed it. The app says so.
+6. **Who is told.** The member gets a confirmation email. Each of their Schools sees a short notice that the member left and their details were removed. A permanent internal record of when the deletion happened is kept, without personal details.
+
+### Payroll access (Decision 435 item 22, #490)
+
+7. The **Payroll** switch for Branch Staff gives the **payroll report only**. Pay rates stay with the owner, so a switched-on staff member can't change their own rate or anyone else's.
+
+### A plan switch into a full plan (Decision 435 items 9 and 10–15)
+
+8. If the next plan has reached its member limit when a membership switches, the switch doesn't happen: the membership simply ends, nothing is charged, and the member is told, as when the next plan can't be sold. A place held for them on that plan's waiting list counts as room.
+
+### Kept as built
+
+9. **Ad tracking (#485):** the visitor's choice lasts until the tab is closed; Accept reloads the schedule once; a browser that blocks storage loads nothing; exact Google and Meta addresses, no wildcards; Meta's sign-up event is `CompleteRegistration`; Google signals, ad personalisation and Meta's automatic events are always off; no "more info" link until the privacy page exists.
+10. **Joining fee (#486):** off for every School by default; any earlier plan at the School (a free trial included, a gifted Friend Pass or visit pass not) means no fee; a waiting Cash/Bank order counts as the first plan; the app says "on your first plan at this School"; a refund made in Stripe's dashboard can include the fee; the fee uses the plan's income category; a refused purchase is refunded in full.
+11. **Children's waivers and photos (#487):** every active parent is told, including the one whose phone was used; a child is under 18 for the notice and a student with a parent link for the photo; the photo rule also covers the student picker and search; the export doesn't name the parent; the notice opens the waiver.
+12. **Contracts (#488):** the stop is set 10 days before the term ends (no freeze in those days); it stops on the term's last day with no partial refund; only freezes that start before the term ends push it back, by the days frozen; the app says "Ends after its minimum term, on …"; an unpaid checkout stops being tracked after 30 days. Item 18 of Decision 435 (keeping signed contracts by the waiver retention rule) waits for the lawyer.
+13. **Plan dates (#489):** only plans with an end can switch, and only to a paid Class Pack, Weekly Pass or Trial without a contract; agreeing is opt-in in the app, never at the desk; a child bought for by a parent has no saved card, so the switch ends; the new plan doesn't switch again; the notice goes 7 days ahead, the switch may run up to an hour late, and the usual "ending soon" reminder still goes; the price is the one on the day of the switch; "first check-in" counts from the class's start; a camp's classes can be booked only from its first day; a future Weekly-Pass camp still blocks a second unlimited plan; changing a plan's dates or next plan affects new buyers only.
+14. **Member limit (#491):** a card payment in progress doesn't hold a place, so two people paying at once can go one over; a current holder can buy again when full; a freed place is offered within 15 minutes; the hold is a fixed 24 hours and nobody is told when it lapses; only owners see the whole waiting list; merging two member records doesn't move waiting-list places.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "go with your recommendations for all", on the recommendations given in chat for each question above.
