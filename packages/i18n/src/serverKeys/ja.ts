@@ -50,6 +50,7 @@ export const server: PartialMessages<ServerKeys> = {
     adultAlready: "この生徒はすでに大人プログラムの段位を持っています。",
     adultFirstBelt: "大人プログラムの最初の帯より上の段位を選んでください。",
     checkInWaiverRequired: "このスクールではチェックインの前に署名済みの同意書が必要です。",
+    waiverRequired: "このスクールでは、クラスの予約やチェックインの前に署名済みの同意書が必要です。",
     checkInHomeBranchOnly: "このスクールでは、メンバーは所属支部でのみチェックインできます。",
     checkInVisitorsOff: "このスクールでは現在、ビジターパスでのチェックインを受け付けていません。",
     checkInOneClass: "このスクールでは一度に1つのクラスにのみチェックインできます。",

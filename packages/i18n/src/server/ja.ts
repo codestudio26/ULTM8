@@ -470,6 +470,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "{v1} 人の生徒{v2}がこの帯を保持しているため、{v3}できません。",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "このインストラクターはアーカイブされています。インストラクターページでアーカイブを解除するか、別のインストラクターを選んでください。",
   "This person is no longer an instructor at this School.": "この人はこのスクールのインストラクターではなくなりました。",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "この方はこのスクールのインストラクターの役割を持っていません。先にスタッフページで役割を付与してください。",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "この方はまだ今後のクラスまたは毎週の時間割枠を担当しています。先にインストラクターページの「クラスを引き継ぐ」を使ってから、役割を外してください。",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "ここではまだ今後のクラスや毎週の時間割枠を担当しています。先にスクールオーナーに引き継ぎを依頼してください。",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "この方はもうここのインストラクターではありません。先にインストラクターの役割を戻してください。",

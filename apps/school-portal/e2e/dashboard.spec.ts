@@ -197,7 +197,9 @@ test('Decision 374: Active students, the setup checklist (hide and show again) a
   await expect(checklist).toContainText('3 of 7 done');
   await expect(checklist.locator('[data-step="WAIVER"]')).toHaveAttribute('data-done', 'false');
   await expect(checklist.getByRole('link', { name: 'Add a waiver' })).toHaveAttribute('href', '/waivers');
-  await expect(checklist.locator('[data-step="STRIPE"]')).toContainText('ULTM8 support connects your Stripe account');
+  // Decision 441 item 6: the owner connects Stripe from the School page.
+  await expect(checklist.locator('[data-step="STRIPE"]')).toContainText("Connect it on your School profile. It's ticked once Stripe confirms your account is ready.");
+  await expect(checklist.getByRole('link', { name: 'Connect Stripe' })).toHaveAttribute('href', '/school#stripe-connect');
   await checklist.getByRole('button', { name: 'Hide' }).click();
   await expect(checklist).toHaveCount(0);
   await page.reload();

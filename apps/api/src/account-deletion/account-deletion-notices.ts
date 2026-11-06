@@ -5,7 +5,8 @@
  * like every other email the API sends today.
  */
 
-/** Machine form, formatted for the reader by the apps (Decision 434, TXT-3). */
+/** Machine form, formatted for the reader by the apps (Decision 434, TXT-3), in
+ * their own time zone (Decision 441 item 9). */
 export function noticeWhen(at: Date): string {
   return `${at.toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 }

@@ -329,6 +329,7 @@ export const SERVER_MESSAGES: string[] = [
  "This note was changed at the same time — please look again.",
  "This person already has a pending invite here. Cancel it to send a new one.",
  "This person is no longer an instructor at this School.",
+ "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.",
  "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.",
  "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.",
  "This person is no longer an instructor here. Give them the Instructor role back first.",

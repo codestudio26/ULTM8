@@ -65,7 +65,10 @@ describeIfDb('Front desk: seats after check-in, QR lookup, waiver status', () =>
     app.useGlobalFilters(new HttpExceptionFilter());
     await app.init();
 
-    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Front Desk School' } });
+    // Waivers here are for the welcome card (Q4); the School-wide "Waiver must
+    // be signed before booking or check-in" (Decision 441) is off, so the desk
+    // tests aren't about it.
+    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Front Desk School', checkInRequireWaiver: false } });
     otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Front Desk Other School' } });
     for (const label of ['ana', 'ben', 'cara', 'coach', 'coach2', 'outsider']) {
       users[label] = await superuser.user.create({

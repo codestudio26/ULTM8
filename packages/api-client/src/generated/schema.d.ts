@@ -1972,6 +1972,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/payment-account/connect-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PaymentsController_getSchoolConnectStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{franchiseId}/payment-accounts": {
         parameters: {
             query?: never;
@@ -7983,7 +7999,7 @@ export interface components {
             checkInOpensMinutesBeforeStart: number;
             /** @description Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends. */
             checkInClosesMinutesAfterStart?: number | null;
-            /** @description Decision 394: a signed waiver is needed to check in, whatever the Class says. */
+            /** @description Decisions 394 and 441: a signed waiver is needed to book a class or check in, whatever the Class says (on by default; a School with no waiver in use stops nobody). */
             checkInRequireWaiver: boolean;
             /** @description Decision 394: members with a home Branch may check in at the School's other Branches. */
             checkInOtherBranches: boolean;
@@ -9915,6 +9931,8 @@ export interface components {
             mode: string;
             /** @description Null until Stripe Connect onboarding is initiated (POST .../connect/onboard). */
             stripeConnectedAccountId?: string | null;
+            /** @description Decision 441 item 6 — Stripe has confirmed the connected account is ready: onboarding finished (details_submitted) and it can take charges (charges_enabled). Kept current by the account.updated webhook and the connect-status read. */
+            stripeAccountReady: boolean;
             /** @description Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country. */
             connectAvailable: boolean;
             createdAt: string;
@@ -9923,7 +9941,7 @@ export interface components {
         ConnectStatusResponseDto: {
             /** @enum {string} */
             status: "CONNECTED" | "ACTION_NEEDED" | "NOT_CONNECTED";
-            /** @description Decision 437 — whether Stripe can onboard this Franchise, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, the Franchise's address country (none set: available). */
+            /** @description Decision 437 — whether Stripe can onboard this Franchise or School, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, its address country (none set: available). */
             connectAvailable: boolean;
             /** @description Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker. */
             connectCountries: string[];
@@ -13131,7 +13149,7 @@ export interface components {
             opensMinutesBeforeStart: number;
             /** @description Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time. */
             closesMinutesAfterStart?: number | null;
-            /** @description A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking). */
+            /** @description Waiver must be signed before booking or check-in (default on): a member, or a child through their parent, needs a signed waiver for the School to book a class, join its waiting list, claim an offered place or check in, whatever the Class says. A School with no waiver in use stops nobody. Off: only a Class that needs a waiver asks for one, at booking. Buying a plan isn't affected. */
             requireWaiver: boolean;
             /** @description Members with a home Branch may check in at the School's other Branches (default on). */
             otherBranches: boolean;
@@ -18774,6 +18792,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentAccountResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_getSchoolConnectStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectStatusResponseDto"];
                 };
             };
         };

@@ -470,6 +470,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "{v1} Schüler{v2} diesen Gürtel, daher kann er nicht {v3} werden.",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "Dieser Ausbilder ist archiviert. Hebe die Archivierung auf der Ausbilderseite auf oder wähle einen anderen Ausbilder.",
   "This person is no longer an instructor at this School.": "Diese Person ist an dieser Schule kein Ausbilder mehr.",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "Diese Person hat an dieser Schule keine Ausbilderrolle. Vergib ihr die Rolle zuerst auf der Mitarbeiterseite.",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "Er/sie unterrichtet hier noch kommende Kurse oder wöchentliche Stundenplan-Slots. Nutze zuerst „Kurse übergeben“ auf der Ausbilderseite und entziehe dann die Rolle.",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "Du unterrichtest hier noch anstehende Kurse oder wöchentliche Stundenplan-Termine. Bitte den Schulinhaber, sie zuerst zu übergeben.",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "Diese Person ist hier kein Ausbilder mehr. Gib ihr zuerst die Ausbilderrolle zurück.",

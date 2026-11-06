@@ -470,6 +470,7 @@ export const serverMessages: Record<string, string> = {
   "{v1} student{v2} this belt, so it can't be {v3}.": "有 {v1} 名学员{v2}持有此腰带，因此无法{v3}。",
   "This instructor is archived. Unarchive them on the Instructors page, or pick another instructor.": "该教练已归档。请在教练页面取消归档，或选择其他教练。",
   "This person is no longer an instructor at this School.": "此人已不再是本学校的教练。",
+  "This person doesn't have the Instructor role at this School. Give them the role on the Staff page first.": "此人在本学校没有教练角色。请先在员工页面为其授予该角色。",
   "They still teach upcoming classes or weekly timetable slots here. Use \"Hand over classes\" on their instructor page first, then remove the role.": "此人在这里仍有即将进行的课程或每周课表时段。请先在其教练页面使用“移交课程”，然后再移除角色。",
   "You still teach upcoming classes or weekly timetable slots here. Ask the School owner to hand them over first.": "你在这里仍有即将开始的课程或每周课表时段。请先让学校所有者将其交接出去。",
   "This person is no longer an instructor here. Give them the Instructor role back first.": "此人已不再是这里的教练。请先恢复其教练角色。",

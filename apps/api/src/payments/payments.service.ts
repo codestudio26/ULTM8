@@ -21,6 +21,7 @@ import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { fromStripeAmount, toStripeAmount } from './stripe-amount';
 import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from './stripe-first-invoice';
 import { cardSurchargeAmount } from './card-surcharge';
+import { ConnectStatus, isStripeAccountReady } from './stripe-account-ready';
 import { SUBSCRIPTION_SURCHARGE_METADATA, invoiceSurchargeAmount, splitSubscriptionItems } from './stripe-subscription-surcharge';
 import { chargeAbilities } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
@@ -296,27 +297,57 @@ export class PaymentsService {
   /**
    * GET /franchises/:franchiseId/payment-account/connect-status — Decision 407:
    * the Franchise page's Connected / Action needed / Not connected. Franchise
-   * Owner only. Read live from Stripe (nothing stores whether onboarding
-   * finished; the account.updated webhook is still log-only): CONNECTED once
-   * Stripe has the business's details and lets it take charges, ACTION_NEEDED
-   * while onboarding was started but isn't finished (or Stripe wants more
-   * details), NOT_CONNECTED before it starts.
+   * Owner only. Read live from Stripe: see readConnectStatus().
    */
-  async getFranchiseConnectStatus(
-    callerId: string,
-    franchiseId: string,
-  ): Promise<{ status: 'CONNECTED' | 'ACTION_NEEDED' | 'NOT_CONNECTED'; connectAvailable: boolean; connectCountries: string[] }> {
+  async getFranchiseConnectStatus(callerId: string, franchiseId: string): Promise<ConnectStatus> {
     const franchise = await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
     const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { franchiseId } }));
-    // Decision 437: where Stripe can onboard this Franchise, and the countries
-    // the portal's country picker offers.
-    const connect = { connectAvailable: stripeConnectAvailable(account, franchise.addressCountry), connectCountries: stripeConnectCountries() };
+    return this.readConnectStatus(callerId, account, franchise.addressCountry);
+  }
+
+  /**
+   * GET /schools/:schoolId/payment-account/connect-status — Decision 441 item
+   * 6: the School page's Stripe card, the same Connected / Action needed / Not
+   * connected as the Franchise's (Decision 407). School owners only, the same
+   * gate as creating the payment account and starting onboarding. The portal
+   * reads it when the owner comes back from Stripe, so the setup checklist is
+   * up to date even before Stripe's account.updated arrives.
+   */
+  async getSchoolConnectStatus(callerId: string, schoolId: string): Promise<ConnectStatus> {
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { schoolId } }));
+    return this.readConnectStatus(callerId, account, school.addressCountry);
+  }
+
+  /**
+   * Read live from Stripe: CONNECTED once Stripe has the business's details
+   * and lets it take charges, ACTION_NEEDED while onboarding was started but
+   * isn't finished (or Stripe wants more details), NOT_CONNECTED before it
+   * starts. What Stripe says is saved on the account (stripeAccountReady,
+   * Decision 441 item 6) when it changed, the same flag the account.updated
+   * webhook keeps current.
+   */
+  private async readConnectStatus(
+    callerId: string,
+    account: { id: string; provider: string; country: string; stripeConnectedAccountId: string | null; stripeAccountReady: boolean } | null,
+    addressCountry: string | null | undefined,
+  ): Promise<ConnectStatus> {
+    // Decision 437: where Stripe can onboard it, and the countries the
+    // portal's country picker offers.
+    const connect = { connectAvailable: stripeConnectAvailable(account, addressCountry), connectCountries: stripeConnectCountries() };
     if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) {
       return { status: 'NOT_CONNECTED', ...connect };
     }
     const stripeAccount = await this.stripeClient.platformClient().accounts.retrieve(account.stripeConnectedAccountId);
-    return { status: stripeAccount.details_submitted && stripeAccount.charges_enabled ? 'CONNECTED' : 'ACTION_NEEDED', ...connect };
+    const ready = isStripeAccountReady(stripeAccount);
+    if (ready !== account.stripeAccountReady) {
+      await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.paymentAccount.update({ where: { id: account.id }, data: { stripeAccountReady: ready } }),
+      );
+    }
+    return { status: ready ? 'CONNECTED' : 'ACTION_NEEDED', ...connect };
   }
 
   // ---------------------------------------------------------------------------
@@ -331,10 +362,10 @@ export class PaymentsService {
    * Connected Account's `id` synchronously in its response, no webhook needed for
    * that specific value — a webhook only becomes necessary for tracking whether
    * onboarding has actually *completed* (`details_submitted`/`charges_enabled` on
-   * `account.updated`), and there's no confirmed field yet to write that outcome
-   * into beyond the id itself, so that half stays a logged TODO in
-   * stripe-webhook-processing.processor.ts (JobsModule) rather than built against a
-   * guess at what field it should update.
+   * `account.updated`). That half is PaymentAccount.stripeAccountReady (Decision
+   * 441 item 6), written by stripe-webhook-processing.processor.ts's
+   * account.updated handler and by readConnectStatus(), never here: starting
+   * onboarding never makes an account ready.
    *
    * Any `Stripe.errors.*` this method's own calls raise (e.g. an unsupported/typo'd
    * `country`) propagates to `HttpExceptionFilter`'s own Stripe-error mapping — no

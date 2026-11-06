@@ -58,6 +58,8 @@ Totals: **238 pass, 0 fail, 0 blocked, 11 notes** (`results-mw58gp4v.json` 235 =
 
 ## Follow-ups (not blocking, no decision needed unless you want one)
 
+> **Built (6 Nov 2026, Decision 441 items 7–10, branch `fix/rehearsal-small-fixes`):** F1 (country in the reader's language, at display time), F2 (IBJJF templates name belts in the School's language), F3 (deletion notice in the member's own time zone) and F6 (`NOT_AN_INSTRUCTOR`). F5 stays as designed (item 11).
+
 - **F1. Addresses in English.** The member app in pt-BR shows "Rua Augusta, 1500, São Paulo-SP, 01304-001, Brazil". The address line is built once when it is saved, with the country name in English.
 - **F2. Belt names in English.** The IBJJF template gives a Brazilian School "White Belt" and "1 Stripe", so a member reads "Você foi promovido a White Belt." The owner can rename belts. Translated templates would help.
 - **F3. Deletion notice in UTC.** "Sua conta ULTM8 será excluída em dom., 6 de dez. de 2026, 17:14 UTC." The member's own time zone would be clearer.

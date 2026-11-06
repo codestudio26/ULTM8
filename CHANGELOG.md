@@ -76,6 +76,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   six questions for the product owner. Report in
   `docs/handover/LAUNCH-REHEARSAL-1.md`, scripts in
   `apps/api/scripts/rehearsal/`. No product change.
+- **Launch rehearsal 1: four small fixes** (Track A and Track B, Decision 441
+  items 7–10). An address shows its country in the reader's language
+  ("…, Brasil" in Portuguese); the stored text is unchanged. A style made
+  from an IBJJF template names its belts and stripes in the School's
+  language ("Faixa Branca · 1 Grau"); styles made before keep their names.
+  The "Delete my account" notice gives the date and time in the member's own
+  time zone instead of UTC. Adding a coach profile for someone who never had
+  the Instructor role now says to give them the role first (error code
+  `NOT_AN_INSTRUCTOR`), in all 15 languages.
 - **Translation review: 12 languages** (School Portal, member app and server
   text; `docs/translations/REVIEW-other-languages.md`). Covers Arabic, German,
   French, Italian, Japanese, Korean, Dutch, Polish, Russian, Thai, Turkish and
@@ -230,6 +239,19 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Open mats are unchanged. The owner, and Branch Staff with "Change check-in
   rules", change it. Needs migration
   `20270207120000_check_in_require_booking`.
+- **Waiver must be signed before booking or check-in** (Decision 441 item 5;
+  launch rehearsal D5) — the "Need a signed waiver to check in" switch on
+  Check-in → Check-in rules becomes **"Waiver must be signed before booking
+  or check-in"**, now **on by default**, and every existing School is
+  switched on too. While it's on, a member, or a child through their parent,
+  who hasn't signed the School's waiver can't book a class, join its waiting
+  list, claim an offered place or check in, whoever books for them (the
+  member, a parent, staff, or a check-in that books a place first). A School
+  with no waiver in use (none, or only archived ones) stops nobody. Buying a
+  plan isn't blocked. When off, a class marked as needing a waiver still asks
+  for one at booking, as before. The refusal has its own message in the
+  portal and the member app, in every language. Needs migration
+  `20270303000001_waiver_before_booking`.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The
@@ -327,6 +349,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   its monthly plans are card Subscriptions bought in the app, and still can't
   be sold at the desk. **Needs migration
   `20270301000001_no_card_monthly_plans`.**
+- **School owners connect Stripe themselves** (Decision 441 item 6) — the
+  School page has a **Stripe account** card with **Connect Stripe**, which
+  starts Stripe's own onboarding (the first time, the owner picks the country
+  of the business's bank account), instead of ULTM8 support doing it. The card
+  shows Connected, Action needed (with **Continue Stripe setup**) or Not
+  connected, and Stripe's return and refresh links come back to it. Where
+  Stripe can't onboard the School (Decision 437) it explains that members pay
+  by cash or bank transfer instead, and a School whose payment account is for
+  cash or bank transfer has no button. The setup checklist's **Connect
+  Stripe** step links to the card and is ticked only once Stripe confirms the
+  account is ready (onboarding finished and it can take card payments), not
+  as soon as onboarding starts; it is kept up to date by Stripe's
+  `account.updated` event and when the owner comes back from Stripe. The
+  checklist no longer says ULTM8 support connects it. New
+  `GET /schools/{id}/payment-account/connect-status` (School owners only) and
+  `stripeAccountReady` on the payment account. All 15 languages. **Needs
+  migration `20270304000001_payment_account_stripe_ready`**, and
+  `account.updated` switched on for the Stripe Connect webhook endpoint.
 - **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
   School's card surcharge applies, a monthly Subscription now carries it too:
   members see it on the plan before subscribing, and it is added to the first
