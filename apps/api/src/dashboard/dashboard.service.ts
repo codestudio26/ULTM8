@@ -39,7 +39,11 @@ export class DashboardService {
         tx.timetableSlot.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }),
         tx.membershipPlan.findFirst({ where: { schoolId, archivedAt: null, type: { not: 'VISIT_PASS' } }, select: { id: true } }),
         tx.waiver.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }),
-        tx.paymentAccount.findFirst({ where: { schoolId, status: 'ACTIVE', stripeConnectedAccountId: { not: null } }, select: { id: true } }),
+        // Decision 441 item 6: ticked only once Stripe has confirmed the
+        // account is ready (onboarding finished, it can take charges), not as
+        // soon as onboarding starts. Kept current by account.updated and the
+        // School page's connect-status read.
+        tx.paymentAccount.findFirst({ where: { schoolId, status: 'ACTIVE', stripeConnectedAccountId: { not: null }, stripeAccountReady: true }, select: { id: true } }),
         tx.roleGrant.findFirst({ where: { schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null }, select: { id: true } }),
         tx.coachInvite.findFirst({ where: { schoolId, acceptedAt: null, cancelledAt: null, expiresAt: { gt: new Date() } }, select: { id: true } }),
         tx.paymentAccount.findUnique({ where: { schoolId }, select: { provider: true, country: true, stripeConnectedAccountId: true } }),

@@ -26,8 +26,10 @@ export enum PaymentAccountProviderDto {
  *    unbuilt entirely this phase rather than exposed as an unguarded client-settable
  *    field on create. Flagged for Architect review.
  *  - `stripeConnectedAccountId` — never client-settable, ever. Only
- *    `stripe-webhook-processing`'s own `account.updated` handler sets this, once
- *    Stripe Connect onboarding actually completes.
+ *    PaymentsService.initiateConnectOnboarding() sets it, from Stripe's own
+ *    accounts.create() response. Whether onboarding has completed is
+ *    `stripeAccountReady` (Decision 441 item 6), set from Stripe's account by
+ *    the `account.updated` webhook and the connect-status reads.
  *
  * Length limits follow the same convention CreateSchoolDto already established: short
  * free text capped at 100 chars.
