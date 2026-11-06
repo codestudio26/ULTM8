@@ -318,7 +318,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   "New invoice" notice, paid by Pix or cash and recorded by staff, and
   overdue and late fees as for any charge. The month costs the plan's price,
   as a card renewal would: tax is never added on top. Cancelling (the member,
-  a parent, or the owner; or removing the student) ends the membership at its
+  a parent, or the owner; or removing the student, or asking to delete the account) ends the membership at its
   next billing day, so the month already charged runs out and no further
   month is charged; the recurring charge then shows as ended. The member app
   says, under such a plan, that later months go on the balance (all 15
