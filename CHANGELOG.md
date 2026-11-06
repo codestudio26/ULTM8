@@ -1252,6 +1252,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Cancellations. The Arabic booked count on the Dashboard has all its plural
   forms. New tests fail CI when a screen text or an API error message is missing
   in any language, or a plural form is missing.
+- **Translation review: Brazilian Portuguese and Spanish** — every pt-BR and
+  es text in the portal, the student app and the server's messages checked
+  against the English, with a glossary of martial-arts and billing terms
+  (`docs/translations/REVIEW-pt-BR-es.md`). 288 Portuguese and 650 Spanish
+  texts corrected. Portuguese now says "unidade" for a Branch, "código de
+  acesso" for the passcode everywhere, and "plano" instead of "assinatura"
+  where it could be read as a signature. Spanish now uses neutral Latin
+  American words instead of Spain-only ones (agregar, ingresar, paquete de
+  clases, lugar, vencido, monto, celular, tasa de impuesto), says "check-in"
+  instead of "registro", and fixes "You're invited to coach" (it said "to
+  train") and "Paid" in payment history. 460 legal, consent, privacy and
+  money texts per language are listed for a paid native reviewer
+  (`docs/translations/high-risk-pt-BR.csv`, `high-risk-es.csv`). Texts only;
+  no key, placeholder or behaviour changed.
 - **Front desk: one-step check-in** (Decision 378) — the welcome card's
   confirm now books, checks in and checks in the ticked guests in one go. If
   one class can't be done (full, not open yet, no membership…), nothing is
