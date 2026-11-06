@@ -5665,6 +5665,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/payment-account/connect-status": {
+      "get": {
+        "operationId": "PaymentsController_getSchoolConnectStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises/{franchiseId}/payment-accounts": {
       "post": {
         "operationId": "PaymentsController_createForFranchise",
@@ -30672,6 +30707,10 @@
             "nullable": true,
             "description": "Null until Stripe Connect onboarding is initiated (POST .../connect/onboard)."
           },
+          "stripeAccountReady": {
+            "type": "boolean",
+            "description": "Decision 441 item 6 — Stripe has confirmed the connected account is ready: onboarding finished (details_submitted) and it can take charges (charges_enabled). Kept current by the account.updated webhook and the connect-status read."
+          },
           "connectAvailable": {
             "type": "boolean",
             "description": "Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country."
@@ -30690,6 +30729,7 @@
           "country",
           "status",
           "mode",
+          "stripeAccountReady",
           "connectAvailable",
           "createdAt",
           "updatedAt"
@@ -30708,7 +30748,7 @@
           },
           "connectAvailable": {
             "type": "boolean",
-            "description": "Decision 437 — whether Stripe can onboard this Franchise, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, the Franchise's address country (none set: available)."
+            "description": "Decision 437 — whether Stripe can onboard this Franchise or School, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, its address country (none set: available)."
           },
           "connectCountries": {
             "description": "Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker.",

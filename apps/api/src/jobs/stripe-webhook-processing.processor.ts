@@ -20,6 +20,7 @@ import { PromotionFeeService } from '../ranks/promotion-fee.service';
 import { fromStripeAmount } from '../payments/stripe-amount';
 import { invoiceSurchargeAmount } from '../payments/stripe-subscription-surcharge';
 import { nonRefundableJoiningFee } from '../memberships/joining-fee';
+import { isStripeAccountReady } from '../payments/stripe-account-ready';
 
 /** `transactionId`: the ULTM8 Transaction id from the event object's metadata,
  * set on a hosted Checkout payment's PaymentIntent and Session
@@ -254,11 +255,24 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       }
     }
 
+    // Decision 441 item 6 — whether a connected account is ready (onboarding
+    // finished and it can take charges), for the setup checklist. Same
+    // pre-fetch discipline as above: the Account is re-read from Stripe rather
+    // than taken from the event, so a late or out-of-order delivery saves
+    // what Stripe says now. Only for an event from a connected account about
+    // that same account; the platform's own account.updated has no
+    // PaymentAccount and is left to dispatch()'s log-only branch.
+    let accountReady: { accountId: string; ready: boolean } | undefined;
+    if (eventType === 'account.updated' && stripeAccountId && stripeAccountId === objectId) {
+      const account = await this.stripeClient.platformClient().accounts.retrieve(objectId);
+      accountReady = { accountId: objectId, ready: isStripeAccountReady(account) };
+    }
+
     let sideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     try {
       await this.prismaJobs.$transaction(async (tx) => {
         await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
-        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData, refundedCharge, cardRef);
+        sideEffects = await this.dispatch(tx, eventType, objectId, stripeEventId, invoice, dispute, checkoutSessionData, refundedCharge, cardRef, accountReady);
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002' && this.isProcessedStripeEventConflict(err)) {
@@ -420,6 +434,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     checkoutSessionData: { studentId: string; schoolId: string; stripeCustomerId: string } | undefined,
     refundedCharge?: Stripe.Charge,
     cardRef: CardEventRef = {},
+    accountReady?: { accountId: string; ready: boolean },
   ): Promise<DisputeSideEffects> {
     const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     switch (eventType) {
@@ -502,6 +517,19 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // turns its Pending row Failed. See handleCheckoutSessionExpired().
       case 'checkout.session.expired':
         await this.handleCheckoutSessionExpired(tx, stripeEventId, cardRef);
+        return noSideEffects;
+      // Decision 441 item 6 — see process()'s own pre-fetch comment. Written
+      // through set_stripe_account_ready() (20270304000001): ultm8_jobs can
+      // only read PaymentAccount, and the function writes this one flag on
+      // the row of this one connected account.
+      case 'account.updated':
+        if (accountReady) {
+          const [{ changed }] = await tx.$queryRaw<Array<{ changed: number }>>`
+            SELECT "set_stripe_account_ready"(${accountReady.accountId}, ${accountReady.ready}) AS changed`;
+          this.logger.log(`Stripe event ${stripeEventId} (account.updated): account ${accountReady.accountId} ready=${accountReady.ready} (${changed} payment account(s) changed).`);
+        } else {
+          this.logger.log(`Stripe event ${stripeEventId} (account.updated) is not about a connected account — recorded, no handler action.`);
+        }
         return noSideEffects;
       // Safe default — see this file's own header comment for why this stays
       // log-only: nothing built yet reacts differently to past_due vs Active

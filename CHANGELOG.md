@@ -307,6 +307,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   saved card** isn't offered. The School's public profile says whether it
   takes card payments and whether it is in Brazil. **Needs migration
   `20270228100001_school_card_payments`.**
+- **School owners connect Stripe themselves** (Decision 441 item 6) — the
+  School page has a **Stripe account** card with **Connect Stripe**, which
+  starts Stripe's own onboarding (the first time, the owner picks the country
+  of the business's bank account), instead of ULTM8 support doing it. The card
+  shows Connected, Action needed (with **Continue Stripe setup**) or Not
+  connected, and Stripe's return and refresh links come back to it. Where
+  Stripe can't onboard the School (Decision 437) it explains that members pay
+  by cash or bank transfer instead, and a School whose payment account is for
+  cash or bank transfer has no button. The setup checklist's **Connect
+  Stripe** step links to the card and is ticked only once Stripe confirms the
+  account is ready (onboarding finished and it can take card payments), not
+  as soon as onboarding starts; it is kept up to date by Stripe's
+  `account.updated` event and when the owner comes back from Stripe. The
+  checklist no longer says ULTM8 support connects it. New
+  `GET /schools/{id}/payment-account/connect-status` (School owners only) and
+  `stripeAccountReady` on the payment account. All 15 languages. **Needs
+  migration `20270304000001_payment_account_stripe_ready`**, and
+  `account.updated` switched on for the Stripe Connect webhook endpoint.
 - **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
   School's card surcharge applies, a monthly Subscription now carries it too:
   members see it on the plan before subscribing, and it is added to the first

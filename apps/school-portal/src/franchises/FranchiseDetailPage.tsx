@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Badge, Button, COUNTRY_NAMES, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
 import { guessDefaultCountry } from '../lib/phoneCountry';
+import { localCountryNames } from '../lib/countryNames';
 import { ApiError } from '@ultm8/api-client';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
@@ -529,17 +530,6 @@ function connectStatusBadge(status: ConnectStatus, t: TranslateFn) {
   if (status === 'CONNECTED') return <Badge variant="success">{t('franchises.stripe.connected')}</Badge>;
   if (status === 'ACTION_NEEDED') return <Badge variant="warning">{t('franchises.stripe.actionNeeded')}</Badge>;
   return <Badge>{t('franchises.stripe.notConnected')}</Badge>;
-}
-
-/** Country names in the portal's language, falling back to English. */
-function localCountryNames(): Array<{ value: string; label: string }> {
-  let names: Intl.DisplayNames | null = null;
-  try {
-    names = new Intl.DisplayNames([formatLocale() ?? 'en'], { type: 'region' });
-  } catch {
-    names = null;
-  }
-  return COUNTRY_NAMES.map(([code, name]) => ({ value: code, label: names?.of(code) ?? name })).sort((a, b) => a.label.localeCompare(b.label));
 }
 
 /**

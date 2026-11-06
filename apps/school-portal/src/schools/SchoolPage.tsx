@@ -35,6 +35,7 @@ import { JoiningFeeSettingsCard } from './JoiningFeeSettingsCard';
 
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
+import { StripeConnectCard } from './StripeConnectCard';
 import { LateFeesCard } from '../charges/LateFeesCard';
 import { IncomeCategoriesCard } from '../charges/IncomeCategoriesCard';
 import { ScheduleSharingCard } from './ScheduleSharingCard';
@@ -99,6 +100,10 @@ export function SchoolPage() {
         <JoiningFeeSettingsCard key={`joining-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 411: tax on staff-created charges, set by the School. */}
         <ChargeSettingsCard key={`charges-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 441 item 6: the owner connects Stripe (Decision 437: only where Stripe can onboard the School). */}
+        {closed ? null : (
+          <StripeConnectCard key={`stripe-connect-${schoolId}`} schoolId={schoolId} schoolName={school.name} defaultCountry={school.addressCountry ?? null} />
+        )}
         {/* Decision 406: only where the School's country allows it. */}
         <CardSurchargeCard key={`surcharge-${schoolId}`} schoolId={schoolId} />
         {/* Decision 413: late fees, off by default, the School's choice. */}

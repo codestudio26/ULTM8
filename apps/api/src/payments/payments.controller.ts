@@ -54,6 +54,16 @@ export class PaymentsController {
     return this.paymentsService.findForSchool(user.sub, schoolId);
   }
 
+  /** Decision 441 item 6 — Connected / Action needed / Not connected, for the
+   * School page's Stripe card. School owners only. */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({ type: ConnectStatusResponseDto })
+  @Get('schools/:schoolId/payment-account/connect-status')
+  getSchoolConnectStatus(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.paymentsService.getSchoolConnectStatus(user.sub, schoolId);
+  }
+
   // ---- Franchise side (schema-correct, practically unreachable this phase — see
   // PaymentsService's own header comment) ----
 

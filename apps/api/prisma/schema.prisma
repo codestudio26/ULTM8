@@ -2151,6 +2151,15 @@ model PaymentAccount {
   /// no webhook needed for that specific value. See that method's own comment.)
   stripeConnectedAccountId String? @unique
 
+  /// Decision 441 item 6: Stripe has confirmed the connected account is ready —
+  /// onboarding finished (`details_submitted`) and it can take charges
+  /// (`charges_enabled`). Kept current by the `account.updated` webhook and by
+  /// the School's connect-status read when the owner comes back from Stripe;
+  /// it goes back to false if Stripe later asks for more details. The setup
+  /// checklist ticks "Connect Stripe" from this. Only the API writes it, from
+  /// what Stripe says; never client-settable.
+  stripeAccountReady Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
