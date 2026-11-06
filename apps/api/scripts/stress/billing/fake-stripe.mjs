@@ -43,7 +43,7 @@ const handlers = {
     const cs = id('cs');
     let pi = null;
     if (p.mode === 'payment') pi = paymentIntent({ amount: p.line_items?.['0']?.price_data?.unit_amount ?? 0, currency: p.line_items?.['0']?.price_data?.currency }, a).id;
-    return save({ id: cs, object: 'checkout.session', mode: p.mode, url: `https://checkout.stripe.test/${cs}`, payment_intent: pi, customer: p.customer ?? null, setup_intent: p.mode === 'setup' ? id('seti') : null, metadata: p.metadata ?? {} });
+    return save({ id: cs, object: 'checkout.session', mode: p.mode, url: `https://checkout.stripe.test/${cs}`, payment_intent: pi, customer: p.customer ?? null, setup_intent: p.mode === 'setup' ? id('seti') : null, metadata: p.metadata ?? {}, line_items: p.line_items ?? {}, payment_intent_data: p.payment_intent_data ?? {}, account: a });
   },
   'POST /v1/refunds': (p) => {
     const pi = store.get(p.payment_intent);
@@ -52,7 +52,9 @@ const handlers = {
   },
   'POST /v1/subscriptions': (p, a) => {
     const pi = paymentIntent({ amount: 1000, currency: 'gbp' }, a);
-    const inv = save({ id: id('in'), object: 'invoice', payment_intent: pi });
+    // Both shapes: the older payment_intent field and the current API's
+    // payments list and confirmation_secret (src/payments/stripe-first-invoice.ts).
+    const inv = save({ id: id('in'), object: 'invoice', payment_intent: pi, payments: { object: 'list', data: [{ is_default: true, payment: { type: 'payment_intent', payment_intent: pi.id } }] }, confirmation_secret: { type: 'payment_intent', client_secret: pi.client_secret } });
     return save({ id: id('sub'), object: 'subscription', status: 'incomplete', latest_invoice: inv, items: { object: 'list', data: [{ id: id('si'), price: { id: p.items?.['0']?.price ?? id('price') } }] }, metadata: p.metadata ?? {} });
   },
   'POST /v1/accounts': () => save({ id: id('acct'), object: 'account', charges_enabled: true }),
@@ -78,6 +80,30 @@ http.createServer((req, res) => {
       const p = JSON.parse(body || '{}');
       return send(200, save({ id: id('dp'), object: 'dispute', payment_intent: p.payment_intent, amount: p.amount ?? 0, currency: p.currency ?? 'gbp', status: p.status ?? 'needs_response' }));
     }
+    // Test hook: the member pays on the hosted Checkout page. As Stripe does,
+    // the PaymentIntent is made then, for the sum of the line items and with
+    // payment_intent_data.metadata, and it has succeeded.
+    const pay = path.match(/^\/__checkout\/(cs_[0-9a-f]+)\/pay$/);
+    if (req.method === 'POST' && pay && store.has(pay[1])) {
+      const cs = store.get(pay[1]);
+      const items = Object.values(cs.line_items ?? {});
+      const amount = items.reduce((n, li) => n + Number(li.price_data?.unit_amount ?? 0) * Number(li.quantity ?? 1), 0);
+      const pi = save({ id: id('pi'), object: 'payment_intent', amount, currency: items[0]?.price_data?.currency, status: 'succeeded', metadata: cs.payment_intent_data?.metadata ?? {}, account: cs.account, latest_charge: { id: id('ch'), receipt_url: `https://pay.stripe.test/receipts/${cs.id}` } });
+      save({ id: pi.latest_charge.id, object: 'charge', amount, amount_refunded: 0, refunded: false, currency: pi.currency, payment_intent: pi.id, receipt_url: pi.latest_charge.receipt_url });
+      cs.payment_intent = pi.id; cs.status = 'complete'; cs.payment_status = 'paid';
+      return send(200, { session: cs, payment_intent: pi, lines: items.map((li) => ({ name: li.price_data?.product_data?.name, amount: Number(li.price_data?.unit_amount ?? 0) })) });
+    }
+    // Test hook: the School refunds a card payment in its Stripe Dashboard.
+    const rf = path.match(/^\/__charges\/(ch_[0-9a-f]+)\/refund$/);
+    if (req.method === 'POST' && rf && store.has(rf[1])) {
+      const ch = store.get(rf[1]);
+      const amount = Number(JSON.parse(body || '{}').amount ?? ch.amount - ch.amount_refunded);
+      ch.amount_refunded = Math.min(ch.amount, ch.amount_refunded + amount);
+      ch.refunded = ch.amount_refunded === ch.amount;
+      save({ id: id('re'), object: 'refund', status: 'succeeded', amount, charge: ch.id, payment_intent: ch.payment_intent });
+      return send(200, ch);
+    }
+    if (req.method === 'GET' && path === '/__checkout') return send(200, [...store.values()].filter((o) => o.object === 'checkout.session'));
     const dm = path.match(/^\/__disputes\/(dp_[0-9a-f]+)$/);
     if (req.method === 'POST' && dm && store.has(dm[1])) return send(200, Object.assign(store.get(dm[1]), JSON.parse(body || '{}')));
     const params = parseForm(body);

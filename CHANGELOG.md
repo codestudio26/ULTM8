@@ -67,6 +67,15 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     and printouts lay out correctly. A "Has only one name" tick replaces "." as
     a surname. Two sign-ups at once no longer duplicate. Approving a walk-in
     keeps the phone and emergency contact they gave at the desk.
+- **Launch rehearsal 1** — a UK School (cards through Stripe Connect, against
+  a pretend Stripe) and a Brazilian School (Pix or cash, confirmed by the
+  School) taken through every main journey end to end: setup, staff and
+  payroll, buying, parents and children, classes and check-in, refunds,
+  freezes, plan switches, "Delete my account", Portuguese, and cross-tenant
+  checks, through the API and in a browser. 238 checks passed and none failed;
+  six questions for the product owner. Report in
+  `docs/handover/LAUNCH-REHEARSAL-1.md`, scripts in
+  `apps/api/scripts/rehearsal/`. No product change.
 - **Translation review: 12 languages** (School Portal, member app and server
   text; `docs/translations/REVIEW-other-languages.md`). Covers Arabic, German,
   French, Italian, Japanese, Korean, Dutch, Polish, Russian, Thai, Turkish and

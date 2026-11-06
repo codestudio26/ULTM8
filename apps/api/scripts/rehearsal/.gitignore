@@ -1,0 +1,4 @@
+# Per-run files with sign-ins and screenshots: not kept.
+cast-*.json
+member-screens-*.json
+*.png
