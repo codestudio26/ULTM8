@@ -7835,3 +7835,37 @@ User (Code), 6 Nov 2026: "This should be the decision of the school owner" (pay 
 ### Recorded by
 
 User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #496's choices.
+
+## Decision 440 — "Delete my account": the build choices of #497
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 436 items 1–6
+
+1. **Bookings and waiting-list places** are cancelled when the account is finally erased, the way removing a member does. No late-cancel fee is charged and the erased person isn't notified.
+2. **Other personal data is cleared** when the account is finally erased:
+   - staff notes about the member;
+   - files the School uploaded for the member;
+   - custom field values and tags;
+   - import rows and invites;
+   - the person's name in older staff activity lines and in notices sent to staff.
+
+   Attendance and check-in history are kept, with the person shown as "Erased User".
+3. **The member's customer record in the School's own Stripe account is kept**, so money already owed can still be collected. Their ULTM8 login and personal details are what is erased.
+4. **Emails stay in English**, like every other ULTM8 email today. In-app notices are translated.
+5. **No self-delete screen in the portal** for launch. Apple only requires one in the app.
+6. **The rest is kept as built:**
+   - Roles at other Schools are locked during the 30 days and end at the end.
+   - A child "has their own login" when the account has a real email.
+   - A parent whose own deletion is pending doesn't count as the child's other parent.
+   - Subscriptions run to the end of the paid period, with no refund. They stay cancelled if the member signs back in.
+   - Staff can't book, check in or sell to a locked member.
+   - The School's notice doesn't name the member and goes to its owners.
+   - The drawn waiver signature is kept; the typed name becomes "Erased User".
+   - Grading history is kept.
+   - "Erased User" is shown in English in every language.
+   - Support can't view a locked account as that member.
+   - The final step runs daily, so it can land up to a day after the 30 days.
+   - The lawyer still has to confirm that anonymising counts as deletion under UK, EU and Brazilian law.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #497's choices.
