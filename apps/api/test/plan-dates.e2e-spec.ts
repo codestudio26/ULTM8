@@ -351,6 +351,11 @@ describeIfDb('Plan start and end dates (Decision 316 item 4, Decision 435 items 
         }
         expect(rows).toHaveLength(1);
       }
+      // The notice before says a full next plan ends it too (Decision 436 item 8).
+      const before = await su.notification.findFirstOrThrow({ where: { userId: m.studentId, title: 'Your plan is about to change' } });
+      expect(before.body).toMatch(
+        /^Your Intro week ends on \d{4}-\d{2}-\d{2}\. Then Ten classes starts and 60\.00 GBP is charged to your saved card\. Without a saved card, or if Ten classes is full, it simply ends and nothing is charged\.$/,
+      );
     });
 
     it('simply ends with no saved card, or a declined one: nothing owed, and the member is told', async () => {

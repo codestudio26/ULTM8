@@ -28,7 +28,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function planSwitchNotice(planTitle: string, endDay: string, nextTitle: string, amount: string) {
   return {
     title: 'Your plan is about to change',
-    body: `Your ${planTitle} ends on ${endDay}. Then ${nextTitle} starts and ${amount} is charged to your saved card. Without a saved card, it simply ends.`,
+    body: `Your ${planTitle} ends on ${endDay}. Then ${nextTitle} starts and ${amount} is charged to your saved card. Without a saved card, or if ${nextTitle} is full, it simply ends and nothing is charged.`,
   };
 }
 export function planSwitchedNotice(planTitle: string, nextTitle: string, amount: string) {

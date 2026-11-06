@@ -876,7 +876,10 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   membership simply ends, nothing is charged (the limit is checked before the
   card), and the member gets the usual "Membership ended" notice, as when the
   next plan can no longer be sold. A place held for the member on that plan's
-  waiting list counts as room, so they still switch. No migration.
+  waiting list counts as room, so they still switch. The "Your plan is about
+  to change" notice 7 days before (push, email and in-app) now says so too:
+  "Without a saved card, or if {next plan} is full, it simply ends and nothing
+  is charged." (all 15 languages). No migration.
 - **Contracts on plans: ending after the minimum term, freezes and the
   early-exit label** (Decision 435 items 16, 17, 19) — the Contract card has a
   new **End the Subscription after the minimum term** option: the member is

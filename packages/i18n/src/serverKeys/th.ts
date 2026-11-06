@@ -247,7 +247,7 @@ export const server: PartialMessages<ServerKeys> = {
     planPlaceHeldTitle: "มีที่ว่างแล้ว",
     planPlaceHeldBody: "เราจองที่ใน {plan} ไว้ให้คุณถึง {until} ซื้อก่อนเวลานั้น ไม่เช่นนั้นจะส่งต่อให้คนถัดไปที่รออยู่",
     planSwitchNoticeTitle: "แพ็กเกจของคุณกำลังจะเปลี่ยน",
-    planSwitchNoticeBody: "{plan} ของคุณสิ้นสุดวันที่ {date} จากนั้น {next} จะเริ่มและเรียกเก็บ {amount} จากบัตรที่บันทึกไว้ หากไม่มีบัตรที่บันทึกไว้ ก็จะสิ้นสุดไปเลย",
+    planSwitchNoticeBody: "{plan} ของคุณสิ้นสุดวันที่ {date} จากนั้น {next} จะเริ่มและเรียกเก็บ {amount} จากบัตรที่บันทึกไว้ หากไม่มีบัตรที่บันทึกไว้ หรือ {next} เต็มแล้ว ก็จะสิ้นสุดไปเลยและไม่มีการเรียกเก็บเงิน",
     planSwitchedTitle: "แพ็กเกจของคุณเปลี่ยนแล้ว",
     planSwitchedBody: "{plan} ของคุณสิ้นสุดแล้วและ {next} เริ่มแล้ว เรียกเก็บ {amount} จากบัตรที่บันทึกไว้",
     planSwitchEndedTitle: "สมาชิกภาพสิ้นสุดแล้ว",
