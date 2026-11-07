@@ -7945,6 +7945,31 @@ User (Code), 6 Nov 2026: "Ok", on the recommendations given in chat for D1–D6 
 
 User (Code), 6 Nov 2026: "Ok to all a part from 3 - here will be owners and those is granted permission", on the recommendations given in chat for the choices of #506–#510. Item 3 was the suggestion "main owner only"; the owner chose owners plus staff given the permission instead.
 
+---
+
+## Decision 443 — The build choices of Decision 442 (PRs #512–#514), and PR #502
+
+**Date:** 7 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 442 (PRs #512, #513, #514)
+
+### Decision
+
+All the choices listed for #512–#514 stay as built:
+
+1. **Freezing a monthly plan billed to the balance (#513):** the next monthly charge on or after the first frozen day moves later by the number of frozen days, and the member keeps the new billing day from then on. For example, a member billed on the 15th and frozen for 30 days (10 Mar to 9 Apr) is next charged on 14 Apr, then on the 14th each month. Ending a freeze early moves the charge back by the days not used, never to before today. A billing day before the freeze starts is still charged.
+2. **The "new order waiting" notice (#513)** goes to Branch Staff only where the School's "Let Branch Staff record payments" switch is on, and only for students whose home branch is one of theirs. A student with no home branch: only the owners are told.
+3. **"Can connect Stripe" (#514):** staff with it can only set up Stripe. Choosing cash or bank transfer as the way of being paid stays with the owners. Coaches can't get it.
+4. **A Stripe account that stops being ready (#514):** the School goes back to working without cards. New card payments are refused and the card surcharge stops. Fees normally taken from a saved card (late cancellation, no-show, freeze, plan switch) aren't charged. Existing card subscriptions, saved cards and refunds carry on.
+5. **"Sign the waiver" button (#512):** not shown in Kid Mode, where a parent signs for the child.
+6. **After a refused QR check-in (#512)** the button opens the member's waivers for all their Schools, because the QR code doesn't say which School refused.
+7. **Reminder before pre-launch:** the owner asked to be reminded, before pre-launch, to switch on `account.updated` for the Stripe Connect webhook in the live Stripe dashboard (`docs/PRE-LAUNCH-UPGRADE-CHECKLIST.md`).
+8. **PR #502** (legal go-live fixes C1, C2 and C5, from another session) is taken over: brought up to date with master and merged when green. Its decision entry was numbered 440, which was already taken (Delete my account), so it is recorded as **Decision 444**, unchanged in content.
+
+### Recorded by
+
+User (Code), 7 Nov 2026: "ok" on each of points 2–6; on point 1, "Yes if the freeze is for 30 days, but i undertsand what you mean"; on the Stripe step, "ok please reminds us before pre lauching"; on #502, "yes" (take it over).
+
+---
+
 ## Decision 444 — Legal go-live fixes C1, C2 and C5: an "I agree" step, no self-sign-up under 18, and the real Children notice version
 
 **Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 236, 375, 430 item 9, and the legal pages drafted 6 Nov 2026 (go-live checklist fixes C1, C2 and C5)
@@ -7953,7 +7978,7 @@ Originally drafted as Decision 440 in PR #502; renumbered by Decision 443 item 8
 
 1. **Sign-up needs an "I agree" tick (C1).** Creating an account, in the portal or the app, needs a tick on "I agree to the Terms of Service and I have read the Privacy Policy", with a link to each page. The API refuses a sign-up without it (`TERMS_NOT_ACCEPTED`).
 2. **Creating a School or a Franchise needs the Agreement tick (C1).** "I accept the School and Franchise Agreement, including its Data Processing Addendum" is required when a School or a Franchise is created. The API refuses it without the tick (`AGREEMENT_NOT_ACCEPTED`). Editing a School or Franchise doesn't ask again, and doesn't take the field.
-3. **What was accepted is saved.** A new `LegalAcceptance` row records who accepted which page, at which version, and when (and the School or Franchise for the Agreement). The version is the one the server publishes at that moment, never one the app sends. Rows are only added, never changed; each person can read only their own (row-level security); they are deleted with the person's row. The School and Franchise are plain ids, not links, so a School's 90-day purge is never blocked.
+3. **What was accepted is saved.** A new `LegalAcceptance` row records who accepted which page, at which version, and when (and the School or Franchise for the Agreement). The version is the one the server publishes at that moment, never one the app sends. Rows are only added, never changed; each person can read only their own (row-level security); Delete my account (Decision 440) keeps them, with the person shown as "Erased User", as proof of what was accepted, the same way signed waivers are kept; they hold nothing that identifies the person. *A lawyer is to confirm this, with the waiver retention.* The School and Franchise are plain ids, not links, so a School's 90-day purge is never blocked.
 4. **Each page has a version.** `LegalDocument` gains a `version` (default `unpublished`). The School and Franchise Agreement, the Children and Guardians Privacy Notice and the Cookie and Storage Notice get rows next to the existing Terms and Privacy rows. Until the reviewed text is loaded, each page shows "This page is being prepared", and an acceptance records `unpublished`. There is no editor yet; the text is loaded on the server when the lawyer has signed it off.
 5. **The legal pages are open to everyone.** The portal shows each page at `/legal/<page>` without signing in; the app has a screen for each, reachable before and after signing in. The footer links stay off until the text is published.
 6. **No self-sign-up under 18 (C2).** The API refuses a sign-up with a date of birth under 18 (`REGISTER_UNDER_18`), telling the person to ask a parent or guardian to add them. It counts the birthday in the earliest time zone, so nobody is refused on their 18th birthday.
@@ -7963,3 +7988,5 @@ Originally drafted as Decision 440 in PR #502; renumbered by Decision 443 item 8
 ### Recorded by
 
 User (Code), 6 Nov 2026: "start it", on the recommendation to build go-live fixes C1, C2 and C5 first.
+
+User (Code), 7 Nov 2026: "agree", on keeping acceptance records after Delete my account (item 3 reworded).
