@@ -103,6 +103,11 @@ http.createServer((req, res) => {
       save({ id: id('re'), object: 'refund', status: 'succeeded', amount, charge: ch.id, payment_intent: ch.payment_intent });
       return send(200, ch);
     }
+    // Test hook (round 6): set a connected account's readiness with real
+    // booleans, as Stripe's Account object has them (a form-encoded update
+    // would store the strings 'true'/'false').
+    const ac = path.match(/^\/__accounts\/(acct_[0-9a-f]+)$/);
+    if (req.method === 'POST' && ac && store.has(ac[1])) return send(200, Object.assign(store.get(ac[1]), JSON.parse(body || '{}')));
     if (req.method === 'GET' && path === '/__checkout') return send(200, [...store.values()].filter((o) => o.object === 'checkout.session'));
     const dm = path.match(/^\/__disputes\/(dp_[0-9a-f]+)$/);
     if (req.method === 'POST' && dm && store.has(dm[1])) return send(200, Object.assign(store.get(dm[1]), JSON.parse(body || '{}')));

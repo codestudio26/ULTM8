@@ -1,0 +1,93 @@
+{
+ "ready": {
+  "kind": "ready",
+  "c": {
+   "country": "GB",
+   "tz": "Europe/London",
+   "cur": "GBP",
+   "lang": "en-GB",
+   "addr": {
+    "line1": "12 Market Street",
+    "city": "London",
+    "postalCode": "E1 6AN",
+    "country": "GB"
+   }
+  },
+  "schoolId": "0bca45c8-02b6-464d-bf54-8b2d3ec96067",
+  "branchId": "f5c2ab8d-ee65-49f3-93e2-35b75187f1d7",
+  "payAcctId": "4d5ace1c-03a8-4da4-abd0-7c66e4ebb8e6",
+  "acct": "acct_479ea10e90c373fb71",
+  "owner": {
+   "email": "olivia.ownerready.mw5y9q0n0@m6.test",
+   "passcode": "482913",
+   "id": "b861ab14-113a-4770-9c92-7ad29d03a4a6"
+  },
+  "plans": {
+   "monthly": "9a663024-05b9-465c-b0d0-799c1c855a9e",
+   "monthly2": "1680ad8a-b5d1-4a26-b83f-906b80d3d9bb",
+   "pack": "dcd3ffa7-a8cf-42a4-94bc-dce19b040c66",
+   "next": "3319048d-8a09-4f45-bbb1-6b28efdce1f2"
+  }
+ },
+ "notready": {
+  "kind": "notready",
+  "c": {
+   "country": "GB",
+   "tz": "Europe/London",
+   "cur": "GBP",
+   "lang": "en-GB",
+   "addr": {
+    "line1": "12 Market Street",
+    "city": "London",
+    "postalCode": "E1 6AN",
+    "country": "GB"
+   }
+  },
+  "schoolId": "d50de285-8f3c-4820-beb8-7ccecdc4e0b4",
+  "branchId": "2abaff79-0715-4d3b-853e-8aa3ffc65a13",
+  "payAcctId": "72450b49-9ff2-4608-a510-08cb24a1d21e",
+  "acct": "acct_22d49ebdd6502e8f88",
+  "owner": {
+   "email": "olivia.ownernotready.mw5y9q0n2@m6.test",
+   "passcode": "482913",
+   "id": "39c9c460-1965-4ace-9cd5-5dbead62fb5f"
+  },
+  "plans": {
+   "monthly": "30bc8e11-e40b-4459-8925-2a50851376d9",
+   "monthly2": "2787fed1-8ffc-471e-8429-ee839693934e",
+   "pack": "64eb3285-c89e-422e-9492-38ab68a94ce8",
+   "next": "682e7544-d750-4865-92f9-09709126aee2"
+  }
+ },
+ "br": {
+  "kind": "br",
+  "c": {
+   "country": "BR",
+   "tz": "America/Sao_Paulo",
+   "cur": "BRL",
+   "lang": "pt-BR",
+   "addr": {
+    "line1": "Rua Augusta, 1500",
+    "city": "São Paulo",
+    "region": "SP",
+    "postalCode": "01304-001",
+    "country": "BR"
+   }
+  },
+  "schoolId": "273854aa-adf3-450a-a6d5-e893a2e0e457",
+  "branchId": "7b98cd95-347b-404f-857e-3e27991b68e8",
+  "payAcctId": "a6fe44d3-3f28-4c1a-a657-f5fe30f8da69",
+  "acct": null,
+  "owner": {
+   "email": "joao.ownerbr.mw5y9q0n4@m6.test",
+   "passcode": "482913",
+   "id": "f9e21973-e615-4c47-9d0e-8eb9ef8c368d"
+  },
+  "plans": {
+   "monthly": "c30952cb-149e-42aa-9ee3-7abf67fcd8e8",
+   "monthly2": "ff2f864f-d47c-41e3-a669-ab9a105a8c04",
+   "pack": "3c3e29de-ae81-45ed-9302-2e020eccb39b",
+   "next": "c00537d5-11ab-410c-a86a-e02d4dd6d3c6"
+  }
+ }
+}

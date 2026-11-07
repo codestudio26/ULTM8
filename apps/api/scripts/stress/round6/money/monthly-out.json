@@ -1,0 +1,104 @@
+[
+ {
+  "area": "monthly",
+  "step": "A1 buy monthly in app at a no-card School is a waiting Pix order with the joining fee",
+  "status": "PASS",
+  "evidence": "{\"status\":201,\"outcome\":\"pending_confirmation\",\"amount\":23990,\"method\":\"BANK_TRANSFER\",\"fee\":5000}"
+ },
+ {
+  "area": "monthly",
+  "step": "A2 a second tap returns the same waiting order",
+  "status": "PASS",
+  "evidence": "{\"first\":\"10e19ef9-8046-4268-b658-932f4dae4a08\",\"second\":\"10e19ef9-8046-4268-b658-932f4dae4a08\"}"
+ },
+ {
+  "area": "monthly",
+  "step": "A3 triple confirm (owner x2 + Branch Staff at once) makes one membership and one monthly series",
+  "status": "PASS",
+  "evidence": "{\"statuses\":[200,200,200],\"memberships\":1,\"billedToBalance\":true,\"series\":true}"
+ },
+ {
+  "area": "monthly",
+  "step": "A4 the series bills the plan price (not price + joining fee), monthly from the start day",
+  "status": "PASS",
+  "evidence": "{\"unit\":18990,\"cur\":\"BRL\",\"first\":\"2026-11-07\",\"next\":\"2026-12-07\",\"idx\":1,\"today\":\"2026-11-07\"}"
+ },
+ {
+  "area": "monthly",
+  "step": "A5 confirm vs cancel at once: one wins, never both",
+  "status": "PASS",
+  "evidence": "{\"confirm\":409,\"cancel\":200,\"cancelBody\":true,\"txStatus\":\"FAILED\",\"memberships\":0,\"series\":false}"
+ },
+ {
+  "area": "monthly",
+  "step": "A6 catch-up after missed days: one charge per missed billing day, never twice (two runs at once + the job + a rerun)",
+  "status": "PASS",
+  "evidence": "{\"want\":[\"2026-08-30\",\"2026-09-30\",\"2026-10-30\"],\"got\":[\"2026-08-30\",\"2026-09-30\",\"2026-10-30\"],\"runs\":[\"fulfilled\",\"fulfilled\",\"fulfilled\"]}"
+ },
+ {
+  "area": "monthly",
+  "step": "A7 each month is the plan price, BRL, due on its own day, with its own invoice number",
+  "status": "PASS",
+  "evidence": "[{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-08-30\",\"inv\":23},{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-09-30\",\"inv\":24},{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-10-30\",\"inv\":25}]"
+ },
+ {
+  "area": "monthly",
+  "step": "A8 member cancels: ends at the start of the next billing day; series ends the day before",
+  "status": "PASS",
+  "evidence": "{\"status\":201,\"cancelAt\":\"2026-11-30T03:00:00.000Z\",\"expiry\":\"2026-11-30T03:00:00.000Z\",\"endDate\":\"2026-11-29\",\"nextDate\":null}"
+ },
+ {
+  "area": "monthly",
+  "step": "A9 after the cancel day passes (70 more days), no new month is charged",
+  "status": "PASS",
+  "evidence": "{\"cancelDayAfterClockMove\":\"2026-09-21\",\"before\":[\"2026-08-30\",\"2026-09-30\",\"2026-10-30\"],\"after\":[\"2026-08-30\",\"2026-09-30\",\"2026-10-30\"]}"
+ },
+ {
+  "area": "monthly",
+  "step": "A10 owner cancels a balance-billed monthly plan",
+  "status": "PASS",
+  "evidence": "{\"status\":201,\"cancelAt\":\"2026-12-07T03:00:00.000Z\"}"
+ },
+ {
+  "area": "monthly",
+  "step": "A11 a parent buys a monthly plan for a child by Pix and cancels it",
+  "status": "PASS",
+  "evidence": "{\"join\":201,\"buy\":201,\"buyBody\":\"pending_confirmation\",\"mem\":true,\"cancel\":201}"
+ },
+ {
+  "area": "monthly",
+  "step": "A12 price change after purchase: the next month is still the bought price",
+  "status": "PASS",
+  "evidence": "{\"bought\":12345,\"patch\":200,\"charged\":[12345]}"
+ },
+ {
+  "area": "monthly",
+  "step": "A12b notices the member got after the price change",
+  "status": "NOTE",
+  "evidence": "[\"Payment confirmed\"]"
+ },
+ {
+  "area": "monthly",
+  "step": "A13 an unpaid month past grace gets one late fee (job run three times)",
+  "status": "PASS",
+  "evidence": "{\"lateFeeSet\":200,\"months\":1,\"fees\":[{\"for\":true,\"gross\":1000,\"cur\":\"BRL\"}]}"
+ },
+ {
+  "area": "monthly",
+  "step": "A13b member sees their charges",
+  "status": "NOTE",
+  "evidence": "{\"status\":200,\"keys\":[\"schools\"]}"
+ },
+ {
+  "area": "monthly",
+  "step": "A14 membership status with an unpaid month",
+  "status": "NOTE",
+  "evidence": "{\"status\":\"ACTIVE\"}"
+ },
+ {
+  "area": "monthly",
+  "step": "A15 member removed: their monthly series stops and nothing more is charged",
+  "status": "PASS",
+  "evidence": "{\"remove\":200,\"charged\":[],\"stopped\":null,\"endDate\":\"2026-10-02\",\"cancelAt\":\"2026-10-03T03:00:00.000Z\"}"
+ }
+]
