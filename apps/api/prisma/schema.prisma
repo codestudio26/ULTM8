@@ -2197,6 +2197,10 @@ model PaymentAccount {
   /// checklist ticks "Connect Stripe" from this. Only the API writes it, from
   /// what Stripe says; never client-settable.
   stripeAccountReady Boolean @default(false)
+  /// When the saved stripeAccountReady was asked of Stripe (the start of the
+  /// read). Decision 446 item 7: a write from an older read never replaces a
+  /// newer one (set_stripe_account_ready()); null before the first read.
+  stripeAccountReadyCheckedAt DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

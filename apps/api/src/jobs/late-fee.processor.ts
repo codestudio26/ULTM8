@@ -19,6 +19,7 @@ import {
 import { LATE_FEE_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
 import { loadEffectiveTax } from '../charges/tax-lines';
+import { PENDING_AUTOMATIC_ATTEMPT } from '../payments/off-session-attempts';
 
 type Tx = Prisma.TransactionClient;
 
@@ -195,6 +196,10 @@ export class LateFeeProcessor extends WorkerHost {
         lateFeeForTransactionId: null,
         lateFee: { is: null },
         dueDate: { gte: dayToDate(firstDue), lte: dayToDate(lastDue) },
+        // Decision 446 item 5: not while an automatic card payment for it is
+        // still Pending (its outcome unsaved); charge-auto-pay settles it from
+        // Stripe first, and a charge it leaves unpaid gets its fee on a later run.
+        transactions: { none: PENDING_AUTOMATIC_ATTEMPT },
       },
       select: { id: true },
       orderBy: [{ dueDate: 'asc' }, { invoiceNumber: 'asc' }],
@@ -294,8 +299,11 @@ export class LateFeeProcessor extends WorkerHost {
     const head = await tx.charge.findUnique({ where: { id: chargeId }, select: { studentId: true } });
     if (!head) return null;
     await lockBalance(tx, school.id, head.studentId);
-    const charge = await tx.charge.findUnique({ where: { id: chargeId }, include: { allocations: { select: { amount: true } }, lateFee: { select: { id: true } } } });
-    if (!charge || charge.cancelledAt || charge.lateFee || charge.lateFeeForChargeId || charge.lateFeeForTransactionId) return null;
+    const charge = await tx.charge.findUnique({
+      where: { id: chargeId },
+      include: { allocations: { select: { amount: true } }, lateFee: { select: { id: true } }, transactions: { where: PENDING_AUTOMATIC_ATTEMPT, select: { id: true } } },
+    });
+    if (!charge || charge.cancelledAt || charge.lateFee || charge.lateFeeForChargeId || charge.lateFeeForTransactionId || charge.transactions.length > 0) return null;
     // Refund-aware (backlog 3.6 step 4): a refund comes off the total, never re-opening it.
     const owed = chargeRemaining(charge);
     if (owed <= 0) return null;

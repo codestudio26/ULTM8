@@ -212,6 +212,38 @@ describeIfDb('Connect Stripe from the portal; the checklist ticks once Stripe sa
     expect(await stripeStep(schoolId, token)).toBe(true);
   });
 
+  // Decision 446 item 7 (stress test round 6, T-4: races.mjs R5b). Two
+  // workers: the event whose read of Stripe started first finishes last.
+  it('an older account.updated finishing after a newer one never overwrites it', async () => {
+    const { schoolId, token } = await school();
+    const { paymentAccountId, acct } = await connect(schoolId, token);
+    const realRetrieve = platform.accounts.retrieve.getMockImplementation()!;
+    // Event A's read: Stripe says "not ready", and the answer is slow.
+    let releaseA!: () => void;
+    const aAnswered = new Promise<void>((resolve) => (releaseA = resolve));
+    platform.accounts.retrieve.mockImplementationOnce(async (id: string) => {
+      const answer = await realRetrieve(id);
+      await aAnswered;
+      return answer;
+    });
+    const a = webhook.process(job('account.updated', acct, acct));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Meanwhile Stripe says ready, and event B is processed in full.
+    accountState.set(acct, { details_submitted: true, charges_enabled: true });
+    await webhook.process(job('account.updated', acct, acct));
+    expect((await superuser.paymentAccount.findUniqueOrThrow({ where: { id: paymentAccountId } })).stripeAccountReady).toBe(true);
+    // A finishes last with Stripe's older answer: not saved.
+    releaseA();
+    await a;
+    expect((await superuser.paymentAccount.findUniqueOrThrow({ where: { id: paymentAccountId } })).stripeAccountReady).toBe(true);
+    expect(await stripeStep(schoolId, token)).toBe(true);
+
+    // The reverse: a newer "not ready" (Stripe switched charges off) is saved.
+    accountState.set(acct, { details_submitted: true, charges_enabled: false });
+    await webhook.process(job('account.updated', acct, acct));
+    expect((await superuser.paymentAccount.findUniqueOrThrow({ where: { id: paymentAccountId } })).stripeAccountReady).toBe(false);
+  });
+
   it("an account.updated that isn't about a School's connected account changes nothing", async () => {
     const { schoolId, token } = await school();
     const { paymentAccountId, acct } = await connect(schoolId, token);
@@ -251,12 +283,12 @@ describeIfDb('Connect Stripe from the portal; the checklist ticks once Stripe sa
     const { paymentAccountId, acct } = await connect(schoolId, token);
     await expect(jobsDb.$executeRaw`UPDATE "PaymentAccount" SET "stripeAccountReady" = true WHERE "id" = ${paymentAccountId}`).rejects.toThrow(/permission denied/);
     await expect(jobsDb.$executeRaw`UPDATE "PaymentAccount" SET "country" = 'FR' WHERE "id" = ${paymentAccountId}`).rejects.toThrow(/permission denied/);
-    const [{ changed }] = await jobsDb.$queryRaw<Array<{ changed: number }>>`SELECT "set_stripe_account_ready"(${acct}, true) AS changed`;
+    const [{ changed }] = await jobsDb.$queryRaw<Array<{ changed: number }>>`SELECT "set_stripe_account_ready"(${acct}, true, now()::timestamp(3)) AS changed`;
     expect(changed).toBe(1);
     // The app connection can't call it.
     const appDb = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL_APP });
     try {
-      await expect(appDb.$queryRaw`SELECT "set_stripe_account_ready"(${acct}, false)`).rejects.toThrow(/permission denied/);
+      await expect(appDb.$queryRaw`SELECT "set_stripe_account_ready"(${acct}, false, now()::timestamp(3))`).rejects.toThrow(/permission denied/);
     } finally {
       await appDb.$disconnect();
     }

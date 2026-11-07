@@ -41,6 +41,11 @@ export function IsBirthDate(options?: ValidationOptions): PropertyDecorator {
   };
 }
 
+/** The earliest time zone on Earth (UTC+14), where a new day starts first.
+ * Sign-up counts the 18th birthday here (Decision 444 item 6), and so does a
+ * School for someone who signed up themselves (Decision 446 item 8). */
+export const LATEST_TIME_ZONE = 'Pacific/Kiritimati';
+
 /** Age of majority (Decision 67: a Guardian consents for anyone younger). */
 export const AGE_OF_MAJORITY_YEARS = 18;
 

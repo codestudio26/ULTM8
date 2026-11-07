@@ -36,6 +36,8 @@ import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 import { resolveChargeCurrency } from '../common/school-currency';
 import { assertAccountNotClosing } from '../account-deletion/account-closing';
+import { CARD_ACCOUNT_SELECT, takesCards } from '../payments/takes-cards';
+import { settleLateCancelFee } from '../payments/off-session-attempts';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -560,13 +562,23 @@ export class BookingsService {
       let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
       let paymentIntentId: string | null = null;
       const feeCurrency = cancellationChargeCurrency as string | null;
+      // Decision 446 item 5: when a card can be tried, the fee's Transaction
+      // is written Pending first and tagged on the PaymentIntent (metadata
+      // and idempotency key), so a fee Stripe took is never lost if this stops
+      // before the outcome is saved: Stripe's webhook, or charge-auto-pay's
+      // stale-attempt sweep, settles it from what Stripe says.
+      const feeTransactionId = feeCurrency ? await this.writePendingLateCancelFee(resolvedBooking, bookingId, feeAmount, feeCurrency) : null;
+      let answered = true;
       try {
         if (!feeCurrency) {
           // Neither the plan nor the School has a currency: nothing is
           // charged, and staff can see why in the log (MON-5).
           throw new Error('no currency on the plan or the School');
         }
-        const charge = await this.paymentsService.chargeOffSession(resolvedBooking.studentId, resolvedBooking.schoolId, cancellationChargeAmount, feeCurrency, 'Late-cancellation fee');
+        const { studentId, schoolId } = resolvedBooking;
+        const charge = feeTransactionId
+          ? await this.paymentsService.chargeOffSession(studentId, schoolId, feeAmount, feeCurrency, 'Late-cancellation fee', `late-cancel-fee-${feeTransactionId}`, 0, feeTransactionId)
+          : await this.paymentsService.chargeOffSession(studentId, schoolId, feeAmount, feeCurrency, 'Late-cancellation fee');
         outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
         paymentIntentId = charge.paymentIntentId || null;
       } catch (err) {
@@ -574,14 +586,27 @@ export class BookingsService {
           outcome = 'NO_SAVED_PAYMENT_METHOD';
         } else {
           outcome = 'FAILED';
+          // With a Pending row, Stripe may still have charged the card: the
+          // row stays Pending for the webhook or the sweep to settle.
+          answered = !feeTransactionId;
           this.logger.error(`Late-cancellation charge failed for Booking ${booking.id} (Student ${resolvedBooking.studentId}, School ${resolvedBooking.schoolId}).`, err as Error);
         }
       }
       return this.prismaApp.withTenantContext(resolvedBooking.studentId, async (tx) => {
         // Decision 346 (G5) — a fee that was charged, or tried and declined, is
-        // also a row on the School's Transactions ledger. No saved card means
-        // nothing was charged, so no row.
-        if (outcome !== 'NO_SAVED_PAYMENT_METHOD' && feeCurrency) {
+        // also a row on the School's Transactions ledger.
+        if (feeTransactionId) {
+          // Nothing was tried after all (no default card on the Customer, or
+          // the account not ready): the Pending row ends Failed, as an attempt
+          // that could not be made.
+          if (answered) await settleLateCancelFee(tx, feeTransactionId, paymentIntentId, outcome === 'CHARGED');
+          // Settled first by Stripe's webhook: keep what it saved.
+          const row = await tx.transaction.findUnique({ where: { id: feeTransactionId }, select: { status: true, stripePaymentIntentId: true } });
+          if (row?.status === 'SUCCESSFUL') {
+            outcome = 'CHARGED';
+            paymentIntentId = row.stripePaymentIntentId;
+          }
+        } else if (outcome !== 'NO_SAVED_PAYMENT_METHOD' && feeCurrency) {
           const paymentAccount = await tx.paymentAccount.findUnique({ where: { schoolId: resolvedBooking.schoolId }, select: { id: true } });
           if (paymentAccount) {
             await tx.transaction.create({
@@ -621,6 +646,36 @@ export class BookingsService {
       );
     }
     return booking;
+  }
+
+  /**
+   * Decision 446 item 5: the late-cancellation fee's LATE_CANCEL_FEE row,
+   * written Pending before the card is charged, when a card can be tried at
+   * all (a School taking cards, and a saved card). Null otherwise: then no
+   * charge is tried and no row is written, as before.
+   */
+  private async writePendingLateCancelFee(booking: { studentId: string; schoolId: string }, bookingId: string, amount: number, currency: string): Promise<string | null> {
+    return this.prismaApp.withTenantContext(booking.studentId, async (tx) => {
+      const account = await tx.paymentAccount.findUnique({ where: { schoolId: booking.schoolId }, select: { id: true, ...CARD_ACCOUNT_SELECT } });
+      const saved = await tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: booking.studentId, schoolId: booking.schoolId } }, select: { id: true } });
+      if (!account || !takesCards(account) || !saved) return null;
+      const id = randomUUID();
+      await tx.transaction.create({
+        data: {
+          id,
+          schoolId: booking.schoolId,
+          studentId: booking.studentId,
+          paymentAccountId: account.id,
+          kind: 'LATE_CANCEL_FEE',
+          bookingId,
+          amount,
+          currency: currency.toUpperCase(),
+          status: 'PENDING',
+          paymentMethod: 'STRIPE',
+        },
+      });
+      return id;
+    });
   }
 
   /** PATCH /bookings/{id}/override. See UpdateBookingOverrideDto's own comment for

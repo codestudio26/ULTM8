@@ -40,7 +40,7 @@ import { assertSchoolCurrencySet, resolveChargeCurrency, setsNewPrice } from '..
 import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
 import { PlanContractsService } from './contracts/plan-contracts.service';
-import { assertPlanHasRoom } from './waitlist/plan-capacity';
+import { assertPlanHasRoom, lockPlanPlaces } from './waitlist/plan-capacity';
 import { assertPlanTermValid, fixedPlanOver, membershipTerm, planDay, PLAN_OVER, TERM_PLAN_TYPES } from './plan-term';
 import { assertJoiningFeeAllowed, joiningFeeDue, NO_JOINING_FEE, type JoiningFeeDue } from './joining-fee';
 import { assertAccountNotClosing } from '../account-deletion/account-closing';
@@ -1089,7 +1089,7 @@ export class MembershipsService {
     // switch could only ever end with no card (the app doesn't offer it there).
     const planSwitchToPlanId = dto?.agreeToPlanSwitch && cards ? plan.switchToPlanId : null;
     if (plan.price === 0) {
-      return this.createMembershipAndReturn(studentId, plan, null, planSwitchToPlanId);
+      return this.createMembershipAndReturn(studentId, plan, null, planSwitchToPlanId, { checkPlanLimit: true });
     }
 
     const student = await this.prismaApp.withTenantContext(studentId, (tx) =>
@@ -1250,12 +1250,17 @@ export class MembershipsService {
     // returns the one already waiting instead of writing another the Owner
     // could confirm twice. The advisory lock serializes two concurrent taps.
     const { transactionId, created } = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+      // Decision 446 item 6: a waiting order takes a place (Decision 435
+      // item 10), so orders for a plan with a limit are placed one at a time
+      // and the limit is counted again here.
+      await lockPlanPlaces(tx, plan);
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`cash-purchase:${studentId}:${plan.id}`}))`;
       const open = await tx.transaction.findFirst({
         where: { studentId, membershipPlanId: plan.id, status: 'PENDING', paymentMethod: { in: ['CASH', 'BANK_TRANSFER'] } },
         select: { id: true },
       });
       if (open) return { transactionId: open.id, created: false };
+      await assertPlanHasRoom(tx, plan, studentId);
       const id = randomUUID();
       await tx.transaction.create({
         data: {
@@ -1529,9 +1534,13 @@ export class MembershipsService {
       startsOnFirstCheckIn?: boolean;
       fixedStartDate?: Date | null;
       fixedEndDate?: Date | null;
+      memberLimit?: number | null;
     },
     stripeSubscriptionId: string | null,
     planSwitchToPlanId: string | null = null,
+    // Decision 446 item 6: a member's free plan starts here at once, so the
+    // member limit is counted again under the plan's lock.
+    opts: { checkPlanLimit?: boolean } = {},
   ) {
     // Decision 432 item 8: an N-day pass ends on calendar days in the School's
     // zone (read only for a plan that expires). Decision 435 items 7-8: or
@@ -1539,6 +1548,11 @@ export class MembershipsService {
     const schoolZone = plan.expiryDurationDays || plan.fixedEndDate ? await schoolZoneFor(this.prismaJobs, plan.schoolId) : null;
     try {
       const membership = await this.prismaApp.withTenantContext(studentId, async (tx) => {
+        if (opts.checkPlanLimit) {
+          const limited = { id: plan.id, memberLimit: plan.memberLimit ?? null };
+          await lockPlanPlaces(tx, limited);
+          await assertPlanHasRoom(tx, limited, studentId);
+        }
         await assertCanCreateMembership(tx, studentId, plan.schoolId, plan);
         const term = membershipTerm(plan, schoolZone);
         return tx.membership.create({

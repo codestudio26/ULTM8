@@ -81,6 +81,30 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     and printouts lay out correctly. A "Has only one name" tick replaces "." as
     a surname. Two sign-ups at once no longer duplicate. Approving a walk-in
     keeps the phone and emergency contact they gave at the desk.
+
+- **Stress test round 6: timing fixes** (Track A; Decision 446 items 5–8,
+  findings T-1 to T-4). **Needs database migrations** (`20270332000001`,
+  `20270332000002`).
+  - *A card payment Stripe took is never lost (T-2):* automatic payment of
+    charges tags Stripe's payment with the payment attempt (written Pending
+    before Stripe is called), so Stripe's success notice finds it even if the
+    worker stopped before saving the answer. Each daily run first asks Stripe
+    about attempts still Pending after an hour and settles them (paid, or
+    failed with the usual notice). While an automatic payment is Pending its
+    charge gets no overdue notice or late fee. A late-cancellation fee is
+    recorded the same way.
+  - *Member limits hold under load (T-3):* Cash, bank transfer and Pix orders
+    (and free plans) for a plan with a member limit are placed one at a time,
+    so orders arriving together can't all pass the limit.
+  - *Stripe readiness can't go back in time (T-4):* an older "account updated"
+    message finishing after a newer one no longer overwrites it; each saved
+    answer keeps when it was asked of Stripe.
+  - *18th birthdays (T-1):* someone who signed up themselves is 18 at every
+    School from the moment sign-up counts it (the earliest time zone), so they
+    can sign waivers and buy at once, and "sign again at 18" doesn't ask them
+    again. A parent can't add as a child someone old enough to sign up. People
+    the School created keep the School's own date.
+
 - **Launch rehearsal 1** — a UK School (cards through Stripe Connect, against
   a pretend Stripe) and a Brazilian School (Pix or cash, confirmed by the
   School) taken through every main journey end to end: setup, staff and

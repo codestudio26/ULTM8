@@ -10,6 +10,9 @@ import { StripeClientService } from '../src/payments/stripe-client.service';
 import { fakePaymentCheckoutSession } from './stripe-fakes';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 import { ChargeAutoPayProcessor } from '../src/jobs/charge-auto-pay.processor';
+import { ChargeOverdueNoticeProcessor } from '../src/jobs/charge-overdue-notice.processor';
+import { LateFeeProcessor } from '../src/jobs/late-fee.processor';
+import { PrismaJobsService } from '../src/common/prisma/prisma-jobs.service';
 
 /**
  * Charges and the member balance, step 2 of 6: paying in the app (v1.3
@@ -49,12 +52,16 @@ type Session = {
   metadata?: Record<string, string>;
   payment_intent_data?: { metadata?: Record<string, string> };
 };
-type Intent = { amount: number; off_session?: boolean; customer?: string };
+type Intent = { amount: number; off_session?: boolean; customer?: string; metadata?: Record<string, string> };
+/** A PaymentIntent the fake Stripe made, as `paymentIntents.list()`/`retrieve()` return it. */
+type MadeIntent = { id: string; status: string; customer?: string; created: number; metadata: Record<string, string>; idempotencyKey?: string };
 
 describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
   let app: INestApplication;
   let webhook: StripeWebhookProcessingProcessor;
   let autoPay: ChargeAutoPayProcessor;
+  let overdue: ChargeOverdueNoticeProcessor;
+  let lateFees: LateFeeProcessor;
   const su = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });
   const acct = `acct_${randomUUID().slice(0, 8)}`;
@@ -72,6 +79,10 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
   const intents: Intent[] = [];
   const sessionByKey = new Map<string, ReturnType<typeof fakePaymentCheckoutSession>>();
   let offSessionStatus: 'succeeded' | 'requires_payment_method' = 'succeeded';
+  const madeIntents: MadeIntent[] = [];
+  let stripeUnreachable = false;
+  let crashAfterStripe = false;
+  let crashNextWrite = false;
   const fakeStripeClient = {
     scopedClient: jest.fn(() => ({
       checkout: {
@@ -88,10 +99,24 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
         },
       },
       paymentIntents: {
-        create: jest.fn(async (params: Intent) => {
+        create: jest.fn(async (params: Intent, opts?: { idempotencyKey?: string }) => {
+          if (stripeUnreachable) throw new Error('connect ETIMEDOUT');
           intents.push(params);
-          return { id: `pi_${randomUUID()}`, status: offSessionStatus };
+          const made: MadeIntent = { id: `pi_${randomUUID()}`, status: offSessionStatus, customer: params.customer, created: Math.floor(Date.now() / 1000), metadata: params.metadata ?? {}, idempotencyKey: opts?.idempotencyKey };
+          madeIntents.push(made);
+          // Decision 446 item 5's crash: Stripe answered, then the worker
+          // stopped before the outcome was saved (the next write throws).
+          if (crashAfterStripe) {
+            crashAfterStripe = false;
+            crashNextWrite = true;
+          }
+          return { id: made.id, status: made.status };
         }),
+        retrieve: jest.fn(async (id: string) => madeIntents.find((i) => i.id === id)),
+        list: jest.fn(async (params: { customer: string; created: { gte: number } }) => ({
+          data: madeIntents.filter((i) => i.customer === params.customer && i.created >= params.created.gte).reverse(),
+          has_more: false,
+        })),
       },
       customers: { retrieve: jest.fn(async () => ({ invoice_settings: { default_payment_method: 'pm_saved' } })) },
     })),
@@ -193,6 +218,20 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
     await app.listen(0);
     webhook = app.get(StripeWebhookProcessingProcessor);
     autoPay = app.get(ChargeAutoPayProcessor);
+    overdue = app.get(ChargeOverdueNoticeProcessor);
+    lateFees = app.get(LateFeeProcessor);
+    // The crash: the first database write after Stripe answered throws, as a
+    // worker killed at that moment never makes it.
+    // The processor's own client (each module has its own PrismaJobsService).
+    const jobsDb = (autoPay as unknown as { prismaJobs: PrismaJobsService }).prismaJobs;
+    const realTransaction = jobsDb.$transaction.bind(jobsDb);
+    jest.spyOn(jobsDb, '$transaction').mockImplementation(((...args: unknown[]) => {
+      if (crashNextWrite) {
+        crashNextWrite = false;
+        return Promise.reject(new Error('worker killed (simulated)'));
+      }
+      return (realTransaction as (...a: unknown[]) => unknown)(...args);
+    }) as never);
     await su.cardSurchargeCountry.deleteMany({ where: { countryCode: COUNTRY } });
 
     card = await su.school.create({ data: { id: randomUUID(), name: 'Pay In App School', defaultCurrency: 'BRL', addressCountry: COUNTRY, timezone: 'UTC' } });
@@ -211,6 +250,9 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
 
   afterEach(() => {
     offSessionStatus = 'succeeded';
+    stripeUnreachable = false;
+    crashAfterStripe = false;
+    crashNextWrite = false;
   });
 
   afterAll(async () => {
@@ -219,6 +261,7 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
     await su.chargeAllocation.deleteMany({ where });
     await su.balanceEntry.deleteMany({ where });
     await su.transaction.deleteMany({ where });
+    await su.charge.updateMany({ where, data: { lateFeeForChargeId: null } });
     await su.charge.deleteMany({ where });
     await su.studentPaymentMethod.deleteMany({ where });
     await su.paymentAccount.deleteMany({ where });
@@ -546,6 +589,101 @@ describeIfDb('Paying charges in the app (backlog 3.6 step 2)', () => {
       await autoPay.run(new Date());
       expect(await su.transaction.count({ where: { chargeId: r.id } })).toBe(0);
       expect(await su.transaction.count({ where: { chargeId: b.id, chargePaymentChannel: 'AUTOMATIC' } })).toBe(0);
+    });
+
+    // Decision 446 item 5 (stress test round 6, T-2: autopay-crash.mjs).
+    describe('a payment Stripe took is never lost (Decision 446 item 5)', () => {
+      const HOUR = 60 * 60 * 1000;
+      const attemptOf = (chargeId: string) => su.transaction.findFirstOrThrow({ where: { chargeId, chargePaymentChannel: 'AUTOMATIC' } });
+      const madeFor = (transactionId: string) => madeIntents.find((i) => i.metadata.transactionId === transactionId);
+
+      it("tags Stripe's payment with the attempt and saves Stripe's id", async () => {
+        const student = await mkStudent('autoTagged');
+        await saveCard(student.id, true);
+        const c = await createCharge(student.id, 1100, day(0));
+        await autoPay.run(new Date());
+        const row = await attemptOf(c.id);
+        const made = madeFor(row.id);
+        expect(made).toMatchObject({ idempotencyKey: `charge-auto-pay-${row.id}`, metadata: { transactionId: row.id } });
+        expect(row).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: made!.id });
+      });
+
+      it("a crash after Stripe took the money: no overdue notice or late fee meanwhile, and Stripe's webhook settles it", async () => {
+        const student = await mkStudent('autoCrash');
+        await saveCard(student.id, true);
+        const c = await createCharge(student.id, 3000, day(-3));
+        await su.school.update({
+          where: { id: card.id },
+          data: { lateFeeEnabled: true, lateFeeConfirmedAt: new Date(), lateFeeEnabledAt: new Date(Date.now() - 30 * DAY), lateFeeType: 'FIXED', lateFeeFixedAmount: 500, lateFeeGraceDays: 0 },
+        });
+        try {
+          crashAfterStripe = true;
+          await autoPay.run(new Date());
+          const row = await attemptOf(c.id);
+          const made = madeFor(row.id)!;
+          expect(made.status).toBe('succeeded');
+          // The card was charged; the outcome was never saved.
+          expect(row).toMatchObject({ status: 'PENDING', stripePaymentIntentId: null });
+          expect(await paid(c.id)).toBe(0);
+
+          // While its outcome is unknown: no overdue notice, no late fee, no second attempt.
+          await overdue.run(new Date());
+          await lateFees.run(new Date(), [card.id]);
+          expect((await su.charge.findUniqueOrThrow({ where: { id: c.id } })).overdueNoticeAt).toBeNull();
+          expect(await su.charge.count({ where: { lateFeeForChargeId: c.id } })).toBe(0);
+          await autoPay.run(new Date());
+          expect(await su.transaction.count({ where: { chargeId: c.id } })).toBe(1);
+
+          // Stripe's payment_intent.succeeded finds the attempt by the id in its metadata.
+          await event('payment_intent.succeeded', made.id, made.metadata.transactionId);
+          expect(await tx(row.id)).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: made.id });
+          expect(await paid(c.id)).toBe(3000);
+          expect((await notices(student.id, 2)).filter((n) => n.title === 'Payment received')).toHaveLength(1);
+
+          // Paid: still no overdue notice or late fee.
+          await overdue.run(new Date());
+          await lateFees.run(new Date(), [card.id]);
+          expect((await su.charge.findUniqueOrThrow({ where: { id: c.id } })).overdueNoticeAt).toBeNull();
+          expect(await su.charge.count({ where: { lateFeeForChargeId: c.id } })).toBe(0);
+        } finally {
+          await su.school.update({ where: { id: card.id }, data: { lateFeeEnabled: false, lateFeeEnabledAt: null, lateFeeFixedAmount: null } });
+        }
+      });
+
+      it('with no webhook, the next run asks Stripe: paid is settled, never made is Failed (and the member told)', async () => {
+        const student = await mkStudent('autoSweep');
+        await saveCard(student.id, true);
+        const c = await createCharge(student.id, 2500, day(0));
+        crashAfterStripe = true;
+        await autoPay.run(new Date());
+        const lost = await attemptOf(c.id);
+        expect(lost).toMatchObject({ status: 'PENDING', stripePaymentIntentId: null });
+
+        // Stripe could not be reached for another: it may have been charged, so it stays Pending.
+        const other = await mkStudent('autoUnreachable');
+        await saveCard(other.id, true);
+        const d = await createCharge(other.id, 1300, day(0));
+        stripeUnreachable = true;
+        await autoPay.run(new Date());
+        stripeUnreachable = false;
+        const unknown = await attemptOf(d.id);
+        expect(unknown).toMatchObject({ status: 'PENDING', stripePaymentIntentId: null });
+
+        // Not stale yet: left for now.
+        expect(await autoPay.resolveStaleAttempts(new Date())).toMatchObject({ paid: 0 });
+        expect((await tx(lost.id)).status).toBe('PENDING');
+
+        await autoPay.resolveStaleAttempts(new Date(Date.now() + 2 * HOUR));
+        expect(await tx(lost.id)).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: madeFor(lost.id)!.id });
+        expect(await paid(c.id)).toBe(2500);
+        // Stripe has no PaymentIntent for it: nothing was charged.
+        expect(await tx(unknown.id)).toMatchObject({ status: 'FAILED', stripePaymentIntentId: null });
+        expect(await paid(d.id)).toBe(0);
+        const told = await notices(other.id, 2);
+        expect(told.map((n) => n.title)).toContain('Automatic payment failed');
+        // Each settled once: a second check changes nothing.
+        expect(await autoPay.resolveStaleAttempts(new Date(Date.now() + 2 * HOUR))).toMatchObject({ paid: 0, failed: 0 });
+      });
     });
   });
 });

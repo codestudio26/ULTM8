@@ -66,3 +66,11 @@ export function assertAgreementAccepted(accepted: boolean | undefined): void {
     throw new BadRequestException({ code: 'AGREEMENT_NOT_ACCEPTED', message: 'Accept the School and Franchise Agreement to continue.' });
   }
 }
+
+/** Decision 446 item 8: whether `userId` made their own account (sign-up
+ * records the Terms acceptance, with no School or Franchise; nobody else's
+ * path does). Read in the user's own tenant context. */
+export async function signedUpThemselves(db: Pick<Prisma.TransactionClient, 'legalAcceptance'>, userId: string): Promise<boolean> {
+  const row = await db.legalAcceptance.findFirst({ where: { userId, documentSlug: LEGAL_SLUGS.terms, schoolId: null, franchiseId: null }, select: { id: true } });
+  return !!row;
+}
