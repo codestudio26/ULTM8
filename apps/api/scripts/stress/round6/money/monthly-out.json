@@ -9,7 +9,7 @@
   "area": "monthly",
   "step": "A2 a second tap returns the same waiting order",
   "status": "PASS",
-  "evidence": "{\"first\":\"10e19ef9-8046-4268-b658-932f4dae4a08\",\"second\":\"10e19ef9-8046-4268-b658-932f4dae4a08\"}"
+  "evidence": "{\"first\":\"2acfa6be-e43c-4ce3-aa1d-75a8f2ab42ae\",\"second\":\"2acfa6be-e43c-4ce3-aa1d-75a8f2ab42ae\"}"
  },
  {
   "area": "monthly",
@@ -39,7 +39,7 @@
   "area": "monthly",
   "step": "A7 each month is the plan price, BRL, due on its own day, with its own invoice number",
   "status": "PASS",
-  "evidence": "[{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-08-30\",\"inv\":23},{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-09-30\",\"inv\":24},{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-10-30\",\"inv\":25}]"
+  "evidence": "[{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-08-30\",\"inv\":38},{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-09-30\",\"inv\":39},{\"gross\":18990,\"net\":18990,\"tax\":0,\"cur\":\"BRL\",\"due\":\"2026-10-30\",\"inv\":40}]"
  },
  {
   "area": "monthly",
@@ -69,13 +69,13 @@
   "area": "monthly",
   "step": "A12 price change after purchase: the next month is still the bought price",
   "status": "PASS",
-  "evidence": "{\"bought\":12345,\"patch\":200,\"charged\":[12345]}"
+  "evidence": "{\"bought\":12456,\"patch\":200,\"charged\":[12456]}"
  },
  {
   "area": "monthly",
   "step": "A12b notices the member got after the price change",
   "status": "NOTE",
-  "evidence": "[\"Payment confirmed\"]"
+  "evidence": "[\"Payment confirmed\",\"New invoice\"]"
  },
  {
   "area": "monthly",

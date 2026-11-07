@@ -1,0 +1,80 @@
+[
+ {
+  "area": "freeze",
+  "step": "F1 freeze across a billing day moves that month by the freeze length",
+  "status": "PASS",
+  "evidence": "{\"freeze\":201,\"before\":\"2026-11-13\",\"after\":\"2026-12-13\",\"want\":\"2026-12-13\"}"
+ },
+ {
+  "area": "freeze",
+  "step": "F1b after living through it: no month charged on a frozen day; one month after it",
+  "status": "PASS",
+  "evidence": "{\"charged\":[\"2026-10-04\",\"2026-11-04\"],\"freeze\":[\"2026-09-01\",\"2026-10-01\"]}"
+ },
+ {
+  "area": "freeze",
+  "step": "F2 freeze from today ended the same day: the month moves later, then back to its old day",
+  "status": "PASS",
+  "evidence": "{\"approve\":201,\"mid\":\"2026-12-13\",\"end\":201,\"after\":\"2026-11-13\",\"want\":\"2026-11-13\"}"
+ },
+ {
+  "area": "freeze",
+  "step": "F3 ended early after 10 of 30 days: the month is 10 days later than it was",
+  "status": "PASS",
+  "evidence": "{\"mid\":\"2026-12-23\",\"end\":201,\"after\":\"2026-11-23\",\"want\":\"2026-11-23\"}"
+ },
+ {
+  "area": "freeze",
+  "step": "F4 freeze starting on a billing day moves that month by the freeze length",
+  "status": "PASS",
+  "evidence": "{\"freeze\":201,\"after\":\"2026-12-12\",\"want\":\"2026-12-12\"}"
+ },
+ {
+  "area": "freeze",
+  "step": "F5 the billing day before the freeze is charged; the month after moves by 30",
+  "status": "PASS",
+  "evidence": "{\"mid\":\"2026-11-12\",\"charged\":[\"2026-11-05\"],\"after\":\"2027-01-04\",\"want\":\"2027-01-04\"}"
+ },
+ {
+  "area": "freeze",
+  "step": "F6 billed on the 31st (30 Nov next), frozen 30 days: next month moves to 30 Dec",
+  "status": "PASS",
+  "evidence": "{\"freeze\":201,\"after\":\"2026-12-30\",\"want\":\"2026-12-30\",\"first\":\"2026-12-30\",\"idx\":0}"
+ },
+ {
+  "area": "freeze",
+  "step": "F6b the months after (as built: the new day of the month stays)",
+  "status": "NOTE",
+  "evidence": "[\"2027-01-30\",\"2027-02-28\",\"2027-03-30\",\"2027-04-30\"]"
+ },
+ {
+  "area": "freeze",
+  "step": "F7 cancel during a freeze: ends on the moved billing day (+36), series ends the day before",
+  "status": "PASS",
+  "evidence": "{\"cancel\":201,\"cancelDay\":\"2026-12-13\",\"want\":\"2026-12-13\",\"endDate\":\"2026-12-13\"}"
+ },
+ {
+  "area": "freeze",
+  "step": "F7b cancelled during a freeze, then the freeze ended early (0 days frozen): when does it end?",
+  "status": "NOTE",
+  "evidence": "{\"end\":201,\"cancelAt\":\"2026-12-13\",\"expiryDate\":\"2026-11-13\",\"paidUpTo\":\"2026-11-13\",\"screen\":{\"cancelAt\":\"2026-12-13T03:00:00.000Z\",\"expiryDate\":\"2026-11-13T03:00:00.000Z\"}}"
+ },
+ {
+  "area": "freeze",
+  "step": "F8 a freeze approved twice at once (and the job) moves the month once",
+  "status": "PASS",
+  "evidence": "{\"request\":201,\"approvals\":[201,409],\"after\":\"2026-11-23\",\"want\":\"2026-11-23\"}"
+ },
+ {
+  "area": "freeze",
+  "step": "F9 a future freeze ended before it starts: the month goes back to its day",
+  "status": "PASS",
+  "evidence": "{\"mid\":\"2026-11-23\",\"end\":201,\"after\":\"2026-11-13\"}"
+ },
+ {
+  "area": "freeze",
+  "step": "F10 freeze fee at a no-card School is a waiting bank-transfer payment, in BRL",
+  "status": "PASS",
+  "evidence": "{\"tx\":{\"status\":\"PENDING\",\"method\":\"BANK_TRANSFER\",\"amount\":1990,\"cur\":\"BRL\"}}"
+ }
+]

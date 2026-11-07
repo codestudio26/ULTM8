@@ -1,0 +1,152 @@
+[
+ {
+  "area": "ready",
+  "step": "R0 a not-ready School turns the 2% card surcharge on",
+  "status": "NOTE",
+  "evidence": "{\"status\":200,\"body\":{\"available\":true,\"country\":\"GB\",\"enabled\":true,\"bps\":200,\"confirmedAt\":\"2026-11-07T05:30:33.910Z\",\"applies\":false}}"
+ },
+ {
+  "area": "ready",
+  "step": "R1 not ready: hosted Checkout card purchase refused CARD_PAYMENTS_NOT_READY",
+  "status": "PASS",
+  "evidence": "{\"status\":400,\"code\":\"CARD_PAYMENTS_NOT_READY\",\"msg\":\"This School can't take card payments yet. Pay at the School instead, by cash or bank transfer, and staff confirm it.\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R2 not ready: saved-card purchase refused CARD_PAYMENTS_NOT_READY",
+  "status": "PASS",
+  "evidence": "{\"status\":400,\"code\":\"CARD_PAYMENTS_NOT_READY\",\"msg\":\"This School can't take card payments yet. Pay at the School instead, by cash or bank transfer, and staff confirm it.\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R3 not ready: a plain purchase becomes a cash order, no Stripe call, no surcharge",
+  "status": "PASS",
+  "evidence": "{\"status\":201,\"outcome\":\"pending_confirmation\",\"method\":\"CASH\",\"surcharge\":0,\"amount\":8000}"
+ },
+ {
+  "area": "ready",
+  "step": "R4 not ready: a monthly plan is a cash order, then billed to the balance (like a no-card School)",
+  "status": "PASS",
+  "evidence": "{\"outcome\":\"pending_confirmation\",\"amount\":9000,\"billed\":true,\"series\":{\"unit\":6500,\"cur\":\"GBP\",\"next\":\"2026-12-07\"}}"
+ },
+ {
+  "area": "ready",
+  "step": "R5 not ready: saving a card refused",
+  "status": "PASS",
+  "evidence": "{\"status\":400,\"code\":\"CARD_PAYMENTS_NOT_READY\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R6 not ready: member turns charge auto-pay on",
+  "status": "NOTE",
+  "evidence": "{\"status\":400,\"code\":\"CHARGE_AUTO_PAY_NO_CARD\",\"msg\":\"Save a card for this School first.\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R7 not ready: paying charges by card in the app refused",
+  "status": "PASS",
+  "evidence": "{\"charge\":201,\"status\":400,\"code\":\"CARD_PAYMENTS_NOT_READY\",\"msg\":\"This School can't take card payments yet. Pay at the School instead, by cash or bank transfer, and staff confirm it.\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R8 not ready: a plan can't be set to switch (SWITCH_NEEDS_CARDS)",
+  "status": "PASS",
+  "evidence": "{\"status\":400,\"code\":\"SWITCH_NEEDS_CARDS\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R9 not ready: the surcharge reads 0 and the public profile says no cards",
+  "status": "PASS",
+  "evidence": "{\"bps\":0,\"profile\":{\"cardPayments\":false,\"inBrazil\":false}}"
+ },
+ {
+  "area": "ready",
+  "step": "R10 not ready: the owner sells a monthly plan at the desk, billed to the balance after",
+  "status": "PASS",
+  "evidence": "{\"status\":201,\"series\":\"2026-12-07\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R11 ready: a hosted Checkout card purchase goes through",
+  "status": "PASS",
+  "evidence": "{\"status\":\"SUCCESSFUL\",\"amount\":8000,\"surcharge\":0}"
+ },
+ {
+  "area": "ready",
+  "step": "R12 ready: a card Subscription bought",
+  "status": "PASS",
+  "evidence": "{\"purchase\":201,\"mem\":true,\"sub\":\"sub_9ea47926e590efcd43\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R13 account.updated (not ready): the School stops taking cards",
+  "status": "PASS",
+  "evidence": "{\"flip\":{\"webhook\":200,\"ready\":false},\"cardPayments\":false}"
+ },
+ {
+  "area": "ready",
+  "step": "R14 after the flip: new card purchase refused",
+  "status": "PASS",
+  "evidence": "{\"status\":400,\"code\":\"CARD_PAYMENTS_NOT_READY\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R15 after the flip: saved-card purchase refused (card on file)",
+  "status": "PASS",
+  "evidence": "{\"status\":400,\"code\":\"CARD_PAYMENTS_NOT_READY\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R16 after the flip: member still sees their saved card",
+  "status": "PASS",
+  "evidence": "{\"status\":200,\"body\":{\"hasSavedPaymentMethod\":true}}"
+ },
+ {
+  "area": "ready",
+  "step": "R17 after the flip: refund of an earlier card payment",
+  "status": "NOTE",
+  "evidence": "{\"status\":400,\"code\":\"CARD_PAYMENT_REFUND\",\"msg\":\"A card payment made in the app is refunded through Stripe, not here.\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R17b after the flip: a refund made in Stripe for an earlier card payment still reaches the app",
+  "status": "PASS",
+  "evidence": "{\"pi\":\"pi_1190fb0f5dd58bb6d0\",\"charge\":true,\"webhook\":200,\"refunded\":1000}"
+ },
+ {
+  "area": "ready",
+  "step": "R18 after the flip: an existing card Subscription can still be cancelled",
+  "status": "PASS",
+  "evidence": "{\"status\":201}"
+ },
+ {
+  "area": "ready",
+  "step": "R19 after the flip: the freeze fee (Decision 443 item 4: fees normally taken from a saved card aren't charged)",
+  "status": "NOTE",
+  "evidence": "{\"freeze\":201,\"feeTx\":{\"status\":\"PENDING\",\"method\":\"CASH\",\"amount\":500},\"stripePIcalls\":0}"
+ },
+ {
+  "area": "ready",
+  "step": "R20 after the flip: a new member buys the monthly plan (no-card fallback)",
+  "status": "PASS",
+  "evidence": "{\"status\":201,\"outcome\":\"pending_confirmation\"}"
+ },
+ {
+  "area": "ready",
+  "step": "R21 account.updated (ready again): card purchases work again",
+  "status": "PASS",
+  "evidence": "{\"flip\":{\"webhook\":200,\"ready\":true},\"cardPayments\":true,\"purchase\":201}"
+ },
+ {
+  "area": "ready",
+  "step": "R22 the member who joined while not ready stays billed to the balance (kept as built)",
+  "status": "PASS",
+  "evidence": "{\"billed\":true,\"series\":{\"next\":\"2026-12-07\",\"stopped\":null}}"
+ },
+ {
+  "area": "ready",
+  "step": "R23 a late, older account.updated (saying not ready) doesn't turn cards off: the state is read live from Stripe",
+  "status": "PASS",
+  "evidence": "{\"ready\":true}"
+ }
+]

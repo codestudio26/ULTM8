@@ -91,6 +91,14 @@ export const plan = (s, body) => must(`plan ${body.title}`, 'POST', `/schools/${
 /** Start a background job as the scheduler does and wait for it. */
 export const job = (name, data = {}) => R.runJob(name, data);
 
+export function occurrenceDay(first, frequency, index) {
+  const [y, m, dd] = first.split('-').map(Number);
+  if (frequency === 'WEEKLY') return addDays(first, 7 * index);
+  const months = frequency === 'MONTHLY' ? index : 12 * index;
+  const t = new Date(Date.UTC(y, m - 1 + months, 1));
+  const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(Math.min(dd, last)).padStart(2, '0')}`;
+}
 export const series = (membershipId) => db.recurringCharge.findUnique({ where: { membershipId } });
 export const charges = (recurringChargeId) => db.charge.findMany({ where: { recurringChargeId }, orderBy: { occurrenceDate: 'asc' } });
 export const d = (x) => (x ? new Date(x).toISOString().slice(0, 10) : null);
@@ -104,7 +112,12 @@ export async function backdate(membershipId, n) {
   const m = await db.membership.findUnique({ where: { id: membershipId } });
   await db.membership.update({ where: { id: membershipId }, data: { startDate: new Date(m.startDate.getTime() - ms), ...(m.expiryDate ? { expiryDate: new Date(m.expiryDate.getTime() - ms) } : {}), ...(m.cancelAt ? { cancelAt: new Date(m.cancelAt.getTime() - ms) } : {}) } });
   const r = await db.recurringCharge.findUnique({ where: { membershipId } });
-  if (r) await db.recurringCharge.update({ where: { id: r.id }, data: { firstDate: new Date(r.firstDate.getTime() - ms), ...(r.nextDate ? { nextDate: new Date(r.nextDate.getTime() - ms) } : {}), ...(r.endDate ? { endDate: new Date(r.endDate.getTime() - ms) } : {}) } });
+  // The next date is worked out again from the moved first date (as the
+  // product always does), so the two never disagree across month lengths.
+  if (r) {
+    const first = d(new Date(r.firstDate.getTime() - ms));
+    await db.recurringCharge.update({ where: { id: r.id }, data: { firstDate: new Date(first), ...(r.nextDate ? { nextDate: new Date(occurrenceDay(first, r.frequency, r.nextIndex)) } : {}), ...(r.endDate ? { endDate: new Date(r.endDate.getTime() - ms) } : {}) } });
+  }
   const fz = await db.membershipFreeze.findMany({ where: { membershipId } });
   for (const f of fz) await db.membershipFreeze.update({ where: { id: f.id }, data: { startsAt: new Date(f.startsAt.getTime() - ms), endsAt: new Date(f.endsAt.getTime() - ms) } });
   return db.recurringCharge.findUnique({ where: { membershipId } });
