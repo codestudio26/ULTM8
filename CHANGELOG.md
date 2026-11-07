@@ -105,6 +105,25 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     again. A parent can't add as a child someone old enough to sign up. People
     the School created keep the School's own date.
 
+- **Stress test round 6: regression fixes** (Track A; Decision 447 items 1–3,
+  findings R-1 to R-3). No migration.
+  - *Booking is back to round 5's speed (R-2):* the waiver, child-consent and
+    "Delete my account" checks added since round 5 read what they need in one
+    go before the booking's locked step, instead of one by one inside it on a
+    second database connection. A booking makes 29 database statements again
+    (38 before) and a 10-School booking race is back to round 5's times; in a
+    race with a smaller connection pool, far fewer "server busy" answers and
+    every class filled exactly. Desk sales check the member in one read
+    instead of reading the School's whole student list, and share one step
+    for their checks. Booking and sale rules are unchanged.
+  - *Check-in rules save after a School passes 500 students (R-1):* the page
+    shows 6-digit codes as soon as the School is past 500 (the School is
+    moved to 6 digits when the page is read), and saving what the page shows
+    is never refused. Choosing 4 at a School already on 6 is still refused.
+  - *Student export (R-3):* someone with no role at the School, or a School
+    that doesn't exist, now gets "School not found" like every other page.
+    Staff without the owner's switch still get "The School owner hasn't let
+    you export the student list."
 - **Stress test round 6: the timing fixes' follow-ups** (Track A; Decision 447
   items 4–6). **Needs a database migration** (`20270336000001`).
   - *No card payment is lost in a crash on the remaining paths:* no-show fees,

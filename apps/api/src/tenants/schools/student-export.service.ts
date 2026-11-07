@@ -27,6 +27,10 @@ export class StudentExportService {
   ) {}
 
   async export(callerId: string, schoolId: string, filter: StudentExportFilterDto = StudentExportFilterDto.ACTIVE) {
+    // Someone with no role at the School, or a School that doesn't exist,
+    // gets "School not found" as on the roster, not the owner's switch
+    // (stress test round 6, R-3; Decision 447 item 3).
+    await this.schools.findOne(callerId, schoolId);
     await this.tenantAuth.assertMayExportStudents(callerId, schoolId);
     // The roster's own checks and scope: who the caller may see.
     const roster = await this.schools.findAllStudentsForSchool(

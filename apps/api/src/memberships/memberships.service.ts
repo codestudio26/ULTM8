@@ -1643,42 +1643,50 @@ export class MembershipsService {
    */
   async recordDeskSale(schoolId: string, studentId: string, dto: SellMembershipDto, { recordedById }: { recordedById: string }) {
     await assertAccountNotClosing(this.prismaJobs, studentId);
-    const plan = await this.loadDeskPlan(schoolId, studentId, dto.membershipPlanId);
-    if (plan.type === 'FRIEND_PASS') {
-      throw new BadRequestException('A Friend Pass is given, not sold. Use Give a Friend Pass instead.');
-    }
-    const paymentAccount = await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, ...CARD_ACCOUNT_SELECT } }),
-    );
-    // Decision 441 item 1: a School that takes no cards sells its monthly
-    // plans at the desk, billed to the balance after this first month. At a
-    // School that takes cards (or has no payments set up) a Subscription is
-    // still bought by card in the app.
-    if (plan.type === 'SUBSCRIPTION' && (!paymentAccount || takesCards(paymentAccount))) {
-      throw new BadRequestException('A Subscription is paid by card in the app, so it can\'t be sold at the desk.');
-    }
-    const billedToBalance = isBalanceBilled(plan, paymentAccount);
-    // Decision 316 item 6: the member signs the plan's contract when buying
-    // it, in the app.
-    if (plan.contractVersion != null) {
-      throw new BadRequestException("This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.");
-    }
-    // Decision 435 item 8: a fixed-date plan is sold until its last day.
-    if (plan.fixedEndDate && fixedPlanOver(plan, await schoolZoneFor(this.prismaJobs, schoolId))) {
-      throw new BadRequestException(PLAN_OVER);
-    }
-    if (plan.termsWaiverRequired) {
-      const signed = await this.prismaApp.withTenantContext(studentId, (tx) => hasCountingWaiverSignature(tx, studentId, schoolId));
-      if (!signed) {
-        throw new BadRequestException('This Student must sign this School\'s waiver before buying this plan.');
-      }
-    }
-    if (plan.price > 0 && !paymentAccount) {
-      throw new BadRequestException('Set up this School\'s payments before recording a sale.');
-    }
-    const currency = plan.price > 0 ? await this.resolveChargeCurrency(studentId, schoolId, plan.currency) : null;
-
+    // Read once, before the checks' transaction (stress test round 6, R-2: it
+    // was read twice, on the jobs connection).
     const schoolZone = await schoolZoneFor(this.prismaJobs, schoolId);
+    // The checks before the sale, each a read in the Student's own context,
+    // share one short transaction instead of one each (R-2). Same checks,
+    // same order.
+    const { plan, paymentAccount, billedToBalance, currency } = await this.prismaApp.withTenantContext(studentId, async () => {
+      const plan = await this.loadDeskPlan(schoolId, studentId, dto.membershipPlanId);
+      if (plan.type === 'FRIEND_PASS') {
+        throw new BadRequestException('A Friend Pass is given, not sold. Use Give a Friend Pass instead.');
+      }
+      const paymentAccount = await this.prismaApp.withTenantContext(studentId, (tx) =>
+        tx.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, ...CARD_ACCOUNT_SELECT } }),
+      );
+      // Decision 441 item 1: a School that takes no cards sells its monthly
+      // plans at the desk, billed to the balance after this first month. At a
+      // School that takes cards (or has no payments set up) a Subscription is
+      // still bought by card in the app.
+      if (plan.type === 'SUBSCRIPTION' && (!paymentAccount || takesCards(paymentAccount))) {
+        throw new BadRequestException('A Subscription is paid by card in the app, so it can\'t be sold at the desk.');
+      }
+      const billedToBalance = isBalanceBilled(plan, paymentAccount);
+      // Decision 316 item 6: the member signs the plan's contract when buying
+      // it, in the app.
+      if (plan.contractVersion != null) {
+        throw new BadRequestException("This plan has a contract the member signs when buying it in the app, so it can't be sold at the desk.");
+      }
+      // Decision 435 item 8: a fixed-date plan is sold until its last day.
+      if (plan.fixedEndDate && fixedPlanOver(plan, schoolZone)) {
+        throw new BadRequestException(PLAN_OVER);
+      }
+      if (plan.termsWaiverRequired) {
+        const signed = await this.prismaApp.withTenantContext(studentId, (tx) => hasCountingWaiverSignature(tx, studentId, schoolId));
+        if (!signed) {
+          throw new BadRequestException('This Student must sign this School\'s waiver before buying this plan.');
+        }
+      }
+      if (plan.price > 0 && !paymentAccount) {
+        throw new BadRequestException('Set up this School\'s payments before recording a sale.');
+      }
+      const currency = plan.price > 0 ? await this.resolveChargeCurrency(studentId, schoolId, plan.currency) : null;
+      return { plan, paymentAccount, billedToBalance, currency };
+    });
+
     let sale: { membership: Membership; transactionId: string | null; amount: number };
     try {
       sale = await this.prismaApp.withTenantContext(studentId, async (tx) => {
@@ -2056,8 +2064,7 @@ export class MembershipsService {
   async recordDeskPayment(callerId: string, schoolId: string, dto: RecordDeskPaymentDto) {
     const school = await this.schoolsService.findOne(callerId, schoolId);
     const as = await this.assertMayRecordDeskPayment(callerId, schoolId, school.branchStaffCanRecordPayments);
-    const payable = (await this.deskPayableStudents(callerId, schoolId, as)).some((st) => st.id === dto.studentId);
-    if (!payable) {
+    if (!(await this.isDeskPayable(callerId, schoolId, as, dto.studentId))) {
       throw new BadRequestException('This person is not a student at this School.');
     }
     const { membership, transactionId } = await this.recordDeskSale(
@@ -2105,6 +2112,20 @@ export class MembershipsService {
         select: { user: { select: { id: true, firstName: true, surname: true } } },
       });
       return grants.map((g) => g.user);
+    });
+  }
+
+  /** Whether deskPayableStudents() lists `studentId`, by the same rule,
+   * reading only that student instead of the School's whole roster (stress
+   * test round 6, R-2: every desk sale read every student). */
+  private async isDeskPayable(callerId: string, schoolId: string, as: 'OWNER' | 'BRANCH_STAFF', studentId: string): Promise<boolean> {
+    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+      if (as === 'BRANCH_STAFF') {
+        const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM desk_payment_students(${schoolId}) WHERE "id" = ${studentId}`;
+        return rows.length > 0;
+      }
+      const grant = await tx.roleGrant.findFirst({ where: { schoolId, userId: studentId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
+      return grant !== null;
     });
   }
 
@@ -2269,8 +2290,7 @@ export class MembershipsService {
         const staffPlan = await this.findOnePlan(callerId, planId);
         const school = await this.schoolsService.findOne(callerId, staffPlan.schoolId);
         const as = await this.assertMayRecordDeskPayment(callerId, staffPlan.schoolId, school.branchStaffCanRecordPayments);
-        const payable = (await this.deskPayableStudents(callerId, staffPlan.schoolId, as)).some((st) => st.id === forId);
-        if (!payable) throw new NotFoundException('Student not found');
+        if (!(await this.isDeskPayable(callerId, staffPlan.schoolId, as, forId))) throw new NotFoundException('Student not found');
       }
     }
     const plan = await this.findOnePlan(forId, planId);

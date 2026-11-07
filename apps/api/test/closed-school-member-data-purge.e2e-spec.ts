@@ -195,9 +195,11 @@ describeIfDb('Closed School member data purge (Decision 433, PRIV-1)', () => {
     expect(await superuser.notification.count({ where: { schoolId: s.school.id } })).toBe(1);
 
     // The token from before the purge is refused (401 once rolesChangedAt is
-    // past its issue time, else 403 from the ended role), and so is a fresh one.
+    // past its issue time, else 404 from the export, which answers "not found"
+    // to someone with no role at the School, Decision 447 item 3; 403 on other
+    // routes), and so is a fresh one.
     const stale = await http().get(`/v1/schools/${s.school.id}/students/export`).set('Authorization', `Bearer ${before}`);
-    expect([401, 403]).toContain(stale.status);
+    expect([401, 403, 404]).toContain(stale.status);
     const fresh = token(s.owner, s.school.id);
     for (const path of ['students/export', `students/${s.student.id}/notes`, 'attendance/stats']) {
       const res = await http().get(`/v1/schools/${s.school.id}/${path}`).set('Authorization', `Bearer ${fresh}`);

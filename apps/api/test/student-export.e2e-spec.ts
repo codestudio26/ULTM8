@@ -66,7 +66,7 @@ describeIfDb('Student list export', () => {
 
     await superuser.school.create({ data: { id: schoolId, name: 'Export School' } });
     branchId = (await superuser.branch.create({ data: { id: randomUUID(), schoolId, name: 'North' } })).id;
-    for (const label of ['owner', 'staffOn', 'staffOff', 'coach', 'ana', 'vic', 'kid', 'parent', 'gone']) {
+    for (const label of ['owner', 'staffOn', 'staffOff', 'coach', 'ana', 'vic', 'kid', 'parent', 'gone', 'outsider', 'formerOwner']) {
       await mkUser(label, label === 'kid' ? { email: `kid-${randomUUID()}@guardian-managed.ultm8.internal`, dateOfBirth: new Date('2016-01-01') } : {});
     }
     await grant('owner', 'SCHOOL_OWNER_MANAGER');
@@ -75,6 +75,11 @@ describeIfDb('Student list export', () => {
     await grant('coach', 'INSTRUCTOR');
     for (const s of ['ana', 'vic', 'kid']) await grant(s, 'STUDENT');
     await grant('gone', 'STUDENT', { revokedAt: new Date() });
+    // Round 6, R-3: no role here at all, and an owner whose role here ended.
+    await grant('formerOwner', 'SCHOOL_OWNER_MANAGER', { revokedAt: new Date() });
+    for (const who of ['outsider', 'formerOwner']) {
+      tokens[who] = jwt.sign({ sub: users[who].id, email: users[who].email, grants: [] });
+    }
     await superuser.staffPermission.create({ data: { id: randomUUID(), schoolId, userId: users.staffOn.id, canExportStudents: true } });
     for (const s of ['ana', 'vic', 'kid']) {
       await superuser.studentHomeBranch.create({ data: { id: randomUUID(), schoolId, studentId: users[s].id, branchId } });
@@ -171,6 +176,22 @@ describeIfDb('Student list export', () => {
     expect(off.body.error.code).toBe('STAFF_ACCESS_OFF');
     expect((await exportAs('coach')).status).toBe(403);
     expect((await exportAs('ana')).status).toBe(403);
+  });
+
+  it("someone with no role at the School, or a School that doesn't exist, gets 404 as on the roster (stress test round 6, R-3)", async () => {
+    const roster = (who: string, id = schoolId) => http().get(`/v1/schools/${id}/students`).set('Authorization', `Bearer ${tokens[who]}`);
+    for (const who of ['outsider', 'formerOwner']) {
+      const res = await exportAs(who);
+      expect(res.status).toBe(404);
+      expect(res.body.error).toMatchObject({ code: 'NOT_FOUND', message: 'School not found' });
+      expect((await roster(who)).status).toBe(404);
+    }
+    const nowhere = randomUUID();
+    const res = await http().get(`/v1/schools/${nowhere}/students/export`).set('Authorization', `Bearer ${tokens.owner}`);
+    expect(res.status).toBe(404);
+    expect(res.body.error.message).toBe('School not found');
+    expect((await roster('owner', nowhere)).status).toBe(404);
+    expect(await superuser.studentExportLog.count({ where: { exportedById: { in: [users.outsider.id, users.formerOwner.id] } } })).toBe(0);
   });
 
   it('every export is logged with who, the filter and the row count', async () => {

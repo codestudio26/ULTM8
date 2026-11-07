@@ -221,6 +221,31 @@ describeIfDb('Waiver before booking or check-in (Decision 441 item 5)', () => {
     }
   });
 
+  it("a signature on an archived waiver counts unless the School turned that off (Decision 354), at booking (stress test round 6, R-2)", async () => {
+    const old = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Retired terms', body: 'Text', archivedAt: new Date() } });
+    const ella = await superuser.user.create({
+      data: {
+        id: randomUUID(), email: `waiver-before-booking-ella-${randomUUID()}@example.test`, phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+        firstName: 'ella', surname: 'Waiver', passcodeHash: 'x', dateOfBirth: new Date('2000-01-01'), phoneVerifiedAt: new Date(),
+      },
+    });
+    users.ella = ella;
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: ella.id, schoolId: school.id } });
+    tokens.ella = jwt.sign({ sub: ella.id, email: ella.email, grants: [{ role: 'STUDENT', franchiseId: null, schoolId: school.id, branchId: null }] });
+    await member('ella');
+    // Ella signed only the waiver that was since archived; the School has another in use.
+    await sign(old.id, 'ella');
+    expect((await book('ella', await classAt(300))).status).toBe(201);
+    await superuser.school.update({ where: { id: school.id }, data: { waiverArchivedSignaturesCount: false } });
+    try {
+      const refused = await book('ella', await classAt(301));
+      expect(refused.status).toBe(403);
+      expect(refused.body.error.code).toBe('WAIVER_REQUIRED');
+    } finally {
+      await superuser.school.update({ where: { id: school.id }, data: { waiverArchivedSignaturesCount: true } });
+    }
+  });
+
   it("doesn't stop buying a plan", async () => {
     await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'CASH', accountTitle: 'Desk', country: 'BR' } });
     const pack = await superuser.membershipPlan.create({

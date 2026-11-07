@@ -10,8 +10,6 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
-import { assertBaselineConsentGiven } from '../guardians/baseline-consent';
-import { schoolZone } from '../common/school-zone';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
@@ -30,12 +28,12 @@ import { bookingUsesCredit } from './open-mat-credit';
 import { classTimeZones } from '../classes/class-time-zone';
 import { assertWhoCanBook } from '../classes/who-can-book';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
-import { bookingWaiverRefusal, WAIVER_REQUIRED_TO_BOOK } from '../waivers/waiver-signed-check';
+import { bookingWaiverRefusal, readSchoolWaiverRule, WAIVER_REQUIRED_TO_BOOK } from '../waivers/waiver-signed-check';
+import { BookingPreflight, bookingPreflight } from './booking-preflight';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 import { resolveChargeCurrency } from '../common/school-currency';
-import { assertAccountNotClosing } from '../account-deletion/account-closing';
 import { CARD_ACCOUNT_SELECT, takesCards } from '../payments/takes-cards';
 import { settleLateCancelFee } from '../payments/off-session-attempts';
 
@@ -175,15 +173,18 @@ export class BookingsService {
     // on-behalf-of path that most needs it; `studentId` is guaranteed
     // RLS-visible into this School the same way the actual Booking create()
     // below already relies on (it also runs under `studentId`'s context).
-    await this.subscriptionGate.assertNotDegraded(studentId, resolvedClass.schoolId);
-    // Decision 110: a closed School accepts no new Bookings, same as every other
-    // write there (Classes review C16: a Student could still book after closing).
-    await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
+    // Both School reads share one short transaction (stress test round 6, R-2).
+    await this.prismaApp.withTenantContext(studentId, async () => {
+      await this.subscriptionGate.assertNotDegraded(studentId, resolvedClass.schoolId);
+      // Decision 110: a closed School accepts no new Bookings, same as every other
+      // write there (Classes review C16: a Student could still book after closing).
+      await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
+    });
     // Decision 430 item 9 (FAM-9): a child whose parent hasn't given BASELINE
-    // consent can't be booked, by anyone.
-    await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
-    // "Delete my account": an account being deleted is locked, by anyone.
-    await assertAccountNotClosing(this.prismaJobs, studentId);
+    // consent can't be booked, by anyone. "Delete my account": an account being
+    // deleted is locked, by anyone. Read in one statement, with the School's
+    // waiver rule and time zone for the transaction below (R-2).
+    const preflight = await bookingPreflight(this.prismaJobs, studentId, resolvedClass.schoolId, resolvedClass.branchId);
     // SKILL.md §10: each guest needs a Friend Pass; the organizer's own
     // Subscription or Class Pack never covers a guest, and one pass covers one
     // guest (Classes review C13: one Subscription sent three times booked three
@@ -202,7 +203,7 @@ export class BookingsService {
       // First, before any row lock (see lockStudentClass).
       await lockStudentClass(tx, studentId, classId);
       await lockSchoolOpen(tx, resolvedClass.schoolId);
-      return this.bookInTx(tx, { callerId, studentId, cls: resolvedClass, dto, isStaffAction, viaKidMode });
+      return this.bookInTx(tx, { callerId, studentId, cls: resolvedClass, dto, isStaffAction, viaKidMode, preflight });
     }, BOOKING_TX_OPTIONS));
   }
 
@@ -213,18 +214,25 @@ export class BookingsService {
    * runs it for several Classes in one transaction, so a failure books none.
    * The checks before the transaction (Class visible, who may book, degraded
    * portal, closed School, assertClassBookable) are the caller's.
+   *
+   * `preflight`: what bookingPreflight read before the transaction (the
+   * School's waiver rule and time zone), so nothing here waits on a second
+   * connection for them while this one holds the locks (stress test round 6,
+   * R-2). Without it (the check-ins that book a place first) the waiver rule
+   * is read here, in one statement.
    */
   async bookInTx(
     tx: TenantTx,
-    args: { callerId: string; studentId: string; cls: Class; dto: BookClassDto; isStaffAction: boolean; viaKidMode: boolean },
+    args: { callerId: string; studentId: string; cls: Class; dto: BookClassDto; isStaffAction: boolean; viaKidMode: boolean; preflight?: BookingPreflight },
   ) {
-    const { callerId, studentId, cls: resolvedClass, dto, isStaffAction, viaKidMode } = args;
+    const { callerId, studentId, cls: resolvedClass, dto, isStaffAction, viaKidMode, preflight } = args;
     const classId = resolvedClass.id;
     await assertNotAlreadyAttended(tx, studentId, classId);
     // Decision 441 item 5: the School's "Waiver must be signed before booking
     // or check-in"; else the Class's own "needs a waiver". Staff booking for
     // someone, and the check-ins that book a place first, pass here too.
-    const waiverRefusal = await bookingWaiverRefusal(this.prismaJobs, tx, studentId, resolvedClass.schoolId, resolvedClass.termsWaiverRequired);
+    const waiverRule = preflight?.waiverRule ?? (await readSchoolWaiverRule(this.prismaJobs, resolvedClass.schoolId));
+    const waiverRefusal = await bookingWaiverRefusal(tx, studentId, resolvedClass.schoolId, resolvedClass.termsWaiverRequired, waiverRule);
     if (waiverRefusal === 'school') {
       throw new ForbiddenException({ ...WAIVER_REQUIRED_TO_BOOK });
     }
@@ -287,7 +295,7 @@ export class BookingsService {
       resolvedClass.schoolId,
       resolvedClass,
       new Date(),
-      (ids) => frozenMembershipIds(this.prismaJobs, resolvedClass.schoolId, ids, [new Date(), resolvedClass.startDate]),
+      (ids) => frozenMembershipIds(this.prismaJobs, resolvedClass.schoolId, ids, [new Date(), resolvedClass.startDate], preflight?.schoolTimezone),
       creditUsed,
     );
 

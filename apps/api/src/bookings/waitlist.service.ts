@@ -8,8 +8,6 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { GuardiansService } from '../guardians/guardians.service';
-import { assertBaselineConsentGiven } from '../guardians/baseline-consent';
-import { schoolZone } from '../common/school-zone';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { ClaimWaitlistDto } from './dto/claim-waitlist.dto';
@@ -22,7 +20,7 @@ import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
 import { bookingWaiverRefusal, WAIVER_REQUIRED_TO_BOOK } from '../waivers/waiver-signed-check';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
-import { assertAccountNotClosing } from '../account-deletion/account-closing';
+import { bookingPreflight } from './booking-preflight';
 
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
 
@@ -92,10 +90,10 @@ export class WaitlistService {
     assertClassBookable(resolvedClass, { byStaff: isOnBehalfOf && !isGuardianAction });
     // Decision 110: a closed School takes no new waitlist places (Classes review C16).
     await this.tenantAuth.assertSchoolNotArchived(studentId, resolvedClass.schoolId);
-    // Decision 430 item 9: no place for a child still waiting for a parent's consent.
-    await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
-    // "Delete my account": an account being deleted is locked.
-    await assertAccountNotClosing(this.prismaJobs, studentId);
+    // Decision 430 item 9: no place for a child still waiting for a parent's
+    // consent. "Delete my account": an account being deleted is locked. One
+    // read, with the School's waiver rule for the transaction (round 6, R-2).
+    const preflight = await bookingPreflight(this.prismaJobs, studentId, resolvedClass.schoolId, resolvedClass.branchId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(studentId, async (tx) => {
       // First, before any row lock (see lockStudentClass): a Student who has
@@ -129,7 +127,7 @@ export class WaitlistService {
       // student without one would hold an offered seat they can never take.
       // Decision 441 item 5: the School's "Waiver must be signed before
       // booking or check-in" stops joining too, for the same reason.
-      const waiverRefusal = await bookingWaiverRefusal(this.prismaJobs, tx, studentId, resolvedClass.schoolId, resolvedClass.termsWaiverRequired);
+      const waiverRefusal = await bookingWaiverRefusal(tx, studentId, resolvedClass.schoolId, resolvedClass.termsWaiverRequired, preflight.waiverRule);
       if (waiverRefusal === 'school') {
         throw new ForbiddenException({ ...WAIVER_REQUIRED_TO_BOOK });
       }
@@ -279,12 +277,16 @@ export class WaitlistService {
     // under the entry's own `studentId`, not `callerId` — same "a Guardian caller
     // holds zero RoleGrant anywhere, Decision 92" reasoning
     // BookingsService.bookClass()'s own identical check already documents.
-    await this.subscriptionGate.assertNotDegraded(resolvedEntry.studentId, resolvedEntry.schoolId);
-    // Decision 110: a closed School takes no new Bookings (Classes review C16).
-    await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
-    // Decision 430 item 9: a claim is a booking; it waits for a parent's consent.
-    await assertBaselineConsentGiven(this.prismaJobs, resolvedEntry.studentId, await schoolZone(this.prismaJobs, resolvedEntry.schoolId, resolvedEntry.branchId));
-    await assertAccountNotClosing(this.prismaJobs, resolvedEntry.studentId);
+    // Both School reads share one short transaction (stress test round 6, R-2).
+    await this.prismaApp.withTenantContext(resolvedEntry.studentId, async () => {
+      await this.subscriptionGate.assertNotDegraded(resolvedEntry.studentId, resolvedEntry.schoolId);
+      // Decision 110: a closed School takes no new Bookings (Classes review C16).
+      await this.tenantAuth.assertSchoolNotArchived(resolvedEntry.studentId, resolvedEntry.schoolId);
+    });
+    // Decision 430 item 9: a claim is a booking; it waits for a parent's
+    // consent. "Delete my account": an account being deleted is locked. One
+    // read, with the School's waiver rule and time zone for the transaction.
+    const preflight = await bookingPreflight(this.prismaJobs, resolvedEntry.studentId, resolvedEntry.schoolId, resolvedEntry.branchId);
 
     return withSeatLockRetry(() => this.prismaApp.withTenantContext(resolvedEntry.studentId, async (tx) => {
       const studentId = resolvedEntry.studentId;
@@ -301,7 +303,7 @@ export class WaitlistService {
       assertClassBookable(cls, { byStaff: true });
 
       // Decision 441 item 5: a claim is a booking.
-      const waiverRefusal = await bookingWaiverRefusal(this.prismaJobs, tx, studentId, cls.schoolId, cls.termsWaiverRequired);
+      const waiverRefusal = await bookingWaiverRefusal(tx, studentId, cls.schoolId, cls.termsWaiverRequired, preflight.waiverRule);
       if (waiverRefusal === 'school') {
         throw new ForbiddenException({ ...WAIVER_REQUIRED_TO_BOOK });
       }
@@ -347,7 +349,7 @@ export class WaitlistService {
         cls.schoolId,
         cls,
         new Date(),
-        (ids) => frozenMembershipIds(this.prismaJobs, cls.schoolId, ids, [new Date(), cls.startDate]),
+        (ids) => frozenMembershipIds(this.prismaJobs, cls.schoolId, ids, [new Date(), cls.startDate], preflight.schoolTimezone),
         creditUsed,
       );
 

@@ -168,6 +168,33 @@ describeIfDb('Large Schools: 6-digit codes and the tablet lock (Decision 417)', 
     expect((await codes(big.id)).sort()).toEqual(before.sort());
   });
 
+  it('a School that has just passed 500 Students reads 6 on Check-in rules, and saving what the page showed is never refused (stress test round 6, R-1)', async () => {
+    await seedShortCodes();
+    // Still on 4: neither a code given out nor the sweep has moved it yet.
+    const rules = await as(ownerToken).get(`/v1/schools/${big.id}/check-in-rules`);
+    expect(rules.status).toBe(200);
+    expect(rules.body.codeDigits).toBe(6);
+    // The rule is applied as the page reads it: the School and its codes are moved.
+    expect((await superuser.school.findUniqueOrThrow({ where: { id: big.id } })).checkInCodeDigits).toBe(6);
+    expect((await codes(big.id)).every((c) => /^\d{6}$/.test(c))).toBe(true);
+    const saved = await as(ownerToken).put(`/v1/schools/${big.id}/check-in-rules`, { ...rules.body, requireWaiver: false });
+    expect(saved.status).toBe(200);
+    expect(saved.body).toMatchObject({ codeDigits: 6, requireWaiver: false });
+
+    // A page read while the School was still on 4 (before it passed 500) saves too, keeping 6.
+    await seedShortCodes();
+    const stale = await as(ownerToken).put(`/v1/schools/${big.id}/check-in-rules`, { ...rules.body, requireWaiver: true, codeDigits: 4 });
+    expect(stale.status).toBe(200);
+    expect(stale.body).toMatchObject({ codeDigits: 6, requireWaiver: true });
+    expect((await superuser.school.findUniqueOrThrow({ where: { id: big.id } })).checkInCodeDigits).toBe(6);
+    expect((await codes(big.id)).every((c) => /^\d{6}$/.test(c))).toBe(true);
+    // The School page, the same way.
+    await seedShortCodes();
+    const school = await as(ownerToken).patch(`/v1/schools/${big.id}`, { checkInCodeDigits: 4 });
+    expect(school.status).toBe(200);
+    expect(school.body.checkInCodeDigits).toBe(6);
+  });
+
   it("a large School's settings can't go back to 4 digits; a small School's can", async () => {
     await superuser.school.update({ where: { id: big.id }, data: { checkInCodeDigits: 6 } });
     const rules = await as(ownerToken).get(`/v1/schools/${big.id}/check-in-rules`);
