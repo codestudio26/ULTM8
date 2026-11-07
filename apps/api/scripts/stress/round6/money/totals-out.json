@@ -1,0 +1,152 @@
+[
+ {
+  "area": "totals",
+  "step": "T0 desk payments of monthly charges (part, overpay, exact)",
+  "status": "FAIL",
+  "evidence": "[[409,\"This was just recorded. Check before adding another.\"],[409,\"This charge is already paid.\"],[409,\"This charge is already paid.\"]]"
+ },
+ {
+  "area": "totals",
+  "step": "T1 ready: overview scheduled/overdue = the unpaid charges",
+  "status": "PASS",
+  "evidence": "{\"report\":{\"scheduled\":0,\"overdue\":0},\"rows\":{\"scheduled\":0,\"overdue\":0}}"
+ },
+ {
+  "area": "totals",
+  "step": "T2 ready: overview paid (received − refunded) = the balance payment/refund entries",
+  "status": "PASS",
+  "evidence": "{\"report\":0,\"rows\":{\"received\":0,\"refunded\":0}}"
+ },
+ {
+  "area": "totals",
+  "step": "T3 ready: overview membership revenue = successful membership-type payments net of refunds",
+  "status": "PASS",
+  "evidence": "{\"report\":104499,\"rows\":104499,\"includingFullyRefundedRows\":104499}"
+ },
+ {
+  "area": "totals",
+  "step": "T4 ready: member balances = the sum of each member's balance entries (none missing)",
+  "status": "PASS",
+  "evidence": "{\"rows\":0,\"bad\":[],\"missing\":[]}"
+ },
+ {
+  "area": "totals",
+  "step": "T5 ready: member balances' owed adds up to the overview's scheduled + overdue",
+  "status": "PASS",
+  "evidence": "{\"owedSum\":0,\"overview\":0}"
+ },
+ {
+  "area": "totals",
+  "step": "T6 ready: Transactions summary revenue = the successful rows' amounts",
+  "status": "PASS",
+  "evidence": "{\"summary\":106499,\"rows\":106499,\"keys\":[\"total\",\"successful\",\"pending\",\"failedOrDisputed\",\"cancelled\",\"revenue\"]}"
+ },
+ {
+  "area": "totals",
+  "step": "T7 ready: what the two pages count differently",
+  "status": "NOTE",
+  "evidence": "{\"summaryRevenueIncludesPartRefunds\":[{\"amount\":8000,\"refunded\":1000,\"status\":\"SUCCESSFUL\",\"kind\":\"MEMBERSHIP\"},{\"amount\":8000,\"refunded\":1000,\"status\":\"SUCCESSFUL\",\"kind\":\"MEMBERSHIP\"}],\"surchargeCollectedNotInEither\":840,\"overviewMemberships\":104499,\"summaryRevenue\":106499}"
+ },
+ {
+  "area": "totals",
+  "step": "T8 ready: Transactions summary counts every row",
+  "status": "PASS",
+  "evidence": "{\"summaryTotal\":32,\"rows\":32}"
+ },
+ {
+  "area": "totals",
+  "step": "T1 notready: overview scheduled/overdue = the unpaid charges",
+  "status": "PASS",
+  "evidence": "{\"report\":{\"scheduled\":6000,\"overdue\":0},\"rows\":{\"scheduled\":6000,\"overdue\":0}}"
+ },
+ {
+  "area": "totals",
+  "step": "T2 notready: overview paid (received − refunded) = the balance payment/refund entries",
+  "status": "PASS",
+  "evidence": "{\"report\":0,\"rows\":{\"received\":0,\"refunded\":0}}"
+ },
+ {
+  "area": "totals",
+  "step": "T3 notready: overview membership revenue = successful membership-type payments net of refunds",
+  "status": "PASS",
+  "evidence": "{\"report\":33666,\"rows\":33666,\"includingFullyRefundedRows\":33666}"
+ },
+ {
+  "area": "totals",
+  "step": "T4 notready: member balances = the sum of each member's balance entries (none missing)",
+  "status": "PASS",
+  "evidence": "{\"rows\":2,\"bad\":[],\"missing\":[]}"
+ },
+ {
+  "area": "totals",
+  "step": "T5 notready: member balances' owed adds up to the overview's scheduled + overdue",
+  "status": "PASS",
+  "evidence": "{\"owedSum\":6000,\"overview\":6000}"
+ },
+ {
+  "area": "totals",
+  "step": "T6 notready: Transactions summary revenue = the successful rows' amounts",
+  "status": "PASS",
+  "evidence": "{\"summary\":33666,\"rows\":33666,\"keys\":[\"total\",\"successful\",\"pending\",\"failedOrDisputed\",\"cancelled\",\"revenue\"]}"
+ },
+ {
+  "area": "totals",
+  "step": "T7 notready: what the two pages count differently",
+  "status": "NOTE",
+  "evidence": "{\"summaryRevenueIncludesPartRefunds\":[],\"surchargeCollectedNotInEither\":0,\"overviewMemberships\":33666,\"summaryRevenue\":33666}"
+ },
+ {
+  "area": "totals",
+  "step": "T8 notready: Transactions summary counts every row",
+  "status": "PASS",
+  "evidence": "{\"summaryTotal\":8,\"rows\":8}"
+ },
+ {
+  "area": "totals",
+  "step": "T1 br: overview scheduled/overdue = the unpaid charges",
+  "status": "PASS",
+  "evidence": "{\"report\":{\"scheduled\":119814,\"overdue\":456012},\"rows\":{\"scheduled\":119814,\"overdue\":456012}}"
+ },
+ {
+  "area": "totals",
+  "step": "T2 br: overview paid (received − refunded) = the balance payment/refund entries",
+  "status": "PASS",
+  "evidence": "{\"report\":44214,\"rows\":{\"received\":44214,\"refunded\":0}}"
+ },
+ {
+  "area": "totals",
+  "step": "T3 br: overview membership revenue = successful membership-type payments net of refunds",
+  "status": "PASS",
+  "evidence": "{\"report\":863788,\"rows\":863788,\"includingFullyRefundedRows\":873788}"
+ },
+ {
+  "area": "totals",
+  "step": "T4 br: member balances = the sum of each member's balance entries (none missing)",
+  "status": "PASS",
+  "evidence": "{\"rows\":24,\"bad\":[],\"missing\":[]}"
+ },
+ {
+  "area": "totals",
+  "step": "T5 br: member balances' owed adds up to the overview's scheduled + overdue",
+  "status": "PASS",
+  "evidence": "{\"owedSum\":575826,\"overview\":575826}"
+ },
+ {
+  "area": "totals",
+  "step": "T6 br: Transactions summary revenue = the successful rows' amounts",
+  "status": "PASS",
+  "evidence": "{\"summary\":908002,\"rows\":908002,\"keys\":[\"total\",\"successful\",\"pending\",\"failedOrDisputed\",\"cancelled\",\"revenue\"]}"
+ },
+ {
+  "area": "totals",
+  "step": "T7 br: what the two pages count differently",
+  "status": "NOTE",
+  "evidence": "{\"summaryRevenueIncludesPartRefunds\":[],\"surchargeCollectedNotInEither\":0,\"overviewMemberships\":863788,\"summaryRevenue\":908002}"
+ },
+ {
+  "area": "totals",
+  "step": "T8 br: Transactions summary counts every row",
+  "status": "PASS",
+  "evidence": "{\"summaryTotal\":69,\"rows\":69}"
+ }
+]
