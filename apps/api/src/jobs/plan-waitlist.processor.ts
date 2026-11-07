@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
-import { holdsPlace, placesTaken } from '../memberships/waitlist/plan-capacity';
+import { holdsPlace, lockPlanPlaces, placesTaken } from '../memberships/waitlist/plan-capacity';
 import { noticeWallTime } from '../common/notice-time';
 import { NOTIFICATION_FANOUT_QUEUE, PLAN_WAITLIST_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
@@ -123,16 +123,24 @@ export class PlanWaitlistProcessor extends WorkerHost {
     }
     if (plan.memberLimit === null || plan.archivedAt || !plan.visible || school.archivedAt) return;
 
-    let free = plan.memberLimit - (await placesTaken(this.prismaJobs, planId, null));
+    const limited = { id: plan.id, memberLimit: plan.memberLimit };
     for (const entry of waiting) {
-      if (free <= 0) break;
       const offerExpiresAt = new Date(now.getTime() + PLACE_HELD_MS);
-      const offered = await this.prismaJobs.planWaitlistEntry.updateMany({
-        where: { id: entry.id, status: 'WAITING' },
-        data: { status: 'OFFERED', offeredAt: now, offerExpiresAt },
+      // Decision 447 item 5: a held place takes a place, so it is offered
+      // under the plan's lock, as orders are placed (Decision 446 item 6), and
+      // the places are counted again inside: an order or a plan switch
+      // starting at the same moment can't both take the last place.
+      const offered = await this.prismaJobs.$transaction(async (tx) => {
+        await lockPlanPlaces(tx, limited);
+        if ((await placesTaken(tx, planId, null)) >= limited.memberLimit) return 'FULL' as const;
+        const updated = await tx.planWaitlistEntry.updateMany({
+          where: { id: entry.id, status: 'WAITING' },
+          data: { status: 'OFFERED', offeredAt: now, offerExpiresAt },
+        });
+        return updated.count > 0 ? ('OFFERED' as const) : ('GONE' as const);
       });
-      if (offered.count === 0) continue;
-      free--;
+      if (offered === 'FULL') break;
+      if (offered === 'GONE') continue;
       outcome.offered++;
       const notice = placeHeldNotice(plan.title, noticeWallTime(offerExpiresAt, school.timezone ?? 'UTC'));
       await this.notify({ notificationId: `plan-place-held-${entry.id}`, userId: entry.studentId, title: notice.title, body: notice.body, type: 'PLAN_WAITLIST', schoolId: plan.schoolId });

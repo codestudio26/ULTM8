@@ -193,13 +193,13 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
       let pendingAtCharge: unknown;
       chargeOffSession.mockImplementationOnce(async (...args: unknown[]) => {
         pendingAtCharge = await superuser.transaction.findFirst({ where: { bookingId } });
-        return { succeeded: true, paymentIntentId: `pi_${String(args[7])}` };
+        return { succeeded: true, paymentIntentId: `pi_${(args[7] as { transactionId: string }).transactionId}` };
       });
       const res = await cancel(bookingId, token);
       expect(res.body).toMatchObject({ cancellationChargeOutcome: 'CHARGED', cancellationChargeAmount: 700 });
       const tx = await superuser.transaction.findFirstOrThrow({ where: { bookingId } });
       expect(pendingAtCharge).toMatchObject({ id: tx.id, kind: 'LATE_CANCEL_FEE', status: 'PENDING', stripePaymentIntentId: null });
-      expect(chargeOffSession).toHaveBeenCalledWith(user.id, school.id, 700, 'GBP', 'Late-cancellation fee', `late-cancel-fee-${tx.id}`, 0, tx.id);
+      expect(chargeOffSession).toHaveBeenCalledWith(user.id, school.id, 700, 'GBP', 'Late-cancellation fee', `late-cancel-fee-${tx.id}`, 0, { transactionId: tx.id });
       expect(tx).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: `pi_${tx.id}` });
       expect(res.body.stripeCancellationPaymentIntentId).toBe(`pi_${tx.id}`);
     });
@@ -234,9 +234,10 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
       // No webhook: an hour later the sweep asks Stripe (paid, and one never made).
       const b = await lost();
       const c = await lost();
-      const find = jest.spyOn(app.get(PaymentsService), 'findOffSessionPayment').mockImplementation(async (_s, _sc, transactionId) =>
-        transactionId === b.row.id ? { id: `pi_b_${b.row.id}`, status: 'succeeded' } : transactionId === c.row.id ? null : { id: 'pi_other', status: 'processing' },
-      );
+      const find = jest.spyOn(app.get(PaymentsService), 'findOffSessionPayment').mockImplementation(async (_s, _sc, tag) => {
+        const transactionId = 'transactionId' in tag ? tag.transactionId : null;
+        return transactionId === b.row.id ? { id: `pi_b_${b.row.id}`, status: 'succeeded' } : transactionId === c.row.id ? null : { id: 'pi_other', status: 'processing' };
+      });
       try {
         // Not yet stale: left alone.
         await autoPay.resolveStaleAttempts(new Date());

@@ -9,13 +9,14 @@ import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcha
 import { takesCards } from '../payments/takes-cards';
 import { resolveChargeCurrency } from '../common/school-currency';
 import { noticeMoney } from '../charges/charge-ledger';
-import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
-import { fixedPlanOver, membershipTerm, TERM_PLAN_TYPES } from '../memberships/plan-term';
+import { fixedPlanOver, TERM_PLAN_TYPES } from '../memberships/plan-term';
 import { planFullFor } from '../memberships/waitlist/plan-capacity';
 import { dayIn } from '../memberships/freeze/membership-freeze';
 import { trialEndedUnpaid } from '../subscription-plans/subscription-gate.service';
 import { NOTIFICATION_FANOUT_QUEUE, PLAN_SWITCH_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
+import { planSwitchNotice, planSwitchedNotice, planSwitchEndedNotice } from '../memberships/plan-switch-notices';
+import { failOffSessionPurchase, OffSessionPurchaseRefusedError, refuseOffSessionPurchase, settleOffSessionPurchase } from '../memberships/off-session-purchase';
 
 /** Every hour, at 20 past (the other hourly jobs run on the hour). */
 const CRON_HOURLY = '20 * * * *';
@@ -25,19 +26,9 @@ const REPEATABLE_JOB_ID = 'plan-switch';
 export const SWITCH_NOTICE_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** The notices' English text, translated in the apps by shape (@ultm8/i18n server/translate.ts). */
-export function planSwitchNotice(planTitle: string, endDay: string, nextTitle: string, amount: string) {
-  return {
-    title: 'Your plan is about to change',
-    body: `Your ${planTitle} ends on ${endDay}. Then ${nextTitle} starts and ${amount} is charged to your saved card. Without a saved card, or if ${nextTitle} is full, it simply ends and nothing is charged.`,
-  };
-}
-export function planSwitchedNotice(planTitle: string, nextTitle: string, amount: string) {
-  return { title: 'Your plan has changed', body: `Your ${planTitle} has ended and ${nextTitle} has started. ${amount} was charged to your saved card.` };
-}
-export function planSwitchEndedNotice(planTitle: string, nextTitle: string) {
-  return { title: 'Membership ended', body: `Your ${planTitle} has ended. ${nextTitle} couldn't be started, so nothing was charged.` };
-}
+// The notices' English text lives beside the switch's settling code
+// (off-session-purchase.ts sends two of them too); exported here as before.
+export { planSwitchNotice, planSwitchedNotice, planSwitchEndedNotice } from '../memberships/plan-switch-notices';
 
 @Injectable()
 export class PlanSwitchScheduler implements OnModuleInit {
@@ -87,7 +78,11 @@ export type PlanSwitchRunOutcome = { noticesSent: number; switched: number; ende
  * 4. Only once: Membership.switchedAt is claimed before any charge, and the
  *    charge's idempotency key is the membership's, so a retried run never
  *    charges twice. The new Membership doesn't switch on in turn: the member
- *    agreed to one switch.
+ *    agreed to one switch. Decision 447 item 4: the payment is written
+ *    Pending before the card is charged, so a switch Stripe was paid for is
+ *    finished by Stripe's webhook or charge-auto-pay's stale-attempt sweep if
+ *    this run stops first (off-session-purchase.ts), and item 5: the next
+ *    plan's member limit is counted again under its lock when it starts.
  *
  * A School whose ULTM8 subscription has lapsed takes no new payments (Spec 55
  * §10.2), so its memberships end too. Never switched, and not told: students
@@ -226,70 +221,77 @@ export class PlanSwitchProcessor extends WorkerHost {
     const student = await this.prismaJobs.user.findUniqueOrThrow({ where: { id: m.studentId }, select: { paymentRestrictedAt: true } });
     // Decision 442 item 2: a Stripe account not ready yet takes no cards.
     if (!account || !takesCards(account) || student.paymentRestrictedAt) return end('NO_CARD');
+    const saved = await this.prismaJobs.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: m.studentId, schoolId: m.schoolId } }, select: { id: true } });
+    if (!saved) return end('NO_CARD');
     const currency = await resolveChargeCurrency(this.prismaJobs, m.schoolId, next.currency);
     if (!currency) return end('NOT_SOLD');
     const surcharge = planCardSurcharge(next, await readCardSurchargeBps(this.prismaJobs, m.schoolId), currency);
 
+    // Decision 447 item 4: the payment is written Pending first and tagged on
+    // the PaymentIntent (metadata and the idempotency key), so a payment
+    // Stripe took is never lost if this stops before saving the answer:
+    // Stripe's webhook, or charge-auto-pay's stale-attempt sweep, settles it
+    // and starts the next plan, once (off-session-purchase.ts).
+    const transactionId = randomUUID();
+    await this.prismaJobs.transaction.create({
+      data: {
+        id: transactionId,
+        schoolId: m.schoolId,
+        studentId: m.studentId,
+        paymentAccountId: account.id,
+        membershipPlanId: next.id,
+        amount: next.price,
+        surchargeAmount: surcharge,
+        currency: currency.toUpperCase(),
+        status: 'PENDING',
+        paymentMethod: 'STRIPE',
+        offSessionAttempt: true,
+        planSwitchFromMembershipId: m.id,
+      },
+    });
     let charge: { succeeded: boolean; paymentIntentId: string };
     try {
-      charge = await this.payments.chargeOffSession(m.studentId, m.schoolId, next.price + surcharge, currency, next.title, `plan-switch-${m.id}`, surcharge);
+      charge = await this.payments.chargeOffSession(m.studentId, m.schoolId, next.price + surcharge, currency, next.title, `plan-switch-${m.id}`, surcharge, { transactionId });
     } catch (err) {
-      if (err instanceof NoSavedPaymentMethodError) return end('NO_CARD');
-      throw err;
+      if (err instanceof NoSavedPaymentMethodError) {
+        // No card to charge after all: nothing was charged (the attempt ends Failed).
+        await this.prismaJobs.$transaction((tx) => failOffSessionPurchase(tx, transactionId, null));
+        return end('NO_CARD');
+      }
+      // No answer from Stripe: the card may have been charged. Left Pending
+      // for Stripe's webhook or the stale-attempt sweep to settle.
+      this.logger.error(`plan-switch: charging membership ${m.id}'s switch (Transaction ${transactionId}) had no answer from Stripe; left Pending for Stripe's webhook or charge-auto-pay's check.`, err as Error);
+      return null;
     }
-    const baseRow = {
-      schoolId: m.schoolId,
-      studentId: m.studentId,
-      paymentAccountId: account.id,
-      membershipPlanId: next.id,
-      amount: next.price,
-      surchargeAmount: surcharge,
-      currency: currency.toUpperCase(),
-      paymentMethod: 'STRIPE' as const,
-    };
     if (!charge.succeeded) {
       // Recorded for the ledger as a failed attempt, as a declined saved-card
       // purchase is; nothing is owed.
-      await this.prismaJobs.transaction.create({ data: { id: randomUUID(), ...baseRow, status: 'FAILED', stripePaymentIntentId: charge.paymentIntentId || undefined } });
+      const failed = await this.prismaJobs.$transaction((tx) => failOffSessionPurchase(tx, transactionId, charge.paymentIntentId || null));
+      // Settled first by Stripe's webhook: it told the member.
+      if (!failed) return null;
       return end('DECLINED');
     }
 
-    let newMembershipId: string;
+    let settled: Awaited<ReturnType<typeof settleOffSessionPurchase>>;
     try {
-      newMembershipId = await this.prismaJobs.$transaction(async (tx) => {
-        await assertCanCreateMembership(tx, m.studentId, m.schoolId, next, now);
-        const term = membershipTerm(next, school.timezone, now);
-        const created = await tx.membership.create({
-          data: {
-            id: randomUUID(),
-            studentId: m.studentId,
-            membershipPlanId: next.id,
-            schoolId: m.schoolId,
-            frequency: 'ONE_TIME',
-            classesRemaining: next.classesIncluded ?? undefined,
-            startDate: term.startDate,
-            expiryDate: term.expiryDate,
-            awaitingFirstCheckIn: term.awaitingFirstCheckIn,
-            scopedClassId: next.scopedClassId,
-          },
-        });
-        await tx.transaction.create({ data: { id: randomUUID(), ...baseRow, membershipId: created.id, status: 'SUCCESSFUL', stripePaymentIntentId: charge.paymentIntentId } });
-        await tx.membership.update({ where: { id: m.id }, data: { switchOutcome: 'SWITCHED', switchedToMembershipId: created.id } });
-        return created.id;
-      });
+      // Decision 447 item 5: the next plan's member limit is counted again
+      // here, under the plan's lock, as for orders (Decision 446 item 6).
+      settled = await this.prismaJobs.$transaction((tx) => settleOffSessionPurchase(tx, transactionId, charge.paymentIntentId, school.timezone, now, { refuseClosedSchool: true }));
     } catch (err) {
-      if (!(err instanceof GeneralAccessConflictError)) throw err;
-      // The member already holds general access (bought since): the card is
-      // refunded in full and the old membership simply ends.
-      await this.payments.refundOffSessionCharge(m.studentId, m.schoolId, charge.paymentIntentId);
-      await this.prismaJobs.transaction.create({
-        data: { id: randomUUID(), ...baseRow, status: 'REFUNDED', refundedAmount: next.price + surcharge, stripePaymentIntentId: charge.paymentIntentId },
-      });
+      if (!(err instanceof OffSessionPurchaseRefusedError)) throw err;
+      // The member already holds general access (bought since), the next
+      // plan filled up meanwhile, or the School closed: the card is refunded in full and the old
+      // membership simply ends.
+      await this.payments.refundOffSessionCharge(m.studentId, m.schoolId, charge.paymentIntentId, `off-session-purchase-refund-${transactionId}`);
+      const refused = await this.prismaJobs.$transaction((tx) => refuseOffSessionPurchase(tx, transactionId, charge.paymentIntentId));
+      if (!refused) return null;
       return end('NOT_SOLD');
     }
+    // Settled first by Stripe's webhook: it told the member.
+    if (!settled) return 'SWITCHED';
     const notice = planSwitchedNotice(m.membershipPlan.title, next.title, noticeMoney(next.price + surcharge, currency));
     await this.notify({ notificationId: `plan-switched-${m.id}`, userId: m.studentId, title: notice.title, body: notice.body, type: 'MEMBERSHIP_EXPIRY', schoolId: m.schoolId });
-    this.logger.log(`plan-switch: membership ${m.id} switched to ${newMembershipId}.`);
+    this.logger.log(`plan-switch: membership ${m.id} switched to ${settled.membershipId}.`);
     return 'SWITCHED';
   }
 

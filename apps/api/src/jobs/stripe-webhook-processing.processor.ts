@@ -21,17 +21,24 @@ import { fromStripeAmount } from '../payments/stripe-amount';
 import { invoiceSurchargeAmount } from '../payments/stripe-subscription-surcharge';
 import { nonRefundableJoiningFee } from '../memberships/joining-fee';
 import { isStripeAccountReady } from '../payments/stripe-account-ready';
-import { settleLateCancelFee } from '../payments/off-session-attempts';
+import { settleFreezeFee, settleLateCancelFee, settleNoShowFee } from '../payments/off-session-attempts';
+import {
+  failOffSessionPurchase,
+  OffSessionPurchaseRefusedError,
+  offSessionPurchaseNotices,
+  refuseOffSessionPurchase,
+  settleOffSessionPurchase,
+} from '../memberships/off-session-purchase';
 
 /** `transactionId`: the ULTM8 Transaction id from the event object's metadata,
  * set on a hosted Checkout payment's PaymentIntent and Session
  * (PaymentsService.createPurchaseCheckoutSession), for payment_intent.* and
  * checkout.session.* events only. */
-type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string; transactionId?: string };
+type WebhookJobData = { stripeEventId: string; eventType: string; objectId: string; stripeAccountId?: string; transactionId?: string; noShowBookingId?: string };
 
 /** A payment_intent.* or checkout.session.* event's link to its card
  * Transaction when the row has no PaymentIntent id yet (findCardTransaction). */
-type CardEventRef = { transactionId?: string; stripeAccountId?: string };
+type CardEventRef = { transactionId?: string; stripeAccountId?: string; noShowBookingId?: string };
 
 /**
  * Thrown by handlePaymentIntentSucceeded when assertCanCreateMembership() refuses
@@ -141,8 +148,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   }
 
   async process(job: Job<WebhookJobData>): Promise<void> {
-    const { stripeEventId, eventType, objectId, stripeAccountId, transactionId } = job.data;
-    const cardRef: CardEventRef = { transactionId, stripeAccountId };
+    const { stripeEventId, eventType, objectId, stripeAccountId, transactionId, noShowBookingId } = job.data;
+    const cardRef: CardEventRef = { transactionId, stripeAccountId, noShowBookingId };
 
     // Phase 16b-ii addition — pre-fetched OUTSIDE the DB transaction below,
     // deliberately: an external Stripe API call has no place holding a DB
@@ -455,8 +462,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // five confirmed Transaction statuses; nothing else to undo, same as a
       // failed charge. Falls through on purpose.
       case 'payment_intent.canceled':
-        await this.handlePaymentIntentFailed(tx, objectId, cardRef);
-        return noSideEffects;
+        // Decision 447 item 4: a plan switch's payment settled here tells the member.
+        return { ...noSideEffects, notifications: await this.handlePaymentIntentFailed(tx, objectId, cardRef) };
       case 'customer.subscription.deleted':
         return { ...noSideEffects, freedClassIds: await this.handleSubscriptionDeleted(tx, objectId) };
       // Phase 16b-ii — real handlers, no longer safe-default no-ops. Decision
@@ -562,6 +569,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   private async handlePaymentIntentSucceeded(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<NotificationFanoutJobData[]> {
     const transaction = await this.findCardTransaction(tx, paymentIntentId, cardRef);
     if (!transaction) {
+      // Decision 447 item 4: a no-show fee, recorded on its Booking only.
+      if (await this.settleNoShowFeeEvent(tx, paymentIntentId, cardRef, true)) return [];
       this.logger.warn(`payment_intent.succeeded for ${paymentIntentId} — no matching Transaction found. Ignoring (not a Membership purchase this platform created).`);
       return [];
     }
@@ -599,9 +608,14 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       await settleLateCancelFee(tx, transaction.id, paymentIntentId, true);
       return [];
     }
+    // Decision 447 item 4: a freeze fee's card attempt, written Pending first.
+    if (transaction.kind === 'FREEZE_FEE') {
+      await settleFreezeFee(tx, transaction.id, paymentIntentId, true);
+      return [];
+    }
     const membershipPlanId = transaction.membershipPlanId;
     if (transaction.kind !== 'MEMBERSHIP' || !membershipPlanId) {
-      return []; // renewal and freeze-fee rows are never Pending card rows and create no Membership
+      return []; // renewal rows are never Pending card rows and create no Membership
     }
 
     // Decision 334 §8: a closed School takes no purchases or confirmations, and
@@ -614,6 +628,24 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     const [school] = await tx.$queryRaw<{ archivedAt: Date | null }[]>`SELECT "archivedAt" FROM "School" WHERE id = ${transaction.schoolId} FOR SHARE`;
     if (school?.archivedAt) {
       throw new MembershipCollisionError(`Membership create for Transaction ${transaction.id} (PaymentIntent ${paymentIntentId}) refused: School ${transaction.schoolId} is closed.`);
+    }
+
+    // Decision 447 item 4: a saved-card purchase or a plan switch charged
+    // off-session, whose outcome the caller never saved. Settled by the same
+    // code as the caller's (off-session-purchase.ts), so its Membership is
+    // created once, whoever gets there first. A refusal (general access held,
+    // or a plan switch's next plan full, item 5) is refunded as any other.
+    if (transaction.offSessionAttempt) {
+      let settled: Awaited<ReturnType<typeof settleOffSessionPurchase>>;
+      try {
+        settled = await settleOffSessionPurchase(tx, transaction.id, paymentIntentId, await schoolZoneFor(tx, transaction.schoolId));
+      } catch (err) {
+        if (err instanceof OffSessionPurchaseRefusedError) {
+          throw new MembershipCollisionError(`Membership create for Transaction ${transaction.id} (PaymentIntent ${paymentIntentId}) refused: ${err.message}`);
+        }
+        throw err;
+      }
+      return settled ? offSessionPurchaseNotices(tx, settled.transaction, 'paid') : [];
     }
 
     const updateResult = await tx.transaction.updateMany({
@@ -777,7 +809,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     }
     if (!SETTLEABLE.includes(transaction.status)) {
       // Already resolved by an earlier delivery of this same event (a BullMQ retry,
-      // or a genuine Stripe redelivery) — idempotent no-op.
+      // or a genuine Stripe redelivery), or for an off-session purchase by its
+      // caller or the stale-attempt sweep — idempotent no-op.
       this.logger.log(`Membership collision for PaymentIntent ${paymentIntentId} (event ${stripeEventId}) already resolved (Transaction ${transaction.id} is ${transaction.status}) — skipping.`);
       return;
     }
@@ -810,9 +843,24 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     }
     await stripe.refunds.create(
       { payment_intent: paymentIntentId },
-      { idempotencyKey: `membership-collision-refund-${stripeEventId}-${paymentIntentId}` },
+      {
+        // Decision 447 item 4: an off-session purchase may also be refunded by
+        // its caller or the stale-attempt sweep; one key for all three.
+        idempotencyKey: transaction.offSessionAttempt ? `off-session-purchase-refund-${transaction.id}` : `membership-collision-refund-${stripeEventId}-${paymentIntentId}`,
+      },
     );
 
+    // Decision 447 item 4: an off-session purchase (a plan switch ends as not
+    // sold, and its member gets the switch's own notice).
+    if (transaction.offSessionAttempt) {
+      const refused = await this.prismaJobs.$transaction(async (tx) => {
+        await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
+        return refuseOffSessionPurchase(tx, transaction.id, paymentIntentId);
+      });
+      this.logger.log(`PaymentIntent ${paymentIntentId} (off-session Transaction ${transaction.id}) refunded — the Membership was refused (event ${stripeEventId}).`);
+      if (refused) await this.enqueueNotices(await offSessionPurchaseNotices(this.prismaJobs, refused, 'refunded'));
+      return;
+    }
     const marked = await this.prismaJobs.$transaction(async (tx) => {
       await tx.processedStripeEvent.create({ data: { stripeEventId, eventType } });
       return tx.transaction.updateMany({
@@ -831,6 +879,17 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // The PaymentIntent was refunded in full, surcharge included.
     if (marked.count > 0) {
       await this.sendRefusedPurchaseNotice(transaction);
+    }
+  }
+
+  /** Best-effort, as sendRefusedPurchaseNotice(). */
+  private async enqueueNotices(notices: NotificationFanoutJobData[]): Promise<void> {
+    for (const data of notices) {
+      try {
+        await this.notificationFanoutQueue.add('notify', data, { jobId: data.notificationId, attempts: 3, backoff: { type: 'exponential', delay: 5000 } });
+      } catch (err) {
+        this.logger.warn(`Failed to enqueue the notice ${data.notificationId}: ${err}`);
+      }
     }
   }
 
@@ -863,16 +922,53 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   /** payment_intent.payment_failed — flips a PENDING Transaction to FAILED. No
    * Membership was ever created for this Transaction (Decision 6), so nothing else
    * to undo. */
-  private async handlePaymentIntentFailed(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<void> {
+  private async handlePaymentIntentFailed(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<NotificationFanoutJobData[]> {
     const transaction = await this.findCardTransaction(tx, paymentIntentId, cardRef);
-    if (!transaction || transaction.status !== 'PENDING') {
-      return;
+    if (!transaction) {
+      // Decision 447 item 4: a no-show fee, recorded on its Booking only.
+      await this.settleNoShowFeeEvent(tx, paymentIntentId, cardRef, false);
+      return [];
+    }
+    if (transaction.status !== 'PENDING') {
+      return [];
     }
     if (transaction.kind === 'LATE_CANCEL_FEE') {
       await settleLateCancelFee(tx, transaction.id, paymentIntentId, false);
-      return;
+      return [];
+    }
+    // Decision 447 item 4: declined, a freeze fee becomes a pending desk
+    // charge, and an off-session purchase fails (a plan switch ends).
+    if (transaction.kind === 'FREEZE_FEE' && transaction.paymentMethod === 'STRIPE') {
+      await settleFreezeFee(tx, transaction.id, paymentIntentId, false);
+      return [];
+    }
+    if (transaction.offSessionAttempt) {
+      const failed = await failOffSessionPurchase(tx, transaction.id, paymentIntentId);
+      return failed ? offSessionPurchaseNotices(tx, failed, 'failed') : [];
     }
     await tx.transaction.updateMany({ where: { id: transaction.id, status: 'PENDING' }, data: { status: 'FAILED' } });
+    return [];
+  }
+
+  /**
+   * Decision 447 item 4: a no-show fee's PaymentIntent (Decision 291), whose
+   * outcome the no-show job may never have saved. A no-show fee has no
+   * Transaction: the Booking is found by the Booking id in the
+   * PaymentIntent's metadata, only at the School whose connected account the
+   * event came from (as findCardTransaction()). Only an outcome not saved
+   * yet changes (settleNoShowFee()), so a redelivery changes nothing. True
+   * when the event was about a no-show fee.
+   */
+  private async settleNoShowFeeEvent(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef, succeeded: boolean): Promise<boolean> {
+    if (!cardRef.noShowBookingId || !cardRef.stripeAccountId) return false;
+    const booking = await tx.booking.findUnique({ where: { id: cardRef.noShowBookingId }, select: { id: true, schoolId: true } });
+    const account = booking ? await tx.paymentAccount.findUnique({ where: { schoolId: booking.schoolId }, select: { stripeConnectedAccountId: true } }) : null;
+    if (!booking || account?.stripeConnectedAccountId !== cardRef.stripeAccountId) {
+      this.logger.warn(`PaymentIntent ${paymentIntentId} names no-show Booking ${cardRef.noShowBookingId}, which is not at a School on account ${cardRef.stripeAccountId} — not matched.`);
+      return false;
+    }
+    await settleNoShowFee(tx, booking.id, paymentIntentId, succeeded);
+    return true;
   }
 
   /**

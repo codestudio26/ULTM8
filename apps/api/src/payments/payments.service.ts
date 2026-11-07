@@ -30,6 +30,7 @@ import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 import { dayIn } from '../memberships/freeze/membership-freeze';
 import { startBalanceBilling } from '../charges/membership-series';
 import { assertAccountNotClosing } from '../account-deletion/account-closing';
+import { OffSessionTag, offSessionTagMatches } from './off-session-attempts';
 
 /** Decision 406: the name of the card-surcharge line on a hosted Checkout
  * page and its Stripe receipt, beside the plan's own title (also untranslated,
@@ -561,10 +562,14 @@ export class PaymentsService {
     // on this API version that PaymentIntent doesn't exist yet when the
     // Transaction is written, so the processor matches it by this id
     // (findCardTransaction), and an expired Session by the same id.
-    const metadataTransactionId =
+    const eventMetadata =
       event.type.startsWith('payment_intent.') || event.type.startsWith('checkout.session.')
-        ? (event.data.object as { metadata?: Record<string, string> | null }).metadata?.transactionId
+        ? (event.data.object as { metadata?: Record<string, string> | null }).metadata
         : undefined;
+    const metadataTransactionId = eventMetadata?.transactionId;
+    // Decision 447 item 4: a no-show fee's PaymentIntent names its Booking
+    // (a no-show fee has no Transaction), matched the same way.
+    const metadataNoShowBookingId = event.type.startsWith('payment_intent.') ? eventMetadata?.noShowBookingId : undefined;
     await this.webhookQueue.add(
       'process',
       {
@@ -573,6 +578,7 @@ export class PaymentsService {
         objectId: object.id,
         stripeAccountId: event.account ?? undefined,
         ...(metadataTransactionId ? { transactionId: metadataTransactionId } : {}),
+        ...(metadataNoShowBookingId ? { noShowBookingId: metadataNoShowBookingId } : {}),
       },
       // Kept on the default 3-attempts/exponential-backoff policy every other job in
       // this codebase gets (Decision 23) — deliberately, not by omission. Decision
@@ -1267,8 +1273,10 @@ export class PaymentsService {
     // this call, put in the PaymentIntent's metadata (as a hosted Checkout's
     // is), so Stripe's payment_intent.* webhooks find the row even if the
     // caller never saved Stripe's answer (findCardTransaction), and
-    // findOffSessionPayment() can find the PaymentIntent again.
-    transactionId?: string,
+    // findOffSessionPayment() can find the PaymentIntent again. Decision 447
+    // item 4: or, for a no-show fee (which has no Transaction), the Booking
+    // whose noShowFeeAmount was written before this call.
+    tag?: OffSessionTag,
   ): Promise<{ succeeded: boolean; paymentIntentId: string }> {
     const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId, schoolId } } }),
@@ -1296,9 +1304,7 @@ export class PaymentsService {
           payment_method: pmId,
           off_session: true,
           confirm: true,
-          ...(surchargeAmount > 0 || transactionId
-            ? { metadata: { ...(transactionId ? { transactionId } : {}), ...(surchargeAmount > 0 ? { surchargeAmount: String(surchargeAmount) } : {}) } }
-            : {}),
+          ...(surchargeAmount > 0 || tag ? { metadata: { ...(tag ?? {}), ...(surchargeAmount > 0 ? { surchargeAmount: String(surchargeAmount) } : {}) } } : {}),
         },
         idempotencyKey ? { idempotencyKey } : undefined,
       );
@@ -1318,13 +1324,14 @@ export class PaymentsService {
    * whose outcome was never saved (the worker stopped between Stripe's answer
    * and the save, or Stripe could not be reached). By its saved id when the
    * row has one; otherwise among the saved card's Customer's PaymentIntents
-   * made since `since`, by the `transactionId` chargeOffSession() puts in the
-   * metadata. Null when Stripe has none: nothing was charged.
+   * made since `since`, by the tag chargeOffSession() puts in the metadata
+   * (the Transaction id, or a no-show fee's Booking id, Decision 447 item 4).
+   * Null when Stripe has none: nothing was charged.
    */
   async findOffSessionPayment(
     studentId: string,
     schoolId: string,
-    transactionId: string,
+    tag: OffSessionTag,
     knownPaymentIntentId: string | null,
     since: Date,
   ): Promise<{ id: string; status: string } | null> {
@@ -1343,7 +1350,7 @@ export class PaymentsService {
     let startingAfter: string | undefined;
     for (;;) {
       const page = await stripe.paymentIntents.list({ customer: saved.stripeCustomerId, created, limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}) });
-      const match = page.data.find((intent) => intent.metadata?.transactionId === transactionId);
+      const match = page.data.find((intent) => offSessionTagMatches(intent.metadata, tag));
       if (match) return { id: match.id, status: match.status };
       if (!page.has_more || page.data.length === 0) return null;
       startingAfter = page.data[page.data.length - 1].id;
@@ -1366,10 +1373,14 @@ export class PaymentsService {
    * is called at most once per purchase() invocation, synchronously, never
    * retried by a queue the way the webhook path's own equivalent is.
    */
-  async refundOffSessionCharge(studentId: string, schoolId: string, paymentIntentId: string): Promise<void> {
+  async refundOffSessionCharge(studentId: string, schoolId: string, paymentIntentId: string, idempotencyKey?: string): Promise<void> {
     const account = await this.resolveStripePaymentAccount(studentId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
-    await stripe.refunds.create({ payment_intent: paymentIntentId });
+    // Decision 447 item 4: the stale-attempt sweep and the webhook may refund
+    // a refused off-session purchase more than once if a run stops midway; they
+    // pass a key so Stripe refunds it once.
+    if (idempotencyKey) await stripe.refunds.create({ payment_intent: paymentIntentId }, { idempotencyKey });
+    else await stripe.refunds.create({ payment_intent: paymentIntentId });
   }
 
   /**

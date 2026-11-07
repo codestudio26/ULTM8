@@ -15,7 +15,15 @@ import { formatInvoiceNumber } from '../charges/charge-maths';
 import { CHARGE_AUTO_PAY_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
-import { settleLateCancelFee, STALE_OFF_SESSION_ATTEMPT_MS } from '../payments/off-session-attempts';
+import { settleFreezeFee, settleLateCancelFee, settleNoShowFee, STALE_OFF_SESSION_ATTEMPT_MS } from '../payments/off-session-attempts';
+import {
+  failOffSessionPurchase,
+  OFF_SESSION_PURCHASE,
+  OffSessionPurchaseRefusedError,
+  offSessionPurchaseNotices,
+  refuseOffSessionPurchase,
+  settleOffSessionPurchase,
+} from '../memberships/off-session-purchase';
 
 /** Daily, at 6am UTC: after the 5am waiver-renewal sweep. */
 const CRON_DAILY_AT_6AM_UTC = '0 6 * * *';
@@ -287,7 +295,7 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         `Invoice ${a.invoiceLabel}: ${a.description}`,
         `charge-auto-pay-${a.transactionId}`,
         a.surcharge,
-        a.transactionId,
+        { transactionId: a.transactionId },
       );
     } catch (err) {
       // No card any more (or the School's account isn't ready): nothing was
@@ -367,17 +375,21 @@ export class ChargeAutoPayProcessor extends WorkerHost {
    * says: paid (the charge is paid and the receipt sent), still processing
    * (left), or declined or never made (Failed; for an automatic payment the
    * member is told). Covers automatic charge payments and late-cancellation
-   * fees. Runs first in every run, before the 7am late-fee and overdue-notice
+   * fees, and (Decision 447 item 4) freeze fees, saved-card purchases and
+   * plan switches (their Membership is created here if Stripe was paid, once:
+   * off-session-purchase.ts) and no-show fees (recorded on their Booking).
+   * Runs first in every run, before the 7am late-fee and overdue-notice
    * jobs, which leave a charge alone while its automatic attempt is Pending.
    * A Stripe that can't be reached leaves the row for the next run.
    */
   async resolveStaleAttempts(now: Date): Promise<{ paid: number; failed: number; left: number }> {
+    const staleBefore = new Date(now.getTime() - STALE_OFF_SESSION_ATTEMPT_MS);
     const stale = await this.prismaJobs.transaction.findMany({
       where: {
         status: 'PENDING',
         paymentMethod: 'STRIPE',
-        createdAt: { lt: new Date(now.getTime() - STALE_OFF_SESSION_ATTEMPT_MS) },
-        OR: [{ kind: 'CHARGE_PAYMENT', chargePaymentChannel: 'AUTOMATIC' }, { kind: 'LATE_CANCEL_FEE' }],
+        createdAt: { lt: staleBefore },
+        OR: [{ kind: 'CHARGE_PAYMENT', chargePaymentChannel: 'AUTOMATIC' }, { kind: 'LATE_CANCEL_FEE' }, { kind: 'FREEZE_FEE' }, OFF_SESSION_PURCHASE],
       },
       include: { charge: { select: { invoiceNumber: true, description: true } } },
       orderBy: { createdAt: 'asc' },
@@ -385,7 +397,7 @@ export class ChargeAutoPayProcessor extends WorkerHost {
     const total = { paid: 0, failed: 0, left: 0 };
     for (const row of stale) {
       try {
-        const intent = await this.payments.findOffSessionPayment(row.studentId, row.schoolId, row.id, row.stripePaymentIntentId, row.createdAt);
+        const intent = await this.payments.findOffSessionPayment(row.studentId, row.schoolId, { transactionId: row.id }, row.stripePaymentIntentId, row.createdAt);
         if (intent?.status === 'processing') {
           total.left++;
           continue;
@@ -393,6 +405,10 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         const succeeded = intent?.status === 'succeeded';
         if (row.kind === 'LATE_CANCEL_FEE') {
           await this.prismaJobs.$transaction((tx) => settleLateCancelFee(tx, row.id, intent?.id ?? null, succeeded));
+        } else if (row.kind === 'FREEZE_FEE') {
+          await this.prismaJobs.$transaction((tx) => settleFreezeFee(tx, row.id, intent?.id ?? null, succeeded));
+        } else if (row.kind === 'MEMBERSHIP') {
+          await this.resolveOffSessionPurchase(row.id, row.studentId, row.schoolId, succeeded ? intent.id : null, intent?.id ?? null, now);
         } else {
           const a: Attempt = {
             transactionId: row.id,
@@ -416,7 +432,64 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         this.logger.error(`charge-auto-pay: checking Pending Transaction ${row.id} with Stripe failed; tried again on the next run.`, err as Error);
       }
     }
+
+    // Decision 447 item 4: no-show fees whose outcome was never saved. The
+    // attempt is the Booking (noShowFeeAmount written, no outcome). Its
+    // PaymentIntent can only have been made after the class's check-in window
+    // closed (the Booking became a no-show then), so Stripe is searched from
+    // that moment.
+    const noShows = await this.prismaJobs.booking.findMany({
+      where: { noShowFeeAmount: { not: null }, noShowFeeOutcome: null, updatedAt: { lt: staleBefore } },
+      select: { id: true, studentId: true, schoolId: true, stripeNoShowPaymentIntentId: true, class: { select: { endDate: true, qrAttendanceEndAt: true } } },
+      orderBy: { updatedAt: 'asc' },
+    });
+    for (const b of noShows) {
+      try {
+        const since = b.class.qrAttendanceEndAt ?? b.class.endDate;
+        const intent = await this.payments.findOffSessionPayment(b.studentId, b.schoolId, { noShowBookingId: b.id }, b.stripeNoShowPaymentIntentId, since);
+        if (intent?.status === 'processing') {
+          total.left++;
+          continue;
+        }
+        const succeeded = intent?.status === 'succeeded';
+        await this.prismaJobs.$transaction((tx) => settleNoShowFee(tx, b.id, intent?.id ?? null, succeeded));
+        if (succeeded) total.paid++;
+        else total.failed++;
+        this.logger.warn(`charge-auto-pay: no-show fee of Booking ${b.id} resolved from Stripe as ${succeeded ? 'paid' : 'not paid'}${intent ? ` (PaymentIntent ${intent.id}, ${intent.status})` : ' (no PaymentIntent)'}.`);
+      } catch (err) {
+        total.left++;
+        this.logger.error(`charge-auto-pay: checking the no-show fee of Booking ${b.id} with Stripe failed; tried again on the next run.`, err as Error);
+      }
+    }
     return total;
+  }
+
+  /**
+   * Decision 447 item 4: a saved-card purchase or plan switch Stripe was
+   * paid for (`paidBy`, the PaymentIntent) or not. Paid, its Membership is
+   * created (unless the caller or Stripe's webhook did first); refused (general
+   * access held, a switch's next plan full, or the School closed since), the card is refunded with the
+   * key the caller and the webhook use, so it is refunded once. The member is
+   * told as the caller would have told them.
+   */
+  private async resolveOffSessionPurchase(transactionId: string, studentId: string, schoolId: string, paidBy: string | null, paymentIntentId: string | null, now: Date) {
+    let notices: NotificationFanoutJobData[] = [];
+    if (!paidBy) {
+      const failed = await this.prismaJobs.$transaction((tx) => failOffSessionPurchase(tx, transactionId, paymentIntentId));
+      if (failed) notices = await offSessionPurchaseNotices(this.prismaJobs, failed, 'failed');
+    } else {
+      const zone = (await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }))?.timezone ?? null;
+      try {
+        const settled = await this.prismaJobs.$transaction((tx) => settleOffSessionPurchase(tx, transactionId, paidBy, zone, now, { refuseClosedSchool: true }));
+        if (settled) notices = await offSessionPurchaseNotices(this.prismaJobs, settled.transaction, 'paid');
+      } catch (err) {
+        if (!(err instanceof OffSessionPurchaseRefusedError)) throw err;
+        await this.payments.refundOffSessionCharge(studentId, schoolId, paidBy, `off-session-purchase-refund-${transactionId}`);
+        const refused = await this.prismaJobs.$transaction((tx) => refuseOffSessionPurchase(tx, transactionId, paidBy));
+        if (refused) notices = await offSessionPurchaseNotices(this.prismaJobs, refused, 'refunded');
+      }
+    }
+    for (const n of notices) await this.notify(n);
   }
 
   /** Best-effort, as ChargesService.notify(): a notice that fails to enqueue never undoes the payment. */

@@ -63,7 +63,7 @@ function paidUntil(subscription: { trial_end: number | null; items?: { data: Arr
 async function freezeWithSubscription(db: Db, freezeId: string) {
   return db.membershipFreeze.findUnique({
     where: { id: freezeId },
-    include: { membership: { select: { stripeSubscriptionId: true, status: true, cancelAt: true } }, school: { select: { timezone: true } } },
+    include: { membership: { select: { stripeSubscriptionId: true, status: true, cancelAt: true, cancelledById: true } }, school: { select: { timezone: true } } },
   });
 }
 
@@ -114,12 +114,34 @@ export async function applyFreezeBillingShift(db: Db, stripeClient: Stripe, free
     target = (await db.membershipFreeze.findUniqueOrThrow({ where: { id: freeze.id }, select: { shiftedTrialEnd: true } })).shiftedTrialEnd!;
   }
   const trialEnd = Math.floor(target.getTime() / 1000);
+  // Decision 447 item 6: cancelled after the freeze was approved but before
+  // this shift reached Stripe, the cancel date was worked out from the paid
+  // period as it was before the shift. Once the shift lands, the cancel date
+  // is set again with it, as if the member had cancelled after it: a cancel
+  // at the end of the paid period (someone cancelled: cancelledById) on a day
+  // after the freeze's first day moves later by the frozen days, as
+  // restoreFreezeBilling() moves it back. Any other cancel date (a minimum
+  // term's end, which already counts the freeze, or one on or before the
+  // first frozen day) is sent again unchanged, so Stripe ends the
+  // Subscription on the date the app shows.
+  const { cancelAt, cancelledById } = freeze.membership;
+  const frozenDays = dayNumber(freeze.endsAt) - dayNumber(freeze.startsAt);
+  const movesCancel = !!cancelAt && !!cancelledById && frozenDays > 0 && dayNumber(dayIn(cancelAt, zone)) > dayNumber(freeze.startsAt);
+  const newCancelMs = cancelAt ? cancelAt.getTime() + (movesCancel ? frozenDays * DAY_S * 1000 : 0) : null;
+  const cancelAtS = newCancelMs !== null && newCancelMs > now.getTime() + 60_000 ? Math.floor(newCancelMs / 1000) : null;
   await stripe.subscriptions.update(
     subscriptionId,
-    { trial_end: trialEnd, proration_behavior: 'none' },
-    { idempotencyKey: `membership-freeze-shift-${freeze.id}-${trialEnd}` },
+    { trial_end: trialEnd, proration_behavior: 'none', ...(cancelAtS !== null ? { cancel_at: cancelAtS } : {}) },
+    { idempotencyKey: `membership-freeze-shift-${freeze.id}-${trialEnd}${cancelAtS !== null ? `-${cancelAtS}` : ''}` },
   );
-  await db.membershipFreeze.updateMany({ where: { id: freeze.id, billingShiftAppliedAt: null }, data: { billingShiftAppliedAt: now } });
+  const applied = db.membershipFreeze.updateMany({ where: { id: freeze.id, billingShiftAppliedAt: null }, data: { billingShiftAppliedAt: now } });
+  if (cancelAtS === null || !movesCancel) {
+    await applied;
+  } else {
+    // Together, so a retry (nothing recorded) works out the same cancel date
+    // again and never moves it twice.
+    await db.$transaction([db.membership.updateMany({ where: { id: freeze.membershipId, cancelAt: cancelAt! }, data: { cancelAt: new Date(cancelAtS * 1000) } }), applied]);
+  }
   return true;
 }
 

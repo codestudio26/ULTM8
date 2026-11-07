@@ -2813,6 +2813,20 @@ model Transaction {
   /// creates (card webhook, cash confirmation). A snapshot, not a link.
   planSwitchToPlanId String?
 
+  /// Decision 447 item 4: a membership bought with the saved card, charged
+  /// off-session (a saved-card purchase, or a plan switch). Written Pending
+  /// before Stripe is called and tagged on the PaymentIntent, so Stripe's
+  /// webhook or the stale-attempt sweep (charge-auto-pay) can settle it and
+  /// create its Membership, exactly once, if the caller stops before saving
+  /// Stripe's answer (payments/off-session-purchase.ts). False for every other
+  /// row (an Elements or hosted Checkout payment the member confirms).
+  offSessionAttempt Boolean @default(false)
+
+  /// Decision 447 item 4: a plan switch's payment (offSessionAttempt): the
+  /// membership that ended and whose agreed switch this pays for, so whoever
+  /// settles the payment records the switch's outcome on it.
+  planSwitchFromMembershipId String?
+
   /// Decision 435 items 2-5: the joining fee this first payment included, as
   /// part of `amount` (so tax, receipts and reports count it with the plan),
   /// and whether it is refunded with the payment (copied from the plan when
