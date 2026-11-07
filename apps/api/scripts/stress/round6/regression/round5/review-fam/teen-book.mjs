@@ -1,0 +1,11 @@
+import { db, call, grant, tokenRca } from '../../round4/common.mjs';
+const S = process.env.SCHOOL;
+const teen = await db.user.findFirst({ where: { email: { startsWith: 'r5-fam-teen18-' } }, orderBy: { createdAt: 'desc' } });
+const link = await db.guardianLink.findFirst({ where: { studentId: teen.id }, include: { guardian: true } });
+const cls = await db.class.findFirst({ where: { schoolId: S, title: 'Adults' }, orderBy: { createdAt: 'desc' } });
+const t = tokenRca(link.guardian, []);
+const b = await call('x', 'POST', `/classes/${cls.id}/book`, t, { studentId: teen.id });
+console.log(b.status, JSON.stringify(b.body));
+const mm = await call('x', 'GET', '/guardians/me/minors', t);
+console.log('minors list contains 18yo:', JSON.stringify(mm.body).includes(teen.id));
+await db.$disconnect();

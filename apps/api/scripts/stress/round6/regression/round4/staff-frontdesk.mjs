@@ -3,10 +3,11 @@
 // real School sizes. PASS/FAIL per check, staff-frontdesk-result.json.
 // Uses Schools 300-339 (medium and large) and one very large School.
 import { db, call, pool, cast, checks, codes, grant, tokenRca } from './common.mjs';
+import { N } from './scale.mjs'; // Round 6: scaled world
 const { ok, save } = checks('staff-frontdesk');
 const info = (id, detail) => ok(id, true, 'INFO ' + detail);
 // OFFSET picks fresh Schools for a rerun (the checks change state).
-const S = cast.schools.filter((s) => s.n >= 300 && s.n < 340 && s.size !== 'small' && s.coOwner).slice(+(process.env.OFFSET || 0));
+const S = cast.schools.filter((s) => s.n >= N(300) && s.n < N(340) && s.size !== 'small' && s.coOwner).slice(+(process.env.OFFSET || 0));
 const user = (id) => ({ id, email: `${id}@x` });
 // What a real sign-in puts in the token: the user's roles-changed stamp, in ms (auth.service).
 const stamp = async (id) => (await db.user.findUnique({ where: { id }, select: { rolesChangedAt: true } })).rolesChangedAt?.getTime() ?? 0;
@@ -40,7 +41,10 @@ const stamp = async (id) => (await db.user.findUnique({ where: { id }, select: {
 {
   const s = S[1];
   const get = await call('st2:get-staff', 'GET', `/schools/${s.id}/staff`, s.owner.tok);
-  const off = { classes: true, bookings: false, students: false, cancelClasses: false, staffList: false, inviteCoaches: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false };
+  // Round 6 adaptation: the access switches changed since round 4 (inviteCoaches went
+  // with Decision 423 item 10; attendanceStats, seeMedicalInfo, payroll, connectStripe,
+  // memberFiles and importData were added). Same intent: everything off but Classes.
+  const off = { classes: true, bookings: false, students: false, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, seeMedicalInfo: false, payroll: false, connectStripe: false, memberFiles: false, importData: false };
   const set = await call('st2:set-access', 'PUT', `/schools/${s.id}/staff/${s.staff.id}/access`, s.owner.tok, off);
   const sb = await db.roleGrant.findFirst({ where: { userId: s.staff.id, schoolId: s.id, role: 'BRANCH_STAFF' } });
   const t = tokenRca(user(s.staff.id), [grant('BRANCH_STAFF', s.id, sb.branchId)], await stamp(s.staff.id));

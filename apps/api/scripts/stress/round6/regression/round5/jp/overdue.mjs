@@ -1,0 +1,23 @@
+// ¥0.72 left owing after the member pays every yen they can: overdue, and a % late fee on it.
+import fs from 'fs';
+import { createRequire } from 'module';
+import { db, call } from '../../round4/common.mjs';
+const require = createRequire(new URL('../../../../../../package.json', import.meta.url));
+const { lateFeeAmount } = require('./dist/late-fees/late-fee-maths.js');
+const C = JSON.parse(fs.readFileSync(new URL('./jp-cast.json', import.meta.url)));
+const S = C.schoolId, O = C.owner.tok, st = C.bulk[9];
+await db.school.update({ where: { id: S }, data: { taxRateBasisPoints: 800, taxInclusive: false } });
+const due = new Date(Date.now() - 20 * 86400e3).toISOString().slice(0, 10);
+const ch = await call('o', 'POST', `/schools/${S}/students/${st.id}/charges`, O, { description: '合宿費 1,234円＋税', amount: 123400, dueDate: due });
+await db.school.update({ where: { id: S }, data: { taxRateBasisPoints: 1000, taxInclusive: true } });
+console.log('create', ch.status, ch.body.grossAmount);
+const pay = await call('o', 'POST', `/schools/${S}/students/${st.id}/charge-payments`, O, { chargeId: ch.body.id, amount: 133200, paymentMethod: 'CASH', sendReceipt: false });
+const l = await call('o', 'GET', `/schools/${S}/students/${st.id}/charges`, O);
+const c = l.body.charges.find((x) => x.id === ch.body.id);
+console.log('after ¥1,332 cash:', JSON.stringify({ owed: c.owedAmount, overdue: c.overdue, status: c.status, balances: l.body.balances }));
+const me = await call('o', 'GET', `/students/${st.id}/charges`, st.tok);
+console.log('member app sees:', JSON.stringify(me.body.balances ?? me.body.schools?.[0]?.balances));
+console.log('3.33% late fee on 72 hundredths =', lateFeeAmount({ type: 'PERCENT', percentBps: 333 }, 72), 'hundredths');
+const ov = await call('o', 'GET', `/schools/${S}/charge-reports/overview`, O);
+console.log('overview', JSON.stringify(ov.body).slice(0, 400));
+await db.$disconnect();

@@ -4,9 +4,10 @@
 // unusual names, and the roster/search at 4,000 students. members-result.json.
 // Uses Schools 340-379 and the very large Schools (read-only there).
 import { db, call, pool, cast, checks, codes } from './common.mjs';
+import { N } from './scale.mjs'; // Round 6: scaled world
 const { ok, save } = checks('members');
 const info = (id, detail) => ok(id, true, 'INFO ' + detail);
-const S = cast.schools.filter((s) => s.n >= 340 && s.n < 380 && s.size !== 'small');
+const S = cast.schools.filter((s) => s.n >= N(280) && !(s.n >= N(300) && s.n < N(340)) && s.size !== 'small').slice(0, 4); // Round 6: scaled world, at least 3 Schools
 const XL = cast.schools.filter((s) => s.size === 'xlarge');
 
 // --- MB1 export the student list at 3,000-4,000 students, 10 owners at once ---

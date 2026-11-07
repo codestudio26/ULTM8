@@ -6,6 +6,8 @@
 // currency (apps/school-portal/src/lib/MoneyField.tsx, money.ts). Stripe wants
 // its own minor unit: none for JPY/KRW, three decimals for KWD/BHD.
 import { db, call, pool, cast, checks, codes, randomUUID } from './common.mjs';
+import { N } from './scale.mjs'; // Round 6: scaled world
+import { makeStripeAccountReady } from '../booking-schedule/lib.mjs';
 const FAKE = `http://localhost:${process.env.FAKE_STRIPE_PORT ?? 12111}`;
 const { ok, save } = checks('money');
 const info = (id, detail) => ok(id, true, 'INFO ' + detail);
@@ -19,7 +21,7 @@ const THREE = new Set(['BHD', 'JOD', 'KWD', 'OMR', 'TND']);
 const stripeAmountFor = (hundredths, cur) => (ZERO.has(cur) ? Math.round(hundredths / 100) : THREE.has(cur) ? hundredths * 10 : hundredths);
 
 // One School per currency to test, not used by the other round 4 scripts (index 200+).
-const pickCountry = (cc) => cast.schools.find((s) => s.country === cc && s.n >= 200 && s.size !== 'xlarge');
+const pickCountry = (cc) => cast.schools.find((s) => s.country === cc && s.n >= N(200) && s.size !== 'xlarge');
 const testSchools = ['JP', 'KR', 'CL', 'KW', 'BH', 'US', 'BR', 'GB'].map(pickCountry).filter(Boolean);
 
 // --- M1: what Stripe is asked to charge, per currency ---
@@ -32,18 +34,25 @@ for (const s of run('M1') ? testSchools : []) {
     const ob = await call('m1:onboard', 'POST', `/payment-accounts/${acct.body.id}/connect/onboard`, s.owner.tok, {});
     if (ob.status >= 300) { ok(`M1 ${s.currency} onboard`, false, JSON.stringify(ob.body)); continue; }
   }
+  // Round 6 adaptation (Decision 442 item 2): Stripe says the account is ready.
+  const pa = await db.paymentAccount.findFirst({ where: { schoolId: s.id, provider: 'STRIPE' } });
+  if (!pa.stripeAccountReady) await makeStripeAccountReady(pa.stripeConnectedAccountId);
   // The owner types 1,000 (yen, won, dinar, dollars...). The portal sends 100000.
   const typed = 1000, sent = typed * 100;
   const plan = await call('m1:plan', 'POST', `/schools/${s.id}/membership-plans`, s.owner.tok, { type: 'CLASS_PACK', title: `R4 ${s.currency} pack ${Date.now() % 100000}`, price: sent, currency: s.currency, classesIncluded: 5 });
   if (plan.status >= 300) { ok(`M1 ${s.currency} plan`, false, JSON.stringify(plan.body)); continue; }
-  const st = s.students.find((x) => x.kind === 'none') ?? s.students[0];
+  // Round 6 adaptation (Decision 430 item 5): an adult buys (a child can't buy for themselves).
+  const adults = new Set((await db.user.findMany({ where: { id: { in: s.students.map((x) => x.id) }, dateOfBirth: { lt: new Date(Date.now() - 18.1 * 365.25 * 86400e3) } }, select: { id: true } })).map((u) => u.id));
+  const st = s.students.find((x) => x.kind === 'none' && adults.has(x.id)) ?? s.students.find((x) => adults.has(x.id));
   const buy = await call('m1:purchase-card', 'POST', `/membership-plans/${plan.body.id}/purchase`, st.tok, { useHostedCheckout: true });
   if (buy.status >= 300) { ok(`M1 ${s.currency} purchase`, false, JSON.stringify(buy.body)); continue; }
   const tx = await db.transaction.findUnique({ where: { id: buy.body.transactionId } });
   const sessionId = buy.body.checkoutUrl?.split('/').pop();
   const session = sessionId ? await (await fetch(`${FAKE}/v1/checkout/sessions/${sessionId}`)).json() : null;
+  // Round 6 adaptation: a hosted Checkout has no PaymentIntent until it is paid;
+  // the fake's pay hook makes it for the sum of the Session's line items.
   const piId = session?.payment_intent ?? tx?.stripePaymentIntentId;
-  const pi = piId ? await (await fetch(`${FAKE}/v1/payment_intents/${piId}`)).json() : null;
+  const pi = piId ? await (await fetch(`${FAKE}/v1/payment_intents/${piId}`)).json() : sessionId ? (await (await fetch(`${FAKE}/__checkout/${sessionId}/pay`, { method: 'POST' })).json()).payment_intent : null;
   const want = stripeAmountFor(sent, s.currency);
   ok(`M1 ${s.currency}: the owner prices ${typed} ${s.currency}, Stripe is asked for ${typed} ${s.currency}`, pi?.amount === want,
     `Stripe amount ${pi?.amount} (${s.currency} ${ZERO.has(s.currency) ? 'has no decimals' : THREE.has(s.currency) ? 'has 3 decimals' : 'has 2 decimals'}, so ${typed} ${s.currency} = ${want}); stored ${tx?.amount}`);
@@ -52,7 +61,7 @@ for (const s of run('M1') ? testSchools : []) {
 
 // --- M2: desk sale clicked 10 times at once (Decision 372 double-click guard) ---
 if (run('M2')) {
-  const s = cast.schools.find((x) => x.n === 210);
+  const s = cast.schools.find((x) => x.n === N(210));
   const st = s.students.find((x) => x.kind === 'none' || x.kind === 'lapsed') ?? s.students[1];
   const rs = await Promise.all(Array.from({ length: 10 }, () => call('m2:desk-x10', 'POST', `/schools/${s.id}/desk-payments`, s.owner.tok, { studentId: st.id, membershipPlanId: s.plans['10-class pack'], paymentMethod: 'CASH' })));
   const n = await db.transaction.count({ where: { studentId: st.id, membershipPlanId: s.plans['10-class pack'] } });
@@ -60,7 +69,7 @@ if (run('M2')) {
 }
 
 // --- M3: charges, member balance, refunds and credit (#399–#407) ---
-const S3 = run('M3') ? cast.schools.filter((x) => x.n >= 220 && x.n < 240) : [];
+const S3 = run('M3') ? cast.schools.filter((x) => x.n >= N(220) && x.n < N(240)) : [];
 let m3 = { created: 0 };
 for (const s of S3) {
   const st = s.students[2];
@@ -102,7 +111,7 @@ for (const s of S3) {
 
 // --- M4: the owner's billing pages with real volume: 5 charges each for 400 students of a large School ---
 if (run('M4')) {
-  const s = cast.schools.find((x) => x.size === 'large' && x.n >= 240);
+  const s = cast.schools.find((x) => x.size === 'large' && x.n >= N(240));
   const due = new Date(Date.now() - 10 * 86400e3).toISOString().slice(0, 10);
   const studs = s.students.slice(0, 400);
   const t0 = Date.now();

@@ -3,13 +3,18 @@
 // waiver at every School). Run it right after life.mjs. notice-delay-result.json.
 import fs from 'fs';
 import { db, call, cast } from './common.mjs';
+import { N } from './scale.mjs'; // Round 6: scaled world
 import { createRequire } from 'module';
 const require = createRequire(new URL('../../../../../package.json', import.meta.url));
 const IORedis = require('ioredis');
 const redis = new IORedis(process.env.REDIS_URL);
-const backlog = await redis.llen('bull:notification-fanout:wait');
-const s = cast.schools.find((x) => x.size === 'medium' && x.n > 400);
-const [a, b] = s.students.filter((x) => x.kind === 'sub' && x.branch === s.branches[0]);
+// Round 6: since the round 4 N1 fix, bulk notices wait in the prioritized set, not the wait list.
+const backlog = (await redis.llen('bull:notification-fanout:wait')) + (await redis.zcard('bull:notification-fanout:prioritized'));
+const s = cast.schools.find((x) => x.size === 'medium' && x.n > N(400)) ?? cast.schools.filter((x) => x.size === 'medium').at(-1); // Round 6: scaled world
+// Round 6 adaptation (Decision 441 item 5): life.mjs published a waiver here, so pick
+// two members who signed it (booking and the waitlist need it now).
+const signed = new Set((await db.waiverSignature.findMany({ where: { schoolId: s.id, status: 'SIGNED' }, select: { studentId: true } })).map((x) => x.studentId));
+const [a, b] = s.students.filter((x) => x.kind === 'sub' && x.branch === s.branches[0] && signed.has(x.id));
 const start = new Date(Date.now() + 3 * 86400e3);
 const cls = await call('nd:class', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branches[0], instructorId: s.instructors[0], title: 'One seat', styles: [{ disciplineId: s.disciplineId, classType: s.classType }], startDate: start.toISOString(), endDate: new Date(start.getTime() + 3600e3).toISOString(), membershipInclusion: true, capacity: 1 });
 const bk = await call('nd:book', 'POST', `/classes/${cls.body.id}/book`, a.tok, {});
