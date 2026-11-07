@@ -9,6 +9,7 @@ import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter
 import { StripeClientService } from '../src/payments/stripe-client.service';
 import { PaymentsService } from '../src/payments/payments.service';
 import { StepUpService } from '../src/auth/step-up.service';
+import * as offSessionPurchase from '../src/memberships/off-session-purchase';
 import { MembershipsService } from '../src/memberships/memberships.service';
 import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
 
@@ -361,8 +362,9 @@ describeIfDb('The "Refund" notice for every refund (Decision 415 item 4)', () =>
           jest.spyOn(payments, 'chargeOffSession').mockImplementation(async () => ({ succeeded: true, paymentIntentId: `pi_${randomUUID()}` }) as never),
           jest.spyOn(payments, 'refundOffSessionCharge').mockResolvedValue(undefined),
           // The race this path guards against: another membership created
-          // between the checks and this one.
-          jest.spyOn(memberships as never as { createMembershipAndReturn: () => Promise<unknown> }, 'createMembershipAndReturn').mockRejectedValue(new ConflictException('Already has one.')),
+          // between the checks and this one (the saved-card payment's
+          // Membership is made when it settles, Decision 447 item 4).
+          jest.spyOn(offSessionPurchase, 'settleOffSessionPurchase').mockRejectedValue(new offSessionPurchase.OffSessionPurchaseRefusedError('Already has one.')),
         );
       });
       afterAll(() => spies.forEach((s) => s.mockRestore()));

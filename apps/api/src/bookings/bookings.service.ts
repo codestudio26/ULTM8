@@ -577,7 +577,7 @@ export class BookingsService {
         }
         const { studentId, schoolId } = resolvedBooking;
         const charge = feeTransactionId
-          ? await this.paymentsService.chargeOffSession(studentId, schoolId, feeAmount, feeCurrency, 'Late-cancellation fee', `late-cancel-fee-${feeTransactionId}`, 0, feeTransactionId)
+          ? await this.paymentsService.chargeOffSession(studentId, schoolId, feeAmount, feeCurrency, 'Late-cancellation fee', `late-cancel-fee-${feeTransactionId}`, 0, { transactionId: feeTransactionId })
           : await this.paymentsService.chargeOffSession(studentId, schoolId, feeAmount, feeCurrency, 'Late-cancellation fee');
         outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
         paymentIntentId = charge.paymentIntentId || null;

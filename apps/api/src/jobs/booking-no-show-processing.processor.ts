@@ -5,6 +5,8 @@ import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE, BOOKING_NO_SHOW_PROCESSING_QUEUE } from './queue.constants';
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { chargeCurrency } from '../common/school-currency';
+import { CARD_ACCOUNT_SELECT, takesCards } from '../payments/takes-cards';
+import { settleNoShowFee } from '../payments/off-session-attempts';
 
 /** How often the sweep runs — SKILL.md §10 says only "set by a background job once a
  * Class's end time... passes", no number. Every 15 minutes is a Developer-level
@@ -184,24 +186,57 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
     // default. No currency set: nothing is charged, and the log says why.
     const school = await this.prismaJobs.school.findUnique({ where: { id: booking.schoolId }, select: { defaultCurrency: true } });
     const currency = chargeCurrency(null, school?.defaultCurrency);
-    let outcome: 'CHARGED' | 'FAILED' | 'NO_SAVED_PAYMENT_METHOD';
-    let paymentIntentId: string | null = null;
+    if (!currency) {
+      this.logger.error(`No-show fee failed for Booking ${booking.id} (Student ${booking.studentId}, School ${booking.schoolId}): the School has no currency set.`);
+      await this.prismaJobs.booking.update({ where: { id: booking.id }, data: { noShowFeeOutcome: 'FAILED', noShowFeeAmount: amount, stripeNoShowPaymentIntentId: null } });
+      return;
+    }
+    // Decision 447 item 4 (as Decision 446 item 5 for late-cancellation
+    // fees): when a card can be tried, the attempt is written first: the
+    // Booking's noShowFeeAmount, with no outcome yet. The PaymentIntent
+    // carries the Booking's id (metadata and idempotency key), so a fee Stripe
+    // took is never lost if this stops before the outcome is saved: Stripe's
+    // webhook, or charge-auto-pay's stale-attempt sweep, saves it from what
+    // Stripe says (settleNoShowFee()). A no-show fee has no ledger row, so the
+    // Booking is the record, as before.
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: booking.schoolId }, select: CARD_ACCOUNT_SELECT });
+    const saved = account && takesCards(account)
+      ? await this.prismaJobs.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: booking.studentId, schoolId: booking.schoolId } }, select: { id: true } })
+      : null;
+    // A card can't be tried (no saved card, or the School takes no cards):
+    // chargeOffSession() says so, and the outcome is saved as before.
+    const tagged = saved ? (await this.prismaJobs.booking.updateMany({ where: { id: booking.id, noShowFeeAmount: null, noShowFeeOutcome: null }, data: { noShowFeeAmount: amount } })).count > 0 : false;
+    if (saved && !tagged) return; // another run made the attempt
+
+    let answer: { succeeded: boolean; paymentIntentId: string | null };
     try {
-      if (!currency) throw new Error('the School has no currency set');
-      const charge = await this.paymentsService.chargeOffSession(booking.studentId, booking.schoolId, amount, currency, 'No-show fee');
-      outcome = charge.succeeded ? 'CHARGED' : 'FAILED';
-      paymentIntentId = charge.paymentIntentId || null;
+      const charge = tagged
+        ? await this.paymentsService.chargeOffSession(booking.studentId, booking.schoolId, amount, currency, 'No-show fee', `no-show-fee-${booking.id}`, 0, { noShowBookingId: booking.id })
+        : await this.paymentsService.chargeOffSession(booking.studentId, booking.schoolId, amount, currency, 'No-show fee');
+      answer = { succeeded: charge.succeeded, paymentIntentId: charge.paymentIntentId || null };
     } catch (err) {
       if (err instanceof NoSavedPaymentMethodError) {
-        outcome = 'NO_SAVED_PAYMENT_METHOD';
-      } else {
-        outcome = 'FAILED';
-        this.logger.error(`No-show fee failed for Booking ${booking.id} (Student ${booking.studentId}, School ${booking.schoolId}).`, err as Error);
+        // Nothing was tried (no default card on the Customer, or the
+        // School's account not ready).
+        await this.prismaJobs.booking.updateMany({
+          where: { id: booking.id, noShowFeeOutcome: null },
+          data: { noShowFeeOutcome: 'NO_SAVED_PAYMENT_METHOD', noShowFeeAmount: amount, stripeNoShowPaymentIntentId: null },
+        });
+        return;
       }
+      this.logger.error(`No-show fee failed for Booking ${booking.id} (Student ${booking.studentId}, School ${booking.schoolId}).`, err as Error);
+      // With the attempt written, Stripe may still have charged the card: no
+      // outcome yet, for Stripe's webhook or the stale-attempt sweep.
+      if (tagged) return;
+      answer = { succeeded: false, paymentIntentId: null };
     }
-    await this.prismaJobs.booking.update({
-      where: { id: booking.id },
-      data: { noShowFeeOutcome: outcome, noShowFeeAmount: amount, stripeNoShowPaymentIntentId: paymentIntentId },
-    });
+    if (tagged) {
+      await this.prismaJobs.$transaction((tx) => settleNoShowFee(tx, booking.id, answer.paymentIntentId, answer.succeeded));
+    } else {
+      await this.prismaJobs.booking.update({
+        where: { id: booking.id },
+        data: { noShowFeeOutcome: answer.succeeded ? 'CHARGED' : 'FAILED', noShowFeeAmount: amount, stripeNoShowPaymentIntentId: answer.paymentIntentId },
+      });
+    }
   }
 }
