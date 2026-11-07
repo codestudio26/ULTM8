@@ -9,7 +9,7 @@ import { PrismaAuthService } from '../../common/prisma/prisma-auth.service';
 import { photosShownFor } from '../../common/prisma/student-photos';
 import { resolveUserNames } from '../../common/prisma/resolve-user-names';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
-import { assertCodeDigitsAllowed } from '../../front-desk/check-in-code';
+import { codeDigitsToSave } from '../../front-desk/check-in-code';
 import { JOIN_REQUEST_SELECT } from '../franchises/franchises.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
 import { cursorPaginate, CursorPage } from '../../common/pagination/cursor-paginate';
@@ -1018,7 +1018,7 @@ export class SchoolsService {
     }
     await this.assertCurrencyForNewFees(callerId, schoolId, dto);
     await this.assertTaxLines(callerId, schoolId, dto);
-    await assertCodeDigitsAllowed(this.prismaJobs, schoolId, dto.checkInCodeDigits);
+    const checkInCodeDigits = await codeDigitsToSave(this.prismaJobs, schoolId, dto.checkInCodeDigits);
     const nextGradingDate = parseNextGradingDate(dto.nextGradingDate);
     // Decision 432 item 2: the zone before the change, to re-time classes after.
     const zoneBefore = dto.timezone !== undefined
@@ -1065,7 +1065,7 @@ export class SchoolsService {
           // Decision 292 — saving a policy is the owner choosing it.
           ...(dto.classCancellationPolicy !== undefined ? { cancellationPolicyChosenAt: new Date() } : {}),
           checkInOpensMinutesBeforeStart: dto.checkInOpensMinutesBeforeStart,
-          checkInCodeDigits: dto.checkInCodeDigits,
+          checkInCodeDigits,
           visitorPeriodDays: dto.visitorPeriodDays,
           absenceAlertWeeks: dto.absenceAlertWeeks,
           heardFromOptions: dto.heardFromOptions === undefined ? undefined : dto.heardFromOptions === null ? Prisma.DbNull : dto.heardFromOptions.map((o) => o.trim()),

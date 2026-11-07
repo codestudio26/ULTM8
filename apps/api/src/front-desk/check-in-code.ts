@@ -26,15 +26,43 @@ export async function checkInCodeDigits(prismaJobs: PrismaJobsService, schoolId:
   return 6;
 }
 
-/** Settings refuse 4 digits at a large School (Decision 417). */
-export async function assertCodeDigitsAllowed(prismaJobs: PrismaJobsService, schoolId: string, digits: number | undefined): Promise<void> {
-  if (digits === undefined || digits === 6) return;
-  if ((await currentStudentCount(prismaJobs, schoolId)) > LARGE_SCHOOL_STUDENTS) {
+/**
+ * The length a School's codes have, as a settings page reads it (stress test
+ * round 6, R-1; Decision 447 item 2): a School that has passed
+ * LARGE_SCHOOL_STUDENTS is moved to 6 digits now (Decision 417), instead of
+ * only when a code is next given out or by the 15-minute sweep, so the page
+ * never shows a 4 that saving would refuse. `stored` is the School's
+ * checkInCodeDigits as the caller read it.
+ */
+export async function checkInCodeDigitsAsRead(prismaJobs: PrismaJobsService, schoolId: string, stored: number): Promise<number> {
+  if (stored === 6) return 6;
+  if ((await currentStudentCount(prismaJobs, schoolId)) <= LARGE_SCHOOL_STUDENTS) return 4;
+  await enforceLargeSchoolCodes(prismaJobs, schoolId);
+  return 6;
+}
+
+/**
+ * The code length a settings save keeps (Decision 417; stress test round 6,
+ * R-1, Decision 447 item 2): `digits` as sent, or undefined when not sent. A
+ * School with more than LARGE_SCHOOL_STUDENTS current Students keeps 6:
+ * - already on 6, a 4 is refused (CHECK_IN_CODE_DIGITS_LOCKED): it can't go
+ *   back to 4 while it is large;
+ * - still on 4 (it passed 500 since the page was read, before the sweep moved
+ *   it), the 4 the page showed is not a change, so it is not refused: the
+ *   School is moved to 6 now and the save keeps 6.
+ */
+export async function codeDigitsToSave(prismaJobs: PrismaJobsService, schoolId: string, digits: number | undefined): Promise<number | undefined> {
+  if (digits === undefined || digits === 6) return digits;
+  if ((await currentStudentCount(prismaJobs, schoolId)) <= LARGE_SCHOOL_STUDENTS) return digits;
+  const school = await prismaJobs.school.findUnique({ where: { id: schoolId }, select: { checkInCodeDigits: true } });
+  if (school?.checkInCodeDigits === 6) {
     throw new BadRequestException({
       code: 'CHECK_IN_CODE_DIGITS_LOCKED',
       message: `This School has more than ${LARGE_SCHOOL_STUDENTS} members, so its check-in codes have 6 digits.`,
     });
   }
+  await enforceLargeSchoolCodes(prismaJobs, schoolId);
+  return 6;
 }
 
 /** Current Students of the School, every Branch together. */

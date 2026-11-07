@@ -15,11 +15,21 @@ export const MEMBERSHIP_FROZEN = {
  * connection: MembershipFreeze has no request-context policy, and booking and
  * check-in run in the member's own context. Called after the caller's own
  * checks, for memberships the caller already read.
+ *
+ * `schoolTimezone`: School.timezone when the caller already read it (a
+ * booking reads it before its transaction, bookingPreflight), so it isn't
+ * read again here; left out, it is read.
  */
-export async function frozenMembershipIds(db: Db, schoolId: string, membershipIds: string[], moments: Date[]): Promise<Set<string>> {
+export async function frozenMembershipIds(
+  db: Db,
+  schoolId: string,
+  membershipIds: string[],
+  moments: Date[],
+  schoolTimezone?: string | null,
+): Promise<Set<string>> {
   if (membershipIds.length === 0 || moments.length === 0) return new Set();
-  const school = await db.school.findUnique({ where: { id: schoolId }, select: { timezone: true } });
-  const zone = school?.timezone ?? null;
+  const zone =
+    schoolTimezone !== undefined ? schoolTimezone : ((await db.school.findUnique({ where: { id: schoolId }, select: { timezone: true } }))?.timezone ?? null);
   const days = moments.map((m) => dayIn(m, zone));
   const nums = days.map(dayNumber);
   const freezes = await db.membershipFreeze.findMany({

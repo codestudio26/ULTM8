@@ -7,15 +7,23 @@ type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transa
  * check behind a class's or a plan's "requires a waiver". A signature on an
  * archived waiver counts unless the School turned that off (Decision 354,
  * Waiver settings). An Expired signature never counts. Runs in the caller's
- * transaction, usually the Student's own tenant context. */
-export async function hasCountingWaiverSignature(tx: TenantTx, studentId: string, schoolId: string): Promise<boolean> {
-  const school = await tx.school.findUnique({ where: { id: schoolId }, select: { waiverArchivedSignaturesCount: true } });
+ * transaction, usually the Student's own tenant context.
+ *
+ * `archivedSignaturesCount`: School.waiverArchivedSignaturesCount when the
+ * caller already read it (readSchoolWaiverRule), so it isn't read again here
+ * (stress test round 6, R-2). Left out, it is read in `tx`. */
+export async function hasCountingWaiverSignature(tx: TenantTx, studentId: string, schoolId: string, archivedSignaturesCount?: boolean): Promise<boolean> {
+  const archivedCount =
+    archivedSignaturesCount ??
+    // No School row: no filter, as before.
+    (await tx.school.findUnique({ where: { id: schoolId }, select: { waiverArchivedSignaturesCount: true } }))?.waiverArchivedSignaturesCount ??
+    true;
   const signed = await tx.waiverSignature.findFirst({
     where: {
       studentId,
       schoolId,
       status: 'SIGNED',
-      ...(school && !school.waiverArchivedSignaturesCount ? { waiver: { archivedAt: null } } : {}),
+      ...(!archivedCount ? { waiver: { archivedAt: null } } : {}),
     },
     select: { id: true },
   });
@@ -38,6 +46,38 @@ export async function schoolHasWaiverInUse(prismaJobs: PrismaJobsService, school
   return !!(await prismaJobs.waiver.findFirst({ where: { schoolId, archivedAt: null }, select: { id: true } }));
 }
 
+/** What the booking waiver rule needs to know about a School (Decision 441
+ * item 5; Decision 354), read once, before the booking's transaction. */
+export interface SchoolWaiverRule {
+  /** School.checkInRequireWaiver: "Waiver must be signed before booking or check-in". */
+  requireWaiver: boolean;
+  /** School.waiverArchivedSignaturesCount: a signature on an archived waiver counts. */
+  archivedSignaturesCount: boolean;
+  /** The School has a waiver in use (schoolHasWaiverInUse). */
+  hasWaiverInUse: boolean;
+}
+
+/** A School with no row: no School rule, archived signatures count, no
+ * waiver in use (what the separate reads answered for a missing School). */
+export const NO_SCHOOL_WAIVER_RULE: SchoolWaiverRule = { requireWaiver: false, archivedSignaturesCount: true, hasWaiverInUse: false };
+
+/**
+ * The School's waiver rule in one statement on the ultm8_jobs connection
+ * (School settings and whether a waiver exists, nothing else about it), the
+ * reads bookingWaiverRefusal used to make one by one inside the booking's
+ * locked transaction, two of them on this second connection while the
+ * transaction held its own (stress test round 6, R-2). Callers read it before
+ * their transaction opens.
+ */
+export async function readSchoolWaiverRule(prismaJobs: Pick<PrismaJobsService, '$queryRaw'>, schoolId: string): Promise<SchoolWaiverRule> {
+  const [row] = await prismaJobs.$queryRaw<SchoolWaiverRule[]>`
+    SELECT s."checkInRequireWaiver" AS "requireWaiver",
+           s."waiverArchivedSignaturesCount" AS "archivedSignaturesCount",
+           EXISTS (SELECT 1 FROM "Waiver" w WHERE w."schoolId" = s.id AND w."archivedAt" IS NULL) AS "hasWaiverInUse"
+    FROM "School" s WHERE s.id = ${schoolId}`;
+  return row ?? NO_SCHOOL_WAIVER_RULE;
+}
+
 /**
  * Which waiver rule stops this Student booking a class here, if any:
  * - `'school'`: the School's "Waiver must be signed before booking or
@@ -48,22 +88,21 @@ export async function schoolHasWaiverInUse(prismaJobs: PrismaJobsService, school
  * - `'class'`: the Class's own "needs a waiver" (termsWaiverRequired), as
  *   before, whatever the School setting says.
  * - null: nothing stops them.
- * The setting and whether a waiver exists are read via ultm8_jobs (School
- * settings, as the check-in rules are); the signature in the caller's
- * transaction (the Student's own context). A child's signature is the one
- * their parent gave for them (WaiverSignature.studentId is the child).
+ * `rule` is the School's setting and whether a waiver exists, read via
+ * ultm8_jobs before the caller's transaction (readSchoolWaiverRule); only the
+ * signature is read here, in the caller's transaction (the Student's own
+ * context). A child's signature is the one their parent gave for them
+ * (WaiverSignature.studentId is the child).
  */
 export async function bookingWaiverRefusal(
-  prismaJobs: PrismaJobsService,
   tx: TenantTx,
   studentId: string,
   schoolId: string,
   classNeedsWaiver: boolean,
+  rule: SchoolWaiverRule,
 ): Promise<'school' | 'class' | null> {
-  const school = await prismaJobs.school.findUnique({ where: { id: schoolId }, select: { checkInRequireWaiver: true } });
-  const schoolRule = !!school?.checkInRequireWaiver;
-  if (!schoolRule && !classNeedsWaiver) return null;
-  if (await hasCountingWaiverSignature(tx, studentId, schoolId)) return null;
-  if (schoolRule && (await schoolHasWaiverInUse(prismaJobs, schoolId))) return 'school';
+  if (!rule.requireWaiver && !classNeedsWaiver) return null;
+  if (await hasCountingWaiverSignature(tx, studentId, schoolId, rule.archivedSignaturesCount)) return null;
+  if (rule.requireWaiver && rule.hasWaiverInUse) return 'school';
   return classNeedsWaiver ? 'class' : null;
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
-import { assertCodeDigitsAllowed } from '../front-desk/check-in-code';
+import { checkInCodeDigitsAsRead, codeDigitsToSave } from '../front-desk/check-in-code';
 import { CHECK_IN_RULES_SELECT, checkInRulesFrom } from './check-in-rules';
 import { CheckInRulesDto } from './dto/check-in-rules.dto';
 
@@ -19,12 +19,14 @@ export class CheckInRulesService {
   async get(callerId: string, schoolId: string): Promise<CheckInRulesDto> {
     await this.tenantAuth.assertMayManageCheckInRules(callerId, schoolId);
     const school = await this.prismaJobs.school.findUniqueOrThrow({ where: { id: schoolId }, select: { ...CHECK_IN_RULES_SELECT, checkInCodeDigits: true } });
-    return this.toDto(school);
+    // Decision 417 as the page reads it (round 6, R-1): past 500 Students, 6.
+    return this.toDto({ ...school, checkInCodeDigits: await checkInCodeDigitsAsRead(this.prismaJobs, schoolId, school.checkInCodeDigits) });
   }
 
   async update(callerId: string, schoolId: string, dto: CheckInRulesDto): Promise<CheckInRulesDto> {
     await this.tenantAuth.assertMayManageCheckInRules(callerId, schoolId);
-    await assertCodeDigitsAllowed(this.prismaJobs, schoolId, dto.codeDigits);
+    // The value the page showed is never refused (round 6, R-1).
+    const codeDigits = await codeDigitsToSave(this.prismaJobs, schoolId, dto.codeDigits);
     const school = await this.prismaJobs.school.update({
       where: { id: schoolId },
       data: {
@@ -39,7 +41,7 @@ export class CheckInRulesService {
         checkInBlockOverdueDays: dto.blockOverdueDays,
         checkInRequireBooking: dto.requireBooking,
         openMatUsesClassCredit: dto.openMatUsesCredit,
-        checkInCodeDigits: dto.codeDigits,
+        checkInCodeDigits: codeDigits,
       },
       select: { ...CHECK_IN_RULES_SELECT, checkInCodeDigits: true },
     });
