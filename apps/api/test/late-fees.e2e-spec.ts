@@ -498,7 +498,7 @@ describeIfDb('Late fees (Decision 413)', () => {
 
       expect((await waive(s.staffToken)).status).toBe(403); // "Can cancel charges" is off by default
       expect((await waive(s.studentToken)).status).toBe(403);
-      expect((await waive(other.ownerToken)).status).toBe(403); // another School's owner
+      expect((await waive(other.ownerToken)).status).toBe(404); // another School's owner: no role here (Decision 448 item 17)
       expect((await waive(other.ownerToken, fee.id, other.school.id)).status).toBe(404); // not a charge of their School
       expect((await waive(s.ownerToken, c.id)).status).toBe(400); // not a late fee
 

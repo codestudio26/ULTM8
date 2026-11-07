@@ -324,11 +324,13 @@ describeIfDb('Students → Attendance: statistics and logging past attendance (D
       const otherClass = await classAgo(DAY, null, otherSchool.id);
       await membership('otherStudent', 'SUBSCRIPTION', null, otherSchool.id);
       const mine = await classAgo(DAY, main.id);
-      expect((await log('otherOwner', 'eve', mine)).status).toBe(403);
+      // Decision 448 item 17: no role at this School, so "School not found".
+      expect((await log('otherOwner', 'eve', mine)).status).toBe(404);
       expect((await log('otherOwner', 'eve', mine, otherSchool.id)).status).toBe(404);
       expect((await log('otherStaff', 'eve', mine, otherSchool.id)).status).toBe(404);
       expect((await log('owner', 'otherStudent', otherClass)).status).toBe(404);
-      expect((await log('owner', 'otherStudent', otherClass, otherSchool.id)).status).toBe(403);
+      // This School's owner has no role at the other School: 404 (Decision 448 item 17).
+      expect((await log('owner', 'otherStudent', otherClass, otherSchool.id)).status).toBe(404);
       expect(await superuser.booking.count({ where: { classId: { in: [mine.id, otherClass.id] } } })).toBe(0);
 
       // The class list for logging shows only the caller's Branches.
@@ -337,7 +339,8 @@ describeIfDb('Students → Attendance: statistics and logging past attendance (D
       const list = await as('staff').get(`${base()}/log-classes?date=${yesterday}`);
       expect(list.status).toBe(200);
       expect(list.body.items.map((c: { id: string }) => c.id)).not.toContain(atOther.id);
-      expect((await as('otherOwner').get(`${base()}/log-classes?date=${today}`)).status).toBe(403);
+      // No role at this School: "School not found" (Decision 448 item 17).
+      expect((await as('otherOwner').get(`${base()}/log-classes?date=${today}`)).status).toBe(404);
     });
   });
 
@@ -432,8 +435,9 @@ describeIfDb('Students → Attendance: statistics and logging past attendance (D
     it('coaches, students and other Schools never see them', async () => {
       expect((await stats('coach')).status).toBe(403);
       expect((await stats('ana')).status).toBe(403);
-      expect((await stats('otherOwner')).status).toBe(403);
-      expect((await stats('otherStaff')).status).toBe(403);
+      // Decision 448 item 17: no role at this School, so "School not found".
+      expect((await stats('otherOwner')).status).toBe(404);
+      expect((await stats('otherStaff')).status).toBe(404);
       // The other School's own statistics don't include this School's.
       const theirs = await as('otherOwner').get(`/v1/schools/${otherSchool.id}/attendance/stats`);
       expect(theirs.status).toBe(200);

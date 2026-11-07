@@ -259,7 +259,8 @@ describeIfDb('Medical information (Decision 315 item 10)', () => {
     });
 
     it("never crosses Schools: another School's owner reads nothing", async () => {
-      expect((await read('ownerB', users.adult.id)).status).toBe(403);
+      // Decision 448 item 17: no role at School A, so "School not found".
+      expect((await read('ownerB', users.adult.id)).status).toBe(404);
       const ownSchool = await read('ownerB', users.adult.id, schoolB.id);
       expect(ownSchool.status).toBe(200);
       expect(ownSchool.body).toEqual({ medicalInfo: null });
@@ -269,7 +270,8 @@ describeIfDb('Medical information (Decision 315 item 10)', () => {
   describe('member-facing endpoints never show it', () => {
     it('the member and the Guardian are refused the staff read, and their own reads carry no medical text', async () => {
       expect((await read('adult', users.adult.id)).status).toBe(403);
-      expect((await read('parent', users.kid.id)).status).toBe(403);
+      // The parent holds no role at the School itself (Decision 448 item 17): 404.
+      expect((await read('parent', users.kid.id)).status).toBe(404);
       for (const [who, path] of [
         ['adult', '/v1/users/me'],
         ['adult', `/v1/academies/${schoolA.id}`],

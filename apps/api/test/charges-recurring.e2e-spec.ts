@@ -430,8 +430,9 @@ describeIfDb('Recurring charges (backlog 3.6 step 3, Decision 412)', () => {
     it('another School is refused; the member and their Guardian see it read-only, a stranger does not', async () => {
       const student = await mkStudent('tenant');
       const s = await setUpOk(student.id, { frequency: 'MONTHLY', description: 'Private lesson' });
-      expect((await list(student.id, tokens.otherOwner)).status).toBe(403);
-      expect((await stop(s.id, tokens.otherOwner)).status).toBe(403);
+      // Decision 448 item 17: another School's owner has no role here, so "School not found".
+      expect((await list(student.id, tokens.otherOwner)).status).toBe(404);
+      expect((await stop(s.id, tokens.otherOwner)).status).toBe(404);
       expect((await stop(s.id, tokens.otherOwner, otherSchool.id)).status).toBe(404);
       expect((await setUp(student.id, {}, tokens.otherOwner, otherSchool.id)).body.error.code).toBe('CHARGE_NOT_A_STUDENT');
       // A student can't use the staff routes.

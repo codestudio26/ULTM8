@@ -205,9 +205,11 @@ describeIfDb('Rosters (Decision 317 item 6)', () => {
     expect((await as('otherOwner').patch(`${listOf(otherSchoolId)}/${aRoster.id}`).send({ name: 'Mine now' })).status).toBe(404);
     expect((await as('otherOwner').delete(`${listOf(otherSchoolId)}/${aRoster.id}`)).status).toBe(404);
     expect((await as('otherOwner').get(listOf(otherSchoolId))).body.items).toEqual([]);
-    // School B's owner under School A's id: not staff there.
+    // School B's owner under School A's id: not staff there. The list isn't
+    // behind a switch (403); a roster's members are, so "School not found"
+    // (Decision 448 item 17).
     expect((await as('otherOwner').get(listOf(schoolId))).status).toBe(403);
-    expect((await as('otherOwner').get(membersOf(aRoster.id))).status).toBe(403);
+    expect((await as('otherOwner').get(membersOf(aRoster.id))).status).toBe(404);
     // School A's owner can't put School B's student on School A's roster.
     expect((await as('owner').post(membersOf(aRoster.id)).send({ studentIds: [users.otherStudent.id] })).status).toBe(404);
     // And the database itself refuses a row pairing School A's roster with School B.
