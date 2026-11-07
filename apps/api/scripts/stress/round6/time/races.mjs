@@ -262,5 +262,33 @@ if (want('R6')) {
   const bookings = await db.booking.count({ where: { studentId: childId, classId: cls.id, status: { not: 'CANCELLED' } } }).catch(() => -1);
   ok('R6: two parents at once: one booking for the child', bookings <= 1, { waiver: w.map(S), signatures: sigs, buys: buys.map(S), pendingOrders: pend, activeMemberships: act, book: bk.map(S), bookings });
 }
+
+// ---------------------------------------------------------------------------
+if (want('R9')) {
+  sectionOf('R9 signing back in at the moment the daily erasure job runs (Decision 436 item 2, 440)');
+  const s = await cleanSchool(9, 'erase'); // BR, CASH
+  const ppl = await pool(Array.from({ length: 8 }, (_, k) => k), 4, async (k) => { const p = await person(`Ivo${k}`); await join(s, p); return p; });
+  const rows = [];
+  for (const p of ppl) {
+    const su = await must('step-up', 'POST', '/auth/step-up/verify', p.tok, { passcode: p.passcode });
+    const del = await call('POST', '/users/me/deletion', p.tok, undefined, { 'x-step-up-token': su.stepUpToken ?? su.token });
+    const u0 = await db.user.findUnique({ where: { id: p.id }, select: { deletionDueAt: true, deletionRequestedAt: true } });
+    const n = await db.notification.findFirst({ where: { userId: p.id, title: 'Account deletion requested' }, select: { body: true } });
+    rows.push({ del: S(del), dueAt: u0?.deletionDueAt, notice: n?.body?.slice(0, 80) });
+  }
+  // Shortcut: "30 days later" (the due date moved back, as the rehearsal does).
+  await db.user.updateMany({ where: { id: { in: ppl.map((p) => p.id) } }, data: { deletionDueAt: new Date(Date.now() - 60e3) } });
+  const results = await burst([() => runJob('account-erasure'), ...ppl.map((p) => () => call('POST', '/auth/login', null, { email: p.email, passcode: p.passcode }))]);
+  await sleep(1500);
+  const out = [];
+  for (let k = 0; k < ppl.length; k++) {
+    const u = await db.user.findUnique({ where: { id: ppl[k].id }, select: { erasedAt: true, deletionRequestedAt: true, email: true } });
+    const login = results[k + 1].status;
+    const consistent = login < 300 ? (!u.erasedAt && !u.deletionRequestedAt) : !!u.erasedAt;
+    out.push({ login, erased: !!u.erasedAt, pending: !!u.deletionRequestedAt, consistent });
+  }
+  ok('R9: each person is either signed in with the deletion cancelled, or erased and refused, never both', out.every((r) => r.consistent), { job: results[0], out });
+  note('R9: the deletion notice text and due time', rows.slice(0, 2));
+}
 await db.$disconnect();
 process.exit(0);
