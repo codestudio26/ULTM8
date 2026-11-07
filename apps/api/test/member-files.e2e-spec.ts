@@ -54,6 +54,8 @@ const ACCESS_DEFAULTS = {
   memberFiles: false,
   importData: false,
   seeMedicalInfo: false,
+  payroll: false,
+  connectStripe: false,
 };
 
 describeIfDb('Files on a member (backlog 5.11)', () => {

@@ -350,7 +350,7 @@ export class FranchisesService {
     const franchiseId = randomUUID();
     const roleGrantId = randomUUID();
 
-    // Decision 440: no Franchise without its owner accepting the Agreement and DPA.
+    // Decision 444: no Franchise without its owner accepting the Agreement and DPA.
     assertAgreementAccepted(dto.acceptAgreement);
     const franchise = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const created = await tx.franchise.create({

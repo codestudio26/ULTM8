@@ -16,7 +16,7 @@ type ConsentTier = 'BASELINE' | 'CAMERA';
  * per docs/TRACK-B-ROADMAP.md's own "candidate committed" entry for this
  * slice.
  *
- * Decision 440 (C5): the server now saves each consent with the Children and
+ * Decision 444 (C5): the server now saves each consent with the Children and
  * Guardians Privacy Notice version it publishes (LegalDocument
  * `children-notice`), whatever the app sends. The API still asks for a
  * `policyVersion` so older app builds keep working; this value only says the

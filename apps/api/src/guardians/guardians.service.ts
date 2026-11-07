@@ -180,7 +180,7 @@ export class GuardiansService {
       // Decision 430 item 9 (FAM-9): the parent's BASELINE consent, ticked
       // when adding the child, recorded with the policy version they saw.
       if (consentVersion) {
-        // Decision 440 (C5): saved with the Children notice version the server
+        // Decision 444 (C5): saved with the Children notice version the server
         // is publishing now, not whatever the app sent.
         const policyVersion = await childrenNoticeVersion(tx);
         await tx.consentRecord.create({ data: { id: randomUUID(), guardianId, studentId: minorId, tier: 'BASELINE', policyVersion } });
@@ -302,7 +302,7 @@ export class GuardiansService {
   }
 
   /** Records (or renews) a parent's BASELINE consent, with the Children
-   * notice version published now (Decision 440, C5). */
+   * notice version published now (Decision 444, C5). */
   async recordBaselineConsent(guardianId: string, studentId: string) {
     await this.prismaApp.withTenantContext(guardianId, async (tx) => {
       const policyVersion = await childrenNoticeVersion(tx);
@@ -385,7 +385,7 @@ export class GuardiansService {
     await this.assertGuardianNotUnder18(guardianId);
     await this.assertChildNotAdult(studentId, { purpose: 'act' });
 
-    // Decision 440 (C5): the version saved is the Children notice the server
+    // Decision 444 (C5): the version saved is the Children notice the server
     // publishes now. The app's dto.policyVersion is still accepted (older
     // app builds send it) but no longer trusted as the record.
     return this.prismaApp.withTenantContext(guardianId, async (tx) => {

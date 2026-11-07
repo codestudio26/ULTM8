@@ -183,10 +183,10 @@ export class CreateFranchiseDto {
   @IsBoolean()
   shareBrandingWithMembers?: boolean;
 
-  /** Decision 440: the owner ticked "I accept the School and Franchise
+  /** Decision 444: the owner ticked "I accept the School and Franchise
    * Agreement, including the Data Processing Addendum". Anything but `true` is
    * refused with AGREEMENT_NOT_ACCEPTED. Create only — not on PATCH. */
-  @ApiPropertyOptional({ description: 'Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this Franchise (Decision 440).' })
+  @ApiPropertyOptional({ description: 'Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this Franchise (Decision 444).' })
   @IsOptional()
   @IsBoolean()
   acceptAgreement?: boolean;

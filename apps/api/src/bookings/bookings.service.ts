@@ -30,11 +30,12 @@ import { bookingUsesCredit } from './open-mat-credit';
 import { classTimeZones } from '../classes/class-time-zone';
 import { assertWhoCanBook } from '../classes/who-can-book';
 import { frozenMembershipIds } from '../memberships/freeze/frozen-lookup';
-import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { bookingWaiverRefusal, WAIVER_REQUIRED_TO_BOOK } from '../waivers/waiver-signed-check';
 import { guestWaiverToken, hashGuestWaiverToken } from '../waivers/guest-waiver-token';
 import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { SEAT_HOLDING_STATUSES } from '../classes/class-seats';
 import { resolveChargeCurrency } from '../common/school-currency';
+import { assertAccountNotClosing } from '../account-deletion/account-closing';
 
 // Same shape PrismaAppService#withTenantContext hands its callback.
 type TenantTx = Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>;
@@ -179,6 +180,8 @@ export class BookingsService {
     // Decision 430 item 9 (FAM-9): a child whose parent hasn't given BASELINE
     // consent can't be booked, by anyone.
     await assertBaselineConsentGiven(this.prismaJobs, studentId, await schoolZone(this.prismaJobs, resolvedClass.schoolId, resolvedClass.branchId));
+    // "Delete my account": an account being deleted is locked, by anyone.
+    await assertAccountNotClosing(this.prismaJobs, studentId);
     // SKILL.md §10: each guest needs a Friend Pass; the organizer's own
     // Subscription or Class Pack never covers a guest, and one pass covers one
     // guest (Classes review C13: one Subscription sent three times booked three
@@ -216,10 +219,15 @@ export class BookingsService {
     const { callerId, studentId, cls: resolvedClass, dto, isStaffAction, viaKidMode } = args;
     const classId = resolvedClass.id;
     await assertNotAlreadyAttended(tx, studentId, classId);
-    if (resolvedClass.termsWaiverRequired) {
-      if (!(await hasCountingWaiverSignature(tx, studentId, resolvedClass.schoolId))) {
-        throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');
-      }
+    // Decision 441 item 5: the School's "Waiver must be signed before booking
+    // or check-in"; else the Class's own "needs a waiver". Staff booking for
+    // someone, and the check-ins that book a place first, pass here too.
+    const waiverRefusal = await bookingWaiverRefusal(this.prismaJobs, tx, studentId, resolvedClass.schoolId, resolvedClass.termsWaiverRequired);
+    if (waiverRefusal === 'school') {
+      throw new ForbiddenException({ ...WAIVER_REQUIRED_TO_BOOK });
+    }
+    if (waiverRefusal === 'class') {
+      throw new BadRequestException('This Student must hold a Signed Waiver for this School before booking a Class that requires one.');
     }
 
     if (!dto.overrideReason) {

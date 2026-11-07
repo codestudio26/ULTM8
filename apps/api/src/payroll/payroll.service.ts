@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { localDateRangeToInstants, safeZone } from '../bookings/booking-week';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
 import { requireSchoolCurrency, setsNewPrice } from '../common/school-currency';
 import { localDay } from '../ranks/engine';
@@ -39,17 +40,27 @@ const byName = (a: { name: string }, b: { name: string }) => a.name.localeCompar
  *   zone, else the School's.
  * Hours are the class's length, start to end. There is no clock in or out.
  *
- * Who: the School's owners only. Decision 320 makes it a right on each staff
- * member's Access page, but who else may hold it (Branch Staff, and for which
- * Branches' staff) isn't decided yet, so nobody else can until it is.
- * Rates are read and written on the app connection, whose RLS policy lets
- * only the School's owners reach them.
+ * Who: the report is for the School's owners, and Branch Staff the owner
+ * switched on ("Payroll", Decision 435 item 22), for the whole School: every
+ * staff member and every Branch's classes. Checked by assertMayRunPayroll.
+ * The switch gives the report only: the Rates tab (listing and setting the
+ * rates) stays the School's owners' alone, as before it, so nobody switched
+ * on can change their own rate or anyone else's. Whether the report shows
+ * them the rates (read only) is the owner's choice, School.payrollStaffSeeRates
+ * (off by default): off, the rows carry classes, hours and pay, and no rate. The rates are read and
+ * written on the app connection, whose RLS policy lets the School's owners
+ * read and write them and those Branch Staff only read them
+ * (is_payroll_staff). What the report adds up around them (who is on the
+ * staff, the School's names for them, the Branches and the classes taught)
+ * is read on the jobs connection for this School only, after that check: a
+ * Branch Staff member's own view stops at their Branches.
  */
 @Injectable()
 export class PayrollService {
   constructor(
     private readonly prismaApp: PrismaAppService,
     private readonly prismaAuth: PrismaAuthService,
+    private readonly prismaJobs: PrismaJobsService,
     private readonly tenantAuth: TenantAuthorizationService,
   ) {}
 
@@ -114,76 +125,82 @@ export class PayrollService {
   }
 
   async report(callerId: string, schoolId: string, query: PayrollReportQueryDto, now = new Date()): Promise<PayrollReportResponseDto> {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const school = await tx.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true, timezone: true } });
-      const schoolZone = safeZone(school?.timezone);
-      const preset = query.preset ?? 'LAST_30_DAYS';
-      const range = preset === 'CUSTOM' ? { from: query.from as string, to: query.to as string } : presetRange(preset, now, schoolZone);
-      if (range.from > range.to) throw new BadRequestException(FROM_AFTER_TO);
-      // Checks both dates are real ones.
-      const { gte, lt } = localDateRangeToInstants(range.from, range.to, schoolZone);
-      if (rangeDays(range.from, range.to) > MAX_PAYROLL_RANGE_DAYS) {
-        throw new BadRequestException(`The date range can be at most ${MAX_PAYROLL_RANGE_DAYS} days.`);
-      }
+    const { isOwner } = await this.tenantAuth.assertMayRunPayroll(callerId, schoolId);
+    const rates = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.staffPayRate.findMany({ where: { schoolId }, select: { userId: true, hourlyRate: true, perClassRate: true } }),
+    );
+    // The rest of the report: this School only, after the check above.
+    const db = this.prismaJobs;
+    const school = await db.school.findUnique({ where: { id: schoolId }, select: { defaultCurrency: true, timezone: true, payrollStaffSeeRates: true } });
+    // The owners always see the rates; switched-on staff only when the School
+    // says so (off by default). Pay is still worked out from them.
+    const ratesShown = isOwner || school?.payrollStaffSeeRates === true;
+    const schoolZone = safeZone(school?.timezone);
+    const preset = query.preset ?? 'LAST_30_DAYS';
+    const range = preset === 'CUSTOM' ? { from: query.from as string, to: query.to as string } : presetRange(preset, now, schoolZone);
+    if (range.from > range.to) throw new BadRequestException(FROM_AFTER_TO);
+    // Checks both dates are real ones.
+    const { gte, lt } = localDateRangeToInstants(range.from, range.to, schoolZone);
+    if (rangeDays(range.from, range.to) > MAX_PAYROLL_RANGE_DAYS) {
+      throw new BadRequestException(`The date range can be at most ${MAX_PAYROLL_RANGE_DAYS} days.`);
+    }
 
-      const [rates, grants, permissions, branches] = await Promise.all([
-        tx.staffPayRate.findMany({ where: { schoolId }, select: { userId: true, hourlyRate: true, perClassRate: true } }),
-        tx.roleGrant.findMany({ where: { schoolId, role: { in: STAFF_ROLES }, revokedAt: null }, select: { userId: true } }),
-        tx.staffPermission.findMany({ where: { schoolId }, select: { userId: true, displayName: true } }),
-        tx.branch.findMany({ where: { schoolId }, select: { id: true, timezone: true } }),
-      ]);
-      const totals = new Map(rates.map((r) => [r.userId, { classes: 0, minutes: 0 }]));
-      if (rates.length > 0) {
-        const classes = await tx.class.findMany({
-          where: {
-            schoolId,
-            instructorId: { in: rates.map((r) => r.userId) },
-            cancelledAt: null,
-            startDate: { gte: new Date(gte.getTime() - ZONE_SLACK_MS), lt: new Date(lt.getTime() + ZONE_SLACK_MS) },
-            endDate: { lte: now },
-          },
-          select: { instructorId: true, branchId: true, startDate: true, endDate: true },
-        });
-        const zoneOf = new Map(branches.map((b) => [b.id, b.timezone ? safeZone(b.timezone) : schoolZone]));
-        for (const c of classes) {
-          const day = localDay(c.startDate, (c.branchId && zoneOf.get(c.branchId)) || schoolZone);
-          if (day < range.from || day > range.to) continue;
-          const t = totals.get(c.instructorId as string);
-          if (!t) continue;
-          t.classes += 1;
-          t.minutes += classMinutes(c.startDate, c.endDate);
-        }
+    const [grants, permissions, branches] = await Promise.all([
+      db.roleGrant.findMany({ where: { schoolId, role: { in: STAFF_ROLES }, revokedAt: null }, select: { userId: true } }),
+      db.staffPermission.findMany({ where: { schoolId }, select: { userId: true, displayName: true } }),
+      db.branch.findMany({ where: { schoolId }, select: { id: true, timezone: true } }),
+    ]);
+    const totals = new Map(rates.map((r) => [r.userId, { classes: 0, minutes: 0 }]));
+    if (rates.length > 0) {
+      const classes = await db.class.findMany({
+        where: {
+          schoolId,
+          instructorId: { in: rates.map((r) => r.userId) },
+          cancelledAt: null,
+          startDate: { gte: new Date(gte.getTime() - ZONE_SLACK_MS), lt: new Date(lt.getTime() + ZONE_SLACK_MS) },
+          endDate: { lte: now },
+        },
+        select: { instructorId: true, branchId: true, startDate: true, endDate: true },
+      });
+      const zoneOf = new Map(branches.map((b) => [b.id, b.timezone ? safeZone(b.timezone) : schoolZone]));
+      for (const c of classes) {
+        const day = localDay(c.startDate, (c.branchId && zoneOf.get(c.branchId)) || schoolZone);
+        if (day < range.from || day > range.to) continue;
+        const t = totals.get(c.instructorId as string);
+        if (!t) continue;
+        t.classes += 1;
+        t.minutes += classMinutes(c.startDate, c.endDate);
       }
+    }
 
-      const onStaff = new Set(grants.map((g) => g.userId));
-      const names = await this.names(rates.map((r) => r.userId), permissions);
-      const rows = rates
-        .map((r) => {
-          const t = totals.get(r.userId) ?? { classes: 0, minutes: 0 };
-          return {
-            userId: r.userId,
-            name: names.get(r.userId) ?? '',
-            onStaff: onStaff.has(r.userId),
-            hourlyRate: r.hourlyRate,
-            perClassRate: r.perClassRate,
-            classesTaught: t.classes,
-            minutesTaught: t.minutes,
-            pay: payFor(t.minutes, t.classes, r.hourlyRate, r.perClassRate),
-          };
-        })
-        .sort(byName);
-      return {
-        preset,
-        from: range.from,
-        to: range.to,
-        currency: school?.defaultCurrency?.trim().toUpperCase() || null,
-        rows,
-        totalClasses: rows.reduce((s, r) => s + r.classesTaught, 0),
-        totalMinutes: rows.reduce((s, r) => s + r.minutesTaught, 0),
-        totalPay: rows.reduce((s, r) => s + r.pay, 0),
-      };
-    });
+    const onStaff = new Set(grants.map((g) => g.userId));
+    const names = await this.names(rates.map((r) => r.userId), permissions);
+    const rows = rates
+      .map((r) => {
+        const t = totals.get(r.userId) ?? { classes: 0, minutes: 0 };
+        return {
+          userId: r.userId,
+          name: names.get(r.userId) ?? '',
+          onStaff: onStaff.has(r.userId),
+          hourlyRate: ratesShown ? r.hourlyRate : null,
+          perClassRate: ratesShown ? r.perClassRate : null,
+          classesTaught: t.classes,
+          minutesTaught: t.minutes,
+          pay: payFor(t.minutes, t.classes, r.hourlyRate, r.perClassRate),
+        };
+      })
+      .sort(byName);
+    return {
+      preset,
+      from: range.from,
+      to: range.to,
+      currency: school?.defaultCurrency?.trim().toUpperCase() || null,
+      ratesShown,
+      rows,
+      totalClasses: rows.reduce((s, r) => s + r.classesTaught, 0),
+      totalMinutes: rows.reduce((s, r) => s + r.minutesTaught, 0),
+      totalPay: rows.reduce((s, r) => s + r.pay, 0),
+    };
   }
 
   /** The School's name for each person (Decision 381), else their account's. */

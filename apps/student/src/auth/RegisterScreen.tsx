@@ -32,7 +32,7 @@ export function RegisterScreen({ navigation }: Props) {
   });
   // Decision 434 (TXT-8): "I have only one name" sends an empty surname.
   const [oneName, setOneName] = useState(false);
-  // Decision 440 (C1): the Terms and Privacy tick, sent as acceptTerms.
+  // Decision 444 (C1): the Terms and Privacy tick, sent as acceptTerms.
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

@@ -427,7 +427,11 @@ test('each guest is ticked on their own; the member\'s check-in doesn\'t check t
   for (let i = 0; i < 2; i++) {
     guests.push(await db.bookingAttendee.create({ data: { id: randomUUID(), bookingId: booking.id, schoolId: s.schoolId, membershipId: m.id, createdAt: at(i * 1000) } }));
   }
-  await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Liability', body: 'Text' } });
+  const liability = await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Liability', body: 'Text' } });
+  // The member has signed it (Decision 441: needed to check in); the guests haven't.
+  await db.waiverSignature.create({
+    data: { id: randomUUID(), waiverId: liability.id, studentId: s.student.id, signedById: s.student.id, schoolId: s.schoolId, status: 'SIGNED', signerFullName: 'Sam Lee', signatureText: 'Sam Lee', signedDate: new Date() },
+  });
   await signIn(page, s.ownerToken);
   await page.goto('/check-in');
   await page.getByRole('tab', { name: 'Name' }).click();
@@ -526,6 +530,8 @@ test('the owner switches on "Check in without a booking"; off by default (Decisi
   await page.goto('/check-in/rules');
   const withoutBooking = page.getByRole('switch', { name: 'Check in without a booking' });
   await expect(withoutBooking).toHaveAttribute('aria-checked', 'false');
+  // Decision 441 item 5: on by default.
+  await expect(page.getByRole('switch', { name: 'Waiver must be signed before booking or check-in' })).toHaveAttribute('aria-checked', 'true');
   await withoutBooking.click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('Check-in rules saved.')).toBeVisible();
@@ -550,11 +556,14 @@ test('the owner turns off "Open mat uses a class credit"; on by default (Decisio
   await db.school.update({ where: { id: s.schoolId }, data: { openMatUsesClassCredit: true } });
 });
 
-test('a check-in rule the person breaks is shown as its reason (Decision 394)', async ({ page }) => {
+test('a check-in rule the person breaks is shown as its reason (Decisions 394, 441)', async ({ page }) => {
   const cls = await classNow();
   const m = await subscribe(s.student.id);
   await db.booking.create({ data: { id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: m.id } });
-  await db.school.update({ where: { id: s.schoolId }, data: { checkInRequireWaiver: true } });
+  // Decision 441 item 5: "Waiver must be signed before booking or check-in" is
+  // on by default, and stops someone only once the School has a waiver in use.
+  expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).checkInRequireWaiver).toBe(true);
+  await db.waiver.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Liability', body: 'Text' } });
   await signIn(page, s.ownerToken);
   await page.goto('/check-in');
   await page.getByRole('tab', { name: 'Name' }).click();

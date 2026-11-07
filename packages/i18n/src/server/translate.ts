@@ -1,6 +1,7 @@
 import type { MessageVars } from '../types';
 import { SERVER_PATTERNS } from './en';
 import { moneyDigits } from '../money';
+import { server as englishServer } from '../serverKeys/en';
 
 /**
  * Translates the English text the API sends — error messages and the titles and
@@ -240,7 +241,39 @@ export function formatWhen(when: string, locale: string): string {
   }
 }
 
+/**
+ * A moment the API wrote in UTC ("YYYY-MM-DD HH:mm UTC"), in the reader's
+ * language and their own time zone, with no "UTC" after it (Decision 441
+ * item 9: the account-deletion notice). The reader's zone is the one their
+ * device or browser is set to; `timeZone` is only for tests. Anything else,
+ * or a zone the engine can't use, is shown as `formatWhen` shows it.
+ */
+export function formatInstant(when: string, locale: string, timeZone?: string): string {
+  const m = when.match(WALL_TIME);
+  if (!m || !m[4]) return formatWhen(when, locale);
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      ...(timeZone ? { timeZone } : {}),
+    }).format(new Date(`${m[1]}T${m[2]}:${m[3]}:00.000Z`));
+  } catch {
+    return formatWhen(when, locale);
+  }
+}
+
+/** "Delete my account"'s notice to the member; its date is a moment, shown in
+ * the reader's own time zone (`formatInstant`). */
+const DELETION_REQUESTED = /^Your ULTM8 account will be deleted on /;
+
 const NOTIFICATION_TITLES: Record<string, string> = {
+  // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
+  'Account deletion requested': 'accountDeletionRequestedTitle',
+  'A member left': 'memberLeftTitle',
   'A spot opened up': 'spotOpenedTitle',
   'Ready to grade': 'readyToGradeTitle',
   'Student payment-restricted': 'paymentRestrictedTitle',
@@ -339,8 +372,24 @@ const charge = (t: Translate, label: string) => n(t, CHARGES[label]);
 const STYLE = String.raw`((?:[^()]|\([^()]*\))+)`;
 const body = (source: string) => new RegExp(source, 's');
 
+/** The waiver request as the API wrote it before #317 (Decision 333): the
+ * waiver's title where the sender belongs ("Kids waiver has invited you to sign
+ * the following waiver."). Those rows are still stored, so they are matched
+ * here and reworded for English readers too. */
+const OLD_WAIVER_REQUEST = /^(.+) has invited you to sign the following waiver\.$/s;
+
 /** apps/api/src/jobs/*.processor.ts — every Notification body a job writes. */
 const BODY_RULES: Array<[RegExp, Rule]> = [
+  // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
+  [
+    /^Your ULTM8 account will be deleted on (.+?)\. Until then it is locked\. These children's accounts will be deleted with it: (.+)\. To keep it, sign in again before then\.$/s,
+    (m, { t, locale }) => n(t, 'accountDeletionRequestedChildrenBody', { when: formatInstant(m[1], locale), children: m[2] }),
+  ],
+  [
+    /^Your ULTM8 account will be deleted on (.+?)\. Until then it is locked\. To keep it, sign in again before then\.$/s,
+    (m, { t, locale }) => n(t, 'accountDeletionRequestedBody', { when: formatInstant(m[1], locale) }),
+  ],
+  [/^A member deleted their ULTM8 account and left your School\. Their details have been removed\. Their payments, waivers and belt history stay with your School under "Erased User"\.$/, (_m, { t }) => n(t, 'memberLeftBody')],
   // Decision 291 — CancellationService (apps/api/src/bookings/cancellation.service.ts).
   [
     /^(.+) on (.+?) has been cancelled by the school\. Reason: (.+)$/s,
@@ -388,8 +437,9 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   // Decision 435 item 30 — apps/api/src/waivers/child-signed-notice.ts.
   [/^(.+?) signed the waiver "(.+)" at (.+)\.$/s, (m, { t }) => n(t, 'waiverSignedByChildBody', { child: m[1], waiver: m[2], school: m[3] })],
   // Older rows, written before the School was named (the waiver's title sat
-  // where the sender belongs).
-  [/^(.+) has invited you to sign the following waiver\.$/s, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
+  // where the sender belongs). Only the title is known, so the translation
+  // names the waiver and no sender (English readers: createEnglishServerTextTranslator).
+  [OLD_WAIVER_REQUEST, (m, { t }) => n(t, 'waiverRequestBody', { waiver: m[1] })],
   // apps/api/src/timetable/timetable.service.ts — "Your booking moved with it." is
   // the wording before the waitlist was told too.
   [/^(.+) has moved to (.+)\. (?:Bookings|Your booking) moved with it\.$/s, (m, { t, locale }) => n(t, 'classMovedBody', { class: m[1], when: formatWhen(m[2], locale) })],
@@ -478,6 +528,11 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [
     /^(.+) chose to pay ([\d.]+) ([A-Z]{3}) for (.+) by cash or bank transfer\. Mark it as paid on the Transactions page once the money arrives\.$/s,
     (m, { t, locale }) => n(t, 'cashWaitingBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
+  // Decision 442 item 4: the Branch Staff's copy (they mark it paid on the student's Payments card).
+  [
+    /^(.+) chose to pay ([\d.]+) ([A-Z]{3}) for (.+) by cash or bank transfer\. Mark it as paid on their Payments card once the money arrives\.$/s,
+    (m, { t, locale }) => n(t, 'cashWaitingStaffBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
   ],
   [
     /^Your payment of ([\d.]+) ([A-Z]{3}) for (.+) was confirmed\. Your membership is now active\.$/s,
@@ -697,7 +752,12 @@ export function createEnglishServerTextTranslator(locale: string): ServerTextTra
     error: (_status, _code, message) => message,
     notification({ title, body, type }) {
       if (type === 'SCHOOL_BROADCAST') return { title, body };
-      return { title, body: body.replace(times, (_m, when: string, utc?: string) => formatWhen(`${when}${utc ?? ''}`, locale)) };
+      // A parent's copy keeps its "For {name}: " in front.
+      const forChild = body.match(/^For [^:]+: /)?.[0] ?? '';
+      const oldWaiverRequest = body.slice(forChild.length).match(OLD_WAIVER_REQUEST);
+      if (oldWaiverRequest) return { title, body: forChild + englishServer.notifications.waiverRequestBody.replace('{waiver}', oldWaiverRequest[1]) };
+      const format = DELETION_REQUESTED.test(body.slice(forChild.length)) ? formatInstant : formatWhen;
+      return { title, body: body.replace(times, (_m, when: string, utc?: string) => format(`${when}${utc ?? ''}`, locale)) };
     },
   };
 }

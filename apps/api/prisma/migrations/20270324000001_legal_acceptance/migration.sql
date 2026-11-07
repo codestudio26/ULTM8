@@ -1,4 +1,4 @@
--- Decision 440 — legal pages: the version each page is at, and a record of who
+-- Decision 444 — legal pages: the version each page is at, and a record of who
 -- accepted which version and when (sign-up, creating a School or Franchise).
 
 ALTER TABLE "LegalDocument" ADD COLUMN "version" TEXT NOT NULL DEFAULT 'unpublished';

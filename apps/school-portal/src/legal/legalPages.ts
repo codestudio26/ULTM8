@@ -3,7 +3,7 @@ import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import type { TranslationKey } from '../i18n/I18nProvider';
 
-/** The legal pages (Decision 440), by their LegalDocument slug. */
+/** The legal pages (Decision 444), by their LegalDocument slug. */
 export const LEGAL_PAGES = {
   'terms-and-conditions': 'legal.titles.terms',
   'privacy-statement': 'legal.titles.privacy',

@@ -1,5 +1,5 @@
 /**
- * Decision 440 (legal go-live fixes C1 and C5).
+ * Decision 444 (legal go-live fixes C1 and C5).
  *
  * C1: creating a School or a Franchise needs the owner's tick on the School and
  * Franchise Agreement, and the server saves which version was accepted and when.
@@ -29,7 +29,7 @@ if (!hasDb) {
   console.warn('[legal-acceptance.e2e-spec] Skipped — DATABASE_URL / DATABASE_URL_APP / JWT_ACCESS_SECRET not set.');
 }
 
-describeIfDb('Legal acceptance (Decision 440)', () => {
+describeIfDb('Legal acceptance (Decision 444)', () => {
   let app: INestApplication;
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   const jwt = new JwtService({ secret: JWT_ACCESS_SECRET });

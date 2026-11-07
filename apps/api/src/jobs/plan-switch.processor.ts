@@ -6,6 +6,7 @@ import { PlanSwitchOutcome } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { PaymentsService, NoSavedPaymentMethodError } from '../payments/payments.service';
 import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcharge';
+import { takesCards } from '../payments/takes-cards';
 import { resolveChargeCurrency } from '../common/school-currency';
 import { noticeMoney } from '../charges/charge-ledger';
 import { assertCanCreateMembership, GeneralAccessConflictError } from '../memberships/membership-creation-guard';
@@ -223,7 +224,8 @@ export class PlanSwitchProcessor extends WorkerHost {
     if (await planFullFor(this.prismaJobs, next, m.studentId, now)) return end('NOT_SOLD');
     const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: m.schoolId } });
     const student = await this.prismaJobs.user.findUniqueOrThrow({ where: { id: m.studentId }, select: { paymentRestrictedAt: true } });
-    if (!account || account.provider !== 'STRIPE' || student.paymentRestrictedAt) return end('NO_CARD');
+    // Decision 442 item 2: a Stripe account not ready yet takes no cards.
+    if (!account || !takesCards(account) || student.paymentRestrictedAt) return end('NO_CARD');
     const currency = await resolveChargeCurrency(this.prismaJobs, m.schoolId, next.currency);
     if (!currency) return end('NOT_SOLD');
     const surcharge = planCardSurcharge(next, await readCardSurchargeBps(this.prismaJobs, m.schoolId), currency);

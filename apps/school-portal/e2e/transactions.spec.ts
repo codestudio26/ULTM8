@@ -204,6 +204,30 @@ test('Branch Staff with "Can cancel charges" cancel it from the student\'s Payme
   expect(cancelled).toMatchObject({ status: 'FAILED', cancelledById: staff.id, cancelReason: 'Paid by card instead' });
 });
 
+test('Branch Staff who may record payments mark a member\'s order as paid from the Payments card (Decision 441 item 2)', async ({ page }) => {
+  const branch = await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'North' } });
+  await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: branch.id } });
+  const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: branch.id }]);
+  await db.school.update({ where: { id: s.schoolId }, data: { branchStaffCanRecordPayments: true } });
+  const pending = await addTransaction({ status: 'PENDING', daysAgo: 1 });
+
+  await signIn(page, staff.token);
+  await page.goto(`/students/${s.student.id}`);
+  const list = page.getByTestId('desk-membership-payments');
+  await expect(list).toContainText('10-Class Pack');
+  // No "Can cancel charges": Mark as paid only.
+  await expect(list.getByRole('button', { name: 'Cancel payment' })).toHaveCount(0);
+  await list.getByRole('button', { name: 'Mark as paid' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('Sam Lee');
+  await dialog.getByRole('button', { name: 'Mark as paid' }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(list).toHaveCount(0);
+  const paid = await db.transaction.findUniqueOrThrow({ where: { id: pending.id } });
+  expect(paid.status).toBe('SUCCESSFUL');
+  expect(await db.membership.count({ where: { id: paid.membershipId! } })).toBe(1);
+});
+
 test('confirming for a student who has left shows why', async ({ page }) => {
   await addTransaction({ status: 'PENDING', daysAgo: 1 });
   await db.roleGrant.updateMany({ where: { userId: s.student.id, schoolId: s.schoolId, role: 'STUDENT' }, data: { revokedAt: new Date() } });

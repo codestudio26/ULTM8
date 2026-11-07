@@ -104,7 +104,7 @@ describeIfDb('Late fees (Decision 413)', () => {
     schoolIds.push(school.id);
     const branch = await su.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Main' } });
     const account = await su.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'BR', stripeConnectedAccountId: acct },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'BR', stripeAccountReady: true, stripeConnectedAccountId: acct },
     });
     const owner = await mkUser('owner');
     const staff = await mkUser('staff');

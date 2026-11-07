@@ -3,13 +3,14 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
 import Stripe from 'stripe';
-import { Prisma } from '@prisma/client';
+import { Prisma, Transaction } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
 import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
+import { isStripeConnectCountry, normalizeCountryCode, stripeConnectAvailable, stripeConnectCountries } from './stripe-connect-countries';
 import { NOTIFICATION_FANOUT_QUEUE, STRIPE_WEBHOOK_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
@@ -20,11 +21,14 @@ import { lockSchoolOpen } from '../tenants/lock-school-open';
 import { fromStripeAmount, toStripeAmount } from './stripe-amount';
 import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from './stripe-first-invoice';
 import { cardSurchargeAmount } from './card-surcharge';
+import { ConnectStatus, isStripeAccountReady } from './stripe-account-ready';
+import { cardPaymentsNotReady, takesCards } from './takes-cards';
 import { SUBSCRIPTION_SURCHARGE_METADATA, invoiceSurchargeAmount, splitSubscriptionItems } from './stripe-subscription-surcharge';
-import { chargeAbilities } from '../charges/charge-abilities';
+import { chargeAbilities, mayConfirmDeskOrder } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 import { dayIn } from '../memberships/freeze/membership-freeze';
+import { startBalanceBilling } from '../charges/membership-series';
 
 /** Decision 406: the name of the card-surcharge line on a hosted Checkout
  * page and its Stripe receipt, beside the plan's own title (also untranslated,
@@ -41,6 +45,13 @@ export const JOINING_FEE_LINE_NAME = 'Joining fee';
  * the same shape MembershipCollisionError (stripe-webhook-processing.processor.ts)
  * already established for a signal-not-a-generic-failure error in this codebase. */
 export class NoSavedPaymentMethodError extends Error {}
+
+/** Decision 442 item 2: chargeOffSession() at a School whose Stripe account
+ * Stripe hasn't said is ready. Nothing is charged. A NoSavedPaymentMethodError,
+ * so every off-session caller (late-cancel and no-show fees, freeze fees, plan
+ * switches) already treats it as "no card here": the School behaves as one
+ * that takes no cards. */
+export class CardPaymentsNotReadyError extends NoSavedPaymentMethodError {}
 
 /**
  * Runs a Stripe create call made with an idempotency key, retrying while
@@ -124,10 +135,16 @@ export class PaymentsService {
   // School-side PaymentAccount CRUD — fully reachable this phase.
   // ---------------------------------------------------------------------------
 
-  /** School Owner/Manager only (Spec §8.2) — same gate as every other write. */
+  /** School Owner/Manager (Spec §8.2), and (Decision 442 item 3) Branch
+   * Staff with "Can connect Stripe", who may only create a Stripe account:
+   * choosing cash or bank transfer stays the owners'. */
   async createForSchool(callerId: string, schoolId: string, dto: CreatePaymentAccountDto) {
-    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    if (dto.provider === 'STRIPE') {
+      await this.tenantAuth.assertMayConnectStripe(callerId, schoolId);
+    } else {
+      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    }
 
     // "has one PaymentAccount set" (School's own confirmed entity row) — pre-checked
     // explicitly (same convention InstructorsService.create()/RoleGrantsService.create()
@@ -141,7 +158,7 @@ export class PaymentsService {
     }
 
     const id = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const created = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.create({
         data: {
           id,
@@ -152,6 +169,7 @@ export class PaymentsService {
         },
       }),
     );
+    return { ...created, connectAvailable: stripeConnectAvailable(created, school.addressCountry), cardPayments: takesCards(created) };
   }
 
   /**
@@ -176,7 +194,7 @@ export class PaymentsService {
    * literally, not by extension.
    */
   async findForSchool(callerId: string, schoolId: string) {
-    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.findUnique({ where: { schoolId } }),
     );
@@ -188,7 +206,8 @@ export class PaymentsService {
     if (!found) {
       throw new NotFoundException('PaymentAccount not found');
     }
-    return found;
+    // Decision 437: whether the Connect Stripe button may show for this School.
+    return { ...found, connectAvailable: stripeConnectAvailable(found, school.addressCountry), cardPayments: takesCards(found) };
   }
 
   // ---------------------------------------------------------------------------
@@ -227,7 +246,7 @@ export class PaymentsService {
     // opposite call for a different reason — see that method's own comment for why the
     // redundant check there was replaced with a genuine second layer instead of just
     // dropped.
-    await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
+    const franchise = await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
 
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
@@ -238,7 +257,7 @@ export class PaymentsService {
     }
 
     const id = randomUUID();
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
+    const created = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.create({
         data: {
           id,
@@ -249,6 +268,7 @@ export class PaymentsService {
         },
       }),
     );
+    return { ...created, connectAvailable: stripeConnectAvailable(created, franchise.addressCountry), cardPayments: takesCards(created) };
   }
 
   /**
@@ -275,33 +295,74 @@ export class PaymentsService {
    * a pure extra DB round-trip for identical observable behavior — removed.
    */
   async findForFranchise(callerId: string, franchiseId: string) {
-    const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.paymentAccount.findUnique({ where: { franchiseId } }),
-    );
+    const { found, franchise } = await this.prismaApp.withTenantContext(callerId, async (tx) => ({
+      found: await tx.paymentAccount.findUnique({ where: { franchiseId } }),
+      // Decision 437 — only read for connectAvailable, and only when the account
+      // isn't a Stripe one (a Stripe account's own country decides). Under the
+      // same RLS: a caller who can't see the Franchise gets null here.
+      franchise: await tx.franchise.findUnique({ where: { id: franchiseId }, select: { addressCountry: true } }),
+    }));
     if (!found) {
       throw new NotFoundException('PaymentAccount not found');
     }
-    return found;
+    return { ...found, connectAvailable: stripeConnectAvailable(found, franchise?.addressCountry), cardPayments: takesCards(found) };
   }
 
   /**
    * GET /franchises/:franchiseId/payment-account/connect-status — Decision 407:
    * the Franchise page's Connected / Action needed / Not connected. Franchise
-   * Owner only. Read live from Stripe (nothing stores whether onboarding
-   * finished; the account.updated webhook is still log-only): CONNECTED once
-   * Stripe has the business's details and lets it take charges, ACTION_NEEDED
-   * while onboarding was started but isn't finished (or Stripe wants more
-   * details), NOT_CONNECTED before it starts.
+   * Owner only. Read live from Stripe: see readConnectStatus().
    */
-  async getFranchiseConnectStatus(callerId: string, franchiseId: string): Promise<{ status: 'CONNECTED' | 'ACTION_NEEDED' | 'NOT_CONNECTED' }> {
-    await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
+  async getFranchiseConnectStatus(callerId: string, franchiseId: string): Promise<ConnectStatus> {
+    const franchise = await this.franchisesService.findOne(callerId, franchiseId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertFranchiseOwner(callerId, franchiseId);
     const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { franchiseId } }));
+    return this.readConnectStatus(callerId, account, franchise.addressCountry);
+  }
+
+  /**
+   * GET /schools/:schoolId/payment-account/connect-status — Decision 441 item
+   * 6: the School page's Stripe card, the same Connected / Action needed / Not
+   * connected as the Franchise's (Decision 407). School owners, and Branch
+   * Staff with "Can connect Stripe" (Decision 442 item 3): the same gate as
+   * creating the Stripe payment account and starting onboarding. The portal
+   * reads it when the owner comes back from Stripe, so the setup checklist is
+   * up to date even before Stripe's account.updated arrives.
+   */
+  async getSchoolConnectStatus(callerId: string, schoolId: string): Promise<ConnectStatus> {
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    await this.tenantAuth.assertMayConnectStripe(callerId, schoolId);
+    const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { schoolId } }));
+    return this.readConnectStatus(callerId, account, school.addressCountry);
+  }
+
+  /**
+   * Read live from Stripe: CONNECTED once Stripe has the business's details
+   * and lets it take charges, ACTION_NEEDED while onboarding was started but
+   * isn't finished (or Stripe wants more details), NOT_CONNECTED before it
+   * starts. What Stripe says is saved on the account (stripeAccountReady,
+   * Decision 441 item 6) when it changed, the same flag the account.updated
+   * webhook keeps current.
+   */
+  private async readConnectStatus(
+    callerId: string,
+    account: { id: string; provider: string; country: string; stripeConnectedAccountId: string | null; stripeAccountReady: boolean } | null,
+    addressCountry: string | null | undefined,
+  ): Promise<ConnectStatus> {
+    // Decision 437: where Stripe can onboard it, and the countries the
+    // portal's country picker offers.
+    const connect = { connectAvailable: stripeConnectAvailable(account, addressCountry), connectCountries: stripeConnectCountries() };
     if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) {
-      return { status: 'NOT_CONNECTED' };
+      return { status: 'NOT_CONNECTED', ...connect };
     }
     const stripeAccount = await this.stripeClient.platformClient().accounts.retrieve(account.stripeConnectedAccountId);
-    return { status: stripeAccount.details_submitted && stripeAccount.charges_enabled ? 'CONNECTED' : 'ACTION_NEEDED' };
+    const ready = isStripeAccountReady(stripeAccount);
+    if (ready !== account.stripeAccountReady) {
+      await this.prismaApp.withTenantContext(callerId, (tx) =>
+        tx.paymentAccount.update({ where: { id: account.id }, data: { stripeAccountReady: ready } }),
+      );
+    }
+    return { status: ready ? 'CONNECTED' : 'ACTION_NEEDED', ...connect };
   }
 
   // ---------------------------------------------------------------------------
@@ -316,10 +377,10 @@ export class PaymentsService {
    * Connected Account's `id` synchronously in its response, no webhook needed for
    * that specific value — a webhook only becomes necessary for tracking whether
    * onboarding has actually *completed* (`details_submitted`/`charges_enabled` on
-   * `account.updated`), and there's no confirmed field yet to write that outcome
-   * into beyond the id itself, so that half stays a logged TODO in
-   * stripe-webhook-processing.processor.ts (JobsModule) rather than built against a
-   * guess at what field it should update.
+   * `account.updated`). That half is PaymentAccount.stripeAccountReady (Decision
+   * 441 item 6), written by stripe-webhook-processing.processor.ts's
+   * account.updated handler and by readConnectStatus(), never here: starting
+   * onboarding never makes an account ready.
    *
    * Any `Stripe.errors.*` this method's own calls raise (e.g. an unsupported/typo'd
    * `country`) propagates to `HttpExceptionFilter`'s own Stripe-error mapping — no
@@ -336,7 +397,8 @@ export class PaymentsService {
       throw new NotFoundException('PaymentAccount not found');
     }
     if (account.schoolId) {
-      await this.tenantAuth.assertSchoolOwner(callerId, account.schoolId);
+      // Decision 442 item 3: owners, and Branch Staff with "Can connect Stripe".
+      await this.tenantAuth.assertMayConnectStripe(callerId, account.schoolId);
     } else if (account.franchiseId) {
       await this.tenantAuth.assertFranchiseOwner(callerId, account.franchiseId);
     } else {
@@ -348,6 +410,21 @@ export class PaymentsService {
     }
     if (account.provider !== 'STRIPE') {
       throw new BadRequestException('Only a STRIPE-provider PaymentAccount can onboard through Stripe Connect');
+    }
+    // Decision 437 — a new connected account only where the UK platform can
+    // onboard one: PaymentAccount.country is the country accounts.create()
+    // below passes to Stripe. An account already connected keeps working
+    // wherever it is (re-issuing its Account Link creates nothing).
+    const country = normalizeCountryCode(account.country);
+    if (!account.stripeConnectedAccountId) {
+      if (!country) {
+        throw new BadRequestException("This payment account's country isn't a valid two-letter country code (ISO 3166-1 alpha-2).");
+      }
+      if (!isStripeConnectCountry(country)) {
+        throw new BadRequestException(
+          "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.",
+        );
+      }
     }
 
     const returnUrl = process.env.STRIPE_CONNECT_RETURN_URL;
@@ -367,7 +444,7 @@ export class PaymentsService {
       // refuses without `card_payments`.
       const created = await stripe.accounts.create({
         type: 'express',
-        country: account.country,
+        country: country ?? account.country,
         capabilities: CONNECT_ACCOUNT_CAPABILITIES,
       });
       stripeAccountId = created.id;
@@ -538,7 +615,7 @@ export class PaymentsService {
     // PaymentIntent has no separate lines.
     surchargeAmount = 0,
   ): Promise<{ paymentIntentId: string; clientSecret: string }> {
-    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const account = await this.resolveCardPaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const intent = await withIdempotencyRetry(() =>
       stripe.paymentIntents.create(
@@ -624,7 +701,7 @@ export class PaymentsService {
     // both. `undefined` leaves the Subscription as before.
     joiningFee?: { amount: number; surcharge: number },
   ): Promise<{ subscriptionId: string; paymentIntentId: string; clientSecret: string; surchargeAmount: number }> {
-    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const account = await this.resolveCardPaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const key = (part: string) => (idempotencyKey ? { idempotencyKey: `${idempotencyKey}-${part}` } : undefined);
     const customer = await withIdempotencyRetry(() => stripe.customers.create({ email: studentEmail }, key('customer')));
@@ -955,7 +1032,7 @@ export class PaymentsService {
    * establishes.
    */
   async createSetupSession(callerId: string, schoolId: string): Promise<{ checkoutUrl: string }> {
-    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const account = await this.resolveCardPaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const existing = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: callerId, schoolId } } }),
@@ -1110,7 +1187,7 @@ export class PaymentsService {
     // line beside the plan's (0 = none). `surchargeAmount` already covers it.
     joiningFeeAmount = 0,
   ): Promise<{ checkoutUrl: string }> {
-    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    const account = await this.resolveCardPaymentAccount(callerId, schoolId);
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const metadata = { transactionId };
     const session = await withIdempotencyRetry(() => stripe.checkout.sessions.create({
@@ -1187,6 +1264,9 @@ export class PaymentsService {
       throw new NoSavedPaymentMethodError(`Student ${studentId} has no saved payment method at School ${schoolId}.`);
     }
     const account = await this.resolveStripePaymentAccount(studentId, schoolId);
+    if (!account.stripeAccountReady) {
+      throw new CardPaymentsNotReadyError(`School ${schoolId}'s Stripe account isn't ready to take card payments yet.`);
+    }
     const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
     const customer = await stripe.customers.retrieve(saved.stripeCustomerId);
     const pmId = (customer as { invoice_settings?: { default_payment_method?: string } }).invoice_settings?.default_payment_method;
@@ -1279,12 +1359,27 @@ export class PaymentsService {
     return account;
   }
 
+  /**
+   * resolveStripePaymentAccount() for a NEW card payment, or saving a card:
+   * Decision 442 item 2, the School takes cards only once Stripe says its
+   * account is ready (takesCards()). Refused with CARD_PAYMENTS_NOT_READY
+   * until then. Managing what is already on Stripe (refunds, a saved card's
+   * details or removal, existing Subscriptions) doesn't wait for it.
+   */
+  private async resolveCardPaymentAccount(callerId: string, schoolId: string) {
+    const account = await this.resolveStripePaymentAccount(callerId, schoolId);
+    if (!takesCards(account)) throw cardPaymentsNotReady();
+    return account;
+  }
+
   // ---------------------------------------------------------------------------
   // Cash/Bank Transfer settlement confirmation (Phase 9, Spec 55 §7/§10.2/§6.1).
   // ---------------------------------------------------------------------------
 
   /**
-   * PATCH /transactions/{id}/confirm — School Owner/Manager only, idempotent.
+   * PATCH /transactions/{id}/confirm — the School Owner/Manager, and (Decision
+   * 441 item 2) Branch Staff whose School lets them record payments, for their
+   * own branches' students (mayConfirmDeskOrder). Idempotent.
    * Atomically flips a PENDING Cash/Bank Transaction to SUCCESSFUL and creates the
    * resulting Membership Active, in one DB transaction (withTenantContext already
    * wraps its callback in `$transaction`, so both writes commit-or-rollback
@@ -1305,90 +1400,130 @@ export class PaymentsService {
     const result = await this.confirmTransactionInner(callerId, transactionId);
     if (result.membershipCreated) {
       await this.notifyCashPayment(result.transaction, 'confirmed');
+      // Decision 441 item 1: a monthly plan at a School that takes no cards;
+      // this payment was its first month, the months after it go on the
+      // balance. If this fails, the charge-recurring job sets it up.
+      if (result.membership?.billedToBalance) {
+        const { transaction, membership } = result;
+        await startBalanceBilling(this.prismaJobs, membership.id, {
+          createdById: callerId,
+          price: transaction.amount - transaction.joiningFeeAmount,
+          currency: transaction.currency,
+        }).catch((err) => this.logger.warn(`Membership ${membership.id}: setting up its monthly charges failed; the charge-recurring job does it. ${err}`));
+      }
     }
     return result;
   }
 
   private async confirmTransactionInner(callerId: string, transactionId: string) {
+    // Decision 441 item 2: Branch Staff can't read Transaction rows under
+    // their own context (Spec 55 §8.2), so for them the row is read and
+    // settled on the jobs connection once mayConfirmDeskOrder() says yes, as
+    // cancelTransaction() does. Everyone else takes the owner's path below,
+    // unchanged: 404 when the row can't be seen, 403 for a member.
+    const row = await this.prismaJobs.transaction.findUnique({ where: { id: transactionId }, select: { schoolId: true, studentId: true } });
+    if (
+      row &&
+      !(await this.tenantAuth.isSchoolOwner(callerId, row.schoolId)) &&
+      (await mayConfirmDeskOrder(this.prismaApp, callerId, row.schoolId, row.studentId))
+    ) {
+      return this.prismaJobs.$transaction(
+        async (tx) => {
+          const transaction = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
+          return this.settleCashPayment(tx, transaction);
+        },
+        { maxWait: CASH_SETTLE_TX_OPTIONS.maxWaitMs },
+      );
+    }
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
       const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
       if (!transaction) {
         throw new NotFoundException('Transaction not found');
       }
       await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
-
-      if (transaction.status !== 'PENDING') {
-        // Already confirmed (a double click, or a Stripe-paid Transaction): an
-        // idempotent no-op. Anything else (FAILED, which includes a cancelled
-        // cash payment, REFUNDED, DISPUTED) can't be confirmed, and saying 200
-        // there made the owner think it worked (billing stress test, B1).
-        assertConfirmable(transaction.status);
-        return { transaction, membershipCreated: false };
-      }
-      if (transaction.paymentMethod === 'STRIPE') {
-        throw new BadRequestException('Only Cash/Bank Transfer Transactions are confirmed through this endpoint — Stripe Transactions settle via webhook.');
-      }
-      // A closed School, or a Student who has left it: Decisions 339 (T8, T9)
-      // and 334 (M13, M18) both asked for these two checks.
-      await this.assertCashPaymentCanBeSettled(tx, transaction);
-
-      const updateResult = await tx.transaction.updateMany({
-        where: { id: transactionId, status: 'PENDING' },
-        data: { status: 'SUCCESSFUL' },
-      });
-      if (updateResult.count === 0) {
-        // Lost a race between the findUnique above and this updateMany. A
-        // concurrent confirm already won: a no-op, as above. A concurrent
-        // Cancel won: refused, as above.
-        const now = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
-        assertConfirmable(now.status);
-        return { transaction: now, membershipCreated: false };
-      }
-
-      // Decision 404: a freeze fee collected at the desk is only marked paid;
-      // its membership already exists.
-      if (transaction.kind === 'FREEZE_FEE') {
-        return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membershipCreated: false };
-      }
-      if (!transaction.membershipPlanId) {
-        throw new BadRequestException('This payment is not for a membership plan.');
-      }
-      const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
-      // Decision 334 (Memberships review M1/M20/M3) — replaces the old partial
-      // unique index; see assertCanCreateMembership's own comment. A refusal
-      // throws, which rolls back the status flip above with it.
-      try {
-        await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
-      } catch (err) {
-        if (err instanceof GeneralAccessConflictError) {
-          throw new ConflictException(err.message);
-        }
-        throw err;
-      }
-      // Decision 432 item 8: calendar days in the School's zone; Decision 435
-      // items 7-8: or the first check-in, or the plan's fixed dates.
-      const term = membershipTerm(plan, await schoolZoneFor(tx, transaction.schoolId));
-      const membership = await tx.membership.create({
-        data: {
-          id: randomUUID(),
-          studentId: transaction.studentId,
-          membershipPlanId: transaction.membershipPlanId,
-          schoolId: transaction.schoolId,
-          frequency: 'ONE_TIME', // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1)
-          classesRemaining: plan.classesIncluded ?? undefined,
-          startDate: term.startDate,
-          expiryDate: term.expiryDate,
-          awaitingFirstCheckIn: term.awaitingFirstCheckIn,
-          scopedClassId: plan.scopedClassId,
-          // Decision 435 item 9: the switch the member agreed to when buying.
-          ...(transaction.planSwitchToPlanId ? { switchToPlanId: transaction.planSwitchToPlanId, switchAgreedAt: transaction.createdAt } : {}),
-        },
-      });
-
-      await tx.transaction.update({ where: { id: transactionId }, data: { membershipId: membership.id } });
-
-      return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membership, membershipCreated: true };
+      return this.settleCashPayment(tx, transaction);
     }, CASH_SETTLE_TX_OPTIONS);
+  }
+
+  /** The confirm itself, once the caller may: flips the Pending row to
+   * SUCCESSFUL and creates its Membership, in the caller's transaction. */
+  private async settleCashPayment(tx: Prisma.TransactionClient, transaction: Transaction) {
+    const transactionId = transaction.id;
+    if (transaction.status !== 'PENDING') {
+      // Already confirmed (a double click, or a Stripe-paid Transaction): an
+      // idempotent no-op. Anything else (FAILED, which includes a cancelled
+      // cash payment, REFUNDED, DISPUTED) can't be confirmed, and saying 200
+      // there made the owner think it worked (billing stress test, B1).
+      assertConfirmable(transaction.status);
+      return { transaction, membershipCreated: false };
+    }
+    if (transaction.paymentMethod === 'STRIPE') {
+      throw new BadRequestException('Only Cash/Bank Transfer Transactions are confirmed through this endpoint — Stripe Transactions settle via webhook.');
+    }
+    // A closed School, or a Student who has left it: Decisions 339 (T8, T9)
+    // and 334 (M13, M18) both asked for these two checks.
+    await this.assertCashPaymentCanBeSettled(tx, transaction);
+
+    const updateResult = await tx.transaction.updateMany({
+      where: { id: transactionId, status: 'PENDING' },
+      data: { status: 'SUCCESSFUL' },
+    });
+    if (updateResult.count === 0) {
+      // Lost a race between the findUnique above and this updateMany. A
+      // concurrent confirm already won: a no-op, as above. A concurrent
+      // Cancel won: refused, as above.
+      const now = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
+      assertConfirmable(now.status);
+      return { transaction: now, membershipCreated: false };
+    }
+
+    // Decision 404: a freeze fee collected at the desk is only marked paid;
+    // its membership already exists.
+    if (transaction.kind === 'FREEZE_FEE') {
+      return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membershipCreated: false };
+    }
+    if (!transaction.membershipPlanId) {
+      throw new BadRequestException('This payment is not for a membership plan.');
+    }
+    const plan = await tx.membershipPlan.findUniqueOrThrow({ where: { id: transaction.membershipPlanId } });
+    // Decision 334 (Memberships review M1/M20/M3) — replaces the old partial
+    // unique index; see assertCanCreateMembership's own comment. A refusal
+    // throws, which rolls back the status flip above with it.
+    try {
+      await assertCanCreateMembership(tx, transaction.studentId, transaction.schoolId, plan);
+    } catch (err) {
+      if (err instanceof GeneralAccessConflictError) {
+        throw new ConflictException(err.message);
+      }
+      throw err;
+    }
+    // Decision 432 item 8: calendar days in the School's zone; Decision 435
+    // items 7-8: or the first check-in, or the plan's fixed dates.
+    const term = membershipTerm(plan, await schoolZoneFor(tx, transaction.schoolId));
+    const membership = await tx.membership.create({
+      data: {
+        id: randomUUID(),
+        studentId: transaction.studentId,
+        membershipPlanId: transaction.membershipPlanId,
+        schoolId: transaction.schoolId,
+        // Cash/Bank Transfer is never Subscription-eligible (Spec 55 §6.1),
+        // except at a School that takes no cards (Decision 441 item 1): a
+        // monthly plan's first month, the rest billed to the balance.
+        frequency: plan.type === 'SUBSCRIPTION' ? 'RECURRING' : 'ONE_TIME',
+        billedToBalance: plan.type === 'SUBSCRIPTION',
+        classesRemaining: plan.classesIncluded ?? undefined,
+        startDate: term.startDate,
+        expiryDate: term.expiryDate,
+        awaitingFirstCheckIn: term.awaitingFirstCheckIn,
+        scopedClassId: plan.scopedClassId,
+        // Decision 435 item 9: the switch the member agreed to when buying.
+        ...(transaction.planSwitchToPlanId ? { switchToPlanId: transaction.planSwitchToPlanId, switchAgreedAt: transaction.createdAt } : {}),
+      },
+    });
+
+    await tx.transaction.update({ where: { id: transactionId }, data: { membershipId: membership.id } });
+
+    return { transaction: { ...transaction, status: 'SUCCESSFUL' as const }, membership, membershipCreated: true };
   }
 
   /**
@@ -1487,7 +1622,8 @@ export class PaymentsService {
 
   /**
    * Decision 339 (T11) — in-app notices around a Cash/Bank Transfer payment:
-   * `waiting` tells the School's Owners/Managers one has arrived to check;
+   * `waiting` tells the School's Owners/Managers one has arrived to check,
+   * and (Decision 442 item 4) the Branch Staff who may confirm it;
    * `confirmed`/`cancelled` tell the Student, or the Guardians of a linked minor
    * (who never logs in). Read through the jobs connection, since the caller's own
    * RLS context can see neither the School's other grants nor GuardianLink.
@@ -1508,17 +1644,40 @@ export class PaymentsService {
       const amount = `${(transaction.amount / 100).toFixed(2)} ${(transaction.currency ?? 'USD').toUpperCase()}`;
       const planTitle = plan?.title ?? 'a membership';
       const name = [student?.firstName, student?.surname].filter(Boolean).join(' ') || 'A student';
-      const notices: Array<{ userId: string; title: string; body: string }> = [];
+      const notices: Array<{ userId: string; title: string; body: string; targetType?: 'PAYMENT' | 'STUDENT'; targetId?: string }> = [];
       if (event === 'waiting') {
-        const owners = await this.prismaJobs.roleGrant.findMany({
-          where: { schoolId: transaction.schoolId, role: 'SCHOOL_OWNER_MANAGER', revokedAt: null },
-          select: { userId: true },
+        const grants = await this.prismaJobs.roleGrant.findMany({
+          where: { schoolId: transaction.schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+          select: { userId: true, role: true },
         });
-        for (const o of owners) {
+        const owners = new Set(grants.filter((g) => g.role === 'SCHOOL_OWNER_MANAGER').map((g) => g.userId));
+        for (const userId of owners) {
           notices.push({
-            userId: o.userId,
+            userId,
             title: 'Cash payment waiting',
             body: `${name} chose to pay ${amount} for ${planTitle} by cash or bank transfer. Mark it as paid on the Transactions page once the money arrives.`,
+          });
+        }
+        // Decision 442 item 4: also the Branch Staff who may confirm this
+        // order (Decision 441 item 2): the School lets Branch Staff record
+        // payments and the student is one of their branches' students. The
+        // same check as PATCH /transactions/{id}/confirm (mayConfirmDeskOrder),
+        // run as each of them. They mark it paid on the student's Payments
+        // card, so the notice opens the student.
+        const staff = [...new Set(grants.filter((g) => g.role === 'BRANCH_STAFF' && !owners.has(g.userId)).map((g) => g.userId))];
+        for (const userId of staff) {
+          // One failed check never holds back the owners' notices.
+          const may = await mayConfirmDeskOrder(this.prismaApp, userId, transaction.schoolId, transaction.studentId).catch((err) => {
+            this.logger.warn(`Cash payment waiting ${transaction.id}: checking whether ${userId} may confirm it failed: ${err}`);
+            return false;
+          });
+          if (!may) continue;
+          notices.push({
+            userId,
+            title: 'Cash payment waiting',
+            body: `${name} chose to pay ${amount} for ${planTitle} by cash or bank transfer. Mark it as paid on their Payments card once the money arrives.`,
+            targetType: 'STUDENT',
+            targetId: transaction.studentId,
           });
         }
       } else {
@@ -1553,7 +1712,8 @@ export class PaymentsService {
         await this.notificationFanoutQueue.add(
           'notify',
           {
-            notificationId: key, userId: notice.userId, title: notice.title, body: notice.body, type: 'CASH_PAYMENT', schoolId: transaction.schoolId, targetType: 'PAYMENT',
+            notificationId: key, userId: notice.userId, title: notice.title, body: notice.body, type: 'CASH_PAYMENT', schoolId: transaction.schoolId,
+            targetType: notice.targetType ?? 'PAYMENT', ...(notice.targetId ? { targetId: notice.targetId } : {}),
           } satisfies NotificationFanoutJobData,
           { jobId: key, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
         );

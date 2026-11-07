@@ -344,7 +344,7 @@ describeIfDb('Kids and Adult programs (backlog 3.20)', () => {
       await superuser.school.update({ where: { id: school.id }, data: { defaultCurrency: 'GBP', timezone: 'UTC' } });
       // Desk payments need the School's payments set up.
       await superuser.paymentAccount.create({
-        data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+        data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
       });
       await superuser.rankStripeTier.update({ where: { id: rung.Blue.id }, data: { promotionFeeMinor: 3000 } });
       await superuser.rankStripeTier.update({ where: { id: rung.Green.id }, data: { promotionFeeMinor: 1000 } });

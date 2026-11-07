@@ -13,6 +13,8 @@ import { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { RolesChangedService } from '../common/prisma/roles-changed.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
+import { cancelDeletionOnSignIn } from '../account-deletion/cancel-on-sign-in';
 import { TwilioVerifyService } from './otp/twilio-verify.service';
 import { LoginAttemptTracker } from './login-attempt-tracker.service';
 import { RegisterDto } from './dto/register.dto';
@@ -36,7 +38,7 @@ import { LEGAL_SLUGS, recordLegalAcceptances } from '../legal/legal-acceptance';
 // (seeds, older rows) still verify.
 const BCRYPT_ROUNDS = 12;
 
-/** Decision 440: what a new account agrees to at sign-up. */
+/** Decision 444: what a new account agrees to at sign-up. */
 const REGISTER_LEGAL_SLUGS = [LEGAL_SLUGS.terms, LEGAL_SLUGS.privacy] as const;
 
 /** The first place on Earth to reach a new day (UTC+14), for the sign-up age
@@ -99,6 +101,7 @@ export class AuthService {
     private readonly jwt: JwtService,
     private readonly loginAttempts: LoginAttemptTracker,
     private readonly rolesChanged: RolesChangedService,
+    private readonly prismaJobs: PrismaJobsService,
   ) {}
 
   /**
@@ -110,11 +113,11 @@ export class AuthService {
     if (dto.passcode !== dto.passcodeConfirm) {
       throw new BadRequestException('passcode and passcodeConfirm must match');
     }
-    // Decision 440: nobody gets an account without agreeing to the Terms.
+    // Decision 444: nobody gets an account without agreeing to the Terms.
     if (dto.acceptTerms !== true) {
       throw new BadRequestException({ code: 'TERMS_NOT_ACCEPTED', message: 'Agree to the Terms of Service and the Privacy Policy to create an account.' });
     }
-    // Decision 440: under-18s never open their own account; a Guardian adds
+    // Decision 444: under-18s never open their own account; a Guardian adds
     // them. Checked before anything is saved, on the latest calendar date on
     // Earth, so nobody who is already 18 somewhere is turned away.
     if (!isAdultOn(new Date(dto.dateOfBirth), new Date(), LATEST_TIME_ZONE)) {
@@ -268,10 +271,22 @@ export class AuthService {
    * below — recordFailure() never fires for an already-locked account, same as before
    * this reorder; only the DB-lookup timing changed, not this control flow.
    */
-  async login(dto: LoginDto): Promise<{ accessToken: string; refreshToken: string } | { mustChangePasscode: true; passcodeChangeToken: string }> {
+  async login(
+    dto: LoginDto,
+  ): Promise<{ accessToken: string; refreshToken: string; deletionCancelled?: true } | { mustChangePasscode: true; passcodeChangeToken: string; deletionCancelled?: true }> {
     const user = await this.prismaAuth.user.findUnique({
       where: { email: dto.email },
-      select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true, temporaryPasscodeExpiresAt: true },
+      select: {
+        id: true,
+        email: true,
+        passcodeHash: true,
+        phoneVerifiedAt: true,
+        phone: true,
+        mustChangePasscode: true,
+        temporaryPasscodeExpiresAt: true,
+        deletionRequestedAt: true,
+        erasedAt: true,
+      },
     });
 
     if (this.loginAttempts.isLocked(dto.email)) {
@@ -284,7 +299,8 @@ export class AuthService {
       ? await bcrypt.compare(dto.passcode, user.passcodeHash)
       : await bcrypt.compare(dto.passcode, DECOY_PASSCODE_HASH);
 
-    if (!user || !passcodeMatches) {
+    // An erased account ("Erased User") can never sign in again.
+    if (!user || !passcodeMatches || user.erasedAt) {
       this.loginAttempts.recordFailure(dto.email);
       throw new UnauthorizedException('Invalid email or passcode');
     }
@@ -314,14 +330,28 @@ export class AuthService {
       if (temporaryPasscodeExpired(user.temporaryPasscodeExpiresAt)) {
         throw new UnauthorizedException(TEMPORARY_PASSCODE_EXPIRED);
       }
-      return { mustChangePasscode: true, passcodeChangeToken: this.issuePasscodeChangeToken(user.id, user.email) };
+      const deletionCancelled = await this.cancelPendingDeletion(user);
+      return { mustChangePasscode: true, passcodeChangeToken: this.issuePasscodeChangeToken(user.id, user.email), ...deletionCancelled };
     }
+
+    const deletionCancelled = await this.cancelPendingDeletion(user);
 
     // FOUND ON REVIEW: these two are independent — different tables, different
     // connections (prismaApp vs. prismaAuth) — so there's no reason to pay the
     // sum of both round-trips in sequence instead of the slower of the two.
     const [accessToken, refreshToken] = await Promise.all([this.issueAccessToken(user.id), this.issueRefreshToken(user.id)]);
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, ...deletionCancelled };
+  }
+
+  /** "Delete my account" rule 2: signing in again within the 30 days cancels
+   * the deletion (the account-erasure job hasn't run yet: erasedAt is null). */
+  private async cancelPendingDeletion(user: { id: string; deletionRequestedAt: Date | null }): Promise<{ deletionCancelled?: true }> {
+    if (!user.deletionRequestedAt) return {};
+    const cancelled = await cancelDeletionOnSignIn(
+      { prismaApp: this.prismaApp, prismaAuth: this.prismaAuth, prismaJobs: this.prismaJobs, rolesChanged: this.rolesChanged },
+      user.id,
+    );
+    return cancelled ? { deletionCancelled: true } : {};
   }
 
   /** Decision 1/230 — 10 minutes, same "named, explicit Developer-level

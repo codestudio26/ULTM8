@@ -37,7 +37,8 @@ const DEFAULT_RULES: {
 } = {
   opensMinutesBeforeStart: 30,
   closesMinutesAfterStart: null,
-  requireWaiver: false,
+  // Decision 441 item 5: "Waiver must be signed before booking or check-in" is on by default.
+  requireWaiver: true,
   otherBranches: true,
   visitors: true,
   severalClasses: true,
@@ -52,7 +53,7 @@ const DEFAULT_RULES: {
   openMatUsesCredit: true,
   codeDigits: 4,
 };
-const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
+const ACCESS_OFF = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false };
 
 describeIfDb('Check-in rules (Decision 394)', () => {
   let app: INestApplication;
@@ -73,7 +74,8 @@ describeIfDb('Check-in rules (Decision 394)', () => {
     post: (url: string) => http().post(url).set('Authorization', `Bearer ${tokens[who]}`),
   });
   const rulesUrl = () => `/v1/schools/${school.id}/check-in-rules`;
-  const setRules = (rules: Partial<typeof DEFAULT_RULES>) => as('owner').put(rulesUrl()).send({ ...DEFAULT_RULES, ...rules });
+  // The waiver rule is off unless a test turns it on (afterEach turns it off again).
+  const setRules = (rules: Partial<typeof DEFAULT_RULES>) => as('owner').put(rulesUrl()).send({ ...DEFAULT_RULES, requireWaiver: false, ...rules });
 
   async function classAt(startMin: number, branchId: string | null = null, minutes = 60) {
     return superuser.class.create({
@@ -165,7 +167,7 @@ describeIfDb('Check-in rules (Decision 394)', () => {
     await app.close();
   });
 
-  it('defaults to what check-in did before the rules', async () => {
+  it('defaults to what check-in did before the rules, with the waiver needed (Decision 441)', async () => {
     const res = await as('owner').get(rulesUrl());
     expect(res.status).toBe(200);
     expect(res.body).toEqual(DEFAULT_RULES);
@@ -222,16 +224,30 @@ describeIfDb('Check-in rules (Decision 394)', () => {
     expect((await scan(soon, 'ben')).status).toBe(201);
   });
 
-  it('needs a signed waiver only when the rule is on', async () => {
+  it('needs a signed waiver only when the rule is on and the School has a waiver in use', async () => {
     const cls = await classAt(-5);
     const booking = await bookedInto('cara', cls);
     await setRules({ requireWaiver: true });
+    // Decision 441 item 5: with no waiver in use (none, or only archived ones), nobody is stopped.
+    const noWaiverYet = await classAt(-5);
+    await bookedInto('cara', noWaiverYet);
+    await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Old', body: 'Text', archivedAt: new Date() } });
+    expect((await scan(noWaiverYet, 'cara')).status).toBe(201);
+
+    await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Liability', body: 'Text' } });
     const refused = await scan(cls, 'cara');
     expect(refused.status).toBe(403);
     expect(refused.body.error.code).toBe('CHECK_IN_WAIVER_REQUIRED');
     expect((await superuser.booking.findUniqueOrThrow({ where: { id: booking.id } })).status).toBe('UPCOMING');
 
-    const waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Liability', body: 'Text' } });
+    // Off: not needed to check in.
+    await setRules({ requireWaiver: false });
+    const whenOff = await classAt(-5);
+    await bookedInto('cara', whenOff);
+    expect((await scan(whenOff, 'cara')).status).toBe(201);
+
+    await setRules({ requireWaiver: true });
+    const waiver = await superuser.waiver.findFirstOrThrow({ where: { schoolId: school.id, archivedAt: null } });
     await superuser.waiverSignature.create({
       data: { id: randomUUID(), waiverId: waiver.id, studentId: users.cara.id, schoolId: school.id, status: 'SIGNED', signerFullName: 'Cara Rules', signatureText: 'Cara Rules', signedDate: new Date() },
     });

@@ -21,7 +21,7 @@ export class CheckInRulesDto {
   @Max(1440)
   closesMinutesAfterStart!: number | null;
 
-  @ApiProperty({ description: "A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking)." })
+  @ApiProperty({ description: "Waiver must be signed before booking or check-in (default on): a member, or a child through their parent, needs a signed waiver for the School to book a class, join its waiting list, claim an offered place or check in, whatever the Class says. A School with no waiver in use stops nobody. Off: only a Class that needs a waiver asks for one, at booking. Buying a plan isn't affected." })
   @IsBoolean()
   requireWaiver!: boolean;
 

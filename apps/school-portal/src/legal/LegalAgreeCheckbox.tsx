@@ -4,7 +4,7 @@ import { Trans } from '../i18n/Trans';
 import { legalPath, type LegalSlug } from './legalPages';
 
 /**
- * Decision 440 (C1): the "I agree" tick before an account, a School or a
+ * Decision 444 (C1): the "I agree" tick before an account, a School or a
  * Franchise is created. The box is required, so the form can't be sent
  * without it, and the server refuses it too. Each link opens the page in a
  * new tab, so what the person has typed is kept.

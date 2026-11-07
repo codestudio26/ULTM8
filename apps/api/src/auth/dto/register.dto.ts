@@ -103,10 +103,10 @@ export class RegisterDto {
   @Type(() => PostalAddressDto)
   postalAddress?: PostalAddressDto | null;
 
-  /** Decision 440: the person ticked "I agree to the Terms of Service and have
+  /** Decision 444: the person ticked "I agree to the Terms of Service and have
    * read the Privacy Policy". Anything but `true` is refused with
    * TERMS_NOT_ACCEPTED; the versions accepted are recorded server-side. */
-  @ApiProperty({ required: false, description: 'Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 440).' })
+  @ApiProperty({ required: false, description: 'Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 444).' })
   @IsOptional()
   @IsBoolean()
   acceptTerms?: boolean;

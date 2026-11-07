@@ -4,7 +4,8 @@ import { ApiError } from '@ultm8/api-client';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { formatMoney } from '../lib/money';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
-import { useOwnedSchoolId } from '../auth/AuthContext';
+import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import {
@@ -35,6 +36,7 @@ import { JoiningFeeSettingsCard } from './JoiningFeeSettingsCard';
 
 import { ChargeSettingsCard } from '../charges/ChargeSettingsCard';
 import { CardSurchargeCard } from './CardSurchargeCard';
+import { StripeConnectCard } from './StripeConnectCard';
 import { LateFeesCard } from '../charges/LateFeesCard';
 import { IncomeCategoriesCard } from '../charges/IncomeCategoriesCard';
 import { ScheduleSharingCard } from './ScheduleSharingCard';
@@ -47,6 +49,24 @@ import { CancellationSettingsFields, cancellationSettingsForm, cancellationSetti
 const cardBrand = (brand: string) => brand.charAt(0).toUpperCase() + brand.slice(1);
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 
+/** Decision 442 item 3: the School page for a Branch Staff member the
+ * owners let connect Stripe — the Stripe card only, for the School they work
+ * at. The API checks the same switch on every call the card makes. */
+function StaffStripeConnectPage({ schoolId }: { schoolId: string }) {
+  const t = useT();
+  const { data: school, isLoading, error } = useSchool(schoolId);
+  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('schools.profile.loadFailed')} />;
+  if (isLoading || !school) return <Spinner />;
+  return (
+    <>
+      <PageHeader title={t('schools.stripeConnect.title')} subtitle={school.name} />
+      {school.archivedAt ? null : (
+        <StripeConnectCard key={`stripe-connect-${schoolId}`} schoolId={schoolId} schoolName={school.name} defaultCountry={school.addressCountry ?? null} />
+      )}
+    </>
+  );
+}
+
 /** School Owner/Manager's own School profile — view + update (Spec §8.2: "Manage
  * their own School"). Each card has its own form and Save, and each is keyed by
  * the School's id, so switching School in the header starts every card afresh
@@ -56,6 +76,9 @@ import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 export function SchoolPage() {
   const t = useT();
   const schoolId = useOwnedSchoolId();
+  const coachSchoolId = useCoachSchoolId();
+  const staffAccess = useMyStaffAccess(schoolId ? null : coachSchoolId).data;
+  const staffStripeSchoolId = !schoolId && staffAccess?.branchStaff && staffAccess.access.connectStripe ? coachSchoolId : null;
   const { data: school, isLoading, error: loadError } = useSchool(schoolId);
   // A link to one setting ("/school#edit-currency", Decision 414 item 6)
   // brings it into view once the page has loaded, and puts the cursor in it.
@@ -70,6 +93,9 @@ export function SchoolPage() {
 
   // Decision 368 (S7) — a Branch Staff member or Instructor has no owned School;
   // the query never runs, so this used to spin for ever.
+  // Decision 442 item 3: Branch Staff with "Can connect Stripe" see the
+  // School's Stripe card, and nothing else of this page.
+  if (!schoolId && staffStripeSchoolId) return <StaffStripeConnectPage schoolId={staffStripeSchoolId} />;
   if (!schoolId) {
     return (
       <>
@@ -99,6 +125,10 @@ export function SchoolPage() {
         <JoiningFeeSettingsCard key={`joining-${schoolId}`} schoolId={schoolId} school={school} />
         {/* Decision 411: tax on staff-created charges, set by the School. */}
         <ChargeSettingsCard key={`charges-${schoolId}`} schoolId={schoolId} school={school} />
+        {/* Decision 441 item 6: the owner connects Stripe (Decision 437: only where Stripe can onboard the School). */}
+        {closed ? null : (
+          <StripeConnectCard key={`stripe-connect-${schoolId}`} schoolId={schoolId} schoolName={school.name} defaultCountry={school.addressCountry ?? null} />
+        )}
         {/* Decision 406: only where the School's country allows it. */}
         <CardSurchargeCard key={`surcharge-${schoolId}`} schoolId={schoolId} />
         {/* Decision 413: late fees, off by default, the School's choice. */}

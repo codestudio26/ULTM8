@@ -55,7 +55,7 @@ describe('RegisterScreen', () => {
     expect((navigation as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith('VerifyOtp', { phone: '+14155552671' });
   });
 
-  it('asks for the Terms and Privacy tick before sending anything (Decision 440)', async () => {
+  it('asks for the Terms and Privacy tick before sending anything (Decision 444)', async () => {
     const screen = await render(<RegisterScreen navigation={nav()} route={{} as never} />);
     expect(screen.getByText('Terms of Service')).toBeTruthy();
     expect(screen.getByText('Privacy Policy')).toBeTruthy();

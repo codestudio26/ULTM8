@@ -123,7 +123,7 @@ describeIfDb('Round-5 stress test: privacy, staff and races (Decision 433)', () 
     await app.close();
   });
 
-  const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
+  const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false };
 
   describe('PRIV-4: the roll call and waitlist follow the bookings switch', () => {
     it('Branch Staff with Bookings off get 403; with it on, and coaches and owners, 200', async () => {

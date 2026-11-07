@@ -5,7 +5,7 @@ import { useT } from '../i18n/I18nProvider';
 import { LEGAL_PAGES, isLegalSlug, useLegalDocument } from './legalPages';
 
 /**
- * A legal page, open to everyone signed in or not (Decision 440). The text
+ * A legal page, open to everyone signed in or not (Decision 444). The text
  * comes from the API (GET /v1/legal/:slug) and is shown as written. Until the
  * real text is loaded the page says it is being prepared.
  */

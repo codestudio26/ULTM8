@@ -76,7 +76,8 @@ export function MembershipRow({ membership, freezable }: { membership: Membershi
       {membership.awaitingFirstCheckIn ? (
         <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{t('memberships.myMemberships.awaitingFirstCheckIn')}</Text>
       ) : null}
-      {membership.expiryDate ? <Text style={{ color: '#9AA0A6', fontSize: 11, marginTop: 2 }}>{t('memberships.myMemberships.expires', { date: formatDate(membership.expiryDate) })}</Text> : null}
+      {/* Decision 441 item 1: a cancelled monthly plan billed to the balance ends on its cancel date, shown below. */}
+      {membership.expiryDate && !(membership.billedToBalance && membership.cancelAt) ? <Text style={{ color: '#9AA0A6', fontSize: 11, marginTop: 2 }}>{t('memberships.myMemberships.expires', { date: formatDate(membership.expiryDate) })}</Text> : null}
       {endsAtTerm && membership.status === 'ACTIVE' ? (
         // Decision 435 item 16: signed to end after the minimum term (not a cancellation).
         <Text style={{ color: '#5F6368', fontSize: 12, marginTop: 2 }}>{t('memberships.contract.endsOn', { date: formatDate(membership.contract!.minimumTermEndsAt) })}</Text>

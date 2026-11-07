@@ -36,6 +36,7 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
   await db.membershipFreeze.deleteMany({ where });
+  await db.recurringCharge.deleteMany({ where });
   await db.staffActivity.deleteMany({ where });
   await db.transaction.deleteMany({ where });
   await db.membership.deleteMany({ where });
@@ -74,6 +75,33 @@ test('the owner freezes a Weekly Pass from the Student page, sees it frozen, and
   await page.getByRole('button', { name: 'End freeze', exact: true }).last().click();
   await expect(row).toContainText('Active');
   await expect(row.getByRole('button', { name: 'Freeze', exact: true })).toBeVisible();
+});
+
+test('Decision 442 item 5: freezing a monthly plan billed to the balance pauses its monthly charge', async ({ page }) => {
+  const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, title: 'Mensal', type: 'SUBSCRIPTION', price: 15000, currency: 'GBP' } });
+  const m = await db.membership.create({
+    data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, frequency: 'RECURRING', billedToBalance: true, startDate: new Date(Date.now() - 20 * DAY) },
+  });
+  const next = day(10);
+  const series = await db.recurringCharge.create({
+    data: {
+      id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, membershipId: m.id, description: 'Mensal', unitAmount: 15000, currency: 'GBP',
+      frequency: 'MONTHLY', firstDate: new Date(`${day(-20)}T00:00:00Z`), nextIndex: 1, nextDate: new Date(`${next}T00:00:00Z`),
+    },
+  });
+
+  await page.goto(`/students/${s.student.id}`);
+  const row = page.getByRole('row', { name: /^Mensal Subscription/ });
+  await row.getByRole('button', { name: 'Freeze', exact: true }).click();
+  const dialog = page.getByTestId('freeze-modal');
+  await page.getByLabel('First frozen day').fill(day(0));
+  await page.getByLabel('Back on').fill(day(14));
+  await dialog.getByRole('button', { name: 'Freeze membership' }).click();
+  await expect(row).toContainText(/Frozen until/);
+  await expect(row).toContainText('Billing paused');
+  // The month due inside the freeze moved later by its 14 days.
+  const moved = await db.recurringCharge.findUniqueOrThrow({ where: { id: series.id } });
+  expect(moved.nextDate!.toISOString().slice(0, 10)).toBe(new Date(Date.parse(`${next}T00:00:00Z`) + 14 * DAY).toISOString().slice(0, 10));
 });
 
 test('a member\'s request shows on the Students page; approving it marks them Frozen in the list and the filter', async ({ page }) => {

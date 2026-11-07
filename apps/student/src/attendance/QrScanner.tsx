@@ -2,10 +2,11 @@ import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Button, ErrorBanner, SuccessBanner } from '../components/ui';
-import { getApiErrorMessage } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isWaiverRefusal } from '../lib/apiErrorMessage';
 import { decodeJwtPayload } from '../auth/decodeJwt';
 import { useScanAttendance } from './attendanceQueries';
 import { useT } from '../i18n/I18nProvider';
+import { SignWaiverButton } from '../waivers/SignWaiverButton';
 
 /** The "scan to check in" half of the self-service camera-scan path
  * (`POST /attendance/scan`, Phase 51/Decision 107) — the counterpart to the
@@ -108,6 +109,8 @@ export function QrScanner() {
       {scan.isError ? (
         <>
           <ErrorBanner message={getApiErrorMessage(scan.error, t('attendance.qrScanner.scanError'))} />
+          {/* Decision 442 item 1. The code names the Class, not its School, so every School's waivers. */}
+          {isWaiverRefusal(scan.error) ? <SignWaiverButton /> : null}
           <Button title={t('attendance.qrScanner.tryAgain')} variant="secondary" onPress={scanAgain} />
         </>
       ) : null}

@@ -1,0 +1,72 @@
+[
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "School B's owner signs in through the portal login page",
+  "status": "PASS",
+  "evidence": "/"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "pt-BR Dashboard: no \"Connect Stripe\" step; the Pix/cash note shows in Portuguese",
+  "status": "PASS",
+  "evidence": "lang pt-BR; Stripe steps 0; note \"Pagamentos com cartão no app ainda não estão disponíveis no seu país, então os membros pagam em dinheiro ou por transferência bancária (Pix no Brasil) e a equipe confirma.\""
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "pt-BR Notifications: the owner's notices show in Portuguese",
+  "status": "PASS",
+  "evidence": "10 notices; English titles on screen: none"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "pt-BR portal: 14 pages with no raw keys, no untranslated English and no server errors",
+  "status": "PASS",
+  "evidence": "/dashboard /students /staff /membership-plans /membership-plans/new /transactions /payroll /waivers /timetable /cancellations /notifications /school /check-in /front-desk"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "Branch Staff with Payroll open the report in the portal; no pay rates shown",
+  "status": "PASS",
+  "evidence": "coach listed true; rates on page false"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "after the owner turns on \"Show pay rates in the report\", the rates show (read only)",
+  "status": "PASS",
+  "evidence": "rates on page true; editable inputs 0"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "payroll page as Branch Staff, raw keys / English",
+  "status": "PASS",
+  "evidence": "none"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "UK Dashboard: the \"Connect Stripe\" step is listed and the no-cards note is not",
+  "status": "PASS",
+  "evidence": "lang en-GB; Stripe steps 1; note 0"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "UK owner's main pages: no raw keys and no server errors",
+  "status": "PASS",
+  "evidence": "clean"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "phone width: Dashboard, Payroll and Plans don't scroll sideways",
+  "status": "PASS",
+  "evidence": "none"
+ }
+]

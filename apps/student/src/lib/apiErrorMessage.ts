@@ -18,6 +18,15 @@ function codedMessage(err: ApiError): string | null {
   switch (err.code) {
     case 'CLASS_FULL':
       return translate('lib.apiError.classFull');
+    // "Delete my account": the shared wording in @ultm8/i18n.
+    case 'ACCOUNT_CLOSING':
+      return translate('server.codes.accountClosing');
+    case 'ACCOUNT_LOCKED':
+      return translate('server.codes.accountLocked');
+    case 'MAIN_OWNER_MUST_HAND_OVER':
+      return translate('server.codes.mainOwnerMustHandOver');
+    case 'SUBSCRIPTION_NOT_STOPPED':
+      return translate('server.codes.subscriptionNotStopped');
     case 'WAITLIST_FIRST':
       return translate('lib.apiError.waitlistFirst');
     case 'BOOKING_CLOSED':
@@ -47,6 +56,9 @@ function codedMessage(err: ApiError): string | null {
     // The School's check-in rules (Decision 394, backlog §3.5): the shared wording in @ultm8/i18n.
     case 'CHECK_IN_WAIVER_REQUIRED':
       return translate('server.codes.checkInWaiverRequired');
+    // Decision 441: "Waiver must be signed before booking or check-in".
+    case 'WAIVER_REQUIRED':
+      return translate('server.codes.waiverRequired');
     case 'CHECK_IN_HOME_BRANCH_ONLY':
       return translate('server.codes.checkInHomeBranchOnly');
     case 'CHECK_IN_VISITORS_OFF':
@@ -87,6 +99,9 @@ function codedMessage(err: ApiError): string | null {
       return translate('server.codes.freezeNotFound');
     case 'FREEZE_FEE_NO_PAYMENTS':
       return translate('server.codes.freezeFeeNoPayments');
+    // Decision 442 item 2: no card payments until Stripe says the School's account is ready.
+    case 'CARD_PAYMENTS_NOT_READY':
+      return translate('server.codes.cardPaymentsNotReady');
     // The School's free trial of ULTM8 ended (backlog 3.14).
     case 'TRIAL_ENDED':
       return translate('lib.apiError.trialEnded');
@@ -101,7 +116,7 @@ function codedMessage(err: ApiError): string | null {
       return translate('server.codes.childAdultAccessEnded');
     case 'GUARDIAN_UNDER_18':
       return translate('server.codes.guardianUnder18');
-    // Legal go-live (Decision 440).
+    // Legal go-live (Decision 444).
     case 'TERMS_NOT_ACCEPTED':
       return translate('server.codes.termsNotAccepted');
     case 'REGISTER_UNDER_18':
@@ -144,4 +159,11 @@ function codedMessage(err: ApiError): string | null {
  * are already queued for it — either way, the next step is the waitlist. */
 export function isWaitlistNext(err: unknown): boolean {
   return err instanceof ApiError && (err.code === 'CLASS_FULL' || err.code === 'WAITLIST_FIRST');
+}
+
+/** Whether a booking, a waiting-list join or claim, or a check-in was refused
+ * because the School needs a signed waiver first (Decision 441 item 5): the
+ * refusal that gets a "Sign the waiver" button (Decision 442 item 1). */
+export function isWaiverRefusal(err: unknown): boolean {
+  return err instanceof ApiError && (err.code === 'WAIVER_REQUIRED' || err.code === 'CHECK_IN_WAIVER_REQUIRED');
 }

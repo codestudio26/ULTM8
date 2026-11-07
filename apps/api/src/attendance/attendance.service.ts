@@ -19,6 +19,7 @@ import { GRADING_NOTIFICATIONS_QUEUE } from '../jobs/queue.constants';
 import { queueReadyCheck } from '../jobs/grading-notifications.types';
 import { assertPersonMayCheckIn, checkInClosesAt, loadCheckInRules } from './check-in-rules';
 import { startOnFirstCheckIn } from '../memberships/first-check-in';
+import { assertAccountNotClosing } from '../account-deletion/account-closing';
 
 
 /**
@@ -446,9 +447,12 @@ export class AttendanceService {
     // BASELINE consent isn't checked in, whichever way in. Imported past
     // attendance (onlySinceRankDate) isn't a check-in made now.
     if (!opts.onlySinceRankDate) await assertBaselineConsentGiven(this.prismaJobs, studentId);
+    // "Delete my account": an account being deleted is locked, whichever way in.
+    if (!opts.onlySinceRankDate) await assertAccountNotClosing(this.prismaJobs, studentId);
     // The School's check-in rules about the person (Decision 394), for every
-    // way in: waiver, home Branch, visitors.
-    await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id, booking.classBranchId);
+    // way in: waiver, home Branch, visitors. Imported past attendance
+    // (onlySinceRankDate) skips only the waiver (Decision 442 item 1).
+    await assertPersonMayCheckIn(this.prismaJobs, tx, studentId, booking.id, booking.classBranchId, { importedPast: !!opts.onlySinceRankDate });
 
     // Optimistic-concurrency guard, same established pattern as every other
     // status transition in this codebase — guards against a double-scan

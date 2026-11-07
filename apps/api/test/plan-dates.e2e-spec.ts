@@ -101,7 +101,7 @@ describeIfDb('Plan start and end dates (Decision 316 item 4, Decision 435 items 
     const school = await su.school.create({ data: { id: randomUUID(), name: `Plan dates ${label}`, timezone: ZONE, defaultCurrency: 'GBP', addressCountry: 'GB' } });
     schoolIds.push(school.id);
     await su.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider, accountTitle: provider, country: 'GB', stripeConnectedAccountId: provider === 'STRIPE' ? `acct_${randomUUID().slice(0, 12)}` : undefined },
+      data: { id: randomUUID(), schoolId: school.id, provider, accountTitle: provider, country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: provider === 'STRIPE' ? `acct_${randomUUID().slice(0, 12)}` : undefined },
     });
     const owner = await mkUser(`${label}-owner`);
     await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id, isMainOwner: true } });
@@ -190,15 +190,39 @@ describeIfDb('Plan start and end dates (Decision 316 item 4, Decision 435 items 
     });
 
     it('switches only from a plan with an end, to a paid pack, pass or trial of the School without a contract', async () => {
-      const next = await createPlan(s, { type: 'CLASS_PACK', classesIncluded: 10 });
-      const monthly = await createPlan(s, { type: 'SUBSCRIPTION' });
-      const ok = await createPlan(s, { type: 'WEEKLY_PASS', expiryDurationDays: 7, switchToPlanId: next.body.id });
+      // The switch charges a saved card, so this needs a School that takes cards (Decision 441 item 3).
+      const c = await mkSchool('rules-card', 'STRIPE');
+      const next = await createPlan(c, { type: 'CLASS_PACK', classesIncluded: 10 });
+      const monthly = await createPlan(c, { type: 'SUBSCRIPTION' });
+      const ok = await createPlan(c, { type: 'WEEKLY_PASS', expiryDurationDays: 7, switchToPlanId: next.body.id });
       expect(ok.status).toBe(201);
       expect(ok.body.switchToPlanId).toBe(next.body.id);
-      expect((await createPlan(s, { type: 'WEEKLY_PASS', expiryDurationDays: 7, switchToPlanId: monthly.body.id })).body.error.code).toBe('SWITCH_TARGET_INVALID');
-      expect((await createPlan(s, { type: 'CLASS_PACK', classesIncluded: 5, switchToPlanId: next.body.id })).body.error.code).toBe('SWITCH_NEEDS_END');
-      expect((await createPlan(s, { type: 'SUBSCRIPTION', switchToPlanId: next.body.id })).body.error.code).toBe('SWITCH_NEEDS_END');
-      expect((await as(s.owner).patch(`/v1/membership-plans/${next.body.id}`, { expiryDurationDays: 30, switchToPlanId: next.body.id })).body.error.code).toBe('SWITCH_TARGET_INVALID');
+      expect((await createPlan(c, { type: 'WEEKLY_PASS', expiryDurationDays: 7, switchToPlanId: monthly.body.id })).body.error.code).toBe('SWITCH_TARGET_INVALID');
+      expect((await createPlan(c, { type: 'CLASS_PACK', classesIncluded: 5, switchToPlanId: next.body.id })).body.error.code).toBe('SWITCH_NEEDS_END');
+      expect((await createPlan(c, { type: 'SUBSCRIPTION', switchToPlanId: next.body.id })).body.error.code).toBe('SWITCH_NEEDS_END');
+      expect((await as(c.owner).patch(`/v1/membership-plans/${next.body.id}`, { expiryDurationDays: 30, switchToPlanId: next.body.id })).body.error.code).toBe('SWITCH_TARGET_INVALID');
+    });
+
+    it('a School that takes no cards can\'t give a plan a next plan; one a plan already has is kept (Decision 441 item 3)', async () => {
+      // `s` has a cash and bank-transfer payment account only.
+      const next = await createPlan(s, { type: 'CLASS_PACK', classesIncluded: 10 });
+      const refused = await createPlan(s, { type: 'WEEKLY_PASS', expiryDurationDays: 7, switchToPlanId: next.body.id });
+      expect(refused.status).toBe(400);
+      expect(refused.body.error.code).toBe('SWITCH_NEEDS_CARDS');
+      const pass = await createPlan(s, { type: 'WEEKLY_PASS', expiryDurationDays: 7 });
+      expect(pass.status).toBe(201);
+      const set = await as(s.owner).patch(`/v1/membership-plans/${pass.body.id}`, { switchToPlanId: next.body.id });
+      expect(set.status).toBe(400);
+      expect(set.body.error.code).toBe('SWITCH_NEEDS_CARDS');
+      // A plan saved with a next plan before: editing it keeps it, and it can be removed.
+      const older = await mkPlan(s, { type: 'WEEKLY_PASS', price: 2000, expiryDurationDays: 7, switchToPlanId: next.body.id });
+      const edited = await as(s.owner).patch(`/v1/membership-plans/${older.id}`, { title: 'Renamed', expiryDurationDays: 14 });
+      expect(edited.status).toBe(200);
+      expect(edited.body.switchToPlanId).toBe(next.body.id);
+      expect((await as(s.owner).patch(`/v1/membership-plans/${older.id}`, { switchToPlanId: next.body.id })).status).toBe(200);
+      const cleared = await as(s.owner).patch(`/v1/membership-plans/${older.id}`, { switchToPlanId: null });
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.switchToPlanId).toBeNull();
     });
   });
 
@@ -282,27 +306,40 @@ describeIfDb('Plan start and end dates (Decision 316 item 4, Decision 435 items 
       pass = await mkPlan(card, { type: 'WEEKLY_PASS', price: 2000, expiryDurationDays: 7, switchToPlanId: next.id, title: 'Intro week' });
     });
 
-    it("keeps the member's agreement with the payment and puts it on the membership; refuses agreeing to a plan with no switch", async () => {
-      const cashNext = await mkPlan(cash, { type: 'CLASS_PACK', price: 6000, classesIncluded: 10 });
-      const cashPass = await mkPlan(cash, { type: 'WEEKLY_PASS', price: 2000, expiryDurationDays: 7, switchToPlanId: cashNext.id });
-      await mkStudent(cash, 'switch-cash-member');
-      const bad = await as(tokens['switch-cash-member']).post(`/v1/membership-plans/${cashNext.id}/purchase`, { agreeToPlanSwitch: true });
+    it("keeps the member's agreement with the card payment; refuses agreeing to a plan with no switch", async () => {
+      await mkStudent(card, 'switch-checkout');
+      const bad = await as(tokens['switch-checkout']).post(`/v1/membership-plans/${next.id}/purchase`, { useHostedCheckout: true, agreeToPlanSwitch: true });
       expect(bad.status).toBe(400);
       expect(bad.body.error.code).toBe('PLAN_HAS_NO_SWITCH');
-      const order = await as(tokens['switch-cash-member']).post(`/v1/membership-plans/${cashPass.id}/purchase`, { agreeToPlanSwitch: true });
-      expect(order.status).toBe(201);
-      expect(await su.transaction.findUniqueOrThrow({ where: { id: order.body.transactionId } })).toMatchObject({ planSwitchToPlanId: cashNext.id });
-      const confirmed = await as(cash.owner).patch(`/v1/transactions/${order.body.transactionId}/confirm`);
-      expect(confirmed.status).toBe(200);
-      const m = await su.membership.findFirstOrThrow({ where: { schoolId: cash.school.id, membershipPlanId: cashPass.id } });
-      expect(m.switchToPlanId).toBe(cashNext.id);
-      expect(m.switchAgreedAt).not.toBeNull();
-
-      // Hosted Checkout keeps it on the pending card payment too.
-      await mkStudent(card, 'switch-checkout');
       const checkout = await as(tokens['switch-checkout']).post(`/v1/membership-plans/${pass.id}/purchase`, { useHostedCheckout: true, agreeToPlanSwitch: true });
       expect(checkout.status).toBe(201);
       expect(await su.transaction.findUniqueOrThrow({ where: { id: checkout.body.transactionId } })).toMatchObject({ planSwitchToPlanId: next.id });
+    });
+
+    it('ignores the agreement at a School that takes no cards (Decision 441 item 3); an order placed before keeps it when confirmed', async () => {
+      const cashNext = await mkPlan(cash, { type: 'CLASS_PACK', price: 6000, classesIncluded: 10 });
+      const cashPass = await mkPlan(cash, { type: 'WEEKLY_PASS', price: 2000, expiryDurationDays: 7, switchToPlanId: cashNext.id });
+      await mkStudent(cash, 'switch-cash-member');
+      const order = await as(tokens['switch-cash-member']).post(`/v1/membership-plans/${cashPass.id}/purchase`, { agreeToPlanSwitch: true });
+      expect(order.status).toBe(201);
+      expect(await su.transaction.findUniqueOrThrow({ where: { id: order.body.transactionId } })).toMatchObject({ planSwitchToPlanId: null });
+      expect((await as(cash.owner).patch(`/v1/transactions/${order.body.transactionId}/confirm`)).status).toBe(200);
+      const m = await su.membership.findFirstOrThrow({ where: { schoolId: cash.school.id, membershipPlanId: cashPass.id } });
+      expect(m).toMatchObject({ switchToPlanId: null, switchAgreedAt: null });
+
+      // An order that already carried the agreement keeps it, as before.
+      const earlier = await mkStudent(cash, 'switch-cash-earlier');
+      const account = await su.paymentAccount.findUniqueOrThrow({ where: { schoolId: cash.school.id } });
+      const old = await su.transaction.create({
+        data: {
+          id: randomUUID(), schoolId: cash.school.id, studentId: earlier.id, paymentAccountId: account.id, membershipPlanId: cashPass.id,
+          amount: 2000, currency: 'GBP', status: 'PENDING', paymentMethod: 'CASH', planSwitchToPlanId: cashNext.id,
+        },
+      });
+      expect((await as(cash.owner).patch(`/v1/transactions/${old.id}/confirm`)).status).toBe(200);
+      const kept = await su.membership.findFirstOrThrow({ where: { studentId: earlier.id, membershipPlanId: cashPass.id } });
+      expect(kept.switchToPlanId).toBe(cashNext.id);
+      expect(kept.switchAgreedAt).not.toBeNull();
     });
 
     async function agreedMembership(label: string, opts: { savedCard: boolean; endsIn: number }) {

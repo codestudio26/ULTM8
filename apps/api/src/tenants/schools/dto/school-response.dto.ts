@@ -137,7 +137,7 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends.' })
   checkInClosesMinutesAfterStart!: number | null;
 
-  @ApiProperty({ description: 'Decision 394: a signed waiver is needed to check in, whatever the Class says.' })
+  @ApiProperty({ description: 'Decisions 394 and 441: a signed waiver is needed to book a class or check in, whatever the Class says (on by default; a School with no waiver in use stops nobody).' })
   checkInRequireWaiver!: boolean;
 
   @ApiProperty({ description: "Decision 394: members with a home Branch may check in at the School's other Branches." })
@@ -169,6 +169,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
 
   @ApiProperty({ description: "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged." })
   joiningFeesEnabled!: boolean;
+
+  @ApiProperty({ description: 'Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (default off). Owners always see them.' })
+  payrollStaffSeeRates!: boolean;
 
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Decision 411: the country the School is in, for its tax.' })
   taxCountry!: string | null;

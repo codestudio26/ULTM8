@@ -24,6 +24,11 @@ export const server = {
   /** Booking and schedule errors the API marks with a code (Decision 322), shown
    * in every language, English included — see the School Portal's `src/i18n/server/codes.ts`. */
   codes: {
+    // "Delete my account" (apps/api/src/account-deletion).
+    accountClosing: "This account is being deleted, so it can no longer book, check in or buy.",
+    accountLocked: "This account is being deleted. Sign in again to keep it.",
+    mainOwnerMustHandOver: "You're the main owner of a School or Franchise. Hand it to another owner (ULTM8 support can do this) or close it before you delete your account.",
+    subscriptionNotStopped: "We couldn't stop a recurring payment just now, so your account hasn't been deleted. Please try again in a moment.",
     classFull: 'This class is full. You can add the student to the waitlist instead.',
     waitlistFirst: 'Students are already waiting for a place in this class. Join the waitlist to take your turn.',
     bookingClosed: 'Booking for this class has closed. A member of staff can still add you.',
@@ -38,7 +43,7 @@ export const server = {
     childIsAdult: 'This child is 18 now and signs for themselves. They can make their own ULTM8 account.',
     childAdultAccessEnded: 'This child turned 18 more than 30 days ago, so their account is no longer managed from a parent\'s account.',
     guardianUnder18: 'A Guardian must be 18 or over.',
-    // Decision 440 (legal go-live).
+    // Decision 444 (legal go-live).
     termsNotAccepted: "Agree to the Terms of Service and the Privacy Policy to create an account.",
     registerUnder18: "You need to be 18 or over to create an account. Ask your parent or guardian to add you from their ULTM8 account.",
     agreementNotAccepted: "Accept the School and Franchise Agreement to continue.",
@@ -57,6 +62,7 @@ export const server = {
     adultAlready: "This student already has a rank in the Adult program.",
     adultFirstBelt: "Pick an adult rank above the Adult program's first belt.",
     checkInWaiverRequired: "This School needs a signed waiver before checking in.",
+    waiverRequired: "This School needs a signed waiver before booking a class or checking in.",
     checkInHomeBranchOnly: "This School checks members in only at their home Branch.",
     checkInVisitorsOff: "This School doesn't check visitors in on a visit pass at the moment.",
     checkInOneClass: "This School checks people in to one class at a time.",
@@ -77,6 +83,8 @@ export const server = {
     freezeNotRunning: "This freeze has already ended.",
     freezeNotFound: "This freeze could not be found.",
     freezeFeeNoPayments: "This School charges a freeze fee but has no payments or currency set up. Set them up, or remove the fee, first.",
+    // Decision 442 item 2: a Stripe account not ready yet.
+    cardPaymentsNotReady: "This School can't take card payments yet. Pay at the School instead, by cash or bank transfer, and staff confirm it.",
     noPackToRecharge: 'This person has no used-up Class Pack to buy again.',
     packNotForSale: 'This pack is no longer sold. Ask at the desk about another plan.',
     rechargeNotPaid: "The pack hasn't been paid for yet.",
@@ -173,6 +181,12 @@ export const server = {
     gradingPermissionMissing: "Your grading permission for this style doesn't include this: {toggle}. The school owner can turn it on.",
   },
   notifications: {
+    // "Delete my account" — apps/api/src/account-deletion/account-deletion-notices.ts.
+    accountDeletionRequestedTitle: "Account deletion requested",
+    accountDeletionRequestedBody: "Your ULTM8 account will be deleted on {when}. Until then it is locked. To keep it, sign in again before then.",
+    accountDeletionRequestedChildrenBody: "Your ULTM8 account will be deleted on {when}. Until then it is locked. These children's accounts will be deleted with it: {children}. To keep it, sign in again before then.",
+    memberLeftTitle: "A member left",
+    memberLeftBody: "A member deleted their ULTM8 account and left your School. Their details have been removed. Their payments, waivers and belt history stay with your School under \"Erased User\".",
     spotOpenedTitle: 'A spot opened up',
     spotOpenedBody: "A spot opened up in {class}. Claim it soon — it goes to the next person on the waitlist if you don't.",
     readyToGradeTitle: 'Ready to grade',
@@ -183,7 +197,7 @@ export const server = {
       'A student at your school has been restricted to cash or bank transfer payments only, following a pattern of lost card disputes.',
     paymentRestrictedNamedBody: '{name}, a student at your school, has been restricted to cash or bank transfer payments only, following a pattern of lost card disputes.',
     waiverRequestTitle: 'Waiver signature requested',
-    waiverRequestBody: '{waiver} has invited you to sign the following waiver.',
+    waiverRequestBody: 'You\'ve been invited to sign the waiver "{waiver}".',
     newStripeTitle: 'New stripe!',
     stepUpTitle: 'Step up!',
     promotedTitle: 'Promoted!',
@@ -212,6 +226,7 @@ export const server = {
     cancellationClassReviewBody: 'Bookings from the cancelled class {class} need a refund decision or a cash refund paid ({count}). See Cancellations to resolve.',
     cashWaitingTitle: "Cash payment waiting",
     cashWaitingBody: "{name} chose to pay {amount} for {plan} by cash or bank transfer. Mark it as paid on the Transactions page once the money arrives.",
+    cashWaitingStaffBody: "{name} chose to pay {amount} for {plan} by cash or bank transfer. Mark it as paid on their Payments card once the money arrives.",
     paymentConfirmedTitle: "Payment confirmed",
     paymentConfirmedBody: "Your payment of {amount} for {plan} was confirmed. Your membership is now active.",
     childPaymentConfirmedBody: "{name}'s payment of {amount} for {plan} was confirmed. The membership is now active.",

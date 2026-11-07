@@ -51,7 +51,7 @@ export interface FranchiseFormValues {
   shareBrandingWithMembers: boolean;
   /** Decision 99's own follow-up — omitted unless feeRateChangeDecisionRequired. */
   feeRateChangeStrategy?: (typeof FEE_RATE_CHANGE_STRATEGIES)[number];
-  /** Decision 440 (C1): sent only when creating, never on an edit. */
+  /** Decision 444 (C1): sent only when creating, never on an edit. */
   acceptAgreement?: boolean;
 }
 

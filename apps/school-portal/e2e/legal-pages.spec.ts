@@ -4,7 +4,7 @@ import { expect, test } from '@playwright/test';
 import { cleanup, db } from './fixtures';
 
 /**
- * Legal go-live fixes (Decision 440): the legal pages are open to everyone,
+ * Legal go-live fixes (Decision 444): the legal pages are open to everyone,
  * sign-up and Create your School each have an "I agree" tick, and the version
  * accepted is saved.
  */

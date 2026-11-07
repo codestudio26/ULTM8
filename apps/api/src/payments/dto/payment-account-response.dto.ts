@@ -34,6 +34,24 @@ export class PaymentAccountResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, description: 'Null until Stripe Connect onboarding is initiated (POST .../connect/onboard).' })
   stripeConnectedAccountId!: string | null;
 
+  @ApiProperty({
+    description:
+      'Decision 441 item 6 — Stripe has confirmed the connected account is ready: onboarding finished (details_submitted) and it can take charges (charges_enabled). Kept current by the account.updated webhook and the connect-status read.',
+  })
+  stripeAccountReady!: boolean;
+
+  @ApiProperty({
+    description:
+      "Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country.",
+  })
+  connectAvailable!: boolean;
+
+  @ApiProperty({
+    description:
+      'Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready (stripeAccountReady). Until then the School takes cash, bank transfer or Pix orders, as a School without cards does.',
+  })
+  cardPayments!: boolean;
+
   @ApiProperty()
   createdAt!: string;
 
@@ -48,8 +66,19 @@ export class ConnectOnboardingResponseDto {
   onboardingUrl!: string;
 }
 
-/** GET /franchises/:franchiseId/payment-account/connect-status (Decision 407). */
+/** GET /franchises/:franchiseId/payment-account/connect-status (Decision 407)
+ * and GET /schools/:schoolId/payment-account/connect-status (Decision 441
+ * item 6). */
 export class ConnectStatusResponseDto {
   @ApiProperty({ enum: ['CONNECTED', 'ACTION_NEEDED', 'NOT_CONNECTED'] })
   status!: 'CONNECTED' | 'ACTION_NEEDED' | 'NOT_CONNECTED';
+
+  @ApiProperty({
+    description:
+      "Decision 437 — whether Stripe can onboard this Franchise or School, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, its address country (none set: available).",
+  })
+  connectAvailable!: boolean;
+
+  @ApiProperty({ type: [String], description: 'Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker.' })
+  connectCountries!: string[];
 }

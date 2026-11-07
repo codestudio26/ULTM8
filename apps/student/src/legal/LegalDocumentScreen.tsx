@@ -5,7 +5,7 @@ import { useT } from '../i18n/I18nProvider';
 import { theme, fontSize, spacing } from '../theme/tokens';
 import { useLegalDocument, type LegalSlug } from './legalPages';
 
-/** One legal page, read in the app (Decision 440). Until the real text is
+/** One legal page, read in the app (Decision 444). Until the real text is
  * loaded on the server, it says the page is being prepared. */
 export function LegalDocumentScreen({ route }: { route: { params: { slug: LegalSlug } } }) {
   const t = useT();

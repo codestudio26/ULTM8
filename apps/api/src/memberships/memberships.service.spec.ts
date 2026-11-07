@@ -363,7 +363,9 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
       null as never,
       null as never,
       null as never, // StripeClientService (Decision 348 cancel)
-      null as never, // PrismaJobsService (Decision 404 freezes)
+      // PrismaJobsService (Decision 404 freezes; "Delete my account": the
+      // buyer's account is not being deleted).
+      { user: { findUnique: jest.fn().mockResolvedValue({ deletionRequestedAt: null, erasedAt: null }) } } as never,
       null as never, // IncomeCategoriesService (Decision 316 item 10)
       null as never, // PlanContractsService (Decision 316 item 6)
     );
@@ -371,7 +373,7 @@ describe('MembershipsService.purchase — useHostedCheckout scope (Decision 243)
   }
 
   const scopePlan = { id: 'plan-1', schoolId: 'school-1', type: 'CLASS_PACK', price: 3000, title: 'Pack', currency: 'usd', visible: true, expiryDurationDays: null };
-  const stripeAccount = { id: 'account-1', provider: 'STRIPE' };
+  const stripeAccount = { id: 'account-1', provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true };
   const cashBankAccount = { id: 'account-1', provider: 'CASH_BANK_TRANSFER' };
 
   it('a Guardian-driven purchase with useHostedCheckout is NOT rejected the way payWithSavedCard would be — reaches the hosted-Checkout branch, for the MINOR\'s own School context', async () => {

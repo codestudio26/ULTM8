@@ -24,6 +24,7 @@ import { ChildWaiversScreen } from '../guardians/ChildWaiversScreen';
 import { ChildPlansScreen } from '../guardians/ChildPlansScreen';
 import { ChildCardScreen } from '../guardians/ChildCardScreen';
 import { ChangePasscodeScreen } from '../auth/ChangePasscodeScreen';
+import { DeleteAccountScreen } from '../profile/DeleteAccountScreen';
 import { KidModePinScreen } from '../kidmode/KidModePinScreen';
 import { KidModeBookingScreen } from '../kidmode/KidModeBookingScreen';
 import { PendingReviewScreen } from '../kidmode/PendingReviewScreen';
@@ -113,6 +114,7 @@ export function AppNavigator() {
         options={({ route }) => ({ title: t('guardians.childCard.title', { name: route.params.name }) })}
       />
       <Stack.Screen name="ChangePasscode" component={ChangePasscodeScreen} options={{ title: t('auth.changePasscode.title') }} />
+      <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ title: t('profile.deleteAccount.title') }} />
       <Stack.Screen name="KidModePin" component={KidModePinScreen} options={{ title: t('navigation.app.kidMode') }} />
       <Stack.Screen
         name="KidModeBooking"

@@ -126,7 +126,12 @@ describeIfDb('ClassesModule: booking + waitlist — HTTP-level gates, cancellati
     // was read. The other policies are covered in class-cancellation-policy.e2e-spec.ts.
     // A currency, as a cancellation charge needs one (Decision 431 MON-5: a
     // fee is never charged in US dollars by default).
-    school = await superuser.school.create({ data: { id: randomUUID(), name: 'Bookings HTTP School', waitlistClaimWindowMinutes: 120, classCancellationPolicy: 'AUTO_CREDIT', defaultCurrency: 'usd' } });
+    // A Class's own "needs a waiver" is tested here, with the School-wide
+    // "Waiver must be signed before booking or check-in" off (Decision 441;
+    // waiver-before-booking.e2e-spec.ts tests it on).
+    school = await superuser.school.create({
+      data: { id: randomUUID(), name: 'Bookings HTTP School', waitlistClaimWindowMinutes: 120, classCancellationPolicy: 'AUTO_CREDIT', defaultCurrency: 'usd', checkInRequireWaiver: false },
+    });
 
     const mkUser = (label: string) =>
       superuser.user.create({

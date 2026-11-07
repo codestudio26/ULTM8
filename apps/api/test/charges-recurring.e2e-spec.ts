@@ -149,7 +149,7 @@ describeIfDb('Recurring charges (backlog 3.6 step 3, Decision 412)', () => {
     schoolIds.push(school.id, otherSchool.id);
     branchA = await su.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Branch A' } });
     branchB = await su.branch.create({ data: { id: randomUUID(), schoolId: school.id, name: 'Branch B' } });
-    await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'BR', stripeConnectedAccountId: acct } });
+    await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'BR', stripeAccountReady: true, stripeConnectedAccountId: acct } });
 
     const owner = await mkUser('owner');
     await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId: school.id, isMainOwner: true } });

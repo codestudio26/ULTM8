@@ -467,6 +467,21 @@ model User {
   /// role change takes effect on the next request (RolesChangedService).
   rolesChangedAt DateTime?
 
+  /// "Delete my account" (Decision 427 item 5; product owner, 6 Nov 2026).
+  /// Set when the member asks for their account to be deleted (or, for a
+  /// child with no login of their own, when their only parent does). From
+  /// then the account is locked; signing in again before `deletionDueAt`
+  /// clears all three. Read by JwtStrategy (through RolesChangedService).
+  deletionRequestedAt   DateTime?
+  /// 30 days after `deletionRequestedAt`: the account-erasure job anonymises
+  /// the account on or after this time.
+  deletionDueAt         DateTime?
+  /// Who asked: the member themselves, or the parent whose request includes
+  /// this child.
+  deletionRequestedById String?
+  /// When the account was anonymised for good ("Erased User"). Never cleared.
+  erasedAt              DateTime?
+
   /// Decision 68/112 — set once by the chargeback-pattern-restriction job when this
   /// Student's lost Stripe disputes (Transaction.disputeLostAt) cross the confirmed
   /// threshold (2). While set, MembershipsService.purchase() refuses a purchase at any
@@ -660,6 +675,7 @@ model User {
 
   @@index([email])
   @@index([phone])
+  @@index([deletionDueAt])
 }
 
 /// ultm8-nestjs-module §7's own confirmed refresh-token gap, now built: closes the
@@ -1215,11 +1231,17 @@ model School {
   /// can't go back to 4 (Decision 417).
   checkInCodeDigits              Int                             @default(4)
   /// Check-in rules (Decision 394, Decision 317 item 1, handover F9). Each
-  /// default is what check-in did before the rules existed. Applied to every
+  /// default is what check-in did before the rules existed (except the
+  /// waiver, Decision 441 item 5). Applied to every
   /// way in: app QR and code, the coach's scan, the front desk and the tablet.
-  /// A School-wide signed waiver needed at check-in, beyond a Class's own
-  /// "needs a waiver" (which is checked at booking). Off: only the Class's.
-  checkInRequireWaiver           Boolean                         @default(false)
+  /// Decision 441 item 5: "Waiver must be signed before booking or
+  /// check-in", on by default (existing Schools were switched on too). A
+  /// member (a child through their parent) needs a signed waiver for the
+  /// School to book a class, join its waiting list, claim an offered place
+  /// or check in, whatever the Class says. A School with no waiver in use
+  /// blocks nobody. Off: only a Class's own "needs a waiver" (at booking).
+  /// Buying a plan isn't affected. Was check-in only (Decision 394).
+  checkInRequireWaiver           Boolean                         @default(true)
   /// Members with a home Branch may check in at the School's other Branches.
   checkInOtherBranches           Boolean                         @default(true)
   /// Visitors may check in on their visit pass (Decision 391).
@@ -1268,6 +1290,11 @@ model School {
   /// the whole School (off by default). Off, the amounts stay saved on the
   /// plans but nothing is charged.
   joiningFeesEnabled             Boolean                         @default(false)
+  /// Decision 435 item 22 (owner's answer, 6 Nov 2026): whether Branch Staff
+  /// with the "Payroll" switch see the pay rates in the payroll report, read
+  /// only. Off by default: they see classes, hours and pay only. Owners
+  /// always see the rates.
+  payrollStaffSeeRates           Boolean                         @default(false)
   /// Decision 411: tax on staff-created charges, set by the School. The country
   /// the School is in (ISO 3166-1 alpha-2; picking it pre-fills the rate from
   /// ULTM8's list, which the School can change), the one rate in hundredths of
@@ -2035,7 +2062,7 @@ model LegalDocument {
 
   title   String
   content String?
-  /// Decision 440: the version people accept (e.g. "terms-2.0"). Stays
+  /// Decision 444: the version people accept (e.g. "terms-2.0"). Stays
   /// "unpublished" until the real text is loaded; each LegalAcceptance row
   /// copies the version current when it was accepted.
   version String  @default("unpublished")
@@ -2044,7 +2071,7 @@ model LegalDocument {
   createdAt DateTime @default(now())
 }
 
-/// LegalAcceptance (Decision 440) — evidence that a person agreed to a legal
+/// LegalAcceptance (Decision 444) — evidence that a person agreed to a legal
 /// page: which page, which version, when, and (for the School and Franchise
 /// Agreement) for which School or Franchise. Append-only: a re-acceptance after
 /// a new version adds a row, so earlier acceptances stay on record.
@@ -2161,6 +2188,15 @@ model PaymentAccount {
   /// method: accounts.create() returns the new Connected Account's id synchronously,
   /// no webhook needed for that specific value. See that method's own comment.)
   stripeConnectedAccountId String? @unique
+
+  /// Decision 441 item 6: Stripe has confirmed the connected account is ready —
+  /// onboarding finished (`details_submitted`) and it can take charges
+  /// (`charges_enabled`). Kept current by the `account.updated` webhook and by
+  /// the School's connect-status read when the owner comes back from Stripe;
+  /// it goes back to false if Stripe later asks for more details. The setup
+  /// checklist ticks "Connect Stripe" from this. Only the API writes it, from
+  /// what Stripe says; never client-settable.
+  stripeAccountReady Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2623,6 +2659,15 @@ model Membership {
   cancelAt      DateTime?
   cancelledById String?
   cancelledBy   User?     @relation("MembershipCancelledBy", fields: [cancelledById], references: [id])
+
+  /// Decision 441 item 1: a monthly plan (SUBSCRIPTION) at a School that takes
+  /// no cards. Its first month was a cash or bank-transfer payment; each month
+  /// after that is a charge on the member's balance, made by its own
+  /// RecurringCharge (membershipId). It has no stripeSubscriptionId. Cancelling
+  /// sets cancelAt and expiryDate to the next billing day, and the series ends.
+  billedToBalance Boolean          @default(false)
+  /// The series that bills it, for billedToBalance only.
+  recurringCharge RecurringCharge?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4554,6 +4599,30 @@ enum WaiverPurgeRule {
 /// School's id (no foreign key, so it outlives the School), the SHA-256 of the
 /// School's wording signed, the rule, and the dates. RLS on; only the jobs
 /// role may INSERT; the app role has no access.
+/// "Delete my account": the permanent internal record of each step of an
+/// account deletion (asked, cancelled by signing in again, made final). Ids
+/// and dates only, no personal details. Only the jobs role may add to it;
+/// no app role can read it.
+model AccountErasureLog {
+  id            String              @id @default(uuid())
+  userId        String
+  event         AccountErasureEvent
+  /// The member who asked (themselves, or the parent for a child).
+  requestedById String?
+  at            DateTime            @default(now())
+
+  @@index([userId])
+}
+
+enum AccountErasureEvent {
+  REQUESTED
+  CANCELLED
+  ERASED
+  /// A child was kept at the end (another parent was linked by then); only
+  /// the deleting parent's link ended.
+  KEPT
+}
+
 model WaiverSignaturePurgeLog {
   id                 String                   @id @default(uuid())
   kind               WaiverSignaturePurgeKind
@@ -4851,7 +4920,7 @@ model Notification {
   schoolName String?
 
   /// Developer-level addition (Decision 355): what clicking the notification
-  /// opens — `targetType` is CLASS, WAIVER, PAYMENT, CANCELLATIONS, GRADING, FRANCHISE or SCHOOL
+  /// opens — `targetType` is CLASS, WAIVER, PAYMENT, CANCELLATIONS, GRADING, FRANCHISE, SCHOOL or STUDENT
   /// (a free string, like `type`), `targetId` the Class/Waiver id where the
   /// app has a page for one item. Each app maps these to its own screens.
   targetType String?
@@ -5135,6 +5204,15 @@ model StaffPermission {
   /// attendance from a spreadsheet, for their own Branches. Branch Staff
   /// only; off by default; owners always can.
   canImportData         Boolean  @default(false)
+  /// Decision 435 item 22: may see the payroll report (Decision 320 item 4),
+  /// for the whole School. The report only: the pay rates stay the owners'
+  /// to set. Branch Staff only; off by default and in no preset; owners
+  /// always can.
+  canSeePayroll         Boolean  @default(false)
+  /// Decision 442 item 3: may connect the School's Stripe account (create its
+  /// Stripe payment account, start Stripe's onboarding, read its status).
+  /// Branch Staff only; off by default and in no preset; owners always can.
+  canConnectStripe      Boolean  @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
@@ -6614,6 +6692,13 @@ model RecurringCharge {
 
   createdById String?
   createdBy   User?   @relation("RecurringChargeCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  /// Decision 441 item 1: the monthly membership this series bills, at a
+  /// School that takes no cards (Membership.billedToBalance). Its price is
+  /// the plan's at purchase, never taxed on top (as a membership payment), and
+  /// it follows the membership: no charge on or after the day it ends.
+  membershipId String?     @unique
+  membership   Membership? @relation(fields: [membershipId], references: [id], onDelete: Restrict)
 
   charges Charge[]
 

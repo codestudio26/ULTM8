@@ -1,4 +1,4 @@
-/** Legal pages and the "I agree" ticks (Decision 440). */
+/** Legal pages and the "I agree" ticks (Decision 444). */
 export const legal = {
   titles: {
     terms: 'Terms of Service',

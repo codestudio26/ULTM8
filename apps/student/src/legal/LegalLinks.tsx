@@ -5,7 +5,7 @@ import { useT } from '../i18n/I18nProvider';
 import { theme, fontSize, spacing, minTouchTarget } from '../theme/tokens';
 import { LEGAL_PAGES, type LegalSlug } from './legalPages';
 
-/** Links that open each legal page in the app (Decision 440). Works from the
+/** Links that open each legal page in the app (Decision 444). Works from the
  * signed-out and the signed-in screens: both stacks have a LegalDocument screen. */
 export function LegalLinks({ slugs }: { slugs: LegalSlug[] }) {
   const t = useT();

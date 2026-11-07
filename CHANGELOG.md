@@ -16,8 +16,8 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
 - **Legal go-live: "I agree" step, 18+ sign-up and the Children notice version**
-  (Track A and Track B; Decision 440). **Needs a database migration**
-  (`20270226000000_legal_acceptance`).
+  (Track A and Track B; Decision 444). **Needs a database migration**
+  (`20270324000001_legal_acceptance`).
   - Creating an account (portal and app) needs a tick to agree to the Terms of
     Service and the Privacy Policy; creating a School or a Franchise needs a
     tick to accept the School and Franchise Agreement. The version accepted
@@ -81,6 +81,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     and printouts lay out correctly. A "Has only one name" tick replaces "." as
     a surname. Two sign-ups at once no longer duplicate. Approving a walk-in
     keeps the phone and emergency contact they gave at the desk.
+- **Launch rehearsal 1** — a UK School (cards through Stripe Connect, against
+  a pretend Stripe) and a Brazilian School (Pix or cash, confirmed by the
+  School) taken through every main journey end to end: setup, staff and
+  payroll, buying, parents and children, classes and check-in, refunds,
+  freezes, plan switches, "Delete my account", Portuguese, and cross-tenant
+  checks, through the API and in a browser. 238 checks passed and none failed;
+  six questions for the product owner. Report in
+  `docs/handover/LAUNCH-REHEARSAL-1.md`, scripts in
+  `apps/api/scripts/rehearsal/`. No product change.
+- **Launch rehearsal 1: four small fixes** (Track A and Track B, Decision 441
+  items 7–10). An address shows its country in the reader's language
+  ("…, Brasil" in Portuguese); the stored text is unchanged. A style made
+  from an IBJJF template names its belts and stripes in the School's
+  language ("Faixa Branca · 1 Grau"); styles made before keep their names.
+  The "Delete my account" notice gives the date and time in the member's own
+  time zone instead of UTC. Adding a coach profile for someone who never had
+  the Instructor role now says to give them the role first (error code
+  `NOT_AN_INSTRUCTOR`), in all 15 languages.
 - **Translation review: 12 languages** (School Portal, member app and server
   text; `docs/translations/REVIEW-other-languages.md`). Covers Arabic, German,
   French, Italian, Japanese, Korean, Dutch, Polish, Russian, Thai, Turkish and
@@ -112,6 +130,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   the signing form has Cancel. Already-booked classes show as booked, plans
   say "Join this School to buy" to non-members, status words read as words,
   the sign-in screen shows the picked School, and removing a card asks first.
+- **Delete my account** (Track B, `apps/student`, and `apps/api`; Decision
+  427 item 5, required by Apple; Decision 436 items 1–6)
+  — My profile → "Delete my account" says what happens, names the children
+  deleted too, and asks for the passcode again. The account is locked at once
+  (signed out everywhere; no booking, check-in or purchase, by anyone), its
+  recurring payments stop, and signing in again within 30 days cancels it.
+  After 30 days a daily job anonymises it as "Erased User": login, name,
+  contact details, date of birth, photo, passcode and medical notes go, and so
+  do staff notes, files the School uploaded, custom fields, tags, import rows
+  and invites; their name in older staff activity lines and staff notices
+  becomes "Erased User". Their upcoming bookings and waitlist places are given
+  up as when a School removes a member (no fee). Payments, signed waivers,
+  contracts, belt and attendance history stay with the School, unnamed. A child goes too only when this was their only parent and they have
+  no login of their own. The main owner of an open School or Franchise must
+  hand it over or close it first. The member is emailed; each School's owners
+  get a "A member left" notice. New `GET`/`POST /users/me/deletion`; sign-in
+  answers `deletionCancelled`. **Needs a database migration**
+  (`20270227100012_account_deletion`): four `User` columns, a write-only
+  `AccountErasureLog`, and one narrow `erase_due_account` function (the jobs
+  role may only call it, and it refuses accounts that aren't due).
 - **Student app: class times on the School's clock** (Track B, `apps/student`;
   Decision 427 SP6) — class times in the app (a School's classes, Kid Mode,
   My bookings, My waitlist, a child's bookings) now show on the class's own
@@ -215,6 +253,28 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Open mats are unchanged. The owner, and Branch Staff with "Change check-in
   rules", change it. Needs migration
   `20270207120000_check_in_require_booking`.
+- **Waiver must be signed before booking or check-in** (Decision 441 item 5;
+  launch rehearsal D5) — the "Need a signed waiver to check in" switch on
+  Check-in → Check-in rules becomes **"Waiver must be signed before booking
+  or check-in"**, now **on by default**, and every existing School is
+  switched on too. While it's on, a member, or a child through their parent,
+  who hasn't signed the School's waiver can't book a class, join its waiting
+  list, claim an offered place or check in, whoever books for them (the
+  member, a parent, staff, or a check-in that books a place first). A School
+  with no waiver in use (none, or only archived ones) stops nobody. Buying a
+  plan isn't blocked. When off, a class marked as needing a waiver still asks
+  for one at booking, as before. The refusal has its own message in the
+  portal and the member app, in every language. Needs migration
+  `20270303000001_waiver_before_booking`.
+- **Waiver before booking: past attendance and a "Sign the waiver" button**
+  (Decision 442 item 1) — importing past attendance is no longer refused by
+  "Waiver must be signed before booking or check-in": those visits already
+  happened. The School's other check-in rules (home Branch only, overdue
+  payment) still apply to imported visits. In the member app, the waiver
+  refusal (booking a class, joining or claiming a waiting-list place, checking
+  in by scan or code) now has a **"Sign the waiver"** button that opens the
+  School's waivers to sign, or, for a parent booking for a child, the child's
+  waivers at that School. In every language.
 - **Fixed: class times in British Columbia from 1 Nov 2026** — British Columbia
   stays on UTC-7 from 1 Nov 2026. The API ran on Node 20, whose time-zone data
   doesn't know this, so Vancouver classes would have come out an hour off. The
@@ -269,6 +329,116 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   that already has them is left as it is), so Stripe's onboarding then collects
   whatever card payments still need. Until that is done the account shows
   Action needed, as before.
+- **Connect Stripe only where Stripe can onboard the School** (Decision 437)
+  — ULTM8's Stripe platform is a UK account, which can onboard Schools and
+  Franchises in the United Kingdom, the 27 EU countries, Norway, Switzerland,
+  Liechtenstein and Gibraltar only. Elsewhere (Brazil, for one) the
+  Franchise page's Stripe card has no **Connect Stripe** button and explains
+  that card payments in the app aren't available in that country yet, so
+  payments are by cash or bank transfer (Pix in Brazil) and staff confirm
+  them; a School's setup checklist leaves out the Connect Stripe step and says
+  the same. The country picker offers only those 32 countries. The API refuses
+  to start Stripe onboarding for any other country (or a country that isn't a
+  two-letter ISO code), with the reason in all 15 languages; an account
+  already connected keeps working wherever it is. The payment-account,
+  Franchise connect-status and Dashboard answers now say whether Connect is
+  available. The list is set in code, and the optional
+  `STRIPE_CONNECT_COUNTRIES` setting replaces it (comma-separated ISO codes).
+  In the member app, a School without card payments shows a short note under
+  each plan: card payments aren't available there yet, so pay by bank
+  transfer or cash at the School (by Pix too, for a School in Brazil) and
+  staff confirm it. **Purchase** there records a cash/bank-transfer payment
+  waiting for staff (it no longer tries Stripe's card page), and **Pay with
+  saved card** isn't offered. The School's public profile says whether it
+  takes card payments and whether it is in Brazil. **Needs migration
+  `20270228100001_school_card_payments`.**
+- **Monthly plans at a School without card payments** (Decision 441 item 1;
+  launch rehearsal D1 and F4) — a School that takes no cards (Brazil, for now)
+  can now sell its monthly plans. The member buys one in the app like any plan
+  there: a Pix/bank-transfer or cash order that staff confirm. Staff can also
+  sell it at the desk (the student's Memberships card, and Record a payment).
+  That first payment is the first month; after it, each month is added to the
+  member's balance as a normal charge (a monthly recurring charge tied to the
+  membership, from the same day of the month), with its own invoice and the
+  "New invoice" notice, paid by Pix or cash and recorded by staff, and
+  overdue and late fees as for any charge. The month costs the plan's price,
+  as a card renewal would: tax is never added on top. Cancelling (the member,
+  a parent, or the owner; or removing the student, or asking to delete the account) ends the membership at its
+  next billing day, so the month already charged runs out and no further
+  month is charged; the recurring charge then shows as ended. The member app
+  says, under such a plan, that later months go on the balance (all 15
+  languages). The old refusal with technical words ("SUBSCRIPTION",
+  "PaymentAccount STRIPE") is gone. A School that takes cards is unchanged:
+  its monthly plans are card Subscriptions bought in the app, and still can't
+  be sold at the desk. **Needs migration
+  `20270301000001_no_card_monthly_plans`.**
+- **Pix and cash orders at a School without cards: staff confirm them, and no
+  plan switch** (Decision 441 items 2 and 3) — Branch Staff whose School lets
+  them record payments (Decision 347) can now also mark a member's Pix, cash or
+  bank-transfer order as paid, for students of their own branches only (the
+  same students they can record a payment for). They do it from the student's
+  Payments card, which now lists the student's waiting orders for them with
+  **Mark as paid** (owners see it there too). Before, only owners could, and
+  Branch Staff got "Transaction not found". Cancelling an order still needs
+  "Can cancel charges", as before. At a School that takes no cards, "When it
+  ends, switch to" is no longer on the plan form and the member app no longer
+  offers the switch when buying: the switch charges a saved card, so there it
+  could only end with no card. The API refuses a new next plan there and
+  ignores the member's agreement when buying; a next plan a plan already had
+  is kept, unused, and works again if the School later takes cards. No
+  migration.
+- **Staff hear about Pix and cash orders; freezing pauses a monthly plan
+  billed to the balance** (Decision 442 items 4 and 5) — the "Cash payment
+  waiting" notice for a member's Pix, cash or bank-transfer order now also
+  goes to the Branch Staff who may mark it as paid (the School's "Let Branch
+  Staff record payments" switch is on and the student's home branch is one of
+  theirs), not only to the owners. Their copy says to mark it paid on the
+  student's Payments card and opens the student's page (all 15 languages).
+  Freezing a monthly plan billed to the member's balance (a School without
+  cards) now pauses its monthly charge, as freezing a card Subscription does:
+  the next month is moved later by the freeze's length and the months after
+  it follow from the new day, so nothing is charged while frozen and the
+  member never pays for frozen days. A month due before the freeze starts is
+  charged first, then the next one moves. Ending a freeze early moves the
+  month back by the days not frozen. Cancelling during a freeze ends the plan
+  on the moved billing day. The student's Memberships card shows "Billing
+  paused" for these plans too. No migration.
+- **School owners connect Stripe themselves** (Decision 441 item 6) — the
+  School page has a **Stripe account** card with **Connect Stripe**, which
+  starts Stripe's own onboarding (the first time, the owner picks the country
+  of the business's bank account), instead of ULTM8 support doing it. The card
+  shows Connected, Action needed (with **Continue Stripe setup**) or Not
+  connected, and Stripe's return and refresh links come back to it. Where
+  Stripe can't onboard the School (Decision 437) it explains that members pay
+  by cash or bank transfer instead, and a School whose payment account is for
+  cash or bank transfer has no button. The setup checklist's **Connect
+  Stripe** step links to the card and is ticked only once Stripe confirms the
+  account is ready (onboarding finished and it can take card payments), not
+  as soon as onboarding starts; it is kept up to date by Stripe's
+  `account.updated` event and when the owner comes back from Stripe. The
+  checklist no longer says ULTM8 support connects it. New
+  `GET /schools/{id}/payment-account/connect-status` (School owners only) and
+  `stripeAccountReady` on the payment account. All 15 languages. **Needs
+  migration `20270304000001_payment_account_stripe_ready`**, and
+  `account.updated` switched on for the Stripe Connect webhook endpoint.
+- **Card payments wait for a ready Stripe account; staff can be let connect
+  Stripe** (Track A and Track B; Decision 442 items 2 and 3). A School takes
+  card payments only once Stripe says its account is ready (the same test as
+  the checklist). Until then, or while Stripe asks for more details, it works
+  as a School without cards: the member app shows the cash or bank-transfer
+  (Pix) note, a purchase is an order staff confirm, monthly plans are billed
+  to the member's balance and sold at the desk, the card surcharge isn't
+  added, "When it ends, switch to" isn't offered, and paying by card, saving
+  a card, automatic payment and off-session fees take nothing. A card payment
+  asked for anyway gets a clear message in all 15 languages. Existing card
+  Subscriptions are left as they are. The payment account gains
+  `cardPayments`. Owners (co-owners included) can give a Branch Staff member
+  the new **Connect Stripe** access switch (off by default, in no preset):
+  they then get **Stripe account** in their menu, with the School's Stripe
+  card, and may create the Stripe account, start or continue Stripe's
+  onboarding and read its status; setting up cash or bank transfer stays the
+  owners'. All 15 languages. **Needs migration
+  `20270312000001_card_payments_need_ready_stripe`.**
 - **Card surcharge on Subscriptions** (backlog 3.8; Decision 406) — where a
   School's card surcharge applies, a monthly Subscription now carries it too:
   members see it on the plan before subscribing, and it is added to the first
@@ -433,6 +603,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   New `StaffPayRate` table (migration `20270215000001_staff_pay_rates`,
   owner-only RLS); `GET /schools/:id/payroll/rates`, `PUT …/rates/:userId`,
   `GET …/payroll/report`. 15 languages.
+- **"Payroll" access switch for Branch Staff** (Decision 435 item 22) — the
+  owner can now let a Branch Staff member see the Payroll page: a new
+  **Payroll** switch in their Access window (Staff group), off by default and
+  in neither preset. With it they see the payroll report for the whole
+  School, every Branch and every staff member, and Payroll appears in their
+  menu. It is the report only: the Rates tab, and setting anyone's rate
+  (their own and the owners' included), stays with the School's owners, as
+  before. Whether they see the pay rates in the report is the owner's choice:
+  a new **Show pay rates in the report** setting on the Payroll page's Rates
+  tab, off by default. Off, they see the classes, hours and pay only (the
+  rate columns are left out of the page and the CSV, and the API leaves the
+  rates out); on, they see the rates read only. Owners always see them. Their
+  page subtitle now says "at the rates the School's owners set". Coaches
+  never have it; a paused role loses it. Enforced by the API and by the
+  database (`StaffPayRate` RLS now also lets `is_payroll_staff` read the
+  rates, never write them). **Needs database migrations**
+  (`20270219000002_payroll_access_switch`,
+  `20270226106000_payroll_staff_see_rates`).
 - **Data tools: merge duplicate members, export all signed documents**
   (Decision 315 item 13; imports are a separate change). **Merge a duplicate**
   on a student's page: the owner picks the other record of the same person at
@@ -909,6 +1097,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   to change" notice 7 days before (push, email and in-app) now says so too:
   "Without a saved card, or if {next plan} is full, it simply ends and nothing
   is charged." (all 15 languages). No migration.
+- **The full-plan line in two more places, a waiver notice fix, and a
+  translation pass on 6 Nov's new text** (Track A and Track B; Decisions 436
+  item 8 and 438 item 2):
+  - the member's agreement line when buying a plan that switches, and the
+    owner's hint under "When it ends, switch to" on the plan form, now also say
+    that if the next plan is full, it simply ends and nothing is charged (all
+    15 languages);
+  - waiver requests stored before the notice named the School read
+    "{waiver} has invited you to sign the following waiver.", with the
+    waiver's name where the sender belongs. They now read "You've been invited
+    to sign the waiver "{waiver}"." in English and in every translation. New
+    requests already name the School;
+  - the text added by the payroll switch, the plan-switch notice, the Connect
+    Stripe country gate and Delete my account was checked in all 14 other
+    languages against the glossaries in `docs/translations/`: Turkish and
+    French "siz"/"vous" where "sen"/"tu" had slipped in, the passcode and
+    waiver words each app already uses, gender-neutral Polish, Korean
+    particles and 원장, and Italian "titolare".
+
+  Only text values changed; no keys or placeholders. No migration.
 - **Contracts on plans: ending after the minimum term, freezes and the
   early-exit label** (Decision 435 items 16, 17, 19) — the Contract card has a
   new **End the Subscription after the minimum term** option: the member is
@@ -1291,6 +1499,20 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   Cancellations. The Arabic booked count on the Dashboard has all its plural
   forms. New tests fail CI when a screen text or an API error message is missing
   in any language, or a plural form is missing.
+- **Translation review: Brazilian Portuguese and Spanish** — every pt-BR and
+  es text in the portal, the student app and the server's messages checked
+  against the English, with a glossary of martial-arts and billing terms
+  (`docs/translations/REVIEW-pt-BR-es.md`). 288 Portuguese and 650 Spanish
+  texts corrected. Portuguese now says "unidade" for a Branch, "código de
+  acesso" for the passcode everywhere, and "plano" instead of "assinatura"
+  where it could be read as a signature. Spanish now uses neutral Latin
+  American words instead of Spain-only ones (agregar, ingresar, paquete de
+  clases, lugar, vencido, monto, celular, tasa de impuesto), says "check-in"
+  instead of "registro", and fixes "You're invited to coach" (it said "to
+  train") and "Paid" in payment history. 460 legal, consent, privacy and
+  money texts per language are listed for a paid native reviewer
+  (`docs/translations/high-risk-pt-BR.csv`, `high-risk-es.csv`). Texts only;
+  no key, placeholder or behaviour changed.
 - **Front desk: one-step check-in** (Decision 378) — the welcome card's
   confirm now books, checks in and checks in the ticked guests in one go. If
   one class can't be done (full, not open yet, no membership…), nothing is

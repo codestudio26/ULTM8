@@ -330,7 +330,7 @@ describeIfDb('tenant-lifecycle-purge job', () => {
         provider: 'STRIPE',
         accountTitle: 'Purge Job Test Account',
         country: 'US',
-        stripeConnectedAccountId: `acct_${randomUUID()}`,
+        stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID()}`,
       },
     });
     const charge = await superuser.franchiseFeeCharge.create({

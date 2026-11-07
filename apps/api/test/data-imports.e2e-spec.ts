@@ -37,7 +37,7 @@ if (!hasDb) {
 
 const ACCESS_DEFAULTS = {
   classes: false, bookings: true, students: true, cancelClasses: true, staffList: false,
-  disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false,
+  disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false,
 };
 
 type Row = Record<string, string>;
@@ -440,6 +440,30 @@ describeIfDb('Spreadsheet imports (Decision 315 items 12, 13)', () => {
       expect(await superuser.booking.findUniqueOrThrow({ where: { id: booked.id } })).toMatchObject({ status: 'COMPLETED', sourceMembershipId: pack.id, checkInMethod: 'STAFF_LOGGED' });
       expect(await superuser.booking.count({ where: { studentId: users.dan.id, classId: cls.id } })).toBe(1);
       expect((await superuser.membership.findUniqueOrThrow({ where: { id: pack.id } })).classesRemaining).toBe(3);
+    });
+
+    it('skips "Waiver must be signed before booking or check-in", and still applies the other check-in rules (Decision 442 item 1)', async () => {
+      // The rule is on and the School has a waiver in use; neither Ana nor Bob has signed it.
+      await superuser.school.update({ where: { id: school }, data: { checkInRequireWaiver: true } });
+      const waiver = await superuser.waiver.create({ data: { id: randomUUID(), schoolId: school, title: 'Liability', body: 'Text' } });
+      try {
+        expect(await superuser.waiverSignature.count({ where: { schoolId: school, studentId: { in: [users.ana.id, users.bob.id] } } })).toBe(0);
+        const visit = await pastClass(20, { title: 'Unsigned' });
+        const { res } = await runImport('owner', 'ATTENDANCE', [visit.row(users.ana)]);
+        expect(res.body.rows[0]).toMatchObject({ outcome: 'CREATED', code: 'NEW_ATTENDANCE' });
+        expect(await superuser.booking.findFirstOrThrow({ where: { studentId: users.ana.id, classId: visit.cls.id } })).toMatchObject({ status: 'COMPLETED', checkInMethod: 'STAFF_LOGGED' });
+
+        // Another rule about the person still refuses: Bob's home branch is Other, the class is at Main.
+        await superuser.school.update({ where: { id: school }, data: { checkInOtherBranches: false } });
+        const elsewhere = await pastClass(21, { title: 'Unsigned elsewhere' });
+        const refused = await runImport('owner', 'ATTENDANCE', [elsewhere.row(users.bob), elsewhere.row(users.ana)]);
+        expect(refused.res.body.rows.map((r: { outcome: string; code: string }) => [r.outcome, r.code])).toEqual([['ERROR', 'FAILED'], ['CREATED', 'NEW_ATTENDANCE']]);
+        expect(refused.res.body.rows[0].message).toBe('This School checks members in only at their home Branch.');
+        expect(await superuser.booking.count({ where: { studentId: users.bob.id, classId: elsewhere.cls.id, status: 'COMPLETED' } })).toBe(0);
+      } finally {
+        await superuser.school.update({ where: { id: school }, data: { checkInOtherBranches: true } });
+        await superuser.waiver.delete({ where: { id: waiver.id } });
+      }
     });
 
     it('refuses a future date, a date before 1900 and a date that does not exist', async () => {

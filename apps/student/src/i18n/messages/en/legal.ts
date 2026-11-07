@@ -1,4 +1,4 @@
-/** English text: legal pages and the sign-up tick (Decision 440). */
+/** English text: legal pages and the sign-up tick (Decision 444). */
 export const legal = {
   titles: {
     terms: 'Terms of Service',

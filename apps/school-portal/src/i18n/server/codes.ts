@@ -72,7 +72,7 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.childAdultAccessEnded');
     case 'GUARDIAN_UNDER_18':
       return t('server.codes.guardianUnder18');
-    // Legal go-live (Decision 440).
+    // Legal go-live (Decision 444).
     case 'TERMS_NOT_ACCEPTED':
       return t('server.codes.termsNotAccepted');
     case 'REGISTER_UNDER_18':
@@ -111,6 +111,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
     // The School's check-in rules (Decision 394).
     case 'CHECK_IN_WAIVER_REQUIRED':
       return t('server.codes.checkInWaiverRequired');
+    // Decision 441: "Waiver must be signed before booking or check-in".
+    case 'WAIVER_REQUIRED':
+      return t('server.codes.waiverRequired');
     case 'CHECK_IN_HOME_BRANCH_ONLY':
       return t('server.codes.checkInHomeBranchOnly');
     case 'CHECK_IN_VISITORS_OFF':
@@ -154,6 +157,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.freezeNotFound');
     case 'FREEZE_FEE_NO_PAYMENTS':
       return t('server.codes.freezeFeeNoPayments');
+    // Decision 442 item 2: no card payments until Stripe says the account is ready.
+    case 'CARD_PAYMENTS_NOT_READY':
+      return t('server.codes.cardPaymentsNotReady');
     // Merge duplicate members (Decision 315 item 13): the preview lists why.
     case 'MERGE_BLOCKED':
       return t('server.codes.mergeBlocked');

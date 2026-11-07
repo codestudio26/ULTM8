@@ -111,6 +111,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // and the refreshed token carries the current roles, so nobody is signed
     // out. If the stamp can't be read, stampFor() throws and the request is
     // refused: never let a possibly-removed person through.
+    // "Delete my account" (rule 2): an account whose deletion is pending (or
+    // done) is locked at once, whatever kind of token this is. The app's
+    // refresh then fails too (every refresh token was revoked), so it signs
+    // out; signing in again is what cancels the deletion.
+    if (await this.rolesChanged.isLocked(payload.sub)) {
+      throw new UnauthorizedException({ code: 'ACCOUNT_LOCKED', message: 'This account is being deleted. Sign in again to keep it.' });
+    }
     if (typeof payload.rca === 'number') {
       const current = await this.rolesChanged.stampFor(payload.sub);
       if (current > payload.rca) {

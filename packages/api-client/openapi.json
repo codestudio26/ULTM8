@@ -5665,6 +5665,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/payment-account/connect-status": {
+      "get": {
+        "operationId": "PaymentsController_getSchoolConnectStatus",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises/{franchiseId}/payment-accounts": {
       "post": {
         "operationId": "PaymentsController_createForFranchise",
@@ -7957,6 +7992,66 @@
         },
         "tags": [
           "instructors"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/me/deletion": {
+      "get": {
+        "operationId": "AccountDeletionController_preview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionStateDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "AccountDeletionController_request",
+        "parameters": [
+          {
+            "name": "x-step-up-token",
+            "required": true,
+            "in": "header",
+            "description": "From POST /auth/step-up/verify.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountDeletionStateDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "users"
         ],
         "security": [
           {
@@ -23837,7 +23932,7 @@
           },
           "acceptTerms": {
             "type": "boolean",
-            "description": "Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 440)."
+            "description": "Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 444)."
           }
         },
         "required": [
@@ -23921,6 +24016,10 @@
           "passcodeChangeToken": {
             "type": "string",
             "description": "Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else."
+          },
+          "deletionCancelled": {
+            "type": "boolean",
+            "description": "True when this sign-in cancelled the account deletion the member had asked for."
           }
         }
       },
@@ -24186,6 +24285,10 @@
             "type": "boolean",
             "description": "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged."
           },
+          "payrollStaffSeeRates": {
+            "type": "boolean",
+            "description": "Decision 435 item 22: whether Branch Staff with the \"Payroll\" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them."
+          },
           "taxCountry": {
             "type": "string",
             "nullable": true,
@@ -24321,7 +24424,7 @@
           },
           "acceptAgreement": {
             "type": "boolean",
-            "description": "Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this School (Decision 440)."
+            "description": "Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this School (Decision 444)."
           }
         },
         "required": [
@@ -24526,7 +24629,7 @@
           },
           "checkInRequireWaiver": {
             "type": "boolean",
-            "description": "Decision 394: a signed waiver is needed to check in, whatever the Class says."
+            "description": "Decisions 394 and 441: a signed waiver is needed to book a class or check in, whatever the Class says (on by default; a School with no waiver in use stops nobody)."
           },
           "checkInOtherBranches": {
             "type": "boolean",
@@ -24573,6 +24676,10 @@
           "joiningFeesEnabled": {
             "type": "boolean",
             "description": "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged."
+          },
+          "payrollStaffSeeRates": {
+            "type": "boolean",
+            "description": "Decision 435 item 22: whether Branch Staff with the \"Payroll\" switch see the pay rates in the payroll report, read only (default off). Owners always see them."
           },
           "taxCountry": {
             "type": "string",
@@ -24804,6 +24911,7 @@
           "checkInRequireBooking",
           "freezeMaxDaysPer12Months",
           "joiningFeesEnabled",
+          "payrollStaffSeeRates",
           "taxRateBasisPoints",
           "taxInclusive",
           "tax2RateBasisPoints",
@@ -24994,6 +25102,10 @@
           "joiningFeesEnabled": {
             "type": "boolean",
             "description": "Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged."
+          },
+          "payrollStaffSeeRates": {
+            "type": "boolean",
+            "description": "Decision 435 item 22: whether Branch Staff with the \"Payroll\" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them."
           },
           "taxCountry": {
             "type": "string",
@@ -27370,6 +27482,14 @@
             "type": "boolean",
             "description": "See the medical information of their branches' students (off by default; Decision 315 item 10)."
           },
+          "payroll": {
+            "type": "boolean",
+            "description": "See the payroll report, for the whole School. Setting the pay rates stays with the School owners (off by default, in no preset; Decision 435 item 22)."
+          },
+          "connectStripe": {
+            "type": "boolean",
+            "description": "Connect the School's Stripe account: start or continue Stripe's onboarding and see whether it is connected (off by default, in no preset; Decision 442 item 3)."
+          },
           "memberFiles": {
             "type": "boolean",
             "description": "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)."
@@ -27391,6 +27511,8 @@
           "freezeMemberships",
           "attendanceStats",
           "seeMedicalInfo",
+          "payroll",
+          "connectStripe",
           "memberFiles",
           "importData"
         ]
@@ -27887,7 +28009,7 @@
           },
           "acceptAgreement": {
             "type": "boolean",
-            "description": "Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this Franchise (Decision 440)."
+            "description": "Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this Franchise (Decision 444)."
           }
         },
         "required": [
@@ -29116,14 +29238,15 @@
               "CANCELLATIONS",
               "GRADING",
               "FRANCHISE",
-              "SCHOOL"
+              "SCHOOL",
+              "STUDENT"
             ],
             "description": "What clicking the notification opens (Decision 355), or null for nothing."
           },
           "targetId": {
             "type": "string",
             "nullable": true,
-            "description": "The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364)."
+            "description": "The Class, Waiver, Franchise or student id, for CLASS, WAIVER, FRANCHISE and STUDENT targets (Decisions 355, 364, 442)."
           }
         },
         "required": [
@@ -30602,6 +30725,18 @@
             "nullable": true,
             "description": "Null until Stripe Connect onboarding is initiated (POST .../connect/onboard)."
           },
+          "stripeAccountReady": {
+            "type": "boolean",
+            "description": "Decision 441 item 6 — Stripe has confirmed the connected account is ready: onboarding finished (details_submitted) and it can take charges (charges_enabled). Kept current by the account.updated webhook and the connect-status read."
+          },
+          "connectAvailable": {
+            "type": "boolean",
+            "description": "Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country."
+          },
+          "cardPayments": {
+            "type": "boolean",
+            "description": "Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready (stripeAccountReady). Until then the School takes cash, bank transfer or Pix orders, as a School without cards does."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -30616,6 +30751,9 @@
           "country",
           "status",
           "mode",
+          "stripeAccountReady",
+          "connectAvailable",
+          "cardPayments",
           "createdAt",
           "updatedAt"
         ]
@@ -30630,10 +30768,23 @@
               "ACTION_NEEDED",
               "NOT_CONNECTED"
             ]
+          },
+          "connectAvailable": {
+            "type": "boolean",
+            "description": "Decision 437 — whether Stripe can onboard this Franchise or School, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, its address country (none set: available)."
+          },
+          "connectCountries": {
+            "description": "Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
-          "status"
+          "status",
+          "connectAvailable",
+          "connectCountries"
         ]
       },
       "ConnectOnboardingResponseDto": {
@@ -33169,6 +33320,130 @@
           "objectKey"
         ]
       },
+      "DeletionBlockDto": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "SCHOOL",
+              "FRANCHISE"
+            ]
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "name"
+        ]
+      },
+      "DeletionChildDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname"
+        ]
+      },
+      "DeletionKeptChildDto": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "OTHER_PARENT",
+              "OWN_LOGIN"
+            ],
+            "description": "Why the child stays: another active parent is linked, or the child has a login of their own. Only this parent's link ends."
+          }
+        },
+        "required": [
+          "studentId",
+          "firstName",
+          "surname",
+          "reason"
+        ]
+      },
+      "AccountDeletionStateDto": {
+        "type": "object",
+        "properties": {
+          "pending": {
+            "type": "boolean",
+            "description": "True once deletion has been asked for and not cancelled."
+          },
+          "requestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the account is anonymised for good, unless the member signs in again before then."
+          },
+          "graceDays": {
+            "type": "number",
+            "description": "Days between asking and the deletion becoming final."
+          },
+          "blockedBy": {
+            "description": "Open Schools and Franchises this member is the main owner of. While any is listed, deletion is refused (MAIN_OWNER_MUST_HAND_OVER).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeletionBlockDto"
+            }
+          },
+          "childrenDeleted": {
+            "description": "Children deleted with this account (no other active parent and no login of their own).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeletionChildDto"
+            }
+          },
+          "childrenKept": {
+            "description": "Children who keep their account; only this parent's link to them ends.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeletionKeptChildDto"
+            }
+          }
+        },
+        "required": [
+          "pending",
+          "requestedAt",
+          "dueAt",
+          "graceDays",
+          "blockedBy",
+          "childrenDeleted",
+          "childrenKept"
+        ]
+      },
       "CodeNameResponseDto": {
         "type": "object",
         "properties": {
@@ -33200,7 +33475,7 @@
           },
           "version": {
             "type": "string",
-            "description": "Decision 440: the version people accept; \"unpublished\" until the real text is loaded."
+            "description": "Decision 444: the version people accept; \"unpublished\" until the real text is loaded."
           },
           "createdAt": {
             "type": "string"
@@ -33283,7 +33558,7 @@
           },
           "switchToPlanId": {
             "type": "string",
-            "description": "Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one it simply ends."
+            "description": "Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one, or if the next plan is full (Decision 438), it simply ends. Refused at a School that takes no cards (Decision 441 item 3)."
           },
           "joiningFee": {
             "type": "number",
@@ -33624,7 +33899,7 @@
           "switchToPlanId": {
             "type": "string",
             "nullable": true,
-            "description": "Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to."
+            "description": "Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to. A new next plan is refused at a School that takes no cards (Decision 441 item 3); one the plan already has is kept."
           },
           "joiningFee": {
             "type": "number",
@@ -33846,7 +34121,7 @@
           },
           "agreeToPlanSwitch": {
             "type": "boolean",
-            "description": "Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. Omit or false: it simply ends."
+            "description": "Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. If the next plan is full when it ends, the membership simply ends and nothing is charged (Decision 438). Ignored at a School that takes no cards (Decision 441 item 3). Omit or false: it simply ends."
           }
         }
       },
@@ -33899,6 +34174,10 @@
             "type": "string",
             "nullable": true
           },
+          "billedToBalance": {
+            "type": "boolean",
+            "description": "Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment."
+          },
           "awaitingFirstCheckIn": {
             "type": "boolean",
             "description": "Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then."
@@ -33923,6 +34202,7 @@
           "status",
           "startDate",
           "frequency",
+          "billedToBalance",
           "awaitingFirstCheckIn",
           "createdAt",
           "updatedAt"
@@ -34052,6 +34332,10 @@
             "type": "string",
             "nullable": true
           },
+          "billedToBalance": {
+            "type": "boolean",
+            "description": "Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment."
+          },
           "awaitingFirstCheckIn": {
             "type": "boolean",
             "description": "Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then."
@@ -34099,6 +34383,7 @@
           "status",
           "startDate",
           "frequency",
+          "billedToBalance",
           "awaitingFirstCheckIn",
           "createdAt",
           "updatedAt",
@@ -34389,6 +34674,10 @@
             "type": "string",
             "nullable": true
           },
+          "billedToBalance": {
+            "type": "boolean",
+            "description": "Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment."
+          },
           "awaitingFirstCheckIn": {
             "type": "boolean",
             "description": "Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then."
@@ -34449,6 +34738,7 @@
           "status",
           "startDate",
           "frequency",
+          "billedToBalance",
           "awaitingFirstCheckIn",
           "createdAt",
           "updatedAt",
@@ -40622,7 +40912,7 @@
           },
           "requireWaiver": {
             "type": "boolean",
-            "description": "A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking)."
+            "description": "Waiver must be signed before booking or check-in (default on): a member, or a child through their parent, needs a signed waiver for the School to book a class, join its waiting list, claim an offered place or check in, whatever the Class says. A School with no waiver in use stops nobody. Off: only a Class that needs a waiver asks for one, at booking. Buying a plan isn't affected."
           },
           "otherBranches": {
             "type": "boolean",
@@ -41192,6 +41482,14 @@
             "type": "boolean",
             "description": "Decision 318 item 7: a Guardian may add their child to this School in the app."
           },
+          "cardPayments": {
+            "type": "boolean",
+            "description": "Decision 437: the School takes card payments in the app (it has a Stripe payment account). When false, members pay by cash or bank transfer at the School and staff confirm it."
+          },
+          "inBrazil": {
+            "type": "boolean",
+            "description": "Decision 437: the School's country is Brazil, so the app mentions Pix with cash and bank transfer."
+          },
           "branches": {
             "description": "The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches.",
             "type": "array",
@@ -41219,6 +41517,8 @@
           "facilities",
           "medicalInfoEnabled",
           "memberAppAddFamily",
+          "cardPayments",
+          "inBrazil",
           "branches",
           "membershipPlans",
           "upcomingClasses"
@@ -42486,6 +42786,9 @@
           "hidden": {
             "type": "boolean"
           },
+          "stripeConnectAvailable": {
+            "type": "boolean"
+          },
           "steps": {
             "type": "array",
             "items": {
@@ -42495,6 +42798,7 @@
         },
         "required": [
           "hidden",
+          "stripeConnectAvailable",
           "steps"
         ]
       },
@@ -46518,6 +46822,10 @@
           "recordPayment": {
             "type": "boolean"
           },
+          "confirmPayment": {
+            "type": "boolean",
+            "description": "Decision 441 item 2: mark the student's Pix, cash or bank-transfer membership payment as paid (PATCH /transactions/{id}/confirm): the owner, and Branch Staff whose School lets them record payments, for their own branches' students."
+          },
           "refund": {
             "type": "boolean",
             "description": "Refund a payment (owner only, Decision 303 item 3)."
@@ -46535,6 +46843,7 @@
           "create",
           "cancel",
           "recordPayment",
+          "confirmPayment",
           "refund",
           "addCredit",
           "resendInvoice"
@@ -46644,7 +46953,7 @@
             }
           },
           "deskMembershipPayments": {
-            "description": "Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them.",
+            "description": "Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them or mark them paid (can.cancel, can.confirmPayment).",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DeskMembershipPaymentDto"
@@ -47949,11 +48258,13 @@
           },
           "hourlyRate": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Null when not set, or left out for staff the School does not show rates to (ratesShown false)."
           },
           "perClassRate": {
             "type": "number",
-            "nullable": true
+            "nullable": true,
+            "description": "Null when not set, or left out for staff the School does not show rates to (ratesShown false)."
           },
           "classesTaught": {
             "type": "number",
@@ -48005,6 +48316,10 @@
             "type": "string",
             "nullable": true
           },
+          "ratesShown": {
+            "type": "boolean",
+            "description": "Decision 435 item 22: whether the rows carry the pay rates. Always true for owners; for Branch Staff with the \"Payroll\" switch, the School's payrollStaffSeeRates setting (off by default), and when false every rate is null."
+          },
           "rows": {
             "description": "Everyone with a rate, by name.",
             "type": "array",
@@ -48027,6 +48342,7 @@
           "from",
           "to",
           "currency",
+          "ratesShown",
           "rows",
           "totalClasses",
           "totalMinutes",

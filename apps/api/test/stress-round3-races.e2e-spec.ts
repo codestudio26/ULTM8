@@ -97,7 +97,7 @@ describeIfDb('Round-3 stress-test races', () => {
     owner = await mkUser('owner', 'SCHOOL_OWNER_MANAGER');
     // For the paid desk sales below.
     paymentAccountId = (await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_fixture' },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: 'acct_fixture' },
     })).id;
     const subscriptionPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'SUBSCRIPTION', title: 'Unlimited', price: 5000 } })).id;
     packPlanId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: school.id, type: 'CLASS_PACK', title: 'Pack', price: 3000, classesIncluded: 50 } })).id;
@@ -466,7 +466,7 @@ describeIfDb('Round-3 stress-test races', () => {
       closingOwner = await grant('closing-owner', 'SCHOOL_OWNER_MANAGER');
       pupil = await grant('closing-pupil', 'STUDENT');
       const account = await superuser.paymentAccount.create({
-        data: { id: randomUUID(), schoolId: closing.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: 'acct_closing' },
+        data: { id: randomUUID(), schoolId: closing.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: 'acct_closing' },
       });
       planId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: closing.id, type: 'CLASS_PACK', title: 'Pack', price: 3000, currency: 'GBP', classesIncluded: 10 } })).id;
       // The pack the booking below uses.

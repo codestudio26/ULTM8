@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { Membership, Prisma } from '@prisma/client';
 import type { StripeClientService } from '../payments/stripe-client.service';
+import { balanceBilledCancelAt } from '../charges/membership-series';
+import { schoolZoneFor } from './pass-expiry';
 
 /**
  * Cancel a Subscription Membership at the end of its paid period (Spec 55
@@ -17,14 +19,20 @@ import type { StripeClientService } from '../payments/stripe-client.service';
  * The caller checks who may cancel and passes a `tx` under a context that can
  * read the School's PaymentAccount and update this Membership (the Student
  * themselves or the School's owner).
+ *
+ * Decision 441 item 1: a monthly plan billed to the balance (a School that
+ * takes no cards) has no Stripe Subscription. It ends at the start of its next
+ * billing day after today (balanceBilledCancelAt), as cancelAt and expiryDate,
+ * so the month already charged runs out and no further month is charged. The
+ * caller then ends its series (endBalanceBilling).
  */
 export async function cancelSubscriptionAtPeriodEnd(
   stripeClient: Pick<StripeClientService, 'scopedClient'>,
   tx: Prisma.TransactionClient,
-  membership: Pick<Membership, 'id' | 'schoolId' | 'status' | 'stripeSubscriptionId' | 'cancelAt'>,
+  membership: Pick<Membership, 'id' | 'schoolId' | 'status' | 'stripeSubscriptionId' | 'cancelAt'> & { billedToBalance?: boolean },
   cancelledById: string,
 ): Promise<Membership> {
-  if (!membership.stripeSubscriptionId) {
+  if (!membership.stripeSubscriptionId && !membership.billedToBalance) {
     throw new BadRequestException('Only a Subscription can be cancelled. Other plans end on their own.');
   }
   // Cancels at once (a double click, owner and Student together) queue on the
@@ -38,12 +46,20 @@ export async function cancelSubscriptionAtPeriodEnd(
   if (current.cancelAt) {
     return current;
   }
+  if (current.billedToBalance) {
+    // Its billing days are its series' (a freeze moves them, Decision 442 item 5).
+    const series = await tx.recurringCharge.findUnique({ where: { membershipId: current.id }, select: { firstDate: true, nextIndex: true } });
+    const endsAt = balanceBilledCancelAt(current.startDate, await schoolZoneFor(tx, current.schoolId), new Date(), series);
+    // expiryDate too: nothing else ends it (no Stripe event), and a
+    // membership past its expiry date is no longer in effect (Decision 26).
+    return tx.membership.update({ where: { id: current.id }, data: { cancelAt: endsAt, expiryDate: endsAt, cancelledById } });
+  }
   const account = await tx.paymentAccount.findUnique({ where: { schoolId: membership.schoolId }, select: { stripeConnectedAccountId: true } });
   if (!account?.stripeConnectedAccountId) {
     throw new BadRequestException('This School has no connected Stripe account, so the Subscription can\'t be cancelled here.');
   }
   const stripe = stripeClient.scopedClient(account.stripeConnectedAccountId);
-  const subscription = await stripe.subscriptions.update(membership.stripeSubscriptionId, { cancel_at_period_end: true });
+  const subscription = await stripe.subscriptions.update(membership.stripeSubscriptionId!, { cancel_at_period_end: true });
   const endsAt = subscription.cancel_at ?? subscription.items?.data[0]?.current_period_end ?? null;
   return tx.membership.update({
     where: { id: membership.id },

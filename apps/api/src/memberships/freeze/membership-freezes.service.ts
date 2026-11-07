@@ -12,6 +12,7 @@ import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types'
 import { BookingsService } from '../../bookings/bookings.service';
 import { isMembershipLive } from '../membership-creation-guard';
 import { applyFreezeBillingShift, restoreFreezeBilling } from './freeze-billing';
+import { applyBalanceFreezeBilling } from '../../charges/membership-series';
 import {
   assertFreezeAllowed,
   backDay,
@@ -30,6 +31,7 @@ import {
 } from './membership-freeze';
 import { CreateMembershipFreezeDto } from './dto/membership-freeze.dto';
 import { loadFreezeStates } from './freeze-states';
+import { CARD_ACCOUNT_SELECT, takesCards } from '../../payments/takes-cards';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FREEZE_NOT_FOUND = { code: 'FREEZE_NOT_FOUND', message: 'Freeze not found' };
@@ -477,6 +479,9 @@ export class MembershipFreezesService {
     } catch (err) {
       this.logger.error(`Freeze ${freeze.id}: moving the Subscription's next charge failed; the membership sweep tries again.`, err as Error);
     }
+    // Decision 442 item 5: a monthly plan billed to the balance (no Stripe
+    // Subscription) has its monthly charges moved the same way.
+    await this.moveBalanceBilling(freeze.membershipId, freeze.id);
     try {
       await this.chargeFee(freeze.id);
     } catch (err) {
@@ -579,7 +584,7 @@ export class MembershipFreezesService {
       include: { membership: { select: { membershipPlan: { select: { currency: true } } } }, school: { select: { defaultCurrency: true } } },
     });
     if (!freeze.feeAmount || freeze.feeTransactionId || freeze.status !== 'APPROVED') return;
-    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: freeze.schoolId }, select: { id: true, provider: true } });
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: freeze.schoolId }, select: { id: true, ...CARD_ACCOUNT_SELECT } });
     const currency = (freeze.school.defaultCurrency ?? freeze.membership.membershipPlan.currency)?.toUpperCase();
     if (!account || !currency) return;
     const base = {
@@ -593,7 +598,9 @@ export class MembershipFreezesService {
     };
 
     let paid: { status: 'SUCCESSFUL' | 'FAILED'; paymentIntentId: string | null } | null = null;
-    if (account.provider === 'STRIPE') {
+    // Decision 442 item 2: by card only once Stripe says the School's account
+    // is ready; until then a pending desk charge, as at a School without cards.
+    if (takesCards(account)) {
       try {
         const charge = await this.paymentsService.chargeOffSession(
           freeze.studentId,
@@ -663,7 +670,21 @@ export class MembershipFreezesService {
     } catch (err) {
       this.logger.error(`Freeze ${freezeId}: moving the Subscription's next charge back failed; the membership sweep tries again.`, err as Error);
     }
-    return this.reload(freezeId);
+    const ended = await this.reload(freezeId);
+    await this.moveBalanceBilling(ended.membershipId, freezeId);
+    return ended;
+  }
+
+  /** Decision 442 item 5 (membership-series.ts syncSeriesFreezes): a
+   * balance-billed membership's monthly charges follow its freezes. Only
+   * such a membership has a series tied to it. Best-effort: the
+   * charge-recurring job applies it before charging either way. */
+  private async moveBalanceBilling(membershipId: string, freezeId: string) {
+    try {
+      await applyBalanceFreezeBilling(this.prismaJobs, membershipId);
+    } catch (err) {
+      this.logger.error(`Freeze ${freezeId}: moving the monthly charges billed to the balance failed; the charge-recurring job does it.`, err as Error);
+    }
   }
 
   /**

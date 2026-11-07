@@ -32,7 +32,8 @@ export const dashboard = {
     show: 'Show the setup checklist',
     doneLabel: 'Done',
     todoLabel: 'Not done yet',
-    stripeHint: 'ULTM8 support connects your Stripe account for you.',
+    stripeHint: "Connect it on your School profile. It's ticked once Stripe confirms your account is ready.",
+    stripeUnavailable: "Card payments in the app aren't available in your country yet, so members pay by cash or bank transfer (Pix in Brazil) and staff confirm it.",
     steps: {
       BRANCH: 'Add a Branch',
       STYLE_AND_BELTS: 'Add a style and its belts',

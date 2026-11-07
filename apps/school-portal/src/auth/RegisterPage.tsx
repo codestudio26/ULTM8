@@ -37,7 +37,7 @@ export function RegisterPage() {
   });
   const [address, setAddress] = useState(() => postalAddressFromRecord(null, guessDefaultCountry()));
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
-  // Decision 440 (C1): the Terms and Privacy tick, sent as acceptTerms.
+  // Decision 444 (C1): the Terms and Privacy tick, sent as acceptTerms.
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

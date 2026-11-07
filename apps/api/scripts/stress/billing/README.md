@@ -4,7 +4,7 @@ The scripts behind `docs/handover/BILLING-STRESS-TEST.md`. Like `../booking-sche
 
 ## What's here
 
-- `fake-stripe.mjs`: a small in-memory stand-in for the Stripe API, covering the calls ULTM8 makes (payment intents, Checkout sessions, customers, subscriptions, refunds, Connect accounts, prices, products, retrieving disputes). An off-session charge for an amount ending in 13 is declined. `GET /__calls` counts the calls; `POST /__disputes` makes a dispute, as Stripe would after a chargeback.
+- `fake-stripe.mjs`: a small in-memory stand-in for the Stripe API, covering the calls ULTM8 makes (payment intents, Checkout sessions, customers, subscriptions, refunds, Connect accounts, prices, products, retrieving disputes). An off-session charge for an amount ending in 13 is declined. `GET /__calls` counts the calls; `POST /__disputes` makes a dispute, as Stripe would after a chargeback. Added for the launch rehearsal (`../../rehearsal/`): `POST /__checkout/:id/pay` pays a hosted Checkout Session as the member would (the PaymentIntent and its Charge are made then, for the sum of the line items); `POST /__charges/:id/refund` is a refund made in the Stripe Dashboard; a Subscription's first invoice also has the current API's `payments` and `confirmation_secret`.
 - `use-fake-stripe.cjs`: preloaded into the API (`node --require`), it points every `new Stripe(...)` at the fake.
 - `billing.mjs`: the run. It reuses the cast from `../booking-schedule/seed.mjs` (30 Schools, about 12,000 students).
 

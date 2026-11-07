@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Button, Screen } from '../components/ui';
+import { Button, Screen, SuccessBanner } from '../components/ui';
 import { theme, spacing, fontSize, radius } from '../theme/tokens';
 import { LegalFooter } from '../components/LegalFooter';
 import { useAuth, useCoachSchoolId, useEnrolledSchoolIds, useIsGuardian } from '../auth/AuthContext';
@@ -27,7 +27,7 @@ type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
 export function HomeScreen({ navigation }: Props) {
   const t = useT();
   const showPaymentHistory = anySchoolShowsPaymentHistory(useMemberAppSettings().data);
-  const { logout, claims, pendingSchoolPick, clearPendingSchoolPick } = useAuth();
+  const { logout, claims, pendingSchoolPick, clearPendingSchoolPick, deletionCancelled, dismissDeletionCancelled } = useAuth();
   const isGuardian = useIsGuardian();
   const isCoach = !!useCoachSchoolId();
   const enrolledSchoolIds = useEnrolledSchoolIds();
@@ -55,6 +55,12 @@ export function HomeScreen({ navigation }: Props) {
     <ScrollView>
     <Screen>
       <Text style={{ fontSize: 22, fontWeight: '700', marginBottom: 20 }}>{t('home.title')}</Text>
+      {deletionCancelled ? (
+        <View style={{ marginBottom: spacing[4], gap: spacing[2] }}>
+          <SuccessBanner message={t('profile.deleteAccount.cancelled')} />
+          <Button title={t('profile.deleteAccount.dismiss')} variant="secondary" onPress={dismissDeletionCancelled} />
+        </View>
+      ) : null}
       {pickToOffer ? (
         <View
           accessibilityLabel={t('home.joinPick.title', { school: pickToOffer.name })}

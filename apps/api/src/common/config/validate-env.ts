@@ -15,6 +15,8 @@
  * staging deploy can legitimately run before every vendor account exists.
  */
 
+import { stripeConnectCountries } from '../../payments/stripe-connect-countries';
+
 const SCOPED_DATABASE_URLS = [
   'DATABASE_URL_APP',
   'DATABASE_URL_AUTH',
@@ -116,6 +118,14 @@ export function findEnvProblems(env: Env): string[] {
     const dup = seen.get(v);
     if (dup) problems.push(`${key} must differ from ${dup}`);
     seen.set(v, key);
+  }
+
+  // Decision 437 — an override of the Stripe Connect countries must be real
+  // ISO 3166-1 alpha-2 codes, or onboarding would fail on every request.
+  try {
+    stripeConnectCountries(env);
+  } catch (err) {
+    problems.push((err as Error).message);
   }
 
   return problems;

@@ -1972,6 +1972,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/payment-account/connect-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PaymentsController_getSchoolConnectStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{franchiseId}/payment-accounts": {
         parameters: {
             query?: never;
@@ -2718,6 +2734,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["InstructorsController_requestCertificationUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/users/me/deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AccountDeletionController_preview"];
+        put?: never;
+        post: operations["AccountDeletionController_request"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7712,7 +7744,7 @@ export interface components {
             currency?: string;
             address?: string;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
-            /** @description Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 440). */
+            /** @description Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 444). */
             acceptTerms?: boolean;
         };
         AuthMessageResponseDto: {
@@ -7739,6 +7771,8 @@ export interface components {
             mustChangePasscode?: boolean;
             /** @description Present only alongside mustChangePasscode — pass to POST /auth/passcode-change/first-login, nowhere else. */
             passcodeChangeToken?: string;
+            /** @description True when this sign-in cancelled the account deletion the member had asked for. */
+            deletionCancelled?: boolean;
         };
         RefreshTokenDto: {
             refreshToken: string;
@@ -7839,6 +7873,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged. */
             joiningFeesEnabled?: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them. */
+            payrollStaffSeeRates?: boolean;
             /**
              * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
              * @example GB
@@ -7906,7 +7942,7 @@ export interface components {
              * @enum {string}
              */
             timetableDefaultLayout?: "LIST" | "GRID";
-            /** @description Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this School (Decision 440). */
+            /** @description Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this School (Decision 444). */
             acceptAgreement?: boolean;
         };
         SchoolResponseDto: {
@@ -7967,7 +8003,7 @@ export interface components {
             checkInOpensMinutesBeforeStart: number;
             /** @description Decision 394: minutes after a Class starts that check-in closes (0 = at the start). Null: when the Class ends. */
             checkInClosesMinutesAfterStart?: number | null;
-            /** @description Decision 394: a signed waiver is needed to check in, whatever the Class says. */
+            /** @description Decisions 394 and 441: a signed waiver is needed to book a class or check in, whatever the Class says (on by default; a School with no waiver in use stops nobody). */
             checkInRequireWaiver: boolean;
             /** @description Decision 394: members with a home Branch may check in at the School's other Branches. */
             checkInOtherBranches: boolean;
@@ -7992,6 +8028,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (default off). Off, the fees stay on the plans but aren't charged. */
             joiningFeesEnabled: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (default off). Owners always see them. */
+            payrollStaffSeeRates: boolean;
             /** @description Decision 411: the country the School is in, for its tax. */
             taxCountry?: string | null;
             /** @description Decision 411: the School's tax rate on charges, in hundredths of a percent (default 0). */
@@ -8143,6 +8181,8 @@ export interface components {
             freezeFeeAmount?: number | null;
             /** @description Decision 316 item 3 / Decision 435 item 6: joining fees on or off for this School (off by default). Off, the fees stay saved on the plans but aren't charged. */
             joiningFeesEnabled?: boolean;
+            /** @description Decision 435 item 22: whether Branch Staff with the "Payroll" switch see the pay rates in the payroll report, read only (off by default: classes, hours and pay only). Owners always see them. */
+            payrollStaffSeeRates?: boolean;
             /**
              * @description Decision 411: the country the School is in, for its tax (ISO 3166-1 alpha-2). Picking it pre-fills the rate from GET /tax-rates; the School can change the rate. null clears it.
              * @example GB
@@ -8903,6 +8943,10 @@ export interface components {
             attendanceStats: boolean;
             /** @description See the medical information of their branches' students (off by default; Decision 315 item 10). */
             seeMedicalInfo: boolean;
+            /** @description See the payroll report, for the whole School. Setting the pay rates stays with the School owners (off by default, in no preset; Decision 435 item 22). */
+            payroll: boolean;
+            /** @description Connect the School's Stripe account: start or continue Stripe's onboarding and see whether it is connected (off by default, in no preset; Decision 442 item 3). */
+            connectStripe: boolean;
             /** @description See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9). */
             memberFiles: boolean;
             /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */
@@ -9056,7 +9100,7 @@ export interface components {
             perHeadcountRate?: number;
             /** @description Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on). */
             shareBrandingWithMembers?: boolean;
-            /** @description Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this Franchise (Decision 440). */
+            /** @description Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this Franchise (Decision 444). */
             acceptAgreement?: boolean;
         };
         FranchiseResponseDto: {
@@ -9423,8 +9467,8 @@ export interface components {
              * @description What clicking the notification opens (Decision 355), or null for nothing.
              * @enum {string|null}
              */
-            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | "FRANCHISE" | "SCHOOL" | null;
-            /** @description The Class, Waiver or Franchise id, for CLASS, WAIVER and FRANCHISE targets (Decisions 355, 364). */
+            targetType?: "CLASS" | "WAIVER" | "PAYMENT" | "CANCELLATIONS" | "GRADING" | "FRANCHISE" | "SCHOOL" | "STUDENT" | null;
+            /** @description The Class, Waiver, Franchise or student id, for CLASS, WAIVER, FRANCHISE and STUDENT targets (Decisions 355, 364, 442). */
             targetId?: string | null;
         };
         NotificationListResponseDto: {
@@ -9895,12 +9939,22 @@ export interface components {
             mode: string;
             /** @description Null until Stripe Connect onboarding is initiated (POST .../connect/onboard). */
             stripeConnectedAccountId?: string | null;
+            /** @description Decision 441 item 6 — Stripe has confirmed the connected account is ready: onboarding finished (details_submitted) and it can take charges (charges_enabled). Kept current by the account.updated webhook and the connect-status read. */
+            stripeAccountReady: boolean;
+            /** @description Decision 437 — whether Stripe can onboard this School or Franchise, so the Connect Stripe button may show. A Stripe account's own country decides (an account already connected stays available); otherwise the address country. */
+            connectAvailable: boolean;
+            /** @description Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready (stripeAccountReady). Until then the School takes cash, bank transfer or Pix orders, as a School without cards does. */
+            cardPayments: boolean;
             createdAt: string;
             updatedAt: string;
         };
         ConnectStatusResponseDto: {
             /** @enum {string} */
             status: "CONNECTED" | "ACTION_NEEDED" | "NOT_CONNECTED";
+            /** @description Decision 437 — whether Stripe can onboard this Franchise or School, so the Connect Stripe button may show. Its Stripe payment account's country decides (an account already connected stays available); with none, its address country (none set: available). */
+            connectAvailable: boolean;
+            /** @description Decision 437 — the ISO 3166-1 alpha-2 countries where Stripe Connect onboarding is allowed, for the country picker. */
+            connectCountries: string[];
         };
         ConnectOnboardingResponseDto: {
             /** @description Stripe Account Link URL — single-use, short-lived per Stripe's own onboarding-link semantics. */
@@ -10686,6 +10740,46 @@ export interface components {
             /** @description Pass this back as certificationKey when calling PATCH /instructors/me/profile. */
             objectKey: string;
         };
+        DeletionBlockDto: {
+            /** @enum {string} */
+            kind: "SCHOOL" | "FRANCHISE";
+            id: string;
+            name: string;
+        };
+        DeletionChildDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+        };
+        DeletionKeptChildDto: {
+            studentId: string;
+            firstName: string;
+            surname: string;
+            /**
+             * @description Why the child stays: another active parent is linked, or the child has a login of their own. Only this parent's link ends.
+             * @enum {string}
+             */
+            reason: "OTHER_PARENT" | "OWN_LOGIN";
+        };
+        AccountDeletionStateDto: {
+            /** @description True once deletion has been asked for and not cancelled. */
+            pending: boolean;
+            /** Format: date-time */
+            requestedAt: string | null;
+            /**
+             * Format: date-time
+             * @description When the account is anonymised for good, unless the member signs in again before then.
+             */
+            dueAt: string | null;
+            /** @description Days between asking and the deletion becoming final. */
+            graceDays: number;
+            /** @description Open Schools and Franchises this member is the main owner of. While any is listed, deletion is refused (MAIN_OWNER_MUST_HAND_OVER). */
+            blockedBy: components["schemas"]["DeletionBlockDto"][];
+            /** @description Children deleted with this account (no other active parent and no login of their own). */
+            childrenDeleted: components["schemas"]["DeletionChildDto"][];
+            /** @description Children who keep their account; only this parent's link to them ends. */
+            childrenKept: components["schemas"]["DeletionKeptChildDto"][];
+        };
         CodeNameResponseDto: {
             code: string;
             name: string;
@@ -10695,7 +10789,7 @@ export interface components {
             title: string;
             /** @description Null until real legal/product content is populated. */
             content?: string | null;
-            /** @description Decision 440: the version people accept; "unpublished" until the real text is loaded. */
+            /** @description Decision 444: the version people accept; "unpublished" until the real text is loaded. */
             version: string;
             createdAt: string;
             updatedAt: string;
@@ -10728,7 +10822,7 @@ export interface components {
             fixedStartDate?: string;
             /** @description Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD), on or after fixedStartDate. */
             fixedEndDate?: string;
-            /** @description Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one it simply ends. */
+            /** @description Decision 435 item 9: a Class Pack, Weekly Pass or Trial with an end can switch to this plan (one of the School's paid Class Packs, Weekly Passes or Trials, without a contract) when it ends, for a member who agrees when buying. Charged to their saved card; without one, or if the next plan is full (Decision 438), it simply ends. Refused at a School that takes no cards (Decision 441 item 3). */
             switchToPlanId?: string;
             /** @description Decision 435 items 1-6: a one-off joining fee, in the plan's currency (minor units), added to a member's first-ever plan at this School (never a rejoin or a renewal), with the plan's tax and card surcharge. Paid plans only. Charged only while the School has joining fees on (School.joiningFeesEnabled). Omit for none. */
             joiningFee?: number;
@@ -10855,7 +10949,7 @@ export interface components {
             fixedStartDate?: string | null;
             /** @description Decision 435 item 8: the last day of a plan on fixed dates (YYYY-MM-DD). Pass null to remove. */
             fixedEndDate?: string | null;
-            /** @description Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to. */
+            /** @description Decision 435 item 9: the plan this one switches to when it ends. Pass null to remove. Members who already agreed keep the switch they agreed to. A new next plan is refused at a School that takes no cards (Decision 441 item 3); one the plan already has is kept. */
             switchToPlanId?: string | null;
             /** @description Decision 435 items 1-6: the joining fee in the plan's currency (minor units). Pass null to remove it. */
             joiningFee?: number | null;
@@ -10921,7 +11015,7 @@ export interface components {
             useHostedCheckout?: boolean;
             /** @description Decision 316 item 6: required for a plan with a contract — the id from POST /membership-plans/{id}/contract/sign (signed within the last day, not used yet). */
             contractSignatureId?: string;
-            /** @description Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. Omit or false: it simply ends. */
+            /** @description Decision 435 item 9: for a plan with a next plan (switchToPlanId), the member (a parent for a child) agrees that when this one ends the next plan starts and is charged to their saved card; told before. Without a saved card it simply ends. If the next plan is full when it ends, the membership simply ends and nothing is charged (Decision 438). Ignored at a School that takes no cards (Decision 441 item 3). Omit or false: it simply ends. */
             agreeToPlanSwitch?: boolean;
         };
         MembershipResponseDto: {
@@ -10939,6 +11033,8 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment. */
+            billedToBalance: boolean;
             /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
             awaitingFirstCheckIn: boolean;
             /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */
@@ -10986,6 +11082,8 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment. */
+            billedToBalance: boolean;
             /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
             awaitingFirstCheckIn: boolean;
             /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */
@@ -11080,6 +11178,8 @@ export interface components {
             /** @description Subscription only: set once the Student or the owner cancels; the date the paid period ends. */
             cancelAt?: string | null;
             cancelledById?: string | null;
+            /** @description Decision 441 item 1: a monthly plan at a School that takes no cards. The first month was paid by Pix/bank transfer or cash; each month after it is a charge on the member's balance (a recurring charge), not a card payment. */
+            billedToBalance: boolean;
             /** @description Decision 435 item 7: bought on a plan that starts on the first check-in, and not used yet: no expiryDate until then. */
             awaitingFirstCheckIn: boolean;
             /** @description Decision 435 item 9: the plan the member agreed to switch to when this one ends; null when it simply ends. */
@@ -13061,7 +13161,7 @@ export interface components {
             opensMinutesBeforeStart: number;
             /** @description Minutes after a Class starts that check-in closes (0 = at the start). Null (default): when the Class ends, or at its own check-in end time. */
             closesMinutesAfterStart?: number | null;
-            /** @description A signed waiver for the School is needed to check in, whatever the Class says (default off: only a Class that needs a waiver asks for one, at booking). */
+            /** @description Waiver must be signed before booking or check-in (default on): a member, or a child through their parent, needs a signed waiver for the School to book a class, join its waiting list, claim an offered place or check in, whatever the Class says. A School with no waiver in use stops nobody. Off: only a Class that needs a waiver asks for one, at booking. Buying a plan isn't affected. */
             requireWaiver: boolean;
             /** @description Members with a home Branch may check in at the School's other Branches (default on). */
             otherBranches: boolean;
@@ -13247,6 +13347,10 @@ export interface components {
             medicalInfoEnabled: boolean;
             /** @description Decision 318 item 7: a Guardian may add their child to this School in the app. */
             memberAppAddFamily: boolean;
+            /** @description Decision 437: the School takes card payments in the app (it has a Stripe payment account). When false, members pay by cash or bank transfer at the School and staff confirm it. */
+            cardPayments: boolean;
+            /** @description Decision 437: the School's country is Brazil, so the app mentions Pix with cash and bank transfer. */
+            inBrazil: boolean;
             /** @description The School's branches, for choosing a home branch when joining (Decision 209). Empty for a School with no branches. */
             branches: components["schemas"]["AcademyBranchDto"][];
             membershipPlans: components["schemas"]["AcademyMembershipPlanDto"][];
@@ -13608,6 +13712,7 @@ export interface components {
         };
         SetupChecklistDto: {
             hidden: boolean;
+            stripeConnectAvailable: boolean;
             steps: components["schemas"]["SetupStepDto"][];
         };
         DashboardOverviewDto: {
@@ -14860,6 +14965,8 @@ export interface components {
             create: boolean;
             cancel: boolean;
             recordPayment: boolean;
+            /** @description Decision 441 item 2: mark the student's Pix, cash or bank-transfer membership payment as paid (PATCH /transactions/{id}/confirm): the owner, and Branch Staff whose School lets them record payments, for their own branches' students. */
+            confirmPayment: boolean;
             /** @description Refund a payment (owner only, Decision 303 item 3). */
             refund: boolean;
             /** @description Give credit (owner only, Decision 303 item 3). */
@@ -14899,7 +15006,7 @@ export interface components {
             payments: components["schemas"]["ChargePaymentResponseDto"][];
             /** @description Credit the owner gave, newest first. */
             credits: components["schemas"]["BalanceCreditResponseDto"][];
-            /** @description Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them. */
+            /** @description Decision 338 item 1: the student's membership payments by cash or bank transfer still waiting at the desk, and the ones cancelled, newest first. Empty unless the caller may cancel them or mark them paid (can.cancel, can.confirmPayment). */
             deskMembershipPayments: components["schemas"]["DeskMembershipPaymentDto"][];
             /** @description What the caller may do here. */
             can: components["schemas"]["ChargeAbilitiesDto"];
@@ -15325,7 +15432,9 @@ export interface components {
             name: string;
             /** @description False when the person is no longer on the staff. */
             onStaff: boolean;
+            /** @description Null when not set, or left out for staff the School does not show rates to (ratesShown false). */
             hourlyRate: number | null;
+            /** @description Null when not set, or left out for staff the School does not show rates to (ratesShown false). */
             perClassRate: number | null;
             /** @description Classes they taught in the range. */
             classesTaught: number;
@@ -15342,6 +15451,8 @@ export interface components {
             /** @description Last date covered, YYYY-MM-DD. */
             to: string;
             currency: string | null;
+            /** @description Decision 435 item 22: whether the rows carry the pay rates. Always true for owners; for Branch Staff with the "Payroll" switch, the School's payrollStaffSeeRates setting (off by default), and when false every rate is null. */
+            ratesShown: boolean;
             /** @description Everyone with a rate, by name. */
             rows: components["schemas"]["PayrollRowDto"][];
             totalClasses: number;
@@ -18699,6 +18810,27 @@ export interface operations {
             };
         };
     };
+    PaymentsController_getSchoolConnectStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectStatusResponseDto"];
+                };
+            };
+        };
+    };
     PaymentsController_createForFranchise: {
         parameters: {
             query?: never;
@@ -19984,6 +20116,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CertificationUploadUrlResponseDto"];
+                };
+            };
+        };
+    };
+    AccountDeletionController_preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDeletionStateDto"];
+                };
+            };
+        };
+    };
+    AccountDeletionController_request: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description From POST /auth/step-up/verify. */
+                "x-step-up-token": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountDeletionStateDto"];
                 };
             };
         };

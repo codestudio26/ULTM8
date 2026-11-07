@@ -41,7 +41,7 @@ describe('AuthService', () => {
     rolesChanged = { forget: jest.fn() };
     loginAttempts = { isLocked: jest.fn().mockReturnValue(false), recordFailure: jest.fn(), recordSuccess: jest.fn() };
 
-    service = new AuthService(prismaApp, prismaAuth, twilio, jwt, loginAttempts, rolesChanged);
+    service = new AuthService(prismaApp, prismaAuth, twilio, jwt, loginAttempts, rolesChanged, {} as never);
   });
 
   describe('register', () => {
@@ -60,7 +60,7 @@ describe('AuthService', () => {
       await expect(service.register({ ...dto, passcodeConfirm: '654321' })).rejects.toThrow(BadRequestException);
     });
 
-    it('refuses a sign-up that did not agree to the Terms, saving nothing (Decision 440)', async () => {
+    it('refuses a sign-up that did not agree to the Terms, saving nothing (Decision 444)', async () => {
       for (const acceptTerms of [undefined, false]) {
         await expect(service.register({ ...dto, acceptTerms })).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
       }
@@ -68,7 +68,7 @@ describe('AuthService', () => {
       expect(prismaApp.withTenantContext).not.toHaveBeenCalled();
     });
 
-    it('refuses an under-18 sign-up before anything is saved or sent (Decision 440)', async () => {
+    it('refuses an under-18 sign-up before anything is saved or sent (Decision 444)', async () => {
       const now = new Date();
       const seventeen = `${now.getUTCFullYear() - 17}-01-01`;
       await expect(service.register({ ...dto, dateOfBirth: seventeen })).rejects.toThrow(ForbiddenException);
@@ -77,7 +77,7 @@ describe('AuthService', () => {
       expect(twilio.sendOtp).not.toHaveBeenCalled();
     });
 
-    it('accepts someone who turns 18 today somewhere on Earth (Decision 440)', async () => {
+    it('accepts someone who turns 18 today somewhere on Earth (Decision 444)', async () => {
       // Kiritimati (UTC+14) is the first place to reach a new day.
       const latest = new Date(Date.now() + 14 * 60 * 60 * 1000);
       const m = String(latest.getUTCMonth() + 1).padStart(2, '0');
@@ -87,7 +87,7 @@ describe('AuthService', () => {
       expect(tx.user.create).toHaveBeenCalled();
     });
 
-    it('records the Terms and Privacy Policy versions accepted (Decision 440)', async () => {
+    it('records the Terms and Privacy Policy versions accepted (Decision 444)', async () => {
       await service.register(dto);
       const rows = tx.legalAcceptance.createMany.mock.calls[0][0].data;
       expect(rows).toEqual([
@@ -214,7 +214,7 @@ describe('AuthService', () => {
       // actually happened, not skipped.
       expect(prismaAuth.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'a@example.test' },
-        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true, temporaryPasscodeExpiresAt: true },
+        select: { id: true, email: true, passcodeHash: true, phoneVerifiedAt: true, phone: true, mustChangePasscode: true, temporaryPasscodeExpiresAt: true, deletionRequestedAt: true, erasedAt: true },
       });
       // The lock check must still reject before ever reaching the compare-and-record
       // step — recordFailure() must not fire for an already-locked account, same as

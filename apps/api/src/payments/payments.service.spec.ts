@@ -36,7 +36,7 @@ describe('PaymentsService — a School keeps all of what its students pay (Decis
     null as never, null as never, null as never);
   jest
     .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-    .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+    .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
 
   const PLATFORM_CUT = ['application_fee_amount', 'application_fee_percent', 'transfer_data', 'on_behalf_of'];
 
@@ -105,7 +105,7 @@ describe('PaymentsService — card surcharge on a Subscription (Decision 406)', 
     const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient: jest.fn().mockReturnValue(stripe) } as never, null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+      .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
     return service;
   }
 
@@ -253,7 +253,7 @@ describe('PaymentsService — saved payment methods (Decision 234)', () => {
       null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+      .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
     return { service, scopedClient, prismaApp };
   }
 
@@ -401,7 +401,7 @@ describe('PaymentsService — createPurchaseCheckoutSession (Decision 243)', () 
     const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+      .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
     return { service, scopedClient };
   }
 
@@ -486,7 +486,7 @@ describe('PaymentsService — refundOffSessionCharge (Decision 236)', () => {
     const service = new PaymentsService(null as never, null as never, null as never, null as never, { scopedClient } as never, null as never, null as never, null as never);
     jest
       .spyOn(service as unknown as { resolveStripePaymentAccount: () => Promise<unknown> }, 'resolveStripePaymentAccount')
-      .mockResolvedValue({ stripeConnectedAccountId: 'acct_school' });
+      .mockResolvedValue({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_school', stripeAccountReady: true });
 
     await service.refundOffSessionCharge('student', 'school', 'pi_1');
 
@@ -517,17 +517,17 @@ describe('PaymentsService — initiateConnectOnboarding requests card_payments (
     }
   });
 
-  function makeService(stripeConnectedAccountId: string | null, existingCapabilities: Record<string, string> = {}) {
+  function makeService(stripeConnectedAccountId: string | null, existingCapabilities: Record<string, string> = {}, country = 'GB') {
     const tx = {
       paymentAccount: {
         findUnique: jest.fn().mockResolvedValue({
-          id: 'pa-1', schoolId: 'school-1', franchiseId: null, provider: 'STRIPE', country: 'GB', stripeConnectedAccountId,
+          id: 'pa-1', schoolId: 'school-1', franchiseId: null, provider: 'STRIPE', country, stripeConnectedAccountId,
         }),
         update: jest.fn().mockResolvedValue({}),
       },
     };
     const prismaApp = { withTenantContext: jest.fn((_caller: string, fn: (t: typeof tx) => unknown) => fn(tx)) };
-    const tenantAuth = { assertSchoolOwner: jest.fn().mockResolvedValue(undefined) };
+    const tenantAuth = { assertMayConnectStripe: jest.fn().mockResolvedValue(undefined) };
     const stripe = {
       accounts: {
         create: jest.fn().mockResolvedValue({ id: 'acct_new' }),
@@ -548,7 +548,7 @@ describe('PaymentsService — initiateConnectOnboarding requests card_payments (
 
     const result = await service.initiateConnectOnboarding('owner', 'pa-1');
 
-    expect(tenantAuth.assertSchoolOwner).toHaveBeenCalledWith('owner', 'school-1');
+    expect(tenantAuth.assertMayConnectStripe).toHaveBeenCalledWith('owner', 'school-1');
     expect(stripe.accounts.create).toHaveBeenCalledWith({ type: 'express', country: 'GB', capabilities: CAPABILITIES });
     expect(stripe.accounts.update).not.toHaveBeenCalled();
     expect(tx.paymentAccount.update).toHaveBeenCalledWith({ where: { id: 'pa-1' }, data: { stripeConnectedAccountId: 'acct_new' } });
@@ -576,6 +576,35 @@ describe('PaymentsService — initiateConnectOnboarding requests card_payments (
     expect(stripe.accounts.retrieve).toHaveBeenCalledWith('acct_existing');
     expect(stripe.accounts.update).not.toHaveBeenCalled();
     expect(stripe.accountLinks.create).toHaveBeenCalledWith(expect.objectContaining({ account: 'acct_existing', type: 'account_onboarding' }));
+  });
+
+  describe('only where Stripe can onboard the School (Decision 437)', () => {
+    it('refuses a Brazilian payment account before anything reaches Stripe', async () => {
+      const { service, stripe } = makeService(null, {}, 'BR');
+      await expect(service.initiateConnectOnboarding('owner', 'pa-1')).rejects.toThrow(
+        "Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.",
+      );
+      expect(stripe.accounts.create).not.toHaveBeenCalled();
+      expect(stripe.accountLinks.create).not.toHaveBeenCalled();
+    });
+
+    it('refuses a country that is not an ISO 3166-1 alpha-2 code', async () => {
+      const { service, stripe } = makeService(null, {}, 'United Kingdom');
+      await expect(service.initiateConnectOnboarding('owner', 'pa-1')).rejects.toThrow(/valid two-letter country code/);
+      expect(stripe.accounts.create).not.toHaveBeenCalled();
+    });
+
+    it('passes the country to Stripe in capitals for an allowed one', async () => {
+      const { service, stripe } = makeService(null, {}, 'ie');
+      await service.initiateConnectOnboarding('owner', 'pa-1');
+      expect(stripe.accounts.create).toHaveBeenCalledWith({ type: 'express', country: 'IE', capabilities: CAPABILITIES });
+    });
+
+    it('keeps an account already connected in another country working', async () => {
+      const { service, stripe } = makeService('acct_existing', { card_payments: 'active' }, 'BR');
+      await expect(service.initiateConnectOnboarding('owner', 'pa-1')).resolves.toEqual({ onboardingUrl: 'https://connect.stripe.com/setup/e/acct/abc' });
+      expect(stripe.accounts.create).not.toHaveBeenCalled();
+    });
   });
 });
 

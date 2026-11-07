@@ -781,7 +781,7 @@ describeIfDb('Promotion fee (Decisions 287, 297, 300, 307, 313)', () => {
       const charge = await superuser.charge.findUniqueOrThrow({ where: { promotionFeeRequestId: id } });
       // A desk payment needs the School's payments set up.
       await superuser.paymentAccount.create({
-        data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
+        data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Card', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID().slice(0, 8)}` },
       });
       const paid = await http()
         .post(`/v1/schools/${school.id}/students/${user.bea.id}/charge-payments`)

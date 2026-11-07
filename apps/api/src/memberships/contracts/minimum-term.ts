@@ -110,9 +110,9 @@ export async function applyDueMinimumTermEnds(db: Db, stripeClient: Stripe, logg
       }
       const membership = await db.membership.findUnique({
         where: { id: membershipId },
-        select: { id: true, schoolId: true, startDate: true, status: true, cancelAt: true, stripeSubscriptionId: true },
+        select: { id: true, schoolId: true, startDate: true, status: true, cancelAt: true, stripeSubscriptionId: true, billedToBalance: true },
       });
-      if (!membership || membership.status !== 'ACTIVE' || membership.cancelAt || !membership.stripeSubscriptionId) {
+      if (!membership || membership.status !== 'ACTIVE' || membership.cancelAt || (!membership.stripeSubscriptionId && !membership.billedToBalance)) {
         await markHandled(db, sig.id, now);
         continue;
       }
@@ -121,7 +121,14 @@ export async function applyDueMinimumTermEnds(db: Db, stripeClient: Stripe, logg
       const done = await db.$transaction(async (tx) => {
         await tx.$queryRaw`SELECT id FROM "Membership" WHERE id = ${membership.id} FOR UPDATE`;
         const current = await tx.membership.findUniqueOrThrow({ where: { id: membership.id }, select: { status: true, cancelAt: true } });
-        if (current.status === 'ACTIVE' && !current.cancelAt) {
+        if (current.status === 'ACTIVE' && !current.cancelAt && membership.billedToBalance) {
+          // Decision 441 item 1: a monthly plan billed to the balance has no
+          // Stripe Subscription. It ends at the term's end (its expiryDate
+          // too, as a cancelled one), and its series makes no charge from
+          // that day (charge-recurring follows the membership).
+          const endsAt = termEnd > now ? termEnd : now;
+          await tx.membership.update({ where: { id: membership.id }, data: { cancelAt: endsAt, expiryDate: endsAt } });
+        } else if (current.status === 'ACTIVE' && !current.cancelAt) {
           const account = await tx.paymentAccount.findUnique({ where: { schoolId: membership.schoolId }, select: { stripeConnectedAccountId: true } });
           if (!account?.stripeConnectedAccountId) throw new Error(`School ${membership.schoolId} has no connected Stripe account`);
           // Stripe needs a cancel_at in the future: a term end already passed

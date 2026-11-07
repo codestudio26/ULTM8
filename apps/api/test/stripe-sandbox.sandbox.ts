@@ -515,7 +515,7 @@ describeIfSandbox('Stripe sandbox: the real integration against Stripe test mode
       await su.roleGrant.create({ data: { id: randomUUID(), role: 'FRANCHISE_OWNER', userId: fOwner.id, franchiseId: franchise.id } });
       tokens.franchiseOwner = sign(fOwner, 'FRANCHISE_OWNER', { franchiseId: franchise.id });
       const account = await su.paymentAccount.create({
-        data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Sandbox Franchise', country: 'GB', stripeConnectedAccountId: v2Account },
+        data: { id: randomUUID(), franchiseId: franchise.id, provider: 'STRIPE', accountTitle: 'Sandbox Franchise', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: v2Account },
       });
       const status = await as(tokens.franchiseOwner).get(`/v1/franchises/${franchise.id}/payment-account/connect-status`);
       expectStatus(status, 200, 'connect-status');
@@ -533,10 +533,10 @@ describeIfSandbox('Stripe sandbox: the real integration against Stripe test mode
       );
     }
     if (paymentAccountId) {
-      await su.paymentAccount.update({ where: { id: paymentAccountId }, data: { stripeConnectedAccountId: schoolAccount } });
+      await su.paymentAccount.update({ where: { id: paymentAccountId }, data: { stripeAccountReady: true, stripeConnectedAccountId: schoolAccount } });
     } else {
       paymentAccountId = (
-        await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Sandbox Card', country: 'GB', stripeConnectedAccountId: schoolAccount } })
+        await su.paymentAccount.create({ data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Sandbox Card', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: schoolAccount } })
       ).id;
     }
   });

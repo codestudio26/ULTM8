@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, SelectField, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { useSchool } from '../schools/schoolQueries';
+import { useSchool, useSchoolTakesCards } from '../schools/schoolQueries';
 import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { useCurrencies } from '../settings/settingsQueries';
@@ -85,6 +85,8 @@ export function MembershipPlanFormPage() {
   const { data: incomeCategoryData } = useIncomeCategories(schoolId);
   // Decision 435 item 9: the plans this one can switch to when it ends.
   const { data: planData } = useMembershipPlans(schoolId);
+  // Decision 441 item 3: no "switch to" at a School that takes no cards.
+  const takesCards = useSchoolTakesCards(schoolId);
   const createPlan = useCreateMembershipPlan(schoolId ?? '');
   const updatePlan = useUpdateMembershipPlan(schoolId ?? '', id ?? '');
   const t = useT();
@@ -121,6 +123,7 @@ export function MembershipPlanFormPage() {
       schoolCurrencyMissing={!!school && !school.defaultCurrency}
       // Decision 435 item 6: a fee set while joining fees are off isn't charged.
       joiningFeesEnabled={school?.joiningFeesEnabled ?? true}
+      takesCards={takesCards !== false}
       // Memberships review M9 (Decision 334): the migrate-or-keep prompt is
       // about running subscriptions, the same count the API checks; active
       // members (cash Weekly Passes etc.) only lock the type (M14).
@@ -203,6 +206,7 @@ function MembershipPlanForm({
   defaultCurrency,
   schoolCurrencyMissing = false,
   joiningFeesEnabled = true,
+  takesCards = true,
   activeSubscriberCount,
   activeMemberCount,
   submitting,
@@ -224,6 +228,9 @@ function MembershipPlanForm({
   schoolCurrencyMissing?: boolean;
   /** Decision 435 item 6: the School's joining fees switch. */
   joiningFeesEnabled?: boolean;
+  /** Decision 441 item 3: the switch needs a saved card, so "Switch to
+   * another plan when it ends" is hidden at a School that takes no cards. */
+  takesCards?: boolean;
   /** v1.2 backend backlog — how many ACTIVE, Stripe-backed subscribers this
    * plan currently has. Always 0 on Create (nothing to migrate/grandfather
    * for a plan that doesn't exist yet). */
@@ -311,6 +318,7 @@ function MembershipPlanForm({
   // simply wrong and has been corrected to match.
   // Decision 435 items 7-9: packs, passes and trials only.
   const showTerm = TERM_TYPES.includes(form.type);
+  const showSwitch = showTerm && takesCards;
   const fixedDates = showTerm && (!!form.fixedStartDate || !!form.fixedEndDate);
   const showExpiryDuration = form.type !== 'SUBSCRIPTION' && !fixedDates;
   const priceLocked = form.type === 'FRIEND_PASS';
@@ -472,7 +480,9 @@ function MembershipPlanForm({
         startsOnFirstCheckIn: showTerm && !fixedDates ? form.startsOnFirstCheckIn : false,
         fixedStartDate: fixedDates ? form.fixedStartDate : null,
         fixedEndDate: fixedDates ? form.fixedEndDate : null,
-        switchToPlanId: showTerm ? form.switchToPlanId || null : null,
+        // Decision 441 item 3: hidden at a School that takes no cards, where
+        // a next plan the plan already has is left as it is (omitted).
+        switchToPlanId: showSwitch ? form.switchToPlanId || null : showTerm ? undefined : null,
         // Decision 435 item 1: only a paid plan carries a joining fee, so a
         // plan made free drops its fee.
         joiningFee: priced ? form.joiningFee || null : null,
@@ -806,8 +816,9 @@ function MembershipPlanForm({
             checked={form.termsWaiverRequired}
             onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
           />
-          {/* Decision 435 item 9: switch to another plan when it ends. */}
-          {showTerm ? (
+          {/* Decision 435 item 9: switch to another plan when it ends;
+              Decision 441 item 3: not at a School that takes no cards. */}
+          {showSwitch ? (
             <Field label={t('membershipPlans.form.switchToLabel')} htmlFor="plan-switch-to" hint={t('membershipPlans.form.switchToHint')}>
               <SelectField
                 id="plan-switch-to"

@@ -32,9 +32,9 @@ if (!hasDb) {
   );
 }
 
-const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
-const ALL_ON = { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, disciplines: true, checkInRules: true, exportStudents: true, freezeMemberships: true, attendanceStats: true, memberFiles: true, importData: true, seeMedicalInfo: true };
-const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false };
+const ALL_OFF = { classes: false, bookings: false, students: false, cancelClasses: false, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false };
+const ALL_ON = { classes: true, bookings: true, students: true, cancelClasses: true, staffList: true, disciplines: true, checkInRules: true, exportStudents: true, freezeMemberships: true, attendanceStats: true, memberFiles: true, importData: true, seeMedicalInfo: true, payroll: true, connectStripe: true };
+const DEFAULTS = { classes: false, bookings: true, students: true, cancelClasses: true, staffList: false, disciplines: false, checkInRules: false, exportStudents: false, freezeMemberships: false, attendanceStats: false, memberFiles: false, importData: false, seeMedicalInfo: false, payroll: false, connectStripe: false };
 
 describeIfDb('Staff access switches (Decision 387)', () => {
   let app: INestApplication;

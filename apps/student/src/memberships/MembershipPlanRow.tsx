@@ -8,6 +8,7 @@ import { formatMoney } from '../lib/formatMoney';
 import { formatDateOnly } from '../lib/formatDate';
 import { StepUpPrompt } from '../auth/StepUpPrompt';
 import { usePaymentMethod } from '../payments/paymentMethodQueries';
+import { useAcademy } from '../academies/academyQueries';
 import { useInvalidateMyMemberships, usePurchaseMembership } from './membershipQueries';
 import { useT } from '../i18n/I18nProvider';
 import { PlanContractSigner } from './PlanContractSigner';
@@ -89,6 +90,13 @@ export function MembershipPlanRow({
   const purchase = usePurchaseMembership();
   const invalidateMyMemberships = useInvalidateMyMemberships();
   const { data: paymentMethod } = usePaymentMethod(schoolId);
+  // Decision 437: a School without card payments (Brazil, for now) is paid
+  // by cash or bank transfer at the School, which staff confirm. Read from
+  // the School's profile (cached: the screens above load the same one).
+  // Unknown while it loads: treated as taking cards, as before.
+  const { data: school } = useAcademy(schoolId);
+  const noCardPayments = school?.cardPayments === false;
+  const payByCard = noCardPayments ? {} : { useHostedCheckout: true };
   const [steppingUp, setSteppingUp] = useState(false);
   // Decision 316 item 6: a plan with a contract is signed first; the
   // signature then goes with the purchase (and the step-up, for a saved card).
@@ -97,14 +105,17 @@ export function MembershipPlanRow({
   const [contractSignatureId, setContractSignatureId] = useState<string | undefined>(undefined);
   // Decision 435 item 9: off until the member (a parent for a child) agrees.
   const [agreeToSwitch, setAgreeToSwitch] = useState(false);
-  const switchTerms = plan.switchToPlanId && switchTo ? { agreeToPlanSwitch: agreeToSwitch } : {};
+  // Decision 441 item 3: not offered at a School that takes no cards, where
+  // the switch (charged to a saved card) could only ever end with no card.
+  const offerSwitch = !!plan.switchToPlanId && !!switchTo && !noCardPayments;
+  const switchTerms = offerSwitch ? { agreeToPlanSwitch: agreeToSwitch } : {};
   const isFriendPass = plan.type === 'FRIEND_PASS';
   const outcome = purchase.isSuccess ? purchase.data.outcome : null;
   // Decision 435 items 11-12: a full plan (or one they're waiting for) offers
   // its waiting list; a place held for them shows until when, beside Purchase.
   const waitlisted = !!availability && (availability.full || availability.waitlist?.status === 'WAITING');
   const placeHeld = availability?.waitlist?.status === 'OFFERED';
-  const canPayWithSavedCard = !forStudentId && !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
+  const canPayWithSavedCard = !noCardPayments && !forStudentId && !isFriendPass && plan.type !== 'SUBSCRIPTION' && !!paymentMethod?.hasSavedPaymentMethod;
 
   async function openCheckoutAndRefetch(checkoutUrl: string) {
     try {
@@ -123,7 +134,7 @@ export function MembershipPlanRow({
   function handlePurchase() {
     if (purchase.isPending) return;
     if (hasContract) return setSigning('checkout');
-    purchase.mutate({ planId: plan.id, useHostedCheckout: true, studentId: forStudentId, ...switchTerms }, { onSuccess: handlePurchaseSuccess });
+    purchase.mutate({ planId: plan.id, ...payByCard, studentId: forStudentId, ...switchTerms }, { onSuccess: handlePurchaseSuccess });
   }
 
   function openPayWithSavedCard() {
@@ -141,7 +152,7 @@ export function MembershipPlanRow({
       return;
     }
     purchase.mutate(
-      { planId: plan.id, useHostedCheckout: true, studentId: forStudentId, contractSignatureId: signatureId, ...switchTerms },
+      { planId: plan.id, ...payByCard, studentId: forStudentId, contractSignatureId: signatureId, ...switchTerms },
       { onSuccess: handlePurchaseSuccess },
     );
   }
@@ -210,7 +221,7 @@ export function MembershipPlanRow({
         <View>
         {placeHeld && availability ? <PlanWaitlistControls planId={plan.id} availability={availability} forStudentId={forStudentId} /> : null}
         {/* Decision 435 item 9: the member agrees to the switch when buying, or it simply ends. */}
-        {plan.switchToPlanId && switchTo ? (
+        {offerSwitch && switchTo ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
             <Switch
               value={agreeToSwitch}
@@ -221,6 +232,17 @@ export function MembershipPlanRow({
               {t('memberships.planRow.agreeToSwitch', { plan: switchTo.title, price: formatMoney(switchTo.price, switchTo.currency) })}
             </Text>
           </View>
+        ) : null}
+        {noCardPayments && plan.price > 0 ? (
+          <Text testID="no-card-payments" style={{ color: '#5F6368', fontSize: 12, marginTop: 4 }}>
+            {t(school?.inBrazil ? 'memberships.planRow.noCardPaymentsPix' : 'memberships.planRow.noCardPayments')}
+          </Text>
+        ) : null}
+        {/* Decision 441 item 1: at a School without cards, a monthly plan's later months go on the balance. */}
+        {noCardPayments && plan.type === 'SUBSCRIPTION' && plan.price > 0 ? (
+          <Text testID="monthly-to-balance" style={{ color: '#5F6368', fontSize: 12, marginTop: 4 }}>
+            {t('memberships.planRow.monthlyToBalance')}
+          </Text>
         ) : null}
         <View style={{ flexDirection: 'row', marginTop: 4, gap: 8 }}>
           <Button title={hasContract ? t('memberships.contract.readAndSign') : t('memberships.planRow.purchase')} onPress={handlePurchase} loading={purchase.isPending} />

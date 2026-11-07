@@ -125,7 +125,7 @@ describeIfDb('PlatformAdminModule — .../payment-account (Slice 6)', () => {
         country: 'US',
         status: 'ACTIVE',
         mode: 'TEST',
-        stripeConnectedAccountId: `acct_${randomUUID()}`,
+        stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID()}`,
       },
     });
     paymentAccountIds.push(account.id);
@@ -144,7 +144,7 @@ describeIfDb('PlatformAdminModule — .../payment-account (Slice 6)', () => {
         country: 'US',
         status: 'ACTIVE',
         mode: 'TEST',
-        stripeConnectedAccountId: `acct_${randomUUID()}`,
+        stripeAccountReady: true, stripeConnectedAccountId: `acct_${randomUUID()}`,
       },
     });
     paymentAccountIds.push(account.id);

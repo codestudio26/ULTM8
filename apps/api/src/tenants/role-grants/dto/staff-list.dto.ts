@@ -108,6 +108,12 @@ export class StaffAccessDto {
   @ApiProperty({ description: "See the medical information of their branches' students (off by default; Decision 315 item 10)." })
   @IsBoolean()
   seeMedicalInfo!: boolean;
+  @ApiProperty({ description: 'See the payroll report, for the whole School. Setting the pay rates stays with the School owners (off by default, in no preset; Decision 435 item 22).' })
+  @IsBoolean()
+  payroll!: boolean;
+  @ApiProperty({ description: "Connect the School's Stripe account: start or continue Stripe's onboarding and see whether it is connected (off by default, in no preset; Decision 442 item 3)." })
+  @IsBoolean()
+  connectStripe!: boolean;
   @ApiProperty({ description: "See, upload, download and delete files on their branches' students (off by default; Decision 315 item 9)." })
   @IsBoolean()
   memberFiles!: boolean;

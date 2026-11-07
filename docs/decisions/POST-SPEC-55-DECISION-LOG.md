@@ -7836,9 +7836,120 @@ User (Code), 6 Nov 2026: "This should be the decision of the school owner" (pay 
 
 User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #496's choices.
 
-## Decision 440 — Legal go-live fixes C1, C2 and C5: an "I agree" step, no self-sign-up under 18, and the real Children notice version
+## Decision 440 — "Delete my account": the build choices of #497
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 436 items 1–6
+
+1. **Bookings and waiting-list places** are cancelled when the account is finally erased, the way removing a member does. No late-cancel fee is charged and the erased person isn't notified.
+2. **Other personal data is cleared** when the account is finally erased:
+   - staff notes about the member;
+   - files the School uploaded for the member;
+   - custom field values and tags;
+   - import rows and invites;
+   - the person's name in older staff activity lines and in notices sent to staff.
+
+   Attendance and check-in history are kept, with the person shown as "Erased User".
+3. **The member's customer record in the School's own Stripe account is kept**, so money already owed can still be collected. Their ULTM8 login and personal details are what is erased.
+4. **Emails stay in English**, like every other ULTM8 email today. In-app notices are translated.
+5. **No self-delete screen in the portal** for launch. Apple only requires one in the app.
+6. **The rest is kept as built:**
+   - Roles at other Schools are locked during the 30 days and end at the end.
+   - A child "has their own login" when the account has a real email.
+   - A parent whose own deletion is pending doesn't count as the child's other parent.
+   - Subscriptions run to the end of the paid period, with no refund. They stay cancelled if the member signs back in.
+   - Staff can't book, check in or sell to a locked member.
+   - The School's notice doesn't name the member and goes to its owners.
+   - The drawn waiver signature is kept; the typed name becomes "Erased User".
+   - Grading history is kept.
+   - "Erased User" is shown in English in every language.
+   - Support can't view a locked account as that member.
+   - The final step runs daily, so it can land up to a day after the 30 days.
+   - The lawyer still has to confirm that anonymising counts as deletion under UK, EU and Brazilian law.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "ok", on the recommendations given in chat for #497's choices.
+
+---
+
+## Decision 441 — The launch rehearsal's questions: monthly plans without cards, who confirms Pix and cash, waivers, connecting Stripe
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Answers:** the "Needs decision" items D1–D6 and follow-ups F1–F3, F5 and F6 of `docs/handover/LAUNCH-REHEARSAL-1.md` (PR #504) · **Builds on:** Decisions 348, 412, 413, 423, 437, 439
+
+### Decision
+
+**Monthly plans at a School without cards** (D1; Brazil)
+1. **A monthly plan at a School that takes no cards is billed to the member's balance each month.** The first month is a Pix or cash order, as with any plan there. After that, each month becomes a normal charge on the member's balance, reusing recurring charges (Decision 412). The member pays it by Pix or cash and staff confirm it. Unpaid charges follow the School's existing overdue and late-fee rules (Decision 413). Card-only wording and technical words in the current refusal (F4) go with this.
+
+**Who confirms a Pix or cash order** (D2)
+2. **Staff with "Can record payments" (Decision 348) can also confirm a member's Pix or cash order**, not only owners.
+
+**Plan switch at a School without cards** (D3)
+3. **"Switch to another plan when it ends" is hidden at a School that takes no cards**, both on the plan form and as the opt-in in the member app. The switch needs a saved card, so there it could only ever end with "no card".
+
+**Privacy policy version** (D4)
+4. **The consent policy version stays "1.0-placeholder" until the lawyer's privacy text is ready.** Setting the real version and text is a launch task for the GDPR/LGPD programme owner (Decision 423 item 9). Nothing is built now.
+
+**Waiver before booking or check-in** (D5)
+5. **New School setting: "Waiver must be signed before booking or check-in", on by default.** With it on, a member (or a child, through their parent) who hasn't signed the School's current waiver can't book a class or check in. The existing per-class "waiver required" mark keeps working when the setting is off. Buying a plan is not blocked by it.
+
+**Connecting Stripe** (D6; UK and the other Connect countries of Decision 437)
+6. **The School owner gets a "Connect Stripe" button in the portal** that starts Stripe's own onboarding, instead of ULTM8 support doing it. **The setup checklist ticks "Connect Stripe" only once Stripe confirms the account is ready** (onboarding complete), not as soon as onboarding starts.
+
+**Small fixes** (follow-ups)
+7. **Addresses show the country in the reader's language** (F1), not always in English.
+8. **The belt templates (e.g. IBJJF) give translated belt names** in the School's language (F2). The owner can still rename them.
+9. **The account-deletion notice shows the date and time in the member's own time zone** (F3), not UTC.
+10. **Adding a coach profile for someone who was never an instructor gets a clear message** (F6), not "This person is no longer an instructor at this School."
+11. **The cancellation policy of a new School stays MANUAL** (F5), as designed.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "Ok", on the recommendations given in chat for D1–D6 and the small fixes.
+
+---
+
+## Decision 442 — The build choices of Decision 441 (PRs #506–#510)
+
+**Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 441 (PRs #506, #507, #508, #509, #510), Decisions 394, 404, 412, 423, 437, 439
+
+### Decision
+
+**Waiver before booking or check-in (#507)**
+1. **Imported past attendance skips the waiver check.** Those visits already happened, so the "Waiver must be signed before booking or check-in" setting doesn't refuse an imported row. The other check-in rules still apply to imports, as Decision 423 item 6 says. To be built.
+   - Kept as built: one switch for booking and check-in; every School switched on, including those that had the old check-in-only rule off; staff with "Change check-in rules" can change it; signing any one of the School's waivers counts; staff can't override it; joining and claiming a waiting-list place are refused too; with no waiver in use nobody is stopped; guests keep their own waiver flow.
+   - **A "Sign the waiver" button** next to the refusal in the member app, taking the member (or parent) to the waiver. To be built.
+
+**Connecting Stripe (#508)**
+2. **Card payments wait until Stripe says the School's account is ready** (onboarding finished and charges enabled, the same test as the checklist). Before that, a card purchase is refused with a clear message, and the School takes Pix/cash/bank orders as a School without cards does. To be built.
+3. **Who can connect Stripe: the School's owners (co-owners included) and staff the School has given a new "Can connect Stripe" permission**, off by default. Owner's words: "owners and those is granted permission". To be built.
+   - Kept as built: Schools already connected show "not ready" until Stripe next updates them or the owner opens the School page; a School set up for cash or bank transfer can't switch to Stripe from the portal.
+
+**Staff confirm Pix and cash orders (#509)**
+4. **The "new order waiting" notice also goes to the Branch Staff who may confirm that order** (the School's "record payments" switch is on and the student is in one of their branches), not only to owners. To be built.
+   - Kept as built: cancelling still needs "Can cancel charges"; a student with no home branch is confirmed by the owner; plans that already have a next plan at a School without cards keep it hidden and unused; "takes no cards" means no Stripe account.
+
+**Monthly plans at a School without cards (#510)**
+5. **Freezing such a monthly plan pauses its monthly charge**, as freezing a card Subscription does, and the charges resume when the freeze ends. To be built.
+   - Kept as built: an unpaid month doesn't stop training (the overdue and late-fee rules apply); cancelling stops at the next billing day and keeps a month already charged; the member keeps the price they bought at; plans with one shared billing day bill these members on their joining day, with no part-month price; staff can stop the monthly charge without ending the plan; existing members stay on balance billing if the School later connects Stripe; members imports still don't accept monthly plans.
+
+**Small fixes (#506)**
+6. Kept as built: the deletion notice uses the phone's or browser's time zone (push and email stay English with UTC, like every notice); translated country names apply in the member app and the portal only; coral belts are named by colour and degree.
+
+**Ops and review notes**
+7. **Go-live step:** switch on `account.updated` for the Stripe Connect webhook endpoint. Added to `docs/PRE-LAUNCH-UPGRADE-CHECKLIST.md`.
+8. Nothing else in #506–#510 changes.
+9. **The belt-template stripe words** in Korean, Thai, Chinese, Arabic, Turkish and Japanese go to the native-speaker review. Added to `docs/translations/REVIEW-other-languages.md`.
+
+### Recorded by
+
+User (Code), 6 Nov 2026: "Ok to all a part from 3 - here will be owners and those is granted permission", on the recommendations given in chat for the choices of #506–#510. Item 3 was the suggestion "main owner only"; the owner chose owners plus staff given the permission instead.
+
+## Decision 444 — Legal go-live fixes C1, C2 and C5: an "I agree" step, no self-sign-up under 18, and the real Children notice version
 
 **Date:** 6 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 236, 375, 430 item 9, and the legal pages drafted 6 Nov 2026 (go-live checklist fixes C1, C2 and C5)
+
+Originally drafted as Decision 440 in PR #502; renumbered by Decision 443 item 8.
 
 1. **Sign-up needs an "I agree" tick (C1).** Creating an account, in the portal or the app, needs a tick on "I agree to the Terms of Service and I have read the Privacy Policy", with a link to each page. The API refuses a sign-up without it (`TERMS_NOT_ACCEPTED`).
 2. **Creating a School or a Franchise needs the Agreement tick (C1).** "I accept the School and Franchise Agreement, including its Data Processing Addendum" is required when a School or a Franchise is created. The API refuses it without the tick (`AGREEMENT_NOT_ACCEPTED`). Editing a School or Franchise doesn't ask again, and doesn't take the field.

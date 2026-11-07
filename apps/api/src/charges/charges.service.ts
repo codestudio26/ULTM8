@@ -18,7 +18,7 @@ import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
 import { dayIn, dayToDate } from '../memberships/freeze/membership-freeze';
 import { ChargeMathsError, computeCharge, formatInvoiceNumber, taxLinesForCharge } from './charge-maths';
 import { STANDARD_TAX_RATES } from './standard-tax-rates';
-import { chargeAbilities, type ChargeAbilities } from './charge-abilities';
+import { chargeAbilities, mayConfirmDeskOrder, type ChargeAbilities } from './charge-abilities';
 import {
   allocate,
   chargePaid,
@@ -38,6 +38,7 @@ import { cancelChargeInTx, chargeCancelledNotice } from './charge-cancel';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
 import { PaymentsService, checkoutTransactionId } from '../payments/payments.service';
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
+import { CARD_ACCOUNT_SELECT, cardPaymentsNotReady, stripeNotReady, takesCards } from '../payments/takes-cards';
 import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { assertWithinChargeCap } from './charge-cap';
 import { StepUpService } from '../auth/step-up.service';
@@ -183,10 +184,14 @@ export class ChargesService {
     const school = await this.loadSchool(schoolId);
     const data = await this.prismaApp.withTenantContext(callerId, (tx) => this.readLedger(tx, schoolId, studentId));
     const view = await this.shapeLedger(data, await this.readPaymentTransactions(schoolId, studentId), school.timezone, true, can.owner);
+    // Decision 441 item 2: who may mark a member's Pix, cash or bank-transfer
+    // order as paid (the owner; Branch Staff with Record a payment, for their
+    // own branches' students).
+    const confirmPayment = can.owner || (can.recordPayment && (await mayConfirmDeskOrder(this.prismaApp, callerId, schoolId, studentId)));
     return {
       ...view,
-      deskMembershipPayments: can.cancel ? await this.readDeskMembershipPayments(schoolId, studentId) : [],
-      can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment, refund: can.owner, addCredit: can.owner, resendInvoice: can.create },
+      deskMembershipPayments: can.cancel || confirmPayment ? await this.readDeskMembershipPayments(schoolId, studentId) : [],
+      can: { create: can.create, cancel: can.cancel, recordPayment: can.recordPayment, confirmPayment, refund: can.owner, addCredit: can.owner, resendInvoice: can.create },
       settings: {
         currency: school.defaultCurrency?.toUpperCase() ?? null,
         taxCountry: school.taxCountry,
@@ -698,8 +703,10 @@ export class ChargesService {
     // membership purchase is.
     await this.tenantAuth.assertSchoolNotArchived(studentId, schoolId);
     await this.subscriptionGate.assertNotDegraded(studentId, schoolId);
-    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, provider: true, stripeConnectedAccountId: true } });
-    if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) {
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true, ...CARD_ACCOUNT_SELECT } });
+    // Decision 442 item 2: a Stripe account not ready yet takes no cards.
+    if (stripeNotReady(account)) throw cardPaymentsNotReady();
+    if (!account || !takesCards(account)) {
       throw new BadRequestException({ code: 'CHARGE_NO_CARD_PAYMENTS', message: "This School doesn't take card payments in the app. Pay at the front desk." });
     }
     // Decision 68/112: restricted to cash and bank transfer, as a membership purchase is.
@@ -817,8 +824,9 @@ export class ChargesService {
 
   /** What the member's Payments screen offers at one School. */
   private async payInApp(callerId: string, studentId: string, schoolId: string, restricted: boolean) {
-    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { provider: true, stripeConnectedAccountId: true } });
-    const cards = !!account && account.provider === 'STRIPE' && !!account.stripeConnectedAccountId;
+    const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: CARD_ACCOUNT_SELECT });
+    // Decision 442 item 2: only once Stripe says the School's account is ready.
+    const cards = takesCards(account);
     const blockedReason: 'NO_CARD_PAYMENTS' | 'RESTRICTED' | null = !cards ? 'NO_CARD_PAYMENTS' : restricted ? 'RESTRICTED' : null;
     // Self-only RLS: read under the student's context; a child never has one.
     const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
@@ -940,7 +948,8 @@ export class ChargesService {
 
   /** Decision 338 item 1 (last point): the student's membership payments by
    * cash or bank transfer still waiting at the desk, and the ones cancelled,
-   * so the owner and staff with "Can cancel charges" can cancel them from the
+   * so the owner and staff with "Can cancel charges" can cancel them (and those
+   * who may, mark them paid: Decision 441 item 2) from the
    * Payments card (PATCH /transactions/{id}/cancel). Read on the jobs
    * connection after the caller's access was checked, as above. */
   private async readDeskMembershipPayments(schoolId: string, studentId: string) {

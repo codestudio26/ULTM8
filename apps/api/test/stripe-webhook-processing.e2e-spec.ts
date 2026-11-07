@@ -609,7 +609,7 @@ describeIfDb('stripe-webhook-processing job — charge.dispute.* handling (Decis
     });
     userIds.push(student.id);
     const paymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     paymentAccountIds.push(paymentAccount.id);
     const plan = await superuser.membershipPlan.create({
@@ -904,7 +904,7 @@ describeIfDb('stripe-webhook-processing job — Membership-purchase-collision au
     const school = await superuser.school.create({ data: { id: randomUUID(), name: 'Collision Fixture School' } });
     schoolIds.push(school.id);
     const paymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: `acct_fixture_${randomUUID()}` },
     });
     paymentAccountIds.push(paymentAccount.id);
     const student = await superuser.user.create({
@@ -1114,7 +1114,7 @@ describeIfDb('stripe-webhook-processing job — hosted Checkout matched by its T
     schoolIds.push(school.id);
     const account = `acct_fixture_${randomUUID().slice(0, 12)}`;
     const paymentAccount = await superuser.paymentAccount.create({
-      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeConnectedAccountId: account },
+      data: { id: randomUUID(), schoolId: school.id, provider: 'STRIPE', accountTitle: 'Fixture', country: 'GB', stripeAccountReady: true, stripeConnectedAccountId: account },
     });
     paymentAccountIds.push(paymentAccount.id);
     const student = await superuser.user.create({

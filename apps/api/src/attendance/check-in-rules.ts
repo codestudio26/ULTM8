@@ -1,7 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
-import { hasCountingWaiverSignature } from '../waivers/waiver-signed-check';
+import { hasCountingWaiverSignature, schoolHasWaiverInUse } from '../waivers/waiver-signed-check';
 import { frozenMembershipIds, MEMBERSHIP_FROZEN } from '../memberships/freeze/frozen-lookup';
 import { dayIn, dayNumber, dayString, dayToDate } from '../memberships/freeze/membership-freeze';
 import { chargeRemaining } from '../charges/charge-ledger';
@@ -24,7 +24,10 @@ export interface CheckInRules {
   opensMinutesBeforeStart: number;
   /** Closes this many minutes after the start (0 = at the start); null = when the Class ends. */
   closesMinutesAfterStart: number | null;
-  /** A signed waiver for the School is needed to check in, whatever the Class says. */
+  /** "Waiver must be signed before booking or check-in" (Decision 441 item
+   * 5; on by default): a signed waiver for the School is needed to check in,
+   * and to book (bookingWaiverRefusal), whatever the Class says. A School
+   * with no waiver in use stops nobody. */
   requireWaiver: boolean;
   /** Members with a home Branch may check in at the School's other Branches. */
   otherBranches: boolean;
@@ -76,11 +79,12 @@ type RuleColumns = {
   openMatUsesClassCredit: boolean;
 };
 
-/** What check-in did before the rules: the column defaults. */
+/** The column defaults: what check-in did before the rules, except the
+ * waiver, on by default since Decision 441 item 5. */
 export const DEFAULT_CHECK_IN_RULES: CheckInRules = {
   opensMinutesBeforeStart: 30,
   closesMinutesAfterStart: null,
-  requireWaiver: false,
+  requireWaiver: true,
   otherBranches: true,
   visitors: true,
   severalClasses: true,
@@ -163,6 +167,11 @@ export function overdueBlocksCheckIn(dueDay: string, blockOverdueDays: number, t
  *
  * Returns null when the person may check in, else the first rule that
  * refuses, with its reason.
+ *
+ * `opts.importedPast`: imported past attendance (Decision 423 items 5–7).
+ * Those visits already happened, so "Waiver must be signed before booking or
+ * check-in" doesn't refuse them (Decision 442 item 1); every other rule here
+ * still applies, judged as of today (Decision 423 item 6).
  */
 export async function personCheckInRefusal(
   prismaJobs: PrismaJobsService,
@@ -171,6 +180,7 @@ export async function personCheckInRefusal(
   bookingId: string,
   now: Date = new Date(),
   classBranchId?: string | null,
+  opts: PersonCheckInOptions = {},
 ): Promise<CheckInRefusal | null> {
   // `classBranchId`: the Class's Branch as staff already read it, so the
   // Class isn't re-read here in the student's context (DE-4).
@@ -180,7 +190,14 @@ export async function personCheckInRefusal(
       ? classBranchId
       : (await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, select: { class: { select: { branchId: true } } } })).class.branchId;
   const rules = await loadCheckInRules(prismaJobs, booking.schoolId);
-  if (rules.requireWaiver && !(await hasCountingWaiverSignature(tx, studentId, booking.schoolId))) {
+  // Decision 441 item 5: a School with no waiver in use stops nobody.
+  // Decision 442 item 1: nor does it stop imported past attendance.
+  if (
+    rules.requireWaiver &&
+    !opts.importedPast &&
+    !(await hasCountingWaiverSignature(tx, studentId, booking.schoolId)) &&
+    (await schoolHasWaiverInUse(prismaJobs, booking.schoolId))
+  ) {
     return { code: 'CHECK_IN_WAIVER_REQUIRED', message: CHECK_IN_RULE_MESSAGES.waiver };
   }
   if (!rules.otherBranches && branchId) {
@@ -217,6 +234,13 @@ export async function personCheckInRefusal(
   return null;
 }
 
+/** How personCheckInRefusal is asked. */
+export interface PersonCheckInOptions {
+  /** The check-in is imported past attendance (Decision 442 item 1): the
+   * waiver rule is skipped, the other rules apply. */
+  importedPast?: boolean;
+}
+
 /** personCheckInRefusal, thrown as a 403 carrying its code and reason. */
 export async function assertPersonMayCheckIn(
   prismaJobs: PrismaJobsService,
@@ -224,8 +248,9 @@ export async function assertPersonMayCheckIn(
   studentId: string,
   bookingId: string,
   classBranchId?: string | null,
+  opts: PersonCheckInOptions = {},
 ): Promise<void> {
-  const refusal = await personCheckInRefusal(prismaJobs, tx, studentId, bookingId, new Date(), classBranchId);
+  const refusal = await personCheckInRefusal(prismaJobs, tx, studentId, bookingId, new Date(), classBranchId, opts);
   if (refusal) throw new ForbiddenException(refusal);
 }
 

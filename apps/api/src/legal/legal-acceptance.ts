@@ -3,7 +3,7 @@ import { BadRequestException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 
 /**
- * Decision 440 — the legal pages (LegalDocument slugs) and how an acceptance is
+ * Decision 444 — the legal pages (LegalDocument slugs) and how an acceptance is
  * recorded. Each LegalAcceptance row copies the page's version at the moment it
  * was accepted, so a later version never rewrites what someone agreed to.
  */
@@ -31,7 +31,7 @@ export async function currentLegalVersions(db: Db, slugs: readonly LegalSlug[]):
 }
 
 /** The Children and Guardians Privacy Notice version a Guardian consent is
- * saved with (Decision 440, C5). */
+ * saved with (Decision 444, C5). */
 export async function childrenNoticeVersion(db: Db): Promise<string> {
   return (await currentLegalVersions(db, [LEGAL_SLUGS.childrenNotice]))[LEGAL_SLUGS.childrenNotice]!;
 }
@@ -59,7 +59,7 @@ export async function recordLegalAcceptances(
   });
 }
 
-/** Decision 440: creating a School or Franchise needs the owner's tick on the
+/** Decision 444: creating a School or Franchise needs the owner's tick on the
  * School and Franchise Agreement (with its Data Processing Addendum). */
 export function assertAgreementAccepted(accepted: boolean | undefined): void {
   if (accepted !== true) {

@@ -40,6 +40,8 @@ import { ChargeRecurringProcessor, ChargeRecurringScheduler } from './charge-rec
 import { LargeSchoolCheckInCodesProcessor, LargeSchoolCheckInCodesScheduler } from './large-school-check-in-codes.processor';
 import { SignedDocumentsExportProcessor } from './signed-documents-export.processor';
 import { CardSurchargeCountryRemovalProcessor } from './card-surcharge-country-removal.processor';
+import { AccountErasureProcessor, AccountErasureScheduler } from './account-erasure.processor';
+import { AccountDeletionModule } from '../account-deletion/account-deletion.module';
 
 /**
  * Hosts every BullMQ consumer/scheduler in the codebase. Imports AuthModule for
@@ -215,9 +217,13 @@ import { CardSurchargeCountryRemovalProcessor } from './card-surcharge-country-r
  * country Platform Admin takes off the card surcharge allow-list, removing the
  * surcharge item from running Subscriptions there. Event-triggered, no
  * Scheduler; PaymentsService via the PaymentsModule import above.
+ *
+ * "Delete my account" adds AccountErasureProcessor/Scheduler: the daily run
+ * anonymising accounts whose 30 days are over. Imports AccountDeletionModule
+ * for its rule checks (which imports nothing that imports this module).
  */
 @Module({
-  imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule, RanksModule],
+  imports: [AuthModule, NotificationsModule, FranchiseFeesModule, PaymentsModule, QueueModule, WaiverAssignmentModule, RanksModule, AccountDeletionModule],
   providers: [
     OtpDeliveryProcessor,
     ClassOccurrenceGenerationProcessor,
@@ -275,6 +281,8 @@ import { CardSurchargeCountryRemovalProcessor } from './card-surcharge-country-r
     LargeSchoolCheckInCodesScheduler,
     SignedDocumentsExportProcessor,
     CardSurchargeCountryRemovalProcessor,
+    AccountErasureProcessor,
+    AccountErasureScheduler,
   ],
 })
 export class JobsModule {}

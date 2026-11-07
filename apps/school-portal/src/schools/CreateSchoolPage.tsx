@@ -43,7 +43,7 @@ export function CreateSchoolPage() {
     description: '',
     classCancellationPolicy: 'MANUAL' as 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT',
     waitlistClaimWindowMinutes: 60 as number | '',
-    // Decision 440 (C1): the School and Franchise Agreement tick.
+    // Decision 444 (C1): the School and Franchise Agreement tick.
     acceptAgreement: false,
   });
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
