@@ -106,7 +106,7 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     the School created keep the School's own date.
 
 - **Stress test round 6: the timing fixes' follow-ups** (Track A; Decision 447
-  items 4–6). **Needs a database migration** (`20270334000001`).
+  items 4–6). **Needs a database migration** (`20270336000001`).
   - *No card payment is lost in a crash on the remaining paths:* no-show fees,
     freeze fees, plan switches and buying with the saved card are now recorded
     before the card is charged and tagged on Stripe's payment, as automatic
