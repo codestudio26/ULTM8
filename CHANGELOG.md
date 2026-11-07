@@ -124,6 +124,26 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     that doesn't exist, now gets "School not found" like every other page.
     Staff without the owner's switch still get "The School owner hasn't let
     you export the student list."
+- **Stress test round 6: the timing fixes' follow-ups** (Track A; Decision 447
+  items 4–6). **Needs a database migration** (`20270336000001`).
+  - *No card payment is lost in a crash on the remaining paths:* no-show fees,
+    freeze fees, plan switches and buying with the saved card are now recorded
+    before the card is charged and tagged on Stripe's payment, as automatic
+    payments and late-cancellation fees already were. If the server stops
+    after Stripe took the money, Stripe's success notice or the daily check of
+    attempts still open after an hour settles it. A plan switch or saved-card
+    purchase paid this way starts its membership exactly once, whichever gets
+    there first; one refused meanwhile (the member holds a pass already, the
+    next plan filled up, or the School closed) is refunded once. A no-show fee
+    still has no row on the Transactions page; its booking records it.
+  - *Member limits hold for the waiting list and plan switches too:* a place
+    held for someone on a plan's waiting list, and the plan a switch starts,
+    are given one at a time per plan with the limit counted again, as orders
+    are.
+  - *Cancelling just after a freeze is approved:* a card member who cancels
+    after a freeze is approved but before Stripe has applied it keeps the
+    right end date: when the freeze reaches Stripe, the cancel date moves with
+    it (and back again if the freeze ends early), in the app and on Stripe.
 
 - **Launch rehearsal 1** — a UK School (cards through Stripe Connect, against
   a pretend Stripe) and a Brazilian School (Pix or cash, confirmed by the

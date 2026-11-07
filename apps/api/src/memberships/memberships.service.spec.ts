@@ -15,21 +15,51 @@ import { NoSavedPaymentMethodError, checkoutTransactionId } from '../payments/pa
  * attempted: a clean success, and the collision-triggers-a-refund case.
  */
 describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
-  function makeTx(overrides: { membershipCreate?: jest.Mock; membershipFindMany?: jest.Mock; transactionCreate?: jest.Mock; transactionUpdate?: jest.Mock } = {}) {
-    return {
+  type Row = Record<string, unknown> & { id: string; status: string };
+  // A small in-memory Transaction table: Decision 447 item 4 writes the row
+  // Pending before the card is charged and settles it after
+  // (off-session-purchase.ts), so the test follows the row's status.
+  function makeTx(overrides: { membershipCreate?: jest.Mock; membershipFindMany?: jest.Mock; saved?: boolean; plan?: object } = {}) {
+    const rows = new Map<string, Row>();
+    const statusMatches = (row: Row, where: { status?: string | { in: string[] } }) =>
+      where.status === undefined || (typeof where.status === 'string' ? row.status === where.status : where.status.in.includes(row.status));
+    const tx = {
+      rows,
       // Decision 334's assertCanCreateMembership(): the advisory lock and the
       // live-membership read.
       $executeRaw: jest.fn().mockResolvedValue(1),
+      $queryRaw: jest.fn().mockResolvedValue([{ taken: 0 }]),
+      studentPaymentMethod: { findUnique: jest.fn().mockResolvedValue(overrides.saved === false ? null : { id: 'pm-1' }) },
+      membershipPlan: { findUniqueOrThrow: jest.fn().mockResolvedValue(overrides.plan ?? plan) },
       membership: {
         create: overrides.membershipCreate ?? jest.fn().mockResolvedValue({ id: 'membership-1' }),
         findMany: overrides.membershipFindMany ?? jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       transaction: {
-        create: overrides.transactionCreate ?? jest.fn().mockResolvedValue({ id: 'transaction-1' }),
-        update: overrides.transactionUpdate ?? jest.fn().mockResolvedValue({}),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        create: jest.fn(async ({ data }: { data: Row }) => {
+          rows.set(data.id, { ...data });
+          return data;
+        }),
+        update: jest.fn(async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+          const row = rows.get(where.id)!;
+          Object.assign(row, data);
+          return row;
+        }),
+        updateMany: jest.fn(async ({ where, data }: { where: { id: string; status?: string | { in: string[] }; stripePaymentIntentId?: null }; data: Record<string, unknown> }) => {
+          const row = rows.get(where.id);
+          if (!row || !statusMatches(row, where) || (where.stripePaymentIntentId === null && row.stripePaymentIntentId)) return { count: 0 };
+          Object.assign(row, data);
+          return { count: 1 };
+        }),
+        findUniqueOrThrow: jest.fn(async ({ where }: { where: { id: string } }) => {
+          const row = rows.get(where.id)!;
+          return { ...row, membership: row.membershipId ? { id: row.membershipId } : null };
+        }),
       },
     };
+    return tx;
   }
 
   function makeService(opts: {
@@ -38,7 +68,19 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
     refundOffSessionCharge?: jest.Mock;
     assertVerified?: jest.Mock;
   }) {
-    const prismaApp = { withTenantContext: jest.fn((_userId: string, cb: (tx: unknown) => unknown) => cb(opts.tx)) };
+    // Each call is one database transaction: a throw rolls its writes back.
+    const prismaApp = {
+      withTenantContext: jest.fn(async (_userId: string, cb: (tx: unknown) => unknown) => {
+        const before = new Map([...opts.tx.rows].map(([id, row]) => [id, { ...row }]));
+        try {
+          return await cb(opts.tx);
+        } catch (err) {
+          opts.tx.rows.clear();
+          for (const [id, row] of before) opts.tx.rows.set(id, row);
+          throw err;
+        }
+      }),
+    };
     const paymentsService = {
       chargeOffSession: opts.chargeOffSession,
       refundOffSessionCharge: opts.refundOffSessionCharge ?? jest.fn().mockResolvedValue(undefined),
@@ -110,6 +152,11 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
     ).purchaseWithSavedCard('student-1', 'student-1', fixturePlan, 'account-1', 'usd', surcharge, stepUpToken);
   }
 
+  const onlyRow = (tx: ReturnType<typeof makeTx>) => {
+    expect(tx.rows.size).toBe(1);
+    return [...tx.rows.values()][0];
+  };
+
   it('checks step-up BEFORE ever calling chargeOffSession', async () => {
     const assertVerified = jest.fn(() => {
       throw new ForbiddenException({ code: 'STEP_UP_REQUIRED', message: 'Re-enter your passcode to confirm this action.' });
@@ -123,11 +170,20 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
 
   it('maps NoSavedPaymentMethodError to a clear 400, without creating any Transaction row', async () => {
     const chargeOffSession = jest.fn().mockRejectedValue(new NoSavedPaymentMethodError('none saved'));
-    const tx = makeTx();
+    const tx = makeTx({ saved: false });
     const { service } = makeService({ tx, chargeOffSession });
 
     await expect(callPurchaseWithSavedCard(service, 'valid-token')).rejects.toBeInstanceOf(BadRequestException);
     expect(tx.transaction.create).not.toHaveBeenCalled();
+  });
+
+  it('a saved card with no default card on the Customer: the Pending attempt ends Failed, and a 400', async () => {
+    const chargeOffSession = jest.fn().mockRejectedValue(new NoSavedPaymentMethodError('no default'));
+    const tx = makeTx();
+    const { service } = makeService({ tx, chargeOffSession });
+
+    await expect(callPurchaseWithSavedCard(service, 'valid-token')).rejects.toBeInstanceOf(BadRequestException);
+    expect(onlyRow(tx)).toMatchObject({ status: 'FAILED', offSessionAttempt: true });
   });
 
   it('records a FAILED Transaction and throws 400 when the saved card is declined', async () => {
@@ -136,12 +192,10 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
     const { service } = makeService({ tx, chargeOffSession });
 
     await expect(callPurchaseWithSavedCard(service, 'valid-token')).rejects.toBeInstanceOf(BadRequestException);
-    expect(tx.transaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ status: 'FAILED', stripePaymentIntentId: 'pi_declined' }) }),
-    );
+    expect(onlyRow(tx)).toMatchObject({ status: 'FAILED', stripePaymentIntentId: 'pi_declined' });
   });
 
-  it('on a clean success, records a SUCCESSFUL Transaction, creates the Membership, and links the two', async () => {
+  it('on a clean success, writes the attempt Pending before charging (tagged), then settles it Successful with the Membership', async () => {
     const chargeOffSession = jest.fn().mockResolvedValue({ succeeded: true, paymentIntentId: 'pi_ok' });
     const tx = makeTx();
     const { service } = makeService({ tx, chargeOffSession });
@@ -151,33 +205,32 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
     expect(result.outcome).toBe('active');
     expect(result.membership).toEqual({ id: 'membership-1' });
     expect(typeof result.transactionId).toBe('string');
-    expect(tx.transaction.create).toHaveBeenCalledWith(
-      expect.objectContaining({ data: expect.objectContaining({ id: result.transactionId, status: 'SUCCESSFUL', stripePaymentIntentId: 'pi_ok' }) }),
-    );
-    expect(tx.transaction.update).toHaveBeenCalledWith({ where: { id: result.transactionId }, data: { membershipId: 'membership-1' } });
+    // Decision 447 item 4: Pending first, then Stripe, tagged with the row.
+    expect(tx.transaction.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ id: result.transactionId, status: 'PENDING', offSessionAttempt: true }) }));
+    expect(tx.transaction.create.mock.invocationCallOrder[0]).toBeLessThan(chargeOffSession.mock.invocationCallOrder[0]);
+    expect(chargeOffSession).toHaveBeenCalledWith('student-1', 'school-1', plan.price, 'usd', plan.title, `membership-saved-card-${result.transactionId}`, 0, { transactionId: result.transactionId });
+    expect(onlyRow(tx)).toMatchObject({ id: result.transactionId, status: 'SUCCESSFUL', stripePaymentIntentId: 'pi_ok', membershipId: 'membership-1' });
+    expect(tx.membership.create).toHaveBeenCalledTimes(1);
   });
 
   it('refunds the already-captured charge and marks the Transaction REFUNDED when Membership creation loses the two-simultaneous-Active race', async () => {
     const chargeOffSession = jest.fn().mockResolvedValue({ succeeded: true, paymentIntentId: 'pi_collision' });
     const refundOffSessionCharge = jest.fn().mockResolvedValue(undefined);
-    // A live Weekly Pass, created between purchase()'s pre-check and here.
-    const tx = makeTx({ membershipFindMany: jest.fn().mockResolvedValue([{ status: 'ACTIVE', expiryDate: null, classesRemaining: null }]) });
-    const { service, paymentsService } = makeService({ tx, chargeOffSession, refundOffSessionCharge });
     const weeklyPass: FixturePlan = { ...plan, type: 'WEEKLY_PASS', classesIncluded: null, expiryDurationDays: 7 };
+    // A live Weekly Pass, created between purchase()'s pre-check and here.
+    const tx = makeTx({ membershipFindMany: jest.fn().mockResolvedValue([{ status: 'ACTIVE', expiryDate: null, classesRemaining: null }]), plan: weeklyPass });
+    const { service, paymentsService } = makeService({ tx, chargeOffSession, refundOffSessionCharge });
 
     await expect(callPurchaseWithSavedCard(service, 'valid-token', weeklyPass)).rejects.toBeInstanceOf(ConflictException);
     expect(tx.membership.create).not.toHaveBeenCalled();
 
-    expect(paymentsService.refundOffSessionCharge).toHaveBeenCalledWith('student-1', 'school-1', 'pi_collision');
-    const createdTransactionId = tx.transaction.create.mock.calls[0][0].data.id;
-    expect(tx.transaction.updateMany).toHaveBeenCalledWith({
-      where: { id: createdTransactionId, status: 'SUCCESSFUL' },
-      data: { status: 'REFUNDED', refundedAmount: plan.price },
-    });
-    expect(chargeOffSession).toHaveBeenCalledWith('student-1', 'school-1', plan.price, 'usd', plan.title, undefined, 0);
+    const row = onlyRow(tx);
+    expect(paymentsService.refundOffSessionCharge).toHaveBeenCalledWith('student-1', 'school-1', 'pi_collision', `off-session-purchase-refund-${row.id}`);
+    expect(row).toMatchObject({ status: 'REFUNDED', refundedAmount: plan.price, stripePaymentIntentId: 'pi_collision' });
+    expect(chargeOffSession).toHaveBeenCalledWith('student-1', 'school-1', plan.price, 'usd', plan.title, `membership-saved-card-${row.id}`, 0, { transactionId: row.id });
     // Decision 415 item 4: the member is told why the card was refunded.
     expect(paymentsService.sendRefundNotice).toHaveBeenCalledWith(
-      expect.objectContaining({ key: `refund-refused-${createdTransactionId}`, title: 'Refund', body: expect.stringMatching(/was refunded to your card: .+ couldn't be bought\.$/) }),
+      expect.objectContaining({ key: `refund-refused-${row.id}`, title: 'Refund', body: expect.stringMatching(/was refunded to your card: .+ couldn't be bought\.$/) }),
       'student-1',
       'school-1',
     );
@@ -188,19 +241,15 @@ describe('MembershipsService.purchaseWithSavedCard (Decision 236)', () => {
   // the recorded refund says the same.
   it('records the whole card payment as refunded, surcharge included, when a surcharged purchase loses the race', async () => {
     const chargeOffSession = jest.fn().mockResolvedValue({ succeeded: true, paymentIntentId: 'pi_collision' });
-    const tx = makeTx({ membershipFindMany: jest.fn().mockResolvedValue([{ status: 'ACTIVE', expiryDate: null, classesRemaining: null }]) });
-    const { service, paymentsService } = makeService({ tx, chargeOffSession, refundOffSessionCharge: jest.fn().mockResolvedValue(undefined) });
     const weeklyPass: FixturePlan = { ...plan, type: 'WEEKLY_PASS', classesIncluded: null, expiryDurationDays: 7, price: 1500 };
+    const tx = makeTx({ membershipFindMany: jest.fn().mockResolvedValue([{ status: 'ACTIVE', expiryDate: null, classesRemaining: null }]), plan: weeklyPass });
+    const { service, paymentsService } = makeService({ tx, chargeOffSession, refundOffSessionCharge: jest.fn().mockResolvedValue(undefined) });
 
     await expect(callPurchaseWithSavedCard(service, 'valid-token', weeklyPass, 30)).rejects.toBeInstanceOf(ConflictException);
 
-    expect(chargeOffSession).toHaveBeenCalledWith('student-1', 'school-1', 1530, 'usd', weeklyPass.title, undefined, 30);
-    const created = tx.transaction.create.mock.calls[0][0].data;
-    expect(created).toMatchObject({ amount: 1500, surchargeAmount: 30, status: 'SUCCESSFUL' });
-    expect(tx.transaction.updateMany).toHaveBeenCalledWith({
-      where: { id: created.id, status: 'SUCCESSFUL' },
-      data: { status: 'REFUNDED', refundedAmount: 1530 },
-    });
+    const row = onlyRow(tx);
+    expect(chargeOffSession).toHaveBeenCalledWith('student-1', 'school-1', 1530, 'usd', weeklyPass.title, `membership-saved-card-${row.id}`, 30, { transactionId: row.id });
+    expect(row).toMatchObject({ amount: 1500, surchargeAmount: 30, status: 'REFUNDED', refundedAmount: 1530 });
     expect(paymentsService.sendRefundNotice).toHaveBeenCalledWith(expect.objectContaining({ body: expect.stringContaining('15.30') }), 'student-1', 'school-1');
   });
 });

@@ -1064,6 +1064,7 @@ describeIfDb('stripe-webhook-processing job — hosted Checkout matched by its T
   const membershipPlanIds: string[] = [];
   const membershipIds: string[] = [];
   const transactionIds: string[] = [];
+  const classIds: string[] = [];
 
   const fakeRefundsCreate = jest.fn().mockResolvedValue({ id: 're_fixture', object: 'refund', status: 'succeeded' });
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? 'whsec_e2e_hosted_checkout';
@@ -1097,6 +1098,8 @@ describeIfDb('stripe-webhook-processing job — hosted Checkout matched by its T
 
   afterAll(async () => {
     await superuser.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
+    await superuser.booking.deleteMany({ where: { classId: { in: classIds } } });
+    await superuser.class.deleteMany({ where: { id: { in: classIds } } });
     await superuser.transaction.deleteMany({ where: { id: { in: transactionIds } } });
     await superuser.membership.deleteMany({ where: { id: { in: membershipIds } } });
     await superuser.membershipPlan.deleteMany({ where: { id: { in: membershipPlanIds } } });
@@ -1275,6 +1278,28 @@ describeIfDb('stripe-webhook-processing job — hosted Checkout matched by its T
     await deliver(paymentIntentEvent('payment_intent.payment_failed', mine.account, first, { transactionId: mine.transaction.id }));
     await deliver(paymentIntentEvent('payment_intent.succeeded', mine.account, `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`, { transactionId: mine.transaction.id }));
     expect(await superuser.transaction.findUniqueOrThrow({ where: { id: mine.transaction.id } })).toMatchObject({ status: 'FAILED', stripePaymentIntentId: first, membershipId: null });
+  });
+
+  // Decision 447 item 4: a no-show fee has no Transaction; its PaymentIntent
+  // names the Booking whose fee it is, and the intake hands that over too.
+  it("a no-show fee's payment_intent.succeeded is matched by the Booking id in its metadata, on that School's own account only", async () => {
+    const { school, student, account } = await seedCheckoutOrder();
+    const cls = await superuser.class.create({ data: { id: randomUUID(), schoolId: school.id, title: 'Missed', startDate: new Date(Date.now() - 3 * 3600_000), endDate: new Date(Date.now() - 2 * 3600_000) } });
+    classIds.push(cls.id);
+    const booking = await superuser.booking.create({ data: { id: randomUUID(), studentId: student.id, classId: cls.id, schoolId: school.id, status: 'NO_SHOW', noShowFeeAmount: 800 } });
+    const pi = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
+
+    // From another School's account: not matched.
+    const elsewhere = await seedCheckoutOrder();
+    await deliver(paymentIntentEvent('payment_intent.succeeded', elsewhere.account, pi, { noShowBookingId: booking.id }, 800));
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: booking.id } })).toMatchObject({ noShowFeeOutcome: null, stripeNoShowPaymentIntentId: null });
+
+    const job = await deliver(paymentIntentEvent('payment_intent.succeeded', account, pi, { noShowBookingId: booking.id }, 800));
+    expect(job).toMatchObject({ eventType: 'payment_intent.succeeded', objectId: pi, stripeAccountId: account, noShowBookingId: booking.id });
+    expect(await superuser.booking.findUniqueOrThrow({ where: { id: booking.id } })).toMatchObject({ noShowFeeOutcome: 'CHARGED', stripeNoShowPaymentIntentId: pi });
+    // A failure for the same PaymentIntent never undoes it.
+    await deliver(paymentIntentEvent('payment_intent.payment_failed', account, pi, { noShowBookingId: booking.id }, 800));
+    expect((await superuser.booking.findUniqueOrThrow({ where: { id: booking.id } })).noShowFeeOutcome).toBe('CHARGED');
   });
 
   it('checkout.session.expired turns an unpaid Checkout\'s Pending row Failed (Decision 339 item 11); a paid one is left alone', async () => {

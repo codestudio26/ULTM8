@@ -39,6 +39,7 @@ import { planCardSurcharge, readCardSurchargeBps } from '../payments/card-surcha
 import { assertSchoolCurrencySet, resolveChargeCurrency, setsNewPrice } from '../common/school-currency';
 import { assertWholeMinorUnits } from '../payments/stripe-amount';
 import { refusedPurchaseRefundNotice } from '../charges/charge-ledger';
+import { failOffSessionPurchase, OffSessionPurchaseRefusedError, refuseOffSessionPurchase, settleOffSessionPurchase } from './off-session-purchase';
 import { PlanContractsService } from './contracts/plan-contracts.service';
 import { assertPlanHasRoom, lockPlanPlaces } from './waitlist/plan-capacity';
 import { assertPlanTermValid, fixedPlanOver, membershipTerm, planDay, PLAN_OVER, TERM_PLAN_TYPES } from './plan-term';
@@ -46,6 +47,9 @@ import { assertJoiningFeeAllowed, joiningFeeDue, NO_JOINING_FEE, type JoiningFee
 import { assertAccountNotClosing } from '../account-deletion/account-closing';
 import { endBalanceBilling, isBalanceBilled, startBalanceBilling } from '../charges/membership-series';
 import { CARD_ACCOUNT_SELECT, cardPaymentsNotReady, takesCards } from '../payments/takes-cards';
+
+/** purchaseWithSavedCard(): no saved card at this School. */
+const NO_SAVED_CARD_MESSAGE = 'You have no saved payment method at this School — add a card first, or pay with a new card.';
 
 /** A second identical desk sale or Friend Pass within this long is refused
  * (assertNotJustRecorded). */
@@ -1315,26 +1319,22 @@ export class MembershipsService {
     const amount = plan.price + joiningFee.amount;
     const feeColumns = { joiningFeeAmount: joiningFee.amount, joiningFeeRefundable: joiningFee.refundable };
 
-    let chargeResult: { succeeded: boolean; paymentIntentId: string };
-    try {
-      // Decision 406: the saved card is charged the price plus the surcharge.
-      chargeResult = await this.paymentsService.chargeOffSession(studentId, plan.schoolId, amount + surcharge, currency, plan.title, undefined, surcharge);
-    } catch (err) {
-      if (err instanceof NoSavedPaymentMethodError) {
-        throw new BadRequestException('You have no saved payment method at this School — add a card first, or pay with a new card.');
-      }
-      throw err;
-    }
-
+    // Decision 447 item 4: when a card can be tried (a saved card), the
+    // payment is written Pending before the card is charged and tagged on the
+    // PaymentIntent (metadata and the idempotency key), so a payment Stripe
+    // took is never lost if this request stops before saving the answer:
+    // Stripe's webhook, or charge-auto-pay's stale-attempt sweep, settles it
+    // and creates the Membership, once (off-session-purchase.ts). With no
+    // saved card chargeOffSession() refuses, and nothing is recorded, as
+    // before. A failure is still recorded for audit (the "a Transaction row
+    // always exists once a real charge attempt was made" discipline the
+    // fresh-card/Subscription branches follow).
+    const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId, schoolId: plan.schoolId } }, select: { id: true } }),
+    );
     const transactionId = randomUUID();
-    if (!chargeResult.succeeded) {
-      // Recorded for audit even though it failed — same "a Transaction row
-      // always exists once a real charge attempt was made" discipline the
-      // fresh-card/Subscription branches already follow (PENDING there,
-      // FAILED here since chargeOffSession() already knows the outcome
-      // synchronously — no webhook needed to tell this branch what already
-      // happened).
-      await this.prismaApp.withTenantContext(studentId, (tx) =>
+    const writeRow = (status: 'PENDING' | 'FAILED', paymentIntentId?: string) =>
+      this.prismaApp.withTenantContext(studentId, (tx) =>
         tx.transaction.create({
           data: {
             id: transactionId,
@@ -1346,43 +1346,53 @@ export class MembershipsService {
             ...feeColumns,
             surchargeAmount: surcharge,
             currency: currency.toUpperCase(),
-            status: 'FAILED',
+            status,
             paymentMethod: 'STRIPE',
-            stripePaymentIntentId: chargeResult.paymentIntentId || undefined,
+            stripePaymentIntentId: paymentIntentId,
+            planSwitchToPlanId,
+            offSessionAttempt: true,
           },
         }),
       );
+    if (saved) await writeRow('PENDING');
+
+    let chargeResult: { succeeded: boolean; paymentIntentId: string };
+    try {
+      // Decision 406: the saved card is charged the price plus the surcharge.
+      chargeResult = saved
+        ? await this.paymentsService.chargeOffSession(studentId, plan.schoolId, amount + surcharge, currency, plan.title, `membership-saved-card-${transactionId}`, surcharge, {
+            transactionId,
+          })
+        : await this.paymentsService.chargeOffSession(studentId, plan.schoolId, amount + surcharge, currency, plan.title, undefined, surcharge);
+    } catch (err) {
+      if (err instanceof NoSavedPaymentMethodError) {
+        // Nothing was charged (with a saved card: no default card on the
+        // Customer, so the Pending row ends Failed).
+        if (saved) await this.prismaApp.withTenantContext(studentId, (tx) => failOffSessionPurchase(tx, transactionId, null));
+        throw new BadRequestException(NO_SAVED_CARD_MESSAGE);
+      }
+      // No answer from Stripe: the card may have been charged. The row stays
+      // Pending for Stripe's webhook or the sweep to settle.
+      throw err;
+    }
+    if (!saved) {
+      if (!chargeResult.succeeded) {
+        await writeRow('FAILED', chargeResult.paymentIntentId || undefined);
+        throw new BadRequestException('Your saved card was declined — try a different payment method.');
+      }
+      await writeRow('PENDING');
+    }
+
+    if (!chargeResult.succeeded) {
+      await this.prismaApp.withTenantContext(studentId, (tx) => failOffSessionPurchase(tx, transactionId, chargeResult.paymentIntentId || null));
       throw new BadRequestException('Your saved card was declined — try a different payment method.');
     }
 
-    await this.prismaApp.withTenantContext(studentId, (tx) =>
-      tx.transaction.create({
-        data: {
-          id: transactionId,
-          schoolId: plan.schoolId,
-          studentId,
-          paymentAccountId,
-          membershipPlanId: plan.id,
-          amount,
-          ...feeColumns,
-          surchargeAmount: surcharge,
-          currency: currency.toUpperCase(),
-          status: 'SUCCESSFUL',
-          paymentMethod: 'STRIPE',
-          stripePaymentIntentId: chargeResult.paymentIntentId,
-          planSwitchToPlanId,
-        },
-      }),
-    );
-
+    const zone = await schoolZoneFor(this.prismaJobs, plan.schoolId);
     try {
-      const result = await this.createMembershipAndReturn(studentId, plan, null, planSwitchToPlanId);
-      await this.prismaApp.withTenantContext(studentId, (tx) =>
-        tx.transaction.update({ where: { id: transactionId }, data: { membershipId: result.membership.id } }),
-      );
-      return { ...result, transactionId };
+      await this.prismaApp.withTenantContext(studentId, (tx) => settleOffSessionPurchase(tx, transactionId, chargeResult.paymentIntentId, zone));
     } catch (err) {
-      if (err instanceof ConflictException) {
+      if (err instanceof OffSessionPurchaseRefusedError) {
         // The charge already succeeded (real money moved) before this
         // Membership-creation race was even attempted — chargeOffSession()
         // runs outside any DB transaction (the same "an external Stripe call
@@ -1390,21 +1400,17 @@ export class MembershipsService {
         // codebase enforces everywhere else), so there is no transaction to
         // roll the charge back with. Refunded explicitly here rather than
         // left orphaned — see PaymentsService.refundOffSessionCharge()'s own
-        // header comment for why this is a synchronous, one-shot refund, not
-        // the async webhook path's queued/idempotency-keyed equivalent
-        // (resolveMembershipCollision, stripe-webhook-processing.processor.ts).
-        await this.paymentsService.refundOffSessionCharge(studentId, plan.schoolId, chargeResult.paymentIntentId);
-        // Only while still Successful: Stripe's charge.refunded may have got
-        // here first (it then sent the member the "Refund" notice itself).
-        // The PaymentIntent was refunded in full, so the recorded refund is
-        // the whole card payment: the price and the surcharge, as Stripe shows
-        // it (and as the webhook's own sync of this refund records it).
-        const marked = await this.prismaApp.withTenantContext(studentId, (tx) =>
-          tx.transaction.updateMany({ where: { id: transactionId, status: 'SUCCESSFUL' }, data: { status: 'REFUNDED', refundedAmount: amount + surcharge } }),
-        );
+        // header comment. The key is the one Stripe's webhook and the sweep
+        // use for the same refusal, so it is refunded once.
+        await this.paymentsService.refundOffSessionCharge(studentId, plan.schoolId, chargeResult.paymentIntentId, `off-session-purchase-refund-${transactionId}`);
+        // Only while still unsettled: Stripe's webhook may have got here first
+        // (it then sent the member the "Refund" notice itself). The
+        // PaymentIntent was refunded in full, so the recorded refund is the
+        // whole card payment: the price and the surcharge.
+        const marked = await this.prismaApp.withTenantContext(studentId, (tx) => refuseOffSessionPurchase(tx, transactionId, chargeResult.paymentIntentId));
         // Decision 415 item 4: the whole payment went back to the card, with
         // any surcharge (the PaymentIntent is refunded in full).
-        if (marked.count > 0) {
+        if (marked) {
           await this.paymentsService.sendRefundNotice(
             refusedPurchaseRefundNotice(`refund-refused-${transactionId}`, amount + surcharge, currency, plan.title),
             studentId,
@@ -1415,6 +1421,14 @@ export class MembershipsService {
       }
       throw err;
     }
+    // Settled here, or a moment earlier by Stripe's webhook: either way it
+    // made the one Membership.
+    const row = await this.prismaApp.withTenantContext(studentId, (tx) => tx.transaction.findUniqueOrThrow({ where: { id: transactionId }, select: { status: true, membership: true } }));
+    if (row.status !== 'SUCCESSFUL' || !row.membership) {
+      // Refused and refunded by Stripe's webhook in the meantime.
+      throw new ConflictException("This plan couldn't be bought. Your saved card was charged and has now been refunded.");
+    }
+    return { outcome: 'active' as const, membership: row.membership, transactionId };
   }
 
   /**

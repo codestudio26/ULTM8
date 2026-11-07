@@ -32,6 +32,7 @@ import {
 import { CreateMembershipFreezeDto } from './dto/membership-freeze.dto';
 import { loadFreezeStates } from './freeze-states';
 import { CARD_ACCOUNT_SELECT, takesCards } from '../../payments/takes-cards';
+import { settleFreezeFee } from '../../payments/off-session-attempts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const FREEZE_NOT_FOUND = { code: 'FREEZE_NOT_FOUND', message: 'Freeze not found' };
@@ -577,6 +578,7 @@ export class MembershipFreezesService {
    * card, or a declined one, a pending cash charge the desk collects (it is
    * marked paid like any cash payment). A declined attempt is kept on the
    * ledger as FAILED, as a late-cancellation fee's is. Never refunded.
+   * Decision 447 item 4: the card attempt is written Pending first (below).
    */
   private async chargeFee(freezeId: string) {
     const freeze = await this.prismaJobs.membershipFreeze.findUniqueOrThrow({
@@ -597,47 +599,69 @@ export class MembershipFreezesService {
       currency,
     };
 
-    let paid: { status: 'SUCCESSFUL' | 'FAILED'; paymentIntentId: string | null } | null = null;
     // Decision 442 item 2: by card only once Stripe says the School's account
     // is ready; until then a pending desk charge, as at a School without cards.
-    if (takesCards(account)) {
-      try {
-        const charge = await this.paymentsService.chargeOffSession(
-          freeze.studentId,
-          freeze.schoolId,
-          freeze.feeAmount,
-          currency,
-          'Membership freeze fee',
-          `membership-freeze-fee-${freeze.id}`,
-        );
-        paid = { status: charge.succeeded ? 'SUCCESSFUL' : 'FAILED', paymentIntentId: charge.paymentIntentId || null };
-      } catch (err) {
-        if (!(err instanceof NoSavedPaymentMethodError)) {
-          this.logger.error(`Freeze ${freeze.id}: the freeze fee card charge failed; a pending desk charge is recorded instead.`, err as Error);
-        }
-      }
-    }
+    const saved = takesCards(account)
+      ? await this.prismaJobs.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: freeze.studentId, schoolId: freeze.schoolId } }, select: { id: true } })
+      : null;
+    const lockFee = (tx: Prisma.TransactionClient) => tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`membership-freeze-fee:${freeze.id}`}, 0))`;
 
-    await this.prismaJobs.$transaction(async (tx) => {
-      // One fee per freeze: a second caller finds the first one's Transaction.
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`membership-freeze-fee:${freeze.id}`}, 0))`;
-      const again = await tx.membershipFreeze.findUniqueOrThrow({ where: { id: freeze.id }, select: { feeTransactionId: true } });
-      if (again.feeTransactionId) return;
-      let feeTransactionId: string;
-      if (paid?.status === 'SUCCESSFUL') {
-        feeTransactionId = randomUUID();
-        await tx.transaction.create({ data: { ...base, id: feeTransactionId, status: 'SUCCESSFUL', paymentMethod: 'STRIPE', stripePaymentIntentId: paid.paymentIntentId } });
-      } else {
-        if (paid?.status === 'FAILED') {
-          await tx.transaction.create({ data: { ...base, id: randomUUID(), status: 'FAILED', paymentMethod: 'STRIPE', stripePaymentIntentId: paid.paymentIntentId } });
-        }
-        feeTransactionId = randomUUID();
+    if (!saved) {
+      await this.prismaJobs.$transaction(async (tx) => {
+        // One fee per freeze: a second caller finds the first one's Transaction.
+        await lockFee(tx);
+        const again = await tx.membershipFreeze.findUniqueOrThrow({ where: { id: freeze.id }, select: { feeTransactionId: true } });
+        if (again.feeTransactionId) return;
+        const feeTransactionId = randomUUID();
         await tx.transaction.create({
           data: { ...base, id: feeTransactionId, status: 'PENDING', paymentMethod: account.provider === 'STRIPE' ? 'CASH' : account.provider },
         });
-      }
-      await tx.membershipFreeze.update({ where: { id: freeze.id }, data: { feeTransactionId } });
+        await tx.membershipFreeze.update({ where: { id: freeze.id }, data: { feeTransactionId } });
+      });
+      return;
+    }
+
+    // Decision 447 item 4: the card attempt is written Pending and made the
+    // freeze's fee before Stripe is called, and tagged on the PaymentIntent
+    // (metadata, and the freeze's idempotency key), so a fee Stripe took is
+    // never lost if this stops before the answer is saved: Stripe's webhook,
+    // or charge-auto-pay's stale-attempt sweep, settles it from what Stripe
+    // says (settleFreezeFee()). Paid, the attempt is the fee; declined, it
+    // stays on the ledger as Failed and a pending desk charge becomes the fee.
+    const attemptId = await this.prismaJobs.$transaction(async (tx) => {
+      await lockFee(tx);
+      const again = await tx.membershipFreeze.findUniqueOrThrow({ where: { id: freeze.id }, select: { feeTransactionId: true } });
+      if (again.feeTransactionId) return null;
+      const id = randomUUID();
+      await tx.transaction.create({ data: { ...base, id, status: 'PENDING', paymentMethod: 'STRIPE' } });
+      await tx.membershipFreeze.update({ where: { id: freeze.id }, data: { feeTransactionId: id } });
+      return id;
     });
+    if (!attemptId) return;
+
+    let paid: { succeeded: boolean; paymentIntentId: string | null };
+    try {
+      const charge = await this.paymentsService.chargeOffSession(
+        freeze.studentId,
+        freeze.schoolId,
+        freeze.feeAmount,
+        currency,
+        'Membership freeze fee',
+        `membership-freeze-fee-${freeze.id}`,
+        0,
+        { transactionId: attemptId },
+      );
+      paid = { succeeded: charge.succeeded, paymentIntentId: charge.paymentIntentId || null };
+    } catch (err) {
+      if (!(err instanceof NoSavedPaymentMethodError)) {
+        // No answer from Stripe: the card may have been charged. Left Pending.
+        this.logger.error(`Freeze ${freeze.id}: the freeze fee card charge had no answer from Stripe; left Pending for Stripe's webhook or charge-auto-pay's check.`, err as Error);
+        return;
+      }
+      // Nothing was charged after all (no default card on the Customer).
+      paid = { succeeded: false, paymentIntentId: null };
+    }
+    await this.prismaJobs.$transaction((tx) => settleFreezeFee(tx, attemptId, paid.paymentIntentId, paid.succeeded));
   }
 
   /**
