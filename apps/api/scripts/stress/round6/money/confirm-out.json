@@ -1,0 +1,26 @@
+[
+ {
+  "area": "confirm",
+  "step": "M-1 clean: 3-month contract with a 30-day freeze is billed 3 times (order + 2), not 4",
+  "status": "FAIL",
+  "evidence": "{\"start\":\"2026-11-07\",\"freeze\":[\"2026-12-01\",\"2026-12-31\"],\"charged\":[\"2027-01-06\",\"2027-02-06\",\"2027-03-06\"],\"termEnd\":\"2027-03-09\",\"payments\":4}"
+ },
+ {
+  "area": "confirm",
+  "step": "M-2 clean: after the early end, the end date shown (cancelAt) = the real end (expiryDate)",
+  "status": "FAIL",
+  "evidence": "{\"cancelAt\":\"2027-01-06\",\"expiryDate\":\"2026-12-07\",\"portalRow\":{\"cancelAt\":\"2027-01-06T03:00:00.000Z\",\"expiryDate\":\"2026-12-07T03:00:00.000Z\"}}"
+ },
+ {
+  "area": "confirm",
+  "step": "M-3 clean: refunded and ended: the monthly charge no longer shows a next date",
+  "status": "FAIL",
+  "evidence": "{\"membership\":\"EXPIRED\",\"recurring\":{\"status\":\"ACTIVE\",\"nextDate\":\"2026-12-07\",\"endDate\":null}}"
+ },
+ {
+  "area": "confirm",
+  "step": "M-4 clean: the R$50.00 joining fee kept after the refund is in the revenue figures (want 299.90)",
+  "status": "FAIL",
+  "evidence": "{\"payment\":{\"amount\":23990,\"refunded\":18990,\"status\":\"REFUNDED\"},\"overviewMemberships\":24990,\"summaryRevenue\":24990,\"kept\":5000}"
+ }
+]

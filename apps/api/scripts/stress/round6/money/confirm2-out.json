@@ -1,0 +1,8 @@
+[
+ {
+  "area": "confirm2",
+  "step": "M-5 clean: £80 pack, £30 refunded in Stripe: Transactions \"Revenue\" = £50 like the overview",
+  "status": "FAIL",
+  "evidence": "{\"payment\":{\"amount\":8000,\"refunded\":3000,\"status\":\"SUCCESSFUL\"},\"summaryRevenue\":8000,\"overviewMemberships\":5000}"
+ }
+]
