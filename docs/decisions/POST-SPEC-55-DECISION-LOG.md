@@ -7990,3 +7990,23 @@ Originally drafted as Decision 440 in PR #502; renumbered by Decision 443 item 8
 User (Code), 6 Nov 2026: "start it", on the recommendation to build go-live fixes C1, C2 and C5 first.
 
 User (Code), 7 Nov 2026: "agree", on keeping acceptance records after Delete my account (item 3 reworded).
+
+---
+
+## Decision 445 — Stress test round 6: the access and privacy fixes (P-1 to P-5)
+
+**Date:** 7 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 436, 439, 440, 443, Spec 55 §8.2 · **Found by:** stress test round 6, tester P (findings P-1 to P-5)
+
+### Decision
+
+The owner approved fixing all five ("fix it all"):
+
+1. **An erased coach's coach profile is cleared (P-1, High).** When a person who is also a coach is erased (Delete my account), their coach profile loses its phone, bio and photo (the photo file is deleted too) and is archived, so members no longer see it on the instructors list or the coach page. Their name shows as "Erased User", as elsewhere (Decisions 436 item 1, 440 item 2).
+2. **A locked member's waiting Pix or cash order can't be confirmed (P-2).** While a member's deletion is pending, confirming their earlier order is refused with the same reason as a desk sale (`ACCOUNT_CLOSING`, Decision 440 item 6), so no plan starts and no "Payment confirmed" is sent. Staff can still cancel the order; any money already handed over is dealt with as a cancelled cash payment. If the member signs back in, which cancels the deletion, the order can be confirmed again.
+3. **Only an owner chooses how the School is paid (P-3).** Creating the School's payment account (Stripe, or cash/bank transfer) is for owners only. A staff member with "Can connect Stripe" can only start or continue Stripe's onboarding for a Stripe account an owner has already chosen (Decisions 443 item 3, 439 item 4).
+4. **An erased staff member's work phone and display name are cleared (P-4)** from the staff records, and the phone is removed from the staff activity log, as the name already is.
+5. **Branch Staff get back only what they need when they confirm an order (P-5):** the order's id, status, amount and the membership it started, not the whole payment record (Spec 55 §8.2).
+
+### Recorded by
+
+User (Code), 7 Nov 2026: "fix it all", on round 6 findings P-1 to P-5 as reported in chat. Items 2 and 3 take the safest reading of the existing decisions; the open questions from round 6 (Q1–Q6 of tester P and Q1–Q5 of tester M) are not answered here.
