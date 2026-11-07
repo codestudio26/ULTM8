@@ -8010,3 +8010,26 @@ The owner approved fixing all five ("fix it all"):
 ### Recorded by
 
 User (Code), 7 Nov 2026: "fix it all", on round 6 findings P-1 to P-5 as reported in chat. Items 2 and 3 take the safest reading of the existing decisions; the open questions from round 6 (Q1–Q6 of tester P and Q1–Q5 of tester M) are not answered here.
+
+---
+
+## Decision 446 — Stress test round 6: the money and timing fixes (M-1 to M-5, T-1 to T-4)
+
+**Date:** 7 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 406, 412, 413, 430, 435, 436, 441–444 · **Found by:** stress test round 6, testers M and T
+
+### Decision
+
+The owner approved fixing every bug found ("fix any bugs you have found"):
+
+1. **A freeze inside a contract's minimum term no longer adds a month (M-1).** When a freeze moves the billing day (Decision 443 item 1), the end of the minimum term moves with the billing schedule, so a 3-month term is still 3 monthly payments.
+2. **The end date after a cancel during a freeze is right (M-2).** Ending the freeze early moves the cancel date back as it moves the end date.
+3. **A balance-billed plan's monthly series ends however the plan ends (M-3):** a desk refund that ends the membership and Delete my account end it too, not only cancel and removal.
+4. **Revenue counts what was kept (M-4, M-5).** A payment refunded in part (including one where the non-refundable joining fee was kept) counts in every revenue figure at its amount less what was refunded, the same on the billing overview and on Transactions. Whether revenue includes the card surcharge is not changed here (open question).
+5. **A card payment taken by Stripe is never lost (T-2).** Automatic payment records the payment attempt and Stripe's payment id together, and tags Stripe's payment with the attempt, so a crash between Stripe's answer and saving it is recovered: Stripe's success notice, or a sweep of stale automatic attempts that asks Stripe, settles the charge. No late fee or overdue notice for a charge that was actually paid.
+6. **A plan's member limit holds when orders arrive at the same moment (T-3)** (Decision 435 item 10): placing orders is serialised per plan, so only as many as fit are accepted.
+7. **Stripe "account updated" messages can't go back in time (T-4).** An older message never overwrites a newer state; the readiness is taken from Stripe's current account when in doubt.
+8. **The 18th-birthday gap is closed (T-1).** For someone who signed up themselves, School actions (signing a waiver, buying, a parent adding them as a child) count them as 18 from the same moment sign-up does (the earliest time zone, Decision 444 item 6), not the School's own date. *Claude's recommendation on question Q-1; the owner can reverse it.*
+
+### Recorded by
+
+User (Code), 7 Nov 2026: "fix it any bugs you have founded", on round 6 findings M-1 to M-5 and T-1 to T-4 as reported in chat. Item 8 answers T's question Q-1 with the recommendation; the other open questions (M Q1–Q5, P Q1–Q6, T Q-2) are not answered here.
