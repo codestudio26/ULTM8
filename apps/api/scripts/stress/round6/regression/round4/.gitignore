@@ -1,0 +1,5 @@
+# Outputs of a run: the cast holds ids and signed tokens, the rest are results.
+cast.json
+*-result.json
+shots/
+dump.rdb
