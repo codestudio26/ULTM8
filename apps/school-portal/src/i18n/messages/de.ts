@@ -357,6 +357,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       actionNeededHint: "Stripe braucht noch weitere Angaben, bevor dein Konto bereit ist. Setze die Einrichtung bei Stripe fort.",
       notConnectedHint: "Verbinde das Stripe-Konto deiner Schule, damit Mitglieder in der App mit Karte zahlen können. Stripe fragt nach deinen Unternehmens- und Bankdaten.",
       otherProviderHint: "Das Zahlungskonto dieser Schule ist für Barzahlung oder Banküberweisung eingerichtet, daher kann Stripe hier nicht verbunden werden.",
+      ownerMustChooseHint: "Ein Inhaber muss zuerst festlegen, wie die Schule bezahlt wird, bevor Stripe verbunden werden kann.",
       unavailableHint: "Kartenzahlungen in der App sind in deinem Land noch nicht verfügbar. Mitglieder zahlen bar oder per Banküberweisung (Pix in Brasilien), und das Team bestätigt es.",
       connect: "Stripe verbinden",
       continue: "Stripe-Einrichtung fortsetzen",

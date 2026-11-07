@@ -51,7 +51,8 @@ import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 
 /** Decision 442 item 3: the School page for a Branch Staff member the
  * owners let connect Stripe — the Stripe card only, for the School they work
- * at. The API checks the same switch on every call the card makes. */
+ * at. The API checks the same switch on every call the card makes. They
+ * can't create the School's payment account (Decision 445 item 3). */
 function StaffStripeConnectPage({ schoolId }: { schoolId: string }) {
   const t = useT();
   const { data: school, isLoading, error } = useSchool(schoolId);
@@ -61,7 +62,13 @@ function StaffStripeConnectPage({ schoolId }: { schoolId: string }) {
     <>
       <PageHeader title={t('schools.stripeConnect.title')} subtitle={school.name} />
       {school.archivedAt ? null : (
-        <StripeConnectCard key={`stripe-connect-${schoolId}`} schoolId={schoolId} schoolName={school.name} defaultCountry={school.addressCountry ?? null} />
+        <StripeConnectCard
+          key={`stripe-connect-${schoolId}`}
+          schoolId={schoolId}
+          schoolName={school.name}
+          defaultCountry={school.addressCountry ?? null}
+          canCreate={false}
+        />
       )}
     </>
   );

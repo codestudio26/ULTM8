@@ -357,6 +357,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       actionNeededHint: "Stripe heeft meer gegevens nodig voordat je account klaar is. Ga verder met de instelling bij Stripe.",
       notConnectedHint: "Koppel het Stripe-account van je school zodat leden in de app met een kaart kunnen betalen. Stripe vraagt om je bedrijfs- en bankgegevens.",
       otherProviderHint: "Het betaalaccount van deze school is voor contant geld of bankoverschrijving, dus Stripe kan hier niet worden gekoppeld.",
+      ownerMustChooseHint: "Een eigenaar moet eerst kiezen hoe de school betaald wordt voordat Stripe kan worden gekoppeld.",
       unavailableHint: "Kaartbetalingen in de app zijn in jouw land nog niet beschikbaar, dus leden betalen contant of per bankoverschrijving (Pix in Brazilië) en het personeel bevestigt dat.",
       connect: "Stripe koppelen",
       continue: "Verder met Stripe instellen",

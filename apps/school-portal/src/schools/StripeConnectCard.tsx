@@ -25,8 +25,22 @@ export const STRIPE_CONNECT_ANCHOR = 'stripe-connect';
  * payment account is for cash or bank transfer can't connect Stripe here.
  * Stripe's return and refresh links come back to this card
  * (StripeConnectReturnPage), which reads the status again.
+ *
+ * Decision 445 item 3: only an owner creates the School's payment account
+ * (`canCreate`), so a staff member sees "an owner must choose how the School
+ * is paid" until one has, then may start or continue Stripe's onboarding.
  */
-export function StripeConnectCard({ schoolId, schoolName, defaultCountry }: { schoolId: string; schoolName: string; defaultCountry: string | null }) {
+export function StripeConnectCard({
+  schoolId,
+  schoolName,
+  defaultCountry,
+  canCreate = true,
+}: {
+  schoolId: string;
+  schoolName: string;
+  defaultCountry: string | null;
+  canCreate?: boolean;
+}) {
   const t = useT();
   const { data, isLoading, error: statusError } = useSchoolConnectStatus(schoolId);
   const { data: paymentAccount, isLoading: accountLoading } = useSchoolPaymentAccount(schoolId);
@@ -42,7 +56,8 @@ export function StripeConnectCard({ schoolId, schoolName, defaultCountry }: { sc
   const stripeAccountId = paymentAccount?.provider === 'STRIPE' ? paymentAccount.id : null;
   const otherProvider = !!paymentAccount && !stripeAccountId;
   const connectAvailable = data?.connectAvailable !== false;
-  const canConnect = connectAvailable && !otherProvider;
+  const waitingForOwner = !paymentAccount && !canCreate;
+  const canConnect = connectAvailable && !otherProvider && !waitingForOwner;
 
   async function start(chosenCountry: string) {
     setError(null);
@@ -68,9 +83,11 @@ export function StripeConnectCard({ schoolId, schoolName, defaultCountry }: { sc
         ? t('schools.stripeConnect.unavailableHint')
         : otherProvider
           ? t('schools.stripeConnect.otherProviderHint')
-          : status === 'ACTION_NEEDED'
-            ? t('schools.stripeConnect.actionNeededHint')
-            : t('schools.stripeConnect.notConnectedHint');
+          : waitingForOwner
+            ? t('schools.stripeConnect.ownerMustChooseHint')
+            : status === 'ACTION_NEEDED'
+              ? t('schools.stripeConnect.actionNeededHint')
+              : t('schools.stripeConnect.notConnectedHint');
   return (
     <div id={STRIPE_CONNECT_ANCHOR} data-testid="school-stripe-connect">
       <Card>

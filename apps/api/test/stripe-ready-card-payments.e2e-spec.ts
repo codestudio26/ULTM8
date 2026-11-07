@@ -10,9 +10,10 @@
  * monthly plans, and off-session charges take nothing.
  *
  * Item 3: the School's owners (co-owners too) and Branch Staff given "Can
- * connect Stripe" create the Stripe payment account, start onboarding and
- * read the connection status. Nobody else; the switch is off by default and
- * any owner sets it, as every other access switch.
+ * connect Stripe" start onboarding and read the connection status. Nobody
+ * else; the switch is off by default and any owner sets it, as every other
+ * access switch. Creating the School's payment account, Stripe included, is
+ * owners only (Decision 445 item 3, round 6 P-3).
  *
  * Stripe is faked (no live key in CI).
  *
@@ -273,13 +274,13 @@ describeIfDb('Card payments wait for a ready Stripe account; who may connect Str
       return { created: created.status, onboard: onboard?.status ?? null, status: status.status, body: { created: created.body, status: status.body } };
     }
 
-    it('Branch Staff need "Can connect Stripe", off by default; with it they connect, without it they are refused', async () => {
+    it('Branch Staff need "Can connect Stripe", off by default; with it they connect the account an owner chose, without it they are refused', async () => {
       const s = await school();
       const staff = await person('BRANCH_STAFF', s.schoolId);
       const off = await tryConnect(s.schoolId, staff.token);
       expect(off).toMatchObject({ created: 403, onboard: null, status: 403 });
-      expect(off.body.created.error?.code).toBe('STAFF_ACCESS_OFF');
-      expect(off.body.created.error?.message).toBe("The School owner hasn't let you connect Stripe.");
+      expect(off.body.status.error?.code).toBe('STAFF_ACCESS_OFF');
+      expect(off.body.status.error?.message).toBe("The School owner hasn't let you connect Stripe.");
       expect((await get(`/v1/schools/${s.schoolId}/staff/me/access`, staff.token)).body.access.connectStripe).toBe(false);
 
       // An owner switches it on, as any access switch.
@@ -289,8 +290,16 @@ describeIfDb('Card payments wait for a ready Stripe account; who may connect Str
       expect((await get(`/v1/schools/${s.schoolId}/staff/me/access`, staff.token)).body.access.connectStripe).toBe(true);
       expect(await su.staffActivity.count({ where: { schoolId: s.schoolId, targetUserId: staff.id, action: 'ACCESS_CHANGED' } })).toBe(1);
 
+      // Decision 445 item 3 (P-3): even switched on, they can't create the
+      // School's payment account; choosing how the School is paid is the
+      // owners'. Once an owner has chosen Stripe, they connect it.
+      const first = await tryConnect(s.schoolId, staff.token);
+      expect(first).toMatchObject({ created: 403, onboard: null, status: 200 });
+      expect(first.body.status.status).toBe('NOT_CONNECTED');
+      expect(await su.paymentAccount.count({ where: { schoolId: s.schoolId } })).toBe(0);
+      expect((await post(`/v1/schools/${s.schoolId}/payment-accounts`, s.owner.token, { provider: 'STRIPE', accountTitle: 'Card', country: 'GB' })).status).toBe(201);
       const on = await tryConnect(s.schoolId, staff.token);
-      expect(on).toMatchObject({ created: 201, onboard: 201, status: 200 });
+      expect(on).toMatchObject({ created: 403, onboard: 201, status: 200 });
       expect(on.body.status.status).toBe('ACTION_NEEDED');
       const account = await su.paymentAccount.findUniqueOrThrow({ where: { schoolId: s.schoolId } });
       expect(account).toMatchObject({ provider: 'STRIPE', stripeAccountReady: false });
@@ -309,6 +318,21 @@ describeIfDb('Card payments wait for a ready Stripe account; who may connect Str
       const res = await post(`/v1/schools/${s.schoolId}/payment-accounts`, staff.token, { provider: 'BANK_TRANSFER', accountTitle: 'Bank', country: 'GB' });
       expect(res.status).toBe(403);
       expect(await su.paymentAccount.count({ where: { schoolId: s.schoolId } })).toBe(0);
+    });
+
+    it('round 6 P-3: switched-on staff can\'t choose Stripe before the owner, so a Brazilian School\'s owner can still choose Pix', async () => {
+      const s = await school();
+      await su.school.update({ where: { id: s.schoolId }, data: { addressCountry: 'BR', defaultCurrency: 'BRL' } });
+      const staff = await person('BRANCH_STAFF', s.schoolId);
+      await put(`/v1/schools/${s.schoolId}/staff/${staff.id}/access`, s.owner.token, { ...ACCESS, connectStripe: true });
+      for (const country of ['BR', 'GB']) {
+        const res = await post(`/v1/schools/${s.schoolId}/payment-accounts`, staff.token, { provider: 'STRIPE', accountTitle: 'Cards', country });
+        expect(res.status).toBe(403);
+      }
+      expect(await su.paymentAccount.count({ where: { schoolId: s.schoolId } })).toBe(0);
+      const pix = await post(`/v1/schools/${s.schoolId}/payment-accounts`, s.owner.token, { provider: 'BANK_TRANSFER', accountTitle: 'Pix', country: 'BR' });
+      expect(pix.status).toBe(201);
+      expect(await su.paymentAccount.findUniqueOrThrow({ where: { schoolId: s.schoolId } })).toMatchObject({ provider: 'BANK_TRANSFER' });
     });
 
     it('co-owners connect as the main owner does, and may give the switch; coaches, members, other Schools and their staff cannot connect', async () => {

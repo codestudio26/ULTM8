@@ -354,6 +354,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       actionNeededHint: "계정이 준비되기 전에 Stripe에 추가 정보가 필요합니다. Stripe에서 설정을 계속하세요.",
       notConnectedHint: "회원이 앱에서 카드로 결제할 수 있도록 도장의 Stripe 계정을 연결하세요. Stripe에서 사업자 및 은행 정보를 요청합니다.",
       otherProviderHint: "이 도장의 결제 계정은 현금 또는 계좌 이체용이라 여기서 Stripe를 연결할 수 없습니다.",
+      ownerMustChooseHint: "Stripe를 연결하려면 먼저 소유자가 도장의 결제 방식을 선택해야 합니다.",
       unavailableHint: "도장이 있는 국가에서는 아직 앱 카드 결제를 사용할 수 없어, 회원은 현금이나 계좌이체(브라질은 Pix)로 결제하고 직원이 확인합니다.",
       connect: "Stripe 연결",
       continue: "Stripe 설정 계속하기",

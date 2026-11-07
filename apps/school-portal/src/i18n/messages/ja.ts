@@ -354,6 +354,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       actionNeededHint: "アカウントの準備が整う前に、Stripe で追加の情報が必要です。Stripe で設定を続けてください。",
       notConnectedHint: "メンバーがアプリでカード払いできるよう、スクールの Stripe アカウントを接続してください。Stripe から事業と銀行口座の情報を求められます。",
       otherProviderHint: "このスクールの支払いアカウントは現金または銀行振込用のため、ここでは Stripe を接続できません。",
+      ownerMustChooseHint: "Stripe を接続する前に、オーナーがスクールの支払い方法を選ぶ必要があります。",
       unavailableHint: "お住まいの国では、アプリでのカード決済はまだご利用いただけません。会員は現金または銀行振込（ブラジルでは Pix）で支払い、スタッフが確認します。",
       connect: "Stripe を接続",
       continue: "Stripe の設定を続ける",

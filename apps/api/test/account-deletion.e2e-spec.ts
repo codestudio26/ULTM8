@@ -172,6 +172,8 @@ describeIfDb('Delete my account', () => {
       await superuser.studentMedicalInfo.deleteMany({ where: { schoolId: id } });
       await superuser.studentJoinDate.deleteMany({ where: { schoolId: id } });
       await superuser.staffActivity.deleteMany({ where: { schoolId: id } });
+      await superuser.staffPermission.deleteMany({ where: { schoolId: id } });
+      await superuser.instructor.deleteMany({ where: { schoolId: id } });
       await superuser.paymentAccount.deleteMany({ where: { schoolId: id } });
       await superuser.roleGrant.deleteMany({ where: { schoolId: id } });
     }
@@ -429,6 +431,73 @@ describeIfDb('Delete my account', () => {
     // A notice from no School of theirs is left alone.
     expect((await superuser.notification.findUniqueOrThrow({ where: { id: unrelated.id } })).body).toBe(`${fullName} elsewhere`);
     deleteObject.mockRestore();
+  });
+
+  it("round 6 P-1: an erased coach's coach profile loses its phone, bio and photo (the file too) and is archived, so members no longer see it", async () => {
+    const coach = await person('Coachy', { studentAt: [school.id] });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: coach.id, schoolId: school.id } });
+    const photoUrl = `${process.env.R2_PUBLIC_BASE_URL}/instructors/${randomUUID()}.jpg`;
+    const profilePhotoUrl = `${process.env.R2_PUBLIC_BASE_URL}/users/${randomUUID()}.jpg`;
+    await superuser.user.update({ where: { id: coach.id }, data: { profilePhotoUrl } });
+    const profile = await superuser.instructor.create({
+      data: { id: randomUUID(), schoolId: school.id, userId: coach.id, phone: '+447911123987', bio: 'Coachy trains in Leeds.', photoUrl },
+    });
+    // Another coach at the School is left alone.
+    const other = await person('Stays', { studentAt: [school.id] });
+    const otherProfile = await superuser.instructor.create({ data: { id: randomUUID(), schoolId: school.id, userId: other.id, phone: '+447911000111', bio: 'Stays here.' } });
+    const member = await person('Watcher', { studentAt: [school.id] });
+    const listFor = async (u: U) => (await http().get(`/v1/schools/${school.id}/instructors`).set(auth(u))).body.items as Array<{ id: string }>;
+    expect((await listFor(member)).map((i) => i.id)).toContain(profile.id);
+    const deletePhoto = jest.spyOn(R2ClientService.prototype, 'deletePublicPhotoByUrl').mockResolvedValue(true);
+
+    expect((await requestDeletion(coach)).status).toBe(200);
+    await makeDue([coach.id]);
+    expect((await processor.sweep()).erased).toContain(coach.id);
+
+    const after = await superuser.instructor.findUniqueOrThrow({ where: { id: profile.id } });
+    expect(after).toMatchObject({ phone: null, bio: null, photoUrl: null });
+    expect(after.archivedAt).not.toBeNull();
+    expect(after.purgeAt!.getTime()).toBeGreaterThan(Date.now() + 89 * DAY);
+    expect(deletePhoto).toHaveBeenCalledWith(photoUrl);
+    expect(deletePhoto).toHaveBeenCalledWith(profilePhotoUrl);
+    expect(await superuser.instructor.findUniqueOrThrow({ where: { id: otherProfile.id } })).toMatchObject({ phone: '+447911000111', bio: 'Stays here.', archivedAt: null });
+
+    // Members no longer see it in the list; the profile itself names nobody.
+    const list = await listFor(member);
+    expect(list.map((i) => i.id)).not.toContain(profile.id);
+    expect(list.map((i) => i.id)).toContain(otherProfile.id);
+    const one = await http().get(`/v1/instructors/${profile.id}`).set(auth(member));
+    expect(JSON.stringify(one.body)).not.toMatch(/Coachy|123987|instructors\//);
+    deletePhoto.mockRestore();
+  });
+
+  it("round 6 P-4: an erased staff member's School display name and work phone are cleared, and the phone leaves the staff activity log", async () => {
+    const staff = await person('Wesley', { studentAt: [school.id] });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'BRANCH_STAFF', userId: staff.id, schoolId: school.id } });
+    const set = await http()
+      .patch(`/v1/schools/${school.id}/staff/${staff.id}/details`)
+      .set(auth(owner))
+      .send({ displayName: 'Wes the Desk', workPhone: '+447911123654' });
+    expect(set.status).toBe(200);
+    const line = await superuser.staffActivity.findFirstOrThrow({ where: { schoolId: school.id, targetUserId: staff.id, action: 'DETAILS_CHANGED' } });
+    expect(line.details).toEqual({ displayName: 'Wes the Desk', workPhone: '+447911123654' });
+    // A "details changed" line about someone else keeps its phone.
+    const otherLine = await superuser.staffActivity.create({
+      data: { id: randomUUID(), schoolId: school.id, actorId: owner.id, targetUserId: owner.id, action: 'DETAILS_CHANGED', details: { workPhone: '+447911000222' } },
+    });
+
+    expect((await requestDeletion(staff)).status).toBe(200);
+    await makeDue([staff.id]);
+    expect((await processor.sweep()).erased).toContain(staff.id);
+
+    expect(await superuser.staffPermission.findUniqueOrThrow({ where: { schoolId_userId: { schoolId: school.id, userId: staff.id } } })).toMatchObject({ displayName: null, workPhone: null });
+    expect((await superuser.staffActivity.findUniqueOrThrow({ where: { id: line.id } })).details).toEqual({ displayName: 'Erased User' });
+    expect((await superuser.staffActivity.findUniqueOrThrow({ where: { id: otherLine.id } })).details).toEqual({ workPhone: '+447911000222' });
+    for (const path of ['staff', 'staff/activity']) {
+      const res = await http().get(`/v1/schools/${school.id}/${path}`).set(auth(owner));
+      expect(res.status).toBe(200);
+      expect(JSON.stringify(res.body)).not.toMatch(/123654|Wes the Desk|Wesley/);
+    }
   });
 
   it('keeps a child who got another parent before the 30 days were over', async () => {

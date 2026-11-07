@@ -91,6 +91,17 @@ describeIfDb('Branch Staff confirm a member order (Decision 441 item 2)', () => 
       },
     });
 
+  /** The notices go through the notification-fanout job, so they land a
+   * moment after the answer. */
+  async function waitFor<T>(fn: () => Promise<T>, done: (v: T) => boolean, timeoutMs = 8000): Promise<T> {
+    const start = Date.now();
+    for (;;) {
+      const v = await fn();
+      if (done(v) || Date.now() - start > timeoutMs) return v;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+
   const http = () => request(app.getHttpServer());
   const confirm = (id: string, tok: string) => http().patch(`/v1/transactions/${id}/confirm`).set('Authorization', `Bearer ${tok}`);
   const card = (s: Seeded, tok: string) => http().get(`/v1/schools/${s.school.id}/students/${s.student.id}/charges`).set('Authorization', `Bearer ${tok}`);
@@ -160,7 +171,7 @@ describeIfDb('Branch Staff confirm a member order (Decision 441 item 2)', () => 
     const membership = await su.membership.findUniqueOrThrow({ where: { id: row.membershipId! } });
     expect(membership).toMatchObject({ studentId: s.student.id, membershipPlanId: s.pack.id, status: 'ACTIVE', classesRemaining: 10 });
     // The member is told, as when the owner confirms.
-    expect(await su.notification.count({ where: { userId: s.student.id } })).toBeGreaterThan(0);
+    expect(await waitFor(() => su.notification.count({ where: { userId: s.student.id } }), (n) => n > 0)).toBeGreaterThan(0);
 
     // Idempotent: a second click changes nothing.
     const again = await confirm(tx.id, s.staffToken);
@@ -199,5 +210,65 @@ describeIfDb('Branch Staff confirm a member order (Decision 441 item 2)', () => 
     expect((await confirm(tx.id, s.staffToken)).status).toBe(404);
     expect((await confirm(tx.id, s.ownerToken)).status).toBe(409);
     expect(await su.transaction.findUniqueOrThrow({ where: { id: tx.id } })).toMatchObject({ status: 'PENDING' });
+  });
+
+  it("round 6 P-2: a locked (deleting) member's waiting order can't be confirmed by staff or the owner; it can be cancelled, and confirmed again once the deletion is cancelled", async () => {
+    const s = await seedSchool();
+    await switchOn(s, true);
+    await homeBranch(s);
+    const tx = await order(s);
+    const second = await order(s);
+    const lock = (on: boolean) =>
+      su.user.update({
+        where: { id: s.student.id },
+        data: on
+          ? { deletionRequestedAt: new Date(), deletionDueAt: new Date(Date.now() + 30 * 86_400_000), deletionRequestedById: s.student.id }
+          : { deletionRequestedAt: null, deletionDueAt: null, deletionRequestedById: null },
+      });
+    await lock(true);
+    for (const tok of [s.staffToken, s.ownerToken]) {
+      const res = await confirm(tx.id, tok);
+      expect(res.status).toBe(403);
+      expect(res.body.error?.code).toBe('ACCOUNT_CLOSING');
+    }
+    // No plan started, nothing sent to the member, the order still waiting.
+    expect(await su.transaction.findUniqueOrThrow({ where: { id: tx.id } })).toMatchObject({ status: 'PENDING', membershipId: null });
+    expect(await su.membership.count({ where: { studentId: s.student.id, schoolId: s.school.id } })).toBe(0);
+    expect(await su.notification.count({ where: { userId: s.student.id } })).toBe(0);
+
+    // Cancelling still works.
+    const cancel = await http().patch(`/v1/transactions/${second.id}/cancel`).set('Authorization', `Bearer ${s.ownerToken}`).send({ reason: 'Member is leaving' });
+    expect(cancel.status).toBe(200);
+    expect(cancel.body.cancelled).toBe(true);
+
+    // Signing back in cancels the deletion: the order can be confirmed again.
+    await lock(false);
+    const res = await confirm(tx.id, s.staffToken);
+    expect(res.status).toBe(200);
+    expect(res.body.membershipCreated).toBe(true);
+    // One "Payment confirmed", from this confirm only (and the cancel's notice).
+    const confirmed = () => su.notification.findMany({ where: { userId: s.student.id, title: 'Payment confirmed' } });
+    expect(await waitFor(confirmed, (n) => n.length > 0)).toHaveLength(1);
+  });
+
+  it('round 6 P-5: Branch Staff get back only the order id, status, amount and the membership it started; the owner gets the whole answer', async () => {
+    const s = await seedSchool();
+    await switchOn(s, true);
+    await homeBranch(s);
+    const tx = await order(s);
+    const res = await confirm(tx.id, s.staffToken);
+    expect(res.status).toBe(200);
+    const membershipId = (await su.transaction.findUniqueOrThrow({ where: { id: tx.id } })).membershipId;
+    expect(membershipId).toBeTruthy();
+    expect(res.body).toEqual({ transaction: { id: tx.id, status: 'SUCCESSFUL', amount: 10500, membershipId }, membershipCreated: true });
+    // The idempotent repeat is trimmed too.
+    expect((await confirm(tx.id, s.staffToken)).body).toEqual({ transaction: { id: tx.id, status: 'SUCCESSFUL', amount: 10500, membershipId }, membershipCreated: false });
+
+    const t = await seedSchool();
+    const ownerTx = await order(t);
+    const own = await confirm(ownerTx.id, t.ownerToken);
+    expect(own.status).toBe(200);
+    expect(own.body.transaction).toMatchObject({ id: ownerTx.id, paymentAccountId: t.account.id, currency: 'BRL' });
+    expect(own.body.membership).toMatchObject({ studentId: t.student.id, status: 'ACTIVE' });
   });
 });

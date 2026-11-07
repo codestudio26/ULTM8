@@ -72,7 +72,9 @@ export interface AccountErasureResult {
  * - deletes the files the Schools uploaded for them (stored copy, then row);
  * - gives up their upcoming bookings and waitlist places at each School, as
  *   when a School removes a member (no fee, no notice);
- * - deletes the profile photo from storage, sends the member the "your account
+ * - deletes the profile photo, and the photo of each of their coach profiles
+ *   (which the function clears and archives, Decision 445 item 1), from
+ *   storage, sends the member the "your account
  *   has been deleted" email, and tells each School they were a member of
  *   (its owners, through the notification-fanout job, the same channel as
  *   other notices to owners) — rule 6.
@@ -151,7 +153,7 @@ export class AccountErasureProcessor extends WorkerHost {
 
     // Read before the details go: where to send the email, and which Schools
     // to tell (where they are a member now).
-    const [person, memberships, files] = await Promise.all([
+    const [person, memberships, files, coachProfiles] = await Promise.all([
       this.prismaJobs.user.findUnique({ where: { id: user.id }, select: { email: true } }),
       this.prismaJobs.roleGrant.findMany({
         where: { userId: user.id, role: 'STUDENT', revokedAt: null, schoolId: { not: null } },
@@ -159,6 +161,9 @@ export class AccountErasureProcessor extends WorkerHost {
         distinct: ['schoolId'],
       }),
       this.prismaJobs.memberFile.findMany({ where: { studentId: user.id }, select: { id: true } }),
+      // Their coach profiles' photos (Decision 445 item 1): the function
+      // clears the addresses, so they are read first and deleted after.
+      this.prismaJobs.instructor.findMany({ where: { userId: user.id, photoUrl: { not: null } }, select: { photoUrl: true } }),
     ]);
     const passcodeHash = await bcrypt.hash(randomUUID(), 12);
     const rows = await this.prismaJobs.$queryRaw<Array<{ erased: boolean; old_photo_url: string | null }>>`
@@ -166,7 +171,8 @@ export class AccountErasureProcessor extends WorkerHost {
     if (!rows[0]?.erased) return 'skipped';
 
     const schoolIds = memberships.map((m) => m.schoolId!);
-    await this.deletePhoto(user.id, rows[0].old_photo_url);
+    const photos = new Set([rows[0].old_photo_url, ...coachProfiles.map((c) => c.photoUrl)].filter((u): u is string => !!u));
+    for (const url of photos) await this.deletePhoto(user.id, url);
     // Files the Schools uploaded for them: the stored copy, then the row (the
     // function unlinked them; the daily offboarding sweep retries a failure).
     if (files.length > 0) await eraseMemberFiles(this.prismaJobs, this.r2, this.logger, { id: { in: files.map((f) => f.id) } });
