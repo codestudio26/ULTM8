@@ -7944,3 +7944,26 @@ User (Code), 6 Nov 2026: "Ok", on the recommendations given in chat for D1–D6 
 ### Recorded by
 
 User (Code), 6 Nov 2026: "Ok to all a part from 3 - here will be owners and those is granted permission", on the recommendations given in chat for the choices of #506–#510. Item 3 was the suggestion "main owner only"; the owner chose owners plus staff given the permission instead.
+
+---
+
+## Decision 443 — The build choices of Decision 442 (PRs #512–#514), and PR #502
+
+**Date:** 7 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 442 (PRs #512, #513, #514)
+
+### Decision
+
+All the choices listed for #512–#514 stay as built:
+
+1. **Freezing a monthly plan billed to the balance (#513):** the next monthly charge on or after the first frozen day moves later by the number of frozen days, and the member keeps the new billing day from then on. For example, a member billed on the 15th and frozen for 30 days (10 Mar to 9 Apr) is next charged on 14 Apr, then on the 14th each month. Ending a freeze early moves the charge back by the days not used, never to before today. A billing day before the freeze starts is still charged.
+2. **The "new order waiting" notice (#513)** goes to Branch Staff only where the School's "Let Branch Staff record payments" switch is on, and only for students whose home branch is one of theirs. A student with no home branch: only the owners are told.
+3. **"Can connect Stripe" (#514):** staff with it can only set up Stripe. Choosing cash or bank transfer as the way of being paid stays with the owners. Coaches can't get it.
+4. **A Stripe account that stops being ready (#514):** the School goes back to working without cards. New card payments are refused and the card surcharge stops. Fees normally taken from a saved card (late cancellation, no-show, freeze, plan switch) aren't charged. Existing card subscriptions, saved cards and refunds carry on.
+5. **"Sign the waiver" button (#512):** not shown in Kid Mode, where a parent signs for the child.
+6. **After a refused QR check-in (#512)** the button opens the member's waivers for all their Schools, because the QR code doesn't say which School refused.
+7. **Reminder before pre-launch:** the owner asked to be reminded, before pre-launch, to switch on `account.updated` for the Stripe Connect webhook in the live Stripe dashboard (`docs/PRE-LAUNCH-UPGRADE-CHECKLIST.md`).
+8. **PR #502** (legal go-live fixes C1, C2 and C5, from another session) is taken over: brought up to date with master and merged when green. Its decision entry was numbered 440, which was already taken (Delete my account), so it is recorded as **Decision 444**, unchanged in content.
+
+### Recorded by
+
+User (Code), 7 Nov 2026: "ok" on each of points 2–6; on point 1, "Yes if the freeze is for 30 days, but i undertsand what you mean"; on the Stripe step, "ok please reminds us before pre lauching"; on #502, "yes" (take it over).
