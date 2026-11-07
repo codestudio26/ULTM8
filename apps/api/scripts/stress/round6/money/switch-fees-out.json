@@ -1,0 +1,110 @@
+[
+ {
+  "area": "switch-fees",
+  "step": "S0 three members bought a week that switches (agreed), with a saved card",
+  "status": "PASS",
+  "evidence": "{\"x\":true,\"y\":true,\"z\":true,\"lines\":[{\"name\":\"Week to full mw5yxvt9\",\"amount\":1500},{\"name\":\"Card surcharge\",\"amount\":30}]}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S1 the 7-day notice says a full next plan ends it with nothing charged, with the surcharge in the amount",
+  "status": "PASS",
+  "evidence": "Your Week to full mw5yxvt9 ends on 2026-11-10. Then Full pack mw5yxvt9 starts and 40.80 GBP is charged to your saved card. Without a saved card, or if Full pack mw5yxvt9 is full, it simply ends and nothing is charged."
+ },
+ {
+  "area": "switch-fees",
+  "step": "S2 switch into a full plan: the membership simply ends, nothing charged, no new membership",
+  "status": "PASS",
+  "evidence": "{\"outcome\":\"NOT_SOLD\",\"newMembership\":false}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S3 switch into a plan with room: switched, charged price + 2% surcharge to the saved card",
+  "status": "PASS",
+  "evidence": "{\"outcome\":\"SWITCHED\",\"tx\":{\"amount\":4001,\"surcharge\":80,\"status\":\"SUCCESSFUL\"},\"offSessionCalls\":2}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S3b (Z was switched in the same run, ready)",
+  "status": "NOTE",
+  "evidence": "SWITCHED"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S4a not ready 7 days before the switch: the notice the member gets",
+  "status": "NOTE",
+  "evidence": "Your Week to roomy mw5yxvt9 ends on 2026-11-10. Then Roomy pack mw5yxvt9 starts and 40.01 GBP is charged to your saved card. Without a saved card, or if Roomy pack mw5yxvt9 is full, it simply ends and nothing is charged."
+ },
+ {
+  "area": "switch-fees",
+  "step": "S4 not ready on switch day: ends NO_CARD, the saved card isn't charged",
+  "status": "PASS",
+  "evidence": "{\"outcome\":\"NO_CARD\",\"stripeCalls\":0}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S5 no-card School: a plan can't be set to switch",
+  "status": "PASS",
+  "evidence": "{\"status\":400,\"code\":\"SWITCH_NEEDS_CARDS\"}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S6 no-card School: an old plan with a next plan, bought with \"agree\", never switches",
+  "status": "PASS",
+  "evidence": "{\"txSwitch\":null,\"memSwitch\":null}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S6b what the member app reads for that plan",
+  "status": "NOTE",
+  "evidence": "{\"switchToPlanId\":\"c00537d5-11ab-410c-a86a-e02d4dd6d3c6\",\"switchToPlan\":null}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S7 card one-off with a joining fee: lines plan 49.99 + fee 19.99 + 2% surcharge on both (1.40), total charged = sum",
+  "status": "PASS",
+  "evidence": "{\"lines\":[{\"name\":\"Fee pack mw5yxvt9\",\"amount\":4999},{\"name\":\"Joining fee\",\"amount\":1999},{\"name\":\"Card surcharge\",\"amount\":140}],\"charged\":7138,\"tx\":{\"amount\":6998,\"fee\":1999,\"sur\":140}}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S8 a second plan at the same School: no joining fee",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":0,\"refundable\":false,\"cardSurchargeAmount\":0}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S9 card Subscription with a joining fee: order = price + fee; surcharge = 2% of each (80 + 20)",
+  "status": "PASS",
+  "evidence": "{\"status\":201,\"tx\":{\"amount\":5000,\"fee\":1001,\"sur\":100}}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S10 desk refund of a monthly first payment: the non-refundable joining fee can't be refunded",
+  "status": "PASS",
+  "evidence": "{\"amount\":23990,\"fee\":5000,\"tooMuch\":[400,\"REFUND_MORE_THAN_LEFT\"],\"ok\":[201,null,null]}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S11a right after \"refund and end the membership\": the monthly series on the member's page",
+  "status": "NOTE",
+  "evidence": "{\"membership\":\"EXPIRED\",\"series\":{\"next\":\"2026-12-07\",\"end\":null,\"stopped\":null},\"screen\":{\"nextDate\":\"2026-12-07\",\"status\":\"ACTIVE\",\"endDate\":null}}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S11 refunded with \"end the membership\": the next month is not billed to the balance",
+  "status": "PASS",
+  "evidence": "{\"membership\":\"EXPIRED\",\"charged\":[],\"after\":{\"next\":null,\"end\":\"2026-12-06\"}}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S12 BRL month with 5% tax included: net + tax = 189.90, whole centavos",
+  "status": "PASS",
+  "evidence": "{\"taxPatch\":200,\"charge\":{\"gross\":18990,\"net\":18086,\"tax\":904,\"lines\":[{\"name\":null,\"taxId\":null,\"amount\":904,\"rateBasisPoints\":500}]}}"
+ },
+ {
+  "area": "switch-fees",
+  "step": "S13 2.5% late fee on 189.90 = 4.75 (whole centavos, BRL)",
+  "status": "PASS",
+  "evidence": "{\"fee\":{\"gross\":475,\"net\":452,\"tax\":23,\"cur\":\"BRL\",\"overdue\":18990}}"
+ }
+]
