@@ -321,6 +321,42 @@
         ]
       }
     },
+    "/v1/auth/legal-acceptance": {
+      "post": {
+        "operationId": "AuthController_acceptLegal",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptLegalDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptLegalResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/auth/passcode-change": {
       "post": {
         "operationId": "AuthController_changePasscode",
@@ -24106,6 +24142,30 @@
         },
         "required": [
           "newPasscode"
+        ]
+      },
+      "AcceptLegalDto": {
+        "type": "object",
+        "properties": {
+          "acceptTerms": {
+            "type": "boolean",
+            "description": "Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 444, Decision 448 item 8)."
+          }
+        },
+        "required": [
+          "acceptTerms"
+        ]
+      },
+      "AcceptLegalResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "description": "A new access token without the legalPending claim. The refresh token is unchanged."
+          }
+        },
+        "required": [
+          "accessToken"
         ]
       },
       "ChangePasscodeDto": {

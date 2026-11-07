@@ -2093,6 +2093,12 @@ model LegalAcceptance {
   schoolId    String?
   franchiseId String?
 
+  /// Decision 448 item 8: accepted at the first sign-in of an account the
+  /// School created (added manually, a tablet sign-up, an import, a Guardian
+  /// added by staff), not at sign-up. Such a row never counts as signing up
+  /// themselves (Decision 446 item 8, signedUpThemselves).
+  atFirstSignIn Boolean @default(false)
+
   acceptedAt DateTime @default(now())
 
   @@index([userId, documentSlug])

@@ -18,7 +18,9 @@
  */
 export function matchesPersonName(firstName: string | null | undefined, surname: string | null | undefined, search: string): boolean {
   const q = foldForSearch(search);
-  if (!q) return true;
+  // Blank means no filter; a query of only symbols ("%", "_") finds nobody
+  // (Decision 448 item 13), never everyone.
+  if (!q) return !search.trim();
   const first = foldForSearch(firstName ?? '');
   const last = foldForSearch(surname ?? '');
   const compact = q.replace(/ /g, '');

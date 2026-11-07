@@ -14,6 +14,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ChangePasscodeFirstLoginDto } from './dto/change-passcode-first-login.dto';
 import { ChangePasscodeDto } from './dto/change-passcode.dto';
 import { StepUpVerifyDto } from './dto/step-up-verify.dto';
+import { AcceptLegalDto, AcceptLegalResponseDto } from './dto/accept-legal.dto';
 import { AuthMessageResponseDto, LoginResponseDto } from './dto/auth-response.dto';
 import { StepUpResponseDto } from './dto/step-up-response.dto';
 import { bodyIdentityTracker, jwtSubTracker } from '../common/throttle/identity-trackers';
@@ -143,6 +144,18 @@ export class AuthController {
   @Post('passcode-change/first-login')
   changePasscodeFirstLogin(@CurrentUser() user: JwtPayload, @Body() dto: ChangePasscodeFirstLoginDto) {
     return this.authService.changePasscodeFirstLogin(user.sub, dto);
+  }
+
+  // Decision 448 item 8 — the Terms and Privacy "I agree" at the first
+  // sign-in of someone who didn't sign up themselves; the one route a
+  // legalPending token may call (JwtStrategy's LEGAL_ACCEPTANCE_ALLOWED_PATH).
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiCreatedResponse({ type: AcceptLegalResponseDto })
+  @Throttle(PASSCODE_CHANGE_THROTTLE)
+  @Post('legal-acceptance')
+  acceptLegal(@CurrentUser() user: JwtPayload, @Body() dto: AcceptLegalDto) {
+    return this.authService.acceptLegalAtFirstSignIn(user.sub, dto.acceptTerms);
   }
 
   // Decision 375 (Q1) — "Change passcode" on My profile, for a signed-in

@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/legal-acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_acceptLegal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/passcode-change": {
         parameters: {
             query?: never;
@@ -7801,6 +7817,14 @@ export interface components {
         ChangePasscodeFirstLoginDto: {
             /** @description Exactly 6 digits */
             newPasscode: string;
+        };
+        AcceptLegalDto: {
+            /** @description Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 444, Decision 448 item 8). */
+            acceptTerms: boolean;
+        };
+        AcceptLegalResponseDto: {
+            /** @description A new access token without the legalPending claim. The refresh token is unchanged. */
+            accessToken: string;
         };
         ChangePasscodeDto: {
             /** @description The current passcode, exactly 6 digits */
@@ -15824,6 +15848,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoginResponseDto"];
+                };
+            };
+        };
+    };
+    AuthController_acceptLegal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptLegalDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptLegalResponseDto"];
                 };
             };
         };
