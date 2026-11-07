@@ -1165,6 +1165,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       correctionSameRank: "Diesen Gürtel hast du schon. Wähle den Gürtel, den du haben solltest.",
     },
   },
+  legal: {
+    titles: {
+      terms: "Nutzungsbedingungen",
+      privacy: "Datenschutzerklärung",
+      schoolAgreement: "Schul- und Franchise-Vereinbarung",
+      childrenNotice: "Datenschutzhinweis für Kinder und Erziehungsberechtigte",
+      cookies: "Hinweis zu Cookies und Speicherung",
+    },
+    agree: {
+      account: "Ich stimme den Nutzungsbedingungen zu und habe die Datenschutzerklärung gelesen.",
+    },
+    version: "Version {version}",
+    beingPrepared: "Diese Seite wird gerade vorbereitet. Sie wird hier veröffentlicht, bevor ULTM8 live geht.",
+    loadFailed: "Diese Seite konnte nicht geladen werden. Versuche es erneut.",
+  },
   charges: {
     recurring: {
       heading: "Wiederkehrende Gebühren",

@@ -1210,6 +1210,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       correctionSameRank: "To jest pas, który już masz. Wybierz pas, który powinieneś mieć.",
     },
   },
+  legal: {
+    titles: {
+      terms: "Warunki korzystania z usługi",
+      privacy: "Polityka prywatności",
+      schoolAgreement: "Umowa Szkoły i Franczyzy",
+      childrenNotice: "Informacja o prywatności dla dzieci i opiekunów",
+      cookies: "Informacja o plikach cookie i pamięci",
+    },
+    agree: {
+      account: "Akceptuję Warunki korzystania z usługi i przeczytałem(-am) Polityka prywatności.",
+    },
+    version: "Wersja {version}",
+    beingPrepared: "Ta strona jest w przygotowaniu. Zostanie tu opublikowana przed uruchomieniem ULTM8.",
+    loadFailed: "Nie udało się wczytać tej strony. Spróbuj ponownie.",
+  },
   charges: {
     recurring: {
       heading: "Opłaty cykliczne",

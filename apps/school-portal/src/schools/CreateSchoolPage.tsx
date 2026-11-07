@@ -7,6 +7,7 @@ import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { useCreateSchool } from './schoolQueries';
 import { useT } from '../i18n/I18nProvider';
+import { LegalAgreeCheckbox } from '../legal/LegalAgreeCheckbox';
 import { languageName } from '../i18n/format';
 
 /**
@@ -42,6 +43,8 @@ export function CreateSchoolPage() {
     description: '',
     classCancellationPolicy: 'MANUAL' as 'MANUAL' | 'AUTO_REFUND' | 'AUTO_CREDIT',
     waitlistClaimWindowMinutes: 60 as number | '',
+    // Decision 444 (C1): the School and Franchise Agreement tick.
+    acceptAgreement: false,
   });
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +79,7 @@ export function CreateSchoolPage() {
         classCancellationPolicy: form.classCancellationPolicy,
         // A cleared box keeps the School's default instead of sending 0 (A12).
         waitlistClaimWindowMinutes: form.waitlistClaimWindowMinutes === '' ? undefined : form.waitlistClaimWindowMinutes,
+        acceptAgreement: form.acceptAgreement,
       });
       // SchoolsService.create() re-mints the caller's own token and returns it
       // (ultm8-nestjs-module §7's narrow, approved exception) — swap it in directly so
@@ -182,6 +186,7 @@ export function CreateSchoolPage() {
           checked={form.ranksToggle}
           onChange={(e) => set('ranksToggle', e.target.checked)}
         />
+        <LegalAgreeCheckbox kind="agreement" checked={form.acceptAgreement} onChange={(v) => set('acceptAgreement', v)} />
         <div style={{ marginTop: 16 }}>
           <Button type="submit" fullWidth loading={createSchool.isPending}>
             {t('schools.create.submit')}

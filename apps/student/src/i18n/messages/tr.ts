@@ -1165,6 +1165,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       correctionSameRank: "Bu zaten sahip olduğunuz kuşak. Olması gereken kuşağı seçin.",
     },
   },
+  legal: {
+    titles: {
+      terms: "Hizmet Şartları",
+      privacy: "Gizlilik Politikası",
+      schoolAgreement: "Okul ve Franchise Sözleşmesi",
+      childrenNotice: "Çocuklar ve Veliler İçin Gizlilik Bildirimi",
+      cookies: "Çerez ve Depolama Bildirimi",
+    },
+    agree: {
+      account: "Hizmet Şartları'nı kabul ediyorum ve Gizlilik Politikası'nı okudum.",
+    },
+    version: "Sürüm {version}",
+    beingPrepared: "Bu sayfa hazırlanıyor. ULTM8 yayına girmeden önce burada yayımlanacak.",
+    loadFailed: "Bu sayfa yüklenemedi. Tekrar deneyin.",
+  },
   charges: {
     recurring: {
       heading: "Tekrarlayan ücretler",

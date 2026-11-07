@@ -239,7 +239,7 @@ describeIfDb('Main owner and co-owners (Decision 370)', () => {
   it('makes whoever creates a School its main owner', async () => {
     const founder = await mkUser('Fred');
     const token = jwt.sign({ sub: founder.id, email: founder.email, grants: [] });
-    const res = await http().post('/v1/schools').set('Authorization', `Bearer ${token}`).send({ name: `Main Owner created ${tag}` });
+    const res = await http().post('/v1/schools').set('Authorization', `Bearer ${token}`).send({ acceptAgreement: true, name: `Main Owner created ${tag}` });
     expect(res.status).toBe(201);
     const g = await superuser.roleGrant.findFirst({ where: { schoolId: res.body.id, userId: founder.id, role: 'SCHOOL_OWNER_MANAGER' } });
     expect(g?.isMainOwner).toBe(true);

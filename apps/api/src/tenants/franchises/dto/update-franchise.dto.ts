@@ -71,7 +71,7 @@ export enum FranchiseFeeRateChangeStrategyDto {
  * unchanged, still out of scope. CHANGING an already-configured rate once
  * billing has started is now resolved: `feeRateChangeStrategy` below.
  */
-export class UpdateFranchiseDto extends PartialType(OmitType(CreateFranchiseDto, NULLABLE_ON_UPDATE)) {
+export class UpdateFranchiseDto extends PartialType(OmitType(CreateFranchiseDto, [...NULLABLE_ON_UPDATE, 'acceptAgreement'] as const)) {
   @ApiPropertyOptional({ type: String, nullable: true })
   @IsOptional()
   @IsString()

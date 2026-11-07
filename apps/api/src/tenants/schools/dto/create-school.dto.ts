@@ -485,4 +485,12 @@ export class CreateSchoolDto {
   @IsOptional()
   @IsEnum(['LIST', 'GRID'])
   timetableDefaultLayout?: 'LIST' | 'GRID';
+
+  /** Decision 444: the owner ticked "I accept the School and Franchise
+   * Agreement, including the Data Processing Addendum". Anything but `true` is
+   * refused with AGREEMENT_NOT_ACCEPTED. Create only — not on PATCH. */
+  @ApiPropertyOptional({ description: 'Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this School (Decision 444).' })
+  @IsOptional()
+  @IsBoolean()
+  acceptAgreement?: boolean;
 }

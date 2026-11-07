@@ -5006,6 +5006,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "ยังไม่มีพนักงาน",
     emptyRatesDescription: "พนักงานที่คุณเพิ่มในหน้าพนักงานจะแสดงที่นี่",
   },
+  legal: {
+    titles: {
+      terms: "ข้อกำหนดการให้บริการ",
+      privacy: "นโยบายความเป็นส่วนตัว",
+      schoolAgreement: "ข้อตกลงสำหรับโรงเรียนและแฟรนไชส์",
+      childrenNotice: "ประกาศความเป็นส่วนตัวสำหรับเด็กและผู้ปกครอง",
+      cookies: "ประกาศเกี่ยวกับคุกกี้และการจัดเก็บข้อมูล",
+    },
+    agree: {
+      account: "ฉันยอมรับ{terms} และได้อ่าน{privacy}แล้ว",
+      agreement: "ฉันยอมรับ{agreement} รวมถึงภาคผนวกการประมวลผลข้อมูล",
+    },
+    version: "เวอร์ชัน {version}",
+    beingPrepared: "หน้านี้กำลังจัดเตรียม และจะเผยแพร่ที่นี่ก่อนที่ ULTM8 จะเปิดใช้งาน",
+    loadFailed: "โหลดหน้านี้ไม่ได้ ลองอีกครั้ง",
+    notFound: "ไม่พบหน้า",
+    backToSignIn: "กลับไปที่การเข้าสู่ระบบ",
+  },
   whatsNew: {
     title: "มีอะไรใหม่",
     subtitle: "ข่าวสาร ULTM8 จากทีม ULTM8",

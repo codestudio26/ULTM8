@@ -230,7 +230,7 @@ describeIfDb('Round-5 stress test: privacy, staff and races (Decision 433)', () 
 
     it('creating a School through the API still works (it reads the new row back before its owner grant exists)', async () => {
       const creator = await mkUser('creator', 'STUDENT');
-      const res = await post('/schools', creator, { name: `Created ${tag}` });
+      const res = await post('/schools', creator, { name: `Created ${tag}`, acceptAgreement: true });
       expect(res.status).toBe(201);
       expect(res.body.name).toBe(`Created ${tag}`);
     });

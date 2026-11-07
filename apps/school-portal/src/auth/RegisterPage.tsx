@@ -8,6 +8,7 @@ import { useCurrencies, useLanguages } from '../settings/settingsQueries';
 import { languageName } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
+import { LegalAgreeCheckbox } from '../legal/LegalAgreeCheckbox';
 
 /** Fields match RegisterDto exactly (apps/api/src/auth/dto/register.dto.ts) — nothing
  * added or removed. Required fields first; the rest of the confirmed base User fields
@@ -36,6 +37,8 @@ export function RegisterPage() {
   });
   const [address, setAddress] = useState(() => postalAddressFromRecord(null, guessDefaultCountry()));
   const [addressErrors, setAddressErrors] = useState<PostalAddressErrors>({});
+  // Decision 444 (C1): the Terms and Privacy tick, sent as acceptTerms.
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState(false);
@@ -77,6 +80,7 @@ export function RegisterPage() {
             language: form.language || undefined,
             currency: form.currency || undefined,
             postalAddress: prepared.postalAddress ?? undefined,
+            acceptTerms,
           },
         }),
       );
@@ -188,6 +192,8 @@ export function RegisterPage() {
           </Field>
           <AddressFields idPrefix="reg-address" value={address} onChange={setAddress} errors={addressErrors} />
         </details>
+
+        <LegalAgreeCheckbox kind="account" checked={acceptTerms} onChange={setAcceptTerms} />
 
         <div style={{ marginTop: 16 }}>
           <Button type="submit" fullWidth loading={submitting}>

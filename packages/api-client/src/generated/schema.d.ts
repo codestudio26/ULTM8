@@ -7744,6 +7744,8 @@ export interface components {
             currency?: string;
             address?: string;
             postalAddress?: components["schemas"]["PostalAddressDto"] | null;
+            /** @description Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 444). */
+            acceptTerms?: boolean;
         };
         AuthMessageResponseDto: {
             message: string;
@@ -7940,6 +7942,8 @@ export interface components {
              * @enum {string}
              */
             timetableDefaultLayout?: "LIST" | "GRID";
+            /** @description Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this School (Decision 444). */
+            acceptAgreement?: boolean;
         };
         SchoolResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -9096,6 +9100,8 @@ export interface components {
             perHeadcountRate?: number;
             /** @description Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on). */
             shareBrandingWithMembers?: boolean;
+            /** @description Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this Franchise (Decision 444). */
+            acceptAgreement?: boolean;
         };
         FranchiseResponseDto: {
             /** @description Decision 276 — structured address, line 1. */
@@ -10783,6 +10789,8 @@ export interface components {
             title: string;
             /** @description Null until real legal/product content is populated. */
             content?: string | null;
+            /** @description Decision 444: the version people accept; "unpublished" until the real text is loaded. */
+            version: string;
             createdAt: string;
             updatedAt: string;
         };

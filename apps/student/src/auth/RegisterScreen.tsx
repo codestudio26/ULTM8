@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { ScrollView, Switch, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
@@ -9,6 +9,8 @@ import { getApiErrorMessage } from '../lib/apiErrorMessage';
 import { useT } from '../i18n/I18nProvider';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import type { AuthStackParamList } from '../navigation/types';
+import { LegalLinks } from '../legal/LegalLinks';
+import { fontSize, minTouchTarget, spacing } from '../theme/tokens';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
@@ -30,6 +32,8 @@ export function RegisterScreen({ navigation }: Props) {
   });
   // Decision 434 (TXT-8): "I have only one name" sends an empty surname.
   const [oneName, setOneName] = useState(false);
+  // Decision 444 (C1): the Terms and Privacy tick, sent as acceptTerms.
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -42,6 +46,10 @@ export function RegisterScreen({ navigation }: Props) {
     setError(null);
     if (form.passcode !== form.passcodeConfirm) {
       setError(t('auth.register.passcodeMismatch'));
+      return;
+    }
+    if (!acceptTerms) {
+      setError(t('server.codes.termsNotAccepted'));
       return;
     }
     setSubmitting(true);
@@ -58,6 +66,7 @@ export function RegisterScreen({ navigation }: Props) {
             passcode: form.passcode,
             passcodeConfirm: form.passcodeConfirm,
             dateOfBirth: form.dateOfBirth,
+            acceptTerms,
           },
         }),
       );
@@ -124,6 +133,11 @@ export function RegisterScreen({ navigation }: Props) {
             onChangeText={(v) => set('dateOfBirth', v)}
           />
         </Field>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2], minHeight: minTouchTarget }}>
+          <Switch value={acceptTerms} onValueChange={setAcceptTerms} accessibilityLabel={t('legal.agree.account')} />
+          <Text style={{ flex: 1, fontSize: fontSize.footnote }}>{t('legal.agree.account')}</Text>
+        </View>
+        <LegalLinks slugs={['terms-and-conditions', 'privacy-statement']} />
         <Button title={t('auth.register.submit')} onPress={handleSubmit} loading={submitting} />
         <Button title={t('auth.register.haveAccount')} variant="secondary" onPress={() => navigation.navigate('Login')} />
       </Screen>

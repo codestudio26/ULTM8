@@ -1165,6 +1165,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       sign: "Firmar",
     },
   },
+  legal: {
+    titles: {
+      terms: "Términos del servicio",
+      privacy: "Política de privacidad",
+      schoolAgreement: "Acuerdo de Escuela y Franquicia",
+      childrenNotice: "Aviso de privacidad para menores y tutores",
+      cookies: "Aviso de cookies y almacenamiento",
+    },
+    agree: {
+      account: "Acepto los Términos del servicio y he leído la Política de privacidad.",
+    },
+    version: "Versión {version}",
+    beingPrepared: "Esta página se está preparando. Se publicará aquí antes de que ULTM8 se lance.",
+    loadFailed: "No se pudo cargar esta página. Inténtalo de nuevo.",
+  },
   charges: {
     recurring: {
       heading: "Cargos recurrentes",

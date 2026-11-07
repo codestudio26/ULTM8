@@ -23929,6 +23929,10 @@
                 "$ref": "#/components/schemas/PostalAddressDto"
               }
             ]
+          },
+          "acceptTerms": {
+            "type": "boolean",
+            "description": "Must be true: agrees to the Terms of Service and has read the Privacy Policy (Decision 444)."
           }
         },
         "required": [
@@ -24417,6 +24421,10 @@
               "GRID"
             ],
             "description": "The layout the Timetable opens in (Decision 319 §4). Default LIST."
+          },
+          "acceptAgreement": {
+            "type": "boolean",
+            "description": "Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this School (Decision 444)."
           }
         },
         "required": [
@@ -27998,6 +28006,10 @@
           "shareBrandingWithMembers": {
             "type": "boolean",
             "description": "Allow member Schools to show this Franchise's name and logo (each School Owner must also turn it on)."
+          },
+          "acceptAgreement": {
+            "type": "boolean",
+            "description": "Must be true: accepts the School and Franchise Agreement, including the Data Processing Addendum, for this Franchise (Decision 444)."
           }
         },
         "required": [
@@ -33461,6 +33473,10 @@
             "nullable": true,
             "description": "Null until real legal/product content is populated."
           },
+          "version": {
+            "type": "string",
+            "description": "Decision 444: the version people accept; \"unpublished\" until the real text is loaded."
+          },
           "createdAt": {
             "type": "string"
           },
@@ -33471,6 +33487,7 @@
         "required": [
           "slug",
           "title",
+          "version",
           "createdAt",
           "updatedAt"
         ]

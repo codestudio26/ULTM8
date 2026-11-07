@@ -228,7 +228,7 @@ export class StudentAccessService {
         }));
         createdStudentId = studentId;
       } else if (consentVersion) {
-        await this.guardians.recordBaselineConsent(callerId, studentId, consentVersion);
+        await this.guardians.recordBaselineConsent(callerId, studentId);
       }
       const enrolled = await this.prismaJobs.roleGrant.findFirst({
         where: { userId: studentId, schoolId: invite.schoolId, role: 'STUDENT', revokedAt: null },
@@ -388,7 +388,7 @@ export class StudentAccessService {
     await this.claim(invite, { status: 'ACCEPTED', respondedAt: new Date() });
     try {
       await this.guardians.linkExistingChild(callerId, studentId);
-      if (consentVersion) await this.guardians.recordBaselineConsent(callerId, studentId, consentVersion);
+      if (consentVersion) await this.guardians.recordBaselineConsent(callerId, studentId);
       const enrolled = await this.prismaJobs.roleGrant.findFirst({
         where: { userId: studentId, schoolId: invite.schoolId, role: 'STUDENT', revokedAt: null },
         select: { id: true },

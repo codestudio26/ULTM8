@@ -19,6 +19,7 @@ import { transactions } from './en/transactions';
 import { waivers } from './en/waivers';
 import { lib } from './en/lib';
 import { charges } from './en/charges';
+import { legal } from './en/legal';
 import { serverKeys as server } from '@ultm8/i18n';
 
 /**
@@ -53,6 +54,7 @@ export const messages = {
   waivers,
   lib,
   charges,
+  legal,
   server,
 };
 

@@ -33,6 +33,7 @@ import { imports } from './en/imports';
 import { adTracking } from './en/adTracking';
 import { payroll } from './en/payroll';
 import { whatsNew } from './en/whatsNew';
+import { legal } from './en/legal';
 
 /**
  * English (UK) — the source catalogue every other locale translates, and the
@@ -78,6 +79,7 @@ export const messages = {
   imports,
   adTracking,
   payroll,
+  legal,
   whatsNew,
 };
 

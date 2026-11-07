@@ -5164,6 +5164,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Сотрудников пока нет",
     emptyRatesDescription: "Здесь появятся сотрудники, добавленные на странице «Сотрудники».",
   },
+  legal: {
+    titles: {
+      terms: "Условия обслуживания",
+      privacy: "Политика конфиденциальности",
+      schoolAgreement: "Соглашение для школ и франшиз",
+      childrenNotice: "Уведомление о конфиденциальности для детей и опекунов",
+      cookies: "Уведомление о файлах cookie и хранении данных",
+    },
+    agree: {
+      account: "Я принимаю {terms} и прочитал(а) {privacy}.",
+      agreement: "Я принимаю {agreement}, включая приложение об обработке данных.",
+    },
+    version: "Версия {version}",
+    beingPrepared: "Эта страница готовится. Она будет опубликована здесь до запуска ULTM8.",
+    loadFailed: "Не удалось загрузить эту страницу. Попробуйте ещё раз.",
+    notFound: "Страница не найдена",
+    backToSignIn: "Вернуться ко входу",
+  },
   whatsNew: {
     title: "Что нового",
     subtitle: "Новости ULTM8 от команды ULTM8.",

@@ -35,6 +35,10 @@ export const server: PartialMessages<ServerKeys> = {
     childIsAdult: "Esta criança já tem 18 anos e assina por si mesma. Ela pode criar a própria conta no ULTM8.",
     childAdultAccessEnded: "Esta criança fez 18 anos há mais de 30 dias, então a conta dela não é mais gerenciada pela conta de um responsável.",
     guardianUnder18: "Um responsável precisa ter 18 anos ou mais.",
+    // Decision 444 (legal go-live).
+    termsNotAccepted: "Aceite os Termos de Serviço e a Política de Privacidade para criar uma conta.",
+    registerUnder18: "Você precisa ter 18 anos ou mais para criar uma conta. Peça ao seu responsável para adicionar você pela conta ULTM8 dele.",
+    agreementNotAccepted: "Aceite o Contrato de Escola e Franquia para continuar.",
     notAMinor: "Isto é para crianças (menores de 18). Um adulto cria a própria conta.",
     childAlreadyHere: "Esta criança já é aluna aqui, com um responsável. Abra a página dela e use \"Adicionar outro responsável\".",
     alreadyGuardian: "Esta pessoa já é responsável por esta criança.",

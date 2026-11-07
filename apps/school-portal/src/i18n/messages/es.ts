@@ -5052,6 +5052,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Aún no hay personal",
     emptyRatesDescription: "El personal que agregues en la página Personal aparece aquí.",
   },
+  legal: {
+    titles: {
+      terms: "Términos del servicio",
+      privacy: "Política de privacidad",
+      schoolAgreement: "Acuerdo de Escuela y Franquicia",
+      childrenNotice: "Aviso de privacidad para menores y tutores",
+      cookies: "Aviso de cookies y almacenamiento",
+    },
+    agree: {
+      account: "Acepto los {terms} y he leído la {privacy}.",
+      agreement: "Acepto el {agreement}, incluido su Anexo de Tratamiento de Datos.",
+    },
+    version: "Versión {version}",
+    beingPrepared: "Esta página se está preparando. Se publicará aquí antes de que ULTM8 se lance.",
+    loadFailed: "No se pudo cargar esta página. Inténtalo de nuevo.",
+    notFound: "Página no encontrada",
+    backToSignIn: "Volver a iniciar sesión",
+  },
   whatsNew: {
     title: "Novedades",
     subtitle: "Noticias de ULTM8 del equipo de ULTM8.",

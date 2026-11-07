@@ -16,6 +16,8 @@ import { LessonDetailScreen } from '../curriculum/LessonDetailScreen';
 import { PlaylistsScreen } from '../curriculum/PlaylistsScreen';
 import { PlaylistDetailScreen } from '../curriculum/PlaylistDetailScreen';
 import { MinorConsentScreen } from '../guardians/MinorConsentScreen';
+import { LegalDocumentScreen } from '../legal/LegalDocumentScreen';
+import { LEGAL_PAGES } from '../legal/legalPages';
 import { ChildBookingScreen } from '../guardians/ChildBookingScreen';
 import { MyMinorsScreen } from '../guardians/MyMinorsScreen';
 import { ChildWaiversScreen } from '../guardians/ChildWaiversScreen';
@@ -136,6 +138,7 @@ export function AppNavigator() {
       <Stack.Screen name="CoachDashboard" component={CoachDashboardScreen} options={{ title: t('navigation.app.coach') }} />
       <Stack.Screen name="GradingBoard" component={GradingBoardScreen} options={({ route }) => ({ title: t('navigation.app.gradingBoard', { name: route.params.name }) })} />
       <Stack.Screen name="CoachStudent" component={CoachStudentScreen} options={({ route }) => ({ title: route.params.name })} />
+      <Stack.Screen name="LegalDocument" component={LegalDocumentScreen} options={({ route }) => ({ title: t(LEGAL_PAGES[route.params.slug]) })} />
     </Stack.Navigator>
   );
 }

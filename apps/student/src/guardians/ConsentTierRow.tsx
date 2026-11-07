@@ -14,11 +14,14 @@ type ConsentTier = 'BASELINE' | 'CAMERA';
 /** Approved screen (Decision 236, 11 Oct 2026 — "build the screen now, with
  * step-up re-authentication, prioritized ahead of ordinary v1.2 backlog"),
  * per docs/TRACK-B-ROADMAP.md's own "candidate committed" entry for this
- * slice. `CURRENT_POLICY_VERSION` is still a placeholder standing in for
- * whatever real, approved privacy-notice text/version the product/legal side
- * would actually supply — not invented legal content, just a value to make the
- * confirmed `policyVersion` field wire up. */
-export const CURRENT_POLICY_VERSION = '1.0-placeholder';
+ * slice.
+ *
+ * Decision 444 (C5): the server now saves each consent with the Children and
+ * Guardians Privacy Notice version it publishes (LegalDocument
+ * `children-notice`), whatever the app sends. The API still asks for a
+ * `policyVersion` so older app builds keep working; this value only says the
+ * app showed the notice link, it is not the version recorded. */
+export const CURRENT_POLICY_VERSION = 'children-notice';
 
 /** Copy quotes SKILL.md §14's own confirmed description of what each tier
  * covers and what withdrawing each one actually does (GuardiansService.

@@ -153,6 +153,7 @@ test('Create your School is refused for someone under 18 (Q5)', async ({ page })
   await expect(page.getByRole('heading', { name: 'Create your School' })).toBeVisible();
 
   await page.getByLabel('School name').fill('Too Young Dojo');
+  await page.getByRole('checkbox', { name: /I accept the School and Franchise Agreement/ }).check();
   await page.getByRole('button', { name: 'Create School' }).click();
   await expect(page.getByText('You must be 18 or over to create a School.')).toBeVisible();
   expect(await db.school.count({ where: { name: 'Too Young Dojo' } })).toBe(0);

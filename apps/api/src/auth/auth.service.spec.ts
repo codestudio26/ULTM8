@@ -30,6 +30,8 @@ describe('AuthService', () => {
       // prismaAuth mock already uses below, so the two stay consistent.
       user: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ email: 'a@example.test' }) },
       roleGrant: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
+      legalDocument: { findMany: jest.fn().mockResolvedValue([{ slug: 'terms-and-conditions', version: 'terms-2.0' }]) },
+      legalAcceptance: { createMany: jest.fn() },
     };
     prismaApp = {
       withTenantContext: jest.fn((_id: string, fn: any) => fn(tx)),
@@ -51,10 +53,47 @@ describe('AuthService', () => {
       passcode: '123456',
       passcodeConfirm: '123456',
       dateOfBirth: '2000-01-01',
+      acceptTerms: true,
     } as any;
 
     it('rejects mismatched passcode/passcodeConfirm', async () => {
       await expect(service.register({ ...dto, passcodeConfirm: '654321' })).rejects.toThrow(BadRequestException);
+    });
+
+    it('refuses a sign-up that did not agree to the Terms, saving nothing (Decision 444)', async () => {
+      for (const acceptTerms of [undefined, false]) {
+        await expect(service.register({ ...dto, acceptTerms })).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+      }
+      expect(prismaAuth.user.findMany).not.toHaveBeenCalled();
+      expect(prismaApp.withTenantContext).not.toHaveBeenCalled();
+    });
+
+    it('refuses an under-18 sign-up before anything is saved or sent (Decision 444)', async () => {
+      const now = new Date();
+      const seventeen = `${now.getUTCFullYear() - 17}-01-01`;
+      await expect(service.register({ ...dto, dateOfBirth: seventeen })).rejects.toThrow(ForbiddenException);
+      await expect(service.register({ ...dto, dateOfBirth: seventeen })).rejects.toMatchObject({ response: { code: 'REGISTER_UNDER_18' } });
+      expect(prismaAuth.user.findMany).not.toHaveBeenCalled();
+      expect(twilio.sendOtp).not.toHaveBeenCalled();
+    });
+
+    it('accepts someone who turns 18 today somewhere on Earth (Decision 444)', async () => {
+      // Kiritimati (UTC+14) is the first place to reach a new day.
+      const latest = new Date(Date.now() + 14 * 60 * 60 * 1000);
+      const m = String(latest.getUTCMonth() + 1).padStart(2, '0');
+      const d = String(latest.getUTCDate()).padStart(2, '0');
+      if (`${m}-${d}` === '02-29') return; // 18 years ago had no 29 February
+      await service.register({ ...dto, dateOfBirth: `${latest.getUTCFullYear() - 18}-${m}-${d}` });
+      expect(tx.user.create).toHaveBeenCalled();
+    });
+
+    it('records the Terms and Privacy Policy versions accepted (Decision 444)', async () => {
+      await service.register(dto);
+      const rows = tx.legalAcceptance.createMany.mock.calls[0][0].data;
+      expect(rows).toEqual([
+        expect.objectContaining({ documentSlug: 'terms-and-conditions', version: 'terms-2.0', userId: tx.user.create.mock.calls[0][0].data.id }),
+        expect.objectContaining({ documentSlug: 'privacy-statement', version: 'unpublished' }),
+      ]);
     });
 
     const longAgo = new Date(Date.now() - 31 * 60 * 1000);

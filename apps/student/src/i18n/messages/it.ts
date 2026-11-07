@@ -1183,6 +1183,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       correctionSameRank: "Questa è già la tua cintura. Scegli la cintura che dovresti avere.",
     },
   },
+  legal: {
+    titles: {
+      terms: "Termini di servizio",
+      privacy: "Informativa sulla privacy",
+      schoolAgreement: "Contratto Scuola e Franchising",
+      childrenNotice: "Informativa privacy per minori e tutori",
+      cookies: "Informativa su cookie e archiviazione",
+    },
+    agree: {
+      account: "Accetto i Termini di servizio e ho letto l’Informativa sulla privacy.",
+    },
+    version: "Versione {version}",
+    beingPrepared: "Questa pagina è in preparazione. Sarà pubblicata qui prima del lancio di ULTM8.",
+    loadFailed: "Impossibile caricare questa pagina. Riprova.",
+  },
   charges: {
     recurring: {
       heading: "Addebiti ricorrenti",

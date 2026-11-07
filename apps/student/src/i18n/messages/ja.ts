@@ -1155,6 +1155,21 @@ export const messages: PartialMessages<EnglishMessages> = {
       correctionSameRank: "それは今の帯です。本来の帯を選んでください。",
     },
   },
+  legal: {
+    titles: {
+      terms: "利用規約",
+      privacy: "プライバシーポリシー",
+      schoolAgreement: "スクールおよびフランチャイズ契約",
+      childrenNotice: "お子様と保護者のためのプライバシー通知",
+      cookies: "Cookieおよびストレージに関する通知",
+    },
+    agree: {
+      account: "利用規約に同意し、プライバシーポリシーを読みました。",
+    },
+    version: "バージョン {version}",
+    beingPrepared: "このページは準備中です。ULTM8の公開前にここで公開されます。",
+    loadFailed: "このページを読み込めませんでした。もう一度お試しください。",
+  },
   charges: {
     recurring: {
       heading: "定期請求",

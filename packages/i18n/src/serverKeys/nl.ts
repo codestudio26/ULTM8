@@ -35,6 +35,10 @@ export const server: PartialMessages<ServerKeys> = {
     childIsAdult: "Dit kind is nu 18 en tekent zelf. Het kan een eigen ULTM8-account maken.",
     childAdultAccessEnded: "Dit kind werd meer dan 30 dagen geleden 18, dus het account wordt niet meer vanuit het account van een ouder beheerd.",
     guardianUnder18: "Een voogd moet 18 of ouder zijn.",
+    // Decision 444 (legal go-live).
+    termsNotAccepted: "Ga akkoord met de Servicevoorwaarden en het Privacybeleid om een account aan te maken.",
+    registerUnder18: "Je moet 18 of ouder zijn om een account aan te maken. Vraag je ouder of voogd om je toe te voegen vanuit hun ULTM8-account.",
+    agreementNotAccepted: "Accepteer de School- en Franchiseovereenkomst om verder te gaan.",
     notAMinor: "Dit is voor kinderen (onder 18). Een volwassene maakt een eigen account.",
     childAlreadyHere: "Dit kind is hier al leerling, met een ouder of voogd. Open de pagina en gebruik in plaats daarvan \"Nog een voogd toevoegen\".",
     alreadyGuardian: "Deze persoon is al ouder of voogd van dit kind.",

@@ -35,6 +35,10 @@ export const server: PartialMessages<ServerKeys> = {
     childIsAdult: "この子どもは18歳になり、自分で署名します。自分のULTM8アカウントを作れます。",
     childAdultAccessEnded: "この子どもは18歳になってから30日以上たったため、アカウントは保護者のアカウントから管理されなくなりました。",
     guardianUnder18: "保護者は18歳以上である必要があります。",
+    // Decision 444 (legal go-live).
+    termsNotAccepted: "アカウントを作成するには、利用規約とプライバシーポリシーに同意してください。",
+    registerUnder18: "アカウントを作成するには18歳以上である必要があります。保護者に、保護者のULTM8アカウントから追加してもらってください。",
+    agreementNotAccepted: "続行するには、スクールおよびフランチャイズ契約に同意してください。",
     notAMinor: "これは子ども（18歳未満）用です。大人は自分のアカウントを作ります。",
     childAlreadyHere: "この子どもはすでに保護者とともにここの生徒です。生徒のページを開き、「別の保護者を追加」を使ってください。",
     alreadyGuardian: "この人はすでにこの子どもの保護者です。",

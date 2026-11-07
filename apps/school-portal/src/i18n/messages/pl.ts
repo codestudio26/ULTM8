@@ -5164,6 +5164,24 @@ export const messages: PartialMessages<EnglishMessages> = {
     emptyRates: "Brak personelu",
     emptyRatesDescription: "Tutaj pojawi się personel dodany na stronie Personel.",
   },
+  legal: {
+    titles: {
+      terms: "Warunki korzystania z usługi",
+      privacy: "Polityka prywatności",
+      schoolAgreement: "Umowa Szkoły i Franczyzy",
+      childrenNotice: "Informacja o prywatności dla dzieci i opiekunów",
+      cookies: "Informacja o plikach cookie i pamięci",
+    },
+    agree: {
+      account: "Akceptuję {terms} i przeczytałem(-am) {privacy}.",
+      agreement: "Akceptuję {agreement}, w tym jej umowę powierzenia przetwarzania danych.",
+    },
+    version: "Wersja {version}",
+    beingPrepared: "Ta strona jest w przygotowaniu. Zostanie tu opublikowana przed uruchomieniem ULTM8.",
+    loadFailed: "Nie udało się wczytać tej strony. Spróbuj ponownie.",
+    notFound: "Nie znaleziono strony",
+    backToSignIn: "Wróć do logowania",
+  },
   whatsNew: {
     title: "Nowości",
     subtitle: "Wiadomości o ULTM8 od zespołu ULTM8.",

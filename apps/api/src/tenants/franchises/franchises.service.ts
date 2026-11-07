@@ -3,6 +3,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { FeeModel } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { LEGAL_SLUGS, assertAgreementAccepted, recordLegalAcceptances } from '../../legal/legal-acceptance';
 import { PrismaAppService } from '../../common/prisma/prisma-app.service';
 import { PrismaJobsService } from '../../common/prisma/prisma-jobs.service';
 import { TenantAuthorizationService } from '../tenant-authorization.service';
@@ -349,6 +350,8 @@ export class FranchisesService {
     const franchiseId = randomUUID();
     const roleGrantId = randomUUID();
 
+    // Decision 444: no Franchise without its owner accepting the Agreement and DPA.
+    assertAgreementAccepted(dto.acceptAgreement);
     const franchise = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const created = await tx.franchise.create({
         data: {
@@ -381,6 +384,7 @@ export class FranchisesService {
           grantedById: callerId, // self-granted at creation time — there is no prior grantor
         },
       });
+      await recordLegalAcceptances(tx, callerId, [LEGAL_SLUGS.schoolAgreement], { franchiseId: created.id });
 
       return created;
     });

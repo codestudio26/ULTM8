@@ -35,6 +35,10 @@ export const server: PartialMessages<ServerKeys> = {
     childIsAdult: "Bu çocuk artık 18 yaşında ve kendi adına imza atar. Kendi ULTM8 hesabını açabilir.",
     childAdultAccessEnded: "Bu çocuk 30 günden uzun süre önce 18 yaşına girdi, bu yüzden hesabı artık bir ebeveynin hesabından yönetilmiyor.",
     guardianUnder18: "Bir veli 18 yaşında veya daha büyük olmalıdır.",
+    // Decision 444 (legal go-live).
+    termsNotAccepted: "Hesap oluşturmak için Hizmet Şartları'nı ve Gizlilik Politikası'nı kabul edin.",
+    registerUnder18: "Hesap oluşturmak için 18 yaşında veya daha büyük olmanız gerekir. Ebeveyninizden veya velinizden sizi kendi ULTM8 hesabından eklemesini isteyin.",
+    agreementNotAccepted: "Devam etmek için Okul ve Franchise Sözleşmesi'ni kabul edin.",
     notAMinor: "Bu, çocuklar (18 yaş altı) içindir. Bir yetişkin kendi hesabını açar.",
     childAlreadyHere: "Bu çocuk zaten burada bir ebeveyn veya veliyle öğrenci. Sayfasını açın ve bunun yerine \"Başka bir veli ekle\"yi kullanın.",
     alreadyGuardian: "Bu kişi zaten bu çocuğun ebeveyni veya velisi.",

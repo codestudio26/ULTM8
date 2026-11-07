@@ -22,6 +22,8 @@ function nav() {
   return { navigate: jest.fn() } as never;
 }
 
+const TERMS = 'I agree to the Terms of Service and I have read the Privacy Policy.';
+
 describe('RegisterScreen', () => {
   afterEach(() => {
     apiClient.POST.mockReset();
@@ -42,13 +44,23 @@ describe('RegisterScreen', () => {
     await fireEvent.changeText(screen.getByLabelText('Search country'), 'united states');
     await fireEvent.press(screen.getByText('United States'));
     await fireEvent.changeText(phoneInput, '4155552671');
+    await fireEvent(screen.getByLabelText(TERMS), 'valueChange', true);
 
     await fireEvent.press(screen.getByText('Create account'));
 
     expect(apiClient.POST).toHaveBeenCalledWith(
       '/v1/auth/register',
-      expect.objectContaining({ body: expect.objectContaining({ phone: '+14155552671' }) }),
+      expect.objectContaining({ body: expect.objectContaining({ phone: '+14155552671', acceptTerms: true }) }),
     );
     expect((navigation as { navigate: jest.Mock }).navigate).toHaveBeenCalledWith('VerifyOtp', { phone: '+14155552671' });
+  });
+
+  it('asks for the Terms and Privacy tick before sending anything (Decision 444)', async () => {
+    const screen = await render(<RegisterScreen navigation={nav()} route={{} as never} />);
+    expect(screen.getByText('Terms of Service')).toBeTruthy();
+    expect(screen.getByText('Privacy Policy')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Create account'));
+    expect(await screen.findByText('Agree to the Terms of Service and the Privacy Policy to create an account.')).toBeTruthy();
+    expect(apiClient.POST).not.toHaveBeenCalled();
   });
 });
