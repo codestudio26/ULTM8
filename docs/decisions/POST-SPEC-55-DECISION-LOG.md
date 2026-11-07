@@ -8079,8 +8079,8 @@ User (Code), 7 Nov 2026: "fix it any bugs you have founded", applied to the bugs
 11. **Editing a student's profile is for owners and staff who have been granted that access** (the "manage students" permission). Coaches without it can't. Owner's words: "only people that has been granted access". To be built.
 
 **Time and search**
-12. *(Question 12, signing back in after the deletion date but before the daily job runs: not yet answered. Kept as built until the owner answers.)*
-13. *(Question 13, a punctuation-only search listing the whole roster: not yet answered.)*
+12. **Signing back in after the deletion date but before the daily deletion job runs still cancels the deletion**, as built: signing back in shows the person wants to stay, and the gap is under a day.
+13. **A search of only symbols (for example `%` or `_`) shows no results**, with a hint that explains symbols can't be used to search and asks for a name instead. To be built.
 14. **The kiosk age checks use the same 18th-birthday rule as sign-up** (Decision 444 item 6, Decision 446 item 8). To be built.
 
 **Points to confirm of #517–#522**
@@ -8093,4 +8093,4 @@ User (Code), 7 Nov 2026: "fix it any bugs you have founded", applied to the bugs
 
 ### Recorded by
 
-User (Code), 7 Nov 2026, item by item in chat: 1 "if we can separated them mighty be a good idea"; 2 "yes"; 3 "But the price should not increase"; 4 "yes"; 5 "Pix foes not work outside of brazil, it should not be shown"; 6 "Main Account owner"; 7 "ok"; 8 "ok"; 9 "only people with who has been given access to tht payment area, not every one"; 10 "delete"; 11 "again only people that has been granted access"; 14 "ok"; 15–20 "ok".
+User (Code), 7 Nov 2026, item by item in chat: 1 "if we can separated them mighty be a good idea"; 2 "yes"; 3 "But the price should not increase"; 4 "yes"; 5 "Pix foes not work outside of brazil, it should not be shown"; 6 "Main Account owner"; 7 "ok"; 8 "ok"; 9 "only people with who has been given access to tht payment area, not every one"; 10 "delete"; 11 "again only people that has been granted access"; 12 "ok"; 13 "Also explain the symbols shuld not be use"; 14 "ok"; 15–20 "ok".
