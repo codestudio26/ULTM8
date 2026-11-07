@@ -38,8 +38,8 @@ export function saveCast(c) { fs.writeFileSync(CAST_FILE, JSON.stringify(c, null
 // --- people -----------------------------------------------------------------
 // A UK mobile number per person: +44 7911 1xxxxx (valid for libphonenumber).
 // PHONE_BASE moves the block per run so a re-seed never collides.
-let phoneSeq = Number(process.env.PHONE_BASE || Math.floor(Math.random() * 850000));
-export function nextPhone() { return `+447911${String(100000 + (phoneSeq++ % 900000)).padStart(6, '0')}`; }
+let phoneSeq = Number(process.env.PHONE_BASE || Math.floor(Math.random() * 100000));
+export function nextPhone() { return `+4479111${String(phoneSeq++ % 100000).padStart(5, '0')}`; }
 
 /** Register (with the Decision 444 tick), SMS code, sign in. */
 export async function signUp({ first, last, dob = '1988-04-12', language, currency, tag }) {

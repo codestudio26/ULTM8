@@ -35,7 +35,7 @@ async function cleanSchool(planIndex, label) {
   note(`clean School for ${label}`, `${s.ck} ${s.provider} ${s.sid}`);
   return s;
 }
-const join = (s, p, studentId) => must('join', 'POST', `/schools/${s.sid}/join`, p.tok, { branchId: s.branchId, ...(studentId ? { studentId } : {}) });
+const join = async (s, p, studentId) => { const r = await must('join', 'POST', `/schools/${s.sid}/join`, p.tok, { branchId: s.branchId, ...(studentId ? { studentId } : {}) }); await signIn(p); return r; };
 const sign = (s, p, studentId) => call('POST', `/waivers/${s.waiverId}/sign`, p.tok, { ...(studentId ? { studentId } : {}), signerFullName: `${p.first} ${p.last}`, signatureText: `${p.first} ${p.last}` });
 const order = (planId, p, extra = {}) => must('purchase', 'POST', `/membership-plans/${planId}/purchase`, p.tok, extra);
 const S = (r) => `${r.status}${r.body?.error?.code ? ' ' + r.body.error.code : ''}`;
@@ -153,7 +153,7 @@ if (want('R3')) {
   const ppl = await pool(Array.from({ length: 8 }, (_, k) => k), 4, async (k) => { const p = await person(`Eve${k}`); await join(s, p); await must('desk sale', 'POST', `/schools/${s.sid}/students/${p.id}/memberships/sell`, s.owner.tok, { membershipPlanId: s.plans.pack, paymentMethod: 'CASH' }); return p; });
   for (const p of ppl) {
     const [w, b] = await burst([() => sign(s, p), () => call('POST', `/classes/${cls.id}/book`, p.tok, {})]);
-    const sig = await db.waiverSignature.findFirst({ where: { studentId: p.id }, select: { signedAt: true } });
+    const sig = await db.waiverSignature.findFirst({ where: { studentId: p.id }, select: { createdAt: true, status: true }, orderBy: { createdAt: "asc" } }).then((x) => x && { signedAt: x.createdAt, status: x.status });
     const bk = await db.booking.findFirst({ where: { studentId: p.id, classId: cls.id }, select: { createdAt: true, status: true } });
     rows.push({ sign: S(w), book: S(b), signedAt: sig?.signedAt, bookedAt: bk?.createdAt, bad: !!bk && (!sig || sig.signedAt > bk.createdAt) });
   }
@@ -247,10 +247,13 @@ if (want('R6')) {
   await join(s, A, childId);
   const add = await call('POST', `/schools/${s.sid}/students/${childId}/guardians`, s.owner.tok, { firstName: B.first, surname: B.last, email: B.email });
   note('R6: owner adds the second parent', `${S(add)} ${JSON.stringify(add.body).slice(0, 300)}`);
-  // The second parent may have to accept an invite; try the obvious route.
+  // The second parent accepts the School's invite (consent ticked), then signs in again.
+  if (add.body?.inviteId) { const acc = await call('POST', `/child-invites/${add.body.inviteId}/accept`, B.tok, { consentPolicyVersion: '1.0-placeholder' }); note('R6: second parent accepts', S(acc)); await signIn(B); }
   const linked = await db.guardianLink.findMany({ where: { studentId: childId }, select: { guardianId: true, revokedAt: true } });
   note('R6: links', JSON.stringify(linked)?.slice(0, 400));
+  await signIn(A);
   const both = [A, B];
+  // Two freeze requests and two cancellations of the same booking at once come after.
   const w = await burst(both.map((p) => () => sign(s, p, childId)));
   const sigs = await db.waiverSignature.count({ where: { studentId: childId } });
   const buys = await burst(both.map((p) => () => call('POST', `/membership-plans/${s.plans.pack}/purchase`, p.tok, { studentId: childId })));
@@ -260,6 +263,10 @@ if (want('R6')) {
   const act = await db.membership.count({ where: { studentId: childId, schoolId: s.sid, status: 'ACTIVE' } });
   const bk = await burst(both.map((p) => () => call('POST', `/classes/${cls.id}/book`, p.tok, { studentId: childId })));
   const bookings = await db.booking.count({ where: { studentId: childId, classId: cls.id, status: { not: 'CANCELLED' } } }).catch(() => -1);
+  const bkId = bk.find((r) => r.status < 300)?.body?.id;
+  const cx = bkId ? await burst(both.map((p) => () => call('PATCH', `/bookings/${bkId}/cancel`, p.tok, {}))) : [];
+  const m = await db.membership.findFirst({ where: { studentId: childId, schoolId: s.sid, status: 'ACTIVE' }, select: { id: true, classesRemaining: true } }).catch(() => null);
+  note('R6: both parents cancel the same booking at once', { cancel: cx.map(S), membership: m });
   ok('R6: two parents at once: one booking for the child', bookings <= 1, { waiver: w.map(S), signatures: sigs, buys: buys.map(S), pendingOrders: pend, activeMemberships: act, book: bk.map(S), bookings });
 }
 

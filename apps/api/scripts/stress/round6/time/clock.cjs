@@ -57,6 +57,19 @@ async function main() {
   const { AppModule } = require(path.join(API_DIR, 'dist/app.module'));
   const app = await NestFactory.createApplicationContext(AppModule, { logger: process.env.CLOCK_QUIET ? ['error'] : ['error', 'warn', 'log'] });
   if (!plan) { console.log('serving (workers only)'); await new Promise(() => {}); }
+  // Fault injection (CRASH_AFTER_STRIPE=n): the process dies (exit 137, as
+  // SIGKILL) right after Stripe answers the n-th off-session charge, before
+  // the answer is saved: the worst moment for charge-auto-pay to be killed.
+  if (process.env.CRASH_AFTER_STRIPE) {
+    const { PaymentsService } = require(path.join(API_DIR, 'dist/payments/payments.service'));
+    const orig = PaymentsService.prototype.chargeOffSession;
+    let n = 0;
+    PaymentsService.prototype.chargeOffSession = async function (...a) {
+      const r = await orig.apply(this, a);
+      if (++n >= Number(process.env.CRASH_AFTER_STRIPE)) { fs.appendFileSync(LOG, JSON.stringify({ crash: 'after Stripe answered', paymentIntentId: r.paymentIntentId, studentId: a[0] }) + '\n'); process.exit(137); }
+      return r;
+    };
+  }
   const procs = {};
   for (const [name, [file, cls]] of Object.entries(JOBS)) {
     try { procs[name] = app.get(require(path.join(API_DIR, 'dist', file))[cls], { strict: false }); } catch (e) { console.error('no processor', name, e.message); }
