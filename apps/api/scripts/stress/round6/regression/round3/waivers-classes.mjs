@@ -4,7 +4,7 @@
 // Changes only the first school picked (default cast schools 18-21 → 18); the school
 // after the last picked one is used read-only for cross-tenant attempts.
 // Every check that has no confirmed rule behind it is reported as INFO (pass, "INFO: ...").
-import { db, call, pool, report, stats, randomUUID, token, grant, cast, pick, checks, codes } from './common.mjs';
+import { db, call, pool, report, stats, randomUUID, token, grant, cast, pick, checks, codes, setRequireWaiver } from './common.mjs';
 
 const { ok, save } = checks('waivers-classes');
 const info = (id, detail) => ok(id, true, 'INFO: ' + detail);
@@ -99,6 +99,7 @@ const setPolicy = (data) => call('setup:school-settings', 'PATCH', `/schools/${S
   const r = await setPolicy({ classCancellationPolicy: 'AUTO_CREDIT', classCancellationPolicyWindow: 'BEFORE_CUTOFF', schoolCancelledClassResolution: 'CREDIT_ALL', defaultRefundCutoffHours: null });
   if (r.status >= 300) throw new Error('school settings ' + JSON.stringify(r.body));
   await db.branch.updateMany({ where: { schoolId: S.id }, data: { cancellationSettingsOverride: false } });
+  await setRequireWaiver(S.id, S.owner.tok, false); // Round 6 adaptation (Decision 441 item 5)
   const w = await call('setup:waiver-settings', 'PATCH', `/schools/${S.id}/waiver-settings`, S.owner.tok, { waiverArchivedSignaturesCount: true });
   if (w.status >= 300) throw new Error('waiver settings ' + JSON.stringify(w.body));
   const old = await db.waiver.findMany({ where: { schoolId: S.id, archivedAt: null }, select: { id: true } });
@@ -588,6 +589,7 @@ await step('K5 list latency', async () => {
 // Retire this run's waivers so the guest page (max 50 waivers per sign) stays usable.
 await pool(waivers, 5, (id) => call('cleanup:archive', 'POST', `/waivers/${id}/archive`, S.owner.tok, {}));
 
+await setRequireWaiver(S.id, S.owner.tok, true); // Round 6: back to the default
 save();
 report();
 await db.$disconnect();

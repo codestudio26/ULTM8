@@ -50,6 +50,14 @@ async function mkOwner(label) {
   await mkGrant(u.id, 'SCHOOL_OWNER_MANAGER');
   return { ...u, tok: token(u, [grant('SCHOOL_OWNER_MANAGER', S.id)]) };
 }
+// Round 6 adaptation (Decision 423 item 10, #459, 3 Nov 2026): only the School's
+// main owner adds or removes coaches and staff. IN5 needs a fresh owner (its
+// own resend throttle), so that owner is made the main owner for the step, as
+// a hand-over (Decision 370) would, and the cast owner is made main again after.
+async function setMainOwner(userId) {
+  await db.roleGrant.updateMany({ where: { schoolId: S.id, role: 'SCHOOL_OWNER_MANAGER' }, data: { isMainOwner: false } });
+  await db.roleGrant.updateMany({ where: { schoolId: S.id, role: 'SCHOOL_OWNER_MANAGER', userId, revokedAt: null }, data: { isMainOwner: true } });
+}
 let k = 0;
 async function mkClass(cap, extra = {}) {
   const start = now + (2 + k) * 3600e3;
@@ -184,6 +192,7 @@ console.log(`school ${S.id} (other ${O.id}), run ${RUN}`);
 // IN5. Resend passcode: throttle (20/h per owner), refusals.
 {
   const owner2 = await mkOwner('owner2');
+  await setMainOwner(owner2.id);
   const add = await call('IN5:add-instructor', 'POST', `/schools/${S.id}/instructors/add-manually`, owner2.tok, { firstName: 'Resend', surname: RUN, email: `ss-resend-${RUN}@stress.test`, branchId: b0 });
   if (add.status !== 201) throw new Error('add-manually instructor ' + JSON.stringify(add.body));
   const hash0 = (await db.user.findFirst({ where: { email: `ss-resend-${RUN}@stress.test` } })).passcodeHash;
@@ -197,6 +206,7 @@ console.log(`school ${S.id} (other ${O.id}), run ${RUN}`);
   const r2 = await call('IN5:resend-refused', 'POST', `/instructors/${add.body.id}/resend-passcode`, S.staff.tok);
   const r3 = await call('IN5:resend-refused', 'POST', `/instructors/${add.body.id}/resend-passcode`, otherOwner.tok);
   const r4 = await call('IN5:resend-refused', 'POST', `/instructors/${oProf.id}/resend-passcode`, S.owner.tok);
+  await setMainOwner(S.owner.id);
   ok('IN5b resend refused: own passcode already chosen (409), Branch Staff, other School\'s owner, other School\'s instructor', r1.status === 409 && [r2, r3, r4].every(is4xx),
     `chosen-passcode ${r1.status}; Branch Staff ${r2.status}; O owner ${r3.status}; O instructor ${r4.status}`);
 }

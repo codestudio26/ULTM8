@@ -544,6 +544,11 @@ async function closeFixture(label, nClasses) {
     if (r.status >= 300) throw new Error('discipline ' + JSON.stringify(r.body));
     return r.body.id;
   };
+  // Round 6 adaptation (Decision 414 item 6, #415): no price until the School has a currency.
+  if (!(await db.school.findUnique({ where: { id: X.id }, select: { defaultCurrency: true } })).defaultCurrency) {
+    const cur = await call('setup:currency', 'PATCH', `/schools/${X.id}`, X.owner.tok, { defaultCurrency: 'GBP', confirmCurrencyChange: true });
+    if (cur.status >= 300) throw new Error('currency ' + JSON.stringify(cur.body));
+  }
   const D2 = await mkDisc('R3 Judo');
   const p1 = await call('disc:plan', 'POST', `/schools/${X.id}/membership-plans`, X.owner.tok, { type: 'CLASS_PACK', title: `R3 ${RUN} judo pack`, price: 1000, classesIncluded: 5, disciplineIds: [D2] });
   const arch = await call('disc:archive', 'POST', `/disciplines/${D2}/archive`, X.owner.tok, {});

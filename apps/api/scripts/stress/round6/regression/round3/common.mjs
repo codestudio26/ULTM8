@@ -21,3 +21,18 @@ export function checks(name) {
   return { ok, save, results };
 }
 export const codes = (rs) => rs.reduce((m, r) => ((m[r.status] = (m[r.status] || 0) + 1), m), {});
+
+// Round 6 adaptation (Decision 441 item 5 / 442 item 1): "Waiver must be signed
+// before booking or check-in" is on by default for every School. Scripts written
+// before it, which assume only a Class's own "needs a waiver" applies, switch it
+// off through the real check-in rules endpoint (and back on at the end).
+import { call as _call } from '../booking-schedule/lib.mjs';
+export async function setRequireWaiver(schoolId, tok, on) {
+  const g = await _call('setup:check-in-rules', 'GET', `/schools/${schoolId}/check-in-rules`, tok);
+  if (g.status >= 300) throw new Error('check-in rules ' + JSON.stringify(g.body));
+  const body = { ...g.body, requireWaiver: on };
+  let p = await _call('setup:check-in-rules', 'PUT', `/schools/${schoolId}/check-in-rules`, tok, body);
+  // A School past 500 students reads 4 until the 15-minute job moves it to 6 (finding R-1).
+  if (p.status === 400 && p.body?.error?.code === 'CHECK_IN_CODE_DIGITS_LOCKED') p = await _call('setup:check-in-rules', 'PUT', `/schools/${schoolId}/check-in-rules`, tok, { ...body, codeDigits: 6 });
+  if (p.status >= 300) throw new Error('check-in rules PUT ' + JSON.stringify(p.body));
+}
