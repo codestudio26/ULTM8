@@ -15,6 +15,7 @@ import { formatInvoiceNumber } from '../charges/charge-maths';
 import { CHARGE_AUTO_PAY_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
 import { PromotionFeeService } from '../ranks/promotion-fee.service';
+import { settleLateCancelFee, STALE_OFF_SESSION_ATTEMPT_MS } from '../payments/off-session-attempts';
 
 /** Daily, at 6am UTC: after the 5am waiver-renewal sweep. */
 const CRON_DAILY_AT_6AM_UTC = '0 6 * * *';
@@ -51,6 +52,18 @@ export class ChargeAutoPayScheduler implements OnModuleInit {
 
 export type ChargeAutoPayOutcome = { paid: number; failed: number; skipped: number };
 
+type Attempt = {
+  transactionId: string;
+  studentId: string;
+  schoolId: string;
+  chargeId: string;
+  amount: number;
+  surcharge: number;
+  currency: string;
+  invoiceLabel: string;
+  description: string;
+};
+
 /**
  * Backlog §3.6 step 2 (Decision 338 item 8): members who turned on "Pay charges
  * automatically with my saved card" have each open charge charged to that card
@@ -78,7 +91,11 @@ export type ChargeAutoPayOutcome = { paid: number; failed: number; skipped: numb
  *   Pending before Stripe is called. Success settles it through the same
  *   ledger code as a desk or app payment and sends the receipt; a decline marks
  *   it Failed and sends "Automatic payment failed". The payment_intent.*
- *   webhooks for the same PaymentIntent settle the same row at most once.
+ *   webhooks for the same PaymentIntent settle the same row at most once:
+ *   the PaymentIntent carries the row's id in its metadata (Decision 446
+ *   item 5), so they find it even when Stripe's answer was never saved here.
+ *   An attempt with no answer from Stripe stays Pending, and the next run
+ *   asks Stripe what became of it (resolveStaleAttempts()).
  * - Promotion fees (backlog §3.6 step 6) are charges like any other and are
  *   paid automatically too: Decision 300 item 2 has an accepted fee "charged,
  *   by saved card or as the school takes payment". Each run starts with the
@@ -114,6 +131,15 @@ export class ChargeAutoPayProcessor extends WorkerHost {
       this.logger.log(`charge-auto-pay: promotion fees caught up: ${caughtUp.created} charges made, ${caughtUp.settled} settled, ${caughtUp.cancelled} cancelled.`);
     } catch (err) {
       this.logger.error('charge-auto-pay: the promotion fee catch-up failed; tried again on the next run.', err as Error);
+    }
+    // Decision 446 item 5: earlier attempts whose outcome was never saved.
+    try {
+      const resolved = await this.resolveStaleAttempts(now);
+      if (resolved.paid + resolved.failed + resolved.left > 0) {
+        this.logger.warn(`charge-auto-pay: stale card attempts: ${resolved.paid} paid, ${resolved.failed} not paid, ${resolved.left} left for the next run.`);
+      }
+    } catch (err) {
+      this.logger.error('charge-auto-pay: the stale card attempt check failed; tried again on the next run.', err as Error);
     }
     const members = await this.prismaJobs.studentPaymentMethod.findMany({ where: { autoPayCharges: true }, select: { studentId: true, schoolId: true } });
     const total: ChargeAutoPayOutcome = { paid: 0, failed: 0, skipped: 0 };
@@ -175,8 +201,10 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         outcome.skipped++;
         continue;
       }
-      if (await this.charge(attempt)) outcome.paid++;
-      else outcome.failed++;
+      const result = await this.charge(attempt);
+      if (result === 'paid') outcome.paid++;
+      else if (result === 'failed') outcome.failed++;
+      else outcome.skipped++;
     }
     // A promotion fee paid by credit or by the card becomes Paid (step 6).
     await this.promotionFees.settlePaidCharges(schoolId, studentId);
@@ -241,18 +269,14 @@ export class ChargeAutoPayProcessor extends WorkerHost {
     }
   }
 
-  /** Charges the saved card for one claimed attempt. True when it was paid. */
-  private async charge(a: {
-    transactionId: string;
-    studentId: string;
-    schoolId: string;
-    chargeId: string;
-    amount: number;
-    surcharge: number;
-    currency: string;
-    invoiceLabel: string;
-    description: string;
-  }): Promise<boolean> {
+  /**
+   * Charges the saved card for one claimed attempt. The PaymentIntent carries
+   * the attempt's id in its metadata and as its idempotency key (Decision 446
+   * item 5), so the payment_intent.* webhooks find the row even if its outcome
+   * is never saved here. Returns 'paid', 'failed', or 'unknown' when Stripe's
+   * answer never came back (left Pending for resolveStaleAttempts()).
+   */
+  private async charge(a: Attempt): Promise<'paid' | 'failed' | 'unknown'> {
     let result: { succeeded: boolean; paymentIntentId: string };
     try {
       result = await this.payments.chargeOffSession(
@@ -263,41 +287,61 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         `Invoice ${a.invoiceLabel}: ${a.description}`,
         `charge-auto-pay-${a.transactionId}`,
         a.surcharge,
+        a.transactionId,
       );
     } catch (err) {
-      // No card any more, or Stripe could not be reached: one attempt only, so
-      // the charge is left for the member to pay, and they are told.
-      if (!(err instanceof NoSavedPaymentMethodError)) {
-        this.logger.error(`charge-auto-pay: charging Transaction ${a.transactionId} failed; marked Failed.`, err as Error);
+      // No card any more (or the School's account isn't ready): nothing was
+      // charged, and one attempt only, so the charge is left for the member
+      // to pay, and they are told.
+      if (err instanceof NoSavedPaymentMethodError) {
+        await this.markFailed(a, null);
+        return 'failed';
       }
-      result = { succeeded: false, paymentIntentId: '' };
+      // Stripe could not be reached, or its answer was lost: the card may have
+      // been charged. Left Pending; Stripe's webhook or the stale-attempt
+      // sweep settles it from what Stripe says (Decision 446 item 5).
+      this.logger.error(`charge-auto-pay: charging Transaction ${a.transactionId} had no answer from Stripe; left Pending for Stripe's webhook or the next run's check.`, err as Error);
+      return 'unknown';
     }
-
     const paymentIntentId = result.paymentIntentId || null;
     if (!result.succeeded) {
-      await this.prismaJobs.transaction.updateMany({
-        where: { id: a.transactionId, status: 'PENDING' },
-        data: { status: 'FAILED', ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}) },
-      });
-      // Decision 338 item 10: "failed or overdue payment", switchable off by the School.
-      if ((await chargeNoticeSwitches(this.prismaJobs, a.schoolId)).failedOverdue) {
-        await this.notify({
-          notificationId: `charge-auto-pay-failed-${a.transactionId}`,
-          userId: a.studentId,
-          title: 'Automatic payment failed',
-          body: `We couldn't charge your saved card for invoice ${a.invoiceLabel} (${a.description}, ${noticeMoney(a.amount + a.surcharge, a.currency)}). Pay it in the app or at the front desk.`,
-          type: 'CHARGE',
-          schoolId: a.schoolId,
-          targetType: 'PAYMENT',
-          targetId: a.transactionId,
-        });
-      }
-      return false;
+      await this.markFailed(a, paymentIntentId);
+      return 'failed';
     }
+    await this.settlePaid(a, paymentIntentId);
+    return 'paid';
+  }
 
+  /** A declined (or impossible) attempt: Failed, and the member is told, once. */
+  private async markFailed(a: Attempt, paymentIntentId: string | null) {
+    const marked = await this.prismaJobs.transaction.updateMany({
+      where: { id: a.transactionId, status: 'PENDING' },
+      data: { status: 'FAILED', ...(paymentIntentId ? { stripePaymentIntentId: paymentIntentId } : {}) },
+    });
+    // Settled meanwhile by Stripe's webhook: not failed.
+    if (marked.count === 0) return;
+    // Decision 338 item 10: "failed or overdue payment", switchable off by the School.
+    if ((await chargeNoticeSwitches(this.prismaJobs, a.schoolId)).failedOverdue) {
+      await this.notify({
+        notificationId: `charge-auto-pay-failed-${a.transactionId}`,
+        userId: a.studentId,
+        title: 'Automatic payment failed',
+        body: `We couldn't charge your saved card for invoice ${a.invoiceLabel} (${a.description}, ${noticeMoney(a.amount + a.surcharge, a.currency)}). Pay it in the app or at the front desk.`,
+        type: 'CHARGE',
+        schoolId: a.schoolId,
+        targetType: 'PAYMENT',
+        targetId: a.transactionId,
+      });
+    }
+  }
+
+  /** A paid attempt: settled on the ledger with Stripe's PaymentIntent id, and the receipt sent. */
+  private async settlePaid(a: Attempt, paymentIntentId: string | null) {
     const settled = await this.prismaJobs.$transaction(async (tx) => {
       // The webhook for this PaymentIntent may have come first and settled it already.
-      await tx.transaction.updateMany({ where: { id: a.transactionId, stripePaymentIntentId: null }, data: { stripePaymentIntentId: paymentIntentId } });
+      if (paymentIntentId) {
+        await tx.transaction.updateMany({ where: { id: a.transactionId, stripePaymentIntentId: null }, data: { stripePaymentIntentId: paymentIntentId } });
+      }
       return settleChargePayment(tx, a.transactionId);
     });
     // Decision 338 item 10: the School may switch receipts off.
@@ -314,7 +358,65 @@ export class ChargeAutoPayProcessor extends WorkerHost {
         targetId: a.transactionId,
       });
     }
-    return true;
+  }
+
+  /**
+   * Decision 446 item 5: off-session card attempts still Pending an hour
+   * after they were written (the worker stopped between Stripe's answer and
+   * saving it, or Stripe could not be reached) are settled from what Stripe
+   * says: paid (the charge is paid and the receipt sent), still processing
+   * (left), or declined or never made (Failed; for an automatic payment the
+   * member is told). Covers automatic charge payments and late-cancellation
+   * fees. Runs first in every run, before the 7am late-fee and overdue-notice
+   * jobs, which leave a charge alone while its automatic attempt is Pending.
+   * A Stripe that can't be reached leaves the row for the next run.
+   */
+  async resolveStaleAttempts(now: Date): Promise<{ paid: number; failed: number; left: number }> {
+    const stale = await this.prismaJobs.transaction.findMany({
+      where: {
+        status: 'PENDING',
+        paymentMethod: 'STRIPE',
+        createdAt: { lt: new Date(now.getTime() - STALE_OFF_SESSION_ATTEMPT_MS) },
+        OR: [{ kind: 'CHARGE_PAYMENT', chargePaymentChannel: 'AUTOMATIC' }, { kind: 'LATE_CANCEL_FEE' }],
+      },
+      include: { charge: { select: { invoiceNumber: true, description: true } } },
+      orderBy: { createdAt: 'asc' },
+    });
+    const total = { paid: 0, failed: 0, left: 0 };
+    for (const row of stale) {
+      try {
+        const intent = await this.payments.findOffSessionPayment(row.studentId, row.schoolId, row.id, row.stripePaymentIntentId, row.createdAt);
+        if (intent?.status === 'processing') {
+          total.left++;
+          continue;
+        }
+        const succeeded = intent?.status === 'succeeded';
+        if (row.kind === 'LATE_CANCEL_FEE') {
+          await this.prismaJobs.$transaction((tx) => settleLateCancelFee(tx, row.id, intent?.id ?? null, succeeded));
+        } else {
+          const a: Attempt = {
+            transactionId: row.id,
+            studentId: row.studentId,
+            schoolId: row.schoolId,
+            chargeId: row.chargeId!,
+            amount: row.amount,
+            surcharge: row.surchargeAmount,
+            currency: row.currency!,
+            invoiceLabel: row.charge ? formatInvoiceNumber(row.charge.invoiceNumber) : '',
+            description: row.charge?.description ?? '',
+          };
+          if (succeeded) await this.settlePaid(a, intent.id);
+          else await this.markFailed(a, intent?.id ?? null);
+        }
+        if (succeeded) total.paid++;
+        else total.failed++;
+        this.logger.warn(`charge-auto-pay: Pending ${row.kind} Transaction ${row.id} resolved from Stripe as ${succeeded ? 'paid' : 'not paid'}${intent ? ` (PaymentIntent ${intent.id}, ${intent.status})` : ' (no PaymentIntent)'}.`);
+      } catch (err) {
+        total.left++;
+        this.logger.error(`charge-auto-pay: checking Pending Transaction ${row.id} with Stripe failed; tried again on the next run.`, err as Error);
+      }
+    }
+    return total;
   }
 
   /** Best-effort, as ChargesService.notify(): a notice that fails to enqueue never undoes the payment. */

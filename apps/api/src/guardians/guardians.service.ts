@@ -8,7 +8,7 @@ import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { StepUpService } from '../auth/step-up.service';
-import { eighteenthBirthday, isAdultOn, localDateIn } from '../common/decorators/is-birth-date.decorator';
+import { eighteenthBirthday, isAdultOn, LATEST_TIME_ZONE, localDateIn } from '../common/decorators/is-birth-date.decorator';
 import { schoolZone } from '../common/school-zone';
 import { sameDay, sameName } from '../common/same-person';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
@@ -115,9 +115,12 @@ export class GuardiansService {
   async createMinor(guardianId: string, dto: CreateMinorDto) {
     // Decision 430 items 2 and 3 (FAM-2, FAM-3): a parent is 18 or over (an
     // unknown date of birth is allowed: a Guardian account the School made
-    // has none), and a child is under 18.
+    // has none), and a child is under 18. Decision 446 item 8: under 18 on
+    // the same clock as sign-up (the earliest time zone, Decision 444 item 6),
+    // so someone who could already make their own account isn't added as a
+    // child, and the other way round.
     await this.assertGuardianNotUnder18(guardianId);
-    if (isAdultOn(new Date(dto.dateOfBirth))) {
+    if (isAdultOn(new Date(dto.dateOfBirth), new Date(), LATEST_TIME_ZONE)) {
       throw new BadRequestException({ code: 'NOT_A_MINOR', message: 'This is for children (under 18). An adult makes their own account.' });
     }
     const minorId = randomUUID();

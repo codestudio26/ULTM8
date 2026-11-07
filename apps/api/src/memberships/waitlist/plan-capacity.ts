@@ -55,3 +55,16 @@ export async function planFullFor(db: Reader, plan: { id: string; memberLimit: n
 export async function assertPlanHasRoom(db: Reader, plan: { id: string; memberLimit: number | null }, studentId: string): Promise<void> {
   if (await planFullFor(db, plan, studentId)) throw new ConflictException(PLAN_FULL);
 }
+
+/**
+ * Decision 446 item 6: one place-taking order at a time per plan, so orders
+ * arriving at the same moment can't all pass the member limit check. Taken
+ * inside the transaction that writes the order (or the membership), before
+ * assertPlanHasRoom() counts again: the count then sees every order the
+ * transactions before it wrote. Before the per-member locks, the order every
+ * caller takes them in. Plans without a limit take no lock.
+ */
+export async function lockPlanPlaces(tx: { $executeRaw: Prisma.TransactionClient['$executeRaw'] }, plan: { id: string; memberLimit: number | null }): Promise<void> {
+  if (plan.memberLimit == null) return;
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`plan-places:${plan.id}`}, 0))`;
+}

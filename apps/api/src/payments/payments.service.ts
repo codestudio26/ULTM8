@@ -356,11 +356,17 @@ export class PaymentsService {
     if (!account || account.provider !== 'STRIPE' || !account.stripeConnectedAccountId) {
       return { status: 'NOT_CONNECTED', ...connect };
     }
+    // Decision 446 item 7: saved with when it was asked, and never over an
+    // answer Stripe gave later (an account.updated processed meanwhile).
+    const checkedAt = new Date();
     const stripeAccount = await this.stripeClient.platformClient().accounts.retrieve(account.stripeConnectedAccountId);
     const ready = isStripeAccountReady(stripeAccount);
     if (ready !== account.stripeAccountReady) {
       await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.paymentAccount.update({ where: { id: account.id }, data: { stripeAccountReady: ready } }),
+        tx.paymentAccount.updateMany({
+          where: { id: account.id, OR: [{ stripeAccountReadyCheckedAt: null }, { stripeAccountReadyCheckedAt: { lt: checkedAt } }] },
+          data: { stripeAccountReady: ready, stripeAccountReadyCheckedAt: checkedAt },
+        }),
       );
     }
     return { status: ready ? 'CONNECTED' : 'ACTION_NEEDED', ...connect };
@@ -1257,6 +1263,12 @@ export class PaymentsService {
     // Decision 406: the part of `amount` that is the card surcharge (0 =
     // none), kept in the PaymentIntent's metadata as charge() keeps it.
     surchargeAmount = 0,
+    // Decision 446 item 5: the Pending Transaction the caller wrote before
+    // this call, put in the PaymentIntent's metadata (as a hosted Checkout's
+    // is), so Stripe's payment_intent.* webhooks find the row even if the
+    // caller never saved Stripe's answer (findCardTransaction), and
+    // findOffSessionPayment() can find the PaymentIntent again.
+    transactionId?: string,
   ): Promise<{ succeeded: boolean; paymentIntentId: string }> {
     const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId, schoolId } } }),
@@ -1284,7 +1296,9 @@ export class PaymentsService {
           payment_method: pmId,
           off_session: true,
           confirm: true,
-          ...(surchargeAmount > 0 ? { metadata: { surchargeAmount: String(surchargeAmount) } } : {}),
+          ...(surchargeAmount > 0 || transactionId
+            ? { metadata: { ...(transactionId ? { transactionId } : {}), ...(surchargeAmount > 0 ? { surchargeAmount: String(surchargeAmount) } : {}) } }
+            : {}),
         },
         idempotencyKey ? { idempotencyKey } : undefined,
       );
@@ -1295,6 +1309,44 @@ export class PaymentsService {
         return { succeeded: false, paymentIntentId };
       }
       throw err;
+    }
+  }
+
+  /**
+   * Decision 446 item 5: the PaymentIntent an off-session charge made for the
+   * Pending Transaction `transactionId`, read from Stripe, for an attempt
+   * whose outcome was never saved (the worker stopped between Stripe's answer
+   * and the save, or Stripe could not be reached). By its saved id when the
+   * row has one; otherwise among the saved card's Customer's PaymentIntents
+   * made since `since`, by the `transactionId` chargeOffSession() puts in the
+   * metadata. Null when Stripe has none: nothing was charged.
+   */
+  async findOffSessionPayment(
+    studentId: string,
+    schoolId: string,
+    transactionId: string,
+    knownPaymentIntentId: string | null,
+    since: Date,
+  ): Promise<{ id: string; status: string } | null> {
+    const account = await this.resolveStripePaymentAccount(studentId, schoolId);
+    const stripe = this.stripeClient.scopedClient(account.stripeConnectedAccountId!);
+    if (knownPaymentIntentId) {
+      const intent = await stripe.paymentIntents.retrieve(knownPaymentIntentId);
+      return { id: intent.id, status: intent.status };
+    }
+    const saved = await this.prismaApp.withTenantContext(studentId, (tx) =>
+      tx.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId, schoolId } }, select: { stripeCustomerId: true } }),
+    );
+    if (!saved) return null;
+    // A few minutes' margin for clock differences with Stripe.
+    const created = { gte: Math.floor(since.getTime() / 1000) - 600 };
+    let startingAfter: string | undefined;
+    for (;;) {
+      const page = await stripe.paymentIntents.list({ customer: saved.stripeCustomerId, created, limit: 100, ...(startingAfter ? { starting_after: startingAfter } : {}) });
+      const match = page.data.find((intent) => intent.metadata?.transactionId === transactionId);
+      if (match) return { id: match.id, status: match.status };
+      if (!page.has_more || page.data.length === 0) return null;
+      startingAfter = page.data[page.data.length - 1].id;
     }
   }
 

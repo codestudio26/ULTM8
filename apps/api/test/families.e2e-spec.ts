@@ -269,6 +269,61 @@ describeIfDb('Families (Decision 430)', () => {
     });
   });
 
+  // Decision 446 item 8 (stress test round 6, T-1): someone who signed up
+  // themselves is 18 at the School from the moment sign-up counts it (the
+  // earliest time zone), not the School's own date. Pago Pago (UTC-11) is
+  // always at least a day behind Kiritimati (UTC+14), so a date of birth 18
+  // years before Kiritimati's today is still 17 there all day.
+  describe('Decision 446 item 8: an account made on its 18th birthday is 18 at the School too', () => {
+    const kiritimatiToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Pacific/Kiritimati' }).format(new Date());
+    const born = () => {
+      const [y, m, d] = kiritimatiToday().split('-').map(Number);
+      return new Date(Date.UTC(y - 18, m - 1, d));
+    };
+    let waiverId: string;
+    let planId: string;
+    beforeAll(async () => {
+      await superuser.school.update({ where: { id: otherSchool.id }, data: { timezone: 'Pacific/Pago_Pago' } });
+      waiverId = (await superuser.waiver.create({ data: { id: randomUUID(), schoolId: otherSchool.id, title: 'Liability', body: 'Risks acknowledged.' } })).id;
+      planId = (await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: otherSchool.id, type: 'CLASS_PACK', title: '5 classes', price: 0, classesIncluded: 5 } })).id;
+      await superuser.paymentAccount.create({ data: { id: randomUUID(), schoolId: otherSchool.id, provider: 'CASH', accountTitle: 'Desk', country: 'AS' } });
+    });
+    afterAll(async () => {
+      await superuser.waiverSignature.deleteMany({ where: { waiverId } });
+      await superuser.waiver.deleteMany({ where: { id: waiverId } });
+      await superuser.membership.deleteMany({ where: { membershipPlanId: planId } });
+      await superuser.paymentAccount.deleteMany({ where: { schoolId: otherSchool.id } });
+      await superuser.school.update({ where: { id: otherSchool.id }, data: { timezone: 'UTC' } });
+    });
+    const sign = (u: U) => http().post(`/v1/waivers/${waiverId}/sign`).set(auth(u)).send({ signerFullName: 'Edge Birthday', signatureText: 'Edge Birthday' });
+    const buy = (u: U) => http().post(`/v1/membership-plans/${planId}/purchase`).set(auth(u)).send({});
+
+    it('signed up themselves (the Terms accepted at sign-up): signs the waiver and buys', async () => {
+      const edge = await person('edge-self', born(), [{ role: 'STUDENT', schoolId: otherSchool.id }]);
+      await superuser.legalAcceptance.create({ data: { id: randomUUID(), userId: edge.id, documentSlug: 'terms-and-conditions', version: 'unpublished' } });
+      expect((await sign(edge)).status).toBe(201);
+      expect((await buy(edge)).status).toBe(201);
+    });
+
+    it('made by the School: still 17 on the School\'s own date', async () => {
+      const made = await person('edge-made', born(), [{ role: 'STUDENT', schoolId: otherSchool.id }]);
+      // An Agreement accepted for a School is not a sign-up.
+      await superuser.legalAcceptance.create({ data: { id: randomUUID(), userId: made.id, documentSlug: 'terms-and-conditions', version: 'unpublished', schoolId: otherSchool.id } });
+      const w = await sign(made);
+      expect(w.status).toBe(403);
+      const b = await buy(made);
+      expect(b.status).toBe(403);
+      expect(b.body.error.code).toBe('UNDER_18_SELF');
+    });
+
+    it('a parent cannot add them as a child: 18 on the same clock as sign-up', async () => {
+      const parent = await person('edge-parent', new Date('1985-01-01'));
+      const res = await http().post('/v1/guardians/me/minors').set(auth(parent)).send({ firstName: 'fam-edge', surname: 'Family', dateOfBirth: isoDay(born()), consentPolicyVersion: POLICY });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('NOT_A_MINOR');
+    });
+  });
+
   describe('items 6 and 8 (FAM-6, FAM-8): a second parent, and leaving', () => {
     let firstParent: U;
     let secondParent: U;

@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
-import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
+import { isAdultOn, LATEST_TIME_ZONE } from '../common/decorators/is-birth-date.decorator';
 import { WaiverAssignmentService } from '../waivers/waiver-assignment.service';
 import { WAIVER_RENEWAL_SWEEP_QUEUE, WAIVER_SIGNATURE_REQUESTS_QUEUE } from './queue.constants';
 import type { WaiverNoticeReason, WaiverSignatureRequestJobData } from './waiver-signature-requests.processor';
@@ -132,10 +132,17 @@ export class WaiverRenewalSweepProcessor extends WorkerHost {
         select: { id: true, dateOfBirth: true },
       });
       const dob = new Map(users.map((u) => [u.id, u.dateOfBirth]));
+      // Decision 446 item 8: someone who signed up themselves is 18 at the
+      // School from the moment sign-up counts it (the earliest time zone), so
+      // a waiver they signed as an adult on that day isn't asked for again.
+      const selfSignedUp = new Set(
+        (await this.prismaJobs.$queryRaw<Array<{ id: string }>>`SELECT "self_signed_up_users" AS id FROM "self_signed_up_users"(${[...dob.keys()]}::text[])`).map((r) => r.id),
+      );
       for (const s of signed) {
         const born = dob.get(s.studentId);
         // Decision 430 item 10: both 18th-birthday checks on the School's own date.
-        if (born && !isAdultOn(born, s.signedDate!, school.timezone) && isAdultOn(born, now, school.timezone)) {
+        const zone = selfSignedUp.has(s.studentId) ? LATEST_TIME_ZONE : school.timezone;
+        if (born && !isAdultOn(born, s.signedDate!, zone) && isAdultOn(born, now, zone)) {
           toExpire.set(s.id, { waiverId: s.waiverId, studentId: s.studentId, reason: 'adult' });
         }
       }

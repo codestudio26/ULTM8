@@ -7,6 +7,8 @@ import { randomUUID } from 'crypto';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { PaymentsService } from '../src/payments/payments.service';
+import { StripeWebhookProcessingProcessor } from '../src/jobs/stripe-webhook-processing.processor';
+import { ChargeAutoPayProcessor } from '../src/jobs/charge-auto-pay.processor';
 
 /**
  * Decision 389 — a late cancellation charges the Class's own cancellation
@@ -36,6 +38,7 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
   let school: { id: string };
   const userIds: string[] = [];
   let chargeOffSession: jest.SpyInstance;
+  const eventIds: string[] = [];
 
   async function mkStudent() {
     const user = await superuser.user.create({
@@ -107,7 +110,9 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
 
   afterAll(async () => {
     const where = { schoolId: school.id };
+    await superuser.processedStripeEvent.deleteMany({ where: { stripeEventId: { in: eventIds } } });
     await superuser.transaction.deleteMany({ where });
+    await superuser.studentPaymentMethod.deleteMany({ where });
     await superuser.bookingAttendee.deleteMany({ where: { booking: { schoolId: school.id } } });
     await superuser.booking.deleteMany({ where });
     await superuser.class.deleteMany({ where });
@@ -173,6 +178,78 @@ describeIfDb('Late-cancellation fee from the plan (Decision 389)', () => {
       expect(res.body.cancellationChargeOutcome).toBeNull();
     }
     expect(chargeOffSession).not.toHaveBeenCalled();
+  });
+
+  // Decision 446 item 5 (stress test round 6, T-2): with a saved card the fee
+  // is written Pending first and tagged on the PaymentIntent, so a fee Stripe
+  // took is never lost when its outcome isn't saved.
+  describe('a fee Stripe took is never lost (Decision 446 item 5)', () => {
+    const saveCard = (studentId: string) =>
+      superuser.studentPaymentMethod.create({ data: { id: randomUUID(), studentId, schoolId: school.id, stripeCustomerId: `cus_${randomUUID()}` } });
+
+    it('tags the PaymentIntent with the Pending row, which the answer then settles', async () => {
+      const { user, token, bookingId } = await setUp({ planCharge: 700, classCharge: null });
+      await saveCard(user.id);
+      let pendingAtCharge: unknown;
+      chargeOffSession.mockImplementationOnce(async (...args: unknown[]) => {
+        pendingAtCharge = await superuser.transaction.findFirst({ where: { bookingId } });
+        return { succeeded: true, paymentIntentId: `pi_${String(args[7])}` };
+      });
+      const res = await cancel(bookingId, token);
+      expect(res.body).toMatchObject({ cancellationChargeOutcome: 'CHARGED', cancellationChargeAmount: 700 });
+      const tx = await superuser.transaction.findFirstOrThrow({ where: { bookingId } });
+      expect(pendingAtCharge).toMatchObject({ id: tx.id, kind: 'LATE_CANCEL_FEE', status: 'PENDING', stripePaymentIntentId: null });
+      expect(chargeOffSession).toHaveBeenCalledWith(user.id, school.id, 700, 'GBP', 'Late-cancellation fee', `late-cancel-fee-${tx.id}`, 0, tx.id);
+      expect(tx).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: `pi_${tx.id}` });
+      expect(res.body.stripeCancellationPaymentIntentId).toBe(`pi_${tx.id}`);
+    });
+
+    it("no answer from Stripe: left Pending, then settled by Stripe's webhook, or by the sweep asking Stripe", async () => {
+      const webhook = app.get(StripeWebhookProcessingProcessor);
+      const autoPay = app.get(ChargeAutoPayProcessor);
+      const lost = async () => {
+        const s = await setUp({ planCharge: 900, classCharge: null });
+        await saveCard(s.user.id);
+        chargeOffSession.mockImplementationOnce(async () => {
+          throw new Error('socket hang up');
+        });
+        expect((await cancel(s.bookingId, s.token)).status).toBe(200);
+        const row = await superuser.transaction.findFirstOrThrow({ where: { bookingId: s.bookingId } });
+        expect(row).toMatchObject({ status: 'PENDING', stripePaymentIntentId: null });
+        return { ...s, row };
+      };
+
+      // Stripe's payment_intent.succeeded finds it by the id in the metadata.
+      const a = await lost();
+      const stripeEventId = `evt_${randomUUID()}`;
+      eventIds.push(stripeEventId);
+      await webhook.process({
+        data: { stripeEventId, eventType: 'payment_intent.succeeded', objectId: `pi_a_${a.row.id}`, stripeAccountId: 'acct_fixture', transactionId: a.row.id },
+        attemptsMade: 1,
+        opts: { attempts: 3 },
+      } as never);
+      expect(await superuser.transaction.findUniqueOrThrow({ where: { id: a.row.id } })).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: `pi_a_${a.row.id}` });
+      expect(await superuser.booking.findUniqueOrThrow({ where: { id: a.bookingId } })).toMatchObject({ cancellationChargeOutcome: 'CHARGED', stripeCancellationPaymentIntentId: `pi_a_${a.row.id}` });
+
+      // No webhook: an hour later the sweep asks Stripe (paid, and one never made).
+      const b = await lost();
+      const c = await lost();
+      const find = jest.spyOn(app.get(PaymentsService), 'findOffSessionPayment').mockImplementation(async (_s, _sc, transactionId) =>
+        transactionId === b.row.id ? { id: `pi_b_${b.row.id}`, status: 'succeeded' } : transactionId === c.row.id ? null : { id: 'pi_other', status: 'processing' },
+      );
+      try {
+        // Not yet stale: left alone.
+        await autoPay.resolveStaleAttempts(new Date());
+        expect(await superuser.transaction.findUniqueOrThrow({ where: { id: b.row.id } })).toMatchObject({ status: 'PENDING' });
+        await autoPay.resolveStaleAttempts(new Date(Date.now() + 2 * HOUR));
+      } finally {
+        find.mockRestore();
+      }
+      expect(await superuser.transaction.findUniqueOrThrow({ where: { id: b.row.id } })).toMatchObject({ status: 'SUCCESSFUL', stripePaymentIntentId: `pi_b_${b.row.id}` });
+      expect(await superuser.booking.findUniqueOrThrow({ where: { id: b.bookingId } })).toMatchObject({ cancellationChargeOutcome: 'CHARGED' });
+      expect(await superuser.transaction.findUniqueOrThrow({ where: { id: c.row.id } })).toMatchObject({ status: 'FAILED', stripePaymentIntentId: null });
+      expect(await superuser.booking.findUniqueOrThrow({ where: { id: c.bookingId } })).toMatchObject({ cancellationChargeOutcome: 'FAILED' });
+    });
   });
 
   it("charges nothing before the cutoff, or when the School's late-fee switch is off", async () => {

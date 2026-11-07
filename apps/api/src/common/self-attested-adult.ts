@@ -1,9 +1,10 @@
 import { ForbiddenException } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { ageOn, AGE_OF_MAJORITY_YEARS } from './decorators/is-birth-date.decorator';
+import { ageOn, AGE_OF_MAJORITY_YEARS, LATEST_TIME_ZONE } from './decorators/is-birth-date.decorator';
 import { schoolZone } from './school-zone';
+import { signedUpThemselves } from '../legal/legal-acceptance';
 
-type Reader = Pick<PrismaClient, 'user' | 'school' | 'branch'>;
+type Reader = Pick<PrismaClient, 'user' | 'school' | 'branch' | 'legalAcceptance'>;
 
 export type SelfAttestedAction = 'waiver' | 'purchase';
 
@@ -26,7 +27,11 @@ const MESSAGES: Record<SelfAttestedAction, { noBirthDate: string; under18: strin
  * to a Guardian. Shared by WaiversService.sign() and, since Decision 430
  * item 5 (FAM-5), MembershipsService.purchase()'s own (not a Guardian's)
  * path. An unknown date of birth is refused, as an under-18 one is. The 18th
- * birthday is counted on the School's own date (Decision 430 item 10).
+ * birthday is counted on the School's own date (Decision 430 item 10), or,
+ * for someone who signed up themselves, from the moment sign-up counts it
+ * (the earliest time zone, Decision 444 item 6; Decision 446 item 8), so an
+ * account made on its 18th birthday can sign and buy at once. People the
+ * School or a parent created keep the School's date.
  *
  * `childMayAct` lets the waiver path keep Decision 318 item 8 (a School that
  * lets children of an age sign their own waivers). `db` is a connection that
@@ -47,7 +52,9 @@ export async function assertSelfAttestedAdult(
   const me = await db.user.findUniqueOrThrow({ where: { id: callerId }, select: { dateOfBirth: true } });
   if (!me.dateOfBirth) throw refuse('BIRTH_DATE_NEEDED', MESSAGES[action].noBirthDate);
   const zone = await schoolZone(db, schoolId);
-  if (ageOn(me.dateOfBirth, new Date(), zone) >= AGE_OF_MAJORITY_YEARS) return;
+  const now = new Date();
+  if (ageOn(me.dateOfBirth, now, zone) >= AGE_OF_MAJORITY_YEARS) return;
+  if (ageOn(me.dateOfBirth, now, LATEST_TIME_ZONE) >= AGE_OF_MAJORITY_YEARS && (await signedUpThemselves(db, callerId))) return;
   if (childMayAct && (await childMayAct(me.dateOfBirth, zone))) return;
   throw refuse('UNDER_18_SELF', MESSAGES[action].under18);
 }

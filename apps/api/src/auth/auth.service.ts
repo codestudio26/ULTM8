@@ -28,7 +28,7 @@ import { ChangePasscodeFirstLoginDto } from './dto/change-passcode-first-login.d
 import { ChangePasscodeDto } from './dto/change-passcode.dto';
 import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
 import { addressWriteData } from '../common/address/postal-address.dto';
-import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
+import { isAdultOn, LATEST_TIME_ZONE } from '../common/decorators/is-birth-date.decorator';
 import { LEGAL_SLUGS, recordLegalAcceptances } from '../legal/legal-acceptance';
 
 // Native `bcrypt`, not `bcryptjs`, everywhere in src/: each hash/compare at
@@ -40,10 +40,6 @@ const BCRYPT_ROUNDS = 12;
 
 /** Decision 444: what a new account agrees to at sign-up. */
 const REGISTER_LEGAL_SLUGS = [LEGAL_SLUGS.terms, LEGAL_SLUGS.privacy] as const;
-
-/** The first place on Earth to reach a new day (UTC+14), for the sign-up age
- * check: someone already 18 anywhere is not turned away. */
-const LATEST_TIME_ZONE = 'Pacific/Kiritimati';
 
 /** Decision 375 (Q2): how old an unverified sign-up must be before a new
  * sign-up with the same email or phone may replace it — long enough that a

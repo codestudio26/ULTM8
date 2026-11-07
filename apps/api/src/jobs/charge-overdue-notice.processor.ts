@@ -7,6 +7,7 @@ import { chargeRemaining, noticeMoney } from '../charges/charge-ledger';
 import { formatInvoiceNumber } from '../charges/charge-maths';
 import { CHARGE_OVERDUE_NOTICE_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
+import { PENDING_AUTOMATIC_ATTEMPT } from '../payments/off-session-attempts';
 
 /** Daily, at 7am UTC: after the 6am charge-auto-pay run, so a charge the
  * saved card paid on its due date is never called overdue. */
@@ -79,7 +80,15 @@ export class ChargeOverdueNoticeProcessor extends WorkerHost {
     const latest = new Date(`${dayIn(now, 'UTC')}T00:00:00.000Z`);
     latest.setUTCDate(latest.getUTCDate() + 1);
     const candidates = await this.prismaJobs.charge.findMany({
-      where: { cancelledAt: null, overdueNoticeAt: null, dueDate: { lt: latest }, school: { archivedAt: null } },
+      where: {
+        cancelledAt: null,
+        overdueNoticeAt: null,
+        dueDate: { lt: latest },
+        school: { archivedAt: null },
+        // Decision 446 item 5: not while an automatic card payment for it is
+        // still Pending; charge-auto-pay settles it from Stripe first.
+        transactions: { none: PENDING_AUTOMATIC_ATTEMPT },
+      },
       include: {
         allocations: { select: { amount: true } },
         school: { select: { timezone: true, chargeNoticeFailedOverdue: true } },

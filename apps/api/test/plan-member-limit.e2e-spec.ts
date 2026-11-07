@@ -231,4 +231,23 @@ describeIfDb('Member limit and waiting list (Decision 316 item 5, Decision 435 i
       expect((await joinList('outsider', plan.id)).status).toBe(404);
     });
   });
+  // Decision 446 item 6 (stress test round 6, T-3: r8b.mjs): orders placed at
+  // the same moment are placed one at a time, so only as many as fit pass.
+  it('four Cash orders at the same moment on a one-place plan: one is placed, three are refused', async () => {
+    const plan = await mkPlan({ memberLimit: 1, title: 'One place', type: 'CLASS_PACK', classesIncluded: 5, expiryDurationDays: null });
+    const who = ['race1', 'race2', 'race3', 'race4'];
+    for (const label of who) await mkStudent(label);
+    const results = await Promise.all(who.map((label) => buy(label, plan.id)));
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409, 409, 409]);
+    for (const r of results.filter((x) => x.status === 409)) expect(r.body.error.code).toBe('PLAN_FULL');
+    expect(await su.transaction.count({ where: { membershipPlanId: plan.id, status: 'PENDING' } })).toBe(1);
+  });
+
+  it('two members taking the last place of a free plan at the same moment: one gets it', async () => {
+    const plan = await mkPlan({ memberLimit: 1, title: 'Free taster', price: 0 });
+    for (const label of ['free1', 'free2', 'free3']) await mkStudent(label);
+    const results = await Promise.all(['free1', 'free2', 'free3'].map((label) => buy(label, plan.id)));
+    expect(results.map((r) => r.status).sort()).toEqual([201, 409, 409]);
+    expect(await su.membership.count({ where: { membershipPlanId: plan.id } })).toBe(1);
+  });
 });

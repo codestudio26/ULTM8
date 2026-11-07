@@ -401,4 +401,30 @@ describeIfDb('Waiver settings and follow-ups (Decision 354)', () => {
     await setSettings({ waiverRenewalMonths: null, waiverReminderDays: null });
     await superuser.roleGrant.updateMany({ where: { userId: { in: [veteran.id, recent.id, grownUp.id, pending.id] } }, data: { revokedAt: new Date() } });
   });
+  // Decision 446 item 8: someone who signed up themselves signed as an adult
+  // on the day sign-up counts them 18 (the earliest time zone), so "sign again
+  // at 18" doesn't ask them again; someone the School made keeps the School's date.
+  it('Decision 446 item 8: a waiver signed on the 18th birthday by someone who signed up themselves is not asked for again', async () => {
+    const today = new Date();
+    const signedAt = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate(), 12)); // 12:00 UTC: already tomorrow in Kiritimati
+    const kiritimatiDay = new Date(signedAt.getTime() + DAY);
+    const dob = new Date(Date.UTC(kiritimatiDay.getUTCFullYear() - 18, kiritimatiDay.getUTCMonth(), kiritimatiDay.getUTCDate()));
+    const self = await mkUser('self-18', school.id, 'STUDENT', dob);
+    await superuser.legalAcceptance.create({ data: { id: randomUUID(), userId: self.id, documentSlug: 'terms-and-conditions', version: 'unpublished' } });
+    const made = await mkUser('made-18', school.id, 'STUDENT', dob);
+    const waiver = await mkWaiver('Birthday');
+    await superuser.waiverSignature.updateMany({
+      where: { waiverId: waiver.id, studentId: { in: [self.id, made.id] }, status: 'UNSIGNED' },
+      data: { status: 'SIGNED', signerFullName: 'S', signatureText: 'S', signedDate: signedAt },
+    });
+    await superuser.waiverSignature.updateMany({ where: { waiverId: waiver.id, studentId: self.id }, data: { signedById: self.id } });
+    await superuser.waiverSignature.updateMany({ where: { waiverId: waiver.id, studentId: made.id }, data: { signedById: owner.id } });
+    await setSettings({ waiverRenewalMonths: null, waiverMinorsSignAgainAt18: true, waiverReminderDays: null });
+    notices = [];
+    await app.get(WaiverRenewalSweepProcessor).sweep(new Date(signedAt.getTime() + 2 * DAY));
+    expect((await rowsFor(waiver.id, self.id)).map((r) => r.status)).toEqual(['SIGNED']);
+    expect((await rowsFor(waiver.id, made.id)).map((r) => r.status)).toEqual(['EXPIRED', 'UNSIGNED']);
+    await setSettings({ waiverMinorsSignAgainAt18: false });
+    await superuser.roleGrant.updateMany({ where: { userId: { in: [self.id, made.id] } }, data: { revokedAt: new Date() } });
+  });
 });

@@ -21,6 +21,7 @@ import { fromStripeAmount } from '../payments/stripe-amount';
 import { invoiceSurchargeAmount } from '../payments/stripe-subscription-surcharge';
 import { nonRefundableJoiningFee } from '../memberships/joining-fee';
 import { isStripeAccountReady } from '../payments/stripe-account-ready';
+import { settleLateCancelFee } from '../payments/off-session-attempts';
 
 /** `transactionId`: the ULTM8 Transaction id from the event object's metadata,
  * set on a hosted Checkout payment's PaymentIntent and Session
@@ -262,10 +263,16 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // what Stripe says now. Only for an event from a connected account about
     // that same account; the platform's own account.updated has no
     // PaymentAccount and is left to dispatch()'s log-only branch.
-    let accountReady: { accountId: string; ready: boolean } | undefined;
+    //
+    // Decision 446 item 7: with more than one worker, two such events can be
+    // processed at once, and the read that started first can finish last. So
+    // the answer is saved with the moment its read started, and never
+    // replaces one read later (set_stripe_account_ready(), 20270332000001).
+    let accountReady: { accountId: string; ready: boolean; checkedAt: Date } | undefined;
     if (eventType === 'account.updated' && stripeAccountId && stripeAccountId === objectId) {
+      const checkedAt = new Date();
       const account = await this.stripeClient.platformClient().accounts.retrieve(objectId);
-      accountReady = { accountId: objectId, ready: isStripeAccountReady(account) };
+      accountReady = { accountId: objectId, ready: isStripeAccountReady(account), checkedAt };
     }
 
     let sideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
@@ -434,7 +441,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     checkoutSessionData: { studentId: string; schoolId: string; stripeCustomerId: string } | undefined,
     refundedCharge?: Stripe.Charge,
     cardRef: CardEventRef = {},
-    accountReady?: { accountId: string; ready: boolean },
+    accountReady?: { accountId: string; ready: boolean; checkedAt: Date },
   ): Promise<DisputeSideEffects> {
     const noSideEffects: DisputeSideEffects = { notifications: [], subscriptionCancellations: [], chargebackPatternCheckStudentIds: [], freedClassIds: [] };
     switch (eventType) {
@@ -521,12 +528,16 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
       // Decision 441 item 6 — see process()'s own pre-fetch comment. Written
       // through set_stripe_account_ready() (20270304000001): ultm8_jobs can
       // only read PaymentAccount, and the function writes this one flag on
-      // the row of this one connected account.
+      // the row of this one connected account, and (Decision 446 item 7, 20270332000001)
+      // only when no later read of Stripe was saved first.
       case 'account.updated':
         if (accountReady) {
+          const checkedAt = accountReady.checkedAt.toISOString();
           const [{ changed }] = await tx.$queryRaw<Array<{ changed: number }>>`
-            SELECT "set_stripe_account_ready"(${accountReady.accountId}, ${accountReady.ready}) AS changed`;
-          this.logger.log(`Stripe event ${stripeEventId} (account.updated): account ${accountReady.accountId} ready=${accountReady.ready} (${changed} payment account(s) changed).`);
+            SELECT "set_stripe_account_ready"(${accountReady.accountId}, ${accountReady.ready}, (${checkedAt}::timestamptz AT TIME ZONE 'UTC')::timestamp(3)) AS changed`;
+          this.logger.log(
+            `Stripe event ${stripeEventId} (account.updated): account ${accountReady.accountId} ready=${accountReady.ready} (${changed} payment account(s) saved${changed === 0 ? '; a later read was already saved' : ''}).`,
+          );
         } else {
           this.logger.log(`Stripe event ${stripeEventId} (account.updated) is not about a connected account — recorded, no handler action.`);
         }
@@ -582,9 +593,15 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
         { notificationId: receipt.key, userId: settled.studentId, title: receipt.title, body: receipt.body, type: 'CHARGE', schoolId: settled.schoolId, targetType: 'PAYMENT', targetId: settled.id },
       ];
     }
+    // Decision 446 item 5: a late-cancellation fee written Pending before its
+    // off-session charge, whose outcome the cancellation never saved.
+    if (transaction.kind === 'LATE_CANCEL_FEE') {
+      await settleLateCancelFee(tx, transaction.id, paymentIntentId, true);
+      return [];
+    }
     const membershipPlanId = transaction.membershipPlanId;
     if (transaction.kind !== 'MEMBERSHIP' || !membershipPlanId) {
-      return []; // renewal and late-cancel-fee rows (Decision 346) are never Pending and create no Membership
+      return []; // renewal and freeze-fee rows are never Pending card rows and create no Membership
     }
 
     // Decision 334 §8: a closed School takes no purchases or confirmations, and
@@ -849,6 +866,10 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   private async handlePaymentIntentFailed(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<void> {
     const transaction = await this.findCardTransaction(tx, paymentIntentId, cardRef);
     if (!transaction || transaction.status !== 'PENDING') {
+      return;
+    }
+    if (transaction.kind === 'LATE_CANCEL_FEE') {
+      await settleLateCancelFee(tx, transaction.id, paymentIntentId, false);
       return;
     }
     await tx.transaction.updateMany({ where: { id: transaction.id, status: 'PENDING' }, data: { status: 'FAILED' } });
