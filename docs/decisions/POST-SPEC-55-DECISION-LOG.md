@@ -7990,3 +7990,46 @@ Originally drafted as Decision 440 in PR #502; renumbered by Decision 443 item 8
 User (Code), 6 Nov 2026: "start it", on the recommendation to build go-live fixes C1, C2 and C5 first.
 
 User (Code), 7 Nov 2026: "agree", on keeping acceptance records after Delete my account (item 3 reworded).
+
+---
+
+## Decision 445 — Stress test round 6: the access and privacy fixes (P-1 to P-5)
+
+**Date:** 7 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 436, 439, 440, 443, Spec 55 §8.2 · **Found by:** stress test round 6, tester P (findings P-1 to P-5)
+
+### Decision
+
+The owner approved fixing all five ("fix it all"):
+
+1. **An erased coach's coach profile is cleared (P-1, High).** When a person who is also a coach is erased (Delete my account), their coach profile loses its phone, bio and photo (the photo file is deleted too) and is archived, so members no longer see it on the instructors list or the coach page. Their name shows as "Erased User", as elsewhere (Decisions 436 item 1, 440 item 2).
+2. **A locked member's waiting Pix or cash order can't be confirmed (P-2).** While a member's deletion is pending, confirming their earlier order is refused with the same reason as a desk sale (`ACCOUNT_CLOSING`, Decision 440 item 6), so no plan starts and no "Payment confirmed" is sent. Staff can still cancel the order; any money already handed over is dealt with as a cancelled cash payment. If the member signs back in, which cancels the deletion, the order can be confirmed again.
+3. **Only an owner chooses how the School is paid (P-3).** Creating the School's payment account (Stripe, or cash/bank transfer) is for owners only. A staff member with "Can connect Stripe" can only start or continue Stripe's onboarding for a Stripe account an owner has already chosen (Decisions 443 item 3, 439 item 4).
+4. **An erased staff member's work phone and display name are cleared (P-4)** from the staff records, and the phone is removed from the staff activity log, as the name already is.
+5. **Branch Staff get back only what they need when they confirm an order (P-5):** the order's id, status, amount and the membership it started, not the whole payment record (Spec 55 §8.2).
+
+### Recorded by
+
+User (Code), 7 Nov 2026: "fix it all", on round 6 findings P-1 to P-5 as reported in chat. Items 2 and 3 take the safest reading of the existing decisions; the open questions from round 6 (Q1–Q6 of tester P and Q1–Q5 of tester M) are not answered here.
+
+---
+
+## Decision 446 — Stress test round 6: the money and timing fixes (M-1 to M-5, T-1 to T-4)
+
+**Date:** 7 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 406, 412, 413, 430, 435, 436, 441–444 · **Found by:** stress test round 6, testers M and T
+
+### Decision
+
+The owner approved fixing every bug found ("fix any bugs you have found"):
+
+1. **A freeze inside a contract's minimum term no longer adds a month (M-1).** When a freeze moves the billing day (Decision 443 item 1), the end of the minimum term moves with the billing schedule, so a 3-month term is still 3 monthly payments.
+2. **The end date after a cancel during a freeze is right (M-2).** Ending the freeze early moves the cancel date back as it moves the end date.
+3. **A balance-billed plan's monthly series ends however the plan ends (M-3):** a desk refund that ends the membership and Delete my account end it too, not only cancel and removal.
+4. **Revenue counts what was kept (M-4, M-5).** A payment refunded in part (including one where the non-refundable joining fee was kept) counts in every revenue figure at its amount less what was refunded, the same on the billing overview and on Transactions. Whether revenue includes the card surcharge is not changed here (open question).
+5. **A card payment taken by Stripe is never lost (T-2).** Automatic payment records the payment attempt and Stripe's payment id together, and tags Stripe's payment with the attempt, so a crash between Stripe's answer and saving it is recovered: Stripe's success notice, or a sweep of stale automatic attempts that asks Stripe, settles the charge. No late fee or overdue notice for a charge that was actually paid.
+6. **A plan's member limit holds when orders arrive at the same moment (T-3)** (Decision 435 item 10): placing orders is serialised per plan, so only as many as fit are accepted.
+7. **Stripe "account updated" messages can't go back in time (T-4).** An older message never overwrites a newer state; the readiness is taken from Stripe's current account when in doubt.
+8. **The 18th-birthday gap is closed (T-1).** For someone who signed up themselves, School actions (signing a waiver, buying, a parent adding them as a child) count them as 18 from the same moment sign-up does (the earliest time zone, Decision 444 item 6), not the School's own date. *Claude's recommendation on question Q-1; the owner can reverse it.*
+
+### Recorded by
+
+User (Code), 7 Nov 2026: "fix it any bugs you have founded", on round 6 findings M-1 to M-5 and T-1 to T-4 as reported in chat. Item 8 answers T's question Q-1 with the recommendation; the other open questions (M Q1–Q5, P Q1–Q6, T Q-2) are not answered here.
