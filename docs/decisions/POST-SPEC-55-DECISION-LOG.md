@@ -8054,3 +8054,43 @@ Under the owner's "fix it any bugs you have founded" (Decision 446), these are f
 ### Recorded by
 
 User (Code), 7 Nov 2026: "fix it any bugs you have founded", applied to the bugs found after Decision 446 was written. The owner's open questions from round 6 are listed in chat and not answered here.
+
+---
+
+## Decision 448 — Stress test round 6: the owner's answers to the open questions
+
+**Date:** 7 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 406, 423 item 10, 437–447 · **Answers:** the round 6 questions (testers M, P, T, R) and the points to confirm of #517–#522
+
+### Decision
+
+**Money**
+1. **The card surcharge is shown separately in revenue.** Revenue figures (billing overview and Transactions) show the card surcharge as its own line, apart from the price of what was sold. To be built.
+2. **A freeze fee while the School's Stripe account isn't ready** stays a cash payment for the desk to collect, as built.
+3. **A plan switch never costs more than its notice said.** The amount in the 7-day plan-switch notice is the most the member is charged on switch day, even if the card surcharge would otherwise apply by then. To be built.
+4. **Members who joined while Stripe wasn't ready stay on Pix/cash billing** after it becomes ready, as built; they move to card by buying again.
+5. **Pix exists only in Brazil.** It is not shown anywhere outside Brazil, and the API refuses a Pix payment (member order or desk sale) at a School outside Brazil. To be built.
+
+**Access and privacy**
+6. **Only the main account owner sets staff access switches** (the staff permissions, Decision 183, and grading permissions), as with roles (Decision 423 item 10). Co-owners can't. To be built.
+7. **Charges to a member whose deletion is pending are refused**, like desk sales (Decision 440 item 6). To be built.
+8. **People the School creates tick "I agree" the first time they sign in** (added manually, approved kiosk sign-ups, imports, Guardians added by staff), the same Terms and Privacy acceptance as sign-up (Decision 444 items 1 and 3). To be built.
+9. **The School's payment account record (including its Stripe account id) is visible only to people with access to the payments area**: owners, and staff with a payments permission. Other staff, coaches and members don't see it. To be built.
+10. **An erased coach's postal address and certification files are deleted at erasure**, and the 90-day purge of an archived coach profile deletes its stored files too. To be built.
+11. **Editing a student's profile is for owners and staff who have been granted that access** (the "manage students" permission). Coaches without it can't. Owner's words: "only people that has been granted access". To be built.
+
+**Time and search**
+12. **Signing back in after the deletion date but before the daily deletion job runs still cancels the deletion**, as built: signing back in shows the person wants to stay, and the gap is under a day.
+13. **A search of only symbols (for example `%` or `_`) shows no results**, with a hint that explains symbols can't be used to search and asks for a name instead. To be built.
+14. **The kiosk age checks use the same 18th-birthday rule as sign-up** (Decision 444 item 6, Decision 446 item 8). To be built.
+
+**Points to confirm of #517–#522**
+15. If Stripe can't be reached during automatic payment, "Automatic payment failed" may arrive up to a day later while it is checked (#518), as built.
+16. The freeze and minimum-term date fixes apply to card subscriptions too (#519), as built.
+17. **Every page refused by an owner's switch answers "not found" to someone with no role at that School**, as the student export does (Decision 447 item 3). To be built.
+18. **No-show fees appear on the Transactions page** (#522). To be built.
+19. **A saved-card purchase that goes through later (settled by Stripe's notice or the sweep) sends the member "Payment confirmed"** (#522). To be built.
+20. A freeze fee recorded as failed that Stripe later reports as paid leaves the replacement desk charge for staff to cancel, logged (#522), as built.
+
+### Recorded by
+
+User (Code), 7 Nov 2026, item by item in chat: 1 "if we can separated them mighty be a good idea"; 2 "yes"; 3 "But the price should not increase"; 4 "yes"; 5 "Pix foes not work outside of brazil, it should not be shown"; 6 "Main Account owner"; 7 "ok"; 8 "ok"; 9 "only people with who has been given access to tht payment area, not every one"; 10 "delete"; 11 "again only people that has been granted access"; 12 "ok"; 13 "Also explain the symbols shuld not be use"; 14 "ok"; 15–20 "ok".
