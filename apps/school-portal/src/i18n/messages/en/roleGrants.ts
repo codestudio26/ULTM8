@@ -29,6 +29,7 @@ export const roleGrants = {
     stepDownFailed: "Could not give up the role.",
     coOwnerHint: "A co-owner runs the School with you and can do everything an owner can, except add or remove people: only the main owner does that.",
     mainOwnerOnly: "Only the account's main owner can add or remove people.",
+    switchesMainOwnerOnly: "Only the account's main owner can change these switches.",
     branchLabel: 'Branch',
     branchHint: 'For an instructor who teaches at several branches, give the role once per branch.',
     selectBranch: 'Select a Branch…',

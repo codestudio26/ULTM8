@@ -833,6 +833,8 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you import data.": "Le propriétaire de l’école ne vous a pas autorisé à importer des données.",
   "The School owner hasn't let you see payroll.": "Le propriétaire de l'école ne vous a pas autorisé à voir la paie.",
   "The School owner hasn't let you connect Stripe.": "Le propriétaire de l'école ne vous a pas autorisé à connecter Stripe.",
+  "Only the School's main owner can change what staff are allowed to do.": "Seul le propriétaire principal de l'école peut modifier ce que le personnel est autorisé à faire.",
+  "The School owner hasn't let you edit students' profiles.": "Le propriétaire de l'école ne vous a pas autorisé à modifier les profils des élèves.",
   "A row number is past the end of this import.": "Un numéro de ligne dépasse la fin de cet import.",
   "Import not found": "Import introuvable",
   "Each row number can only be sent once.": "Chaque numéro de ligne ne peut être envoyé qu’une seule fois.",

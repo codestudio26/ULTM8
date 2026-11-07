@@ -1230,9 +1230,9 @@ export class SchoolsService {
    * profile on their behalf. `PATCH /users/me` (UsersController) is self-service
    * only and obviously can't serve this.
    *
-   * Authorization: any staff member at the School (Owner/Manager, Branch Staff or
-   * Instructor), not only the owner, since editing a Student's contact details is
-   * an ordinary Staff action. Staff other than the owner may edit only the students
+   * Authorization: the School's owners, and Branch Staff the owner granted
+   * "Manage students" (Decision 448 item 11; coaches no longer, unless they are
+   * also such Branch Staff). Staff other than the owner may edit only the students
    * they cover by the Grading Board's branch rule (Decision 341) — see
    * assertStaffCanEditStudent.
    *
@@ -1248,6 +1248,9 @@ export class SchoolsService {
    */
   async updateStudentProfile(callerId: string, schoolId: string, studentId: string, dto: UpdateStudentProfileDto) {
     await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
+    // Decision 448 item 11: editing is for owners and Branch Staff with
+    // "Manage students"; a coach can still open the student, not edit them.
+    await this.tenantAuth.assertMayEditStudentProfiles(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     // A birth date that turns a child into an adult, or an adult into a
     // child, changes whether a Guardian must consent (Decision 67): only the

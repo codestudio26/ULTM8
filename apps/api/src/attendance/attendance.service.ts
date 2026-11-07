@@ -246,7 +246,7 @@ export class AttendanceService {
   /** `lookupOwner`: who may use the lookup to check in; a locked tablet's own
    * session, not its starter (Decision 380, frontDeskLookupOwner). */
   async deskQrLookup(callerId: string, schoolId: string, studentToken: string, lookupOwner: string = callerId) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const studentId = this.qrTokenService.verifyStudentToken(studentToken);
     // Read via ultm8_jobs: Branch Staff and coaches can't see every RoleGrant.

@@ -22,7 +22,7 @@ import { fromStripeAmount, toStripeAmount } from './stripe-amount';
 import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from './stripe-first-invoice';
 import { cardSurchargeAmount } from './card-surcharge';
 import { ConnectStatus, isStripeAccountReady } from './stripe-account-ready';
-import { cardPaymentsNotReady, takesCards } from './takes-cards';
+import { CARD_ACCOUNT_SELECT, cardPaymentsNotReady, takesCards } from './takes-cards';
 import { SUBSCRIPTION_SURCHARGE_METADATA, invoiceSurchargeAmount, splitSubscriptionItems } from './stripe-subscription-surcharge';
 import { chargeAbilities, mayConfirmDeskOrder } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
@@ -193,9 +193,19 @@ export class PaymentsService {
    * narrowing) a business rule Spec 55 doesn't itself state. Confirmed step-up MFA
    * (§11.5) gates payout/bank-detail *changes*, not reads — this code follows that
    * literally, not by extension.
+   *
+   * Decision 448 item 9 answers it: the record is read only by people with
+   * access to the payments area (TenantAuthorizationService.mayAccessPayments:
+   * owners, and Branch Staff with a payments permission). Everyone else at the
+   * School (other staff, coaches, members) gets the same 404 as a School with
+   * no account, so it stays hidden; whether the School takes cards is on
+   * GET /schools/:schoolId/card-payments for them.
    */
   async findForSchool(callerId: string, schoolId: string) {
     const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    if (!(await this.tenantAuth.mayAccessPayments(callerId, schoolId))) {
+      throw new NotFoundException('PaymentAccount not found');
+    }
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.findUnique({ where: { schoolId } }),
     );
@@ -209,6 +219,20 @@ export class PaymentsService {
     }
     // Decision 437: whether the Connect Stripe button may show for this School.
     return { ...found, connectAvailable: stripeConnectAvailable(found, school.addressCountry), cardPayments: takesCards(found) };
+  }
+
+  /**
+   * GET /schools/:schoolId/card-payments — Decision 448 item 9: what the rest
+   * of the School's people need of its payment account, without the record
+   * itself: whether it has one (a School with none sells as before), and
+   * whether members can pay by card (takesCards, Decision 442 item 2). Anyone with a role at the School; 404 to anyone else.
+   */
+  async cardPaymentsForSchool(callerId: string, schoolId: string): Promise<{ hasPaymentAccount: boolean; cardPayments: boolean }> {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    const account = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.paymentAccount.findUnique({ where: { schoolId }, select: CARD_ACCOUNT_SELECT }),
+    );
+    return { hasPaymentAccount: !!account, cardPayments: takesCards(account) };
   }
 
   // ---------------------------------------------------------------------------

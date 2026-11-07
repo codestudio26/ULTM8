@@ -59,6 +59,18 @@ export class PaymentAccountResponseDto {
   updatedAt!: string;
 }
 
+/** GET /schools/:schoolId/card-payments (Decision 448 item 9). */
+export class CardPaymentsResponseDto {
+  @ApiProperty({ description: 'Whether the School has set up a payment account (any provider).' })
+  hasPaymentAccount!: boolean;
+
+  @ApiProperty({
+    description:
+      "Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready. The same value as the payment account's cardPayments, for people who may not read the account itself.",
+  })
+  cardPayments!: boolean;
+}
+
 /** Response for POST /payment-accounts/:id/connect/onboard — the Stripe Account Link
  * URL the frontend redirects the caller to. Not a PaymentAccount field itself. */
 export class ConnectOnboardingResponseDto {

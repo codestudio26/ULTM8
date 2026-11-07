@@ -1495,6 +1495,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "Die Rolle konnte nicht niedergelegt werden.",
       coOwnerHint: "Ein Mitinhaber führt die Schule mit dir und kann alles, was ein Inhaber kann, außer Personen hinzuzufügen oder zu entfernen: Das macht nur der Hauptinhaber.",
       mainOwnerOnly: "Nur der Hauptinhaber des Kontos kann Personen hinzufügen oder entfernen.",
+      switchesMainOwnerOnly: "Nur der Hauptinhaber des Kontos kann diese Schalter ändern.",
       branchLabel: "Filiale",
       branchHint: "Für einen Ausbilder, der in mehreren Filialen unterrichtet, vergib die Rolle einmal pro Filiale.",
       selectBranch: "Filiale auswählen…",

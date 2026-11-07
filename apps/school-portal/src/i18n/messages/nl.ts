@@ -1495,6 +1495,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "Kon de rol niet neerleggen.",
       coOwnerHint: "Een mede-eigenaar runt de school met jou en kan alles wat een eigenaar kan, behalve mensen toevoegen of verwijderen: dat doet alleen de hoofdeigenaar.",
       mainOwnerOnly: "Alleen de hoofdeigenaar van het account kan mensen toevoegen of verwijderen.",
+      switchesMainOwnerOnly: "Alleen de hoofdeigenaar van het account kan deze schakelaars wijzigen.",
       branchLabel: "Vestiging",
       branchHint: "Geef een instructeur die op meerdere vestigingen lesgeeft de rol één keer per vestiging.",
       selectBranch: "Selecteer een Vestiging…",

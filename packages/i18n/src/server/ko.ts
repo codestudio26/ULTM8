@@ -833,6 +833,8 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you import data.": "도장 원장이 데이터 가져오기를 허용하지 않았습니다.",
   "The School owner hasn't let you see payroll.": "도장 원장이 급여를 볼 수 있도록 허용하지 않았습니다.",
   "The School owner hasn't let you connect Stripe.": "도장 원장이 Stripe 연결을 허용하지 않았습니다.",
+  "Only the School's main owner can change what staff are allowed to do.": "직원이 할 수 있는 일은 도장의 기본 원장만 변경할 수 있습니다.",
+  "The School owner hasn't let you edit students' profiles.": "도장 원장이 수련생 프로필 편집을 허용하지 않았습니다.",
   "A row number is past the end of this import.": "행 번호가 이 가져오기의 끝을 넘었습니다.",
   "Import not found": "가져오기를 찾을 수 없습니다",
   "Each row number can only be sent once.": "각 행 번호는 한 번만 보낼 수 있습니다.",

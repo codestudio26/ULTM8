@@ -106,10 +106,12 @@ test('a coach typing /students/invite lands on their own home screen', async ({ 
   await expect(page).not.toHaveURL(/\/students\/invite$/);
 });
 
-test('a branch coach can open and edit a student of their own branch', async ({ page }) => {
+// Decision 448 item 11: editing is for Branch Staff with "Manage students"
+// (on by default), no longer for coaches (student-grading.spec.ts).
+test('branch staff can open and edit a student of their own branch', async ({ page }) => {
   const north = await addBranch(s, 'North');
   await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: north.id } });
-  const coach = await addPerson('Bo', 'Branch', [{ role: 'INSTRUCTOR', schoolId: s.schoolId, branchId: north.id }]);
+  const coach = await addPerson('Bo', 'Branch', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
   await signIn(page, coach.token);
   // Decision 430 item 13: gender is locked once the member has signed in, so
   // this member is one the School added who hasn't yet.

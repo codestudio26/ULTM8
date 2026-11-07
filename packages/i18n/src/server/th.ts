@@ -833,6 +833,8 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you import data.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณนำเข้าข้อมูล",
   "The School owner hasn't let you see payroll.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณดูเงินเดือน",
   "The School owner hasn't let you connect Stripe.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณเชื่อมต่อ Stripe",
+  "Only the School's main owner can change what staff are allowed to do.": "เฉพาะเจ้าของหลักของโรงเรียนเท่านั้นที่เปลี่ยนสิ่งที่พนักงานทำได้",
+  "The School owner hasn't let you edit students' profiles.": "เจ้าของโรงเรียนยังไม่อนุญาตให้คุณแก้ไขโปรไฟล์ของนักเรียน",
   "A row number is past the end of this import.": "หมายเลขแถวเกินจุดสิ้นสุดของการนำเข้านี้",
   "Import not found": "ไม่พบการนำเข้า",
   "Each row number can only be sent once.": "ส่งหมายเลขแถวแต่ละหมายเลขได้เพียงครั้งเดียว",

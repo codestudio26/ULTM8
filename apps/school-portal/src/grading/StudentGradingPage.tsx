@@ -140,6 +140,8 @@ export function StudentGradingPage() {
   const maySeeMedical = my.isOwner || !!staffAccess.data?.access.seeMedicalInfo;
   // Decision 315 item 9: the owner, or Branch Staff the owner let see member files.
   const mayFiles = my.isOwner || !!staffAccess.data?.access.memberFiles;
+  // Decision 448 item 11: the owner, or Branch Staff with "Manage students", edit the profile.
+  const mayEditProfile = my.isOwner || !!staffAccess.data?.editStudents;
   // Decision 420 item 2: the owner, or staff with "Can cancel charges", waive or cancel a promotion fee.
   const mayCloseFees = mayCloseFee(my.isOwner, staffAccess.data);
 
@@ -188,10 +190,9 @@ export function StudentGradingPage() {
         actions={
           <>
             {inactive ? <Badge>{t('students.statusInactive')}</Badge> : null}
-            {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — any Staff
-              * reaching this page (School Owner/Manager, Branch Staff, or
-              * Instructor) may use it, matching the backend's own
-              * assertStaffAtSchool gate — not Owner-only like Revoke
+            {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — the owner, and
+              * Branch Staff with "Manage students" (Decision 448 item 11; not
+              * coaches), matching the backend's gate — not Owner-only like Revoke
               * enrollment below, which the backend separately restricts via
               * assertSchoolOwner. A dedicated page (StudentUpdatePage.tsx at
               * /students/:id/edit), not a Modal — see that page's own header
@@ -201,7 +202,7 @@ export function StudentGradingPage() {
                 {t('students.attendance.logButton')}
               </Button>
             ) : null}
-            {student && !inactive ? (
+            {student && !inactive && mayEditProfile ? (
               <Button variant="secondary" onClick={() => navigate(`/students/${studentId}/edit`)}>
                 {t('grading.student.editProfile')}
               </Button>

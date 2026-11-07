@@ -5665,6 +5665,41 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/card-payments": {
+      "get": {
+        "operationId": "PaymentsController_getSchoolCardPayments",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPaymentsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/payment-account/connect-status": {
       "get": {
         "operationId": "PaymentsController_getSchoolConnectStatus",
@@ -27713,7 +27748,11 @@
           },
           "mainOwner": {
             "type": "boolean",
-            "description": "The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10). False for co-owners and everyone else."
+            "description": "The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10) and set staff access switches and grading permissions (Decision 448 item 6). False for co-owners and everyone else."
+          },
+          "editStudents": {
+            "type": "boolean",
+            "description": "Decision 448 item 11 — may edit students' profiles: owners, and Branch Staff with the students switch (\"Manage students\"). False for coaches who aren't also such Branch Staff, whatever `access.students` says."
           },
           "branchStaff": {
             "type": "boolean",
@@ -27735,6 +27774,7 @@
         "required": [
           "owner",
           "mainOwner",
+          "editStudents",
           "branchStaff",
           "access",
           "cancelCharges"
@@ -30756,6 +30796,23 @@
           "cardPayments",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "CardPaymentsResponseDto": {
+        "type": "object",
+        "properties": {
+          "hasPaymentAccount": {
+            "type": "boolean",
+            "description": "Whether the School has set up a payment account (any provider)."
+          },
+          "cardPayments": {
+            "type": "boolean",
+            "description": "Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready. The same value as the payment account's cardPayments, for people who may not read the account itself."
+          }
+        },
+        "required": [
+          "hasPaymentAccount",
+          "cardPayments"
         ]
       },
       "ConnectStatusResponseDto": {

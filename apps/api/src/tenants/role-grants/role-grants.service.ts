@@ -1110,7 +1110,8 @@ export class RoleGrantsService {
   }
 
   /**
-   * PUT /schools/{schoolId}/staff/{userId}/access (Decision 387) — the owner
+   * PUT /schools/{schoolId}/staff/{userId}/access (Decision 387) — the main
+   * owner (Decision 448 item 6; co-owners get STAFF_SWITCHES_MAIN_OWNER_ONLY)
    * sets a Branch Staff member's six access switches, all at once (the
    * portal's presets are just ticks). Only for someone who holds a Branch
    * Staff role here now, or one that is paused (Decision 390: the switches
@@ -1120,7 +1121,8 @@ export class RoleGrantsService {
    * switch any more: only the main owner adds people (Decision 423 item 10).
    */
   async setStaffAccess(callerId: string, schoolId: string, userId: string, dto: StaffAccessDto) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 448 item 6: the main owner only.
+    await this.tenantAuth.assertMaySetStaffSwitches(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const access: StaffAccessSet = Object.fromEntries(STAFF_ACCESS.map((k) => [k, dto[k]])) as StaffAccessSet;
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -1157,7 +1159,7 @@ export class RoleGrantsService {
     if (owner) {
       // Decision 423 item 10: whether they may add or remove people.
       const mainOwner = await this.tenantAuth.isSchoolMainOwner(callerId, schoolId);
-      return { owner, mainOwner, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet, cancelCharges: true };
+      return { owner, mainOwner, editStudents: true, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet, cancelCharges: true };
     }
     // One read of the School's StaffPermission row: the Branch Staff switches
     // above, and "Can cancel charges", which Branch Staff and coaches both
@@ -1167,8 +1169,10 @@ export class RoleGrantsService {
       tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { ...STAFF_ACCESS_SELECT, canCancelCharges: true } }),
     );
     let access: StaffAccessSet = branchStaff ? staffAccessFrom(row) : (Object.fromEntries(STAFF_ACCESS.map((k) => [k, false])) as StaffAccessSet);
+    // Decision 448 item 11: the switch itself, before a coach's role adds "students".
+    const editStudents = branchStaff && access.students;
     if (grants.some((g) => g.role === 'INSTRUCTOR')) access = { ...access, bookings: true, students: true };
-    return { owner, mainOwner: false, branchStaff, access, cancelCharges: row?.canCancelCharges ?? false };
+    return { owner, mainOwner: false, editStudents, branchStaff, access, cancelCharges: row?.canCancelCharges ?? false };
   }
 
   /**

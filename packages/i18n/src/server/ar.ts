@@ -833,6 +833,8 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you import data.": "لم يسمح لك مالك المدرسة باستيراد البيانات.",
   "The School owner hasn't let you see payroll.": "لم يسمح لك مالك المدرسة برؤية كشف الرواتب.",
   "The School owner hasn't let you connect Stripe.": "لم يسمح لك مالك المدرسة بربط Stripe.",
+  "Only the School's main owner can change what staff are allowed to do.": "لا يمكن إلا للمالك الرئيسي للمدرسة تغيير ما يُسمح للموظفين بفعله.",
+  "The School owner hasn't let you edit students' profiles.": "لم يسمح لك مالك المدرسة بتعديل ملفات الطلاب.",
   "A row number is past the end of this import.": "رقم صف يتجاوز نهاية هذا الاستيراد.",
   "Import not found": "لم يتم العثور على الاستيراد",
   "Each row number can only be sent once.": "لا يمكن إرسال رقم كل صف إلا مرة واحدة.",

@@ -833,6 +833,8 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you import data.": "Okul sahibi veri içe aktarmana izin vermedi.",
   "The School owner hasn't let you see payroll.": "Okul sahibi bordroyu görmenize izin vermedi.",
   "The School owner hasn't let you connect Stripe.": "Okul sahibi Stripe'ı bağlamanıza izin vermedi.",
+  "Only the School's main owner can change what staff are allowed to do.": "Personelin neler yapabileceğini yalnızca okulun ana sahibi değiştirebilir.",
+  "The School owner hasn't let you edit students' profiles.": "Okul sahibi öğrenci profillerini düzenlemenize izin vermedi.",
   "A row number is past the end of this import.": "Bir satır numarası bu içe aktarmanın sonunu aşıyor.",
   "Import not found": "İçe aktarma bulunamadı",
   "Each row number can only be sent once.": "Her satır numarası yalnızca bir kez gönderilebilir.",

@@ -1495,6 +1495,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "Impossibile lasciare il ruolo.",
       coOwnerHint: "Un comproprietario gestisce la scuola con te e può fare tutto ciò che fa un proprietario, tranne aggiungere o rimuovere persone: lo fa solo il proprietario principale.",
       mainOwnerOnly: "Solo il proprietario principale dell'account può aggiungere o rimuovere persone.",
+      switchesMainOwnerOnly: "Solo il proprietario principale dell'account può modificare queste opzioni.",
       branchLabel: "Sede",
       branchHint: "Per un istruttore che insegna in più sedi, assegna il ruolo una volta per sede.",
       selectBranch: "Seleziona una Sede…",

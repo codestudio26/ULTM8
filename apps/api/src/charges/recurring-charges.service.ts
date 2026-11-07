@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { assertAccountNotClosing } from '../account-deletion/account-closing';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { RecurringCharge } from '@prisma/client';
@@ -85,6 +86,9 @@ export class RecurringChargesService {
   private async assertMay(callerId: string, schoolId: string, studentId: string, what: 'read' | 'create' | 'stop' | 'restart') {
     const can = await this.may(callerId, schoolId, studentId);
     if (can[what]) return can;
+    // Decision 448 item 17: someone with no role at the School gets 404, not
+    // the owner's switch.
+    await this.tenantAuth.assertSchoolVisible(callerId, schoolId);
     const message = {
       read: "The School owner hasn't let you see this student's charges.",
       create: "The School owner hasn't let you create charges.",
@@ -113,6 +117,9 @@ export class RecurringChargesService {
     await this.assertMay(callerId, schoolId, studentId, 'create');
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
+    // Decision 448 item 7: no recurring charge set up for a member whose
+    // deletion is pending, as for a single charge.
+    await assertAccountNotClosing(this.prismaJobs, studentId);
     await this.assertCurrentStudent(schoolId, studentId);
     const school = await this.prismaJobs.school.findUnique({
       where: { id: schoolId },
@@ -232,6 +239,8 @@ export class RecurringChargesService {
     await this.assertMay(callerId, schoolId, series.studentId, 'restart');
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
+    // Decision 448 item 7: restarting one starts charging again, so the same.
+    await assertAccountNotClosing(this.prismaJobs, series.studentId);
     await this.assertCurrentStudent(schoolId, series.studentId);
     const school = await this.prismaJobs.school.findUniqueOrThrow({ where: { id: schoolId }, select: { timezone: true } });
     const now = new Date();

@@ -3,6 +3,7 @@ import { Card, Checkbox, EmptyState, ErrorBanner, Spinner, Table } from '@ultm8/
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { useChargePermissions, useSetChargePermission, type ChargePermission } from './chargeQueries';
+import { useIsMainOwner } from '../roleGrants/roleGrantQueries';
 
 type Pending = { canCreateCharges: boolean; canCancelCharges: boolean };
 
@@ -16,6 +17,9 @@ export function ChargePermissions({ schoolId }: { schoolId: string }) {
   const t = useT();
   const staff = useChargePermissions(schoolId);
   const save = useSetChargePermission(schoolId);
+  // Decision 448 item 6: only the main owner changes these; a co-owner sees them, locked.
+  const isMainOwner = useIsMainOwner(schoolId);
+  const locked = isMainOwner !== true;
   const [error, setError] = useState<string | null>(null);
   // Shows the new state at once; it goes back if saving fails.
   const [saving, setSaving] = useState<Record<string, Pending>>({});
@@ -40,6 +44,7 @@ export function ChargePermissions({ schoolId }: { schoolId: string }) {
         {t('charges.permissions.heading')}
       </h2>
       <p style={{ marginTop: 0 }}>{t('charges.permissions.intro')}</p>
+      {isMainOwner === false ? <p className="ultm8-field__hint">{t('roleGrants.staff.switchesMainOwnerOnly')}</p> : null}
       {error ? <ErrorBanner message={error} /> : null}
       {staff.isLoading ? (
         <Spinner />
@@ -59,7 +64,7 @@ export function ChargePermissions({ schoolId }: { schoolId: string }) {
                 <Checkbox
                   label={t('charges.permissions.createLabel', { name: `${p.firstName} ${p.surname}` })}
                   checked={current(p).canCreateCharges}
-                  disabled={p.userId in saving}
+                  disabled={locked || p.userId in saving}
                   onChange={(e) => toggle(p, { ...current(p), canCreateCharges: e.target.checked })}
                 />
               ),
@@ -71,7 +76,7 @@ export function ChargePermissions({ schoolId }: { schoolId: string }) {
                 <Checkbox
                   label={t('charges.permissions.cancelLabel', { name: `${p.firstName} ${p.surname}` })}
                   checked={current(p).canCancelCharges}
-                  disabled={p.userId in saving}
+                  disabled={locked || p.userId in saving}
                   onChange={(e) => toggle(p, { ...current(p), canCancelCharges: e.target.checked })}
                 />
               ),

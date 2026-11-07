@@ -1495,6 +1495,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "Rolden ayrılınamadı.",
       coOwnerHint: "Ortak sahip okulu seninle birlikte yönetir ve bir sahibin yapabildiği her şeyi yapabilir; yalnızca kişi ekleyip kaldıramaz: bunu sadece ana sahip yapar.",
       mainOwnerOnly: "Yalnızca hesabın ana sahibi kişi ekleyebilir veya kaldırabilir.",
+      switchesMainOwnerOnly: "Bu anahtarları yalnızca hesabın ana sahibi değiştirebilir.",
       branchLabel: "Şube",
       branchHint: "Birden fazla şubede ders veren bir eğitmene rolü her şube için bir kez verin.",
       selectBranch: "Bir Şube seçin…",

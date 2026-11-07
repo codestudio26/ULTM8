@@ -36,7 +36,7 @@ export class PackRechargesService {
   ) {}
 
   async create(callerId: string, schoolId: string, dto: CreatePackRechargeDto, kiosk?: Kiosk): Promise<PackRechargeDto> {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const { studentId } = dto;
     const enrolled = await this.prismaJobs.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
@@ -50,7 +50,7 @@ export class PackRechargesService {
       throw new NotFoundException('Class not found');
     }
     for (const cls of classes) {
-      await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, cls.branchId);
+      await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId, cls.branchId);
       await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', cls.branchId);
       assertAtKioskBranch(kiosk, cls.branchId);
       await this.attendance.assertWithinWindow(cls);
@@ -164,7 +164,7 @@ export class PackRechargesService {
 
   /** Staff at the School may see a recharge; a tablet only its own. */
   private async loadForDesk(callerId: string, schoolId: string, id: string, kiosk?: Kiosk): Promise<PackRecharge> {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const recharge = await this.prismaJobs.packRecharge.findFirst({ where: { id, schoolId } });
     if (!recharge || (kiosk && recharge.frontDeskSessionId !== kiosk.sessionId)) {

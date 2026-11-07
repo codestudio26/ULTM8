@@ -60,9 +60,10 @@ test('only the main owner adds or removes people: a co-owner sees a note instead
   const row = page.getByRole('row', { name: /waiting\.coach@example\.test/ });
   await expect(row.getByText('Waiting', { exact: true })).toBeVisible();
   await expect(row.getByRole('button', { name: /Cancel invite/ })).toHaveCount(0);
-  // Edit details and Access stay; removing and pausing don't show.
+  // Edit details stays; Access (Decision 448 item 6), removing and pausing don't show.
   await page.getByRole('button', { name: 'Actions for Bea Desk' }).click();
-  await expect(page.getByRole('menuitem', { name: 'Access' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Edit details' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'Access' })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: /Remove/ })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: 'Pause' })).toHaveCount(0);
 });

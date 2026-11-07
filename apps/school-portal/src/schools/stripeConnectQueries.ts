@@ -51,6 +51,7 @@ export function useConnectSchoolStripe(schoolId: string) {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['school-payment-account', schoolId] });
+      queryClient.invalidateQueries({ queryKey: ['school-card-payments', schoolId] });
       queryClient.invalidateQueries({ queryKey: ['school-connect-status', schoolId] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-overview', schoolId] });
     },

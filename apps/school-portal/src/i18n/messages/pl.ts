@@ -1525,6 +1525,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "Nie udało się zrezygnować z roli.",
       coOwnerHint: "Współwłaściciel prowadzi szkołę razem z tobą i może robić wszystko, co właściciel, poza dodawaniem i usuwaniem osób: to robi tylko główny właściciel.",
       mainOwnerOnly: "Tylko główny właściciel konta może dodawać lub usuwać osoby.",
+      switchesMainOwnerOnly: "Tylko główny właściciel konta może zmieniać te przełączniki.",
       branchLabel: "Oddział",
       branchHint: "Instruktorowi, który uczy w kilku oddziałach, nadaj rolę raz dla każdego oddziału.",
       selectBranch: "Wybierz Oddział…",

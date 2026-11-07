@@ -1972,6 +1972,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/card-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PaymentsController_getSchoolCardPayments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/payment-account/connect-status": {
         parameters: {
             query?: never;
@@ -9011,8 +9027,10 @@ export interface components {
         MyStaffAccessResponseDto: {
             /** @description School Owner/Manager: every switch is on, by role. */
             owner: boolean;
-            /** @description The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10). False for co-owners and everyone else. */
+            /** @description The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10) and set staff access switches and grading permissions (Decision 448 item 6). False for co-owners and everyone else. */
             mainOwner: boolean;
+            /** @description Decision 448 item 11 — may edit students' profiles: owners, and Branch Staff with the students switch ("Manage students"). False for coaches who aren't also such Branch Staff, whatever `access.students` says. */
+            editStudents: boolean;
             /** @description Holds an active Branch Staff role here. */
             branchStaff: boolean;
             /** @description What the caller may do. An Instructor's own role gives bookings and students. */
@@ -9947,6 +9965,12 @@ export interface components {
             cardPayments: boolean;
             createdAt: string;
             updatedAt: string;
+        };
+        CardPaymentsResponseDto: {
+            /** @description Whether the School has set up a payment account (any provider). */
+            hasPaymentAccount: boolean;
+            /** @description Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready. The same value as the payment account's cardPayments, for people who may not read the account itself. */
+            cardPayments: boolean;
         };
         ConnectStatusResponseDto: {
             /** @enum {string} */
@@ -18806,6 +18830,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentAccountResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_getSchoolCardPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPaymentsResponseDto"];
                 };
             };
         };

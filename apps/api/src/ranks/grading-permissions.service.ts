@@ -61,13 +61,15 @@ export class GradingPermissionsService {
     });
   }
 
-  /** Replaces one staff member's styles and toggles (Decision 181). The
+  /** Replaces one staff member's styles and toggles (Decision 181). Set by
+   * the School's main owner only (Decision 448 item 6). The
    * target must be an active Instructor or Branch Staff at this School (the
    * owner needs no grant), and every style must belong to this School. The
    * older `disciplineIds` form gives every toggle. */
   async setForUser(callerId: string, schoolId: string, userId: string, dto: SetGradingPermissionsDto) {
     this.assertUuids(schoolId, userId);
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 448 item 6: the main owner only.
+    await this.tenantAuth.assertMaySetStaffSwitches(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
 
     const styles = dto.styles ?? (dto.disciplineIds ?? []).map((disciplineId) => ({ disciplineId, ...ALL_ON }));
