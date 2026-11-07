@@ -46,7 +46,7 @@ import { backDay, dayIn, dayNumber, dayStart } from './membership-freeze';
  * Not checked against a live Stripe account; unit- and e2e-tested with stubs.
  */
 
-type Db = Pick<PrismaClient, 'membershipFreeze' | 'paymentAccount' | 'school'>;
+type Db = Pick<PrismaClient, 'membershipFreeze' | 'paymentAccount' | 'school' | 'membership' | '$transaction'>;
 type Stripe = Pick<StripeClientService, 'scopedClient'>;
 
 const DAY_S = 24 * 60 * 60;
@@ -63,7 +63,7 @@ function paidUntil(subscription: { trial_end: number | null; items?: { data: Arr
 async function freezeWithSubscription(db: Db, freezeId: string) {
   return db.membershipFreeze.findUnique({
     where: { id: freezeId },
-    include: { membership: { select: { stripeSubscriptionId: true, status: true } }, school: { select: { timezone: true } } },
+    include: { membership: { select: { stripeSubscriptionId: true, status: true, cancelAt: true } }, school: { select: { timezone: true } } },
   });
 }
 
@@ -168,12 +168,30 @@ export async function restoreFreezeBilling(db: Db, stripeClient: Stripe, freezeI
     target = (await db.membershipFreeze.findUniqueOrThrow({ where: { id: freeze.id }, select: { restoredTrialEnd: true } })).restoredTrialEnd!;
   }
   const trialEnd = Math.floor(Math.max(target.getTime(), now.getTime() + 60_000) / 1000);
+  // Decision 446 item 2: cancelled during the freeze, the Subscription was set
+  // to end on the moved day (its cancel date was worked out from it), so the
+  // cancel date moves back by the same days. A cancel date on or before the
+  // freeze's first day was never pushed by it and stays.
+  const cancelAt = freeze.membership.cancelAt;
+  const unusedDays = dayNumber(freeze.endsAt) - backDay(freeze, freeze.school.timezone);
+  const movesCancel = !!cancelAt && unusedDays > 0 && dayNumber(dayIn(cancelAt, freeze.school.timezone)) > dayNumber(freeze.startsAt);
+  const cancelAtS = movesCancel ? Math.floor(Math.max(cancelAt!.getTime() - unusedDays * DAY_S * 1000, now.getTime() + 60_000) / 1000) : null;
   await stripe.subscriptions.update(
     subscriptionId,
-    { trial_end: trialEnd, proration_behavior: 'none' },
-    { idempotencyKey: `membership-freeze-restore-${freeze.id}-${trialEnd}` },
+    { trial_end: trialEnd, proration_behavior: 'none', ...(cancelAtS !== null ? { cancel_at: cancelAtS } : {}) },
+    { idempotencyKey: `membership-freeze-restore-${freeze.id}-${trialEnd}${cancelAtS !== null ? `-${cancelAtS}` : ''}` },
   );
-  await db.membershipFreeze.updateMany({ where: { id: freeze.id, billingRestoredAt: null }, data: { billingRestoredAt: now } });
+  const restored = db.membershipFreeze.updateMany({ where: { id: freeze.id, billingRestoredAt: null }, data: { billingRestoredAt: now } });
+  if (cancelAtS === null) {
+    await restored;
+  } else {
+    // Together, so a retry (nothing recorded) works out the same cancel date
+    // again and never moves it back twice.
+    await db.$transaction([
+      db.membership.updateMany({ where: { id: freeze.membershipId, cancelAt: cancelAt! }, data: { cancelAt: new Date(cancelAtS * 1000) } }),
+      restored,
+    ]);
+  }
   return true;
 }
 

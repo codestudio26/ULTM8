@@ -12,7 +12,7 @@ import { NotificationFanoutJobData } from '../../jobs/notification-fanout.types'
 import { BookingsService } from '../../bookings/bookings.service';
 import { isMembershipLive } from '../membership-creation-guard';
 import { applyFreezeBillingShift, restoreFreezeBilling } from './freeze-billing';
-import { applyBalanceFreezeBilling } from '../../charges/membership-series';
+import { applyBalanceFreezeBilling, endBalanceBilling } from '../../charges/membership-series';
 import {
   assertFreezeAllowed,
   backDay,
@@ -658,12 +658,22 @@ export class MembershipFreezesService {
       const now = new Date();
       const unused = dayNumber(freeze.endsAt) - Math.max(dayNumber(freeze.startsAt), today);
       await tx.membershipFreeze.update({ where: { id: freezeId }, data: { endedEarlyAt: now } });
-      if (ctx.membership.expiryDate && unused > 0) {
-        await tx.membership.update({
-          where: { id: ctx.membership.id },
-          data: { expiryDate: new Date(ctx.membership.expiryDate.getTime() - unused * DAY_MS) },
-        });
-      }
+      // Decision 446 item 2: a date the freeze pushed later (one after its
+      // first day) moves back by the days not frozen: a fixed-term expiry
+      // date, and the end of a monthly plan billed to the balance that was
+      // cancelled during the freeze (its cancelAt and expiryDate were worked
+      // out from the moved billing day, membership-series.ts). A cancel date
+      // on a billing day before the freeze was never pushed, so it stays. A
+      // card Subscription's cancel date moves with Stripe (freeze-billing.ts
+      // restoreFreezeBilling).
+      const firstFrozen = dayNumber(freeze.startsAt);
+      const pushed = (d: Date | null): d is Date => !!d && dayNumber(dayIn(d, ctx.school.timezone)) > firstFrozen;
+      const back = (d: Date) => new Date(d.getTime() - unused * DAY_MS);
+      const { expiryDate, cancelAt, billedToBalance } = ctx.membership;
+      const data: Prisma.MembershipUpdateInput = {};
+      if (unused > 0 && pushed(expiryDate)) data.expiryDate = back(expiryDate);
+      if (unused > 0 && billedToBalance && pushed(cancelAt)) data.cancelAt = back(cancelAt);
+      if (Object.keys(data).length > 0) await tx.membership.update({ where: { id: ctx.membership.id }, data });
     });
     try {
       await restoreFreezeBilling(this.prismaJobs, this.stripeClient, freezeId);
@@ -672,6 +682,9 @@ export class MembershipFreezesService {
     }
     const ended = await this.reload(freezeId);
     await this.moveBalanceBilling(ended.membershipId, freezeId);
+    // Its series ended before the old cancel day: it now ends before the new one.
+    const after = await this.prismaJobs.membership.findUnique({ where: { id: ended.membershipId }, select: { billedToBalance: true, cancelAt: true } });
+    if (after?.billedToBalance && after.cancelAt) await endBalanceBilling(this.prismaJobs, ended.membershipId, after.cancelAt, this.logger);
     return ended;
   }
 

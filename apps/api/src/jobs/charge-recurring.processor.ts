@@ -3,7 +3,7 @@ import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { runSeries } from '../charges/recurring-occurrences';
-import { applyDueBalanceFreezes, healBalanceBilling } from '../charges/membership-series';
+import { applyDueBalanceFreezes, endFinishedBalanceBilling, healBalanceBilling } from '../charges/membership-series';
 import { addDays, dayValue, schoolToday } from '../charges/recurring-schedule';
 import { CHARGE_RECURRING_QUEUE, NOTIFICATION_FANOUT_QUEUE } from './queue.constants';
 import { NotificationFanoutJobData } from './notification-fanout.types';
@@ -91,6 +91,13 @@ export class ChargeRecurringProcessor extends WorkerHost {
       await applyDueBalanceFreezes(this.prismaJobs, now, this.logger);
     } catch (err) {
       this.logger.error('charge-recurring: applying freezes to monthly membership series failed.', err as Error);
+    }
+    // Decision 446 item 3: a series whose membership has ended, however it
+    // ended, shows it ended.
+    try {
+      await endFinishedBalanceBilling(this.prismaJobs, now, this.logger);
+    } catch (err) {
+      this.logger.error('charge-recurring: ending the monthly series of ended memberships failed.', err as Error);
     }
     const latestDay = addDays(schoolToday(now, 'UTC'), 1);
     const series = await this.prismaJobs.recurringCharge.findMany({

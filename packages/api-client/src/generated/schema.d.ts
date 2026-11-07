@@ -11523,7 +11523,7 @@ export interface components {
             failedOrDisputed: number;
             /** @description Cancelled cash or bank-transfer payments (Decision 338 item 1). */
             cancelled: number;
-            /** @description Successful rows only, one entry per currency. */
+            /** @description What the School kept, one entry per currency: Successful and Refunded rows, each at its amount less what was refunded on it (Decision 446 item 4). */
             revenue: components["schemas"]["TransactionRevenueDto"][];
         };
         TransactionReceiptUrlResponseDto: {
@@ -15168,7 +15168,7 @@ export interface components {
             refunded: number;
             /** @description Charges revenue that month: received − refunded. */
             net: number;
-            /** @description Membership revenue that month (Decision 414 item 3): Successful payments for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received). */
+            /** @description Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received). */
             memberships: number;
             /** @description net + memberships. */
             total: number;

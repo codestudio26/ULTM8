@@ -49,6 +49,29 @@ describe('Decision 316 item 6 — plan contracts', () => {
     expect(earlyExitFeeDue({ minimumTermMonths: 6, earlyExitFee: 100 }, { startDate: start }, new Date('2026-07-10T00:00:00Z'))).toBe(false);
   });
 
+  it('Decision 446 item 1: the end moves along the billing schedule, so the term is still its number of monthly payments', () => {
+    const f = (startsAt: string, endsAt: string, endedEarlyAt: Date | null = null) => ({
+      status: 'APPROVED',
+      startsAt: new Date(`${startsAt}T00:00:00Z`),
+      endsAt: new Date(`${endsAt}T00:00:00Z`),
+      endedEarlyAt,
+    });
+    // Stress round 6, M-1: bought 7 Nov (billed on the 7th), 3 months, frozen
+    // 1 Dec to 31 Dec (30 days). The month due 7 Dec moves to 6 Jan, then 6
+    // Feb; the term ends on 6 Mar (the third payment would fall there, so it
+    // isn't charged), not 30 days after 7 Feb (9 Mar, after a 6 Mar charge).
+    const start = new Date('2026-11-07T15:00:00Z');
+    expect(minimumTermEndsAtWithFreezes(start, 3, [f('2026-12-01', '2026-12-31')], 'America/Sao_Paulo').toISOString()).toBe('2027-03-06T15:00:00.000Z');
+    // Ended early on 11 Dec (10 days frozen): the months move by 10 days.
+    expect(
+      minimumTermEndsAtWithFreezes(start, 3, [f('2026-12-01', '2026-12-31', new Date('2026-12-11T15:00:00Z'))], 'America/Sao_Paulo').toISOString(),
+    ).toBe('2027-02-17T15:00:00.000Z');
+    // A billing day before the freeze (7 Dec) is charged first; the next one (7 Jan) moves 30 days, to 6 Feb.
+    expect(minimumTermEndsAtWithFreezes(start, 3, [f('2026-12-10', '2027-01-09')], 'America/Sao_Paulo').toISOString()).toBe('2027-03-06T15:00:00.000Z');
+    // The 31st: the month due 31 Jan moves 30 days, to 2 Mar; then 2 Apr, 2 May; the 4-month term ends on 2 Jun.
+    expect(minimumTermEndsAtWithFreezes(new Date('2026-12-31T10:00:00Z'), 4, [f('2027-01-01', '2027-01-31')], 'UTC').toISOString()).toBe('2027-06-02T10:00:00.000Z');
+  });
+
   it("the signed text's fingerprint is its SHA-256", () => {
     expect(contractSha256('abc')).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
   });

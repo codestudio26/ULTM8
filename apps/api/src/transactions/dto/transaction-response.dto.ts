@@ -203,6 +203,6 @@ export class TransactionSummaryResponseDto {
   @ApiProperty({ description: 'Cancelled cash or bank-transfer payments (Decision 338 item 1).' })
   cancelled!: number;
 
-  @ApiProperty({ type: [TransactionRevenueDto], description: 'Successful rows only, one entry per currency.' })
+  @ApiProperty({ type: [TransactionRevenueDto], description: 'What the School kept, one entry per currency: Successful and Refunded rows, each at its amount less what was refunded on it (Decision 446 item 4).' })
   revenue!: TransactionRevenueDto[];
 }

@@ -9,6 +9,7 @@ import { RolesChangedService } from '../common/prisma/roles-changed.service';
 import { StepUpService } from '../auth/step-up.service';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { cancelSubscriptionAtPeriodEnd } from '../memberships/cancel-subscription';
+import { endBalanceBilling } from '../charges/membership-series';
 import { GUARDIAN_MANAGED_EMAIL_DOMAIN } from '../guardians/guardians.service';
 import { NOTIFICATION_FANOUT_QUEUE } from '../jobs/queue.constants';
 import { NotificationFanoutJobData } from '../jobs/notification-fanout.types';
@@ -280,7 +281,9 @@ export class AccountDeletionService {
     );
     for (const membership of subscriptions) {
       try {
-        await this.prismaApp.withTenantContext(personId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, membership, callerId));
+        const cancelled = await this.prismaApp.withTenantContext(personId, (tx) => cancelSubscriptionAtPeriodEnd(this.stripeClient, tx, membership, callerId));
+        // Decision 446 item 3: a monthly plan billed to the balance: its series ends with it.
+        if (cancelled.billedToBalance && cancelled.cancelAt) await endBalanceBilling(this.prismaJobs, cancelled.id, cancelled.cancelAt, this.logger);
       } catch (err) {
         // Nothing here can cancel it (e.g. the School's Stripe account is
         // gone): the School deals with it in Stripe; it mustn't block deleting.

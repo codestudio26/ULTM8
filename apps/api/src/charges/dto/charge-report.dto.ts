@@ -28,7 +28,7 @@ export class ChargeRevenueMonthDto {
 
   @ApiProperty({
     description:
-      'Membership revenue that month (Decision 414 item 3): Successful payments for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received).',
+      'Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received).',
   })
   memberships!: number;
 

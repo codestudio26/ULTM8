@@ -10,6 +10,7 @@ import { paymentRefundNotice } from '../charges/charge-ledger';
 import { assertWholeMinorUnits } from './stripe-amount';
 import { PaymentsService } from './payments.service';
 import { nonRefundableJoiningFee } from '../memberships/joining-fee';
+import { endBalanceBilling } from '../charges/membership-series';
 import { RefundDeskSaleDto } from './dto/refund-desk-sale.dto';
 
 /** A second identical refund this soon after the first is a double tap (as
@@ -121,9 +122,14 @@ export class DeskSaleRefundsService {
         select: { id: true, transactionId: true, amount: true, currency: true, notes: true, endedMembership: true, createdAt: true },
       });
       await tx.transaction.update({ where: { id: transactionId }, data: { refundedAmount, status } });
-      return { refund, refundedAmount, status, membershipEnded, freedClassIds, studentId: t.studentId, schoolId: t.schoolId };
+      return { refund, refundedAmount, status, membershipEnded, freedClassIds, studentId: t.studentId, schoolId: t.schoolId, membershipId: t.membershipId };
     });
 
+    // Decision 446 item 3: a monthly plan billed to the balance that this
+    // refund ended stops being charged from today, and its series shows it.
+    if (result.membershipEnded && result.membershipId) {
+      await endBalanceBilling(this.prismaJobs, result.membershipId, new Date(), this.logger);
+    }
     // After the commit: tell the member (the usual "Refund" notice, Decision
     // 415 item 4) and the waitlists of the classes whose seats were freed.
     await this.paymentsService.sendRefundNotice(
