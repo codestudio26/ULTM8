@@ -172,14 +172,20 @@ await apiJoin(instrDid, sp.ruairi, lev);
 // Turning 18 tomorrow / turned 18 yesterday / 18 today (guardian-managed).
 sp.ann = await adult('Ann', 'Murphy');
 sp.ciara = await apiMinor(sp.ann, 'Ciara', 'Murphy', ymd(yearsAgo(18, 1)), 'FEMALE');
-sp.ronan = await apiMinor(sp.ann, 'Ronan', 'Murphy', ymd(yearsAgo(18, -1)), 'MALE');
+// Round 6 adaptation (Decision 430): an adult can't be added as a child. Ronan was added
+// while still 17 and turned 18 yesterday: add him at 17, then move his birthday back.
+sp.ronan = await apiMinor(sp.ann, 'Ronan', 'Murphy', ymd(yearsAgo(18, 2)), 'MALE');
 for (const c of [sp.ciara, sp.ronan]) await apiJoin(sp.ann, c, did);
+await db.user.update({ where: { id: sp.ronan.id }, data: { dateOfBirth: yearsAgo(18, -1) } }); // ...and the birthday came
 // A child with no Guardian, self-registered (has a login), 10 years old.
 sp.liam = await adult('Liam', 'Walsh', { dateOfBirth: yearsAgo(10) });
 await db.roleGrant.create({ data: { id: randomUUID(), userId: sp.liam.id, role: 'STUDENT', schoolId: A.id, grantedById: sp.liam.id } });
 await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: A.id, studentId: sp.liam.id, branchId: lev.id } });
 // A teen with a disability note, very long name, mononym, Welsh, emoji.
-sp.long = await apiMinor(sp.maire, 'Llŷr', 'ap Gwyn-Wynne-Fitzgerald-'.repeat(5) + 'Jones', ymd(yearsAgo(14)), 'MALE');
+// Round 6 adaptation: surnames are now limited to 100 characters (130 refused, 400);
+// the long-name child keeps a 100-character surname.
+{ const tooLong = await call('seed:minor-130', 'POST', '/guardians/me/minors', gTok(sp.maire), { firstName: 'Llŷr', surname: 'ap Gwyn-Wynne-Fitzgerald-'.repeat(5) + 'Jones', dateOfBirth: ymd(yearsAgo(14)), gender: 'MALE' }); console.log('130-character surname:', tooLong.status); }
+sp.long = await apiMinor(sp.maire, 'Llŷr', ('ap Gwyn-Wynne-Fitzgerald-'.repeat(5) + 'Jones').slice(0, 100), ymd(yearsAgo(14)), 'MALE');
 sp.mono = await apiMinor(sp.ann, 'Bodhi', '🥋', ymd(yearsAgo(7)), null);
 for (const c of [sp.long, sp.mono]) await apiJoin(c === sp.long ? sp.maire : sp.ann, c, did);
 // Pay the special children's memberships (DB, like a past purchase).

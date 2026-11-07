@@ -10,6 +10,9 @@ const school = await db.school.findUnique({ where: { id: S }, select: { defaultC
 const used = new Set((await db.membership.findMany({ where: { schoolId: S }, select: { studentId: true } })).map((m) => m.studentId));
 const cand = [];
 for (const a of C.adults) { if (used.has(a.id)) continue; const g = await db.roleGrant.findFirst({ where: { userId: a.id, schoolId: S, role: 'STUDENT', branchId: C.van } }); if (g) cand.push(a); if (cand.length >= 2) break; }
+// Round 6: on round 5's shared stack ca/money.mjs had already set a 24 h refund cut-off at
+// this School; on a fresh seed it is unset, so no cancel is ever "late". Set it as the owner.
+if (school.defaultRefundCutoffHours == null) console.log('set cut-off', (await call('cutoff', 'PATCH', `/schools/${S}`, O, { defaultRefundCutoffHours: 24 })).status);
 const p = await call('plan', 'POST', `/schools/${S}/membership-plans`, O, { type: 'CLASS_PACK', title: `MON review no-currency ${Date.now() % 1e5}`, price: 17500, classesIncluded: 5, cancellationCharge: 1500 });
 console.log('school', school, 'plan', p.status, 'currency', p.body?.currency);
 const start = Date.now() + 3 * 3600e3;

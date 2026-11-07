@@ -7,7 +7,7 @@ const user = await db.user.findUnique({ where: { id: coach.id }, select: { id: t
 const grants = await db.roleGrant.findMany({ where: { userId: coach.id, revokedAt: null }, select: { role: true, schoolId: true, branchId: true, franchiseId: true } });
 console.log('coach grants', grants.map((g) => g.role + '@' + (g.branchId || 'school')));
 const tok = tokenRca(user, grants);
-const hb = await db.studentHomeBranch.findFirst({ where: { schoolId: c.schoolId, branchId: c.branches.syd }, select: { studentId: true } });
+const hb = (await db.studentHomeBranch.findFirst({ where: { schoolId: c.schoolId, branchId: c.branches.syd }, select: { studentId: true } })) ?? (await db.roleGrant.findFirst({ where: { schoolId: c.schoolId, branchId: c.branches.syd, role: 'STUDENT', revokedAt: null }, select: { userId: true } }).then((g) => g && { studentId: g.userId })); // Round 6: the au seed puts the Branch on the STUDENT grant
 const p = await call('x', 'GET', `/schools/${c.schoolId}/students/${hb.studentId}/profile`, tok);
 console.log('GET profile', p.status, p.body?.firstName, p.body?.dateOfBirth);
 const w = await call('x', 'PATCH', `/schools/${c.schoolId}/students/${hb.studentId}/profile`, tok, { firstName: p.body.firstName });

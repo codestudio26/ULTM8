@@ -1,11 +1,7 @@
 # Round 6 tester R (regression): resume notes
 
-Stack: PG data /var/tmp/round6-R/pg (port 55511), Redis 56511, API 3311, fake Stripe 12111; env in /var/tmp/round6-R/env.sh.
-Start: see ../round6/regression/ADAPTATIONS.md and the billing README (API with `--require ./scripts/rehearsal/use-fakes.cjs`, no proxy env).
+Done (7 Nov 2026): every part below ran; findings in scratchpad round6/R-findings.md.
+- booking-schedule seed/load/attack/burst, billing (fresh DB), round3 ×4, round4 at 100 Schools (world, life, money, staff-frontdesk, members, tenancy, notice-delay, pages, ramp), round5 seeds + mon/priv/review-fam + jp money, us time, de closure, gb tests, ng race; A/B vs 3df7696 for R-2.
+Not run: round4/browser.mjs (no Chromium); round5 country scripts other than those listed (they re-test the same fixes or need their old casts).
 
-Order: booking-schedule seed → load → round3 x4 → attack → burst → billing → round4 (scaled world) → round5 repro scripts.
-
-## Done
-- seed (30 Schools, 12,213 students)
-## Next
-- load (running)
+To rebuild the stack: see ADAPTATIONS.md and billing/README.md. Env must also have DATABASE_URL_AUTH, PORTAL_BASE_URL and CORS_ALLOWED_ORIGINS; Postgres data outside /tmp/claude-0 (root-only). For round4 money and round5 money/card scripts, start the API with STRIPE_CONNECT_COUNTRIES widened. For round5: run each folder's seed, then `node fix-seed.mjs`, then `node waiver-rule-off.mjs <cast>` where a script books.

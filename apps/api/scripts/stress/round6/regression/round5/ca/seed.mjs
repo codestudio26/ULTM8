@@ -4,6 +4,7 @@
 // through the API. Writes cast-ca.json next to this file.
 import fs from 'fs';
 import { db, call, grant, randomUUID, tokenRca } from '../../round4/common.mjs';
+import { makeStripeAccountReady } from '../../booking-schedule/lib.mjs';
 
 const now = Date.now();
 const DAY = 86400e3, YEAR = 365.25 * DAY;
@@ -84,6 +85,8 @@ const acct = await call('seed:pa', 'POST', `/schools/${school.id}/payment-accoun
 if (acct.status >= 300) throw new Error('pa ' + JSON.stringify(acct.body));
 let ob; for (let a = 0; a < 5; a++) { ob = await call('seed:onboard', 'POST', `/payment-accounts/${acct.body.id}/connect/onboard`, tOwner, {}); if (ob.status < 300) break; console.log('onboard retry', ob.status); await new Promise((r) => setTimeout(r, 1500)); }
 if (ob.status >= 300) throw new Error('onboard ' + JSON.stringify(ob.body));
+// Round 6 adaptation (Decision 442 item 2): Stripe says the account is ready.
+{ const pa = await db.paymentAccount.findUnique({ where: { id: acct.body.id } }); if (!pa.stripeAccountReady) await makeStripeAccountReady(pa.stripeConnectedAccountId); }
 const pa = await db.paymentAccount.findUnique({ where: { id: acct.body.id } });
 
 // Style and timetable.

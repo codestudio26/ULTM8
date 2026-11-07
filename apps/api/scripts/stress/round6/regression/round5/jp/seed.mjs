@@ -129,7 +129,7 @@ const mkClass = async (title, cap, startOff, len, extra = {}) => {
   if (r.status >= 300) throw new Error('class ' + JSON.stringify(r.body));
   return r.body.id;
 };
-const classes = { soon: await mkClass('特別稽古 A', 40, 3 * DAY, 3600e3), soon2: await mkClass('特別稽古 B', 2, 4 * DAY, 3600e3, { cancellationCharge: 50050 }), now: await mkClass('いま稽古', 40, -10 * 60e3, 3600e3), late: await mkClass('直前稽古', 40, 30 * 60e3, 3600e3, { cancellationCharge: 33333, refundFeeDate: new Date(now - 60e3).toISOString() }) };
+const classes = { soon: await mkClass('特別稽古 A', 40, 3 * DAY, 3600e3), soon2: await mkClass('特別稽古 B', 2, 4 * DAY, 3600e3, { cancellationCharge: 50000 /* round 6: whole yen, Decision 431 refuses 500.50 */ }), now: await mkClass('いま稽古', 40, -10 * 60e3, 3600e3), late: await mkClass('直前稽古', 40, 30 * 60e3, 3600e3, { cancellationCharge: 33300 /* round 6: whole yen */, refundFeeDate: new Date(now - 60e3).toISOString() }) };
 
 // --- Memberships for bulk ---
 const ms = [];

@@ -30,6 +30,14 @@ const ymd = (d) => d.toISOString().slice(0, 10);
 const yearsAgo = (y, extraDays = 0) => { const d = new Date(); d.setUTCFullYear(d.getUTCFullYear() - y); d.setUTCDate(d.getUTCDate() + extraDays); return d; };
 
 // ---- T1: createMinor input validation ----
+// Round 6 adaptation (Decision 441 item 5): "Waiver must be signed before booking or
+// check-in" is on by default; these family tests were written for the per-class rule
+// only, so it is switched off at School A for the run (WAIVER_RULE=on keeps it).
+if (process.env.WAIVER_RULE !== 'on') {
+  const g0 = await call('setup', 'GET', `/schools/${A}/check-in-rules`, tOwner);
+  const p0 = await call('setup', 'PUT', `/schools/${A}/check-in-rules`, tOwner, { ...g0.body, requireWaiver: false });
+  console.log('waiver rule off at School A:', p0.status);
+}
 if (on('T1')) {
   const cases = [
     ['future DOB', { firstName: 'Fut', surname: 'Ure', dateOfBirth: '2099-01-01' }],
