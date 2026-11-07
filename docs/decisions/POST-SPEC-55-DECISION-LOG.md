@@ -8033,3 +8033,24 @@ The owner approved fixing every bug found ("fix any bugs you have found"):
 ### Recorded by
 
 User (Code), 7 Nov 2026: "fix it any bugs you have founded", on round 6 findings M-1 to M-5 and T-1 to T-4 as reported in chat. Item 8 answers T's question Q-1 with the recommendation; the other open questions (M Q1–Q5, P Q1–Q6, T Q-2) are not answered here.
+
+---
+
+## Decision 447 — Stress test round 6: the regression fixes (R-1 to R-3) and the follow-ups of #517–#519
+
+**Date:** 7 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 430, 435, 441, 446 · **Found by:** stress test round 6, tester R, and the fix PRs #517–#519
+
+### Decision
+
+Under the owner's "fix it any bugs you have founded" (Decision 446), these are fixed too:
+
+1. **Booking speed back to round 5 (R-2).** The waiver, child-consent and Delete-my-account checks added since round 5 run without holding a second database connection while the booking's locked transaction is open, and with as few reads as possible, so a busy booking race no longer answers "server busy" or leaves seats empty. Booking rules don't change.
+2. **Check-in rules can be saved after a School passes 500 students (R-1):** saving the value the page shows is never refused; the 6-digit code rule (when it applies) is applied as the page reads it.
+3. **The student export answers "not found" (R-3)** to someone with no role at that School, like every other page.
+4. **No card payment can be lost in a crash on the remaining paths** (#518's follow-up): no-show fees, freeze fees, plan-switch charges and saved-card purchases get the same protection as automatic payment (Decision 446 item 5).
+5. **The waiting-list offer and plan-switch jobs respect a plan's member limit under the same per-plan lock** as orders (Decision 446 item 6).
+6. **A card member who cancels after a freeze is approved but before Stripe has applied it** keeps the right end date in the app (#519's follow-up).
+
+### Recorded by
+
+User (Code), 7 Nov 2026: "fix it any bugs you have founded", applied to the bugs found after Decision 446 was written. The owner's open questions from round 6 are listed in chat and not answered here.
