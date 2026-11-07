@@ -11,6 +11,7 @@ import { StripeClientService } from '../payments/stripe-client.service';
 import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
 import { TransactionFilterDto, TransactionListQueryDto } from './dto/transaction-filter-query.dto';
 import { formatInvoiceNumber } from '../charges/charge-maths';
+import { REVENUE_STATUSES } from '../charges/charge-reports.service';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 import { includedTax, type IncludedTax } from '../charges/tax-lines';
 import { DateTime } from 'luxon';
@@ -227,8 +228,10 @@ export class TransactionsService {
    * GET /schools/{id}/transactions/summary (Decision 339, T1) — the page's
    * tiles, counted over the whole ledger on the server. The page used to add up
    * whichever 20 rows it had loaded, so every tile was wrong once a School had
-   * more. Revenue is Successful rows only, one figure per currency (codes are
-   * compared in capitals: rows written before Decision 339 may be lower-case).
+   * more. Revenue is what the School kept, one figure per currency (codes are
+   * compared in capitals: rows written before Decision 339 may be lower-case):
+   * Successful and Refunded rows less what was refunded on each (Decision 446
+   * item 4, the billing overview's rule, REVENUE_STATUSES).
    */
   async summaryForSchool(callerId: string, schoolId: string, filter: TransactionFilterDto = {}) {
     const school = await this.schoolsService.findOne(callerId, schoolId);
@@ -243,12 +246,32 @@ export class TransactionsService {
     const cancelled = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.transaction.count({ where: { AND: [where, { status: 'FAILED', cancelledAt: { not: null } }] } }),
     );
+    // Decision 446 item 4: each Successful or Refunded row at its amount less
+    // what was refunded on it, as the billing overview counts it. A row
+    // refunded as much as its amount or more (the surcharge too) counts
+    // nothing, so it is left out here rather than counted below zero.
+    const kept = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.transaction.groupBy({
+        by: ['currency'],
+        where: {
+          AND: [
+            where,
+            { status: { in: [...REVENUE_STATUSES] } },
+            { OR: [{ refundedAmount: null }, { refundedAmount: { lt: tx.transaction.fields.amount } }] },
+          ],
+        },
+        _sum: { amount: true, refundedAmount: true },
+      }),
+    );
     const count = (statuses: string[]) => groups.filter((g) => statuses.includes(g.status)).reduce((n, g) => n + g._count._all, 0);
     const revenue = new Map<string, number>();
     for (const g of groups) {
       if (g.status !== 'SUCCESSFUL') continue;
+      revenue.set((g.currency ?? '').toUpperCase(), 0);
+    }
+    for (const g of kept) {
       const key = (g.currency ?? '').toUpperCase();
-      revenue.set(key, (revenue.get(key) ?? 0) + (g._sum.amount ?? 0));
+      revenue.set(key, (revenue.get(key) ?? 0) + (g._sum.amount ?? 0) - (g._sum.refundedAmount ?? 0));
     }
     return {
       total: groups.reduce((n, g) => n + g._count._all, 0),

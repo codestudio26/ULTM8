@@ -403,6 +403,22 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   month back by the days not frozen. Cancelling during a freeze ends the plan
   on the moved billing day. The student's Memberships card shows "Billing
   paused" for these plans too. No migration.
+- **Stress test round 6: money fixes** (Decision 446 items 1–4, findings
+  M-1 to M-5) — a freeze inside a contract's minimum term no longer adds a
+  month: the end of the term moves along the billing schedule with the
+  freeze, so a 3-month term is still 3 monthly payments (cards and plans
+  billed to the balance). Ending a freeze early now also moves back the end
+  date of a monthly plan cancelled during the freeze (and of a card
+  Subscription cancelled during it), so the Memberships card shows one, right
+  end date; a cancel date before the freeze is left alone. A monthly plan
+  billed to the balance now shows its monthly charges as ended however the
+  plan ends: a desk refund that ends it, Delete my account, the end of the
+  minimum term, and (the nightly charge job's catch-all) any other way. A
+  payment refunded in part, including one where the non-refundable joining
+  fee was kept, counts in revenue at its amount less what was refunded, the
+  same on the billing overview and on the Transactions page's "Total
+  revenue". Whether revenue includes the card surcharge is unchanged. No
+  migration.
 - **School owners connect Stripe themselves** (Decision 441 item 6) — the
   School page has a **Stripe account** card with **Connect Stripe**, which
   starts Stripe's own onboarding (the first time, the owner picks the country

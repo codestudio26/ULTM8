@@ -153,8 +153,11 @@ export async function endSeriesBefore(tx: Pick<Prisma.TransactionClient, 'recurr
     nextIndex: row.nextIndex,
     createdCount: row.createdCount,
   };
+  // Nothing on or after endDay, also when the end date can't go before the
+  // first date (a series re-anchored on a moved billing day).
   const next = row.nextDate ? nextDay(state) : null;
-  await tx.recurringCharge.update({ where: { id: row.id }, data: { endDate: dayValue(lastDay), nextDate: next ? dayValue(next) : null } });
+  const kept = next && next < endDay ? next : null;
+  await tx.recurringCharge.update({ where: { id: row.id }, data: { endDate: dayValue(lastDay), nextDate: kept ? dayValue(kept) : null } });
 }
 
 /**
@@ -175,6 +178,48 @@ export async function endBalanceBilling(db: Db, membershipId: string, endsAt: Da
   } catch (err) {
     logger?.warn(`Membership ${membershipId}: ending its monthly charges failed; the charge-recurring job stops them. ${err}`);
   }
+}
+
+/**
+ * Decision 446 item 3: a balance-billed plan's series ends however the plan
+ * ends. Cancelling, removing the member, a desk refund that ends it, Delete
+ * my account and the end of a minimum term each end it at once
+ * (endBalanceBilling); this is the charge-recurring job's catch-all for any
+ * other way (a Stripe refund or dispute, the expiry sweep, a call above that
+ * failed): every series still showing a next date on or after the day its
+ * membership stops being charged (membershipBillingEndDay) ends before that
+ * day, so the screens show it ended. Nothing would be charged either way
+ * (runSeries reads the membership). Returns how many it ended.
+ */
+export async function endFinishedBalanceBilling(db: Db, now: Date, logger?: Pick<Logger, 'warn'>): Promise<number> {
+  const rows = await db.recurringCharge.findMany({
+    where: {
+      membershipId: { not: null },
+      nextDate: { not: null },
+      membership: { is: { OR: [{ status: { not: 'ACTIVE' } }, { cancelAt: { not: null } }, { expiryDate: { not: null } }] } },
+    },
+    select: { id: true, membershipId: true },
+  });
+  let ended = 0;
+  for (const r of rows) {
+    try {
+      const done = await db.$transaction(async (tx: Tx & Pick<Prisma.TransactionClient, 'membership'>) => {
+        await tx.$queryRaw`SELECT id FROM "RecurringCharge" WHERE id = ${r.id} FOR UPDATE`;
+        const row = await tx.recurringCharge.findUniqueOrThrow({ where: { id: r.id } });
+        if (!row.nextDate) return false;
+        const school = await tx.school.findUnique({ where: { id: row.schoolId }, select: { timezone: true } });
+        const membership = await tx.membership.findUnique({ where: { id: r.membershipId! }, select: { status: true, cancelAt: true, expiryDate: true } });
+        const endDay = membershipBillingEndDay(membership, school?.timezone, schoolToday(now, school?.timezone));
+        if (endDay === null || dayOf(row.nextDate) < endDay) return false;
+        await endSeriesBefore(tx, row, endDay);
+        return true;
+      });
+      if (done) ended++;
+    } catch (err) {
+      logger?.warn(`Monthly series ${r.id}: ending it after its membership ended failed; tried again on the next run. ${err}`);
+    }
+  }
+  return ended;
 }
 
 /**
@@ -209,10 +254,13 @@ type FreezeTx = Pick<Prisma.TransactionClient, 'recurringCharge' | 'membershipFr
  * follow from there (the same day of each month), as a card Subscription's
  * billing restarts from the day its trial ends. The series' first date and
  * next index are re-anchored on that day (anchorAt; the index never goes
- * below the charges already made); its end date (if any) still holds.
+ * below the charges already made, nor below the next index it had); its end
+ * date (if any) still holds.
  */
 async function moveSeriesTo(tx: Pick<Prisma.TransactionClient, 'recurringCharge'>, row: RecurringCharge, day: string): Promise<RecurringCharge> {
-  const anchor = anchorAt(day, row.frequency, row.createdCount);
+  // The index never goes back either, so the first date stays before the
+  // moved day and an end date set later (a cancel) can fall before it.
+  const anchor = anchorAt(day, row.frequency, Math.max(row.createdCount, row.nextIndex));
   const state = {
     firstDate: anchor.firstDate,
     frequency: row.frequency,

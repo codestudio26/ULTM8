@@ -14,6 +14,17 @@ import { chargeRemaining } from './charge-ledger';
 export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE'] as const;
 
 /**
+ * Decision 446 item 4: the payment rows revenue counts, each at its amount less
+ * what was refunded on it (never below nothing): Successful ones (a part refund
+ * keeps a row Successful) and Refunded ones, which still count what the School
+ * kept, such as a non-refundable joining fee left out of a desk refund
+ * (Decision 435 item 5). The card surcharge is in neither (amount excludes it;
+ * whether revenue should include it is an open question). Shared by the
+ * billing overview and the Transactions page's Revenue tile.
+ */
+export const REVENUE_STATUSES = ['SUCCESSFUL', 'REFUNDED'] as const;
+
+/**
  * The billing reports (backlog §3.6 step 4; Decision 338 item 11): an
  * Overview (scheduled, paid and overdue totals, revenue by month) and Member
  * balances. Seen by the owner (the whole School) and "staff with payment
@@ -31,8 +42,11 @@ export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_F
  * Decision 414 item 3: the Overview also shows membership revenue, and the
  * total. Memberships are Transaction rows of kind MEMBERSHIP (a plan bought in
  * the app or sold at the desk) and RENEWAL (a Subscription's later payments),
- * counted as the Transactions page's Revenue tile counts them (Successful rows,
- * by billing date, currency in capitals), less what was refunded on each row.
+ * counted as the Transactions page's Revenue tile counts them (Successful and
+ * Refunded rows, by billing date, currency in capitals), less what was refunded
+ * on each row (Decision 446 item 4: a row refunded in part, or Refunded with a
+ * non-refundable joining fee kept, counts what the School kept; a whole refund
+ * counts nothing).
  * CHARGE_PAYMENT rows are left out: they are the ledger's payments above, so
  * counting them here would count them twice. Late-cancellation and freeze fees
  * are neither part (Decision 414 names charges and memberships only).
@@ -112,7 +126,7 @@ export class ChargeReportsService {
         select: { kind: true, amount: true, currency: true, createdAt: true },
       }),
       this.prismaJobs.transaction.findMany({
-        where: { ...this.where(schoolId, scope), kind: { in: [...MEMBERSHIP_REVENUE_KINDS] }, status: 'SUCCESSFUL', billingDate: { gte: first.toJSDate() } },
+        where: { ...this.where(schoolId, scope), kind: { in: [...MEMBERSHIP_REVENUE_KINDS] }, status: { in: [...REVENUE_STATUSES] }, billingDate: { gte: first.toJSDate() } },
         select: { amount: true, refundedAmount: true, currency: true, billingDate: true },
       }),
     ]);

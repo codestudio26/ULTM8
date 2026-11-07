@@ -102,7 +102,7 @@ describe('membership-series (Decision 441 item 1)', () => {
     it('moves the next month later by the freeze length, and the months after follow from there', async () => {
       const tx = txWith([freeze('2027-03-10', '2027-04-09')]);
       const after = await syncSeriesFreezes(tx as never, series('2027-03-15'), 'UTC', NOW);
-      expect(tx.recurringCharge.update).toHaveBeenCalledWith({ where: { id: 'rc-1' }, data: { firstDate: day('2027-03-14'), nextIndex: 1, nextDate: day('2027-04-14') } });
+      expect(tx.recurringCharge.update).toHaveBeenCalledWith({ where: { id: 'rc-1' }, data: { firstDate: day('2027-02-14'), nextIndex: 2, nextDate: day('2027-04-14') } });
       expect(after.nextDate).toEqual(day('2027-04-14'));
       expect(tx.membershipFreeze.update).toHaveBeenCalledWith({ where: { id: 'f-1' }, data: { billingShiftAppliedAt: NOW } });
     });

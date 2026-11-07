@@ -25,7 +25,11 @@ type Row = {
   billingRestoredAt: Date | null;
 };
 
-function setup(freezes: Array<Partial<Row> & Pick<Row, 'id' | 'startsAt' | 'endsAt'>>, sub: { periodEnd: number; trialEnd?: number | null; status?: string }) {
+function setup(
+  freezes: Array<Partial<Row> & Pick<Row, 'id' | 'startsAt' | 'endsAt'>>,
+  sub: { periodEnd: number; trialEnd?: number | null; status?: string },
+  membership: { cancelAt: Date | null } = { cancelAt: null },
+) {
   const rows = new Map<string, Row>(
     freezes.map((f) => [
       f.id,
@@ -52,7 +56,7 @@ function setup(freezes: Array<Partial<Row> & Pick<Row, 'id' | 'startsAt' | 'ends
     membershipFreeze: {
       findUnique: jest.fn(async ({ where }: { where: { id: string } }) => {
         const r = rows.get(where.id);
-        return r ? { ...r, membership: { stripeSubscriptionId: 'sub_1', status: 'ACTIVE' }, school: { timezone: null } } : null;
+        return r ? { ...r, membership: { stripeSubscriptionId: 'sub_1', status: 'ACTIVE', cancelAt: membership.cancelAt }, school: { timezone: null } } : null;
       }),
       findUniqueOrThrow: jest.fn(async ({ where }: { where: { id: string } }) => ({ ...rows.get(where.id)! })),
       findMany: jest.fn(async ({ where }: { where: Record<string, unknown> }) => [...rows.values()].filter((r) => matches(r, where)).map((r) => ({ id: r.id }))),
@@ -65,6 +69,14 @@ function setup(freezes: Array<Partial<Row> & Pick<Row, 'id' | 'startsAt' | 'ends
     },
     paymentAccount: { findUnique: jest.fn(async () => ({ provider: 'STRIPE', stripeConnectedAccountId: 'acct_1' })) },
     school: {},
+    membership: {
+      updateMany: jest.fn(async ({ where, data }: { where: { cancelAt: Date }; data: { cancelAt: Date } }) => {
+        if (membership.cancelAt?.getTime() !== where.cancelAt.getTime()) return { count: 0 };
+        membership.cancelAt = data.cancelAt;
+        return { count: 1 };
+      }),
+    },
+    $transaction: jest.fn(async (ops: Array<Promise<unknown>>) => Promise.all(ops)),
   };
   const state = { trialEnd: sub.trialEnd ?? null, periodEnd: sub.periodEnd };
   const update = jest.fn(async (_id: string, params: { trial_end: number }) => {
@@ -79,7 +91,7 @@ function setup(freezes: Array<Partial<Row> & Pick<Row, 'id' | 'startsAt' | 'ends
       },
     }),
   };
-  return { db: db as never, stripe: stripe as never, rows, update, state };
+  return { db: db as never, stripe: stripe as never, rows, update, state, membership };
 }
 
 describe('freeze billing timing (Decision 409)', () => {
@@ -179,5 +191,29 @@ describe('freeze billing timing (Decision 409)', () => {
     s.rows.get('later')!.endedEarlyAt = NOW;
     await restoreFreezeBilling(s.db, s.stripe, 'later', NOW);
     expect(s.state.trialEnd).toBe(paid + 7 * DAY_S);
+  });
+
+  it('Decision 446 item 2: cancelled during the freeze, then ended early: the cancel date moves back with the next charge', async () => {
+    // Started on 1 Nov, 10 days; ended on 2 Nov: 9 days unused.
+    const paid = nowS + 20 * DAY_S;
+    const cancelAt = new Date((paid + 10 * DAY_S) * 1000); // cancelled at the moved period end
+    const s = setup([{ id: 'f1', startsAt: date('2026-11-01'), endsAt: date('2026-11-11') }], { periodEnd: paid }, { cancelAt });
+    await applyFreezeBillingShift(s.db, s.stripe, 'f1', NOW);
+    s.rows.get('f1')!.endedEarlyAt = NOW;
+    expect(await restoreFreezeBilling(s.db, s.stripe, 'f1', NOW)).toBe(true);
+    const back = paid + DAY_S;
+    expect(s.update.mock.calls[1]).toEqual(['sub_1', { trial_end: back, proration_behavior: 'none', cancel_at: back }, { idempotencyKey: `membership-freeze-restore-f1-${back}-${back}` }]);
+    expect(s.membership.cancelAt).toEqual(new Date(back * 1000));
+  });
+
+  it('a cancel date on or before the first frozen day was not pushed by the freeze: it stays', async () => {
+    const paid = nowS + 20 * DAY_S;
+    const cancelAt = date('2026-11-01');
+    const s = setup([{ id: 'f1', startsAt: date('2026-11-01'), endsAt: date('2026-11-11') }], { periodEnd: paid }, { cancelAt });
+    await applyFreezeBillingShift(s.db, s.stripe, 'f1', NOW);
+    s.rows.get('f1')!.endedEarlyAt = NOW;
+    await restoreFreezeBilling(s.db, s.stripe, 'f1', NOW);
+    expect(s.update.mock.calls[1][1]).toEqual({ trial_end: paid + DAY_S, proration_behavior: 'none' });
+    expect(s.membership.cancelAt).toEqual(cancelAt);
   });
 });

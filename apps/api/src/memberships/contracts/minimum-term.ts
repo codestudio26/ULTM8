@@ -2,7 +2,9 @@ import type { Logger } from '@nestjs/common';
 import type { PrismaClient } from '@prisma/client';
 import { DateTime } from 'luxon';
 import type { StripeClientService } from '../../payments/stripe-client.service';
-import { dayIn, dayNumber, frozenDays, type FreezeDates } from '../freeze/membership-freeze';
+import { endBalanceBilling } from '../../charges/membership-series';
+import { addDays, occurrenceDay } from '../../charges/recurring-schedule';
+import { dayIn, dayNumber, dayString, frozenDays, type FreezeDates } from '../freeze/membership-freeze';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -22,12 +24,26 @@ export function minimumTermEndsAt(startDate: Date, months: number): Date {
 }
 
 /**
- * Decision 435 item 17: a freeze pushes the end of the minimum term back by
- * the freeze's length, as it already moves a fixed-term membership's end
- * date (Decision 404: approval adds the whole freeze, ending early takes the
- * unused days back off). Every approved freeze that starts before the term
- * ends (as pushed by the freezes before it) adds the days it actually freezes;
- * a freeze starting after the term has ended changes nothing.
+ * Decision 435 item 17: a freeze pushes the end of the minimum term back.
+ * Decision 446 item 1: it moves along the billing schedule, so a term of N
+ * months is still N monthly payments (the first, paid as the order, and N - 1
+ * more), however long the months the freeze crosses are.
+ *
+ * The billing days are worked out as a freeze moves them (Decision 443 item 1
+ * for a plan billed to the balance, membership-series.ts syncSeriesFreezes;
+ * Decision 404 for a card Subscription, freeze-billing.ts): payment 0 is the
+ * start day, payment k is k months later (the last day of a shorter month for
+ * the 29th to 31st); an approved freeze moves the first payment on or after
+ * its first day later by the days it actually freezes (fewer when ended
+ * early), and the payments after it follow monthly from the new day. The term
+ * ends on the day payment N would fall, which is never charged: the
+ * membership ends that day.
+ *
+ * Freezes are taken in order of their first day; one that starts on or after
+ * the term's end (as moved by the freezes before it) changes nothing, and
+ * neither does one that froze no day. With no freeze that moves it, the end
+ * is minimumTermEndsAt exactly. The days are the School's (its time zone);
+ * the end is minimumTermEndsAt moved by the whole days the freezes added.
  */
 export function minimumTermEndsAtWithFreezes(
   startDate: Date,
@@ -35,16 +51,30 @@ export function minimumTermEndsAtWithFreezes(
   freezes: FreezeDates[],
   zone: string | null | undefined,
 ): Date {
-  let end = minimumTermEndsAt(startDate, months);
+  const plain = minimumTermEndsAt(startDate, months);
   const approved = freezes.filter((f) => f.status === 'APPROVED').sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+  // The schedule: payment k (k >= from) falls on occurrenceDay(anchor, k - from).
+  let anchor = dayIn(startDate, zone);
+  let from = 0;
+  const payment = (k: number) => occurrenceDay(anchor, 'MONTHLY', k - from);
+  const unmoved = payment(months);
   for (const f of approved) {
-    if (dayNumber(f.startsAt) >= dayNumber(dayIn(end, zone))) continue;
-    end = new Date(end.getTime() + frozenDays(f, zone) * DAY_MS);
+    const days = frozenDays(f, zone);
+    if (days === 0) continue;
+    const first = dayString(dayNumber(f.startsAt));
+    if (first >= payment(months)) continue;
+    let k = Math.max(1, from);
+    while (payment(k) < first) k++;
+    anchor = addDays(payment(k), days);
+    from = k;
   }
-  return end;
+  const moved = dayNumber(payment(months)) - dayNumber(unmoved);
+  if (moved === 0) return plain;
+  // Whole days of 24 hours, as a card Subscription's next charge moves (freeze-billing.ts).
+  return new Date(plain.getTime() + moved * DAY_MS);
 }
 
-type Db = Pick<PrismaClient, 'planContractSignature' | 'transaction' | 'membership' | 'membershipFreeze' | 'school' | 'paymentAccount' | '$transaction'>;
+type Db = Pick<PrismaClient, 'planContractSignature' | 'transaction' | 'membership' | 'membershipFreeze' | 'school' | 'paymentAccount' | 'recurringCharge' | '$transaction'>;
 type Stripe = Pick<StripeClientService, 'scopedClient'>;
 
 /** The Membership a used signature bought: linked directly (a free plan) or
@@ -147,6 +177,11 @@ export async function applyDueMinimumTermEnds(db: Db, stripeClient: Stripe, logg
         return current.status === 'ACTIVE' && !current.cancelAt;
       });
       if (done) stopped += 1;
+      // Decision 446 item 3: its series shows it ending on the term's last day.
+      if (done && membership.billedToBalance) {
+        const ended = await db.membership.findUnique({ where: { id: membership.id }, select: { cancelAt: true } });
+        if (ended?.cancelAt) await endBalanceBilling(db, membership.id, ended.cancelAt, { warn: (m: string) => logger.error(m) });
+      }
     } catch (err) {
       logger.error(`plan contract ${sig.id}: setting the Subscription to stop at the end of the minimum term failed; the next sweep tries again.`, err as Error);
     }
