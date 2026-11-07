@@ -13,6 +13,13 @@ const FAKE = `http://localhost:${process.env.FAKE_STRIPE_PORT ?? 12111}`;
 
 const cast = JSON.parse(fs.readFileSync(new URL('../booking-schedule/cast.json', import.meta.url)));
 const S = cast.schools;
+// Round 6 adaptation (Decision 430 item 4 / FAM-5): a child can't buy a plan for
+// themselves; the round 1 seed's 12-year-olds (no parent) used to. Only adults buy here.
+{
+  const ids = S.flatMap((s) => s.students.map((st) => st.id));
+  const adults = new Set((await db.user.findMany({ where: { id: { in: ids }, dateOfBirth: { lt: new Date(Date.now() - 18.1 * 365.25 * 86400e3) } }, select: { id: true } })).map((u) => u.id));
+  for (const s of S) { s.minors = s.students.filter((st) => !adults.has(st.id)); s.students = s.students.filter((st) => adults.has(st.id)); }
+}
 const results = [];
 const ok = (name, pass, detail) => { results.push({ name, pass, detail }); console.log(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? ' — ' + detail : ''}`); };
 const codes = (rs) => rs.reduce((m, r) => ((m[r.status] = (m[r.status] || 0) + 1), m), {});
@@ -24,13 +31,23 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Webhooks, signed with the API's own secret.
 // ---------------------------------------------------------------------------
 async function webhook(label, type, objectId, account, eventId = `evt_${randomUUID().replace(/-/g, '')}`, opts = {}) {
-  const payload = JSON.stringify({ id: eventId, object: 'event', type, account, data: { object: { id: objectId, object: type.split('.')[0] } } });
+  // Round 6 adaptation: opts.object sends the whole object, as Stripe does (the
+  // PaymentIntent of a hosted Checkout carries the Transaction id in its metadata).
+  const payload = JSON.stringify({ id: eventId, object: 'event', type, account, data: { object: opts.object ?? { id: objectId, object: type.split('.')[0] } } });
   const header = opts.badSignature ? 't=1,v1=deadbeef' : stripe.webhooks.generateTestHeaderString({ payload, secret: process.env.STRIPE_WEBHOOK_SECRET, timestamp: opts.timestamp });
   const t0 = t();
   const res = await fetch(`${process.env.API || 'http://localhost:3200/v1'}/payments/webhooks/stripe`, { method: 'POST', headers: { 'content-type': 'application/json', ...(opts.noSignature ? {} : { 'stripe-signature': header }) }, body: payload });
   await res.text();
   (globalThis.__wh ||= []).push({ label, ms: t() - t0, status: res.status });
   return { status: res.status, eventId };
+}
+// Round 6 adaptation: a hosted Checkout has no PaymentIntent until the member pays
+// (current Stripe API; the API stores none at purchase). Pay it on the fake's
+// Checkout page, as the launch rehearsal does, and return Stripe's PaymentIntent.
+async function payCheckout(body) {
+  const cs = body.checkoutUrl.split('/').pop();
+  const paid = await (await fetch(`${FAKE}/__checkout/${cs}/pay`, { method: 'POST' })).json();
+  return paid.payment_intent;
 }
 async function waitFor(fn, ms = 60000) {
   const end = Date.now() + ms;
@@ -84,14 +101,13 @@ let tb = t();
 const buys = await pool(all, C, async ({ s, st }) => ({ s, st, r: await call(s.card ? 'buy:pack:card' : 'buy:pack:cash', 'POST', `/membership-plans/${s.plans.pack}/purchase`, st.tok, s.card ? { useHostedCheckout: true } : {}) }));
 console.log(`purchases: ${buys.length} in ${((t() - tb) / 1000).toFixed(1)}s`);
 const cashTx = buys.filter((b) => !b.s.card && b.r.status < 300).map((b) => ({ s: b.s, id: b.r.body.transactionId }));
-const cardTx = buys.filter((b) => b.s.card && b.r.status < 300).map((b) => ({ s: b.s, id: b.r.body.transactionId }));
+const cardTx = buys.filter((b) => b.s.card && b.r.status < 300).map((b) => ({ s: b.s, id: b.r.body.transactionId, body: b.r.body }));
 tb = t();
 await pool(cashTx, C, ({ s, id }) => call('confirm:cash', 'PATCH', `/transactions/${id}/confirm`, s.owner.tok, {}));
 console.log(`cash confirmations: ${cashTx.length} in ${((t() - tb) / 1000).toFixed(1)}s`);
-const cardRows = await db.transaction.findMany({ where: { id: { in: cardTx.map((x) => x.id) } }, select: { id: true, stripePaymentIntentId: true, schoolId: true } });
-const acctOf = Object.fromEntries(S.map((s) => [s.id, s.acct]));
+const cardRows = cardTx;
 tb = t();
-await pool(cardRows, C, (row) => webhook('webhook:pi.succeeded', 'payment_intent.succeeded', row.stripePaymentIntentId, acctOf[row.schoolId]));
+await pool(cardTx, C, async (x) => { const pi = await payCheckout(x.body); return webhook('webhook:pi.succeeded', 'payment_intent.succeeded', pi.id, x.s.acct, undefined, { object: pi }); });
 const settled = await waitFor(async () => (await db.transaction.count({ where: { id: { in: cardRows.map((r) => r.id) }, status: 'PENDING' } })) === 0, 300000);
 console.log(`card webhooks: ${cardRows.length} accepted and processed in ${((t() - tb) / 1000).toFixed(1)}s (all settled: ${settled})`);
 
@@ -163,9 +179,9 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
 {
   const s = card[0]; const st = nth(s, 4);
   const r = await call('C4:buy', 'POST', `/membership-plans/${s.plans.pack}/purchase`, st.tok, { useHostedCheckout: true });
-  const pi = (await db.transaction.findUnique({ where: { id: r.body.transactionId } })).stripePaymentIntentId;
+  const piObj = await payCheckout(r.body); const pi = piObj.id;
   const evt = `evt_${randomUUID().replace(/-/g, '')}`;
-  const rs = await Promise.all(Array.from({ length: 20 }, () => webhook('C4', 'payment_intent.succeeded', pi, s.acct, evt)));
+  const rs = await Promise.all(Array.from({ length: 20 }, () => webhook('C4', 'payment_intent.succeeded', pi, s.acct, evt, { object: piObj })));
   await waitFor(async () => (await db.transaction.findUnique({ where: { id: r.body.transactionId } })).status !== 'PENDING', 30000);
   await sleep(2000);
   const m = await db.membership.count({ where: { studentId: st.id, membershipPlanId: s.plans.pack } });
@@ -176,8 +192,8 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
 {
   const s = card[1]; const st = nth(s, 5);
   const r = await call('C5:buy', 'POST', `/membership-plans/${s.plans.pack}/purchase`, st.tok, { useHostedCheckout: true });
-  const pi = (await db.transaction.findUnique({ where: { id: r.body.transactionId } })).stripePaymentIntentId;
-  await Promise.all(Array.from({ length: 10 }, () => webhook('C5', 'payment_intent.succeeded', pi, s.acct)));
+  const piObj = await payCheckout(r.body); const pi = piObj.id;
+  await Promise.all(Array.from({ length: 10 }, () => webhook('C5', 'payment_intent.succeeded', pi, s.acct, undefined, { object: piObj })));
   await waitFor(async () => (await db.transaction.findUnique({ where: { id: r.body.transactionId } })).status !== 'PENDING', 30000);
   await sleep(3000);
   const m = await db.membership.count({ where: { studentId: st.id, membershipPlanId: s.plans.pack } });
@@ -200,10 +216,11 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
 {
   const s = card[2]; const st = free(s, 6);
   const first = await call('C7:buy', 'POST', `/membership-plans/${s.plans.weekly}/purchase`, st.tok, { useHostedCheckout: true });
+  const firstPi = await payCheckout(first.body);
   const firstRow = await db.transaction.findUnique({ where: { id: first.body.transactionId } });
   const secondRow = await db.transaction.create({ data: { ...firstRow, id: randomUUID(), stripePaymentIntentId: `pi_c7_${randomUUID().replace(/-/g, '')}`, createdAt: undefined, updatedAt: undefined } });
   const rows = [firstRow, secondRow];
-  await Promise.all(rows.map((x) => webhook('C7', 'payment_intent.succeeded', x.stripePaymentIntentId, s.acct)));
+  await Promise.all([webhook('C7', 'payment_intent.succeeded', firstPi.id, s.acct, undefined, { object: firstPi }), webhook('C7', 'payment_intent.succeeded', secondRow.stripePaymentIntentId, s.acct)]);
   await waitFor(async () => (await db.transaction.count({ where: { id: { in: rows.map((x) => x.id) }, status: 'PENDING' } })) === 0, 30000);
   const after = await db.transaction.findMany({ where: { id: { in: rows.map((x) => x.id) } }, select: { status: true, membershipId: true, refundedAmount: true } });
   const live = await db.membership.count({ where: { studentId: st.id, membershipPlanId: s.plans.weekly } });
@@ -214,10 +231,10 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
 {
   const s = card[3]; const st = nth(s, 7);
   const r = await call('C8:buy', 'POST', `/membership-plans/${s.plans.pack}/purchase`, st.tok, { useHostedCheckout: true });
-  const pi = (await db.transaction.findUnique({ where: { id: r.body.transactionId } })).stripePaymentIntentId;
-  await webhook('C8', 'payment_intent.payment_failed', pi, s.acct);
+  const piObj = await payCheckout(r.body); const pi = piObj.id;
+  await webhook('C8', 'payment_intent.payment_failed', pi, s.acct, undefined, { object: { ...piObj, status: 'requires_payment_method' } });
   await waitFor(async () => (await db.transaction.findUnique({ where: { id: r.body.transactionId } })).status !== 'PENDING', 20000);
-  await webhook('C8', 'payment_intent.succeeded', pi, s.acct);
+  await webhook('C8', 'payment_intent.succeeded', pi, s.acct, undefined, { object: piObj });
   await sleep(3000);
   const tx = await db.transaction.findUnique({ where: { id: r.body.transactionId } });
   ok('C8 a payment that fails and then succeeds still gives the membership', tx.status === 'SUCCESSFUL' && !!tx.membershipId, `order ${tx.status}, membership ${tx.membershipId ?? 'none'}`);
@@ -289,7 +306,7 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
   const s = S[10];
   await call('C12:settings', 'PUT', `/schools/${s.id}/promotion-fee-settings`, s.owner.tok, { promotionFeeEnabled: true, gradeBeforeFeePaid: false });
   await db.rankStripeTier.updateMany({ where: { rank: { disciplineId: s.disciplineId } }, data: { promotionFeeMinor: 3000 } });
-  const members = s.students.filter((x) => x.kind === 'sub').slice(200, 206);
+  const members = s.students.filter((x) => x.kind === 'sub').slice(140, 146); // Round 6: 200-206 → 140-146, adults only now
   const reqOf = async (st) => db.promotionFeeRequest.findFirst({ where: { studentId: st.id }, orderBy: { createdAt: 'desc' } });
   const promote = async (st) => {
     return call('C12:promote', 'POST', `/students/${st.id}/ranks/${s.disciplineId}/promote`, s.owner.tok, { acknowledgeWithoutSkillSignoff: true });
@@ -356,7 +373,7 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
   const st3 = free(s, 21);
   const m3Before = await db.membership.count({ where: { studentId: st3.id, membershipPlanId: s.plans.pack } });
   const r3 = await call('C14:buy', 'POST', `/membership-plans/${s.plans.pack}/purchase`, st3.tok, {});
-  const cancel = await call('C14:cancel', 'PATCH', `/transactions/${r3.body.transactionId}/cancel`, s.owner.tok, {});
+  const cancel = await call('C14:cancel', 'PATCH', `/transactions/${r3.body.transactionId}/cancel`, s.owner.tok, { reason: 'Never arrived' }); // Round 6: a reason is required (Decision 338 item 1, #409)
   const after = await call('C14:confirm-cancelled', 'PATCH', `/transactions/${r3.body.transactionId}/confirm`, s.owner.tok, {});
   const m3 = (await db.membership.count({ where: { studentId: st3.id, membershipPlanId: s.plans.pack } })) - m3Before;
   const o3 = await db.transaction.findUnique({ where: { id: r3.body.transactionId } });
@@ -368,8 +385,10 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
 {
   const s = card[5]; const st = free(s, 15);
   const r = await call('C15:buy', 'POST', `/membership-plans/${s.plans.pack}/purchase`, st.tok, { useHostedCheckout: true });
+  const pi0 = await payCheckout(r.body); // Round 6 adaptation (hosted Checkout)
+  await webhook('C15', 'payment_intent.succeeded', pi0.id, s.acct, undefined, { object: pi0 });
+  await waitFor(async () => (await db.transaction.findUnique({ where: { id: r.body.transactionId } })).stripePaymentIntentId, 20000);
   const tx0 = await db.transaction.findUnique({ where: { id: r.body.transactionId } });
-  await webhook('C15', 'payment_intent.succeeded', tx0.stripePaymentIntentId, s.acct);
   await waitFor(async () => (await db.transaction.findUnique({ where: { id: tx0.id } })).membershipId, 20000);
   const dp = await (await fetch(`${FAKE}/__disputes`, { method: 'POST', body: JSON.stringify({ payment_intent: tx0.stripePaymentIntentId, amount: 6000 }) })).json();
   await webhook('C15', 'charge.dispute.created', dp.id, s.acct);
@@ -384,9 +403,13 @@ const free = (s, i) => s.students.filter((x) => x.kind === 'pack' || x.kind === 
 
 // C16. Guardians buying for their child, and for a child who isn't theirs.
 {
-  const s = cash[8]; const child = free(s, 16); const other = free(s, 17);
+  // Round 6 adaptation: the children are real minors (an 18+ "child" is their own
+  // buyer since Decision 430), and the parent's link carries BASELINE consent as
+  // the app's consent tick gives it.
+  const s = cash[8]; const child = s.minors[0]; const other = s.minors[1];
   const g = await db.user.create({ data: { id: randomUUID(), email: `guardian-${randomUUID()}@stress.test`, firstName: 'Guardian', surname: 'Test', passcodeHash: 'x', phone: `+1555${Math.floor(1e9 + Math.random() * 9e9)}`, dateOfBirth: new Date('1985-01-01') } });
   await db.guardianLink.create({ data: { id: randomUUID(), guardianId: g.id, studentId: child.id } });
+  await db.consentRecord.create({ data: { id: randomUUID(), guardianId: g.id, studentId: child.id, tier: 'BASELINE', policyVersion: 'unpublished' } });
   const gt = token(g, []);
   const mine = await call('C16:buy', 'POST', `/membership-plans/${s.plans.pack}/purchase`, gt, { studentId: child.id });
   const notMine = await call('C16:buy', 'POST', `/membership-plans/${s.plans.pack}/purchase`, gt, { studentId: other.id });
