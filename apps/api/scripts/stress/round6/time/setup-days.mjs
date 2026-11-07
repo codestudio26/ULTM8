@@ -30,8 +30,10 @@ export const FREEZES = {
 };
 
 sectionOf('setup: billing days and freezes');
-const days = { members: [], freezes: [] };
-for (const s of cast.schools.filter((x) => x.provider !== 'STRIPE')) {
+const ONLY = process.env.SCHOOLS ? new Set(process.env.SCHOOLS.split(',').map(Number)) : null;
+const days = ONLY && fs.existsSync(`${OUT}/days.json`) ? JSON.parse(fs.readFileSync(`${OUT}/days.json`, 'utf8')) : { members: [], freezes: [] };
+const mine = (x) => x.provider !== 'STRIPE' && (!ONLY || ONLY.has(x.i));
+for (const s of cast.schools.filter(mine)) {
   const ms = await db.membership.findMany({ where: { schoolId: s.sid, billedToBalance: true }, select: { id: true, studentId: true } });
   const byStudent = new Map(ms.map((m) => [m.studentId, m.id]));
   const ids = [];
@@ -56,7 +58,7 @@ for (const s of cast.schools.filter((x) => x.provider !== 'STRIPE')) {
 }
 
 // The job's safety net makes the series again from the moved dates.
-for (const s of cast.schools.filter((x) => x.provider !== 'STRIPE')) {
+for (const s of cast.schools.filter(mine)) {
   for (const [k, f] of Object.entries(FREEZES)) {
     const m = days.members.find((x) => x.sid === s.sid && x.k === Number(k));
     if (!m) continue;

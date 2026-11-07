@@ -19,7 +19,7 @@ const C = {
   GB: { tz: 'Europe/London', cur: 'GBP', lang: 'en-GB', addr: { line1: '1 High St', city: 'London', postalCode: 'E1 6AN', country: 'GB' }, price: 6500 },
   DE: { tz: 'Europe/Berlin', cur: 'EUR', lang: 'de-DE', addr: { line1: 'Hauptstr. 1', city: 'Berlin', postalCode: '10115', country: 'DE' }, price: 7000 },
   BR: { tz: 'America/Sao_Paulo', cur: 'BRL', lang: 'pt-BR', addr: { line1: 'Rua Augusta, 1500', city: 'São Paulo', region: 'SP', postalCode: '01304-001', country: 'BR' }, price: 18000 },
-  JP: { tz: 'Asia/Tokyo', cur: 'JPY', lang: 'ja-JP', addr: { line1: '1-1 Shibuya', city: 'Tokyo', postalCode: '150-0002', country: 'JP' }, price: 1200000 },
+  JP: { tz: 'Asia/Tokyo', cur: 'JPY', lang: 'ja-JP', addr: { line1: '1-1 Shibuya', city: 'Shibuya', region: 'Tokyo', postalCode: '150-0002', country: 'JP' }, price: 1200000 },
   US: { tz: 'America/New_York', cur: 'USD', lang: 'en-US', addr: { line1: '1 Main St', city: 'New York', region: 'NY', postalCode: '10001', country: 'US' }, price: 15000 },
   USW: { tz: 'America/Los_Angeles', cur: 'USD', lang: 'en-US', addr: { line1: '1 Sunset Blvd', city: 'Los Angeles', region: 'CA', postalCode: '90028', country: 'US' }, price: 15000 },
   AU: { tz: 'Australia/Sydney', cur: 'AUD', lang: 'en-AU', addr: { line1: '1 George St', city: 'Sydney', region: 'NSW', postalCode: '2000', country: 'AU' }, price: 16000 },
@@ -76,7 +76,7 @@ export async function seedSchool(i, { members = N_MEMBERS, tag = RUN } = {}) {
     rowNumber: k + 2,
     values: { first_name: `M${k}`, last_name: `${ck}${i}`, email: `m${k}.${ck.toLowerCase()}${i}.${tag}@round6t.test`, phone: '', date_of_birth: '1990-0' + (1 + (k % 9)) + '-15', gender: '', join_date: '', belts: '', branch: branch.name, guardian_email: '', guardian_first_name: '', guardian_last_name: '' },
   }));
-  const imp = await must('import start', 'POST', `/schools/${sid}/imports`, T, { kind: 'MEMBERS', totalRows: rows.length, fileName: 'members.csv' });
+  const imp = rows.length ? await must('import start', 'POST', `/schools/${sid}/imports`, T, { kind: 'MEMBERS', totalRows: rows.length, fileName: 'members.csv' }) : null;
   const per = lim.maxRowsPerRequest || 100;
   let okRows = 0;
   for (let k = 0; k < rows.length; k += per) {

@@ -50,17 +50,19 @@ const JOBS = {
 };
 
 async function main() {
-  const plan = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+  // --serve: no plan, just a second API instance's workers (BullMQ queues), until killed.
+  const plan = process.argv[2] === '--serve' ? null : JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
   const start = Number(process.argv[3] || 0);
-  const { NestFactory } = require(path.join(API_DIR, 'node_modules/@nestjs/core'));
+  const { NestFactory } = require(require.resolve('@nestjs/core', { paths: [API_DIR] }));
   const { AppModule } = require(path.join(API_DIR, 'dist/app.module'));
   const app = await NestFactory.createApplicationContext(AppModule, { logger: process.env.CLOCK_QUIET ? ['error'] : ['error', 'warn', 'log'] });
+  if (!plan) { console.log('serving (workers only)'); await new Promise(() => {}); }
   const procs = {};
   for (const [name, [file, cls]] of Object.entries(JOBS)) {
     try { procs[name] = app.get(require(path.join(API_DIR, 'dist', file))[cls], { strict: false }); } catch (e) { console.error('no processor', name, e.message); }
   }
   // Which simulated step made each charge (createdAt is real time; Prisma sets it).
-  const { PrismaClient } = require(path.join(API_DIR, 'node_modules/@prisma/client'));
+  const { PrismaClient } = require(require.resolve('@prisma/client', { paths: [API_DIR] }));
   const pc = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
   let realMark = new RealDate(RealDate.now() - 1);
   for (let k = start; k < plan.length; k++) {
