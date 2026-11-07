@@ -33,6 +33,7 @@ export const schools = {
     actionNeededHint: "Stripe needs more details before your account is ready. Continue the setup on Stripe.",
     notConnectedHint: "Connect your School's Stripe account so members can pay by card in the app. Stripe asks for your business and bank details.",
     otherProviderHint: "This School's payment account is for cash or bank transfer, so Stripe can't be connected here.",
+    ownerMustChooseHint: "An owner must choose how the School is paid before Stripe can be connected.",
     unavailableHint: "Card payments in the app aren't available in your country yet, so members pay by cash or bank transfer (Pix in Brazil) and staff confirm it.",
     connect: "Connect Stripe",
     continue: "Continue Stripe setup",

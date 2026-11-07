@@ -5209,8 +5209,9 @@ model StaffPermission {
   /// to set. Branch Staff only; off by default and in no preset; owners
   /// always can.
   canSeePayroll         Boolean  @default(false)
-  /// Decision 442 item 3: may connect the School's Stripe account (create its
-  /// Stripe payment account, start Stripe's onboarding, read its status).
+  /// Decision 442 item 3: may connect the School's Stripe account (start
+  /// Stripe's onboarding, read its status) once an owner has created its
+  /// Stripe payment account; creating it is owners only (Decision 445 item 3).
   /// Branch Staff only; off by default and in no preset; owners always can.
   canConnectStripe      Boolean  @default(false)
 

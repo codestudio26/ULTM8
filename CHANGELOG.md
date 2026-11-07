@@ -150,6 +150,25 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   (`20270227100012_account_deletion`): four `User` columns, a write-only
   `AccountErasureLog`, and one narrow `erase_due_account` function (the jobs
   role may only call it, and it refuses accounts that aren't due).
+- **Stress test round 6: access and privacy fixes P-1 to P-5** (Track A,
+  `apps/api` and `apps/school-portal`; Decision 445). **Needs a database
+  migration** (`20270335000001_erasure_clears_coach_and_staff_details`: the
+  same `erase_due_account` function with a longer body, and column grants to
+  its owner only).
+  - When a person is finally erased, their coach profile at each School loses
+    its phone, bio and photo (the photo file is deleted too) and is archived,
+    so members no longer see it. The School's display name and work phone for
+    them as staff are cleared, and the work phone leaves older staff activity
+    lines.
+  - A waiting Pix, cash or bank-transfer order of a member whose deletion is
+    pending can't be confirmed (`ACCOUNT_CLOSING`, as a desk sale). It can
+    still be cancelled, and confirmed again if they sign back in.
+  - Only an owner creates the School's payment account (Stripe or cash/bank
+    transfer). Staff with "Can connect Stripe" start or continue Stripe's
+    onboarding once an owner has chosen Stripe; until then their Stripe card
+    says an owner must choose how the School is paid.
+  - Branch Staff who confirm an order get back only its id, status, amount and
+    the membership it started.
 - **Student app: class times on the School's clock** (Track B, `apps/student`;
   Decision 427 SP6) — class times in the app (a School's classes, Kid Mode,
   My bookings, My waitlist, a child's bookings) now show on the class's own

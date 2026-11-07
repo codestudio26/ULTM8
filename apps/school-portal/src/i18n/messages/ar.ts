@@ -369,6 +369,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       actionNeededHint: "يحتاج Stripe إلى مزيد من البيانات قبل أن يصبح حسابك جاهزًا. تابع الإعداد على Stripe.",
       notConnectedHint: "اربط حساب Stripe الخاص بمدرستك ليتمكن الأعضاء من الدفع بالبطاقة في التطبيق. سيطلب Stripe بيانات نشاطك التجاري وحسابك البنكي.",
       otherProviderHint: "حساب الدفع لهذه المدرسة مخصص للنقد أو التحويل البنكي، لذا لا يمكن ربط Stripe هنا.",
+      ownerMustChooseHint: "يجب أن يختار أحد المالكين أولاً طريقة استلام المدرسة للمدفوعات قبل ربط Stripe.",
       unavailableHint: "الدفع بالبطاقة في التطبيق غير متاح بعد في بلدك، لذا يدفع الأعضاء نقدًا أو بتحويل بنكي (Pix في البرازيل) ويؤكد الموظفون الدفع.",
       connect: "ربط Stripe",
       continue: "متابعة إعداد Stripe",

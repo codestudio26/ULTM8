@@ -357,6 +357,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       actionNeededHint: "Hesabın hazır olmadan önce Stripe'ın daha fazla bilgiye ihtiyacı var. Kuruluma Stripe'ta devam et.",
       notConnectedHint: "Üyelerin uygulamada kartla ödeyebilmesi için okulunun Stripe hesabını bağla. Stripe işletme ve banka bilgilerini ister.",
       otherProviderHint: "Bu okulun ödeme hesabı nakit veya banka havalesi için, bu yüzden Stripe burada bağlanamaz.",
+      ownerMustChooseHint: "Stripe bağlanmadan önce bir sahibin okulun nasıl ödeme alacağını seçmesi gerekir.",
       unavailableHint: "Uygulamada kartla ödeme ülkenizde henüz kullanılamıyor; üyeler nakit veya banka havalesiyle (Brezilya'da Pix) öder, personel de onaylar.",
       connect: "Stripe'ı bağla",
       continue: "Stripe kurulumuna devam et",

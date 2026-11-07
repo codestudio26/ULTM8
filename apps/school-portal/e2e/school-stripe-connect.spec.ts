@@ -118,7 +118,7 @@ test('a School whose payment account is for cash or bank transfer sees no Connec
   await expect(card.getByRole('button')).toHaveCount(0);
 });
 
-test('Decision 442 item 3: Branch Staff connect Stripe only once an owner switches "Connect Stripe" on', async ({ page }) => {
+test('Decision 442 item 3: Branch Staff connect Stripe only once an owner switches "Connect Stripe" on and has chosen Stripe (Decision 445 item 3)', async ({ page }) => {
   const s = await gbSchool();
   const north = await addBranch(s, 'North');
   const dee = await addPerson('Dee', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
@@ -160,8 +160,16 @@ test('Decision 442 item 3: Branch Staff connect Stripe only once an owner switch
   await expect(page.getByTestId('school-settings')).toHaveCount(0);
   const card = page.getByTestId('school-stripe-connect');
   await expect(card.getByTestId('school-stripe-connect-status')).toHaveText('Not connected');
+  // Decision 445 item 3: choosing how the School is paid (creating its
+  // payment account) stays the owners', so there is nothing to press yet.
+  await expect(card.getByTestId('school-stripe-connect-hint')).toHaveText('An owner must choose how the School is paid before Stripe can be connected.');
+  await expect(card.getByRole('button', { name: 'Connect Stripe' })).toHaveCount(0);
+  expect(await db.paymentAccount.findUnique({ where: { schoolId: s.schoolId } })).toBeNull();
+
+  // Once an owner has chosen Stripe, they start Stripe's onboarding.
+  await db.paymentAccount.create({ data: { id: randomUUID(), schoolId: s.schoolId, provider: 'STRIPE', accountTitle: 'Card', country: 'GB' } });
+  await page.reload();
   await card.getByRole('button', { name: 'Connect Stripe' }).click();
-  await page.getByRole('button', { name: 'Continue to Stripe' }).click();
   await page.waitForURL('https://connect.stripe.test/onboarding');
   expect(onboardCalled).toBe(true);
   expect(await db.paymentAccount.findUniqueOrThrow({ where: { schoolId: s.schoolId } })).toMatchObject({ provider: 'STRIPE', country: 'GB', stripeAccountReady: false });

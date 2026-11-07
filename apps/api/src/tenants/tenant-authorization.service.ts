@@ -72,9 +72,9 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
  * checked by assertMaySeeMedicalInfo. "payroll" is Decision 435 item 22's
  * "Payroll" (the payroll report only, whole School; the rates stay
  * owner-only), checked by assertMayRunPayroll. "connectStripe" is Decision
- * 442 item 3's "Can connect Stripe" (the School's Stripe account: create it,
- * start Stripe's onboarding, read its status), checked by
- * assertMayConnectStripe. */
+ * 442 item 3's "Can connect Stripe" (the School's Stripe account, once an
+ * owner has created it: start Stripe's onboarding, read its status;
+ * Decision 445 item 3), checked by assertMayConnectStripe. */
 export const STAFF_ACCESS = [
   'classes',
   'bookings',
@@ -576,9 +576,9 @@ export class TenantAuthorizationService {
   /**
    * Decision 442 item 3: the School's Stripe account is connected by its
    * owners (co-owners included) and by Branch Staff the owners switched on
-   * ("Can connect Stripe"). Coaches never. Covers creating the School's
-   * Stripe payment account, starting or continuing Stripe's onboarding and
-   * reading the connection status.
+   * ("Can connect Stripe"). Coaches never. Covers starting or continuing
+   * Stripe's onboarding and reading the connection status. Creating the
+   * School's payment account is owners only (Decision 445 item 3).
    */
   async assertMayConnectStripe(userId: string, schoolId: string): Promise<void> {
     const allowed = await this.prismaApp.withTenantContext(userId, async (tx) => {

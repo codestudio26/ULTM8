@@ -29,6 +29,7 @@ import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 import { dayIn } from '../memberships/freeze/membership-freeze';
 import { startBalanceBilling } from '../charges/membership-series';
+import { assertAccountNotClosing } from '../account-deletion/account-closing';
 
 /** Decision 406: the name of the card-surcharge line on a hosted Checkout
  * page and its Stripe receipt, beside the plan's own title (also untranslated,
@@ -135,16 +136,15 @@ export class PaymentsService {
   // School-side PaymentAccount CRUD — fully reachable this phase.
   // ---------------------------------------------------------------------------
 
-  /** School Owner/Manager (Spec §8.2), and (Decision 442 item 3) Branch
-   * Staff with "Can connect Stripe", who may only create a Stripe account:
-   * choosing cash or bank transfer stays the owners'. */
+  /** School Owner/Manager only (Spec §8.2): creating the School's payment
+   * account chooses how the School is paid, Stripe or cash/bank transfer,
+   * and a School has only one, so it stays the owners' (Decision 445 item 3,
+   * round 6 P-3). Branch Staff with "Can connect Stripe" (Decision 442
+   * item 3) start or continue onboarding for a Stripe account an owner has
+   * already created, and read its status; they can't create one. */
   async createForSchool(callerId: string, schoolId: string, dto: CreatePaymentAccountDto) {
     const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    if (dto.provider === 'STRIPE') {
-      await this.tenantAuth.assertMayConnectStripe(callerId, schoolId);
-    } else {
-      await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    }
+    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
 
     // "has one PaymentAccount set" (School's own confirmed entity row) — pre-checked
     // explicitly (same convention InstructorsService.create()/RoleGrantsService.create()
@@ -325,7 +325,8 @@ export class PaymentsService {
    * 6: the School page's Stripe card, the same Connected / Action needed / Not
    * connected as the Franchise's (Decision 407). School owners, and Branch
    * Staff with "Can connect Stripe" (Decision 442 item 3): the same gate as
-   * creating the Stripe payment account and starting onboarding. The portal
+   * starting onboarding (creating the account is owners only, Decision 445
+   * item 3). The portal
    * reads it when the owner comes back from Stripe, so the setup checklist is
    * up to date even before Stripe's account.updated arrives.
    */
@@ -1397,7 +1398,7 @@ export class PaymentsService {
    * that same sentence describes for a genuinely competing Cash/Bank purchase).
    */
   async confirmTransaction(callerId: string, transactionId: string) {
-    const result = await this.confirmTransactionInner(callerId, transactionId);
+    const { byStaff, ...result } = await this.confirmTransactionInner(callerId, transactionId);
     if (result.membershipCreated) {
       await this.notifyCashPayment(result.transaction, 'confirmed');
       // Decision 441 item 1: a monthly plan at a School that takes no cards;
@@ -1411,6 +1412,16 @@ export class PaymentsService {
           currency: transaction.currency,
         }).catch((err) => this.logger.warn(`Membership ${membership.id}: setting up its monthly charges failed; the charge-recurring job does it. ${err}`));
       }
+    }
+    if (byStaff) {
+      // Decision 445 item 5 (Spec 55 §8.2): Branch Staff don't see payment
+      // records, so they get back only what they need: the order's id,
+      // status and amount, and the membership it started.
+      const { transaction, membership, membershipCreated } = result;
+      return {
+        transaction: { id: transaction.id, status: transaction.status, amount: transaction.amount, membershipId: membership?.id ?? transaction.membershipId },
+        membershipCreated,
+      };
     }
     return result;
   }
@@ -1427,15 +1438,16 @@ export class PaymentsService {
       !(await this.tenantAuth.isSchoolOwner(callerId, row.schoolId)) &&
       (await mayConfirmDeskOrder(this.prismaApp, callerId, row.schoolId, row.studentId))
     ) {
-      return this.prismaJobs.$transaction(
+      const settled = await this.prismaJobs.$transaction(
         async (tx) => {
           const transaction = await tx.transaction.findUniqueOrThrow({ where: { id: transactionId } });
           return this.settleCashPayment(tx, transaction);
         },
         { maxWait: CASH_SETTLE_TX_OPTIONS.maxWaitMs },
       );
+      return { ...settled, byStaff: true };
     }
-    return this.prismaApp.withTenantContext(callerId, async (tx) => {
+    const settled = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
       if (!transaction) {
         throw new NotFoundException('Transaction not found');
@@ -1443,6 +1455,7 @@ export class PaymentsService {
       await this.tenantAuth.assertSchoolOwner(callerId, transaction.schoolId);
       return this.settleCashPayment(tx, transaction);
     }, CASH_SETTLE_TX_OPTIONS);
+    return { ...settled, byStaff: false };
   }
 
   /** The confirm itself, once the caller may: flips the Pending row to
@@ -1540,6 +1553,11 @@ export class PaymentsService {
   ): Promise<void> {
     await lockSchoolOpen(tx, transaction.schoolId);
     if (action === 'cancel') return;
+    // Decision 445 item 2: a member whose deletion is pending is locked, so
+    // their waiting order can't be confirmed (no plan, no "Payment
+    // confirmed"), as a desk sale to them is refused (Decision 440 item 6).
+    // Cancelling still works; signing back in cancels the deletion.
+    await assertAccountNotClosing(this.prismaJobs, transaction.studentId);
     const enrolled = await tx.roleGrant.findFirst({
       where: { userId: transaction.studentId, schoolId: transaction.schoolId, role: 'STUDENT', revokedAt: null },
       select: { id: true },

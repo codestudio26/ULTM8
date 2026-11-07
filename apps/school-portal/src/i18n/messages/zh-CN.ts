@@ -354,6 +354,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       actionNeededHint: "在你的账户就绪之前，Stripe 还需要更多信息。请在 Stripe 上继续设置。",
       notConnectedHint: "连接你学校的 Stripe 账户，让会员可以在应用中用银行卡付款。Stripe 会要求提供你的企业和银行信息。",
       otherProviderHint: "这所学校的收款账户用于现金或银行转账，因此无法在这里连接 Stripe。",
+      ownerMustChooseHint: "需要先由学校负责人选择学校的收款方式，才能连接 Stripe。",
       unavailableHint: "你所在的国家/地区暂不支持在应用内用银行卡付款，会员以现金或银行转账（巴西为 Pix）付款，由工作人员确认。",
       connect: "关联 Stripe",
       continue: "继续设置 Stripe",
