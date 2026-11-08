@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "Een voogd moet 18 of ouder zijn.",
     // Decision 444 (legal go-live).
     termsNotAccepted: "Ga akkoord met de Servicevoorwaarden en het Privacybeleid om een account aan te maken.",
+    legalAcceptanceRequired: "Ga akkoord met de Servicevoorwaarden en het Privacybeleid om verder te gaan.",
     registerUnder18: "Je moet 18 of ouder zijn om een account aan te maken. Vraag je ouder of voogd om je toe te voegen vanuit hun ULTM8-account.",
     agreementNotAccepted: "Accepteer de School- en Franchiseovereenkomst om verder te gaan.",
     notAMinor: "Dit is voor kinderen (onder 18). Een volwassene maakt een eigen account.",

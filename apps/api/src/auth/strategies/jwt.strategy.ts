@@ -20,9 +20,15 @@ const KID_MODE_ALLOWED_PATH = /^\/v1\/classes\/[^/]+\/book$/;
 // carries zero grants and must never reach any ordinary tenant endpoint.
 const PASSCODE_CHANGE_ALLOWED_PATH = /^\/v1\/auth\/passcode-change\/first-login$/;
 
-// Decision 448 item 8 — the ONE route a token carrying `legalPending` (the
-// user hasn't ticked the Terms and Privacy "I agree" yet) may call.
+// Decision 448 item 8 — what a token carrying `legalPending` (the user hasn't
+// ticked the Terms and Privacy "I agree" yet) may call: recording the tick,
+// and reading their own profile, so the step is shown in their language.
 const LEGAL_ACCEPTANCE_ALLOWED_PATH = /^\/v1\/auth\/legal-acceptance$/;
+const OWN_PROFILE_PATH = /^\/v1\/users\/me$/;
+
+function allowedWhileLegalPending(req: Request): boolean {
+  return (req.method === 'POST' && LEGAL_ACCEPTANCE_ALLOWED_PATH.test(req.path)) || (req.method === 'GET' && OWN_PROFILE_PATH.test(req.path));
+}
 
 /**
  * Validates the access token and hands back its claims as `req.user`. 15-minute
@@ -132,7 +138,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // before the "I agree" tick existed) accepts the Terms and Privacy before
     // anything else. Last, so a locked account or a stale token is answered
     // as before.
-    if (payload.legalPending && !(req.method === 'POST' && LEGAL_ACCEPTANCE_ALLOWED_PATH.test(req.path))) {
+    if (payload.legalPending && !allowedWhileLegalPending(req)) {
       throw new ForbiddenException({ code: 'LEGAL_ACCEPTANCE_REQUIRED', message: 'Agree to the Terms of Service and the Privacy Policy to continue.' });
     }
     return payload;

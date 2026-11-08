@@ -3201,6 +3201,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     addManuallyButton: "Добавить вручную",
     searchLabel: "Поиск",
     searchPlaceholder: "Имя или email",
+    searchSymbolsHint: "Символы вроде % или _ нельзя использовать для поиска. Введите имя.",
     branchLabel: "Филиал",
     branchAll: "Все филиалы",
     branchNone: "Без основного филиала",
@@ -5176,6 +5177,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "Я принимаю {terms} и прочитал(а) {privacy}.",
       agreement: "Я принимаю {agreement}, включая приложение об обработке данных.",
+    },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "Прежде чем продолжить",
+      body: "Чтобы пользоваться ULTM8, примите Условия обслуживания и прочитайте Политику конфиденциальности. Это нужно сделать только один раз.",
+      submit: "Продолжить",
+      signOut: "Выйти",
     },
     version: "Версия {version}",
     beingPrepared: "Эта страница готовится. Она будет опубликована здесь до запуска ULTM8.",

@@ -1176,6 +1176,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "Ik ga akkoord met de Servicevoorwaarden en ik heb het Privacybeleid gelezen.",
     },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "Voordat je verdergaat",
+      body: "Om ULTM8 te gebruiken, ga je akkoord met de Servicevoorwaarden en lees je het Privacybeleid. Dit hoeft maar één keer.",
+      submit: "Doorgaan",
+      signOut: "Uitloggen",
+    },
     version: "Versie {version}",
     beingPrepared: "Deze pagina wordt voorbereid. Ze wordt hier gepubliceerd voordat ULTM8 live gaat.",
     loadFailed: "Deze pagina kon niet worden geladen. Probeer het opnieuw.",

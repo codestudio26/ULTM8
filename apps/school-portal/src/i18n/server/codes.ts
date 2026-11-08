@@ -75,6 +75,9 @@ export function translateByCode(t: Translate, code: string, message: string): st
     // Legal go-live (Decision 444).
     case 'TERMS_NOT_ACCEPTED':
       return t('server.codes.termsNotAccepted');
+    // Decision 448 item 8: the first-sign-in "I agree" is still to be ticked.
+    case 'LEGAL_ACCEPTANCE_REQUIRED':
+      return t('server.codes.legalAcceptanceRequired');
     case 'REGISTER_UNDER_18':
       return t('server.codes.registerUnder18');
     case 'AGREEMENT_NOT_ACCEPTED':

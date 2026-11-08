@@ -86,9 +86,14 @@ describeIfDb('Terms and Privacy at the first sign-in (Decision 448 item 8)', () 
     expect(res.status).toBe(201);
     expect(claims(res.body.accessToken).legalPending).toBe(true);
 
-    const blocked = await http().get('/v1/users/me').set('Authorization', `Bearer ${res.body.accessToken}`);
+    const blocked = await http().get(`/v1/users/${person.id}/role-grants`).set('Authorization', `Bearer ${res.body.accessToken}`);
     expect(blocked.status).toBe(403);
     expect(blocked.body.error.code).toBe('LEGAL_ACCEPTANCE_REQUIRED');
+    const profileEdit = await http().patch('/v1/users/me').set('Authorization', `Bearer ${res.body.accessToken}`).send({ firstName: 'Changed' });
+    expect(profileEdit.status).toBe(403);
+    // Only reading their own profile is let through, so the step shows in their language.
+    const me = await http().get('/v1/users/me').set('Authorization', `Bearer ${res.body.accessToken}`);
+    expect(me.status).toBe(200);
 
     // A refreshed token is still held at the step.
     const refreshed = await http().post('/v1/auth/refresh').send({ refreshToken: res.body.refreshToken });

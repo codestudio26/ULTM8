@@ -3084,6 +3084,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     addManuallyButton: "เพิ่มด้วยตนเอง",
     searchLabel: "ค้นหา",
     searchPlaceholder: "ชื่อหรืออีเมล",
+    searchSymbolsHint: "ไม่สามารถใช้สัญลักษณ์อย่าง % หรือ _ ในการค้นหาได้ โปรดพิมพ์ชื่อแทน",
     branchLabel: "สาขา",
     branchAll: "ทุกสาขา",
     branchNone: "ไม่มีสาขาหลัก",
@@ -5018,6 +5019,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "ฉันยอมรับ{terms} และได้อ่าน{privacy}แล้ว",
       agreement: "ฉันยอมรับ{agreement} รวมถึงภาคผนวกการประมวลผลข้อมูล",
+    },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "ก่อนดำเนินการต่อ",
+      body: "หากต้องการใช้ ULTM8 โปรดยอมรับข้อกำหนดการให้บริการและอ่านนโยบายความเป็นส่วนตัว ทำเพียงครั้งเดียวเท่านั้น",
+      submit: "ดำเนินการต่อ",
+      signOut: "ออกจากระบบ",
     },
     version: "เวอร์ชัน {version}",
     beingPrepared: "หน้านี้กำลังจัดเตรียม และจะเผยแพร่ที่นี่ก่อนที่ ULTM8 จะเปิดใช้งาน",

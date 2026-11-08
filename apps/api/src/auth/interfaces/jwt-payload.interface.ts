@@ -77,6 +77,7 @@ export interface JwtPayload {
   /** Decision 448 item 8 — set while the user has never ticked the Terms and
    * Privacy "I agree" for their own account (an account the School made, or a
    * sign-up from before the tick). JwtStrategy lets such a token call only
-   * POST /auth/legal-acceptance; the apps read it to show the "I agree" step. */
+   * POST /auth/legal-acceptance and GET /users/me; the apps read it to show
+   * the "I agree" step. */
   legalPending?: true;
 }

@@ -376,6 +376,8 @@ export const students = {
   addManuallyButton: 'Add manually',
   searchLabel: 'Search',
   searchPlaceholder: 'Name or email',
+  // Decision 448 item 13.
+  searchSymbolsHint: "Symbols such as % or _ can't be used to search. Type a name instead.",
   branchLabel: 'Branch',
   branchAll: 'All branches',
   branchNone: 'No home branch',

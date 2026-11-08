@@ -1165,6 +1165,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "我同意服务条款，并已阅读隐私政策。",
     },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "继续之前",
+      body: "要使用 ULTM8，请同意服务条款并阅读隐私政策。只需操作一次。",
+      submit: "继续",
+      signOut: "退出登录",
+    },
     version: "版本 {version}",
     beingPrepared: "此页面正在准备中，将在 ULTM8 上线前在此发布。",
     loadFailed: "无法加载此页面，请重试。",

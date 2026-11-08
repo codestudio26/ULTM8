@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "Un tutor debe tener 18 años o más.",
     // Decision 444 (legal go-live).
     termsNotAccepted: "Acepta los Términos del servicio y la Política de privacidad para crear una cuenta.",
+    legalAcceptanceRequired: "Acepta los Términos del servicio y la Política de privacidad para continuar.",
     registerUnder18: "Debes tener 18 años o más para crear una cuenta. Pide a tu padre, madre o tutor que te añada desde su cuenta de ULTM8.",
     agreementNotAccepted: "Acepta el Acuerdo de Escuela y Franquicia para continuar.",
     notAMinor: "Esto es para niños (menores de 18). Un adulto crea su propia cuenta.",

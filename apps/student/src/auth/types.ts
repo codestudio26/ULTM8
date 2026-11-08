@@ -17,6 +17,8 @@ export interface JwtClaims {
   sub: string; // User.id
   email: string;
   grants: RoleGrantClaim[];
+  /** Decision 448 item 8: the Terms and Privacy "I agree" is still to be ticked. */
+  legalPending?: true;
   iat?: number;
   exp?: number;
 }

@@ -30,6 +30,12 @@ async function mkLoginUser(opts: { phone: string | null; phoneVerified: boolean;
     },
   });
   userIds.push(user.id);
+  // Someone who signed up themselves has sign-up's Terms acceptance; an
+  // account the School made (a temporary passcode) ticks it at its first
+  // sign-in (Decision 448 item 8).
+  if (!opts.mustChangePasscode) {
+    await db.legalAcceptance.create({ data: { id: randomUUID(), userId: user.id, documentSlug: 'terms-and-conditions', version: 'unpublished' } });
+  }
   return user;
 }
 
@@ -57,6 +63,11 @@ test('first sign-in with a temporary passcode keeps its own 30-day sign-in, not 
   await page.getByLabel('New passcode', { exact: true }).fill(NEW_PASSCODE);
   await page.getByLabel('Confirm new passcode').fill(NEW_PASSCODE);
   await page.getByRole('button', { name: 'Set passcode and continue' }).click();
+
+  // Decision 448 item 8: an account the School made ticks the Terms first.
+  await expect(page.getByRole('heading', { name: 'Before you continue' })).toBeVisible();
+  await page.getByRole('checkbox', { name: /I agree to the Terms of Service/ }).check();
+  await page.getByRole('button', { name: 'Continue' }).click();
 
   // No School yet, so home is Create your School.
   await expect(page.getByRole('heading', { name: 'Create your School' })).toBeVisible();

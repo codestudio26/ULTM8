@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "보호자는 18세 이상이어야 합니다.",
     // Decision 444 (legal go-live).
     termsNotAccepted: "계정을 만들려면 서비스 약관과 개인정보 처리방침에 동의하세요.",
+    legalAcceptanceRequired: "계속하려면 서비스 약관과 개인정보 처리방침에 동의하세요.",
     registerUnder18: "계정을 만들려면 18세 이상이어야 합니다. 부모나 보호자에게 그분의 ULTM8 계정에서 추가해 달라고 요청하세요.",
     agreementNotAccepted: "계속하려면 스쿨 및 프랜차이즈 계약에 동의하세요.",
     notAMinor: "자녀(18세 미만)용입니다. 성인은 자신의 계정을 만듭니다.",
