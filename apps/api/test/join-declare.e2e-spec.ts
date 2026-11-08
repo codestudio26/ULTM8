@@ -52,6 +52,9 @@ describeIfDb('Join a School and declare a belt (Decisions 137, 147, 209)', () =>
     });
     userIds.push(u.id);
     id[label] = u.id;
+    // Signed up themselves (Decision 444), so the token join mints isn't held
+    // at the first-sign-in Terms tick (Decision 448 item 8).
+    await superuser.legalAcceptance.create({ data: { id: randomUUID(), userId: u.id, documentSlug: 'terms-and-conditions', version: 'unpublished' } });
   }
   async function signAs(label: string) {
     const grants = await superuser.roleGrant.findMany({ where: { userId: id[label], revokedAt: null } });
