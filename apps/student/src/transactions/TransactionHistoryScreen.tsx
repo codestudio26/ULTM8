@@ -59,6 +59,10 @@ function rowTitle(transaction: Transaction, t: ReturnType<typeof useT>): string 
       ? t('transactions.row.lateCancelFee', { class: transaction.bookingClassTitle })
       : t('transactions.row.lateCancelFeeNoClass');
   }
+  // Decision 448 item 18: a no-show fee names its class, as a late-cancellation fee does.
+  if (transaction.kind === 'NO_SHOW_FEE') {
+    return transaction.bookingClassTitle ? t('transactions.row.noShowFee', { class: transaction.bookingClassTitle }) : t('transactions.row.noShowFeeNoClass');
+  }
   const plan = transaction.membershipPlanTitle ?? '';
   // Decision 404: the School's fee for freezing a membership.
   if (transaction.kind === 'FREEZE_FEE') return plan ? t('transactions.row.freezeFee', { plan }) : t('transactions.row.freezeFeeNoPlan');

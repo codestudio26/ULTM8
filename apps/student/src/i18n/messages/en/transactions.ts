@@ -17,6 +17,8 @@ export const transactions = {
     lateCancelFeeNoClass: 'Late-cancellation fee',
     freezeFee: "Freeze fee: {plan}",
     freezeFeeNoPlan: "Freeze fee",
+    noShowFee: "No-show fee: {class}",
+    noShowFeeNoClass: "No-show fee",
     /** Decision 338 item 1: a cash or bank-transfer payment the School cancelled. */
     cancelledOn: "Cancelled on {date}. Nothing to pay.",
   },

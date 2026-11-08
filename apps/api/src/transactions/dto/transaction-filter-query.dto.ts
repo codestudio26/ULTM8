@@ -7,7 +7,7 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
  * leaves the cancelled ones out. */
 export const TRANSACTION_STATUSES = ['SUCCESSFUL', 'PENDING', 'FAILED', 'CANCELLED', 'REFUNDED', 'DISPUTED'] as const;
 export const TRANSACTION_METHODS = ['STRIPE', 'CASH', 'BANK_TRANSFER', 'PIX', 'CARD_TERMINAL'] as const;
-export const TRANSACTION_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE', 'CHARGE_PAYMENT'] as const;
+export const TRANSACTION_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE', 'CHARGE_PAYMENT', 'NO_SHOW_FEE'] as const;
 
 /** The Transactions page's filters (Decision 346, G3). All optional; together
  * they narrow the ledger, its tiles and the CSV export the same way. `from` and

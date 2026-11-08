@@ -557,6 +557,7 @@ export const serverMessages: Record<string, string> = {
   "This payment has already been refunded in full.": "การชำระเงินนี้ถูกคืนเงินเต็มจำนวนแล้ว",
   "Only a payment that was taken can be refunded.": "คืนเงินได้เฉพาะการชำระเงินที่ได้รับแล้วเท่านั้น",
   "That is more than is left to refund on this payment.": "จำนวนนี้มากกว่ายอดที่เหลือให้คืนเงินของการชำระเงินนี้",
+  "Pix can only be used by a School in Brazil. Choose another way to pay.": "ใช้ Pix ได้เฉพาะโรงเรียนในบราซิลเท่านั้น โปรดเลือกวิธีชำระเงินอื่น",
   "This payment was taken, so it can't be cancelled. Refund it instead.": "ได้รับการชำระเงินนี้แล้ว จึงยกเลิกไม่ได้ โปรดคืนเงินแทน",
   "This Class is archived and can no longer be booked.": "คลาสนี้ถูกเก็บถาวรแล้ว จองไม่ได้อีก",
   "This Class has already ended.": "คลาสนี้จบไปแล้ว",

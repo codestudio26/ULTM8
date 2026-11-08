@@ -338,7 +338,7 @@ function DeskModal({
 }) {
   const t = useT();
   const sell = useSellMembership(schoolId, studentId);
-  // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  // Decision 448 item 5: Pix only for a School in Brazil.
   const deskMethods = useDeskMethods(schoolId, DESK_PAYMENT_METHODS);
   const gift = useGiftFriendPass(schoolId, studentId);
   const [pickedPlanId, setPlanId] = useState(plans[0]?.id ?? '');

@@ -25,7 +25,7 @@ import { RefundDeskSaleModal } from './RefundDeskSaleModal';
 import { useT } from '../i18n/I18nProvider';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
-import { useDeskMethods } from '../lib/deskMethods';
+import { offersPix, useDeskMethods } from '../lib/deskMethods';
 import { JoiningFeeNotice, useDeskTotal } from '../membershipPlans/JoiningFeeNotice';
 
 /** How a desk payment was taken (Decision 348's desk methods). */
@@ -159,6 +159,10 @@ function useItemLabel() {
     if (row.kind === 'LATE_CANCEL_FEE') {
       return row.bookingClassTitle ? t('transactions.itemLateFee', { class: row.bookingClassTitle }) : t('transactions.kindLateFee');
     }
+    // Decision 448 item 18: a no-show fee names its class too.
+    if (row.kind === 'NO_SHOW_FEE') {
+      return row.bookingClassTitle ? t('transactions.itemNoShowFee', { class: row.bookingClassTitle }) : t('transactions.kindNoShowFee');
+    }
     const plan = row.membershipPlanTitle ?? '';
     // Decision 404: a freeze fee names the frozen membership's plan.
     if (row.kind === 'FREEZE_FEE') return plan ? t('transactions.itemFreezeFee', { plan }) : t('transactions.kindFreezeFee');
@@ -178,6 +182,7 @@ const KIND_LABELS = {
   LATE_CANCEL_FEE: 'transactions.kindLateFee',
   FREEZE_FEE: 'transactions.kindFreezeFee',
   CHARGE_PAYMENT: 'charges.transactions.kind',
+  NO_SHOW_FEE: 'transactions.kindNoShowFee',
 } as const;
 
 /** "Record a payment" (Decision 346, G7): cash or a bank transfer the School
@@ -197,7 +202,7 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
   const plan = plans.find((p) => p.id === planId);
   // Decision 435: a first plan's joining fee is collected with it.
   const deskTotal = useDeskTotal(plan?.id ?? null, studentId || null, plan?.price ?? 0);
-  // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  // Decision 448 item 5: Pix only for a School in Brazil.
   const methods = useDeskMethods(schoolId, ['CASH', 'BANK_TRANSFER', 'PIX', 'CARD_TERMINAL'] as const);
 
   async function handleSave() {
@@ -214,7 +219,7 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
   return (
     <Modal title={t('transactions.recordTitle')} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ margin: '0 0 16px' }}>{t('transactions.recordBody')}</p>
+      <p style={{ margin: '0 0 16px' }}>{t(methods.includes('PIX') ? 'transactions.recordBodyPix' : 'transactions.recordBody')}</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <Field label={t('transactions.recordStudent')} htmlFor="record-student">
           <SelectField
@@ -308,6 +313,7 @@ export function TransactionsPage() {
   const [settling, setSettling] = useState<{ row: TransactionResponse; action: 'confirm' | 'cancel' | 'refund' } | null>(null);
   // The School's "reason required" setting for cancelling (Decision 338 item 1).
   const { data: school } = useSchool(schoolId);
+  const pix = offersPix(school);
   const [recording, setRecording] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -324,6 +330,10 @@ export function TransactionsPage() {
 
   const transactions = data?.items ?? [];
   const revenueLabel = (summary?.revenue ?? []).map((r) => formatMoney(r.amount, r.currency ?? null)).join(' + ');
+  // Decision 448 item 1: the card surcharge is its own tile, apart from the
+  // price of what was sold (shown once any surcharge was kept).
+  const surcharges = (summary?.surcharges ?? []).filter((r) => r.amount > 0);
+  const surchargesLabel = surcharges.map((r) => formatMoney(r.amount, r.currency ?? null)).join(' + ');
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS);
   const setFilter = <K extends keyof TransactionFilters>(key: K, value: TransactionFilters[K]) => setFilters((f) => ({ ...f, [key]: value }));
   const methodLabel = (row: TransactionResponse) => (PAYMENT_METHOD_LABELS[row.paymentMethod] ? t(PAYMENT_METHOD_LABELS[row.paymentMethod]!) : row.paymentMethod);
@@ -417,7 +427,10 @@ export function TransactionsPage() {
                 onChange={(e) => setFilter('paymentMethod', e.target.value as TransactionFilters['paymentMethod'])}
                 options={[
                   { value: '', label: t('transactions.filterAny') },
-                  ...Object.entries(PAYMENT_METHOD_LABELS).map(([value, key]) => ({ value, label: t(key) })),
+                  // Decision 448 item 5: Pix only at a School in Brazil.
+                  ...Object.entries(PAYMENT_METHOD_LABELS)
+                    .filter(([value]) => value !== 'PIX' || pix)
+                    .map(([value, key]) => ({ value, label: t(key) })),
                 ]}
               />
             </Field>
@@ -472,6 +485,7 @@ export function TransactionsPage() {
         <StatTile label={t('transactions.statFailedOrDisputed')} value={summary?.failedOrDisputed ?? '—'} />
         <StatTile label={t('transactions.statCancelled')} value={summary?.cancelled ?? '—'} />
         <StatTile label={t('transactions.statRevenue')} value={summary ? revenueLabel || formatMoney(0, null) : '—'} />
+        {surcharges.length > 0 ? <StatTile label={t('transactions.statSurcharges')} value={surchargesLabel} /> : null}
       </div>
 
       <Card>

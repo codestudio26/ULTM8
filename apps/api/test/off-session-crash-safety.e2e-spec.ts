@@ -247,7 +247,7 @@ describeIfDb('Off-session card attempts survive a crash (Decision 447 items 4-5)
     await app.close();
   });
 
-  describe('the no-show fee (no ledger row: its Booking is the attempt)', () => {
+  describe('the no-show fee (its Booking is the attempt)', () => {
     async function overdueBooking(label: string) {
       const student = await mkStudent(label);
       const cls = await su.class.create({

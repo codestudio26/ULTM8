@@ -1107,6 +1107,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Geç iptal ücreti",
       freezeFee: "Dondurma ücreti: {plan}",
       freezeFeeNoPlan: "Dondurma ücreti",
+      noShowFee: "Gelmeme ücreti: {class}",
+      noShowFeeNoClass: "Gelmeme ücreti",
       cancelledOn: "{date} tarihinde iptal edildi. Ödenecek bir şey yok.",
     },
     status: {

@@ -14,7 +14,7 @@ export interface TransactionFilters {
    * FAILED leaves those out. */
   status: '' | 'SUCCESSFUL' | 'PENDING' | 'FAILED' | 'CANCELLED' | 'REFUNDED' | 'DISPUTED';
   paymentMethod: '' | 'STRIPE' | 'CASH' | 'BANK_TRANSFER' | 'PIX' | 'CARD_TERMINAL';
-  kind: '' | 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE' | 'CHARGE_PAYMENT';
+  kind: '' | 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE' | 'CHARGE_PAYMENT' | 'NO_SHOW_FEE';
   membershipPlanId: string;
   from: string;
   to: string;

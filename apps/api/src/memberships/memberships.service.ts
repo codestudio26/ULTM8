@@ -7,6 +7,7 @@ import { Prisma, type Membership, type MembershipPlanType } from '@prisma/client
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
+import { assertPixAllowed } from '../payments/pix';
 import { PaymentsService, NoSavedPaymentMethodError, checkoutTransactionId } from '../payments/payments.service';
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
@@ -1643,6 +1644,8 @@ export class MembershipsService {
    */
   async recordDeskSale(schoolId: string, studentId: string, dto: SellMembershipDto, { recordedById }: { recordedById: string }) {
     await assertAccountNotClosing(this.prismaJobs, studentId);
+    // Decision 448 item 5: Pix only at a School in Brazil.
+    await assertPixAllowed(this.prismaJobs, schoolId, dto.paymentMethod);
     // Read once, before the checks' transaction (stress test round 6, R-2: it
     // was read twice, on the jobs connection).
     const schoolZone = await schoolZoneFor(this.prismaJobs, schoolId);

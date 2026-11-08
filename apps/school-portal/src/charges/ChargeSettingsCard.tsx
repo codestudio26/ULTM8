@@ -6,6 +6,7 @@ import { formatLocale } from '../i18n/format';
 import { useUpdateSchool, type SchoolResponse } from '../schools/schoolQueries';
 import { parseRate, rateText, useStandardTaxRates } from './chargeQueries';
 import { TaxLineFields, taxLineBody, taxLineDraft, taxLinesProblem, type TaxLineDraft } from './TaxLineFields';
+import { offersPix } from '../lib/deskMethods';
 
 /** Country names in the reader's language, sorted in it. */
 function useCountryOptions() {
@@ -226,7 +227,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
             }}
           />
         </Field>
-        <Field label={t('charges.settings.paymentInstructionsLabel')} htmlFor="charge-payment-instructions" hint={t('charges.settings.paymentInstructionsHint')}>
+        <Field label={t('charges.settings.paymentInstructionsLabel')} htmlFor="charge-payment-instructions" hint={t(offersPix(school) ? 'charges.settings.paymentInstructionsHintPix' : 'charges.settings.paymentInstructionsHint')}>
           <TextArea
             id="charge-payment-instructions"
             maxLength={1000}

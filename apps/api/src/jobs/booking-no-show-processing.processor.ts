@@ -6,7 +6,7 @@ import { WAITLIST_CASCADE_PROCESSING_QUEUE, BOOKING_NO_SHOW_PROCESSING_QUEUE } f
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
 import { chargeCurrency } from '../common/school-currency';
 import { CARD_ACCOUNT_SELECT, takesCards } from '../payments/takes-cards';
-import { settleNoShowFee } from '../payments/off-session-attempts';
+import { recordNoShowFeeTransaction, settleNoShowFee } from '../payments/off-session-attempts';
 
 /** How often the sweep runs — SKILL.md §10 says only "set by a background job once a
  * Class's end time... passes", no number. Every 15 minutes is a Developer-level
@@ -197,8 +197,8 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
     // carries the Booking's id (metadata and idempotency key), so a fee Stripe
     // took is never lost if this stops before the outcome is saved: Stripe's
     // webhook, or charge-auto-pay's stale-attempt sweep, saves it from what
-    // Stripe says (settleNoShowFee()). A no-show fee has no ledger row, so the
-    // Booking is the record, as before.
+    // Stripe says (settleNoShowFee()). The Booking is the attempt's record;
+    // its Transactions row is written with the outcome (Decision 448 item 18).
     const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId: booking.schoolId }, select: CARD_ACCOUNT_SELECT });
     const saved = account && takesCards(account)
       ? await this.prismaJobs.studentPaymentMethod.findUnique({ where: { studentId_schoolId: { studentId: booking.studentId, schoolId: booking.schoolId } }, select: { id: true } })
@@ -233,9 +233,13 @@ export class BookingNoShowProcessingProcessor extends WorkerHost {
     if (tagged) {
       await this.prismaJobs.$transaction((tx) => settleNoShowFee(tx, booking.id, answer.paymentIntentId, answer.succeeded));
     } else {
-      await this.prismaJobs.booking.update({
-        where: { id: booking.id },
-        data: { noShowFeeOutcome: answer.succeeded ? 'CHARGED' : 'FAILED', noShowFeeAmount: amount, stripeNoShowPaymentIntentId: answer.paymentIntentId },
+      // Decision 448 item 18: with its Transactions row, in one transaction.
+      await this.prismaJobs.$transaction(async (tx) => {
+        await tx.booking.update({
+          where: { id: booking.id },
+          data: { noShowFeeOutcome: answer.succeeded ? 'CHARGED' : 'FAILED', noShowFeeAmount: amount, stripeNoShowPaymentIntentId: answer.paymentIntentId },
+        });
+        await recordNoShowFeeTransaction(tx, booking.id);
       });
     }
   }

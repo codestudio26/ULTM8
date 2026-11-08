@@ -1182,6 +1182,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "رسوم الإلغاء المتأخر",
       freezeFee: "رسوم التجميد: {plan}",
       freezeFeeNoPlan: "رسوم التجميد",
+      noShowFee: "رسوم عدم الحضور: {class}",
+      noShowFeeNoClass: "رسوم عدم الحضور",
       cancelledOn: "أُلغيت في {date}. لا شيء للدفع.",
     },
     status: {
