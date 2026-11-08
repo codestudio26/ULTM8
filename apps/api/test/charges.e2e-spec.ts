@@ -364,9 +364,15 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
       await createCharge(student.id, { description: 'Belt', amount: 1000 });
       expect((await pay(student.id, { amount: 1000 }, tokens.staffA)).status).toBe(403);
       await superuser.school.update({ where: { id: school.id }, data: { branchStaffCanRecordPayments: true } });
-      const ok = await pay(student.id, { amount: 1000, paymentMethod: 'PIX' }, tokens.staffA);
-      expect(ok.status).toBe(201);
-      expect(ok.body.payment).toMatchObject({ amount: 1000, paymentMethod: 'PIX', creditAmount: 0 });
+      // Decision 448 item 5: Pix only at a School in Brazil, which this one is.
+      await superuser.school.update({ where: { id: school.id }, data: { addressCountry: 'BR' } });
+      try {
+        const ok = await pay(student.id, { amount: 1000, paymentMethod: 'PIX' }, tokens.staffA);
+        expect(ok.status).toBe(201);
+        expect(ok.body.payment).toMatchObject({ amount: 1000, paymentMethod: 'PIX', creditAmount: 0 });
+      } finally {
+        await superuser.school.update({ where: { id: school.id }, data: { addressCountry: null } });
+      }
     });
 
     it('a reason is required to cancel unless the owner makes it optional', async () => {

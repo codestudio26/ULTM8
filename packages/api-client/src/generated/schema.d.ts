@@ -11493,7 +11493,7 @@ export interface components {
             membershipPlanId?: string | null;
             membershipPlanTitle?: string | null;
             /** @enum {string} */
-            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
+            kind: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT" | "NO_SHOW_FEE";
             chargeId?: string | null;
             chargeDescription?: string | null;
             /** @example #0000001 */
@@ -11547,8 +11547,10 @@ export interface components {
             failedOrDisputed: number;
             /** @description Cancelled cash or bank-transfer payments (Decision 338 item 1). */
             cancelled: number;
-            /** @description What the School kept, one entry per currency: Successful and Refunded rows, each at its amount less what was refunded on it (Decision 446 item 4). */
+            /** @description What the School kept of the price of what was sold, one entry per currency: Successful and Refunded rows, each at its amount less what was refunded of it (Decision 446 item 4). The card surcharge is not in it (Decision 448 item 1, surcharges). */
             revenue: components["schemas"]["TransactionRevenueDto"][];
+            /** @description Decision 448 item 1: the card surcharges kept on the same rows, one entry per currency revenue lists (0 when none), by the billing overview's rule. */
+            surcharges: components["schemas"]["TransactionRevenueDto"][];
         };
         TransactionReceiptUrlResponseDto: {
             /** @description Stripe's own hosted receipt page. Null if this Transaction was not paid via Stripe, or Stripe has no receipt for it yet. */
@@ -15194,7 +15196,9 @@ export interface components {
             net: number;
             /** @description Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received). */
             memberships: number;
-            /** @description net + memberships. */
+            /** @description Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received or memberships, which are the price of what was sold. */
+            surcharges: number;
+            /** @description net + memberships + surcharges. */
             total: number;
         };
         ChargeOverviewCurrencyDto: {
@@ -15207,7 +15211,9 @@ export interface components {
             paid: number;
             /** @description Membership revenue over the months covered (the sum of memberships by month). */
             memberships: number;
-            /** @description Total revenue over the months covered: paid + memberships. */
+            /** @description Card surcharges over the months covered (the sum of surcharges by month). */
+            surcharges: number;
+            /** @description Total revenue over the months covered: paid + memberships + surcharges. */
             total: number;
             /** @description Oldest month first. */
             revenueByMonth: components["schemas"]["ChargeRevenueMonthDto"][];
@@ -21294,7 +21300,7 @@ export interface operations {
                 limit?: number;
                 status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "CANCELLED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
-                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT" | "NO_SHOW_FEE";
                 membershipPlanId?: string;
                 /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 from?: string;
@@ -21324,7 +21330,7 @@ export interface operations {
             query?: {
                 status?: "SUCCESSFUL" | "PENDING" | "FAILED" | "CANCELLED" | "REFUNDED" | "DISPUTED";
                 paymentMethod?: "STRIPE" | "CASH" | "BANK_TRANSFER" | "PIX" | "CARD_TERMINAL";
-                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT";
+                kind?: "MEMBERSHIP" | "RENEWAL" | "LATE_CANCEL_FEE" | "FREEZE_FEE" | "CHARGE_PAYMENT" | "NO_SHOW_FEE";
                 membershipPlanId?: string;
                 /** @description First day included, YYYY-MM-DD, in the School's time zone (UTC if it has none). Decision 431 (MON-7). */
                 from?: string;

@@ -80,7 +80,8 @@ export function StripeConnectCard({
     status === 'CONNECTED'
       ? t('schools.stripeConnect.connectedHint')
       : !connectAvailable
-        ? t('schools.stripeConnect.unavailableHint')
+        ? // Decision 448 item 5: Pix is named only for a School in Brazil.
+          t(defaultCountry?.toUpperCase() === 'BR' ? 'schools.stripeConnect.unavailableHintPix' : 'schools.stripeConnect.unavailableHint')
         : otherProvider
           ? t('schools.stripeConnect.otherProviderHint')
           : waitingForOwner

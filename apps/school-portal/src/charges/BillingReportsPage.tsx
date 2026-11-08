@@ -108,6 +108,10 @@ function Overview({ schoolId }: { schoolId: string }) {
                 hint={t('charges.reports.revenueMembershipsHint', { count: data.months })}
                 value={formatMoney(c.memberships, c.currency)}
               />
+              {/* Decision 448 item 1: the card surcharge as its own line. */}
+              {c.surcharges > 0 ? (
+                <Tile label={t('charges.reports.revenueSurcharges')} hint={t('charges.reports.revenueSurchargesHint', { count: data.months })} value={formatMoney(c.surcharges, c.currency)} />
+              ) : null}
               <Tile label={t('charges.reports.revenueTotal')} hint={t('charges.reports.revenueTotalHint', { count: data.months })} value={formatMoney(c.total, c.currency)} />
             </div>
             <h3 style={{ fontSize: 14, margin: '0 0 4px' }}>{t('charges.reports.revenueHeading')}</h3>
@@ -122,6 +126,9 @@ function Overview({ schoolId }: { schoolId: string }) {
                 { key: 'refunded', header: t('charges.reports.columnRefunded'), render: (m) => formatMoney(m.refunded, c.currency) },
                 { key: 'net', header: t('charges.reports.columnCharges'), render: (m) => formatMoney(m.net, c.currency) },
                 { key: 'memberships', header: t('charges.reports.columnMemberships'), render: (m) => formatMoney(m.memberships, c.currency) },
+                ...(c.surcharges > 0 || c.revenueByMonth.some((m) => m.surcharges > 0)
+                  ? [{ key: 'surcharges', header: t('charges.reports.columnSurcharges'), render: (m: ChargeOverview['currencies'][number]['revenueByMonth'][number]) => formatMoney(m.surcharges, c.currency) }]
+                  : []),
                 { key: 'total', header: t('charges.reports.columnTotal'), render: (m) => <strong>{formatMoney(m.total, c.currency)}</strong> },
               ]}
             />

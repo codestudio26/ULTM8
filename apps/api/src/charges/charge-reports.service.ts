@@ -10,19 +10,49 @@ import { chargeRemaining } from './charge-ledger';
 
 /** The Transaction kinds that are membership revenue (Decision 414 item 3):
  * plans bought in the app or sold at the desk, and Subscription renewals;
- * and the late-cancellation and freeze fees (Decision 415 item 2). */
-export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE'] as const;
+ * and the late-cancellation and freeze fees (Decision 415 item 2), and the
+ * no-show fees, on the ledger since Decision 448 item 18. */
+export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE', 'NO_SHOW_FEE'] as const;
 
 /**
  * Decision 446 item 4: the payment rows revenue counts, each at its amount less
  * what was refunded on it (never below nothing): Successful ones (a part refund
  * keeps a row Successful) and Refunded ones, which still count what the School
  * kept, such as a non-refundable joining fee left out of a desk refund
- * (Decision 435 item 5). The card surcharge is in neither (amount excludes it;
- * whether revenue should include it is an open question). Shared by the
- * billing overview and the Transactions page's Revenue tile.
+ * (Decision 435 item 5). Shared by the billing overview and the Transactions
+ * page's Revenue tile. The card surcharge is its own line in both (Decision
+ * 448 item 1, keptRevenue()).
  */
 export const REVENUE_STATUSES = ['SUCCESSFUL', 'REFUNDED'] as const;
+
+/** The columns keptRevenue() reads. */
+export const KEPT_REVENUE_SELECT = { amount: true, surchargeAmount: true, refundedAmount: true, joiningFeeAmount: true, joiningFeeRefundable: true } as const;
+
+/**
+ * Decision 448 item 1: what the School kept of one Successful or Refunded
+ * payment, split into the price of what was sold (`amount`) and the card
+ * surcharge paid on top of it (Decision 406), so revenue shows the surcharge
+ * as its own line. Both reports (the billing overview and the Transactions
+ * page) use this one rule, so they agree. A refund (refundedAmount, which
+ * may include the surcharge) gives back the refundable part of the price
+ * first, then the surcharge, then a non-refundable joining fee (only a
+ * Stripe dashboard refund can reach it; Decision 435 item 5). Neither part
+ * is ever below nothing. A payment toward charges never refunds its
+ * surcharge (Decision 414 item 2), so its surcharge is always kept.
+ */
+export function keptRevenue(t: { amount: number; surchargeAmount: number; refundedAmount: number | null; joiningFeeAmount: number; joiningFeeRefundable: boolean }): {
+  price: number;
+  surcharge: number;
+} {
+  let refunded = Math.max(0, t.refundedAmount ?? 0);
+  const fixedFee = Math.min(t.amount, t.joiningFeeRefundable ? 0 : t.joiningFeeAmount);
+  const fromPrice = Math.min(refunded, t.amount - fixedFee);
+  refunded -= fromPrice;
+  const fromSurcharge = Math.min(refunded, t.surchargeAmount);
+  refunded -= fromSurcharge;
+  const fromFee = Math.min(refunded, fixedFee);
+  return { price: t.amount - fromPrice - fromFee, surcharge: t.surchargeAmount - fromSurcharge };
+}
 
 /**
  * The billing reports (backlog §3.6 step 4; Decision 338 item 11): an
@@ -48,7 +78,9 @@ export const REVENUE_STATUSES = ['SUCCESSFUL', 'REFUNDED'] as const;
  * non-refundable joining fee kept, counts what the School kept; a whole refund
  * counts nothing).
  * CHARGE_PAYMENT rows are left out: they are the ledger's payments above, so
- * counting them here would count them twice. Late-cancellation and freeze fees
+ * counting them here would count them twice. Decision 448 item 1: the card
+ * surcharge (of memberships, fees and payments toward charges alike) is its
+ * own line, by billing date, apart from both, and part of the total. Late-cancellation and freeze fees
  * are neither part (Decision 414 names charges and memberships only).
  */
 @Injectable()
@@ -127,16 +159,23 @@ export class ChargeReportsService {
         where: { ...this.where(schoolId, scope), kind: { in: ['PAYMENT', 'REFUND'] }, createdAt: { gte: first.toJSDate() } },
         select: { kind: true, amount: true, currency: true, createdAt: true },
       }),
+      // Decision 448 item 1: payments toward charges too, for their card
+      // surcharge only (their price is the ledger's, above).
       this.prismaJobs.transaction.findMany({
-        where: { ...this.where(schoolId, scope), kind: { in: [...MEMBERSHIP_REVENUE_KINDS] }, status: { in: [...REVENUE_STATUSES] }, billingDate: { gte: first.toJSDate() } },
-        select: { amount: true, refundedAmount: true, currency: true, billingDate: true },
+        where: {
+          ...this.where(schoolId, scope),
+          OR: [{ kind: { in: [...MEMBERSHIP_REVENUE_KINDS] } }, { kind: 'CHARGE_PAYMENT', surchargeAmount: { gt: 0 } }],
+          status: { in: [...REVENUE_STATUSES] },
+          billingDate: { gte: first.toJSDate() },
+        },
+        select: { ...KEPT_REVENUE_SELECT, kind: true, currency: true, billingDate: true },
       }),
     ]);
-    const byCurrency = new Map<string, { scheduled: number; overdue: number; months: Map<string, { received: number; refunded: number; memberships: number }> }>();
+    const byCurrency = new Map<string, { scheduled: number; overdue: number; months: Map<string, { received: number; refunded: number; memberships: number; surcharges: number }> }>();
     const bucket = (currency: string) => {
       let b = byCurrency.get(currency);
       if (!b) {
-        b = { scheduled: 0, overdue: 0, months: new Map(monthKeys.map((m) => [m, { received: 0, refunded: 0, memberships: 0 }])) };
+        b = { scheduled: 0, overdue: 0, months: new Map(monthKeys.map((m) => [m, { received: 0, refunded: 0, memberships: 0, surcharges: 0 }])) };
         byCurrency.set(currency, b);
       }
       return b;
@@ -160,7 +199,9 @@ export class ChargeReportsService {
       const month = DateTime.fromJSDate(t.billingDate, { zone }).toFormat('yyyy-MM');
       if (!monthKeys.includes(month)) continue;
       const m = bucket(t.currency.toUpperCase()).months.get(month)!;
-      m.memberships += Math.max(0, t.amount - (t.refundedAmount ?? 0));
+      const kept = keptRevenue(t);
+      if (t.kind !== 'CHARGE_PAYMENT') m.memberships += kept.price;
+      m.surcharges += kept.surcharge;
     }
     const currencies = [...byCurrency.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
@@ -168,11 +209,12 @@ export class ChargeReportsService {
         const revenueByMonth = monthKeys.map((month) => {
           const m = b.months.get(month)!;
           const net = m.received - m.refunded;
-          return { month, received: m.received, refunded: m.refunded, net, memberships: m.memberships, total: net + m.memberships };
+          return { month, received: m.received, refunded: m.refunded, net, memberships: m.memberships, surcharges: m.surcharges, total: net + m.memberships + m.surcharges };
         });
         const paid = revenueByMonth.reduce((n, m) => n + m.net, 0);
         const membershipRevenue = revenueByMonth.reduce((n, m) => n + m.memberships, 0);
-        return { currency, scheduled: b.scheduled, overdue: b.overdue, paid, memberships: membershipRevenue, total: paid + membershipRevenue, revenueByMonth };
+        const surcharges = revenueByMonth.reduce((n, m) => n + m.surcharges, 0);
+        return { currency, scheduled: b.scheduled, overdue: b.overdue, paid, memberships: membershipRevenue, surcharges, total: paid + membershipRevenue + surcharges, revenueByMonth };
       });
     return { months, wholeSchool: scope.wholeSchool, currencies };
   }

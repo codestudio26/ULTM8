@@ -557,6 +557,7 @@ export const serverMessages: Record<string, string> = {
   "This payment has already been refunded in full.": "这笔付款已全额退款。",
   "Only a payment that was taken can be refunded.": "只能退款已收到的付款。",
   "That is more than is left to refund on this payment.": "这超过了这笔付款剩余可退的金额。",
+  "Pix can only be used by a School in Brazil. Choose another way to pay.": "只有巴西的学校可以使用 Pix。请选择其他付款方式。",
   "This payment was taken, so it can't be cancelled. Refund it instead.": "这笔付款已收到，因此无法取消。请改为退款。",
   "This Class is archived and can no longer be booked.": "这节课已归档，无法再预约。",
   "This Class has already ended.": "这节课已经结束。",

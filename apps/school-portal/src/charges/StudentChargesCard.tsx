@@ -36,7 +36,7 @@ import { useConfirmTransaction } from '../transactions/transactionQueries';
 import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
-import { useDeskMethods } from '../lib/deskMethods';
+import { useDeskMethods, useOffersPix } from '../lib/deskMethods';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
   OPEN: 'warning',
@@ -878,7 +878,7 @@ function RecordPaymentModal({
 }) {
   const t = useT();
   const record = useRecordChargePayment(schoolId, studentId);
-  // Decision 431 (MON-13): Pix only for a School in Brazil or pricing in reais.
+  // Decision 448 item 5: Pix only for a School in Brazil.
   const methods = useDeskMethods(schoolId, CHARGE_PAYMENT_METHODS);
   const open = data.charges.filter((c) => c.status === 'OPEN' || c.status === 'PART_PAID');
   const [toward, setToward] = useState(chargeId ?? '');
@@ -1070,6 +1070,8 @@ function RefundModal({
 }) {
   const t = useT();
   const refund = useRefundChargePayment(schoolId, studentId);
+  // Decision 448 item 5: Pix is named only for a School in Brazil.
+  const pix = useOffersPix(schoolId);
   const card = payment.paymentMethod === 'STRIPE';
   const asMoney = payment.refundable?.asMoney ?? 0;
   const asCredit = payment.refundable?.asCredit ?? 0;
@@ -1103,7 +1105,7 @@ function RefundModal({
   }
 
   const options = [
-    ...(asMoney > 0 ? [card ? { value: 'CARD', label: t('charges.refundDialog.toCard') } : { value: 'MONEY_BACK', label: t('charges.refundDialog.moneyBack') }] : []),
+    ...(asMoney > 0 ? [card ? { value: 'CARD', label: t('charges.refundDialog.toCard') } : { value: 'MONEY_BACK', label: t(pix ? 'charges.refundDialog.moneyBackPix' : 'charges.refundDialog.moneyBack') }] : []),
     ...(asCredit > 0 ? [{ value: 'CREDIT', label: t('charges.refundDialog.asCredit') }] : []),
   ];
 

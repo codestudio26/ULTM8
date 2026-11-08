@@ -339,7 +339,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
     it('a cash payment can only be given back (records only) or turned into credit', async () => {
       const student = await mkStudent('cashBack');
       const c = await createCharge(student.id, 8000);
-      const paymentId = await deskPay(student.id, 8000, c.id, 'PIX');
+      // Cash (Pix is only for a School in Brazil, Decision 448 item 5; this one is in Paraguay).
+      const paymentId = await deskPay(student.id, 8000, c.id, 'CASH');
       const before = refunds.length;
 
       const toCard = await refund(paymentId, { amount: 1000, destination: 'CARD' });
@@ -787,7 +788,7 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect(overview.body.currencies.map((c: { currency: string }) => c.currency)).toEqual(['BRL', 'USD']);
       const [brl, usd] = overview.body.currencies;
       expect(brl).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 27700, total: 31700 });
-      expect(brl.revenueByMonth[2]).toEqual({ month: thisMonth, received: 5000, refunded: 1000, net: 4000, memberships: 24700, total: 28700 });
+      expect(brl.revenueByMonth[2]).toEqual({ month: thisMonth, received: 5000, refunded: 1000, net: 4000, memberships: 24700, surcharges: 0, total: 28700 });
       expect(brl.revenueByMonth[1]).toMatchObject({ received: 0, net: 0, memberships: 3000, total: 3000 });
       expect(brl.revenueByMonth[0]).toMatchObject({ memberships: 0, total: 0 });
       expect(usd).toMatchObject({ currency: 'USD', scheduled: 0, overdue: 0, paid: 0, memberships: 1500, total: 1500 });

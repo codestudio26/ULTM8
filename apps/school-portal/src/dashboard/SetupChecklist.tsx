@@ -4,6 +4,7 @@ import { Button, Card } from '@ultm8/ui';
 import { useSetSetupChecklistHidden, type DashboardOverview, type SetupStepKey } from './dashboardQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { STRIPE_CONNECT_ANCHOR } from '../schools/StripeConnectCard';
+import { useOffersPix } from '../lib/deskMethods';
 
 /** Where each step is done. Stripe is connected from the Stripe card on the
  * School page (Decision 441 item 6). */
@@ -25,6 +26,8 @@ const STEPS: Record<SetupStepKey, { label: TranslationKey; to: string | null }> 
 export function SetupChecklist({ schoolId, checklist }: { schoolId: string; checklist: DashboardOverview['setupChecklist'] }) {
   const t = useT();
   const setHidden = useSetSetupChecklistHidden(schoolId);
+  // Decision 448 item 5: Pix is named only for a School in Brazil.
+  const pix = useOffersPix(schoolId);
   if (checklist.hidden) {
     return (
       <p style={{ margin: '0 0 16px', fontSize: 13 }}>
@@ -72,7 +75,7 @@ export function SetupChecklist({ schoolId, checklist }: { schoolId: string; chec
             the Stripe step out; say how members pay instead. */}
         {checklist.stripeConnectAvailable === false ? (
           <p data-testid="stripe-unavailable" style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)' }}>
-            {t('dashboard.setup.stripeUnavailable')}
+            {t(pix ? 'dashboard.setup.stripeUnavailablePix' : 'dashboard.setup.stripeUnavailable')}
           </p>
         ) : null}
       </Card>

@@ -1,14 +1,15 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { chargeCurrency } from '../common/school-currency';
 
 type Tx = Pick<Prisma.TransactionClient, 'transaction' | 'booking'>;
 
 /**
  * What an off-session PaymentIntent is tagged with, in its metadata (and its
  * idempotency key is derived from the same id): the Pending Transaction the
- * caller wrote first (Decision 446 item 5), or, for a no-show fee, which has
- * no Transaction, its Booking (Decision 447 item 4).
+ * caller wrote first (Decision 446 item 5), or, for a no-show fee, whose
+ * attempt is recorded on its Booking, its Booking (Decision 447 item 4).
  */
 export type OffSessionTag = { transactionId: string } | { noShowBookingId: string };
 
@@ -63,18 +64,20 @@ export async function settleLateCancelFee(tx: Tx, transactionId: string, payment
 }
 
 /**
- * Decision 447 item 4: a no-show fee attempt's outcome (Decision 291). A
- * no-show fee has no Transaction (it is recorded on its Booking only), so the
- * attempt is the Booking itself: noShowFeeAmount is written before Stripe is
+ * Decision 447 item 4: a no-show fee attempt's outcome (Decision 291). The
+ * attempt is the Booking itself (Decision 448 item 18 adds the ledger row
+ * only once the outcome is saved, recordNoShowFeeTransaction()): noShowFeeAmount is written before Stripe is
  * called, with noShowFeeOutcome left empty until the answer is saved, and the
  * PaymentIntent carries the Booking's id (metadata noShowBookingId,
  * idempotency key no-show-fee-<booking id>). Saved by whichever comes first:
  * the no-show job, Stripe's payment_intent.* webhook, or the stale-attempt
  * sweep. Only an outcome still empty changes, so it is saved at most once; a
  * failure never undoes a success, and a success saved after a failure wins
- * (the money was taken). Returns whether this call saved it.
+ * (the money was taken). The outcome's Transactions ledger row is written in
+ * the same transaction (Decision 448 item 18). Returns whether this call
+ * saved it.
  */
-export async function settleNoShowFee(tx: Pick<Prisma.TransactionClient, 'booking'>, bookingId: string, paymentIntentId: string | null, succeeded: boolean): Promise<boolean> {
+export async function settleNoShowFee(tx: NoShowTx, bookingId: string, paymentIntentId: string | null, succeeded: boolean): Promise<boolean> {
   const flipped = await tx.booking.updateMany({
     where: {
       id: bookingId,
@@ -83,7 +86,70 @@ export async function settleNoShowFee(tx: Pick<Prisma.TransactionClient, 'bookin
     },
     data: { noShowFeeOutcome: succeeded ? 'CHARGED' : 'FAILED', ...(paymentIntentId ? { stripeNoShowPaymentIntentId: paymentIntentId } : {}) },
   });
-  return flipped.count > 0;
+  if (flipped.count === 0) return false;
+  await recordNoShowFeeTransaction(tx, bookingId);
+  return true;
+}
+
+type NoShowTx = Pick<Prisma.TransactionClient, 'booking' | 'transaction' | 'school' | 'paymentAccount'>;
+
+/**
+ * Decision 448 item 18: a no-show fee on the School's Transactions page, as
+ * a late-cancellation fee is (Decision 346): a NO_SHOW_FEE row for its
+ * Booking once the outcome is saved, Successful when the card was charged
+ * and Failed when it was tried and declined. Nothing is written when no card
+ * could be tried (NO_SAVED_PAYMENT_METHOD), or the School has no currency or
+ * payment account, as for late-cancellation fees. Called in the transaction
+ * that saves the Booking's outcome, so the two never disagree; one row per
+ * Booking (bookingId is unique). A success saved after a failure turns the
+ * row Successful; nothing ever turns a Successful row back.
+ */
+export async function recordNoShowFeeTransaction(tx: NoShowTx, bookingId: string): Promise<void> {
+  const b = await tx.booking.findUnique({
+    where: { id: bookingId },
+    select: { schoolId: true, studentId: true, noShowFeeOutcome: true, noShowFeeAmount: true, stripeNoShowPaymentIntentId: true },
+  });
+  if (!b || !b.noShowFeeAmount || (b.noShowFeeOutcome !== 'CHARGED' && b.noShowFeeOutcome !== 'FAILED')) return;
+  const status = b.noShowFeeOutcome === 'CHARGED' ? ('SUCCESSFUL' as const) : ('FAILED' as const);
+  const existing = await tx.transaction.findUnique({ where: { bookingId }, select: { id: true, kind: true, status: true, stripePaymentIntentId: true } });
+  if (existing) {
+    if (existing.kind !== 'NO_SHOW_FEE') return;
+    const paid = status === 'SUCCESSFUL' && existing.status === 'FAILED';
+    const intent = !existing.stripePaymentIntentId ? await freeIntent(tx, b.stripeNoShowPaymentIntentId) : null;
+    if (paid || intent) {
+      await tx.transaction.update({ where: { id: existing.id }, data: { ...(paid ? { status } : {}), ...(intent ? { stripePaymentIntentId: intent } : {}) } });
+    }
+    return;
+  }
+  const school = await tx.school.findUnique({ where: { id: b.schoolId }, select: { defaultCurrency: true } });
+  const currency = chargeCurrency(null, school?.defaultCurrency);
+  const account = await tx.paymentAccount.findUnique({ where: { schoolId: b.schoolId }, select: { id: true } });
+  if (!currency || !account) return;
+  await tx.transaction.create({
+    data: {
+      id: randomUUID(),
+      schoolId: b.schoolId,
+      studentId: b.studentId,
+      paymentAccountId: account.id,
+      kind: 'NO_SHOW_FEE',
+      bookingId,
+      amount: b.noShowFeeAmount,
+      currency: currency.toUpperCase(),
+      status,
+      paymentMethod: 'STRIPE',
+      stripePaymentIntentId: await freeIntent(tx, b.stripeNoShowPaymentIntentId),
+    },
+  });
+}
+
+/** The PaymentIntent id to put on the no-show fee's row, unless another
+ * Transaction already holds it (the column is unique): the row is then
+ * written without it, so the Booking's outcome is still saved. The Booking
+ * keeps the id either way. */
+async function freeIntent(tx: NoShowTx, paymentIntentId: string | null): Promise<string | null> {
+  if (!paymentIntentId) return null;
+  const taken = await tx.transaction.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } });
+  return taken ? null : paymentIntentId;
 }
 
 const freezeFeeLogger = new Logger('FreezeFeeAttempt');

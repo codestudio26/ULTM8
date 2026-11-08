@@ -750,6 +750,7 @@ export const SERVER_PATTERNS: string[] = [
  "This payment has already been refunded in full.",
  "Only a payment that was taken can be refunded.",
  "That is more than is left to refund on this payment.",
+ "Pix can only be used by a School in Brazil. Choose another way to pay.",
  "This payment was taken, so it can't be cancelled. Refund it instead.",
   "The date range can be at most {v1} days.",
   "This plan has {v1} active member(s), so its type can't change. Create a new plan for the new type instead.",

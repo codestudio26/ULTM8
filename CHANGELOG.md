@@ -163,7 +163,8 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     purchase paid this way starts its membership exactly once, whichever gets
     there first; one refused meanwhile (the member holds a pass already, the
     next plan filled up, or the School closed) is refunded once. A no-show fee
-    still has no row on the Transactions page; its booking records it.
+    still has no row on the Transactions page; its booking records it (until
+    Decision 448, below).
   - *Member limits hold for the waiting list and plan switches too:* a place
     held for someone on a plan's waiting list, and the plan a switch starts,
     are given one at a time per plan with the limit counted again, as orders
@@ -172,6 +173,27 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     after a freeze is approved but before Stripe has applied it keeps the
     right end date: when the freeze reaches Stripe, the cancel date moves with
     it (and back again if the freeze ends early), in the app and on Stripe.
+- **Stress test round 6: the owner's money answers** (Track A, and Track B's
+  payment history; Decision 448 items 1, 3, 5, 18 and 19). **Needs two
+  database migrations** (`20270401000001`, `20270401000002`).
+  - *Card surcharge as its own line:* the billing overview has a Card
+    surcharges figure and column (part of Total revenue), and the Transactions
+    page a Card surcharges tile. The Memberships figure and the Transactions
+    page's Total revenue are now the price of what was sold only. Both pages
+    count the surcharge the same way; a refund comes off the price first.
+  - *A plan switch never costs more than its notice said:* the 7-day notice's
+    amount is kept, and on switch day the card is charged that amount or the
+    price then, whichever is lower.
+  - *Pix only in Brazil:* Pix is offered, and named in hints, only for a
+    School whose address is in Brazil (pricing in reais no longer counts), and
+    the API refuses a Pix desk sale or desk payment anywhere else, with a
+    message in every language.
+  - *No-show fees on the Transactions page:* a no-show fee charged to the card
+    (or tried and declined) is a "No-show fee: class" row, counted in revenue
+    with the other fees, and shown in the member's payment history; fees
+    charged before are added by the migration.
+  - *"Payment confirmed" for a saved-card purchase that went through later*
+    (settled by Stripe's notice or the hourly check), sent once.
 
 - **Launch rehearsal 1** — a UK School (cards through Stripe Connect, against
   a pretend Stripe) and a Brazilian School (Pix or cash, confirmed by the

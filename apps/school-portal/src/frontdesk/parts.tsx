@@ -818,8 +818,8 @@ function PackUsedUp({
               {t('frontDesk.packUsedUp.paidBy')}
             </label>
             <select id="fd-pack-method" value={method} onChange={(e) => setMethod(e.target.value as DeskPaymentMethod)}>
-              {/* Decision 431 (MON-13): Pix only when the pack is priced in reais. */}
-              {deskMethodsFor(DESK_PAYMENT_METHODS, { defaultCurrency: offer?.currency }).map((m) => (
+              {/* Decision 448 item 5: Pix only at a School in Brazil. */}
+              {deskMethodsFor(DESK_PAYMENT_METHODS, !!recharge.offersPix).map((m) => (
                 <option key={m} value={m}>
                   {t(PAYMENT_METHOD_LABELS[m])}
                 </option>

@@ -65,7 +65,8 @@ export type PlanSwitchRunOutcome = { noticesSent: number; switched: number; ende
  * 1. They are told before the switch: up to 7 days before the end (at once for
  *    a shorter plan), once. A switch never runs before they were told.
  * 2. At the end, the next plan is charged to their saved card at this School,
- *    at its price then plus the School's card surcharge (Decision 406), and its
+ *    at its price then plus the School's card surcharge (Decision 406), but
+ *    never more than the notice quoted (Decision 448 item 3), and its
  *    Membership starts. Its own start and end rules apply (plan-term.ts).
  * 3. With no saved card, a declined card, or a next plan that can't be sold
  *    any more (archived, hidden, given a contract, its dates over, full under
@@ -140,11 +141,16 @@ export class PlanSwitchProcessor extends WorkerHost {
     const zoneOf = new Map(schools.map((s) => [s.id, s.timezone]));
     for (const m of due) {
       if (!zoneOf.has(m.schoolId) || !m.switchToPlan || !m.expiryDate) continue;
-      const claimed = await this.prismaJobs.membership.updateMany({ where: { id: m.id, switchNoticeSentAt: null }, data: { switchNoticeSentAt: now } });
-      if (claimed.count === 0) continue;
       const currency = await resolveChargeCurrency(this.prismaJobs, m.schoolId, m.switchToPlan.currency);
       const bps = await readCardSurchargeBps(this.prismaJobs, m.schoolId);
       const amount = m.switchToPlan.price + planCardSurcharge(m.switchToPlan, bps, currency);
+      // Decision 448 item 3: the amount quoted is kept with the notice: the
+      // switch never charges more.
+      const claimed = await this.prismaJobs.membership.updateMany({
+        where: { id: m.id, switchNoticeSentAt: null },
+        data: { switchNoticeSentAt: now, ...(currency ? { switchNoticeAmount: amount, switchNoticeCurrency: currency.toUpperCase() } : {}) },
+      });
+      if (claimed.count === 0) continue;
       if (!currency) continue;
       const notice = planSwitchNotice(m.membershipPlan.title, dayIn(m.expiryDate, zoneOf.get(m.schoolId)), m.switchToPlan.title, noticeMoney(amount, currency));
       await this.notify({ notificationId: `plan-switch-notice-${m.id}`, userId: m.studentId, title: notice.title, body: notice.body, type: 'MEMBERSHIP_EXPIRY', schoolId: m.schoolId });
@@ -225,7 +231,20 @@ export class PlanSwitchProcessor extends WorkerHost {
     if (!saved) return end('NO_CARD');
     const currency = await resolveChargeCurrency(this.prismaJobs, m.schoolId, next.currency);
     if (!currency) return end('NOT_SOLD');
-    const surcharge = planCardSurcharge(next, await readCardSurchargeBps(this.prismaJobs, m.schoolId), currency);
+    let price = next.price;
+    let surcharge = planCardSurcharge(next, await readCardSurchargeBps(this.prismaJobs, m.schoolId), currency);
+    // Decision 448 item 3: never more than the notice said. The lower of the
+    // quoted amount and the price now (with any surcharge) is charged; what
+    // is taken off comes off the surcharge first. A notice quoted in another
+    // currency can't be compared, so nothing is charged and it ends as not
+    // sold. A notice sent before Decision 448 quoted nothing kept: the price
+    // now, as before.
+    if (m.switchNoticeAmount !== null) {
+      if (m.switchNoticeCurrency && m.switchNoticeCurrency !== currency.toUpperCase()) return end('NOT_SOLD');
+      const capped = Math.min(m.switchNoticeAmount, price + surcharge);
+      price = Math.min(price, capped);
+      surcharge = capped - price;
+    }
 
     // Decision 447 item 4: the payment is written Pending first and tagged on
     // the PaymentIntent (metadata and the idempotency key), so a payment
@@ -240,7 +259,7 @@ export class PlanSwitchProcessor extends WorkerHost {
         studentId: m.studentId,
         paymentAccountId: account.id,
         membershipPlanId: next.id,
-        amount: next.price,
+        amount: price,
         surchargeAmount: surcharge,
         currency: currency.toUpperCase(),
         status: 'PENDING',
@@ -251,7 +270,7 @@ export class PlanSwitchProcessor extends WorkerHost {
     });
     let charge: { succeeded: boolean; paymentIntentId: string };
     try {
-      charge = await this.payments.chargeOffSession(m.studentId, m.schoolId, next.price + surcharge, currency, next.title, `plan-switch-${m.id}`, surcharge, { transactionId });
+      charge = await this.payments.chargeOffSession(m.studentId, m.schoolId, price + surcharge, currency, next.title, `plan-switch-${m.id}`, surcharge, { transactionId });
     } catch (err) {
       if (err instanceof NoSavedPaymentMethodError) {
         // No card to charge after all: nothing was charged (the attempt ends Failed).
@@ -289,7 +308,7 @@ export class PlanSwitchProcessor extends WorkerHost {
     }
     // Settled first by Stripe's webhook: it told the member.
     if (!settled) return 'SWITCHED';
-    const notice = planSwitchedNotice(m.membershipPlan.title, next.title, noticeMoney(next.price + surcharge, currency));
+    const notice = planSwitchedNotice(m.membershipPlan.title, next.title, noticeMoney(price + surcharge, currency));
     await this.notify({ notificationId: `plan-switched-${m.id}`, userId: m.studentId, title: notice.title, body: notice.body, type: 'MEMBERSHIP_EXPIRY', schoolId: m.schoolId });
     this.logger.log(`plan-switch: membership ${m.id} switched to ${settled.membershipId}.`);
     return 'SWITCHED';

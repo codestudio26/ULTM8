@@ -557,6 +557,7 @@ export const serverMessages: Record<string, string> = {
   "This payment has already been refunded in full.": "Questo pagamento è già stato rimborsato per intero.",
   "Only a payment that was taken can be refunded.": "Si può rimborsare solo un pagamento incassato.",
   "That is more than is left to refund on this payment.": "È più di quanto resta da rimborsare su questo pagamento.",
+  "Pix can only be used by a School in Brazil. Choose another way to pay.": "Pix può essere usato solo da una scuola in Brasile. Scegli un altro metodo di pagamento.",
   "This payment was taken, so it can't be cancelled. Refund it instead.": "Questo pagamento è stato incassato, quindi non si può annullare. Rimborsalo invece.",
   "This Class is archived and can no longer be booked.": "Questo corso è archiviato e non può più essere prenotato.",
   "This Class has already ended.": "Questo corso è già terminato.",

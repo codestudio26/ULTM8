@@ -62,8 +62,8 @@ export class TransactionResponseDto {
 
   /** MEMBERSHIP (a plan bought or recorded at the desk), RENEWAL (a later
    * Subscription charge) or LATE_CANCEL_FEE (Decision 346). */
-  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE', 'CHARGE_PAYMENT'] })
-  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE' | 'CHARGE_PAYMENT';
+  @ApiProperty({ enum: ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE', 'CHARGE_PAYMENT', 'NO_SHOW_FEE'] })
+  kind!: 'MEMBERSHIP' | 'RENEWAL' | 'LATE_CANCEL_FEE' | 'FREEZE_FEE' | 'CHARGE_PAYMENT' | 'NO_SHOW_FEE';
 
   /** CHARGE_PAYMENT only (Decision 338 item 9): the charge it was taken
    * against, as "#0000001 Rash guard"; null when it was paid toward the
@@ -77,7 +77,7 @@ export class TransactionResponseDto {
   @ApiPropertyOptional({ type: String, nullable: true, example: '#0000001' })
   chargeInvoiceLabel!: string | null;
 
-  /** LATE_CANCEL_FEE only: the cancelled Booking and its class's title. */
+  /** LATE_CANCEL_FEE and NO_SHOW_FEE (Decision 448 item 18) only: the Booking and its class's title. */
   @ApiPropertyOptional({ type: String, nullable: true })
   bookingId!: string | null;
 
@@ -203,6 +203,16 @@ export class TransactionSummaryResponseDto {
   @ApiProperty({ description: 'Cancelled cash or bank-transfer payments (Decision 338 item 1).' })
   cancelled!: number;
 
-  @ApiProperty({ type: [TransactionRevenueDto], description: 'What the School kept, one entry per currency: Successful and Refunded rows, each at its amount less what was refunded on it (Decision 446 item 4).' })
+  @ApiProperty({
+    type: [TransactionRevenueDto],
+    description:
+      'What the School kept of the price of what was sold, one entry per currency: Successful and Refunded rows, each at its amount less what was refunded of it (Decision 446 item 4). The card surcharge is not in it (Decision 448 item 1, surcharges).',
+  })
   revenue!: TransactionRevenueDto[];
+
+  @ApiProperty({
+    type: [TransactionRevenueDto],
+    description: 'Decision 448 item 1: the card surcharges kept on the same rows, one entry per currency revenue lists (0 when none), by the billing overview\'s rule.',
+  })
+  surcharges!: TransactionRevenueDto[];
 }
