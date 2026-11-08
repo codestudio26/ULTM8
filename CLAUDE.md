@@ -19,6 +19,20 @@ When sources disagree, resolve in this order, highest first:
 4. **Existing code** — once implementation begins, working code is authoritative for *how* something is built, but it never overrides an unresolved spec item simply by existing.
 5. **Figma/design references** — illustrative only. Useful for screen inventory and observed UI flow, never a substitute for a confirmed business rule.
 
+## Two developers, two Claudes
+
+Two people now work on this repo, each with their own Claude. Read
+`CONTRIBUTING.md` before your first change; `docs/handover/COWORKER-ONBOARDING.md`
+has the full setup, deploy and open-items picture. The rules that prevent
+collisions:
+
+- One branch per task from the latest `origin/master`; never push to `master` or to the other developer's branch. Update a branch by merging `master` in, not rebasing.
+- Merge only with **Squash and merge**, and only when your own user says so.
+- Before pushing API changes: `cd apps/api && npx eslint src test --max-warnings 0` (CI fails on one warning), plus `npx turbo run lint` and the relevant tests.
+- **Decision numbers:** check both `master` and open PR titles for the highest number, claim the next one by putting "Decision N" in your PR title, and re-check just before merge; whoever merges second renumbers. Never renumber one already on `master`.
+- **Migrations:** the folder name must sort after the newest on `master`; never edit or rename a merged one; put the exact migrate steps (`cd apps/api && npx prisma migrate deploy && npx prisma generate`, restart the API) at the top of the PR description.
+- The live staging DB is migrated by hand; Vercel auto-deploys `master` on a free plan (100 deploys/day, a "Deployment rate limited" status is not a code failure).
+
 ## Standing rules
 
 - **Never act on an assumption — verify, then verify again, then ask.** When a task is ambiguous or something isn't explicitly confirmed, don't guess and proceed. Review your own answer or approach in depth before treating it as final, then take a second, independent pass to re-check that review before acting on it. If genuine uncertainty remains after that check, ask the user directly rather than filling the gap with an assumption.
