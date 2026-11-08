@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "Um responsável precisa ter 18 anos ou mais.",
     // Decision 444 (legal go-live).
     termsNotAccepted: "Aceite os Termos de Serviço e a Política de Privacidade para criar uma conta.",
+    legalAcceptanceRequired: "Aceite os Termos de Serviço e a Política de Privacidade para continuar.",
     registerUnder18: "Você precisa ter 18 anos ou mais para criar uma conta. Peça ao seu responsável para adicionar você pela conta ULTM8 dele.",
     agreementNotAccepted: "Aceite o Contrato de Escola e Franquia para continuar.",
     notAMinor: "Isto é para crianças (menores de 18). Um adulto cria a própria conta.",

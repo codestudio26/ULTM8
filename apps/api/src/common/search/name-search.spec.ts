@@ -1,4 +1,4 @@
-import { firstGrapheme as appFirstGrapheme, foldForSearch as appFold, matchesNameSearch } from '@ultm8/i18n';
+import { firstGrapheme as appFirstGrapheme, foldForSearch as appFold, isSymbolsOnlySearch, matchesNameSearch } from '@ultm8/i18n';
 import { NAME_SEARCH_MUST_MATCH, NAME_SEARCH_MUST_NOT_MATCH } from '@ultm8/i18n/src/search/nameSearchVectors';
 import { firstGrapheme, foldForSearch, foldText, matchesPersonName } from './name-search';
 
@@ -41,6 +41,16 @@ describe('foldForSearch / matchesPersonName (Decision 434, TXT-1)', () => {
     expect(matchesPersonName('Ana', 'Souza', '   ')).toBe(true);
     expect(matchesPersonName('Venkataraghavan', '', 'venkata')).toBe(true);
     expect(matchesPersonName('Venkataraghavan', '', 'souza')).toBe(false);
+  });
+
+  it('Decision 448 item 13: a query of only symbols matches nobody, in both copies', () => {
+    for (const matches of [matchesPersonName, matchesNameSearch]) {
+      for (const q of ['%', '_', '%_%', ' !! ', '-', '\u3000@\u3000']) expect(matches('Ana', 'Souza', q)).toBe(false);
+      expect(matches('Ana', 'Souza', '')).toBe(true);
+      expect(matches('Ana', 'Souza', '%ana%')).toBe(true);
+    }
+    expect(['%', '_', ' !! '].every(isSymbolsOnlySearch)).toBe(true);
+    expect(['', '   ', 'a%', '7'].some(isSymbolsOnlySearch)).toBe(false);
   });
 
   it('foldText is the same fold, keeping punctuation (Branch filters and waiver signatures)', () => {

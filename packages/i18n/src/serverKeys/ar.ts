@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "يجب أن يكون ولي الأمر في سن 18 عامًا أو أكثر.",
     // Decision 444 (legal go-live).
     termsNotAccepted: "وافق على شروط الخدمة وسياسة الخصوصية لإنشاء حساب.",
+    legalAcceptanceRequired: "وافق على شروط الخدمة وسياسة الخصوصية للمتابعة.",
     registerUnder18: "يجب أن يكون عمرك 18 عامًا أو أكثر لإنشاء حساب. اطلب من أحد والديك أو ولي أمرك إضافتك من حسابه في ULTM8.",
     agreementNotAccepted: "اقبل اتفاقية المدرسة والامتياز للمتابعة.",
     notAMinor: "هذا مخصص للأطفال (دون 18 عامًا). البالغ ينشئ حسابه الخاص.",

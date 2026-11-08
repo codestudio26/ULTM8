@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "Ein Erziehungsberechtigter muss mindestens 18 sein.",
     // Decision 444 (legal go-live).
     termsNotAccepted: "Stimme den Nutzungsbedingungen und der Datenschutzerklärung zu, um ein Konto zu erstellen.",
+    legalAcceptanceRequired: "Stimme den Nutzungsbedingungen und der Datenschutzerklärung zu, um fortzufahren.",
     registerUnder18: "Du musst mindestens 18 sein, um ein Konto zu erstellen. Bitte einen Elternteil oder Erziehungsberechtigten, dich über sein ULTM8-Konto hinzuzufügen.",
     agreementNotAccepted: "Akzeptiere die Schul- und Franchise-Vereinbarung, um fortzufahren.",
     notAMinor: "Das ist für Kinder (unter 18). Erwachsene legen ein eigenes Konto an.",

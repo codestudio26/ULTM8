@@ -115,6 +115,12 @@ describeIfDb('TenantsModule — HTTP-level cross-tenant isolation', () => {
     ownerA = await mkUser('owner-a', true);
     ownerB = await mkUser('owner-b', true);
     verifiedInvitee = await mkUser('invitee', true);
+    // The owners signed up themselves (sign-up's Terms acceptance, Decision
+    // 444), so the tokens the API mints for them aren't held at the
+    // first-sign-in tick (Decision 448 item 8).
+    await superuser.legalAcceptance.createMany({
+      data: [ownerA, ownerB].map((u) => ({ id: randomUUID(), userId: u.id, documentSlug: 'terms-and-conditions', version: 'unpublished' })),
+    });
 
     await superuser.roleGrant.create({
       data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerA.id, schoolId: schoolA.id },

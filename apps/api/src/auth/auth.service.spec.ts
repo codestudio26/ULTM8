@@ -31,7 +31,8 @@ describe('AuthService', () => {
       user: { create: jest.fn(), update: jest.fn(), findUnique: jest.fn().mockResolvedValue({ email: 'a@example.test' }) },
       roleGrant: { findMany: jest.fn().mockResolvedValue([]), count: jest.fn().mockResolvedValue(0) },
       legalDocument: { findMany: jest.fn().mockResolvedValue([{ slug: 'terms-and-conditions', version: 'terms-2.0' }]) },
-      legalAcceptance: { createMany: jest.fn() },
+      // Signed up themselves by default: sign-up's Terms acceptance is there.
+      legalAcceptance: { createMany: jest.fn(), findFirst: jest.fn().mockResolvedValue({ id: 'la1' }) },
     };
     prismaApp = {
       withTenantContext: jest.fn((_id: string, fn: any) => fn(tx)),
@@ -293,6 +294,42 @@ describe('AuthService', () => {
       );
       expect(loginAttempts.recordSuccess).toHaveBeenCalledWith('a@example.test');
       expect(jwt.sign).toHaveBeenCalledWith(expect.objectContaining({ sub: 'u1', email: 'a@example.test', grants: [] }));
+      expect(jwt.sign.mock.calls[0][0].legalPending).toBeUndefined();
+    });
+
+    it('Decision 448 item 8: with no Terms acceptance of their own, the token carries legalPending', async () => {
+      tx.legalAcceptance.findFirst.mockResolvedValue(null);
+      const hash = await bcrypt.hash('123456', 4);
+      prismaAuth.user.findUnique.mockResolvedValue({ id: 'u1', email: 'a@example.test', passcodeHash: hash, phoneVerifiedAt: new Date(), phone: '+15551234567', mustChangePasscode: false });
+      await service.login({ email: 'a@example.test', passcode: '123456' });
+      expect(tx.legalAcceptance.findFirst).toHaveBeenCalledWith({
+        where: { userId: 'u1', documentSlug: 'terms-and-conditions', schoolId: null, franchiseId: null },
+        select: { id: true },
+      });
+      expect(jwt.sign).toHaveBeenCalledWith(expect.objectContaining({ sub: 'u1', legalPending: true }));
+    });
+  });
+
+  describe('acceptLegalAtFirstSignIn (Decision 448 item 8)', () => {
+    it('refuses without the tick and records nothing', async () => {
+      await expect(service.acceptLegalAtFirstSignIn('u1', false)).rejects.toMatchObject({ response: { code: 'TERMS_NOT_ACCEPTED' } });
+      expect(tx.legalAcceptance.createMany).not.toHaveBeenCalled();
+    });
+
+    it('records Terms and Privacy at the published versions, marked atFirstSignIn, and returns a token without the claim', async () => {
+      tx.legalAcceptance.findFirst.mockResolvedValueOnce(null).mockResolvedValue({ id: 'la1' });
+      const result = await service.acceptLegalAtFirstSignIn('u1', true);
+      const rows = tx.legalAcceptance.createMany.mock.calls[0][0].data;
+      expect(rows.map((r: { documentSlug: string }) => r.documentSlug)).toEqual(['terms-and-conditions', 'privacy-statement']);
+      expect(rows[0]).toMatchObject({ userId: 'u1', version: 'terms-2.0', schoolId: null, franchiseId: null, atFirstSignIn: true });
+      expect(rows[1]).toMatchObject({ version: 'unpublished', atFirstSignIn: true });
+      expect(result.accessToken).toBe('signed.jwt.token');
+      expect(jwt.sign.mock.calls.at(-1)[0].legalPending).toBeUndefined();
+    });
+
+    it('already accepted: nothing more is recorded', async () => {
+      await service.acceptLegalAtFirstSignIn('u1', true);
+      expect(tx.legalAcceptance.createMany).not.toHaveBeenCalled();
     });
   });
 

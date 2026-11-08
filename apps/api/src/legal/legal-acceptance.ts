@@ -42,7 +42,7 @@ export async function recordLegalAcceptances(
   tx: Pick<Prisma.TransactionClient, 'legalDocument' | 'legalAcceptance'>,
   userId: string,
   slugs: readonly LegalSlug[],
-  scope: { schoolId?: string; franchiseId?: string } = {},
+  scope: { schoolId?: string; franchiseId?: string; atFirstSignIn?: boolean } = {},
 ): Promise<void> {
   const versions = await currentLegalVersions(tx, slugs);
   const acceptedAt = new Date();
@@ -54,6 +54,7 @@ export async function recordLegalAcceptances(
       version: versions[slug]!,
       schoolId: scope.schoolId ?? null,
       franchiseId: scope.franchiseId ?? null,
+      atFirstSignIn: scope.atFirstSignIn ?? false,
       acceptedAt,
     })),
   });
@@ -68,9 +69,31 @@ export function assertAgreementAccepted(accepted: boolean | undefined): void {
 }
 
 /** Decision 446 item 8: whether `userId` made their own account (sign-up
- * records the Terms acceptance, with no School or Franchise; nobody else's
- * path does). Read in the user's own tenant context. */
+ * records the Terms acceptance, with no School or Franchise; the first-sign-in
+ * acceptance of an account the School made is marked atFirstSignIn and
+ * doesn't count, Decision 448 item 8). Read in the user's own tenant context. */
 export async function signedUpThemselves(db: Pick<Prisma.TransactionClient, 'legalAcceptance'>, userId: string): Promise<boolean> {
-  const row = await db.legalAcceptance.findFirst({ where: { userId, documentSlug: LEGAL_SLUGS.terms, schoolId: null, franchiseId: null }, select: { id: true } });
+  const row = await db.legalAcceptance.findFirst({
+    where: { userId, documentSlug: LEGAL_SLUGS.terms, schoolId: null, franchiseId: null, atFirstSignIn: false },
+    select: { id: true },
+  });
   return !!row;
+}
+
+/** What someone ticks at sign-up, and at their first sign-in when they didn't
+ * sign up themselves (Decision 444 item 1, Decision 448 item 8). */
+export const ACCOUNT_LEGAL_SLUGS = [LEGAL_SLUGS.terms, LEGAL_SLUGS.privacy] as const;
+
+/** Decision 448 item 8: true while `userId` has never accepted the Terms for
+ * their own account (no Terms acceptance with no School or Franchise): an
+ * account the School created (added manually, a tablet sign-up, an import, a
+ * Guardian added by staff), and anyone who signed up before the "I agree"
+ * tick existed. They are asked once, at their next sign-in. Read in the
+ * user's own tenant context (LegalAcceptance is self-only). */
+export async function legalAcceptancePending(db: Pick<Prisma.TransactionClient, 'legalAcceptance'>, userId: string): Promise<boolean> {
+  const row = await db.legalAcceptance.findFirst({
+    where: { userId, documentSlug: LEGAL_SLUGS.terms, schoolId: null, franchiseId: null },
+    select: { id: true },
+  });
+  return !row;
 }

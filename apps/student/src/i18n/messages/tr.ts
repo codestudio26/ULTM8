@@ -1178,6 +1178,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "Hizmet Şartları'nı kabul ediyorum ve Gizlilik Politikası'nı okudum.",
     },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "Devam etmeden önce",
+      body: "ULTM8'i kullanmak için Hizmet Şartları'nı kabul edin ve Gizlilik Politikası'nı okuyun. Bunu yalnızca bir kez yapmanız yeterli.",
+      submit: "Devam",
+      signOut: "Çıkış yap",
+    },
     version: "Sürüm {version}",
     beingPrepared: "Bu sayfa hazırlanıyor. ULTM8 yayına girmeden önce burada yayımlanacak.",
     loadFailed: "Bu sayfa yüklenemedi. Tekrar deneyin.",

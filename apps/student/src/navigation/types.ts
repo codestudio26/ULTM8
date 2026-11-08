@@ -21,6 +21,12 @@ export type AuthStackParamList = {
   LegalDocument: { slug: LegalSlug };
 };
 
+/** Decision 448 item 8: the first-sign-in Terms and Privacy step. */
+export type AcceptTermsStackParamList = {
+  AcceptTerms: undefined;
+  LegalDocument: { slug: LegalSlug };
+};
+
 export type AppStackParamList = {
   Home: undefined;
   Profile: undefined;

@@ -58,6 +58,8 @@ test('Create your School needs the Agreement tick, and saves the version accepte
     },
   });
   userIds.push(user.id);
+  // Signed up themselves (sign-up's Terms acceptance), so no first-sign-in tick.
+  await db.legalAcceptance.create({ data: { id: randomUUID(), userId: user.id, documentSlug: 'terms-and-conditions', version: 'unpublished' } });
   await page.goto('/login');
   await page.getByLabel('Email').fill(user.email);
   await page.getByLabel('Passcode', { exact: true }).fill(PASSCODE);
@@ -77,4 +79,71 @@ test('Create your School needs the Agreement tick, and saves the version accepte
   schoolIds.push(school.id);
   const accepted = await db.legalAcceptance.findMany({ where: { userId: user.id, schoolId: school.id } });
   expect(accepted.map((a) => a.documentSlug)).toEqual(['school-agreement']);
+});
+
+test('Decision 448 item 8: someone the School added ticks the Terms and Privacy once, at their first sign-in', async ({ page }) => {
+  const user = await db.user.create({
+    data: {
+      id: randomUUID(),
+      email: `legal-first-${randomUUID()}@example.test`,
+      phone: null,
+      firstName: 'Fran',
+      surname: 'First',
+      passcodeHash: await bcrypt.hash(PASSCODE, 4),
+      dateOfBirth: new Date('1990-01-01'),
+    },
+  });
+  userIds.push(user.id);
+  const logIn = async () => {
+    await page.goto('/login');
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Passcode', { exact: true }).fill(PASSCODE);
+    await page.getByRole('button', { name: 'Log in' }).click();
+  };
+  await logIn();
+  await expect(page.getByRole('heading', { name: 'Before you continue' })).toBeVisible();
+  const tick = page.getByRole('checkbox', { name: /I agree to the Terms of Service/ });
+  await expect(tick).toHaveAttribute('required', '');
+  await expect(page.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/legal/terms-and-conditions');
+  // Nothing else opens until it is ticked.
+  await page.goto('/profile');
+  await expect(page.getByRole('heading', { name: 'Before you continue' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  expect(await db.legalAcceptance.count({ where: { userId: user.id } })).toBe(0);
+
+  await page.getByRole('checkbox', { name: /I agree to the Terms of Service/ }).check();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByLabel('First name')).toHaveValue('Fran');
+  const rows = await db.legalAcceptance.findMany({ where: { userId: user.id }, orderBy: { documentSlug: 'asc' } });
+  expect(rows.map((r) => [r.documentSlug, r.atFirstSignIn, r.schoolId])).toEqual([
+    ['privacy-statement', true, null],
+    ['terms-and-conditions', true, null],
+  ]);
+
+  // Asked once: the next sign-in goes straight in.
+  await page.evaluate(() => sessionStorage.clear());
+  await logIn();
+  await expect(page.getByRole('heading', { name: 'Create your School' })).toBeVisible();
+});
+
+test('Decision 448 item 8: "Log out" on the step signs the person out', async ({ page }) => {
+  const user = await db.user.create({
+    data: {
+      id: randomUUID(),
+      email: `legal-out-${randomUUID()}@example.test`,
+      phone: null,
+      firstName: 'Lou',
+      surname: 'Out',
+      passcodeHash: await bcrypt.hash(PASSCODE, 4),
+      dateOfBirth: new Date('1990-01-01'),
+    },
+  });
+  userIds.push(user.id);
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(user.email);
+  await page.getByLabel('Passcode', { exact: true }).fill(PASSCODE);
+  await page.getByRole('button', { name: 'Log in' }).click();
+  await expect(page.getByRole('heading', { name: 'Before you continue' })).toBeVisible();
+  await page.getByRole('button', { name: 'Log out' }).click();
+  await expect(page).toHaveURL(/\/login/);
 });

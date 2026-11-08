@@ -11,6 +11,7 @@ import { useSchool } from '../schools/schoolQueries';
 import { StudentsTabs } from './StudentsTabs';
 import { useBranches } from '../branches/branchQueries';
 import { matchesSearch } from './studentSearch';
+import { isSymbolsOnlySearch } from '@ultm8/i18n';
 import { useT } from '../i18n/I18nProvider';
 import { ChildInvitesCard } from './StudentAccess';
 import { formatLocale } from '../i18n/format';
@@ -182,7 +183,8 @@ export function StudentsPage() {
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div style={{ minWidth: 220 }}>
-            <Field label={t('students.searchLabel')} htmlFor="students-search">
+            {/* Decision 448 item 13: a search of only symbols finds nobody, and says why. */}
+            <Field label={t('students.searchLabel')} htmlFor="students-search" hint={isSymbolsOnlySearch(search) ? t('students.searchSymbolsHint') : undefined}>
               <TextField id="students-search" type="search" placeholder={t('students.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
             </Field>
           </div>

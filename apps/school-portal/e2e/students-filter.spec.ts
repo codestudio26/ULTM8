@@ -76,3 +76,19 @@ test('Active (default) hides a revoked enrollment; Inactive and All surface it',
   await expect(page.getByRole('cell', { name: 'Riley Revoked' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Sam Lee' })).toBeVisible();
 });
+
+test('Decision 448 item 13: a search of only symbols finds nobody and explains why', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/students');
+  await expect(page.getByRole('cell', { name: 'Sam Lee' })).toBeVisible();
+  const hint = page.getByText("Symbols such as % or _ can't be used to search. Type a name instead.");
+
+  for (const q of ['%', '_']) {
+    await page.locator('#students-search').fill(q);
+    await expect(hint).toBeVisible();
+    await expect(page.getByRole('cell', { name: 'Sam Lee' })).toHaveCount(0);
+  }
+  await page.locator('#students-search').fill('sam');
+  await expect(hint).toHaveCount(0);
+  await expect(page.getByRole('cell', { name: 'Sam Lee' })).toBeVisible();
+});
