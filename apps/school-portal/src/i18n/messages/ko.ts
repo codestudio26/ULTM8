@@ -3092,6 +3092,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     addManuallyButton: "직접 추가",
     searchLabel: "검색",
     searchPlaceholder: "이름 또는 이메일",
+    searchSymbolsHint: "% 또는 _ 같은 기호로는 검색할 수 없습니다. 이름을 입력하세요.",
     branchLabel: "지점",
     branchAll: "모든 지점",
     branchNone: "소속 지점 없음",
@@ -5031,6 +5032,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "{terms}에 동의하며 {privacy}을 읽었습니다.",
       agreement: "데이터 처리 부속서를 포함한 {agreement}에 동의합니다.",
+    },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "계속하기 전에",
+      body: "ULTM8을 사용하려면 서비스 약관에 동의하고 개인정보 처리방침을 읽어 주세요. 한 번만 하면 됩니다.",
+      submit: "계속",
+      signOut: "로그아웃",
     },
     version: "버전 {version}",
     beingPrepared: "이 페이지는 준비 중입니다. ULTM8 출시 전에 여기에 게시됩니다.",

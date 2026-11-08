@@ -211,6 +211,19 @@ describeIfDb('Global Search (Decision 278) — `search` on the list endpoints, t
     }
   });
 
+  it('Decision 448 item 13: a search of only symbols finds nobody (Students on both views, and Instructors)', async () => {
+    for (const search of ['%', '_', '%_', ' !! ', '-']) {
+      for (const status of ['ACTIVE', 'INACTIVE']) {
+        const res = await get(`/v1/schools/${schoolA.id}/students`, tokenOwnerA, { search, status });
+        expect(res.status).toBe(200);
+        expect(ids(res)).toEqual([]);
+      }
+      const coaches = await get(`/v1/schools/${schoolA.id}/instructors`, tokenOwnerA, { search });
+      expect(coaches.status).toBe(200);
+      expect(ids(coaches)).toEqual([]);
+    }
+  });
+
   it('Students: an inactive (revoked) Student is left out, as on the roster\'s default Active view', async () => {
     const res = await get(`/v1/schools/${schoolA.id}/students`, tokenOwnerA, { search: 'leftschool' });
     expect(res.status).toBe(200);

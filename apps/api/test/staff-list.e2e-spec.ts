@@ -73,7 +73,11 @@ describeIfDb('Staff list, Remove from School and instant role changes (Decision 
   const login = async (email: string) => {
     const res = await http().post('/v1/auth/login').send({ email, passcode: PASSCODE });
     expect(res.status).toBe(201);
-    return res.body as { accessToken: string; refreshToken: string };
+    // Decision 448 item 8: these accounts were made by the test, not by
+    // sign-up, so the first sign-in asks for the Terms tick once.
+    const ticked = await http().post('/v1/auth/legal-acceptance').set('Authorization', `Bearer ${res.body.accessToken}`).send({ acceptTerms: true });
+    expect(ticked.status).toBe(201);
+    return { accessToken: ticked.body.accessToken as string, refreshToken: res.body.refreshToken as string };
   };
 
   beforeAll(async () => {

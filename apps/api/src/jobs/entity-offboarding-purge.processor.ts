@@ -55,6 +55,12 @@ export class EntityOffboardingPurgeScheduler implements OnModuleInit {
   }
 }
 
+/** Decision 448 item 10: a photo uploaded for a coach profile
+ * (UploadsService keys it under public-photos/instructor/). */
+export function isCoachProfilePhoto(url: string): boolean {
+  return url.includes('/public-photos/instructor/');
+}
+
 function isForeignKeyRestrictError(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003';
 }
@@ -204,7 +210,9 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     skipped += branchOutcome.skipped;
     deleted += await this.sweepSimple('class', now);
     deleted += await this.sweepSimple('timetableSlot', now);
-    deleted += await this.sweepSimple('instructor', now);
+    const instructorOutcome = await this.sweepInstructors(now);
+    deleted += instructorOutcome.deleted;
+    skipped += instructorOutcome.failed;
     deleted += await this.sweepSimple('lesson', now);
 
     const rankOutcome = await this.sweepRanks(now);
@@ -284,15 +292,16 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
     return { deleted, skipped };
   }
 
-  /** Shared sweep for the 4 entities with nothing beyond a plain
-   * DELETE-and-catch-P2003 (Class, TimetableSlot, Instructor, Lesson) — Rank and Waiver each need their own method (see this file's
-   * own header comment for why). Typed loosely (`any`-ish via a narrow
-   * model-name union) since these 4 share an identical purgeAt/purgedAt/id
+  /** Shared sweep for the 3 entities with nothing beyond a plain
+   * DELETE-and-catch-P2003 (Class, TimetableSlot, Lesson) — Rank, Waiver and
+   * Instructor (its stored files, Decision 448 item 10) each need their own
+   * method (see this file's own header comment for why). Typed loosely
+   * (`any`-ish via a narrow model-name union) since these 3 share an identical purgeAt/purgedAt/id
    * shape and identical delete-by-id call, and Prisma's own per-model client
    * types don't factor into one common interface cleanly enough to avoid it
    * — contained entirely inside this one private method, never exposed. */
   private async sweepSimple(
-    model: 'class' | 'timetableSlot' | 'instructor' | 'lesson',
+    model: 'class' | 'timetableSlot' | 'lesson',
     now: Date,
   ): Promise<number> {
     const client = this.prismaJobs[model] as unknown as {
@@ -314,6 +323,64 @@ export class EntityOffboardingPurgeProcessor extends WorkerHost {
       }
     }
     return deleted;
+  }
+
+  /**
+   * Instructor's own sweep (Decision 448 item 10): an archived coach profile
+   * past its 90 days goes with its stored files, the certification file
+   * (private bucket) and a photo uploaded for a coach profile (public
+   * bucket). The row is deleted inside a transaction and the files deleted
+   * before it commits, so a file that can't be deleted keeps the row for the
+   * next sweep and no file is left without a record; a row still referenced
+   * elsewhere (FK-restrict) keeps its files too. A file another coach profile
+   * still uses is kept: a coach's own profile completion sets the same
+   * certification and photo on each of their profiles (completeMyProfile). A
+   * photo address that isn't a coach-profile upload (a pasted address, or one
+   * of a School, Class or member photo) is never deleted from here. Without
+   * R2 configured (local development) only the rows go, with a warning, as
+   * eraseMemberFiles does.
+   */
+  private async sweepInstructors(now: Date): Promise<{ deleted: number; failed: number }> {
+    const due = await this.prismaJobs.instructor.findMany({
+      where: { purgeAt: { lte: now }, purgedAt: null },
+      select: { id: true, photoUrl: true, certificationKey: true },
+    });
+    let deleted = 0;
+    let failed = 0;
+    for (const row of due) {
+      try {
+        await this.prismaJobs.$transaction(
+          async (tx) => {
+            await tx.instructor.delete({ where: { id: row.id } });
+            const elsewhere = (field: 'photoUrl' | 'certificationKey', value: string) =>
+              tx.instructor.count({ where: { [field]: value, id: { not: row.id } } });
+            const files: Array<() => Promise<unknown>> = [];
+            if (row.certificationKey && (await elsewhere('certificationKey', row.certificationKey)) === 0) {
+              files.push(() => this.r2Client.deleteObject(row.certificationKey!));
+            }
+            if (row.photoUrl && isCoachProfilePhoto(row.photoUrl) && (await elsewhere('photoUrl', row.photoUrl)) === 0) {
+              files.push(() => this.r2Client.deletePublicPhotoByUrl(row.photoUrl!));
+            }
+            if (files.length === 0) return;
+            if (!this.r2Client.isConfigured()) {
+              this.logger.warn(`R2 is not configured, so the stored files of coach profile ${row.id} were not deleted.`);
+              return;
+            }
+            for (const deleteFile of files) await deleteFile();
+          },
+          { timeout: 60_000 },
+        );
+        deleted += 1;
+      } catch (err) {
+        if (isForeignKeyRestrictError(err)) {
+          this.logger.warn(`entity-offboarding-purge: instructor ${row.id} is still referenced elsewhere (FK-restrict) — left archived, will retry.`);
+          continue;
+        }
+        failed += 1;
+        this.logger.error(`entity-offboarding-purge: failed to purge instructor ${row.id}; it will be tried again on the next sweep.`, err as Error);
+      }
+    }
+    return { deleted, failed };
   }
 
   /** Rank's own sweep — see this file's own header comment for why a plain

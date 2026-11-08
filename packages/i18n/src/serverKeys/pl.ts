@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "Opiekun musi mieć co najmniej 18 lat.",
     // Decision 444 (legal go-live).
     termsNotAccepted: "Zaakceptuj Warunki korzystania z usługi i Politykę prywatności, aby utworzyć konto.",
+    legalAcceptanceRequired: "Zaakceptuj Warunki korzystania z usługi i Politykę prywatności, aby kontynuować.",
     registerUnder18: "Aby utworzyć konto, musisz mieć co najmniej 18 lat. Poproś rodzica lub opiekuna, aby dodał cię ze swojego konta ULTM8.",
     agreementNotAccepted: "Zaakceptuj Umowę Szkoły i Franczyzy, aby kontynuować.",
     notAMinor: "To jest dla dzieci (poniżej 18 lat). Dorosły zakłada własne konto.",

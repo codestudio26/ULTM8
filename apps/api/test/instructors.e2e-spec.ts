@@ -812,7 +812,13 @@ describeIfDb('InstructorsModule — HTTP-level cross-tenant isolation', () => {
       .post('/v1/auth/passcode-change/first-login')
       .set('Authorization', `Bearer ${firstLogin.body.passcodeChangeToken}`)
       .send({ newPasscode: '424242' });
-    const tokenNewInstructor = change.body.accessToken as string;
+    // Decision 448 item 8: someone the School added ticks the Terms first.
+    const ticked = await request(app.getHttpServer())
+      .post('/v1/auth/legal-acceptance')
+      .set('Authorization', `Bearer ${change.body.accessToken}`)
+      .send({ acceptTerms: true });
+    expect(ticked.status).toBe(201);
+    const tokenNewInstructor = ticked.body.accessToken as string;
 
     const res = await request(app.getHttpServer())
       .patch('/v1/instructors/me/profile')

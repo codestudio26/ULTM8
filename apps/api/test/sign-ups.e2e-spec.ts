@@ -4,6 +4,7 @@ import request from 'supertest';
 import { PrismaClient, Role } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { randomUUID } from 'crypto';
+import { DateTime } from 'luxon';
 import { AppModule } from '../src/app.module';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import { NotificationDeliveryService } from '../src/notifications/notification-delivery.service';
@@ -168,6 +169,23 @@ describeIfDb('Front-desk sign-ups (Decision 392)', () => {
       const again = await signUp({ ...body, firstName: 'Other' });
       expect(again.status).toBe(409);
       expect(again.body.error.code).toBe('SIGN_UP_WAITING');
+    });
+
+    it("Decision 448 item 14: counts the 18th birthday as sign-up does (the earliest time zone), not on the School's own date", async () => {
+      // 18 today in Kiritimati (UTC+14), still 17 in Pago Pago (UTC-11).
+      const dateOfBirth = DateTime.now().setZone('Pacific/Kiritimati').minus({ years: 18 }).toISODate()!;
+      await superuser.school.update({ where: { id: school.id }, data: { timezone: 'Pacific/Pago_Pago' } });
+      try {
+        const res = await signUp(adult({ dateOfBirth }));
+        expect(res.status).toBe(201);
+        // A day younger is still refused.
+        const younger = DateTime.fromISO(dateOfBirth).plus({ days: 1 }).toISODate()!;
+        const refused = await signUp(adult({ dateOfBirth: younger }));
+        expect(refused.status).toBe(400);
+        expect(refused.body.error.code).toBe('SIGN_UP_UNDER_18');
+      } finally {
+        await superuser.school.update({ where: { id: school.id }, data: { timezone: null } });
+      }
     });
 
     it('needs a name, date of birth and email; the rest may be blank', async () => {

@@ -45,6 +45,7 @@ export const server = {
     guardianUnder18: 'A Guardian must be 18 or over.',
     // Decision 444 (legal go-live).
     termsNotAccepted: "Agree to the Terms of Service and the Privacy Policy to create an account.",
+    legalAcceptanceRequired: "Agree to the Terms of Service and the Privacy Policy to continue.",
     registerUnder18: "You need to be 18 or over to create an account. Ask your parent or guardian to add you from their ULTM8 account.",
     agreementNotAccepted: "Accept the School and Franchise Agreement to continue.",
     notAMinor: 'This is for children (under 18). An adult makes their own account.',

@@ -29,6 +29,24 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
   - Each legal page has its own address (`/legal/<page>` in the portal, a
     screen in the app) and says it is being prepared until its text is loaded.
 
+- **Stress test round 6 answers: privacy, legal and search** (Track A and
+  Track B; Decision 448 items 8, 10, 13, 14). **Needs a database migration**
+  (`20270403000001_first_sign_in_terms_and_coach_files`).
+  - People the School creates (added manually, approved tablet sign-ups,
+    imports, Guardians added by staff) tick "I agree" to the Terms of Service
+    and the Privacy Policy the first time they sign in, in the portal and the
+    app; nothing else opens until they do. The acceptance is saved as at
+    sign-up. Anyone who signed up before the tick existed is asked once too.
+  - "Delete my account" also deletes an erased coach's postal address and
+    certification file; the 90-day purge of an archived coach profile deletes
+    its certification file and coach photo (unless their profile at another
+    School still uses them).
+  - A student or coach search of only symbols (such as `%` or `_`) finds
+    nobody; the Students page explains that symbols can't be used to search
+    and asks for a name.
+  - The front-desk tablet's sign-up counts the 18th birthday as sign-up does
+    (the earliest time zone), so nobody is turned away on their birthday.
+
 - **Stress test round 5 fixes** (Track A and Track B; Decisions 430–434;
   `docs/handover/STRESS-TEST-ROUND5.md`). **Needs database migrations**
   (`20270220000000` to `20270224000000`, nine in all).

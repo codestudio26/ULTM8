@@ -1223,6 +1223,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "Я принимаю Условия обслуживания и прочитал(а) Политика конфиденциальности.",
     },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "Прежде чем продолжить",
+      body: "Чтобы пользоваться ULTM8, примите Условия обслуживания и прочитайте Политику конфиденциальности. Это нужно сделать только один раз.",
+      submit: "Продолжить",
+      signOut: "Выйти",
+    },
     version: "Версия {version}",
     beingPrepared: "Эта страница готовится. Она будет опубликована здесь до запуска ULTM8.",
     loadFailed: "Не удалось загрузить эту страницу. Попробуйте ещё раз.",

@@ -34,3 +34,11 @@ describe('Students list search (Decision 371, folded per Decision 434)', () => {
     expect(matchesSearch(student('Venkataraghavan', ''), 'venkat')).toBe(true);
   });
 });
+
+describe('a search of only symbols (Decision 448 item 13)', () => {
+  it('finds nobody, while a blank one still lists everyone', () => {
+    for (const q of ['%', '_', '%_%', ' !! ']) expect(matchesSearch(student('Ana', 'Souza', 'ana%@example.test'), q)).toBe(false);
+    expect(matchesSearch(student('Ana', 'Souza'), '   ')).toBe(true);
+    expect(matchesSearch(student('Ana', 'Souza'), '%ana')).toBe(true);
+  });
+});

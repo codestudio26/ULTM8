@@ -4,7 +4,7 @@ import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { PrismaAuthService } from '../common/prisma/prisma-auth.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { resolveUserNames } from '../common/prisma/resolve-user-names';
-import { isAdultOn } from '../common/decorators/is-birth-date.decorator';
+import { isAdultOn, LATEST_TIME_ZONE } from '../common/decorators/is-birth-date.decorator';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { RoleGrantsService } from '../tenants/role-grants/role-grants.service';
@@ -75,10 +75,12 @@ export class SignUpsService {
   async submitFromKiosk(session: FrontDeskSessionContext, dto: KioskSignUpDto): Promise<{ id: string }> {
     const school = await this.prismaJobs.school.findUniqueOrThrow({
       where: { id: session.schoolId },
-      select: { visitorPeriodDays: true, heardFromOptions: true, timezone: true },
+      select: { visitorPeriodDays: true, heardFromOptions: true },
     });
-    // Decision 430 item 10: the 18th birthday on the School's own date.
-    if (!isAdultOn(new Date(dto.dateOfBirth), new Date(), school.timezone)) {
+    // Decision 448 item 14: the same 18th-birthday rule as sign-up (Decision
+    // 444 item 6): the birthday counts in the earliest time zone, so nobody
+    // is turned away on their 18th birthday.
+    if (!isAdultOn(new Date(dto.dateOfBirth), new Date(), LATEST_TIME_ZONE)) {
       throw new BadRequestException(UNDER_18);
     }
     if (dto.kind === 'VISITOR' && !school.visitorPeriodDays) {

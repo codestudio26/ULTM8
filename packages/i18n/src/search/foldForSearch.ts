@@ -51,13 +51,23 @@ export function foldForSearch(value: string): string {
  * A person's name search (Decision 278 as extended by Decision 434): the
  * folded query is part of the first name, the surname, "first surname" or
  * "surname first" (family name first, as Japanese is written), with or
- * without the spaces. A blank query matches everyone.
+ * without the spaces. A blank query matches everyone; one of only symbols
+ * ("%", "_") matches nobody (Decision 448 item 13).
  */
 export function matchesNameSearch(firstName: string | null | undefined, surname: string | null | undefined, query: string): boolean {
   const q = foldForSearch(query);
-  if (!q) return true;
+  // Blank means no filter; a query of only symbols ("%", "_") finds nobody
+  // (Decision 448 item 13), never everyone.
+  if (!q) return !query.trim();
   const first = foldForSearch(firstName ?? '');
   const last = foldForSearch(surname ?? '');
   const compact = q.replace(/ /g, '');
   return [first, last, `${first} ${last}`, `${last} ${first}`].some((h) => h.includes(q) || h.replace(/ /g, '').includes(compact));
+}
+
+/** Decision 448 item 13: true when something was typed but none of it is a
+ * letter or a digit ("%", "_", "!!"), so a name search finds nobody. The
+ * portal then explains that symbols can't be used to search. */
+export function isSymbolsOnlySearch(query: string): boolean {
+  return query.trim() !== '' && foldForSearch(query) === '';
 }

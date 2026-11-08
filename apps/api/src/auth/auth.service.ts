@@ -29,7 +29,7 @@ import { ChangePasscodeDto } from './dto/change-passcode.dto';
 import { JwtPayload, RoleGrantClaim } from './interfaces/jwt-payload.interface';
 import { addressWriteData } from '../common/address/postal-address.dto';
 import { isAdultOn, LATEST_TIME_ZONE } from '../common/decorators/is-birth-date.decorator';
-import { LEGAL_SLUGS, recordLegalAcceptances } from '../legal/legal-acceptance';
+import { ACCOUNT_LEGAL_SLUGS, legalAcceptancePending, recordLegalAcceptances } from '../legal/legal-acceptance';
 
 // Native `bcrypt`, not `bcryptjs`, everywhere in src/: each hash/compare at
 // cost 12 runs on the libuv threadpool instead of the event loop, so a burst
@@ -39,7 +39,10 @@ import { LEGAL_SLUGS, recordLegalAcceptances } from '../legal/legal-acceptance';
 const BCRYPT_ROUNDS = 12;
 
 /** Decision 444: what a new account agrees to at sign-up. */
-const REGISTER_LEGAL_SLUGS = [LEGAL_SLUGS.terms, LEGAL_SLUGS.privacy] as const;
+const REGISTER_LEGAL_SLUGS = ACCOUNT_LEGAL_SLUGS;
+
+/** Decision 444 / 448 item 8: the "I agree" tick is missing. */
+const TERMS_NOT_ACCEPTED = { code: 'TERMS_NOT_ACCEPTED', message: 'Agree to the Terms of Service and the Privacy Policy to create an account.' };
 
 /** Decision 375 (Q2): how old an unverified sign-up must be before a new
  * sign-up with the same email or phone may replace it — long enough that a
@@ -111,7 +114,7 @@ export class AuthService {
     }
     // Decision 444: nobody gets an account without agreeing to the Terms.
     if (dto.acceptTerms !== true) {
-      throw new BadRequestException({ code: 'TERMS_NOT_ACCEPTED', message: 'Agree to the Terms of Service and the Privacy Policy to create an account.' });
+      throw new BadRequestException(TERMS_NOT_ACCEPTED);
     }
     // Decision 444: under-18s never open their own account; a Guardian adds
     // them. Checked before anything is saved, on the latest calendar date on
@@ -391,6 +394,29 @@ export class AuthService {
   }
 
   /**
+   * POST /auth/legal-acceptance (Decision 448 item 8) — the Terms and Privacy
+   * "I agree" at the first sign-in of someone who didn't sign up themselves
+   * (added manually, an approved tablet sign-up, an import, a Guardian added
+   * by staff), or who signed up before the tick existed. Recorded exactly as
+   * sign-up records it (the versions the server publishes now, no School or
+   * Franchise), marked atFirstSignIn. Their session (a token carrying
+   * `legalPending`) can call nothing else until then; a new access token
+   * without the claim is returned. Asked once: already accepted, nothing more
+   * is recorded.
+   */
+  async acceptLegalAtFirstSignIn(callerId: string, acceptTerms: boolean): Promise<{ accessToken: string }> {
+    if (acceptTerms !== true) {
+      throw new BadRequestException({ code: 'TERMS_NOT_ACCEPTED', message: 'Agree to the Terms of Service and the Privacy Policy to continue.' });
+    }
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      if (await legalAcceptancePending(tx, callerId)) {
+        await recordLegalAcceptances(tx, callerId, ACCOUNT_LEGAL_SLUGS, { atFirstSignIn: true });
+      }
+    });
+    return { accessToken: await this.issueAccessToken(callerId) };
+  }
+
+  /**
    * POST /auth/passcode-change (Decision 375, Q1) — "Change passcode" on My
    * profile. The current passcode must match; wrong guesses count toward the
    * same per-email lockout as login, so this can't be used to try passcodes
@@ -448,7 +474,7 @@ export class AuthService {
    * asked for).
    */
   async issueAccessToken(userId: string): Promise<string> {
-    const { user, grants } = await this.prismaApp.withTenantContext(userId, async (tx) => {
+    const { user, grants, legalPending } = await this.prismaApp.withTenantContext(userId, async (tx) => {
       const user = await tx.user.findUnique({ where: { id: userId }, select: { email: true, rolesChangedAt: true } });
       if (!user) {
         // Shouldn't happen — userId is always the already-authenticated caller's own
@@ -460,7 +486,10 @@ export class AuthService {
         where: { userId, revokedAt: null },
         select: { role: true, franchiseId: true, schoolId: true, branchId: true },
       });
-      return { user, grants };
+      // Decision 448 item 8: someone who hasn't ticked the Terms yet gets a
+      // session that can only record the tick (JwtStrategy).
+      const legalPending = await legalAcceptancePending(tx, userId);
+      return { user, grants, legalPending };
     });
 
     const claims: RoleGrantClaim[] = grants.map((g) => ({
@@ -472,7 +501,13 @@ export class AuthService {
 
     // Read in the same transaction as the grants, so `rca` always describes
     // exactly the grants in this token (Decision 361).
-    const payload: JwtPayload = { sub: userId, email: user.email, grants: claims, rca: user.rolesChangedAt?.getTime() ?? 0 };
+    const payload: JwtPayload = {
+      sub: userId,
+      email: user.email,
+      grants: claims,
+      rca: user.rolesChangedAt?.getTime() ?? 0,
+      ...(legalPending ? { legalPending: true as const } : {}),
+    };
     return this.jwt.sign(payload);
   }
 

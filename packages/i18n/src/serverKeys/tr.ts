@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "Bir veli 18 yaşında veya daha büyük olmalıdır.",
     // Decision 444 (legal go-live).
     termsNotAccepted: "Hesap oluşturmak için Hizmet Şartları'nı ve Gizlilik Politikası'nı kabul edin.",
+    legalAcceptanceRequired: "Devam etmek için Hizmet Şartları'nı ve Gizlilik Politikası'nı kabul edin.",
     registerUnder18: "Hesap oluşturmak için 18 yaşında veya daha büyük olmanız gerekir. Ebeveyninizden veya velinizden sizi kendi ULTM8 hesabından eklemesini isteyin.",
     agreementNotAccepted: "Devam etmek için Okul ve Franchise Sözleşmesi'ni kabul edin.",
     notAMinor: "Bu, çocuklar (18 yaş altı) içindir. Bir yetişkin kendi hesabını açar.",

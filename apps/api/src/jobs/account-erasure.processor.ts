@@ -161,9 +161,13 @@ export class AccountErasureProcessor extends WorkerHost {
         distinct: ['schoolId'],
       }),
       this.prismaJobs.memberFile.findMany({ where: { studentId: user.id }, select: { id: true } }),
-      // Their coach profiles' photos (Decision 445 item 1): the function
-      // clears the addresses, so they are read first and deleted after.
-      this.prismaJobs.instructor.findMany({ where: { userId: user.id, photoUrl: { not: null } }, select: { photoUrl: true } }),
+      // Their coach profiles' photos (Decision 445 item 1) and certification
+      // files (Decision 448 item 10): the function clears the addresses and
+      // keys, so they are read first and the files deleted after.
+      this.prismaJobs.instructor.findMany({
+        where: { userId: user.id, purgedAt: null, OR: [{ photoUrl: { not: null } }, { certificationKey: { not: null } }] },
+        select: { photoUrl: true, certificationKey: true },
+      }),
     ]);
     const passcodeHash = await bcrypt.hash(randomUUID(), 12);
     const rows = await this.prismaJobs.$queryRaw<Array<{ erased: boolean; old_photo_url: string | null }>>`
@@ -173,6 +177,8 @@ export class AccountErasureProcessor extends WorkerHost {
     const schoolIds = memberships.map((m) => m.schoolId!);
     const photos = new Set([rows[0].old_photo_url, ...coachProfiles.map((c) => c.photoUrl)].filter((u): u is string => !!u));
     for (const url of photos) await this.deletePhoto(user.id, url);
+    const certifications = new Set(coachProfiles.map((c) => c.certificationKey).filter((k): k is string => !!k));
+    for (const key of certifications) await this.deleteCertification(user.id, key);
     // Files the Schools uploaded for them: the stored copy, then the row (the
     // function unlinked them; the daily offboarding sweep retries a failure).
     if (files.length > 0) await eraseMemberFiles(this.prismaJobs, this.r2, this.logger, { id: { in: files.map((f) => f.id) } });
@@ -221,6 +227,18 @@ export class AccountErasureProcessor extends WorkerHost {
       await this.r2.deletePublicPhotoByUrl(url);
     } catch (err) {
       this.logger.warn(`account-erasure: ${userId}'s photo not deleted from storage — ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  /** Decision 448 item 10: a coach profile's certification file, from the
+   * private bucket. A failure is logged; the key is already cleared, so the
+   * file is not served again. */
+  private async deleteCertification(userId: string, key: string): Promise<void> {
+    if (!this.r2.isConfigured()) return;
+    try {
+      await this.r2.deleteObject(key);
+    } catch (err) {
+      this.logger.warn(`account-erasure: ${userId}'s certification file not deleted from storage — ${err instanceof Error ? err.message : String(err)}`);
     }
   }
 

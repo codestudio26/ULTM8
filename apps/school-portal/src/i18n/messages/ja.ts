@@ -3092,6 +3092,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     addManuallyButton: "手動で追加",
     searchLabel: "検索",
     searchPlaceholder: "名前またはメール",
+    searchSymbolsHint: "% や _ などの記号では検索できません。名前を入力してください。",
     branchLabel: "支部",
     branchAll: "すべての支部",
     branchNone: "所属支部なし",
@@ -5031,6 +5032,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "{terms}に同意し、{privacy}を読みました。",
       agreement: "データ処理補遺を含む{agreement}に同意します。",
+    },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "続行する前に",
+      body: "ULTM8を使うには、利用規約に同意し、プライバシーポリシーをお読みください。これは一度だけです。",
+      submit: "続行",
+      signOut: "ログアウト",
     },
     version: "バージョン {version}",
     beingPrepared: "このページは準備中です。ULTM8の公開前にここで公開されます。",

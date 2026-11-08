@@ -119,6 +119,9 @@ function codedMessage(err: ApiError): string | null {
     // Legal go-live (Decision 444).
     case 'TERMS_NOT_ACCEPTED':
       return translate('server.codes.termsNotAccepted');
+    // Decision 448 item 8: the first-sign-in "I agree" is still to be ticked.
+    case 'LEGAL_ACCEPTANCE_REQUIRED':
+      return translate('server.codes.legalAcceptanceRequired');
     case 'REGISTER_UNDER_18':
       return translate('server.codes.registerUnder18');
     case 'AGREEMENT_NOT_ACCEPTED':

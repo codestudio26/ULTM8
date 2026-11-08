@@ -186,6 +186,9 @@ describeIfDb('AuthController — /auth/refresh + /auth/logout', () => {
       },
     });
     userIds.push(user.id);
+    // Signed up themselves: sign-up's Terms acceptance (Decision 444), so the
+    // session isn't held at the first-sign-in tick (Decision 448 item 8).
+    await superuser.legalAcceptance.create({ data: { id: randomUUID(), userId: user.id, documentSlug: 'terms-and-conditions', version: 'unpublished' } });
     const loginRes = await request(app.getHttpServer()).post('/v1/auth/login').send({ email: user.email, passcode: PASSCODE });
     return { user, refreshToken: loginRes.body.refreshToken as string, accessToken: loginRes.body.accessToken as string };
   }

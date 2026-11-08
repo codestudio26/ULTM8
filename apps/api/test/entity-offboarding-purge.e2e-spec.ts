@@ -37,7 +37,11 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
   const superuser = new PrismaClient({ datasourceUrl: DATABASE_URL });
   let processor: EntityOffboardingPurgeProcessor;
   // Stands in for R2: the purge deletes a signature's drawn image first.
-  const r2 = { isConfigured: () => true, deleteObject: jest.fn(async (_key: string) => undefined) };
+  const r2 = {
+    isConfigured: () => true,
+    deleteObject: jest.fn(async (_key: string) => undefined),
+    deletePublicPhotoByUrl: jest.fn(async (_url: string) => true),
+  };
 
   let school: { id: string };
   // Other Schools a test makes (cross-tenant, closed Schools).
@@ -238,6 +242,93 @@ describeIfDb('entity-offboarding-purge job (Decision 226)', () => {
 
     expect(await superuser.instructor.findUnique({ where: { id: profile.id } })).toBeNull();
     expect(await superuser.user.findUnique({ where: { id: user.id } })).not.toBeNull();
+  });
+
+  describe('Decision 448 item 10: an archived coach profile goes with its stored files', () => {
+    const mkCoach = async () => {
+      const user = await superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `purge-coach-files-${randomUUID()}@example.test`,
+          phone: null,
+          firstName: 'Purge',
+          surname: 'Coach',
+          passcodeHash: 'x',
+        },
+      });
+      userIds.push(user.id);
+      return user;
+    };
+    const coachPhoto = () => `https://ci-test-public-photos.example.test/public-photos/instructor/${school.id}/${randomUUID()}/${randomUUID()}.jpg`;
+    const profile = async (userId: string, data: { photoUrl?: string; certificationKey?: string; archived?: boolean; schoolId?: string }) => {
+      const row = await superuser.instructor.create({
+        data: {
+          id: randomUUID(),
+          userId,
+          schoolId: data.schoolId ?? school.id,
+          photoUrl: data.photoUrl,
+          certificationKey: data.certificationKey,
+          ...(data.archived === false ? {} : { archivedAt: PAST, purgeAt: PAST }),
+        },
+      });
+      instructorIds.push(row.id);
+      return row;
+    };
+
+    beforeEach(() => {
+      r2.deleteObject.mockClear();
+      r2.deletePublicPhotoByUrl.mockClear();
+    });
+
+    it('the certification file and the coach-profile photo are deleted with the profile', async () => {
+      const coach = await mkCoach();
+      const photoUrl = coachPhoto();
+      const certificationKey = `certifications/${randomUUID()}.pdf`;
+      const row = await profile(coach.id, { photoUrl, certificationKey });
+
+      await processor.process(fakeJob());
+
+      expect(await superuser.instructor.findUnique({ where: { id: row.id } })).toBeNull();
+      expect(r2.deleteObject).toHaveBeenCalledWith(certificationKey);
+      expect(r2.deletePublicPhotoByUrl).toHaveBeenCalledWith(photoUrl);
+    });
+
+    it("a file the coach's other (open) profile still uses is kept, and a photo that isn't a coach-profile upload is never deleted", async () => {
+      const coach = await mkCoach();
+      const sharedPhoto = coachPhoto();
+      const sharedKey = `certifications/${randomUUID()}.pdf`;
+      const purged = await profile(coach.id, { photoUrl: sharedPhoto, certificationKey: sharedKey });
+      // completeMyProfile sets the same files on the coach's profile at another School.
+      const otherSchool = await superuser.school.create({ data: { id: randomUUID(), name: 'Purge Coach Files Other School' } });
+      extraSchoolIds.push(otherSchool.id);
+      const open = await profile(coach.id, { photoUrl: sharedPhoto, certificationKey: sharedKey, archived: false, schoolId: otherSchool.id });
+      const pasted = await profile((await mkCoach()).id, { photoUrl: `https://ci-test-public-photos.example.test/public-photos/school/${school.id}/logo.png` });
+
+      await processor.process(fakeJob());
+
+      expect(await superuser.instructor.findUnique({ where: { id: purged.id } })).toBeNull();
+      expect(await superuser.instructor.findUnique({ where: { id: pasted.id } })).toBeNull();
+      expect(await superuser.instructor.findUniqueOrThrow({ where: { id: open.id } })).toMatchObject({ photoUrl: sharedPhoto, certificationKey: sharedKey });
+      expect(r2.deleteObject).not.toHaveBeenCalledWith(sharedKey);
+      expect(r2.deletePublicPhotoByUrl).not.toHaveBeenCalled();
+    });
+
+    it('if a file cannot be deleted, the profile waits for the next run', async () => {
+      const coach = await mkCoach();
+      const certificationKey = `certifications/${randomUUID()}.pdf`;
+      const row = await profile(coach.id, { certificationKey });
+
+      r2.deleteObject.mockImplementation(async (k: string) => {
+        if (k === certificationKey) throw new Error('R2 down');
+      });
+      await processor.process(fakeJob());
+      r2.deleteObject.mockImplementation(async () => undefined);
+      expect(await superuser.instructor.findUnique({ where: { id: row.id } })).not.toBeNull();
+
+      await processor.process(fakeJob());
+      expect(await superuser.instructor.findUnique({ where: { id: row.id } })).toBeNull();
+      expect(r2.deleteObject).toHaveBeenCalledWith(certificationKey);
+    });
   });
 
   it('a Lesson past purgeAt is hard-deleted', async () => {

@@ -1223,6 +1223,13 @@ export const messages: PartialMessages<EnglishMessages> = {
     agree: {
       account: "Akceptuję Warunki korzystania z usługi i przeczytałem(-am) Polityka prywatności.",
     },
+    // Decision 448 item 8: the first sign-in of an account the School made.
+    firstSignIn: {
+      title: "Zanim przejdziesz dalej",
+      body: "Aby korzystać z ULTM8, zaakceptuj Warunki korzystania z usługi i przeczytaj Politykę prywatności. Wystarczy to zrobić raz.",
+      submit: "Dalej",
+      signOut: "Wyloguj się",
+    },
     version: "Wersja {version}",
     beingPrepared: "Ta strona jest w przygotowaniu. Zostanie tu opublikowana przed uruchomieniem ULTM8.",
     loadFailed: "Nie udało się wczytać tej strony. Spróbuj ponownie.",

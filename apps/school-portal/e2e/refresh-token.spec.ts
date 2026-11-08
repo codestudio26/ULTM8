@@ -36,6 +36,9 @@ test.beforeEach(async () => {
     },
   });
   ownerId = owner.id;
+  // Signed up themselves (Decision 444), so sign-in isn't held at the
+  // first-sign-in Terms tick (Decision 448 item 8).
+  await db.legalAcceptance.create({ data: { id: randomUUID(), userId: owner.id, documentSlug: 'terms-and-conditions', version: 'unpublished' } });
   await db.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: owner.id, schoolId } });
 });
 

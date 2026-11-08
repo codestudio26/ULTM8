@@ -80,6 +80,9 @@ describeIfDb('Delete my account', () => {
         emergencyContactName: 'Someone',
       },
     });
+    // Signed up themselves (Decision 444), so a sign-in isn't held at the
+    // first-sign-in Terms tick (Decision 448 item 8).
+    await superuser.legalAcceptance.create({ data: { id: randomUUID(), userId: id, documentSlug: 'terms-and-conditions', version: 'unpublished' } });
     for (const schoolId of opts.studentAt ?? []) {
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'STUDENT', userId: id, schoolId } });
     }
@@ -469,6 +472,48 @@ describeIfDb('Delete my account', () => {
     const one = await http().get(`/v1/instructors/${profile.id}`).set(auth(member));
     expect(JSON.stringify(one.body)).not.toMatch(/Coachy|123987|instructors\//);
     deletePhoto.mockRestore();
+  });
+
+  it("Decision 448 item 10: an erased coach's postal address and certification file are deleted, on every coach profile", async () => {
+    const coach = await person('Certy', { studentAt: [school.id] });
+    await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'INSTRUCTOR', userId: coach.id, schoolId: school.id } });
+    const certificationKey = `certifications/${randomUUID()}.pdf`;
+    const address = {
+      address: '9 Dojo Lane, Leeds',
+      addressLine1: '9 Dojo Lane',
+      addressLine2: 'Unit 4',
+      addressCity: 'Leeds',
+      addressRegion: 'West Yorkshire',
+      addressPostalCode: 'LS1 4AA',
+      addressCountry: 'GB',
+    };
+    const profile = await superuser.instructor.create({
+      data: { id: randomUUID(), schoolId: school.id, userId: coach.id, ...address, certificationKey, certificationConsentedAt: new Date() },
+    });
+    // Someone else's certification file stays.
+    const other = await person('KeepsCert', { studentAt: [school.id] });
+    const otherKey = `certifications/${randomUUID()}.pdf`;
+    const otherProfile = await superuser.instructor.create({ data: { id: randomUUID(), schoolId: school.id, userId: other.id, addressCity: 'York', certificationKey: otherKey } });
+    const deleteObject = jest.spyOn(R2ClientService.prototype, 'deleteObject').mockResolvedValue(undefined);
+
+    expect((await requestDeletion(coach)).status).toBe(200);
+    await makeDue([coach.id]);
+    expect((await processor.sweep()).erased).toContain(coach.id);
+
+    expect(await superuser.instructor.findUniqueOrThrow({ where: { id: profile.id } })).toMatchObject({
+      address: null,
+      addressLine1: null,
+      addressLine2: null,
+      addressCity: null,
+      addressRegion: null,
+      addressPostalCode: null,
+      addressCountry: null,
+      certificationKey: null,
+    });
+    expect(deleteObject).toHaveBeenCalledWith(certificationKey);
+    expect(deleteObject).not.toHaveBeenCalledWith(otherKey);
+    expect(await superuser.instructor.findUniqueOrThrow({ where: { id: otherProfile.id } })).toMatchObject({ addressCity: 'York', certificationKey: otherKey });
+    deleteObject.mockRestore();
   });
 
   it("round 6 P-4: an erased staff member's School display name and work phone are cleared, and the phone leaves the staff activity log", async () => {

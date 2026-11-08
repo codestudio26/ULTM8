@@ -37,6 +37,7 @@ export const server: PartialMessages<ServerKeys> = {
     guardianUnder18: "监护人必须年满 18 岁。",
     // Decision 444 (legal go-live).
     termsNotAccepted: "请同意服务条款和隐私政策以创建账户。",
+    legalAcceptanceRequired: "请同意服务条款和隐私政策以继续。",
     registerUnder18: "你必须年满 18 岁才能创建账户。请让家长或监护人从其 ULTM8 账户添加你。",
     agreementNotAccepted: "请接受学校和加盟协议以继续。",
     notAMinor: "这是给孩子（18 岁以下）用的。成年人请创建自己的账户。",

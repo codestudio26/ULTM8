@@ -6,6 +6,7 @@ import { SchoolThemeProvider } from '../theme/SchoolThemeContext';
 import { AuthNavigator } from './AuthNavigator';
 import { AppNavigator } from './AppNavigator';
 import { SchoolPickNavigator } from './SchoolPickNavigator';
+import { AcceptTermsNavigator } from './AcceptTermsNavigator';
 
 /** Three-way branch, not two — Decision 266 (Apple 4.2.6/4.3 compliance,
  * Decision 247's "one shared app, School picked after install") added a
@@ -21,7 +22,7 @@ import { SchoolPickNavigator } from './SchoolPickNavigator';
  * AuthContext) — without it the app would flash the wrong screen even for an
  * already logged-in or already-picked-a-School session. */
 export function RootNavigator() {
-  const { loading, accessToken, pendingSchoolPick } = useAuth();
+  const { loading, accessToken, claims, pendingSchoolPick } = useAuth();
 
   if (loading) {
     return (
@@ -35,6 +36,15 @@ export function RootNavigator() {
     return (
       <NavigationContainer>
         <SchoolPickNavigator />
+      </NavigationContainer>
+    );
+  }
+
+  // Decision 448 item 8: the Terms and Privacy tick comes before the app.
+  if (accessToken && claims?.legalPending) {
+    return (
+      <NavigationContainer>
+        <AcceptTermsNavigator />
       </NavigationContainer>
     );
   }
