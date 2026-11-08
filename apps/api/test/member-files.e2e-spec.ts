@@ -273,7 +273,8 @@ describeIfDb('Files on a member (backlog 5.11)', () => {
     expect((await as('ana').get(`${filesOf(users.ana.id)}/${anaFile.id}/download`)).status).toBe(403);
     expect((await upload('ana', users.ana.id, PDF, 'x.pdf')).status).toBe(403);
     expect((await as('ana').delete(`${filesOf(users.ana.id)}/${anaFile.id}`)).status).toBe(403);
-    expect((await as('parent').get(filesOf(users.kid.id))).status).toBe(403);
+    // The parent holds no role at the School itself (Decision 448 item 17): 404.
+    expect((await as('parent').get(filesOf(users.kid.id))).status).toBe(404);
 
     const markers = [...(await superuser.memberFile.findMany({ where: { studentId: { in: [users.ana.id, users.kid.id] } } }))].flatMap((f) => [f.id, f.fileName, f.objectKey]);
     expect(markers.length).toBeGreaterThan(0);
@@ -301,12 +302,12 @@ describeIfDb('Files on a member (backlog 5.11)', () => {
     const beaFile = await upload('ownerB', users.bea.id, PDF, 'B private.pdf', schoolB);
     expect(beaFile.status).toBe(201);
     const id = beaFile.body.id;
-    // Through School B's paths: not their School.
+    // Through School B's paths: not their School, so "School not found" (Decision 448 item 17).
     for (const who of ['ownerA', 'staffA1']) {
-      expect((await as(who).get(filesOf(users.bea.id, schoolB))).status).toBe(403);
-      expect((await as(who).get(`${filesOf(users.bea.id, schoolB)}/${id}/download`)).status).toBe(403);
-      expect((await as(who).delete(`${filesOf(users.bea.id, schoolB)}/${id}`)).status).toBe(403);
-      expect((await upload(who, users.bea.id, PDF, 'x.pdf', schoolB)).status).toBe(403);
+      expect((await as(who).get(filesOf(users.bea.id, schoolB))).status).toBe(404);
+      expect((await as(who).get(`${filesOf(users.bea.id, schoolB)}/${id}/download`)).status).toBe(404);
+      expect((await as(who).delete(`${filesOf(users.bea.id, schoolB)}/${id}`)).status).toBe(404);
+      expect((await upload(who, users.bea.id, PDF, 'x.pdf', schoolB)).status).toBe(404);
     }
     // Through their own School's paths: no such file there.
     expect((await as('ownerA').get(filesOf(users.bea.id))).body.items).toEqual([]);

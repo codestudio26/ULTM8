@@ -31,7 +31,8 @@ type StaffRow = StaffMember & { id: string };
  * co-owner the main owner, after re-entering their passcode.
  *
  * Decision 423 item 10 — only the main owner removes, pauses or unpauses
- * anyone (`canManageRoles`); co-owners keep "Edit details" and "Access".
+ * anyone (`canManageRoles`); co-owners keep "Edit details". Decision 448 item
+ * 6: "Access" (the switches) is the main owner's too.
  *
  * Decision 381 — "Edit details" sets the School's own display name and work
  * phone for someone. The list shows them first, with the person's own account
@@ -264,7 +265,8 @@ export function StaffListSection({
                 if (readOnly) return null;
                 const actions = [
                   ...(p.active || p.paused ? [{ label: t('roleGrants.list.editDetails'), onClick: () => setEditing(p) }] : []),
-                  ...(p.access ? [{ label: t('roleGrants.access.action'), onClick: () => setSettingAccess(p) }] : []),
+                  // Decision 448 item 6: only the main owner sets the switches.
+                  ...(p.access && canManageRoles ? [{ label: t('roleGrants.access.action'), onClick: () => setSettingAccess(p) }] : []),
                   ...(iAmMainOwner && isCoOwner(p) && p.userId !== claims?.sub
                     ? [{ label: t('roleGrants.list.makeMainOwner'), onClick: () => setHandingOver(p) }]
                     : []),

@@ -834,6 +834,8 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you import data.": "De schooleigenaar heeft je niet toegestaan gegevens te importeren.",
   "The School owner hasn't let you see payroll.": "De schooleigenaar heeft je niet toegestaan het salarisoverzicht te zien.",
   "The School owner hasn't let you connect Stripe.": "De schooleigenaar heeft je niet toegestaan Stripe te koppelen.",
+  "Only the School's main owner can change what staff are allowed to do.": "Alleen de hoofdeigenaar van de school kan wijzigen wat medewerkers mogen doen.",
+  "The School owner hasn't let you edit students' profiles.": "De schooleigenaar heeft je niet toegestaan profielen van leerlingen te bewerken.",
   "A row number is past the end of this import.": "Een rijnummer ligt voorbij het einde van deze import.",
   "Import not found": "Import niet gevonden",
   "Each row number can only be sent once.": "Elk rijnummer kan maar één keer worden verstuurd.",

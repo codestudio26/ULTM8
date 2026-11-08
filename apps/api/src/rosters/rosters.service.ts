@@ -92,7 +92,7 @@ export class RostersService {
 
   /** Who's on the roster: the current students the caller covers. */
   async students(callerId: string, schoolId: string, rosterId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     // The Students list's own gate (Decision 387): students or bookings.
     if (!(await this.tenantAuth.staffMay(callerId, schoolId, 'bookings'))) {
       await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
@@ -171,7 +171,7 @@ export class RostersService {
   /** The staff who can edit students (Decision 387's Students switch; coaches
    * and the owner always), at a School that isn't closed. */
   private async assertMayManage(callerId: string, schoolId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
   }

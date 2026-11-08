@@ -626,8 +626,9 @@ describeIfDb('Freezing a membership (Decision 404)', () => {
         expect((await as(t).post(`/v1/schools/${school.id}/freezes/${asked.body.id}/end`)).status).toBe(403);
       }
 
-      // The other School's owner: refused at this School, and this School's ids are not found at theirs.
-      expect((await staffFreeze(m.id, day(1), day(10), tokenOtherOwner)).status).toBe(403);
+      // The other School's owner: no role at this School, so "School not found"
+      // (Decision 448 item 17), and this School's ids are not found at theirs.
+      expect((await staffFreeze(m.id, day(1), day(10), tokenOtherOwner)).status).toBe(404);
       expect((await staffFreeze(m.id, day(1), day(10), tokenOtherOwner, otherSchool.id)).status).toBe(404);
       expect((await as(tokenOtherOwner).post(`/v1/schools/${otherSchool.id}/freezes/${asked.body.id}/approve`)).status).toBe(404);
       expect((await as(tokenOtherOwner).post(`/v1/schools/${otherSchool.id}/freezes/${asked.body.id}/end`)).status).toBe(404);

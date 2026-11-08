@@ -144,7 +144,7 @@ export class StaffAttendanceService {
   /** GET /schools/{schoolId}/attendance/log-classes: the classes on one day
    * that attendance can be logged for, at the caller's Branches. */
   async logClasses(callerId: string, schoolId: string, requested: string | undefined, studentId?: string): Promise<LogClassesResponseDto> {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const zone = await this.schoolZone(schoolId);
     const now = new Date();
@@ -195,7 +195,7 @@ export class StaffAttendanceService {
   /** POST /schools/{schoolId}/attendance/logs */
   async log(callerId: string, schoolId: string, dto: { studentId: string; classId: string }): Promise<LoggedAttendanceResponseDto> {
     const { studentId, classId } = dto;
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     const cls = await this.prismaApp.withTenantContext(callerId, (tx) => tx.class.findFirst({ where: { id: classId, schoolId } }));
     if (!cls) {
       throw new NotFoundException('Class not found');

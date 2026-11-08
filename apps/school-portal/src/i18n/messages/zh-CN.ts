@@ -1486,6 +1486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "无法卸任该角色。",
       coOwnerHint: "共同所有者与你一起管理学校，可以做所有者能做的一切，但不能添加或移除人员：这只能由主要所有者完成。",
       mainOwnerOnly: "只有账户的主要所有者才能添加或移除人员。",
+      switchesMainOwnerOnly: "只有账户的主要所有者才能更改这些开关。",
       branchLabel: "分校",
       branchHint: "对于在多个分校任教的教练，请为每个分校分别授予一次角色。",
       selectBranch: "选择分校…",

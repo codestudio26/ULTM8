@@ -674,7 +674,8 @@ describeIfDb('Paying a promotion fee as a charge (backlog 3.6 step 6)', () => {
     for (const action of ['accept', 'waive', 'cancel'] as const) {
       expect((await feeAction('ownerB', id, action)).status).toBe(404);
     }
-    expect((await http().get(`/v1/schools/${school.id}/students/${user.kid.id}/charges`).set(as('ownerB'))).status).toBe(403);
+    // Decision 448 item 17: no role at this School, so "School not found".
+    expect((await http().get(`/v1/schools/${school.id}/students/${user.kid.id}/charges`).set(as('ownerB'))).status).toBe(404);
     expect((await http().post(`/v1/schools/${schoolB.id}/charges/${c.id}/cancel`).set(as('ownerB')).send({ reason: 'x' })).status).toBe(404);
     const withUser = <T>(userId: string, fn: (tx: PrismaClient) => Promise<T>) =>
       appDb.$transaction(async (tx) => {

@@ -1501,6 +1501,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "Não foi possível deixar a função.",
       coOwnerHint: "Um coproprietário administra a escola com você e pode fazer tudo o que um proprietário faz, exceto adicionar ou remover pessoas: isso só o proprietário principal faz.",
       mainOwnerOnly: "Somente o proprietário principal da conta pode adicionar ou remover pessoas.",
+      switchesMainOwnerOnly: "Somente o proprietário principal da conta pode alterar essas opções.",
       branchLabel: "Unidade",
       branchHint: "Para um instrutor que dá aula em várias unidades, dê a função uma vez por unidade.",
       selectBranch: "Selecione uma Unidade…",

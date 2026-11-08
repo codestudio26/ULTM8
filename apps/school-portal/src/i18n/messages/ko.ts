@@ -1486,6 +1486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "역할을 내려놓을 수 없습니다.",
       coOwnerHint: "공동 소유자는 함께 도장을 운영하며 소유자가 할 수 있는 모든 일을 할 수 있지만, 사람을 추가하거나 삭제할 수는 없습니다. 이는 기본 소유자만 할 수 있습니다.",
       mainOwnerOnly: "계정의 기본 소유자만 사람을 추가하거나 삭제할 수 있습니다.",
+      switchesMainOwnerOnly: "이 설정은 계정의 기본 소유자만 변경할 수 있습니다.",
       branchLabel: "지점",
       branchHint: "여러 지점에서 가르치는 강사에게는 지점마다 한 번씩 역할을 부여하세요.",
       selectBranch: "지점 선택…",

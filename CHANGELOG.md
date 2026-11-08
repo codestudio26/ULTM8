@@ -142,6 +142,34 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     that doesn't exist, now gets "School not found" like every other page.
     Staff without the owner's switch still get "The School owner hasn't let
     you export the student list."
+- **Stress test round 6: access and privacy answers** (Track A; Decision 448
+  items 6, 7, 9, 11 and 17). No migration. New endpoint
+  `GET /schools/{schoolId}/card-payments`.
+  - *Only the main owner sets staff access (item 6):* the Access window,
+    grading permissions, "Can manage disciplines", "Can create / cancel
+    charges" and "Can start open mat sessions" are changed by the School's
+    main owner only, as adding and removing people already was. A co-owner is
+    told "Only the School's main owner can change what staff are allowed to
+    do." The portal shows co-owners these switches locked, with a note, and
+    no "Access" action on the Staff page.
+  - *No charges for a member being deleted (item 7):* creating a charge,
+    setting up a recurring charge or restarting a stopped one for a member
+    whose deletion is pending is refused, as a desk sale is.
+  - *The payment account is for the payments area (item 9):* the School's
+    payment account record (with its Stripe account id) is read only by owners
+    and Branch Staff with a payments permission (Record a payment, Can create
+    charges, Can cancel charges or Can connect Stripe). Other staff, coaches
+    and members get "not found". Whether the School takes cards is read by
+    everyone at the School from the new endpoint, which the plan form and the
+    student's Memberships card now use.
+  - *Editing a student is for those granted it (item 11):* a student's
+    profile is edited by owners and Branch Staff with "Manage students".
+    Coaches can still open the student, their profile and the rest of their
+    page, but not edit the profile; the portal hides "Edit profile" for them.
+  - *"Not found" for outsiders (item 17):* every endpoint refused by one of
+    the owner's switches answers "School not found" to someone with no role at
+    that School, or for a School that doesn't exist, as the student export
+    does. The School's own members still get the switch's message.
 - **Stress test round 6: the timing fixes' follow-ups** (Track A; Decision 447
   items 4–6). **Needs a database migration** (`20270336000001`).
   - *No card payment is lost in a crash on the remaining paths:* no-show fees,

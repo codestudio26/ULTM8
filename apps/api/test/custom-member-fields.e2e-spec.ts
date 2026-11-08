@@ -314,14 +314,16 @@ describeIfDb('Custom member fields and statuses', () => {
     expect((await as('otherOwner').get(`${statusesOf(otherSchoolId)}/students`)).body.items).toEqual([]);
     // Nor can School B filter by School A's field, under either School.
     expect((await as('otherOwner').get(`${fieldsOf(otherSchoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(404);
-    expect((await as('otherOwner').get(`${fieldsOf(schoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(403);
-    expect((await as('owner').get(`${fieldsOf(otherSchoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(403);
+    // Decision 448 item 17: the filter is behind the students switch, so no role at the School is a 404.
+    expect((await as('otherOwner').get(`${fieldsOf(schoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(404);
+    expect((await as('owner').get(`${fieldsOf(otherSchoolId)}/${fields.number.id}/students`).query({ value: '72.5' })).status).toBe(404);
     // School A's owner can't reach School B's student or lists.
     expect((await as('owner').put(valuesOf(users.otherStudent.id, schoolId)).send({ values: [{ fieldId: fields.number.id, value: '1' }] })).status).toBe(404);
     expect((await as('owner').get(valuesOf(users.otherStudent.id, otherSchoolId))).status).toBeGreaterThanOrEqual(403);
     expect((await as('owner').get(fieldsOf(otherSchoolId))).status).toBe(403);
     expect((await as('owner').get(statusesOf(otherSchoolId))).status).toBe(403);
-    expect((await as('owner').get(`${statusesOf(otherSchoolId)}/students`)).status).toBe(403);
+    // Behind the students switch, so no role there is "School not found" (Decision 448 item 17).
+    expect((await as('owner').get(`${statusesOf(otherSchoolId)}/students`)).status).toBe(404);
     // And the database itself refuses a row pairing School A's field or status with School B.
     await expect(
       superuser.customMemberFieldValue.create({ data: { fieldId: fields.number.id, schoolId: otherSchoolId, studentId: users.otherStudent.id, value: '1' } }),

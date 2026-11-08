@@ -20,25 +20,26 @@ export function useSchool(schoolId: string | null) {
  * (curriculumQueries.ts), here for `SchoolSwitcher`'s option labels. Returns
  * `null` for a name still loading or that failed to load, rather than
  * blocking the whole switcher on every School resolving. */
-/** Decision 441 item 3: whether the School takes card payments: the API's
- * `cardPayments`, the one rule of Decisions 437, 439 and 442 item 2 (a Stripe
- * account that Stripe says is ready). `false` when it has none (the API
- * answers 404), only cash and bank transfer, or a Stripe account not ready
- * yet; `undefined` while loading. Owner only. */
-export function useSchoolTakesCards(schoolId: string | null): boolean | undefined {
-  const { data } = useQuery({
-    queryKey: ['school-payment-account', schoolId],
-    queryFn: async () => {
-      try {
-        return await unwrap(apiClient.GET('/v1/schools/{schoolId}/payment-account', { params: { path: { schoolId: schoolId! } } }));
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 404) return null;
-        throw err;
-      }
-    },
+/** Decision 448 item 9: GET /schools/{schoolId}/card-payments, whether
+ * members can pay by card here, for anyone at the School; the payment
+ * account record itself is for the payments area only. Shared by the plan
+ * form and the student's Memberships card. */
+export function useSchoolCardPayments(schoolId: string | null) {
+  return useQuery({
+    queryKey: ['school-card-payments', schoolId],
+    queryFn: () => unwrap(apiClient.GET('/v1/schools/{schoolId}/card-payments', { params: { path: { schoolId: schoolId! } } })),
     enabled: !!schoolId,
   });
-  return data === undefined ? undefined : !!data?.cardPayments;
+}
+
+/** Decision 441 item 3: whether the School takes card payments: the API's
+ * `cardPayments`, the one rule of Decisions 437, 439 and 442 item 2 (a Stripe
+ * account that Stripe says is ready). `false` with no account, only cash and
+ * bank transfer, or a Stripe account not ready yet; `undefined` while
+ * loading. */
+export function useSchoolTakesCards(schoolId: string | null): boolean | undefined {
+  const { data } = useSchoolCardPayments(schoolId);
+  return data === undefined ? undefined : data.cardPayments;
 }
 
 export function useSchoolNames(schoolIds: string[]): Array<{ id: string; name: string | null }> {

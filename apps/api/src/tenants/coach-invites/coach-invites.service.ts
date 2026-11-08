@@ -346,11 +346,13 @@ export class CoachInvitesService {
     return { items };
   }
 
-  /** Give or take "Can manage disciplines" (Decision 383). Owner only;
+  /** Give or take "Can manage disciplines" (Decision 383). The main owner only
+   * (Decision 448 item 6);
    * Branch Staff only. */
   async setStaffPermission(callerId: string, schoolId: string, userId: string, change: { canManageDisciplines: boolean }) {
     const { canManageDisciplines } = change;
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 448 item 6: the main owner only.
+    await this.tenantAuth.assertMaySetStaffSwitches(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const isStaff = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } }),

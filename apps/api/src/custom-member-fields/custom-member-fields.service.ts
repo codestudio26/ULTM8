@@ -167,7 +167,7 @@ export class CustomMemberFieldsService {
   /** Each student's status, for the Students list's Member status filter and
    * column. Staff other than the owner get only the students they cover. */
   async statusAssignments(callerId: string, schoolId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     const rows = await this.prismaJobs.studentCustomStatus.findMany({ where: { schoolId }, select: { studentId: true, statusId: true } });
     const covered = await this.coveredOf(callerId, schoolId, rows.map((r) => r.studentId));
@@ -181,7 +181,7 @@ export class CustomMemberFieldsService {
    * ignoring case. Staff other than the owner get only the students they
    * cover. */
   async fieldMatches(callerId: string, schoolId: string, fieldId: string, raw: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     const field = await this.findField(schoolId, fieldId);
     const value = this.normalise(field, raw);
@@ -317,7 +317,7 @@ export class CustomMemberFieldsService {
 
   /** The same staff who can edit a student's details, School-wide. */
   private async assertMayManage(callerId: string, schoolId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
   }

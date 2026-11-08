@@ -695,7 +695,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       const scopedOverview = await as(staffToken).get(`/v1/schools/${r.id}/charge-reports/overview`);
       expect(scopedOverview.body.currencies[0]).toMatchObject({ scheduled: 3000, overdue: 5000, paid: 3000 });
       expect((await as(coachToken).get(`/v1/schools/${r.id}/charge-reports/overview`)).status).toBe(403);
-      expect((await as(tokens.owner).get(`/v1/schools/${r.id}/charge-reports/overview`)).status).toBe(403);
+      // Decision 448 item 17: another School's owner has no role here: 404.
+      expect((await as(tokens.owner).get(`/v1/schools/${r.id}/charge-reports/overview`)).status).toBe(404);
       expect((await as(tokens.north).get(`/v1/schools/${r.id}/charge-reports/member-balances`)).status).toBe(403);
     });
 
@@ -810,7 +811,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: xOwner.id, schoolId: x.id, isMainOwner: true } });
       const xView = await as(sign(xOwner, 'SCHOOL_OWNER_MANAGER', x.id)).get(`/v1/schools/${x.id}/charge-reports/overview?months=3`);
       expect(xView.body.currencies).toEqual([expect.objectContaining({ currency: 'BRL', paid: 0, memberships: 99999, total: 99999 })]);
-      expect((await as(ownerToken).get(`/v1/schools/${x.id}/charge-reports/overview`)).status).toBe(403);
+      // Decision 448 item 17: no role at that School: 404.
+      expect((await as(ownerToken).get(`/v1/schools/${x.id}/charge-reports/overview`)).status).toBe(404);
     });
   });
 
@@ -889,7 +891,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect(rows).toHaveLength(2);
       expect(rows[1].body).toBe(rows[0].body);
       expect((await as(tokens.coachA).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(403);
-      expect((await as(tokens.otherOwner).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(403);
+      // Decision 448 item 17: another School's owner has no role here: 404.
+      expect((await as(tokens.otherOwner).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(404);
       await as(tokens.owner).post(`/v1/schools/${school.id}/charges/${c.id}/cancel`, { reason: 'Mistake' });
       expect((await as(tokens.owner).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(409);
     });

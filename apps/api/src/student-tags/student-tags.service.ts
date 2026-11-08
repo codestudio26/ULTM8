@@ -84,7 +84,7 @@ export class StudentTagsService {
   /** The students with this tag, for the Students list's tag filter. Staff
    * other than the owner get only the students they cover. */
   async taggedStudents(callerId: string, schoolId: string, tagId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     await this.findTag(schoolId, tagId);
     const rows = await this.prismaJobs.studentTag.findMany({ where: { schoolId, tagId }, select: { studentId: true } });
@@ -132,7 +132,7 @@ export class StudentTagsService {
 
   /** The same staff who can edit a student's details, School-wide. */
   private async assertMayManage(callerId: string, schoolId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
   }

@@ -1486,6 +1486,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "役割を辞退できませんでした。",
       coOwnerHint: "共同オーナーはあなたと一緒にスクールを運営し、オーナーができることはすべてできますが、メンバーの追加や削除はできません。それはメインオーナーだけが行います。",
       mainOwnerOnly: "メンバーの追加や削除ができるのは、アカウントのメインオーナーだけです。",
+      switchesMainOwnerOnly: "これらの設定を変更できるのは、アカウントのメインオーナーだけです。",
       branchLabel: "支店",
       branchHint: "複数の支店で指導するインストラクターには、支店ごとに1回ずつ役割を付与してください。",
       selectBranch: "支店を選択…",

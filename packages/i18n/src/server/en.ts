@@ -658,6 +658,8 @@ export const SERVER_MESSAGES: string[] = [
   "The School owner hasn't let you import data.",
  "The School owner hasn't let you see payroll.",
  "The School owner hasn't let you connect Stripe.",
+ "Only the School's main owner can change what staff are allowed to do.",
+ "The School owner hasn't let you edit students' profiles.",
   "A row number is past the end of this import.",
   "Import not found",
   "Each row number can only be sent once.",

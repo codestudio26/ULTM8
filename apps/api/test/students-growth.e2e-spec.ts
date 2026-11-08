@@ -347,7 +347,8 @@ describeIfDb('Students → Growth (backlog 5.8)', () => {
     });
 
     it("another School's owner can't read this School, and another School's Branch is refused (400)", async () => {
-      expect((await growth('otherOwner', '', school.id)).status).toBe(403);
+      // Decision 448 item 17: no role at this School, so "School not found".
+      expect((await growth('otherOwner', '', school.id)).status).toBe(404);
       const foreignBranch = await growth('owner', `?branchId=${otherBranch.id}`);
       expect(foreignBranch.status).toBe(400);
     });

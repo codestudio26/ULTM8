@@ -1501,6 +1501,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       stepDownFailed: "Impossible de quitter le rôle.",
       coOwnerHint: "Un copropriétaire gère l’école avec vous et peut tout faire comme un propriétaire, sauf ajouter ou retirer des personnes : seul le propriétaire principal le fait.",
       mainOwnerOnly: "Seul le propriétaire principal du compte peut ajouter ou retirer des personnes.",
+      switchesMainOwnerOnly: "Seul le propriétaire principal du compte peut modifier ces réglages.",
       branchLabel: "Succursale",
       branchHint: "Pour un instructeur qui enseigne dans plusieurs succursales, attribuez le rôle une fois par succursale.",
       selectBranch: "Sélectionnez une Succursale…",

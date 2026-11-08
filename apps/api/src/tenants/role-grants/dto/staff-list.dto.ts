@@ -138,9 +138,15 @@ export class MyStaffAccessResponseDto {
 
   @ApiProperty({
     description:
-      "The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10). False for co-owners and everyone else.",
+      "The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10) and set staff access switches and grading permissions (Decision 448 item 6). False for co-owners and everyone else.",
   })
   mainOwner!: boolean;
+
+  @ApiProperty({
+    description:
+      "Decision 448 item 11 — may edit students' profiles: owners, and Branch Staff with the students switch (\"Manage students\"). False for coaches who aren't also such Branch Staff, whatever `access.students` says.",
+  })
+  editStudents!: boolean;
 
   @ApiProperty({ description: 'Holds an active Branch Staff role here.' })
   branchStaff!: boolean;

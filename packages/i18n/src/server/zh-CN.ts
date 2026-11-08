@@ -834,6 +834,8 @@ export const serverMessages: Record<string, string> = {
   "The School owner hasn't let you import data.": "学校所有者尚未允许你导入数据。",
   "The School owner hasn't let you see payroll.": "学校所有者未允许你查看工资。",
   "The School owner hasn't let you connect Stripe.": "学校所有者未允许你连接 Stripe。",
+  "Only the School's main owner can change what staff are allowed to do.": "只有学校的主要所有者才能更改员工的权限。",
+  "The School owner hasn't let you edit students' profiles.": "学校所有者未允许你编辑学员资料。",
   "A row number is past the end of this import.": "某个行号超出了此次导入的末尾。",
   "Import not found": "未找到导入",
   "Each row number can only be sent once.": "每个行号只能发送一次。",
