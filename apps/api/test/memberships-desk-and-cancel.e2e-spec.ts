@@ -165,14 +165,27 @@ describeIfDb('Memberships desk sale, Friend Pass, cancel and member list (Decisi
       expect(tx.paymentMethod).toBe('BANK_TRANSFER');
     });
 
-    it('records Pix and a card on the School\'s own terminal', async () => {
-      for (const method of ['PIX', 'CARD_TERMINAL'] as const) {
-        const plan = await mkPlan({ type: 'CLASS_PACK', title: `Pack ${method}`, price: 4000, classesIncluded: 5, expiryDurationDays: 60 });
-        const { user } = await mkStudent(method.toLowerCase());
-        const res = await sell(user.id, { membershipPlanId: plan.id, paymentMethod: method });
-        expect(res.status).toBe(201);
-        const tx = await superuser.transaction.findUniqueOrThrow({ where: { id: res.body.transactionId } });
-        expect(tx).toMatchObject({ status: 'SUCCESSFUL', paymentMethod: method, recordedById: owner.id });
+    it('records Pix (at a School in Brazil only, Decision 448 item 5) and a card on the School\'s own terminal', async () => {
+      // This School is in the UK: Pix is refused, and nothing is recorded.
+      const ukPlan = await mkPlan({ type: 'CLASS_PACK', title: 'Pack Pix UK', price: 4000, classesIncluded: 5, expiryDurationDays: 60 });
+      const { user: ukStudent } = await mkStudent('pixuk');
+      const refused = await sell(ukStudent.id, { membershipPlanId: ukPlan.id, paymentMethod: 'PIX' });
+      expect(refused.status).toBe(400);
+      expect(refused.body.error.message).toBe('Pix can only be used by a School in Brazil. Choose another way to pay.');
+      expect(await superuser.transaction.count({ where: { studentId: ukStudent.id } })).toBe(0);
+      expect(await superuser.membership.count({ where: { studentId: ukStudent.id } })).toBe(0);
+      await superuser.school.update({ where: { id: school.id }, data: { addressCountry: 'BR' } });
+      try {
+        for (const method of ['PIX', 'CARD_TERMINAL'] as const) {
+          const plan = await mkPlan({ type: 'CLASS_PACK', title: `Pack ${method}`, price: 4000, classesIncluded: 5, expiryDurationDays: 60 });
+          const { user } = await mkStudent(method.toLowerCase());
+          const res = await sell(user.id, { membershipPlanId: plan.id, paymentMethod: method });
+          expect(res.status).toBe(201);
+          const tx = await superuser.transaction.findUniqueOrThrow({ where: { id: res.body.transactionId } });
+          expect(tx).toMatchObject({ status: 'SUCCESSFUL', paymentMethod: method, recordedById: owner.id });
+        }
+      } finally {
+        await superuser.school.update({ where: { id: school.id }, data: { addressCountry: null } });
       }
     });
 

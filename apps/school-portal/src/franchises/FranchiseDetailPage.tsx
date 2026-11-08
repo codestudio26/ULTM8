@@ -605,7 +605,8 @@ function StripeConnectCard({
               {status === 'CONNECTED'
                 ? t('franchises.stripe.connectedHint')
                 : !connectAvailable
-                  ? t('franchises.stripe.unavailableHint')
+                  ? // Decision 448 item 5: Pix is named only in Brazil.
+                    t(defaultCountry?.toUpperCase() === 'BR' ? 'franchises.stripe.unavailableHintPix' : 'franchises.stripe.unavailableHint')
                   : status === 'ACTION_NEEDED'
                     ? t('franchises.stripe.actionNeededHint')
                     : t('franchises.stripe.notConnectedHint')}

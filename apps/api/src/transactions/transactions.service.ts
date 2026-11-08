@@ -11,7 +11,7 @@ import { StripeClientService } from '../payments/stripe-client.service';
 import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
 import { TransactionFilterDto, TransactionListQueryDto } from './dto/transaction-filter-query.dto';
 import { formatInvoiceNumber } from '../charges/charge-maths';
-import { REVENUE_STATUSES } from '../charges/charge-reports.service';
+import { KEPT_REVENUE_SELECT, REVENUE_STATUSES, keptRevenue } from '../charges/charge-reports.service';
 import { IncomeCategoriesService } from '../income-categories/income-categories.service';
 import { includedTax, type IncludedTax } from '../charges/tax-lines';
 import { DateTime } from 'luxon';
@@ -231,7 +231,8 @@ export class TransactionsService {
    * more. Revenue is what the School kept, one figure per currency (codes are
    * compared in capitals: rows written before Decision 339 may be lower-case):
    * Successful and Refunded rows less what was refunded on each (Decision 446
-   * item 4, the billing overview's rule, REVENUE_STATUSES).
+   * item 4, the billing overview's rule, REVENUE_STATUSES), with the card
+   * surcharge as its own figure (Decision 448 item 1).
    */
   async summaryForSchool(callerId: string, schoolId: string, filter: TransactionFilterDto = {}) {
     const school = await this.schoolsService.findOne(callerId, schoolId);
@@ -246,42 +247,37 @@ export class TransactionsService {
     const cancelled = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.transaction.count({ where: { AND: [where, { status: 'FAILED', cancelledAt: { not: null } }] } }),
     );
-    // Decision 446 item 4: each Successful or Refunded row at its amount less
-    // what was refunded on it, as the billing overview counts it. A row
-    // refunded as much as its amount or more (the surcharge too) counts
-    // nothing, so it is left out here rather than counted below zero.
+    // Decision 446 item 4: each Successful or Refunded row at what the School
+    // kept of it, as the billing overview counts it. Decision 448 item 1: the
+    // price and the card surcharge apart (keptRevenue()).
     const kept = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.transaction.groupBy({
-        by: ['currency'],
-        where: {
-          AND: [
-            where,
-            { status: { in: [...REVENUE_STATUSES] } },
-            { OR: [{ refundedAmount: null }, { refundedAmount: { lt: tx.transaction.fields.amount } }] },
-          ],
-        },
-        _sum: { amount: true, refundedAmount: true },
-      }),
+      tx.transaction.findMany({ where: { AND: [where, { status: { in: [...REVENUE_STATUSES] } }] }, select: { ...KEPT_REVENUE_SELECT, currency: true } }),
     );
     const count = (statuses: string[]) => groups.filter((g) => statuses.includes(g.status)).reduce((n, g) => n + g._count._all, 0);
     const revenue = new Map<string, number>();
+    const surcharges = new Map<string, number>();
     for (const g of groups) {
       if (g.status !== 'SUCCESSFUL') continue;
       revenue.set((g.currency ?? '').toUpperCase(), 0);
     }
-    for (const g of kept) {
-      const key = (g.currency ?? '').toUpperCase();
-      revenue.set(key, (revenue.get(key) ?? 0) + (g._sum.amount ?? 0) - (g._sum.refundedAmount ?? 0));
+    for (const t of kept) {
+      const key = (t.currency ?? '').toUpperCase();
+      const k = keptRevenue(t);
+      // A row refunded in full adds nothing, and no currency of its own.
+      if (k.price === 0 && k.surcharge === 0 && !revenue.has(key)) continue;
+      revenue.set(key, (revenue.get(key) ?? 0) + k.price);
+      surcharges.set(key, (surcharges.get(key) ?? 0) + k.surcharge);
     }
+    const perCurrency = (m: Map<string, number>) =>
+      [...revenue.keys()].sort((a, b) => a.localeCompare(b)).map((currency) => ({ currency: currency || null, amount: m.get(currency) ?? 0 }));
     return {
       total: groups.reduce((n, g) => n + g._count._all, 0),
       successful: count(['SUCCESSFUL']),
       pending: count(['PENDING']),
       failedOrDisputed: count(['FAILED', 'DISPUTED']) - cancelled,
       cancelled,
-      revenue: [...revenue.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([currency, amount]) => ({ currency: currency || null, amount })),
+      revenue: perCurrency(revenue),
+      surcharges: perCurrency(surcharges),
     };
   }
 

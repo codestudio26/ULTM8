@@ -1107,6 +1107,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Gebühr für späte Absage",
       freezeFee: "Gebühr fürs Einfrieren: {plan}",
       freezeFeeNoPlan: "Gebühr fürs Einfrieren",
+      noShowFee: "Gebühr für Nichterscheinen: {class}",
+      noShowFeeNoClass: "Gebühr für Nichterscheinen",
       cancelledOn: "Storniert am {date}. Nichts zu zahlen.",
     },
     status: {

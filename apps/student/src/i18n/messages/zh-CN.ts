@@ -1096,6 +1096,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "迟取消费用",
       freezeFee: "冻结费：{plan}",
       freezeFeeNoPlan: "冻结费",
+      noShowFee: "缺席费：{class}",
+      noShowFeeNoClass: "缺席费",
       cancelledOn: "已于 {date} 取消。无需付款。",
     },
     status: {

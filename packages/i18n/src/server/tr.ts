@@ -557,6 +557,7 @@ export const serverMessages: Record<string, string> = {
   "This payment has already been refunded in full.": "Bu ödeme zaten tamamen iade edildi.",
   "Only a payment that was taken can be refunded.": "Yalnızca alınmış bir ödeme iade edilebilir.",
   "That is more than is left to refund on this payment.": "Bu, bu ödemede iade edilecek kalan tutardan fazla.",
+  "Pix can only be used by a School in Brazil. Choose another way to pay.": "Pix yalnızca Brezilya'daki bir okulda kullanılabilir. Başka bir ödeme yöntemi seçin.",
   "This payment was taken, so it can't be cancelled. Refund it instead.": "Bu ödeme alındığı için iptal edilemez. Bunun yerine iade edin.",
   "This Class is archived and can no longer be booked.": "Bu ders arşivlendi ve artık rezerve edilemez.",
   "This Class has already ended.": "Bu ders zaten bitti.",

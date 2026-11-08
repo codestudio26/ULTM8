@@ -1152,6 +1152,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       lateCancelFeeNoClass: "Плата за позднюю отмену",
       freezeFee: "Плата за заморозку: {plan}",
       freezeFeeNoPlan: "Плата за заморозку",
+      noShowFee: "Штраф за неявку: {class}",
+      noShowFeeNoClass: "Штраф за неявку",
       cancelledOn: "Отменён {date}. Платить ничего не нужно.",
     },
     status: {

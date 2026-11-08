@@ -10110,7 +10110,8 @@
                 "RENEWAL",
                 "LATE_CANCEL_FEE",
                 "FREEZE_FEE",
-                "CHARGE_PAYMENT"
+                "CHARGE_PAYMENT",
+                "NO_SHOW_FEE"
               ],
               "type": "string"
             }
@@ -10217,7 +10218,8 @@
                 "RENEWAL",
                 "LATE_CANCEL_FEE",
                 "FREEZE_FEE",
-                "CHARGE_PAYMENT"
+                "CHARGE_PAYMENT",
+                "NO_SHOW_FEE"
               ],
               "type": "string"
             }
@@ -35712,7 +35714,8 @@
               "RENEWAL",
               "LATE_CANCEL_FEE",
               "FREEZE_FEE",
-              "CHARGE_PAYMENT"
+              "CHARGE_PAYMENT",
+              "NO_SHOW_FEE"
             ]
           },
           "chargeId": {
@@ -35895,7 +35898,14 @@
             "description": "Cancelled cash or bank-transfer payments (Decision 338 item 1)."
           },
           "revenue": {
-            "description": "What the School kept, one entry per currency: Successful and Refunded rows, each at its amount less what was refunded on it (Decision 446 item 4).",
+            "description": "What the School kept of the price of what was sold, one entry per currency: Successful and Refunded rows, each at its amount less what was refunded of it (Decision 446 item 4). The card surcharge is not in it (Decision 448 item 1, surcharges).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TransactionRevenueDto"
+            }
+          },
+          "surcharges": {
+            "description": "Decision 448 item 1: the card surcharges kept on the same rows, one entry per currency revenue lists (0 when none), by the billing overview's rule.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/TransactionRevenueDto"
@@ -35908,7 +35918,8 @@
           "pending",
           "failedOrDisputed",
           "cancelled",
-          "revenue"
+          "revenue",
+          "surcharges"
         ]
       },
       "TransactionReceiptUrlResponseDto": {
@@ -47517,9 +47528,13 @@
             "type": "number",
             "description": "Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received)."
           },
+          "surcharges": {
+            "type": "number",
+            "description": "Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received or memberships, which are the price of what was sold."
+          },
           "total": {
             "type": "number",
-            "description": "net + memberships."
+            "description": "net + memberships + surcharges."
           }
         },
         "required": [
@@ -47528,6 +47543,7 @@
           "refunded",
           "net",
           "memberships",
+          "surcharges",
           "total"
         ]
       },
@@ -47553,9 +47569,13 @@
             "type": "number",
             "description": "Membership revenue over the months covered (the sum of memberships by month)."
           },
+          "surcharges": {
+            "type": "number",
+            "description": "Card surcharges over the months covered (the sum of surcharges by month)."
+          },
           "total": {
             "type": "number",
-            "description": "Total revenue over the months covered: paid + memberships."
+            "description": "Total revenue over the months covered: paid + memberships + surcharges."
           },
           "revenueByMonth": {
             "description": "Oldest month first.",
@@ -47571,6 +47591,7 @@
           "overdue",
           "paid",
           "memberships",
+          "surcharges",
           "total",
           "revenueByMonth"
         ]

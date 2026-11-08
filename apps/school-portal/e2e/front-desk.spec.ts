@@ -607,7 +607,7 @@ test('a used-up Class Pack can be sold at the desk, and the card then checks the
   await note.getByRole('button', { name: 'Sell at the desk' }).click();
   await expect(note).toContainText('Five classes');
   await expect(note).toContainText('Take the payment, then record it here.');
-  // Decision 431 item 11: Pix is offered only to a School in Brazil or pricing in reais.
+  // Decision 448 item 5: Pix is offered only to a School in Brazil.
   await note.getByLabel('Paid by').selectOption('CARD_TERMINAL');
   await note.getByRole('button', { name: 'Record payment' }).click();
 

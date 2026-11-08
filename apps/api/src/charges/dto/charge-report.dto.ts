@@ -32,7 +32,13 @@ export class ChargeRevenueMonthDto {
   })
   memberships!: number;
 
-  @ApiProperty({ description: 'net + memberships.' })
+  @ApiProperty({
+    description:
+      'Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received or memberships, which are the price of what was sold.',
+  })
+  surcharges!: number;
+
+  @ApiProperty({ description: 'net + memberships + surcharges.' })
   total!: number;
 }
 
@@ -52,7 +58,10 @@ export class ChargeOverviewCurrencyDto {
   @ApiProperty({ description: 'Membership revenue over the months covered (the sum of memberships by month).' })
   memberships!: number;
 
-  @ApiProperty({ description: 'Total revenue over the months covered: paid + memberships.' })
+  @ApiProperty({ description: 'Card surcharges over the months covered (the sum of surcharges by month).' })
+  surcharges!: number;
+
+  @ApiProperty({ description: 'Total revenue over the months covered: paid + memberships + surcharges.' })
   total!: number;
 
   @ApiProperty({ type: [ChargeRevenueMonthDto], description: 'Oldest month first.' })

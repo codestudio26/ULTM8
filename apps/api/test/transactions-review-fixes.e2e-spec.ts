@@ -195,6 +195,8 @@ describeIfDb('Transactions review fixes (Decision 339)', () => {
         failedOrDisputed: 1,
         cancelled: 0,
         revenue: [{ currency: 'GBP', amount: 23_000 }],
+        // Decision 448 item 1: the card surcharge apart (none here).
+        surcharges: [{ currency: 'GBP', amount: 0 }],
       });
     });
 
