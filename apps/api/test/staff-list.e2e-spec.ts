@@ -164,7 +164,8 @@ describeIfDb('Staff list, Remove from School and instant role changes (Decision 
       const stranger = await mkUser('Stranger', 'Owner');
       await superuser.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: stranger.id, schoolId: other.id } });
       const res = await as(ownerOf(stranger, other.id)).get(`/v1/schools/${school.id}/staff`);
-      expect(res.status).toBe(403);
+      // Decision 448 item 17: someone with no role in this School is told "not found".
+      expect(res.status).toBe(404);
       const own = await as(ownerOf(stranger, other.id)).get(`/v1/schools/${other.id}/staff`);
       expect(own.body.items.map((i: { userId: string }) => i.userId)).toEqual([stranger.id]);
     });
