@@ -45,7 +45,7 @@ test('the owner sells a Class Pack at the desk (cash, bank transfer or card term
 
   await page.getByRole('button', { name: 'Sell a plan' }).click();
   await expect(page.locator('#desk-plan option')).toHaveText(['Ten classes (60.00 GBP)']);
-  // Decision 431 item 11: Pix is offered only to a School in Brazil or pricing in reais; this one prices in pounds.
+  // Decision 448 item 5: Pix is offered only to a School in Brazil. this one prices in pounds.
   await expect(page.locator('#desk-paid-by option')).toHaveText(['Cash', 'Bank transfer', 'Card terminal']);
   await page.getByLabel('Paid by').selectOption('BANK_TRANSFER');
   await page.getByRole('button', { name: 'Record sale' }).click();

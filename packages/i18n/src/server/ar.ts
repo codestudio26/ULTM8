@@ -557,6 +557,7 @@ export const serverMessages: Record<string, string> = {
   "This payment has already been refunded in full.": "تم استرداد هذه الدفعة بالكامل بالفعل.",
   "Only a payment that was taken can be refunded.": "يمكن استرداد الدفعة المستلمة فقط.",
   "That is more than is left to refund on this payment.": "هذا أكثر مما تبقى لاسترداده من هذه الدفعة.",
+  "Pix can only be used by a School in Brazil. Choose another way to pay.": "لا يمكن استخدام Pix إلا لدى مدرسة في البرازيل. اختر طريقة دفع أخرى.",
   "This payment was taken, so it can't be cancelled. Refund it instead.": "تم استلام هذه الدفعة، لذا لا يمكن إلغاؤها. استردها بدلًا من ذلك.",
   "This Class is archived and can no longer be booked.": "هذه الحصة مؤرشفة ولم يعد بالإمكان حجزها.",
   "This Class has already ended.": "انتهت هذه الحصة بالفعل.",

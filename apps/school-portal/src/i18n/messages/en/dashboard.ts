@@ -33,7 +33,8 @@ export const dashboard = {
     doneLabel: 'Done',
     todoLabel: 'Not done yet',
     stripeHint: "Connect it on your School profile. It's ticked once Stripe confirms your account is ready.",
-    stripeUnavailable: "Card payments in the app aren't available in your country yet, so members pay by cash or bank transfer (Pix in Brazil) and staff confirm it.",
+    stripeUnavailable: "Card payments in the app aren't available in your country yet, so members pay by cash or bank transfer and staff confirm it.",
+    stripeUnavailablePix: "Card payments in the app aren't available in your country yet, so members pay by cash or bank transfer (Pix in Brazil) and staff confirm it.",
     steps: {
       BRANCH: 'Add a Branch',
       STYLE_AND_BELTS: 'Add a style and its belts',

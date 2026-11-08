@@ -7,6 +7,7 @@ import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { ALL_PAGES_LIMIT, fetchAllPages } from '../lib/fetchAllPages';
 import type { BookingResponse } from '../bookings/bookingQueries';
 import type { DeskPaymentMethod } from '../membershipPlans/membershipPlanQueries';
+import { useOffersPix } from '../lib/deskMethods';
 
 export type MembershipStatus = components['schemas']['MembershipStatusResponseDto']['status'];
 
@@ -247,6 +248,8 @@ export interface PackRechargeApi {
   /** Decision 395: record the same pack as a desk sale (cash, bank, Pix or card
    * terminal). Only for staff who may record desk payments; never on the tablet. */
   sell?: (body: { studentId: string; membershipPlanId: string; paymentMethod: DeskPaymentMethod }) => Promise<unknown>;
+  /** Decision 448 item 5: the School is in Brazil, so a desk sale may be Pix. */
+  offersPix?: boolean;
   status: (id: string) => Promise<{ paid: boolean; expired: boolean; completed: boolean }>;
   complete: (id: string) => Promise<DeskCheckInResult>;
 }
@@ -255,8 +258,10 @@ export interface PackRechargeApi {
  * owner, or Branch Staff when the School allows it. */
 export function useStaffPackRecharges(schoolId: string | null, maySell = false): PackRechargeApi {
   const queryClient = useQueryClient();
+  const pix = useOffersPix(schoolId);
   const path = { schoolId: schoolId! };
   return {
+    offersPix: pix,
     ...(maySell
       ? {
           sell: async (body: { studentId: string; membershipPlanId: string; paymentMethod: DeskPaymentMethod }) => {

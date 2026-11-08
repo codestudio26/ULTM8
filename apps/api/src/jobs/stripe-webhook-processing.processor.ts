@@ -569,7 +569,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   private async handlePaymentIntentSucceeded(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<NotificationFanoutJobData[]> {
     const transaction = await this.findCardTransaction(tx, paymentIntentId, cardRef);
     if (!transaction) {
-      // Decision 447 item 4: a no-show fee, recorded on its Booking only.
+      // Decision 447 item 4: a no-show fee whose outcome isn't saved yet
+      // (its Transactions row is written with the outcome, Decision 448).
       if (await this.settleNoShowFeeEvent(tx, paymentIntentId, cardRef, true)) return [];
       this.logger.warn(`payment_intent.succeeded for ${paymentIntentId} — no matching Transaction found. Ignoring (not a Membership purchase this platform created).`);
       return [];
@@ -611,6 +612,13 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     // Decision 447 item 4: a freeze fee's card attempt, written Pending first.
     if (transaction.kind === 'FREEZE_FEE') {
       await settleFreezeFee(tx, transaction.id, paymentIntentId, true);
+      return [];
+    }
+    // Decision 448 item 18: a no-show fee recorded as declined (its
+    // Transactions row carries the PaymentIntent) that Stripe now says was
+    // paid: saved on its Booking, and the row turns Successful.
+    if (transaction.kind === 'NO_SHOW_FEE') {
+      if (transaction.bookingId) await settleNoShowFee(tx, transaction.bookingId, paymentIntentId, true);
       return [];
     }
     const membershipPlanId = transaction.membershipPlanId;
@@ -925,7 +933,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   private async handlePaymentIntentFailed(tx: Prisma.TransactionClient, paymentIntentId: string, cardRef: CardEventRef = {}): Promise<NotificationFanoutJobData[]> {
     const transaction = await this.findCardTransaction(tx, paymentIntentId, cardRef);
     if (!transaction) {
-      // Decision 447 item 4: a no-show fee, recorded on its Booking only.
+      // Decision 447 item 4: a no-show fee whose outcome isn't saved yet.
       await this.settleNoShowFeeEvent(tx, paymentIntentId, cardRef, false);
       return [];
     }
@@ -952,8 +960,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
 
   /**
    * Decision 447 item 4: a no-show fee's PaymentIntent (Decision 291), whose
-   * outcome the no-show job may never have saved. A no-show fee has no
-   * Transaction: the Booking is found by the Booking id in the
+   * outcome the no-show job may never have saved. Until it is saved there is
+   * no Transactions row (Decision 448 item 18): the Booking is found by the Booking id in the
    * PaymentIntent's metadata, only at the School whose connected account the
    * event came from (as findCardTransaction()). Only an outcome not saved
    * yet changes (settleNoShowFee()), so a redelivery changes nothing. True

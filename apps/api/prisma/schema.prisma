@@ -379,6 +379,11 @@ enum TransactionKind {
   LATE_CANCEL_FEE
   FREEZE_FEE
   CHARGE_PAYMENT
+  /// Decision 448 item 18: a no-show fee (Decision 291) charged to the saved
+  /// card, or tried and declined, on the ledger like a late-cancellation fee.
+  /// Written when its Booking's outcome is saved (settleNoShowFee()); the
+  /// Booking stays the card attempt's record (Decision 447 item 4).
+  NO_SHOW_FEE
 }
 
 /// How a CHARGE_PAYMENT Transaction was paid (backlog §3.6 step 2): DESK,
@@ -2647,6 +2652,13 @@ model Membership {
   switchToPlan           MembershipPlan?    @relation("MembershipSwitchToPlan", fields: [switchToPlanId], references: [id], onDelete: SetNull)
   switchAgreedAt         DateTime?
   switchNoticeSentAt     DateTime?
+  /// Decision 448 item 3: the most the switch may charge, as the 7-day notice
+  /// quoted it (the next plan's price plus any card surcharge then), in the
+  /// same minor units, and its currency. Written with switchNoticeSentAt; on
+  /// switch day the card is charged the lower of this and the price then.
+  /// Null for a notice sent before Decision 448 (charged the price then).
+  switchNoticeAmount     Int?
+  switchNoticeCurrency   String?
   switchedAt             DateTime?
   switchOutcome          PlanSwitchOutcome?
   switchedToMembershipId String?
@@ -2737,7 +2749,8 @@ model Transaction {
 
   kind TransactionKind @default(MEMBERSHIP)
 
-  /// LATE_CANCEL_FEE only: the cancelled Booking the fee was charged for.
+  /// LATE_CANCEL_FEE: the cancelled Booking the fee was charged for.
+  /// NO_SHOW_FEE (Decision 448 item 18): the no-show Booking.
   bookingId String?  @unique
   booking   Booking? @relation(fields: [bookingId], references: [id])
 

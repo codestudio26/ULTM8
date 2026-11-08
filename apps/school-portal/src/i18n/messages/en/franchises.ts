@@ -99,7 +99,8 @@ export const franchises = {
     countryHint: "Stripe needs this to set up the account, and it can't be changed later.",
     chooseCountry: 'Select a country',
     goToStripe: 'Continue to Stripe',
-    unavailableHint: "Card payments in the app aren't available in this Franchise's country yet, so Stripe can't be connected. Payments are made by cash or bank transfer (Pix in Brazil) and confirmed by staff.",
+    unavailableHint: "Card payments in the app aren't available in this Franchise's country yet, so Stripe can't be connected. Payments are made by cash or bank transfer and confirmed by staff.",
+    unavailableHintPix: "Card payments in the app aren't available in this Franchise's country yet, so Stripe can't be connected. Payments are made by cash or bank transfer (Pix in Brazil) and confirmed by staff.",
   },
   refundModal: {
     title: 'Refund fee charge',

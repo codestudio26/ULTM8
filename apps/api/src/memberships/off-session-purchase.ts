@@ -135,7 +135,7 @@ export async function refuseOffSessionPurchase(tx: Tx, transactionId: string, pa
   return row;
 }
 
-type NoticeDb = Pick<Prisma.TransactionClient, 'membership' | 'membershipPlan' | 'school'>;
+type NoticeDb = Pick<Prisma.TransactionClient, 'membership' | 'membershipPlan' | 'school' | 'guardianLink' | 'user'>;
 
 /**
  * The member's notice for an off-session purchase settled by Stripe's
@@ -144,8 +144,13 @@ type NoticeDb = Pick<Prisma.TransactionClient, 'membership' | 'membershipPlan' |
  * once. A plan switch: "Your plan has changed", or "Membership ended" when it
  * was declined or refused. A saved-card purchase refused and refunded: the
  * "Refund" notice (Decision 415 item 4), unless the School switched refund
- * notices off. Nothing else: the member who bought it was answered at the
- * time.
+ * notices off. Decision 448 item 19: a saved-card purchase paid: the usual
+ * "Payment confirmed" notice (the one a confirmed cash or bank payment sends,
+ * PaymentsService.notifyCashPayment(), with the same keys and audience: the
+ * member, or the Guardians of a linked minor), for what left the card. Only
+ * the settler that turned the row Successful sends it, so it goes once, and
+ * never when the purchase request itself saved the answer (the member saw it
+ * then). A declined one: nothing, as before.
  */
 export async function offSessionPurchaseNotices(db: NoticeDb, row: Transaction, outcome: 'paid' | 'failed' | 'refunded'): Promise<NotificationFanoutJobData[]> {
   if (row.planSwitchFromMembershipId) {
@@ -161,9 +166,39 @@ export async function offSessionPurchaseNotices(db: NoticeDb, row: Transaction, 
     const notice = planSwitchEndedNotice(ended.membershipPlan.title, next.title);
     return [{ ...base, notificationId: `plan-switch-ended-${ended.id}`, title: notice.title, body: notice.body }];
   }
+  if (outcome === 'paid') return paymentConfirmedNotices(db, row);
   if (outcome !== 'refunded' || !row.currency) return [];
   if (!(await chargeNoticeSwitches(db, row.schoolId)).refund) return [];
   const plan = row.membershipPlanId ? await db.membershipPlan.findUnique({ where: { id: row.membershipPlanId }, select: { title: true } }) : null;
   const notice = refusedPurchaseRefundNotice(`refund-refused-${row.id}`, row.amount + row.surchargeAmount, row.currency, plan?.title ?? 'the membership');
   return [{ notificationId: notice.key, userId: row.studentId, title: notice.title, body: notice.body, type: 'REFUND', schoolId: row.schoolId, targetType: 'PAYMENT' }];
+}
+
+/** Decision 448 item 19: "Payment confirmed" for a saved-card purchase
+ * settled after the request that made it (offSessionPurchaseNotices()). The
+ * English text and keys of PaymentsService.notifyCashPayment('confirmed'),
+ * translated by the same @ultm8/i18n patterns. */
+async function paymentConfirmedNotices(db: NoticeDb, row: Transaction): Promise<NotificationFanoutJobData[]> {
+  if (!row.currency) return [];
+  const [plan, student, guardians] = await Promise.all([
+    row.membershipPlanId ? db.membershipPlan.findUnique({ where: { id: row.membershipPlanId }, select: { title: true } }) : null,
+    db.user.findUnique({ where: { id: row.studentId }, select: { firstName: true, surname: true } }),
+    db.guardianLink.findMany({ where: { studentId: row.studentId, revokedAt: null }, select: { guardianId: true } }),
+  ]);
+  const amount = noticeMoney(row.amount + row.surchargeAmount, row.currency);
+  const planTitle = plan?.title ?? 'a membership';
+  const name = [student?.firstName, student?.surname].filter(Boolean).join(' ') || 'A student';
+  const notices =
+    guardians.length === 0
+      ? [{ userId: row.studentId, body: `Your payment of ${amount} for ${planTitle} was confirmed. Your membership is now active.` }]
+      : guardians.map((g) => ({ userId: g.guardianId, body: `${name}'s payment of ${amount} for ${planTitle} was confirmed. The membership is now active.` }));
+  return notices.map((n) => ({
+    notificationId: `cash-payment-confirmed-${row.id}-${n.userId}`,
+    userId: n.userId,
+    title: 'Payment confirmed',
+    body: n.body,
+    type: 'CASH_PAYMENT',
+    schoolId: row.schoolId,
+    targetType: 'PAYMENT' as const,
+  }));
 }

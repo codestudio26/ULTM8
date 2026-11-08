@@ -40,6 +40,7 @@ import { PaymentsService, checkoutTransactionId } from '../payments/payments.ser
 import { cardSurchargeAmount, readCardSurchargeBps } from '../payments/card-surcharge';
 import { CARD_ACCOUNT_SELECT, cardPaymentsNotReady, stripeNotReady, takesCards } from '../payments/takes-cards';
 import { assertWholeMinorUnits } from '../payments/stripe-amount';
+import { assertPixAllowed } from '../payments/pix';
 import { assertWithinChargeCap } from './charge-cap';
 import { StepUpService } from '../auth/step-up.service';
 import {
@@ -358,6 +359,8 @@ export class ChargesService {
       throw new BadRequestException({ code: 'CHARGE_NOT_A_STUDENT', message: 'Charges can only be created for a current student of this School.' });
     }
     const school = await this.loadSchool(schoolId);
+    // Decision 448 item 5: Pix only at a School in Brazil.
+    await assertPixAllowed(this.prismaJobs, schoolId, dto.paymentMethod);
     const account = await this.prismaJobs.paymentAccount.findUnique({ where: { schoolId }, select: { id: true } });
     if (!account) {
       throw new BadRequestException({ code: 'CHARGE_NO_PAYMENT_ACCOUNT', message: "Set up this School's payments before recording a payment." });

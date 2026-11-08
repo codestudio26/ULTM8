@@ -557,6 +557,7 @@ export const serverMessages: Record<string, string> = {
   "This payment has already been refunded in full.": "この支払いはすでに全額返金されています。",
   "Only a payment that was taken can be refunded.": "返金できるのは受け取った支払いだけです。",
   "That is more than is left to refund on this payment.": "この支払いで返金できる残りの金額を超えています。",
+  "Pix can only be used by a School in Brazil. Choose another way to pay.": "Pix はブラジルのスクールでのみ利用できます。別の支払い方法を選んでください。",
   "This payment was taken, so it can't be cancelled. Refund it instead.": "この支払いは受け取り済みのため、取り消せません。代わりに返金してください。",
   "This Class is archived and can no longer be booked.": "このクラスはアーカイブされているため、予約できません。",
   "This Class has already ended.": "このクラスはすでに終了しています。",
