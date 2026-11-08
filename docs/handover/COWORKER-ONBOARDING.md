@@ -172,6 +172,17 @@ stop and look before continuing. Never run the stress scripts
 (`apps/api/scripts/stress/`) against staging: they create and change large
 amounts of data.
 
+**Sharing the Supabase database.** Both developers may use the same
+Supabase project (the coworker gets their own Supabase login, see §2 row 5).
+One rule: **run `prisma migrate deploy` against Supabase only from an
+up-to-date `master`**, never from a feature branch. A branch's migration
+applied to the shared database before it merges leaves the live API and the
+other developer's work out of step with `master`, and a migration can't
+easily be undone. For day-to-day coding, use your own Codespace (or local)
+database, so half-built migrations and test data stay out of the shared one.
+The free Supabase plan also has a small connection limit; don't point local
+APIs at it.
+
 The Codespace is separate: its database migrates on every Codespace start
 (and you run the three commands above after pulling a branch with a new
 migration).

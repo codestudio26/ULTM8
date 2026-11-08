@@ -78,6 +78,9 @@ avoid it:
   # then restart the API
   ```
 
+- The live (staging) Supabase database is shared. Run
+  `prisma migrate deploy` against it **only from an up-to-date `master`**,
+  never from a feature branch. Develop against your own Codespace/local DB.
 - The live (staging) database is migrated by hand, not by CI. See
   `docs/handover/COWORKER-ONBOARDING.md` §6.
 
