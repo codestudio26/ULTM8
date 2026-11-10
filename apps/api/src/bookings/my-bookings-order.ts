@@ -33,6 +33,15 @@ export function encodeMyBookingsCursor(c: MyBookingsCursor): string {
   return Buffer.from(JSON.stringify({ p: c.part, at: c.at.toISOString(), s: c.start?.toISOString() ?? null, id: c.id })).toString('base64url');
 }
 
+/** A date the database can be asked about: a real date in the years 1970 to
+ * 9999. JavaScript reads far wider dates ("-005000-01-01", "+275760-09-13")
+ * that the database driver can't send, which used to end in a server error
+ * (Decision 451 item 8, S-5). */
+function sendableDate(d: Date): boolean {
+  const year = d.getUTCFullYear();
+  return !Number.isNaN(d.getTime()) && year >= 1970 && year <= 9999;
+}
+
 /** An older id-only cursor (before this order) or anything else unreadable is
  * refused, never silently restarted (that would repeat bookings). */
 export function decodeMyBookingsCursor(cursor: string): MyBookingsCursor {
@@ -42,7 +51,7 @@ export function decodeMyBookingsCursor(cursor: string): MyBookingsCursor {
     if (!MY_BOOKINGS_PARTS.includes(part) || typeof raw.at !== 'string' || typeof raw.id !== 'string' || !raw.id) throw new Error('shape');
     const at = new Date(raw.at);
     const start = typeof raw.s === 'string' ? new Date(raw.s) : null;
-    if (Number.isNaN(at.getTime()) || (part !== 'gone' && (!start || Number.isNaN(start.getTime())))) throw new Error('dates');
+    if (!sendableDate(at) || (part !== 'gone' && (!start || !sendableDate(start)))) throw new Error('dates');
     return { part, at, start, id: raw.id };
   } catch {
     throw new BadRequestException('cursor is not valid');

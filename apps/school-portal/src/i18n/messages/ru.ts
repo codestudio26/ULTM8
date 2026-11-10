@@ -207,6 +207,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "Код подтверждения",
     newPasscodeMismatch: "Новый код доступа и подтверждение должны совпадать.",
     logIn: "Войти",
+    accessPausedTitle: "Доступ приостановлен",
     createAccountLink: "Создать аккаунт",
     login: {
       successTitle: "Готово",
@@ -3371,6 +3372,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Размер пояса",
       joinedOn: "Дата вступления",
       joinedOnHint: "День, когда человек вступил в эту школу. Может быть раньше сегодняшнего дня, но не позже.",
+      dateOfBirthOwnerOnly: "Только владелец школы может изменить дату рождения участника.",
       secondaryPhone: "Дополнительный телефон",
       secondaryEmail: "Дополнительная эл. почта",
       secondaryHint: "Ещё один способ связаться. Не используется для входа.",

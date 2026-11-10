@@ -42,6 +42,7 @@ export function wrongMemberCodesKey(sessionId: string): string {
 const STAFF_ROLES = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] as const;
 // Who may start a tablet (handover F1): the owner, or Branch Staff for their Branch.
 const STARTER_ROLES = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] as const;
+const START_REFUSED = 'Only the School owner, or Branch Staff at this Branch, can start front-desk mode.';
 
 /** The session a kiosk request runs under, as the guard found it. */
 export interface FrontDeskSessionContext {
@@ -90,6 +91,16 @@ export class FrontDeskSessionsService {
   /** POST /schools/{schoolId}/front-desk/sessions. `branchId` is required when
    * the School has open Branches, and must be null when it has none. */
   async start(callerId: string, schoolId: string, branchId: string | null) {
+    // Decision 451 item 4 (S-1): who is calling comes before anything about
+    // the School or its Branches, so a stranger gets 404 School not found
+    // whatever they send and can't learn whether the School exists, has
+    // Branches, or which Branch ids are its own. Paused staff get 403
+    // ACCESS_PAUSED, a member or Guardian 403 NO_PERMISSION
+    // (staffRolesOrRefuse), and a coach the same 403 as before.
+    if (!(await this.holdsGrant(callerId, schoolId, null, STARTER_ROLES))) {
+      await this.tenantAuth.staffRolesOrRefuse(callerId, schoolId);
+      throw new ForbiddenException(START_REFUSED);
+    }
     const branches = await this.prismaJobs.branch.findMany({ where: { schoolId, archivedAt: null }, select: { id: true } });
     if (branches.length > 0 && !branches.some((b) => b.id === branchId)) {
       throw new BadRequestException('Pick one of the School\'s open Branches for this tablet.');
@@ -98,7 +109,7 @@ export class FrontDeskSessionsService {
       throw new BadRequestException('This School has no Branches: start front-desk mode for the whole School.');
     }
     if (!(await this.holdsGrant(callerId, schoolId, branchId, STARTER_ROLES))) {
-      throw new ForbiddenException('Only the School owner, or Branch Staff at this Branch, can start front-desk mode.');
+      throw new ForbiddenException(START_REFUSED);
     }
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const expiresAt = new Date(Date.now() + FRONT_DESK_SESSION_HOURS * 3_600_000);

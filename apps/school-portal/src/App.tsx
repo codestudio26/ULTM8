@@ -5,6 +5,9 @@ import { CoachDashboardPage } from './coach/CoachDashboardPage';
 import { CoachInvitesPage } from './coach/CoachInvitesPage';
 import { MyBeltsPage } from './coach/MyBeltsPage';
 import { RequireAuth } from './auth/RequireAuth';
+import { AccessPausedPage } from './auth/AccessPausedPage';
+import { useMyPausedSchools } from './auth/currentUserQueries';
+import { Spinner } from '@ultm8/ui';
 import { LoginPage } from './auth/LoginPage';
 import { RegisterPage } from './auth/RegisterPage';
 import { VerifyOtpPage } from './auth/VerifyOtpPage';
@@ -77,7 +80,14 @@ function HomeRedirect() {
   const schoolId = useOwnedSchoolId();
   const coachSchoolId = useCoachSchoolId();
   const ownsFranchise = !!useAuth().claims?.grants.some((g) => g.role === 'FRANCHISE_OWNER');
-  return <Navigate to={schoolId ? '/dashboard' : coachSchoolId ? '/coach' : ownsFranchise ? '/franchises' : '/onboarding'} replace />;
+  const landing = schoolId ? '/dashboard' : coachSchoolId ? '/coach' : ownsFranchise ? '/franchises' : null;
+  // Decision 451 item 2 (R-1): someone with nothing else here whose staff
+  // access to a School is paused is told so, not offered "Create your School".
+  const paused = useMyPausedSchools({ enabled: landing === null });
+  if (landing) return <Navigate to={landing} replace />;
+  if (paused.isLoading) return <Spinner />;
+  if ((paused.data?.schoolIds.length ?? 0) > 0) return <AccessPausedPage />;
+  return <Navigate to="/onboarding" replace />;
 }
 
 export function App() {

@@ -72,9 +72,10 @@ It needs Node 20+, the repo's `node_modules` (`npm ci`), Postgres 16 binaries (`
 | Process | Port |
 |---|---|
 | Postgres, data in `/var/tmp/pg-demo` (`DEMO_PGDATA`), socket in `/var/tmp` | 55540 (`DEMO_PG_PORT`) |
-| Redis | 56540 (`DEMO_REDIS_PORT`) |
+| Redis, in its own folder `/var/tmp/demo-redis` (`DEMO_REDIS_DIR`; never the repo), emptied of saved data before it starts | 56540 (`DEMO_REDIS_PORT`) |
 | Pretend Stripe (`demo-stripe.mjs` in front of the rehearsal's `fake-stripe.mjs`, one port below) | 12540 (`DEMO_FAKE_STRIPE_PORT`) |
 | API, with the rehearsal's fakes (`../rehearsal/use-fakes.cjs`) | 3540 (`DEMO_API_PORT`) |
+| Fake file storage (the rehearsal's fake R2) | 12541 (`DEMO_R2_PORT`) |
 | **Front server**: the one port to open | **8080** (`DEMO_FRONT_PORT`) |
 
 Open **`http://<host>:8080/`** for the School Portal and **`http://<host>:8080/app/`** for the member app. The front server (`front-server.mjs`) serves both builds and passes `/v1/...` to the API, so everything is on one origin; both apps are built with a relative API address (`VITE_API_BASE_URL=` for the portal; for the member app, `start-demo.sh` sets `extra.apiBaseUrl` to `""` and `experiments.baseUrl` to `/app` in `apps/student/app.json` for the export only, then puts the file back).

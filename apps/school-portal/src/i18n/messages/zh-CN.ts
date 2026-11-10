@@ -198,6 +198,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "验证码",
     newPasscodeMismatch: "新登录码与确认码必须一致。",
     logIn: "登录",
+    accessPausedTitle: "访问已暂停",
     createAccountLink: "创建账户",
     login: {
       successTitle: "登录成功",
@@ -3254,6 +3255,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "腰带尺码",
       joinedOn: "入会日期",
       joinedOnHint: "加入本学校的日期。可以早于今天，不能晚于今天。",
+      dateOfBirthOwnerOnly: "只有学校所有者可以修改会员的出生日期。",
       secondaryPhone: "备用电话",
       secondaryEmail: "备用邮箱",
       secondaryHint: "另一种联系方式，不用于登录。",

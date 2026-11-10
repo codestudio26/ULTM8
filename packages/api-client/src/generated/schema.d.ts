@@ -708,6 +708,22 @@ export interface paths {
         patch: operations["RoleGrantsController_updateStaffDetails"];
         trace?: never;
     };
+    "/v1/users/me/paused-schools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoleGrantsController_myPausedSchools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff/me/access": {
         parameters: {
             query?: never;
@@ -9092,6 +9108,10 @@ export interface components {
             displayName?: string | null;
             workPhone?: string | null;
         };
+        MyPausedSchoolsResponseDto: {
+            /** @description The Schools where the caller's coach or Branch Staff access is paused and they hold no live staff role. */
+            schoolIds: string[];
+        };
         MyStaffAccessResponseDto: {
             /** @description School Owner/Manager: every switch is on, by role. */
             owner: boolean;
@@ -16955,6 +16975,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffDetailsResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_myPausedSchools: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPausedSchoolsResponseDto"];
                 };
             };
         };

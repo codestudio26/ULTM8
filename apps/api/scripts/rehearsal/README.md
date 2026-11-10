@@ -15,6 +15,7 @@ Everything a person does goes through the real HTTP API as that person, after a 
 ## What's here
 
 - `use-fakes.cjs`: the fakes above.
+- `fake-r2-port.cjs`: where the fake R2 storage's port for this run is written and read.
 - `lib.mjs`: `call` (waits and retries on a 429 from the sign-in limits), `signUp`, `signIn`, `stepUp`, `runJob`, `stripeWebhook`, PASS/FAIL/NOTE bookkeeping.
 - `schools.mjs`: the two Schools and their people.
 - `rehearsal.mjs`: runs journeys 1–7 below, then writes `results-<run>.json` and `cast-<run>.json` (ids and sign-ins for the browser checks).
@@ -33,7 +34,7 @@ Everything a person does goes through the real HTTP API as that person, after a 
 
 ## Run
 
-1. A fresh database with every migration, Redis to itself, and the built API (`npm run build` in `apps/api`), with the CI env block from `.github/workflows/ci.yml` pointed at them. Then, from `apps/api`:
+1. A fresh database with every migration, Redis to itself (started with `--dir` set to its own new, empty folder, never the repo: Redis loads any `dump.rdb` in its folder, old jobs included; see `../stress/booking-schedule/README.md`), and the built API (`npm run build` in `apps/api`), with the CI env block from `.github/workflows/ci.yml` pointed at them. Then, from `apps/api`:
 
    ```sh
    FAKE_STRIPE_PORT=12517 node scripts/stress/billing/fake-stripe.mjs &
@@ -42,6 +43,8 @@ Everything a person does goes through the real HTTP API as that person, after a 
    CORS_ALLOWED_ORIGINS=http://localhost:5317,http://localhost:5318 PORT=3317 THROTTLE_IP_LIMIT_PER_MINUTE=10000000 \
    node --require ./scripts/rehearsal/use-fakes.cjs dist/main.js
    ```
+
+   The fake R2 file storage takes a free port of its own for each run (set `REHEARSAL_R2_PORT` to choose one); `use-fakes.cjs` prints it and writes it where `j5-delete.mjs` finds it (`fake-r2-port.cjs`, keyed by the API's `PORT`).
 
    Unset `HTTPS_PROXY` for the API if your machine has one: the API sends its Stripe calls through it otherwise, and the fake is on localhost.
 

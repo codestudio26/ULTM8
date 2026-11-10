@@ -201,6 +201,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "Verificatiecode",
     newPasscodeMismatch: "Nieuwe toegangscode en bevestiging moeten overeenkomen.",
     logIn: "Inloggen",
+    accessPausedTitle: "Toegang gepauzeerd",
     createAccountLink: "Account aanmaken",
     login: {
       successTitle: "Gelukt",
@@ -3293,6 +3294,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Bandmaat",
       joinedOn: "Inschrijfdatum",
       joinedOnHint: "De dag waarop diegene lid werd van deze school. Mag vóór vandaag liggen, nooit erna.",
+      dateOfBirthOwnerOnly: "Alleen de eigenaar van de school kan de geboortedatum van een lid wijzigen.",
       secondaryPhone: "Tweede telefoonnummer",
       secondaryEmail: "Tweede e-mailadres",
       secondaryHint: "Een andere manier om contact op te nemen. Niet om in te loggen.",

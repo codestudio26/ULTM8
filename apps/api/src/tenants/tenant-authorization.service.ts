@@ -339,6 +339,56 @@ export class TenantAuthorizationService {
   }
 
   /**
+   * Decision 451 item 2 (R-1) — is `userId` linked to `schoolId` only through
+   * a paused coach or Branch Staff role? True when they hold a paused role
+   * there and nothing live: no live role of any kind (staff or member) and no
+   * live Guardian link to someone with a live student role there. Such a
+   * person is told their access is paused on every School page
+   * (PausedAccessInterceptor), instead of each page's own "not found". Someone
+   * still linked another way (a paused coach who is also a member there, or a
+   * Guardian of one) keeps what that link gives them, and the pages that are
+   * staff-only still answer ACCESS_PAUSED through staffRolesOrRefuse.
+   *
+   * The common case (no paused role at the School) is one indexed read of the
+   * caller's own grants on the jobs connection, keyed by the caller's own id;
+   * the rest runs only for someone with a paused role. It grants nothing.
+   */
+  async isPausedOnly(userId: string, schoolId: string): Promise<boolean> {
+    if (!UUID_PATTERN.test(userId) || !UUID_PATTERN.test(schoolId)) return false;
+    const grants = await this.prismaJobs.roleGrant.findMany({
+      where: { userId, schoolId, OR: [{ pausedAt: { not: null } }, { revokedAt: null }] },
+      select: { revokedAt: true, pausedAt: true },
+    });
+    if (!grants.some((g) => g.pausedAt)) return false;
+    if (grants.some((g) => !g.revokedAt)) return false;
+    const wardIds = (await this.prismaJobs.guardianLink.findMany({ where: { guardianId: userId, revokedAt: null }, select: { studentId: true } })).map((l) => l.studentId);
+    if (wardIds.length > 0) {
+      const ward = await this.prismaJobs.roleGrant.findFirst({ where: { userId: { in: wardIds }, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
+      if (ward) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Decision 451 item 2 (R-1) — the Schools where `userId`'s staff access is
+   * paused: a paused coach or Branch Staff role there and no live staff role
+   * (linkToSchool's 'paused'). Only the caller's own grants are read, so the
+   * answer is ids the caller is already linked to; the School Portal uses it
+   * to show "your access has been paused" at sign-in instead of "Create your
+   * School".
+   */
+  async pausedSchoolIds(userId: string): Promise<string[]> {
+    const grants = await this.prismaApp.withTenantContext(userId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId, schoolId: { not: null }, OR: [{ pausedAt: { not: null } }, { revokedAt: null, role: { in: [...STAFF_ROLE_SET] } }] },
+        select: { schoolId: true, revokedAt: true, pausedAt: true },
+      }),
+    );
+    const live = new Set(grants.filter((g) => !g.revokedAt).map((g) => g.schoolId));
+    return [...new Set(grants.filter((g) => g.pausedAt && !live.has(g.schoolId)).map((g) => g.schoolId as string))].sort();
+  }
+
+  /**
    * Decision 449 item 6 — the start of every refusal on a page one of the
    * owner's switches (or the payments area) guards: someone with no link to
    * the School, or an unknown School, gets 404 School not found, so ULTM8

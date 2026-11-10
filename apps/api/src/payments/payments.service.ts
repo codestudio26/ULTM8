@@ -5,7 +5,7 @@ import { createHash, randomUUID } from 'crypto';
 import Stripe from 'stripe';
 import { Prisma, Transaction } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
-import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
+import { NO_PERMISSION, NOT_FOR_COACHES, TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
@@ -1538,6 +1538,9 @@ export class PaymentsService {
       );
       return { ...settled, byStaff: true };
     }
+    if (row && row.studentId !== callerId && !(await this.tenantAuth.isSchoolOwner(callerId, row.schoolId))) {
+      await this.refuseDeskOrderConfirm(callerId, row.schoolId);
+    }
     const settled = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
       if (!transaction) {
@@ -1547,6 +1550,29 @@ export class PaymentsService {
       return this.settleCashPayment(tx, transaction);
     }, CASH_SETTLE_TX_OPTIONS);
     return { ...settled, byStaff: false };
+  }
+
+  /**
+   * Decision 451 item 9 (R-2; Decision 449 item 6) — someone connected to the
+   * order's School who may not confirm it is told why, never "not found":
+   * Branch Staff while the School doesn't let them record payments get 403
+   * STAFF_ACCESS_OFF (like Cancel), a coach 403 NOT_FOR_COACHES, Branch Staff
+   * for a student outside their branches, a member or a Guardian 403
+   * NO_PERMISSION, paused staff 403 ACCESS_PAUSED. Returns, leaving the
+   * owner's path its 404, for someone with no link to the School.
+   */
+  private async refuseDeskOrderConfirm(callerId: string, schoolId: string): Promise<void> {
+    if ((await this.tenantAuth.linkToSchool(callerId, schoolId)) === 'none') return;
+    const roles = await this.tenantAuth.staffRolesOrRefuse(callerId, schoolId);
+    if (roles.branchStaff) {
+      const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { branchStaffCanRecordPayments: true } });
+      if (!school?.branchStaffCanRecordPayments) {
+        throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: 'The School owner has not let Branch Staff record payments.' });
+      }
+      throw new ForbiddenException(NO_PERMISSION);
+    }
+    if (roles.coach) throw new ForbiddenException(NOT_FOR_COACHES);
+    throw new ForbiddenException(NO_PERMISSION);
   }
 
   /** The confirm itself, once the caller may: flips the Pending row to

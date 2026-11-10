@@ -33,6 +33,11 @@ describe("GET /bookings/me's order and cursor (Decision 450 item 2)", () => {
     ['an unknown part', Buffer.from(JSON.stringify({ p: 'sideways', at: at.toISOString(), s: null, id: 'x' })).toString('base64url')],
     ['an upcoming cursor with no start', Buffer.from(JSON.stringify({ p: 'up', at: at.toISOString(), s: null, id: 'x' })).toString('base64url')],
     ['a bad date', Buffer.from(JSON.stringify({ p: 'past', at: 'soon', s: start.toISOString(), id: 'x' })).toString('base64url')],
+    // Decision 451 item 8 (S-5): dates JavaScript reads but the database driver can't send.
+    ['a start in the year -5000', Buffer.from(JSON.stringify({ p: 'up', at: at.toISOString(), s: '-005000-01-01T00:00:00.000Z', id: 'x' })).toString('base64url')],
+    ['a start in the year 275760', Buffer.from(JSON.stringify({ p: 'up', at: at.toISOString(), s: '+275760-09-13T00:00:00.000Z', id: 'x' })).toString('base64url')],
+    ['a moment before 1970', Buffer.from(JSON.stringify({ p: 'gone', at: '1969-12-31T23:59:59.000Z', id: 'x' })).toString('base64url')],
+    ['a moment after 9999', Buffer.from(JSON.stringify({ p: 'past', at: '+010000-01-01T00:00:00.000Z', s: start.toISOString(), id: 'x' })).toString('base64url')],
   ])('refuses %s with a 400', (_label, cursor) => {
     expect(() => decodeMyBookingsCursor(cursor)).toThrow(BadRequestException);
   });

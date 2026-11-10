@@ -23,6 +23,50 @@ Post-v1.4.0 work on `master`.
   `EXPO_PUBLIC_API_BASE_URL` at build time). Owner steps:
   `docs/deploy/STAGING-DEMO.md`.
 
+- **Decision 451 items 2–11 and 14: stress test round 7 fixes (access,
+  member app, harness)** (Tracks A and B; no migration).
+  - **Paused staff are told so everywhere** (item 2, R-1): a coach or Branch
+    Staff member whose access is paused and who has no other live link to the
+    School gets 403 "Your access to this School has been paused. Please
+    contact the School owner." on every School page and action (School
+    profile, students, Branches, classes, waivers, plans, transactions, tablet
+    sign-ups, ...), before the page runs, so nothing of it is returned.
+    Strangers still get exactly what a missing School gets. In the School
+    Portal they land on an "Access paused" page with the same sentence
+    instead of "Create your School" (new `GET /users/me/paused-schools`).
+  - **A student's profile and the student tags list** give paused staff
+    ACCESS_PAUSED and removed staff, members and Guardians NO_PERMISSION, not
+    "School not found" or a generic 403 (items 3 and 6).
+  - **Front-desk mode** checks who is calling before anything about the
+    School or its Branches: strangers always get 404 (item 4).
+  - **Plans on sale** (`GET /schools/:id/plan-availability`): the School's own
+    coach or staff get NO_PERMISSION, not "School not found" (item 7).
+  - **`GET /bookings/me`**: a cursor with a date outside 1970–9999 is a 400,
+    never a server error (item 8).
+  - **Confirming a Pix/cash order**: Branch Staff while the School doesn't
+    let them record payments get 403 STAFF_ACCESS_OFF (as on Cancel), a coach
+    NOT_FOR_COACHES, staff for a student outside their branches NO_PERMISSION;
+    other Schools still get 404 (item 9).
+  - **Too many sign-in tries** show a plain translated sentence in every
+    language, English included, never "ThrottlerException: Too Many Requests"
+    (item 10).
+  - **A member's birth date is owner-only** (item 14): coaches with "Manage
+    students" and Branch Staff can change the join date and the rest of the
+    profile, not the birth date (before, only a change across 18 was the
+    owner's). The portal's edit form greys the field out for them.
+  - **Member app on the web** (item 5, S-6): the saved screens (bookings,
+    notifications, memberships) now live in the tab's sessionStorage, like
+    the session, and are keyed by person: emptied on sign-out, when the app
+    starts with no session, and before a different person's session starts.
+    A copy an older build left in localStorage is removed. iOS/Android keep
+    their on-device cache, now also keyed by person (emptied once after the
+    update).
+  - **Test harness** (item 11): the demo's Redis refuses a folder inside the
+    repo and starts with its folder emptied of saved data; the stress and
+    rehearsal READMEs say to start Redis with `--dir` set to its own empty
+    folder; the rehearsal's fake file storage takes a free port per run
+    (`REHEARSAL_R2_PORT` to choose one) and tells the journeys where it is.
+
 ## v1.4.0 — 2026-11-10
 
 Named v1.4 by the product owner on 10 Nov 2026. It covers all post-V1 work on

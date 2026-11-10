@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { PausedAccessInterceptor } from './paused-access.interceptor';
 import { AuthModule } from '../auth/auth.module';
 import { GuardiansModule } from '../guardians/guardians.module';
 import { SchoolsController } from './schools/schools.controller';
@@ -105,7 +107,10 @@ import { MedicalInfoService } from '../medical-info/medical-info.service';
 @Module({
   imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule, TimeZoneChangeModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController, MedicalInfoController, MemberMedicalInfoController],
-  providers: [SchoolsService, StudentExportService, MemberDataExportService, BranchesService, RoleGrantsService, FranchisesService, FranchiseOverviewService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
+  providers: [SchoolsService, StudentExportService, MemberDataExportService, BranchesService, RoleGrantsService, FranchisesService, FranchiseOverviewService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService,
+    // Decision 451 item 2: paused staff are told so on every School page.
+    { provide: APP_INTERCEPTOR, useClass: PausedAccessInterceptor },
+  ],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService, MedicalInfoService],
 })
 export class TenantsModule {}

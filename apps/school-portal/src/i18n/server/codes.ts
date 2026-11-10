@@ -233,6 +233,10 @@ export function translateByCode(t: Translate, code: string, message: string): st
       return t('server.codes.mainOwnerOnly');
     // Decision 449 item 6: people connected to the School are told why,
     // never "not found".
+    // Decision 451 item 10 (R-3): too many tries (the sign-in limit among
+    // them), in every language, English included.
+    case 'TOO_MANY_REQUESTS':
+      return t('server.generic.tooManyRequests');
     case 'ACCESS_PAUSED':
       return t('server.codes.accessPaused');
     case 'NO_PERMISSION':

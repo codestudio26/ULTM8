@@ -19,7 +19,7 @@ Builds a world of 500 Schools (40 countries, 32 currencies, 60 time zones, about
 
 ## Run
 
-1. A fresh database with every migration, Redis to itself, the fake Stripe and the built API, as in `../billing/README.md`. Give the API more heap for the 500-School world, and lift the per-IP limit the scripts would hit:
+1. A fresh database with every migration, Redis to itself (started with `--dir` set to its own new, empty folder, as in `../booking-schedule/README.md`), the fake Stripe and the built API, as in `../billing/README.md`. Give the API more heap for the 500-School world, and lift the per-IP limit the scripts would hit:
 
    ```sh
    THROTTLE_IP_LIMIT_PER_MINUTE=10000000 PORT=3200 \

@@ -213,6 +213,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "رمز التحقق",
     newPasscodeMismatch: "يجب أن يتطابق رمز الدخول الجديد مع التأكيد.",
     logIn: "تسجيل الدخول",
+    accessPausedTitle: "تم إيقاف الوصول مؤقتًا",
     createAccountLink: "إنشاء حساب",
     login: {
       successTitle: "تم بنجاح",
@@ -3449,6 +3450,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "مقاس الحزام",
       joinedOn: "تاريخ الانضمام",
       joinedOnHint: "اليوم الذي انضم فيه إلى هذه المدرسة. يمكن أن يكون قبل اليوم، ولا يمكن أن يكون بعده.",
+      dateOfBirthOwnerOnly: "مالك المدرسة وحده يمكنه تغيير تاريخ ميلاد العضو.",
       secondaryPhone: "هاتف ثانوي",
       secondaryEmail: "بريد إلكتروني ثانوي",
       secondaryHint: "طريقة أخرى للتواصل. لا يُستخدم لتسجيل الدخول.",

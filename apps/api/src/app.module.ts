@@ -64,6 +64,10 @@ import { NoNulCharactersPipe } from './common/pipes/no-nul-characters.pipe';
     // DB roles and signing secrets — see validate-env.ts.
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     ThrottlerModule.forRoot({
+      // Decision 451 item 10 (R-3): a plain sentence, never the library's
+      // "ThrottlerException: Too Many Requests". The apps show their own
+      // wording for the 429 (code TOO_MANY_REQUESTS) in every language.
+      errorMessage: 'Too many attempts. Please wait a moment and try again.',
       throttlers: [
         // Per IP for callers who aren't signed in (see defaultIpLimit); auth and
         // other public endpoints override tighter.

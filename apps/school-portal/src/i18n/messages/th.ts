@@ -198,6 +198,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "รหัสยืนยัน",
     newPasscodeMismatch: "รหัสเข้าใช้ใหม่และการยืนยันต้องตรงกัน",
     logIn: "เข้าสู่ระบบ",
+    accessPausedTitle: "การเข้าถึงถูกหยุดชั่วคราว",
     createAccountLink: "สร้างบัญชี",
     login: {
       successTitle: "สำเร็จ",
@@ -3254,6 +3255,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "ขนาดสายคาด",
       joinedOn: "วันที่เข้าร่วม",
       joinedOnHint: "วันที่เข้าร่วมโรงเรียนนี้ เป็นวันก่อนวันนี้ได้ แต่เป็นวันหลังวันนี้ไม่ได้",
+      dateOfBirthOwnerOnly: "เฉพาะเจ้าของโรงเรียนเท่านั้นที่เปลี่ยนวันเกิดของสมาชิกได้",
       secondaryPhone: "โทรศัพท์สำรอง",
       secondaryEmail: "อีเมลสำรอง",
       secondaryHint: "อีกช่องทางในการติดต่อ ไม่ได้ใช้สำหรับลงชื่อเข้าใช้",

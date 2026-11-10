@@ -198,6 +198,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "認証コード",
     newPasscodeMismatch: "新しいパスコードと確認用の入力が一致しません。",
     logIn: "ログイン",
+    accessPausedTitle: "アクセスは一時停止中です",
     createAccountLink: "アカウントを作成",
     login: {
       successTitle: "ログイン完了",
@@ -3254,6 +3255,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "帯のサイズ",
       joinedOn: "入会日",
       joinedOnHint: "このスクールに入会した日です。今日より前にできますが、後にはできません。",
+      dateOfBirthOwnerOnly: "会員の生年月日を変更できるのはスクールのオーナーだけです。",
       secondaryPhone: "サブの電話番号",
       secondaryEmail: "サブのメールアドレス",
       secondaryHint: "別の連絡先です。サインインには使いません。",

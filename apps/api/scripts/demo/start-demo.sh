@@ -109,7 +109,14 @@ psql -h /var/tmp -p "$PG_PORT" -U postgres -tAc "SELECT 1 FROM pg_database WHERE
 (cd "$API_DIR" && npx prisma migrate deploy >"$LOGS/migrate.log" 2>&1) || { echo "migrate failed, see $LOGS/migrate.log" >&2; exit 1; }
 
 # --- Redis (its own dir, so it never loads another project's dump.rdb) ---------
+# Decision 451 item 11: Redis loads any dump.rdb in its folder at start (even
+# with --save ''), so it gets a folder of its own, never the repo, and the
+# folder is emptied of saved data first: no old jobs are ever loaded.
+case "$(cd "$REDIS_DIR" && pwd)/" in
+  "$REPO"/*) echo "DEMO_REDIS_DIR must be a folder of its own outside the repo ($REDIS_DIR)" >&2; exit 2 ;;
+esac
 if ! redis-cli -p "$REDIS_PORT" ping >/dev/null 2>&1; then
+  rm -rf "$REDIS_DIR/dump.rdb" "$REDIS_DIR/appendonly.aof" "$REDIS_DIR/appendonlydir"
   (cd "$REDIS_DIR" && setsid nohup redis-server --port "$REDIS_PORT" --dir "$REDIS_DIR" --save '' --appendonly no >"$LOGS/redis.log" 2>&1 </dev/null &)
   for _ in $(seq 1 20); do redis-cli -p "$REDIS_PORT" ping >/dev/null 2>&1 && break; sleep 0.5; done
 fi
