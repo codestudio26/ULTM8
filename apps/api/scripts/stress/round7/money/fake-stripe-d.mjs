@@ -36,7 +36,7 @@ function paymentIntent(params, account) {
   const offSession = params.off_session === 'true' && params.confirm === 'true';
   // An amount ending in 13 (minor units) is declined when charged off-session.
   const declined = offSession && String(params.amount).endsWith('13');
-  const obj = save({ id: pi, object: 'payment_intent', amount: Number(params.amount ?? 0), currency: params.currency, client_secret: `${pi}_secret_x`, status: offSession ? (declined ? 'requires_payment_method' : 'succeeded') : 'requires_payment_method', metadata: params.metadata ?? {}, account, latest_charge: { id: id('ch'), receipt_url: `https://pay.stripe.test/receipts/${pi}` } });
+  const obj = save({ id: pi, object: 'payment_intent', amount: Number(params.amount ?? 0), currency: params.currency, client_secret: `${pi}_secret_x`, status: offSession ? (declined ? 'requires_payment_method' : 'succeeded') : 'requires_payment_method', metadata: params.metadata ?? {}, account, customer: params.customer ?? null, created: Math.floor(Date.now() / 1000), latest_charge: { id: id('ch'), receipt_url: `https://pay.stripe.test/receipts/${pi}` } });
   if (declined) return { error: { status: 402, body: { error: { type: 'card_error', code: 'card_declined', message: 'Your card was declined.', payment_intent: obj } } } };
   if (offSession && loseNextAnswer) {
     loseNextAnswer = false;
@@ -140,6 +140,12 @@ http.createServer((req, res) => {
     if (req.method === 'GET' && path === '/__checkout') return send(200, [...store.values()].filter((o) => o.object === 'checkout.session'));
     const dm = path.match(/^\/__disputes\/(dp_[0-9a-f]+)$/);
     if (req.method === 'POST' && dm && store.has(dm[1])) return send(200, Object.assign(store.get(dm[1]), JSON.parse(body || '{}')));
+    // Round 7 (D): paymentIntents.list({ customer }) for the stale-attempt sweep.
+    if (req.method === 'GET' && path === '/v1/payment_intents') {
+      const cus = url.searchParams.get('customer');
+      const data = [...store.values()].filter((o) => o.object === 'payment_intent' && (!cus || o.customer === cus) && (!account || o.account === account)).reverse();
+      return send(200, { object: 'list', data, has_more: false, url: '/v1/payment_intents' });
+    }
     const params = parseForm(body);
     const h = handlers[key];
     if (h) {
