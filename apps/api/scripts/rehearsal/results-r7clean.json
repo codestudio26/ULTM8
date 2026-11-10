@@ -1,0 +1,961 @@
+[
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "owner signs up (register, SMS code, sign in)",
+  "status": "PASS",
+  "evidence": "olivia.hart.r7clean@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "creating a School without ticking the School and Franchise Agreement is refused",
+  "status": "PASS",
+  "evidence": "400 AGREEMENT_NOT_ACCEPTED"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "owner creates the School",
+  "status": "PASS",
+  "evidence": "Rehearsal Dojo London: GB, GBP, Europe/London, en-GB"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "Dashboard checklist includes \"Connect Stripe\"",
+  "status": "PASS",
+  "evidence": "BRANCH,STYLE_AND_BELTS,CLASS,MEMBERSHIP_PLAN,WAIVER,STRIPE,STAFF"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a Branch",
+  "status": "PASS",
+  "evidence": "Shoreditch"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a style with belts (BJJ from the IBJJF template)",
+  "status": "PASS",
+  "evidence": "BJJ: 20 belts"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "owner also coaches at the Branch",
+  "status": "PASS",
+  "evidence": "instructor 0c4bb1ed-164c-422f-a016-91ce50b5a16b"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a weekly timetable slot",
+  "status": "PASS",
+  "evidence": "TUESDAY 18:30-20:00"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "make the weeks' classes from the timetable",
+  "status": "PASS",
+  "evidence": "4 classes made for the slot"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add one-off classes (1 place tomorrow; one now)",
+  "status": "PASS",
+  "evidence": "4ee41584-1b68-4233-8b42-8314d5bedec8, 8d98b935-81ec-4b25-a65b-fb1e9a39d9ea"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "turn on a 2% card surcharge",
+  "status": "PASS",
+  "evidence": "{\"available\":true,\"country\":\"GB\",\"enabled\":true,\"bps\":200,\"confirmedAt\":\"2026-11-10T21:24:29.966Z\",\"applies\":false}"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a Stripe payment account",
+  "status": "PASS",
+  "evidence": "provider STRIPE, connectAvailable true"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "Connect Stripe: get the onboarding link (fake Stripe)",
+  "status": "PASS",
+  "evidence": "https://connect.stripe.test/al_7a23428480ed7a0c22"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "while Stripe onboarding isn't finished: checklist not ticked, no card payments",
+  "status": "PASS",
+  "evidence": "STRIPE done=false; cardPayments=false"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "Stripe says onboarding is finished (account.updated): the account is ready and the checklist ticks \"Connect Stripe\"",
+  "status": "PASS",
+  "evidence": "webhook 200; ready true; cardPayments true; STRIPE done=true"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "switch joining fees on",
+  "status": "PASS",
+  "evidence": "joiningFeesEnabled=true"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "plan with a joining fee and a member limit",
+  "status": "PASS",
+  "evidence": "joiningFee 2500, memberLimit 2"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "plan that switches to another when it ends",
+  "status": "PASS",
+  "evidence": "Intro week → 5-class pack"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "a monthly Subscription",
+  "status": "PASS",
+  "evidence": "201 6500 GBP"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a waiver",
+  "status": "PASS",
+  "evidence": "Liability waiver"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "Dashboard checklist ticks each step as it is done",
+  "status": "PASS",
+  "evidence": "[{\"key\":\"BRANCH\",\"done\":true},{\"key\":\"STYLE_AND_BELTS\",\"done\":true},{\"key\":\"CLASS\",\"done\":true},{\"key\":\"MEMBERSHIP_PLAN\",\"done\":true},{\"key\":\"WAIVER\",\"done\":true},{\"key\":\"STRIPE\",\"done\":true},{\"key\":\"STAFF\",\"done\":true}]"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner finds them by email",
+  "status": "PASS",
+  "evidence": "found=true"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner invites them as Branch Staff",
+  "status": "PASS",
+  "evidence": "grant 4b5f747d-0f51-4a9a-bfbd-5b45fe912bff"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner sets the coach's pay rates",
+  "status": "PASS",
+  "evidence": "{\"userId\":\"d81c0cce-6b96-4624-a62d-35b95eec397d\",\"name\":\"Olivia Hart\",\"roles\":[\"SCHOOL_OWNER_MANAGER\",\"INSTRUCTOR\"],\"hourlyRate\":3000,\"perClassRate\":1500}"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "without the Payroll switch, staff can't open the payroll report",
+  "status": "PASS",
+  "evidence": "403 The School owner hasn't let you see payroll."
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner turns on the Payroll switch",
+  "status": "PASS",
+  "evidence": "{\"userId\":\"8efaa045-885e-4a20-aeca-6f3905b06914\",\"access\":{\"classes\":false,\"bookings\":true,\"students\":true,\"cancelClasses\":true,\"staffList\":false,\"disciplines\":false,\"checkInRules\":false,\"exportStudents\":false,\"freezeMemberships\":false,\"attendanceStats\":false,\"memberFiles\":false,\"importData\":false,\""
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "with the switch, staff open the payroll report",
+  "status": "PASS",
+  "evidence": "200; 1 rows; totals 0 classes, 0 min"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "rates are hidden from staff by default (page and CSV use the same data)",
+  "status": "PASS",
+  "evidence": "ratesShown=false; coach row {\"userId\":\"d81c0cce-6b96-4624-a62d-35b95eec397d\",\"name\":\"Olivia Hart\",\"onStaff\":true,\"hourlyRate\":null,\"perClassRate\":null,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "the owner always sees the rates",
+  "status": "PASS",
+  "evidence": "ratesShown=true; {\"userId\":\"d81c0cce-6b96-4624-a62d-35b95eec397d\",\"name\":\"Olivia Hart\",\"onStaff\":true,\"hourlyRate\":3000,\"perClassRate\":1500,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "report only: staff can't open the rates page or change any rate",
+  "status": "PASS",
+  "evidence": "rates 403, own rate 403, owner's rate 403"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "staff can't turn \"Show pay rates in the report\" on themselves",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner turns on \"Show pay rates in the report\"",
+  "status": "PASS",
+  "evidence": "payrollStaffSeeRates=true"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "then staff see the rates, read only",
+  "status": "PASS",
+  "evidence": "ratesShown=true; {\"userId\":\"d81c0cce-6b96-4624-a62d-35b95eec397d\",\"name\":\"Olivia Hart\",\"onStaff\":true,\"hourlyRate\":3000,\"perClassRate\":1500,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "and still can't change them",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "Branch Staff and the transactions list (not part of Payroll)",
+  "status": "NOTE",
+  "evidence": "GET transactions as Branch Staff: 403"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "a coach signs up and is given the Instructor role",
+  "status": "PASS",
+  "evidence": "ryan.cole.r7clean@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "the main owner adds a co-owner",
+  "status": "PASS",
+  "evidence": "grace.hill.r7clean@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "the payment account: owner and Branch Staff with a payments permission see it; a coach doesn't",
+  "status": "PASS",
+  "evidence": "owner 200; Branch Staff (charges on by default) 200; coach 403 NO_PERMISSION"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "Branch Staff with no payments permission don't see the payment account",
+  "status": "PASS",
+  "evidence": "403 NO_PERMISSION"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "a co-owner can't change staff access switches (main owner only)",
+  "status": "PASS",
+  "evidence": "403 STAFF_SWITCHES_MAIN_OWNER_ONLY"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "nor the charge permissions",
+  "status": "PASS",
+  "evidence": "403 STAFF_SWITCHES_MAIN_OWNER_ONLY"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "Branch Staff without \"Connect Stripe\" can't open Stripe onboarding",
+  "status": "PASS",
+  "evidence": "403 STAFF_ACCESS_OFF The School owner hasn't let you connect Stripe."
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "with \"Connect Stripe\" on, Branch Staff can continue Stripe onboarding",
+  "status": "PASS",
+  "evidence": "201"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "but only an owner chooses how the School is paid (creating the payment account)",
+  "status": "PASS",
+  "evidence": "403 FORBIDDEN"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "a co-owner may connect Stripe; a coach may not",
+  "status": "PASS",
+  "evidence": "co-owner 201; coach 403 NOT_FOR_COACHES"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "Dashboard checklist ticks \"Add staff\"",
+  "status": "PASS",
+  "evidence": "{\"key\":\"STAFF\",\"done\":true}"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "adult member signs up",
+  "status": "PASS",
+  "evidence": "james.wright.r7clean@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "adult joins the School",
+  "status": "PASS",
+  "evidence": "{\"id\":\"c3b42eeb-1c51-4be7-af15-211a69b977c1\",\"role\":\"STUDENT\",\"userId\":\"d9787fdf-886e-41e1-8047-c34a7d90482a\",\"franchiseId\":null,\"schoolId\":\"139e801c-45f0-4410-"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "a new School has \"Waiver must be signed before booking or check-in\" on",
+  "status": "PASS",
+  "evidence": "checkInRequireWaiver=true"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "booking a class before signing the waiver is refused (WAIVER_REQUIRED)",
+  "status": "PASS",
+  "evidence": "403 WAIVER_REQUIRED This School needs a signed waiver before booking a class or checking in."
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "buying a plan before signing the waiver is allowed (Decision 441 item 5)",
+  "status": "PASS",
+  "evidence": "201 requires_checkout"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the waiver shows as waiting for the member",
+  "status": "PASS",
+  "evidence": "200; {\"id\":\"171522ea-59b0-4eaf-b7b3-3770aa94a49f\",\"waiverId\":\"a363e5d7-3a13-4ff2-9360-abd9796bffe8\",\"studentId\":\"d9787fdf-886e-41e1-8047-c34a7d90482a\",\"signedById\":null,\"schoolId\":\"139e801c-45f0-4410-8b80-"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "adult signs the waiver",
+  "status": "PASS",
+  "evidence": "signature 171522ea-59b0-4eaf-b7b3-3770aa94a49f"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the joining fee is shown before buying (first plan here)",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":2500,\"refundable\":false,\"cardSurchargeAmount\":50}"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "adult buys the 10-class pack by card (Checkout)",
+  "status": "PASS",
+  "evidence": "webhook 200; order SUCCESSFUL"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "Checkout charges plan + joining fee + 2% surcharge",
+  "status": "PASS",
+  "evidence": "lines [{\"name\":\"10-class pack\",\"amount\":8000},{\"name\":\"Joining fee\",\"amount\":2500},{\"name\":\"Card surcharge\",\"amount\":210}]; charged 10710, expected 10710; order amount 10500, joining fee 2500, surcharge 210"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the member has the pack with 10 classes",
+  "status": "PASS",
+  "evidence": "{\"id\":\"b7e9e969-f68f-41b2-9da4-9e2514430c33\",\"studentId\":\"d9787fdf-886e-41e1-8047-c34a7d90482a\",\"membershipPlanId\":\"e2ca2a57-3e93-458c-8c0b-15538b57a7e0\",\"schoolId\":\"139e801c-45f0-4410-8b80-385297f9cbec\",\"status\":\"ACTIVE"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "no joining fee on a second plan",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":0,\"refundable\":false,\"cardSurchargeAmount\":0}"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent signs up",
+  "status": "PASS",
+  "evidence": "emma.clarke.r7clean@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent adds a child (consent ticked)",
+  "status": "PASS",
+  "evidence": "{\"alreadyAdded\":false,\"linkId\":\"fcd7ee74-4c62-44c6-8aee-0911f3198af7\",\"studentId\":\"b4ecaa29-7a88-4f2e-8a53-5797e5c03aa0\",\"firstName\":\"Lily\",\"surname\":\"Clarke\",\"dateOfBirth\":\"2016-05-20T00:00:00.000Z\","
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the parent's consent is recorded with the child",
+  "status": "PASS",
+  "evidence": "{\"state\":\"GIVEN\",\"guardians\":[{\"guardianId\":\"3696449b-717a-41a7-9b44-0faa2d375fda\",\"name\":\"Emma Clarke\",\"isMe\":true,\"records\":[{\"id\":\"fe7ad450-9e20-4d69-8b8f-a2ab8e1f756a\",\"tier\":\"BASELINE\",\"status\":\"ACTIVE\",\"policyVersi"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the consent is saved with the server's Children notice version, not the app's placeholder",
+  "status": "PASS",
+  "evidence": "Children notice version \"unpublished\"; consent saved with [\"unpublished\"]"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent gives camera consent too",
+  "status": "PASS",
+  "evidence": "201"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent adds the child to the School",
+  "status": "PASS",
+  "evidence": "{\"id\":\"08cc2447-950f-43eb-bd96-dbdb7b1fcd3c\",\"role\":\"STUDENT\",\"userId\":\"b4ecaa29-7a88-4f2e-8a53-5797e5c03aa0\",\"franchise"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the child's waiver shows for the parent",
+  "status": "PASS",
+  "evidence": "{\"items\":[{\"id\":\"a363e5d7-3a13-4ff2-9360-abd9796bffe8\",\"schoolId\":\"139e801c-45f0-4410-8b80-385297f9cbec\",\"title\":\"Liability waiver\",\"body\":\"I understand that martial arts training carries a risk of in"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent signs the child's waiver",
+  "status": "PASS",
+  "evidence": "{\"id\":\"56066268-63b1-43f8-8053-3b49497a0ddf\",\"waiverId\":\"a363e5d7-3a13-4ff2-9360-abd9796bffe8\",\"stud"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent buys a plan for the child",
+  "status": "PASS",
+  "evidence": "order SUCCESSFUL; for the child; lines [{\"name\":\"Kids 8-class pack\",\"amount\":5000},{\"name\":\"Card surcharge\",\"amount\":100}]"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the child has the plan",
+  "status": "PASS",
+  "evidence": "8 classes"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "buying the switching plan records the member's agreement",
+  "status": "PASS",
+  "evidence": "requires_checkout; order switches to 5-class pack"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "owner signs up (register, SMS code, sign in)",
+  "status": "PASS",
+  "evidence": "joo.silva.r7clean@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "creating a School without ticking the School and Franchise Agreement is refused",
+  "status": "PASS",
+  "evidence": "400 AGREEMENT_NOT_ACCEPTED"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "owner creates the School",
+  "status": "PASS",
+  "evidence": "Academia Ensaio São Paulo: BR, BRL, America/Sao_Paulo, pt-BR"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "Dashboard checklist drops \"Connect Stripe\" (no card payments in Brazil)",
+  "status": "PASS",
+  "evidence": "stripeConnectAvailable=false; steps BRANCH,STYLE_AND_BELTS,CLASS,MEMBERSHIP_PLAN,WAIVER,STAFF"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a Branch",
+  "status": "PASS",
+  "evidence": "Consolação"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a style with belts (BJJ from the IBJJF template)",
+  "status": "PASS",
+  "evidence": "BJJ: 20 belts"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "owner also coaches at the Branch",
+  "status": "PASS",
+  "evidence": "instructor ca63df8f-e82e-4a39-a4d7-594b05b700e3"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a weekly timetable slot",
+  "status": "PASS",
+  "evidence": "TUESDAY 18:30-20:00"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "make the weeks' classes from the timetable",
+  "status": "PASS",
+  "evidence": "4 classes made for the slot"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add one-off classes (1 place tomorrow; one now)",
+  "status": "PASS",
+  "evidence": "8b17b9d3-16d2-48eb-ae8d-b7d0e700f8ac, e22792fe-f345-4a12-990f-c2b888b42fbf"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a bank transfer (Pix) payment account",
+  "status": "PASS",
+  "evidence": "provider BANK_TRANSFER, connectAvailable false"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "Connect Stripe refused in Brazil, with a translated reason",
+  "status": "PASS",
+  "evidence": "onboard 400; connectAvailable false; en \"Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.\"; pt-BR \"Pagamentos com cartão pelo Stripe ainda não estão disponíveis neste país. Os membros pagam em dinheiro ou por transferência bancária (Pix), e a equipe confirma o pagamento.\""
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "no Stripe connected account is created for the refused Brazilian School",
+  "status": "PASS",
+  "evidence": "Stripe accounts.create calls: 3 before, 3 after"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "switch joining fees on",
+  "status": "PASS",
+  "evidence": "joiningFeesEnabled=true"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "plan with a joining fee and a member limit",
+  "status": "PASS",
+  "evidence": "joiningFee 2500, memberLimit 2"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "\"switch to another plan when it ends\" is refused at a School without cards",
+  "status": "PASS",
+  "evidence": "400 SWITCH_NEEDS_CARDS"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "a monthly plan at a School without card payments",
+  "status": "PASS",
+  "evidence": "201 18000 BRL"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a waiver",
+  "status": "PASS",
+  "evidence": "Termo de responsabilidade"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "Dashboard checklist ticks each step as it is done",
+  "status": "PASS",
+  "evidence": "[{\"key\":\"BRANCH\",\"done\":true},{\"key\":\"STYLE_AND_BELTS\",\"done\":true},{\"key\":\"CLASS\",\"done\":true},{\"key\":\"MEMBERSHIP_PLAN\",\"done\":true},{\"key\":\"WAIVER\",\"done\":true},{\"key\":\"STAFF\",\"done\":true}]"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner finds them by email",
+  "status": "PASS",
+  "evidence": "found=true"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner invites them as Branch Staff",
+  "status": "PASS",
+  "evidence": "grant cf6d3e9b-cdc2-44ad-8d81-1e010a9f806d"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner sets the coach's pay rates",
+  "status": "PASS",
+  "evidence": "{\"userId\":\"6cacf731-3f4a-42b7-991b-88fc74847c62\",\"name\":\"João Silva\",\"roles\":[\"SCHOOL_OWNER_MANAGER\",\"INSTRUCTOR\"],\"hourlyRate\":3000,\"perClassRate\":1500}"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "without the Payroll switch, staff can't open the payroll report",
+  "status": "PASS",
+  "evidence": "403 The School owner hasn't let you see payroll."
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner turns on the Payroll switch",
+  "status": "PASS",
+  "evidence": "{\"userId\":\"45e1d206-790b-4d0b-99e7-36cc94780f76\",\"access\":{\"classes\":false,\"bookings\":true,\"students\":true,\"cancelClasses\":true,\"staffList\":false,\"disciplines\":false,\"checkInRules\":false,\"exportStudents\":false,\"freezeMemberships\":false,\"attendanceStats\":false,\"memberFiles\":false,\"importData\":false,\""
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "with the switch, staff open the payroll report",
+  "status": "PASS",
+  "evidence": "200; 1 rows; totals 0 classes, 0 min"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "rates are hidden from staff by default (page and CSV use the same data)",
+  "status": "PASS",
+  "evidence": "ratesShown=false; coach row {\"userId\":\"6cacf731-3f4a-42b7-991b-88fc74847c62\",\"name\":\"João Silva\",\"onStaff\":true,\"hourlyRate\":null,\"perClassRate\":null,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "the owner always sees the rates",
+  "status": "PASS",
+  "evidence": "ratesShown=true; {\"userId\":\"6cacf731-3f4a-42b7-991b-88fc74847c62\",\"name\":\"João Silva\",\"onStaff\":true,\"hourlyRate\":3000,\"perClassRate\":1500,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "report only: staff can't open the rates page or change any rate",
+  "status": "PASS",
+  "evidence": "rates 403, own rate 403, owner's rate 403"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "staff can't turn \"Show pay rates in the report\" on themselves",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner turns on \"Show pay rates in the report\"",
+  "status": "PASS",
+  "evidence": "payrollStaffSeeRates=true"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "then staff see the rates, read only",
+  "status": "PASS",
+  "evidence": "ratesShown=true; {\"userId\":\"6cacf731-3f4a-42b7-991b-88fc74847c62\",\"name\":\"João Silva\",\"onStaff\":true,\"hourlyRate\":3000,\"perClassRate\":1500,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "and still can't change them",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "Branch Staff and the transactions list (not part of Payroll)",
+  "status": "NOTE",
+  "evidence": "GET transactions as Branch Staff: 403"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "a coach signs up and is given the Instructor role",
+  "status": "PASS",
+  "evidence": "thiago.ramos.r7clean@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "the main owner adds a co-owner",
+  "status": "PASS",
+  "evidence": "paula.mendes.r7clean@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "the payment account: owner and Branch Staff with a payments permission see it; a coach doesn't",
+  "status": "PASS",
+  "evidence": "owner 200; Branch Staff (charges on by default) 200; coach 403 NO_PERMISSION"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "Branch Staff with no payments permission don't see the payment account",
+  "status": "PASS",
+  "evidence": "403 NO_PERMISSION"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "a co-owner can't change staff access switches (main owner only)",
+  "status": "PASS",
+  "evidence": "403 STAFF_SWITCHES_MAIN_OWNER_ONLY"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "nor the charge permissions",
+  "status": "PASS",
+  "evidence": "403 STAFF_SWITCHES_MAIN_OWNER_ONLY"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "Dashboard checklist ticks \"Add staff\"",
+  "status": "PASS",
+  "evidence": "{\"key\":\"STAFF\",\"done\":true}"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "adult member signs up",
+  "status": "PASS",
+  "evidence": "lucas.oliveira.r7clean@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "adult joins the School",
+  "status": "PASS",
+  "evidence": "{\"id\":\"9c2dd25f-ba41-47e7-b802-cdc783d0bf31\",\"role\":\"STUDENT\",\"userId\":\"a39216ac-1726-4ca5-9f60-248fd0e63ceb\",\"franchiseId\":null,\"schoolId\":\"b9d8e925-6b0e-49ab-"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "a new School has \"Waiver must be signed before booking or check-in\" on",
+  "status": "PASS",
+  "evidence": "checkInRequireWaiver=true"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "booking a class before signing the waiver is refused (WAIVER_REQUIRED)",
+  "status": "PASS",
+  "evidence": "403 WAIVER_REQUIRED This School needs a signed waiver before booking a class or checking in."
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "buying a plan before signing the waiver is allowed (Decision 441 item 5)",
+  "status": "PASS",
+  "evidence": "201 pending_confirmation"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the waiver shows as waiting for the member",
+  "status": "PASS",
+  "evidence": "200; {\"id\":\"706b57d3-010b-42de-b7fc-a0e7c60b67ab\",\"waiverId\":\"77096afd-618f-40af-a38d-034b2f06607b\",\"studentId\":\"a39216ac-1726-4ca5-9f60-248fd0e63ceb\",\"signedById\":null,\"schoolId\":\"b9d8e925-6b0e-49ab-b2d0-"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "adult signs the waiver",
+  "status": "PASS",
+  "evidence": "signature 706b57d3-010b-42de-b7fc-a0e7c60b67ab"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the joining fee is shown before buying (first plan here)",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":2500,\"refundable\":false,\"cardSurchargeAmount\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "adult places a Pix/cash order for the 10-class pack",
+  "status": "PASS",
+  "evidence": "pending_confirmation; order PENDING BANK_TRANSFER"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the order includes the joining fee and no card surcharge",
+  "status": "PASS",
+  "evidence": "amount 10500, joining fee 2500, surcharge 0"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "with the \"record payments\" switch off, Branch Staff can't confirm the Pix/cash order",
+  "status": "PASS",
+  "evidence": "404 NOT_FOUND Transaction not found"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "…and aren't sent the \"Cash payment waiting\" notice",
+  "status": "PASS",
+  "evidence": "0 notices"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "with the switch on, Branch Staff confirm the Pix/cash order",
+  "status": "PASS",
+  "evidence": "200; order SUCCESSFUL"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "…and get back only the order's id, status, amount and membership (Decision 445 item 5)",
+  "status": "PASS",
+  "evidence": "membershipCreated,transaction"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the member has the pack with 10 classes",
+  "status": "PASS",
+  "evidence": "{\"id\":\"793a39bb-c75d-4175-b25e-c56abebe99ad\",\"studentId\":\"a39216ac-1726-4ca5-9f60-248fd0e63ceb\",\"membershipPlanId\":\"97907de5-0053-4578-b795-b727bbe66de7\",\"schoolId\":\"b9d8e925-6b0e-49ab-b2d0-8863e8841453\",\"status\":\"ACTIVE"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "no joining fee on a second plan",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":0,\"refundable\":false,\"cardSurchargeAmount\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent signs up",
+  "status": "PASS",
+  "evidence": "ana.souza.r7clean@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent adds a child (consent ticked)",
+  "status": "PASS",
+  "evidence": "{\"alreadyAdded\":false,\"linkId\":\"2225ff49-f0bf-4024-b40e-dca17421e0d3\",\"studentId\":\"b1615ba7-2ccf-4d4b-a477-9e9c6c353816\",\"firstName\":\"Beatriz\",\"surname\":\"Souza\",\"dateOfBirth\":\"2016-05-20T00:00:00.000Z"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the parent's consent is recorded with the child",
+  "status": "PASS",
+  "evidence": "{\"state\":\"GIVEN\",\"guardians\":[{\"guardianId\":\"ba9ac2ba-a36f-4d59-bb35-3542c23d7360\",\"name\":\"Ana Souza\",\"isMe\":true,\"records\":[{\"id\":\"ce3d1880-53aa-40df-969e-8fe372a2c2b7\",\"tier\":\"BASELINE\",\"status\":\"ACTIVE\",\"policyVersion"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the consent is saved with the server's Children notice version, not the app's placeholder",
+  "status": "PASS",
+  "evidence": "Children notice version \"unpublished\"; consent saved with [\"unpublished\"]"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent gives camera consent too",
+  "status": "PASS",
+  "evidence": "201"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent adds the child to the School",
+  "status": "PASS",
+  "evidence": "{\"id\":\"fcf31ebc-be68-4140-99f7-aa0b75997d26\",\"role\":\"STUDENT\",\"userId\":\"b1615ba7-2ccf-4d4b-a477-9e9c6c353816\",\"franchise"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the child's waiver shows for the parent",
+  "status": "PASS",
+  "evidence": "{\"items\":[{\"id\":\"77096afd-618f-40af-a38d-034b2f06607b\",\"schoolId\":\"b9d8e925-6b0e-49ab-b2d0-8863e8841453\",\"title\":\"Termo de responsabilidade\",\"body\":\"Declaro estar ciente dos riscos da prática de artes"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent signs the child's waiver",
+  "status": "PASS",
+  "evidence": "{\"id\":\"eb842eaa-2995-4e0c-b974-424265667836\",\"waiverId\":\"77096afd-618f-40af-a38d-034b2f06607b\",\"stud"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "Branch Staff who may confirm get the \"Cash payment waiting\" notice, pointing to the student",
+  "status": "PASS",
+  "evidence": "\"Cash payment waiting: Beatriz Souza chose to pay 50.00 BRL for Kids 8 aulas by cash or bank transfer. Mark it as paid on their Payments card o\" → STUDENT"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent buys a plan for the child (Pix/cash, confirmed)",
+  "status": "PASS",
+  "evidence": "order SUCCESSFUL, confirm 200"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the child has the plan",
+  "status": "PASS",
+  "evidence": "8 classes"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "at a School without cards no plan offers a switch, so \"agree to switch\" has nothing to agree to",
+  "status": "PASS",
+  "evidence": "400 PLAN_HAS_NO_SWITCH"
+ }
+]

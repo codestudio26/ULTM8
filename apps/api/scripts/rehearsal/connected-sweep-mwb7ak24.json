@@ -1,0 +1,100 @@
+[
+ {
+  "school": "A",
+  "journey": "R7",
+  "step": "A's member gets 403 NO_PERMISSION (not 404) from the switch-gated pages",
+  "status": "FAIL",
+  "evidence": "/schools/:s/payroll/report 403 NO_PERMISSION; /schools/:s/staff 403 NO_PERMISSION; /schools/:s/students/export 403 NO_PERMISSION; /schools/:s/payment-account 403 NO_PERMISSION; /schools/:s/students/:st/files 403 NO_PERMISSION; /schools/:s/imports/limits 403 NO_PERMISSION; /schools/:s/freezes 403 NO_PERMISSION; /schools/:s/sign-ups 403 FORBIDDEN"
+ },
+ {
+  "school": "A",
+  "journey": "R7",
+  "step": "A's Branch Staff never get 404 from the switch-gated pages",
+  "status": "PASS",
+  "evidence": "/schools/:s/payroll/report 200; /schools/:s/staff 403 STAFF_ACCESS_OFF; /schools/:s/students/export 403 STAFF_ACCESS_OFF; /schools/:s/payment-account 200; /schools/:s/students/:st/files 403 STAFF_ACCESS_OFF; /schools/:s/imports/limits 403 STAFF_ACCESS_OFF; /schools/:s/freezes 403 STAFF_ACCESS_OFF; /schools/:s/sign-ups 200"
+ },
+ {
+  "school": "A",
+  "journey": "R7",
+  "step": "a person with no link to any School gets 404 from A's switch-gated pages",
+  "status": "PASS",
+  "evidence": "/schools/:s/payroll/report 404 NOT_FOUND; /schools/:s/staff 404 NOT_FOUND; /schools/:s/students/export 404 NOT_FOUND; /schools/:s/payment-account 404 NOT_FOUND; /schools/:s/students/:st/files 404 NOT_FOUND; /schools/:s/imports/limits 404 NOT_FOUND; /schools/:s/freezes 404 NOT_FOUND; /schools/:s/sign-ups 404 NOT_FOUND"
+ },
+ {
+  "school": "A",
+  "journey": "R7",
+  "step": "B's owner gets 404 from A's switch-gated pages",
+  "status": "PASS",
+  "evidence": "/schools/:s/payroll/report 404 NOT_FOUND; /schools/:s/staff 404 NOT_FOUND; /schools/:s/students/export 404 NOT_FOUND; /schools/:s/payment-account 404 NOT_FOUND; /schools/:s/students/:st/files 404 NOT_FOUND; /schools/:s/imports/limits 404 NOT_FOUND; /schools/:s/freezes 404 NOT_FOUND; /schools/:s/sign-ups 404 NOT_FOUND"
+ },
+ {
+  "school": "A",
+  "journey": "R7",
+  "step": "A's paused Branch Staff get 403 ACCESS_PAUSED from the switch-gated pages",
+  "status": "FAIL",
+  "evidence": "pause 201; sign-in ok; /schools/:s/payroll/report 403 ACCESS_PAUSED; /schools/:s/staff 403 ACCESS_PAUSED; /schools/:s/students/export 403 ACCESS_PAUSED; /schools/:s/payment-account 403 ACCESS_PAUSED; /schools/:s/students/:st/files 403 ACCESS_PAUSED; /schools/:s/imports/limits 403 ACCESS_PAUSED; /schools/:s/freezes 403 ACCESS_PAUSED; /schools/:s/sign-ups 404 NOT_FOUND"
+ },
+ {
+  "school": "A",
+  "journey": "R7",
+  "step": "A's Branch Staff after unpause: back to the same answers",
+  "status": "PASS",
+  "evidence": "unpause 201; /schools/:s/payroll/report 200; /schools/:s/staff 403 STAFF_ACCESS_OFF; /schools/:s/students/export 403 STAFF_ACCESS_OFF; /schools/:s/payment-account 200; /schools/:s/students/:st/files 403 STAFF_ACCESS_OFF; /schools/:s/imports/limits 403 STAFF_ACCESS_OFF; /schools/:s/freezes 403 STAFF_ACCESS_OFF; /schools/:s/sign-ups 200"
+ },
+ {
+  "school": "A",
+  "journey": "R7",
+  "step": "A's Branch Staff confirming an order with \"record payments\" off get a reason, not 404",
+  "status": "FAIL",
+  "evidence": "confirm 404 NOT_FOUND Transaction not found; cancel (for comparison) 403 STAFF_ACCESS_OFF; order PENDING -> PENDING"
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "B's member gets 403 NO_PERMISSION (not 404) from the switch-gated pages",
+  "status": "FAIL",
+  "evidence": "/schools/:s/payroll/report 403 NO_PERMISSION; /schools/:s/staff 403 NO_PERMISSION; /schools/:s/students/export 403 NO_PERMISSION; /schools/:s/payment-account 403 NO_PERMISSION; /schools/:s/students/:st/files 403 NO_PERMISSION; /schools/:s/imports/limits 403 NO_PERMISSION; /schools/:s/freezes 403 NO_PERMISSION; /schools/:s/sign-ups 403 FORBIDDEN"
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "B's Branch Staff never get 404 from the switch-gated pages",
+  "status": "PASS",
+  "evidence": "/schools/:s/payroll/report 200; /schools/:s/staff 403 STAFF_ACCESS_OFF; /schools/:s/students/export 403 STAFF_ACCESS_OFF; /schools/:s/payment-account 200; /schools/:s/students/:st/files 403 STAFF_ACCESS_OFF; /schools/:s/imports/limits 403 STAFF_ACCESS_OFF; /schools/:s/freezes 403 STAFF_ACCESS_OFF; /schools/:s/sign-ups 200"
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "a person with no link to any School gets 404 from B's switch-gated pages",
+  "status": "PASS",
+  "evidence": "/schools/:s/payroll/report 404 NOT_FOUND; /schools/:s/staff 404 NOT_FOUND; /schools/:s/students/export 404 NOT_FOUND; /schools/:s/payment-account 404 NOT_FOUND; /schools/:s/students/:st/files 404 NOT_FOUND; /schools/:s/imports/limits 404 NOT_FOUND; /schools/:s/freezes 404 NOT_FOUND; /schools/:s/sign-ups 404 NOT_FOUND"
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "A's owner gets 404 from B's switch-gated pages",
+  "status": "PASS",
+  "evidence": "/schools/:s/payroll/report 404 NOT_FOUND; /schools/:s/staff 404 NOT_FOUND; /schools/:s/students/export 404 NOT_FOUND; /schools/:s/payment-account 404 NOT_FOUND; /schools/:s/students/:st/files 404 NOT_FOUND; /schools/:s/imports/limits 404 NOT_FOUND; /schools/:s/freezes 404 NOT_FOUND; /schools/:s/sign-ups 404 NOT_FOUND"
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "B's paused Branch Staff get 403 ACCESS_PAUSED from the switch-gated pages",
+  "status": "FAIL",
+  "evidence": "pause 201; sign-in ok; /schools/:s/payroll/report 403 ACCESS_PAUSED; /schools/:s/staff 403 ACCESS_PAUSED; /schools/:s/students/export 403 ACCESS_PAUSED; /schools/:s/payment-account 403 ACCESS_PAUSED; /schools/:s/students/:st/files 403 ACCESS_PAUSED; /schools/:s/imports/limits 403 ACCESS_PAUSED; /schools/:s/freezes 403 ACCESS_PAUSED; /schools/:s/sign-ups 404 NOT_FOUND"
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "B's Branch Staff after unpause: back to the same answers",
+  "status": "PASS",
+  "evidence": "unpause 201; /schools/:s/payroll/report 200; /schools/:s/staff 403 STAFF_ACCESS_OFF; /schools/:s/students/export 403 STAFF_ACCESS_OFF; /schools/:s/payment-account 200; /schools/:s/students/:st/files 403 STAFF_ACCESS_OFF; /schools/:s/imports/limits 403 STAFF_ACCESS_OFF; /schools/:s/freezes 403 STAFF_ACCESS_OFF; /schools/:s/sign-ups 200"
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "B's Branch Staff confirming an order with \"record payments\" off get a reason, not 404",
+  "status": "FAIL",
+  "evidence": "confirm 404 NOT_FOUND Transaction not found; cancel (for comparison) 403 STAFF_ACCESS_OFF; order SUCCESSFUL -> SUCCESSFUL"
+ }
+]
