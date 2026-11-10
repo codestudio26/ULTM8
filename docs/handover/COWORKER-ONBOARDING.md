@@ -61,7 +61,7 @@ them.
 | # | Where | What | Needed for |
 |---|---|---|---|
 | 1 | GitHub → repo **Settings → Collaborators → Add people** | Invite the coworker with **Write** access. They accept the email invite. | Pushing branches, opening and merging PRs |
-| 2 | GitHub → **Settings → Branches → Add branch ruleset** (or classic "branch protection rule") for `master` | Require a pull request before merging; require status checks *Cross-tenant isolation gate (required)*, *Build & unit tests*, *Portal browser tests (Chromium)*; block force pushes and deletion. Optional: require 1 approval. | Nobody (human or Claude) pushes to `master` by accident |
+| 2 | GitHub → **Settings → Branches → Add branch ruleset** (or classic "branch protection rule") for `master` | Require a pull request before merging; require status checks *Cross-tenant isolation gate (required)*, *Build & unit tests*, *Portal browser tests (Chromium)*; block force pushes and deletion. Require 1 approval and put the product owner (Repository admin) on the bypass list, so the coworker's PRs need the owner's approval while the owner's own PRs don't need the coworker's. | Nobody (human or Claude) pushes to `master` by accident |
 | 3 | GitHub → **Settings → General → Pull Requests** | Tick **Allow squash merging** only; untick merge commits and rebase merging. Tick "Automatically delete head branches". | The team's always-squash rule, enforced |
 | 4 | GitHub → **Settings → Tags** (or a tag ruleset) | Protect `v*` tags from deletion and updates. | `v1.0.0` is frozen |
 | 5 | Supabase → **Organization settings → Team → Invite** | Invite the coworker (Developer role is enough). Optional. | Running migrations themselves, reading the DB |
@@ -223,8 +223,8 @@ selected).
 
 ```text
 You're joining ULTM8 as a second developer's Claude. Another developer (the
-product owner) works on the same repo with their own Claude, so we must not
-collide.
+product owner) works on the same repo (github.com/codestudio26/ULTM8) with
+their own Claude, so we must not collide.
 
 Before doing anything:
 1. Read CLAUDE.md, CONTRIBUTING.md and docs/handover/COWORKER-ONBOARDING.md
@@ -240,16 +240,18 @@ Before doing anything:
 
 How we work:
 - Every task on its own branch from the latest origin/master
-  (feature/<name>), one feature per PR, never push to master or to the other
-  developer's branch.
+  (feature/<name>), one feature per PR. Never push to master or to the
+  product owner's branches.
 - Before pushing API changes run `cd apps/api && npx eslint src test
   --max-warnings 0`, `npx turbo run lint` and the relevant tests.
 - New decision: claim the next free number by putting "Decision N" in the PR
   title; re-check master just before merge and renumber if it was taken.
 - New migration: name must sort after the newest on master; put the
-  migrate steps at the top of the PR description.
+  migrate steps at the top of the PR description. Never run migrations
+  against the live Supabase database.
 - Add user-visible changes under "## Unreleased" in CHANGELOG.md.
-- Merge only with "Squash and merge", and only when I say so.
+- Don't merge. The product owner reviews and approves every PR, then it is
+  squash-merged.
 - Never commit secrets or ask me to paste one.
 - If a rule isn't confirmed by Spec 55, SKILL.md or the decision log, stop
   and ask me; I'll check with the product owner.
