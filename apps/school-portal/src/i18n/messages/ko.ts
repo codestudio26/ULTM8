@@ -4704,6 +4704,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "카드 결제 분쟁",
       noticeDueReminder: "요금 기한 3일 전 알림",
       noticeRefund: "결제 환불",
+      noticeCardPaymentConfirmed: "나중에 확인된 저장된 카드 구매",
+      noticeCardPaymentConfirmedHint: "회원이 구매 화면을 떠난 뒤 플랜의 카드 결제가 확인되면 보냅니다. 같은 결제이며 한 번만 청구되었다고 알려 줍니다.",
     },
     card: {
       title: "결제",

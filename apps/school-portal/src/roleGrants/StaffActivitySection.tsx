@@ -4,6 +4,7 @@ import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import type { TranslationKey } from '../i18n/I18nProvider';
+import { ROLE_LABELS } from '../lib/enumLabels';
 import { useStaffActivity, useStaffList, type StaffActivityEntry } from './roleGrantQueries';
 
 type T = ReturnType<typeof useT>;
@@ -20,7 +21,8 @@ function describe(t: T, e: StaffActivityEntry): string {
   const d = (e.details ?? {}) as Record<string, any>;
   const who = e.actorName ?? t('roleGrants.activity.someone');
   const whom = e.targetName ?? t('roleGrants.activity.someone');
-  const role = d.role && ROLE_KEYS[d.role] ? t(ROLE_KEYS[d.role]) : String(d.role ?? '');
+  // Any other role (e.g. FRANCHISE_OWNER) by its name, never the raw code.
+  const role = d.role && ROLE_KEYS[d.role] ? t(ROLE_KEYS[d.role]) : d.role && ROLE_LABELS[d.role] ? t(ROLE_LABELS[d.role]!) : String(d.role ?? '');
   const at = d.branchName ? t('roleGrants.activity.atBranch', { branch: d.branchName }) : '';
   const vars = { who, whom, role, at, email: String(d.email ?? '') };
   switch (e.action) {

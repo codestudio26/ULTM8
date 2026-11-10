@@ -1074,10 +1074,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "알 수 없는 종목",
       loading: "등급 불러오는 중…",
       rankError: "등급 세부 정보를 불러오지 못했습니다.",
-      rank: "등급 {order}",
-      rankWithStripes: {
-        other: "등급 {order} · 그랄 {count}개",
-      },
     },
   },
   transactions: {

@@ -4962,6 +4962,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "نزاع على دفعة بالبطاقة",
       noticeDueReminder: "تذكير قبل 3 أيام من استحقاق الرسوم",
       noticeRefund: "استرداد دفعة",
+      noticeCardPaymentConfirmed: "شراء بالبطاقة المحفوظة تم تأكيده لاحقًا",
+      noticeCardPaymentConfirmedHint: "يُرسل عندما يُؤكَّد دفع خطة بالبطاقة بعد مغادرة العضو شاشة الشراء. يوضح أنها الدفعة نفسها وأنها خُصمت مرة واحدة فقط.",
     },
     card: {
       title: "المدفوعات",

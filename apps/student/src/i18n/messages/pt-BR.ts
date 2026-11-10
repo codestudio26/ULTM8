@@ -1099,11 +1099,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Modalidade desconhecida",
       loading: "Carregando graduação…",
       rankError: "Não foi possível carregar os detalhes da graduação.",
-      rank: "Graduação {order}",
-      rankWithStripes: {
-        one: "Graduação {order} · {count} grau",
-        other: "Graduação {order} · {count} graus",
-      },
     },
   },
   transactions: {

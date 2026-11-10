@@ -7,20 +7,22 @@ import { offSessionPurchaseNotices, savedCardPaymentConfirmedBody } from './off-
  * (settled by Stripe's webhook or the stale-attempt sweep, after the purchase
  * screen may already have shown success) says it is the same payment and only
  * one charge was made. Its own text, not the cash notice's, with the cash
- * notice's title, type, keys and audience (the member, or the Guardians of a
+ * notice's title, keys and audience (the member, or the Guardians of a
  * linked minor), translated in every language by its shape (@ultm8/i18n
- * server/translate.ts).
+ * server/translate.ts). Decision 450 item 8: its own type,
+ * CARD_PAYMENT_CONFIRMED (was the cash notice's CASH_PAYMENT), and its own
+ * School switch, on by default.
  */
 const CASH_MEMBER = 'Your payment of 30.00 USD for Gold was confirmed. Your membership is now active.';
 const CASH_GUARDIAN = "Sam Lee's payment of 30.00 USD for Gold was confirmed. The membership is now active.";
 
 const row = { id: 'tx-1', studentId: 'student-1', schoolId: 'school-1', membershipPlanId: 'plan-1', planSwitchFromMembershipId: null, amount: 2910, surchargeAmount: 90, currency: 'USD' } as unknown as Transaction;
 
-function db(guardianIds: string[]) {
+function db(guardianIds: string[], school: { chargeNoticeCardConfirmed: boolean } | null = null) {
   return {
     membership: { findUnique: jest.fn() },
     membershipPlan: { findUnique: jest.fn().mockResolvedValue({ title: 'Gold' }) },
-    school: { findUnique: jest.fn() },
+    school: { findUnique: jest.fn().mockResolvedValue(school) },
     user: { findUnique: jest.fn().mockResolvedValue({ firstName: 'Sam', surname: 'Lee' }) },
     guardianLink: { findMany: jest.fn().mockResolvedValue(guardianIds.map((guardianId) => ({ guardianId }))) },
   } as never;
@@ -47,12 +49,19 @@ describe('the late "Payment confirmed" for a saved-card purchase (Decision 449 i
         userId: 'student-1',
         title: 'Payment confirmed',
         body: 'Your payment of 30.00 USD for Gold is complete. This is the same payment you made when you bought it, not a new one: you have been charged only once. Your membership is now active.',
-        type: 'CASH_PAYMENT',
+        type: 'CARD_PAYMENT_CONFIRMED',
         schoolId: 'school-1',
         targetType: 'PAYMENT',
       },
     ]);
     expect(notices[0].body).not.toBe(CASH_MEMBER);
+  });
+
+  it('its own School switch: on by default, and off sends nothing (Decision 450 item 8)', async () => {
+    expect(await offSessionPurchaseNotices(db([], { chargeNoticeCardConfirmed: true }), row, 'paid')).toHaveLength(1);
+    expect(await offSessionPurchaseNotices(db([]), row, 'paid')).toHaveLength(1);
+    expect(await offSessionPurchaseNotices(db([], { chargeNoticeCardConfirmed: false }), row, 'paid')).toEqual([]);
+    expect(await offSessionPurchaseNotices(db(['g-1'], { chargeNoticeCardConfirmed: false }), row, 'paid')).toEqual([]);
   });
 
   it("a linked minor's purchase: each Guardian, never the minor, with the Guardian's text", async () => {
@@ -69,8 +78,8 @@ describe('the late "Payment confirmed" for a saved-card purchase (Decision 449 i
     }
   });
 
-  const MEMBER = { title: 'Payment confirmed', body: savedCardPaymentConfirmedBody('30.00 USD', 'Gold'), type: 'CASH_PAYMENT' };
-  const GUARDIAN = { title: 'Payment confirmed', body: savedCardPaymentConfirmedBody('30.00 USD', 'Gold', 'Sam Lee'), type: 'CASH_PAYMENT' };
+  const MEMBER = { title: 'Payment confirmed', body: savedCardPaymentConfirmedBody('30.00 USD', 'Gold'), type: 'CARD_PAYMENT_CONFIRMED' };
+  const GUARDIAN = { title: 'Payment confirmed', body: savedCardPaymentConfirmedBody('30.00 USD', 'Gold', 'Sam Lee'), type: 'CARD_PAYMENT_CONFIRMED' };
 
   it('reads the same in English, amount formatted', () => {
     const english = translatorFor(serverKeys, 'en-GB');

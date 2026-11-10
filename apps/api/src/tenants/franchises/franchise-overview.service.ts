@@ -49,7 +49,7 @@ function addLine(into: RevenueLine, from: RevenueLine) {
  * added up across the Franchise.
  *
  * The figures come from three SECURITY DEFINER functions (migration
- * 20270405000001_franchise_overview), called in the caller's own context:
+ * 20270406000001_franchise_overview), called in the caller's own context:
  * each checks from `app.current_user_id` that the caller owns the Franchise
  * and reads only the Schools that are its members now, and returns counts and
  * sums only. They follow each School's own reports (Dashboard / Growth,

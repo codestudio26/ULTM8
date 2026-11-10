@@ -224,6 +224,9 @@ export class SchoolResponseDto extends PostalAddressColumnsResponseDto {
   @ApiProperty({ description: 'Decisions 414 and 415 item 4: "Refund" notices to the member, for every refund (default on).' })
   chargeNoticeRefund!: boolean;
 
+  @ApiProperty({ description: 'Decision 450 item 8: the late "Payment confirmed" notice for a saved-card purchase (default on).' })
+  chargeNoticeCardConfirmed!: boolean;
+
   @ApiPropertyOptional({ type: Number, nullable: true, description: 'Decision 391: days a Visitor\'s visit pass lasts. Null until the School sets it.' })
   visitorPeriodDays!: number | null;
 

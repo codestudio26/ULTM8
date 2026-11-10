@@ -609,6 +609,16 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       }
       // Only the owner changes it.
       expect((await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokens.staffA}`).send({ chargeNoticeRefund: false })).status).toBe(403);
+
+      // Decision 450 item 8: the late saved-card "Payment confirmed" has its
+      // own switch, on by default, set by the owner only, leaving the others.
+      const before = await su.school.findUniqueOrThrow({ where: { id: school.id } });
+      expect(before.chargeNoticeCardConfirmed).toBe(true);
+      const cardOff = await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokens.owner}`).send({ chargeNoticeCardConfirmed: false });
+      expect(cardOff.status).toBe(200);
+      expect(cardOff.body).toMatchObject({ chargeNoticeCardConfirmed: false, chargeNoticeRefund: true, chargeNoticeReceipt: before.chargeNoticeReceipt });
+      await setSchool({ chargeNoticeCardConfirmed: true });
+      expect((await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokens.staffA}`).send({ chargeNoticeCardConfirmed: false })).status).toBe(403);
     });
   });
 

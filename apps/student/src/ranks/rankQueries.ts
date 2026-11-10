@@ -33,9 +33,12 @@ export function useDisciplines(schoolId: string | null) {
   });
 }
 
-/** A Rank has no name/title field — it's represented by `order` (a number),
- * `primaryColour`/`secondaryColour` (belt colours), and `stripeTiers` (verified in
- * packages/api-client/src/generated/schema.d.ts's RankResponseDto). Same RLS shape as
+/** A Rank (a belt) has its `name` (e.g. "Blue Belt"), its ladder `order`,
+ * `primaryColour`/`secondaryColour` (belt colours), and `stripeTiers`, each rung
+ * with its own `name` (e.g. "Blue Belt · 2 Stripes") — see
+ * packages/api-client/src/generated/schema.d.ts's RankResponseDto. (An earlier
+ * version of this comment said a Rank had no name; the grading work since gave it
+ * one, and the member app now shows it, MyRankSection.) Same RLS shape as
  * Discipline (catalog data, any active RoleGrant at the School can read it). */
 export function useRank(rankId: string | null) {
   return useQuery({

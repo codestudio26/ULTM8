@@ -1100,12 +1100,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Discipline inconnue",
       loading: "Chargement du grade…",
       rankError: "Impossible de charger le détail du grade.",
-      rank: "Grade {order}",
-      rankWithStripes: {
-        one: "Grade {order} · {count} barrette",
-        many: "Grade {order} · {count} barrettes",
-        other: "Grade {order} · {count} barrettes",
-      },
     },
   },
   transactions: {

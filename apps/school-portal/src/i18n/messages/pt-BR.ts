@@ -4750,6 +4750,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Uma contestação de pagamento com cartão",
       noticeDueReminder: "Um lembrete 3 dias antes do vencimento de uma cobrança",
       noticeRefund: "Um reembolso de um pagamento",
+      noticeCardPaymentConfirmed: "Uma compra com cartão salvo confirmada depois",
+      noticeCardPaymentConfirmedHint: "Enviada quando um pagamento com cartão de um plano é confirmado depois que o membro saiu da tela de compra. Diz que é o mesmo pagamento, cobrado uma única vez.",
     },
     card: {
       title: "Pagamentos",

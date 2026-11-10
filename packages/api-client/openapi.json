@@ -24562,6 +24562,10 @@
             "type": "boolean",
             "description": "Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on)."
           },
+          "chargeNoticeCardConfirmed": {
+            "type": "boolean",
+            "description": "Decision 450 item 8: tell the member \"Payment confirmed\" when a saved-card purchase is confirmed after the purchase screen (default on)."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
@@ -24941,6 +24945,10 @@
             "type": "boolean",
             "description": "Decisions 414 and 415 item 4: \"Refund\" notices to the member, for every refund (default on)."
           },
+          "chargeNoticeCardConfirmed": {
+            "type": "boolean",
+            "description": "Decision 450 item 8: the late \"Payment confirmed\" notice for a saved-card purchase (default on)."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -25107,6 +25115,7 @@
           "chargeNoticeDispute",
           "chargeNoticeDueReminder",
           "chargeNoticeRefund",
+          "chargeNoticeCardConfirmed",
           "medicalInfoEnabled",
           "memberAppEditProfile",
           "memberAppCancelMembership",
@@ -25379,6 +25388,10 @@
           "chargeNoticeRefund": {
             "type": "boolean",
             "description": "Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on)."
+          },
+          "chargeNoticeCardConfirmed": {
+            "type": "boolean",
+            "description": "Decision 450 item 8: tell the member \"Payment confirmed\" when a saved-card purchase is confirmed after the purchase screen (default on)."
           },
           "heardFromOptions": {
             "nullable": true,

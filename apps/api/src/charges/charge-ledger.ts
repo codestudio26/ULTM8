@@ -325,12 +325,13 @@ export async function giveCredit(tx: Tx, input: { schoolId: string; studentId: s
 export async function chargeNoticeSwitches(db: Pick<Tx, 'school'>, schoolId: string) {
   const school = await db.school.findUnique({
     where: { id: schoolId },
-    select: { chargeNoticeReceipt: true, chargeNoticeFailedOverdue: true, chargeNoticeDispute: true, chargeNoticeRefund: true },
+    select: { chargeNoticeReceipt: true, chargeNoticeFailedOverdue: true, chargeNoticeDispute: true, chargeNoticeRefund: true, chargeNoticeCardConfirmed: true },
   });
   return {
     receipt: school?.chargeNoticeReceipt ?? true,
     failedOverdue: school?.chargeNoticeFailedOverdue ?? true,
     dispute: school?.chargeNoticeDispute ?? true,
     refund: school?.chargeNoticeRefund ?? true,
+    cardPaymentConfirmed: school?.chargeNoticeCardConfirmed ?? true,
   };
 }

@@ -1073,10 +1073,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "未知项目",
       loading: "正在加载级别…",
       rankError: "无法加载级别详情。",
-      rank: "第 {order} 级",
-      rankWithStripes: {
-        other: "第 {order} 级 · {count} 道条纹",
-      },
     },
   },
   transactions: {

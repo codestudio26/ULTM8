@@ -1126,13 +1126,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Nieznana dyscyplina",
       loading: "Wczytywanie stopnia…",
       rankError: "Nie udało się wczytać szczegółów stopnia.",
-      rank: "Stopień {order}",
-      rankWithStripes: {
-        one: "Stopień {order} · {count} belka",
-        few: "Stopień {order} · {count} belki",
-        many: "Stopień {order} · {count} belek",
-        other: "Stopień {order} · {count} belki",
-      },
     },
   },
   transactions: {

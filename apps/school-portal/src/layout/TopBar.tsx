@@ -8,23 +8,8 @@ import { useLanguages } from '../settings/settingsQueries';
 import { SchoolSwitcher } from '../coach/SchoolSwitcher';
 import { AccountMenu } from './AccountMenu';
 import { GlobalSearch } from './GlobalSearch';
-import type { RoleGrantClaim } from '../auth/types';
-import { useI18n, type TranslateFn } from '../i18n/I18nProvider';
-
-/** Coaches review CP6: the role at the School being worked in (the switcher's
- * choice), so a coach at one School who is Branch Staff at another reads
- * right at each; a School-less grant (Franchise owner) always counts. Falls
- * back to every grant when none matches. */
-function roleLabel(allGrants: RoleGrantClaim[] | undefined, schoolId: string | null, t: TranslateFn): string {
-  if (!allGrants?.length) return '';
-  const here = schoolId ? allGrants.filter((g) => g.schoolId === schoolId || !g.schoolId) : [];
-  const grants = here.length > 0 ? here : allGrants;
-  if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return t('layout.roles.owner');
-  if (grants.some((g) => g.role === 'BRANCH_STAFF')) return t('layout.roles.branchStaff');
-  if (grants.some((g) => g.role === 'INSTRUCTOR')) return t('layout.roles.coach');
-  if (grants.some((g) => g.role === 'STUDENT')) return t('layout.roles.student');
-  return grants[0].role;
-}
+import { useI18n } from '../i18n/I18nProvider';
+import { roleLabel } from './roleLabel';
 
 /** Who reads "What's new" (Decision 318 item 3): owners and staff, not students. */
 const STAFF_ROLES: string[] = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR', 'FRANCHISE_OWNER'];

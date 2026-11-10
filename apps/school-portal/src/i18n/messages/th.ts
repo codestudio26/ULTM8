@@ -4704,6 +4704,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "ข้อโต้แย้งการชำระด้วยบัตร",
       noticeDueReminder: "แจ้งเตือน 3 วันก่อนครบกำหนดค่าบริการ",
       noticeRefund: "การคืนเงินของการชำระเงิน",
+      noticeCardPaymentConfirmed: "การซื้อด้วยบัตรที่บันทึกไว้ซึ่งยืนยันภายหลัง",
+      noticeCardPaymentConfirmedHint: "ส่งเมื่อการชำระเงินด้วยบัตรสำหรับแพ็กเกจได้รับการยืนยันหลังจากสมาชิกออกจากหน้าซื้อแล้ว แจ้งว่าเป็นการชำระเงินเดิมและเรียกเก็บเพียงครั้งเดียว",
     },
     card: {
       title: "การชำระเงิน",

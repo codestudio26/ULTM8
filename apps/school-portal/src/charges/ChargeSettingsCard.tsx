@@ -53,6 +53,8 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
   const [noticeDispute, setNoticeDispute] = useState(school.chargeNoticeDispute ?? true);
   const [noticeDueReminder, setNoticeDueReminder] = useState(school.chargeNoticeDueReminder ?? true);
   const [noticeRefund, setNoticeRefund] = useState(school.chargeNoticeRefund ?? true);
+  // Decision 450 item 8: the late saved-card "Payment confirmed" notice.
+  const [noticeCardPaymentConfirmed, setNoticeCardPaymentConfirmed] = useState(school.chargeNoticeCardConfirmed ?? true);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const parsedRate = parseRate(rate);
@@ -108,6 +110,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
         chargeNoticeDispute: noticeDispute,
         chargeNoticeDueReminder: noticeDueReminder,
         chargeNoticeRefund: noticeRefund,
+        chargeNoticeCardConfirmed: noticeCardPaymentConfirmed,
       });
       setSaved(true);
     } catch (err) {
@@ -285,6 +288,16 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
           checked={noticeRefund}
           onChange={(on) => {
             setNoticeRefund(on);
+            changed();
+          }}
+        />
+        <Switch
+          id="charge-notice-card-payment-confirmed"
+          label={t('charges.settings.noticeCardPaymentConfirmed')}
+          description={t('charges.settings.noticeCardPaymentConfirmedHint')}
+          checked={noticeCardPaymentConfirmed}
+          onChange={(on) => {
+            setNoticeCardPaymentConfirmed(on);
             changed();
           }}
         />
