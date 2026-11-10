@@ -36,6 +36,7 @@ async function bookMany(s, n, tag) {
     // Every 5th class shares its start time with the one before it (ties on the start time).
     const slot = i % 5 === 4 ? i - 1 : i;
     const start = new Date(base + slot * 3600e3 + (s === sb ? 1800e3 : 0));
+    if (i % 40 === 0) { await signIn(s.owner); await signIn(m); } // access tokens last 15 minutes
     const cls = await must('class', 'POST', `/schools/${s.id}/classes`, s.owner.tok, { branchId: s.branch.id, title: `${tag} ${i}`, activities: ['BJJ'], startDate: start.toISOString(), endDate: new Date(start.getTime() + 3600e3).toISOString(), membershipInclusion: true, capacity: 30 });
     const b = await call('POST', `/classes/${cls.id}/book`, m.tok, {});
     if (b.status >= 300) { bookErrors.push(`${b.status} ${b.body?.error?.message}`); continue; }
