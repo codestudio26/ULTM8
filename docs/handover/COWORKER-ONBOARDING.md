@@ -60,15 +60,15 @@ them.
 
 | # | Where | What | Needed for |
 |---|---|---|---|
-| 1 | GitHub → repo **Settings → Collaborators → Add people** | Invite the coworker with **Write** access. They accept the email invite. | Pushing branches, opening and merging PRs |
-| 2 | GitHub → **Settings → Branches → Add branch ruleset** (or classic "branch protection rule") for `master` | Require a pull request before merging; require status checks *Cross-tenant isolation gate (required)*, *Build & unit tests*, *Portal browser tests (Chromium)*; block force pushes and deletion. Require 1 approval and put the product owner (Repository admin) on the bypass list, so the coworker's PRs need the owner's approval while the owner's own PRs don't need the coworker's. | Nobody (human or Claude) pushes to `master` by accident |
+| 1 | GitHub | **Both developers share the product owner's GitHub account** (owner's choice, 10 Nov 2026). No collaborator invite. The coworker signs in to that account where needed (Codespaces, claude.ai/connect-github). | Pushing branches, opening PRs |
+| 2 | GitHub → **Settings → Branches → Add branch ruleset** (or classic "branch protection rule") for `master` | Require a pull request before merging; require status checks *Cross-tenant isolation gate (required)*, *Build & unit tests*, *Portal browser tests (Chromium)*; block force pushes and deletion. **Don't require approvals**: with one shared account, GitHub can't approve its own PRs, so that would block every merge. The owner's review happens in chat instead (see §5). | Nobody (human or Claude) pushes to `master` by accident |
 | 3 | GitHub → **Settings → General → Pull Requests** | Tick **Allow squash merging** only; untick merge commits and rebase merging. Tick "Automatically delete head branches". | The team's always-squash rule, enforced |
 | 4 | GitHub → **Settings → Tags** (or a tag ruleset) | Protect `v*` tags from deletion and updates. | `v1.0.0` is frozen |
 | 5 | Supabase → **Organization settings → Team → Invite** | Invite the coworker (Developer role is enough). Optional. | Running migrations themselves, reading the DB |
 | 6 | Render → **Workspace settings → Members** | Invite if your plan allows members. Optional. | Redeploying the API, reading logs |
 | 7 | Vercel | The free Hobby plan has no team members. Not needed: `master` deploys by itself. | (none) |
 | 8 | Stripe → **Settings → Team and security → Add member** | Optional, test mode only. | Checking test payments and webhooks |
-| 9 | Claude (coworker's own account) | Connect their GitHub at claude.ai/connect-github. If they use Claude Code on the web, the Claude GitHub App must cover this repo (the owner installed it already; an owner may need to approve). | Their Claude can clone, push and open PRs |
+| 9 | Claude (coworker's own Claude account) | Connect the shared GitHub account at claude.ai/connect-github. | Their Claude can clone, push and open PRs |
 
 Never send a password, key or connection string over chat or email. If the
 coworker needs a secret, they get dashboard access (rows 5, 6, 8) and copy it
@@ -123,6 +123,16 @@ bypasses RLS. Never "fix" a connection error by pointing one at the superuser.
 The short version is in `CONTRIBUTING.md`. The points that matter most with
 two people:
 
+- **Telling the two of you apart (one shared GitHub account).** Every PR shows
+  the same GitHub user, so:
+  - The coworker's branches start with their initials, e.g.
+    `ab/feature-timetable-filters`; the owner's don't.
+  - The coworker sets their own name for commits once per machine/Codespace:
+    `git config user.name "<their name>"` and `git config user.email "<their email>"`.
+  - The coworker's PR titles start with `[<initials>]`.
+- **The owner approves every coworker PR before it merges**, in chat with
+  the owner's Claude (not with GitHub's Approve button, which a shared account
+  can't use on its own PRs). The coworker's Claude never merges.
 - **One branch per feature, from the latest `master`.** Merge `master` into
   your branch to update it; don't rebase.
 - **Always "Squash and merge".**
@@ -250,6 +260,10 @@ How we work:
   migrate steps at the top of the PR description. Never run migrations
   against the live Supabase database.
 - Add user-visible changes under "## Unreleased" in CHANGELOG.md.
+- We share one GitHub account with the product owner. Start every branch
+  name with my initials (<initials>/feature-<name>), start every PR title with
+  [<initials>], and set git user.name/user.email to my own name before the
+  first commit.
 - Don't merge. The product owner reviews and approves every PR, then it is
   squash-merged.
 - Never commit secrets or ask me to paste one.

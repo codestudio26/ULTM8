@@ -11,6 +11,10 @@ first, then `CLAUDE.md`.
 - Start every piece of work on a new branch from the latest `master`:
   `git fetch origin master && git checkout -b feature/<short-name> origin/master`
   (`fix/<name>`, `docs/<name>` and `claude/<name>` are fine too).
+- Both developers share one GitHub account, so the coworker's branches start
+  with their initials (`ab/feature-<name>`), their PR titles with `[ab]`, and
+  they set their own `git config user.name` / `user.email` so commits show who
+  wrote them. The owner approves the coworker's PRs in chat before merge.
 - One feature or fix per PR. Don't push to the other person's branch unless
   they've asked you to.
 - Keep your branch current by **merging** `master` in

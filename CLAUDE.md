@@ -27,7 +27,8 @@ has the full setup, deploy and open-items picture. The rules that prevent
 collisions:
 
 - One branch per task from the latest `origin/master`; never push to `master` or to the other developer's branch. Update a branch by merging `master` in, not rebasing.
-- Merge only with **Squash and merge**, and only when your own user says so.
+- Both developers share one GitHub account: the coworker's branches start with their initials and their PR titles with `[initials]`, so PRs can be told apart. The coworker's Claude never merges; the product owner approves each coworker PR in chat first.
+- Merge only with **Squash and merge**, and only when the product owner says so.
 - Before pushing API changes: `cd apps/api && npx eslint src test --max-warnings 0` (CI fails on one warning), plus `npx turbo run lint` and the relevant tests.
 - **Decision numbers:** check both `master` and open PR titles for the highest number, claim the next one by putting "Decision N" in your PR title, and re-check just before merge; whoever merges second renumbers. Never renumber one already on `master`.
 - **Migrations:** the folder name must sort after the newest on `master`; never edit or rename a merged one; put the exact migrate steps (`cd apps/api && npx prisma migrate deploy && npx prisma generate`, restart the API) at the top of the PR description.
