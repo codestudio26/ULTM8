@@ -232,6 +232,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "결제 확인됨",
     paymentConfirmedBody: "{plan} 결제 금액 {amount}이(가) 확인되었습니다. 이제 멤버십이 활성화되었습니다.",
     childPaymentConfirmedBody: "{name}님의 {plan} 결제 금액 {amount}이(가) 확인되었습니다. 이제 멤버십이 활성화되었습니다.",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "{plan} 결제 금액 {amount}의 결제가 완료되었습니다. 구매할 때 하신 결제와 같은 결제이며 새 결제가 아닙니다. 요금은 한 번만 청구되었습니다. 이제 멤버십이 활성화되었습니다.",
+    childPaymentConfirmedOnceBody: "{name}님의 {plan} 결제 금액 {amount}의 결제가 완료되었습니다. 구매할 때 한 결제와 같은 결제이며 새 결제가 아닙니다. 요금은 한 번만 청구되었습니다. 이제 멤버십이 활성화되었습니다.",
     priceIncreaseTitle: "멤버십 가격 인상",
     priceIncreaseBody: "{plan} 멤버십 가격이 {amount}(으)로 오릅니다. 새 가격은 {day}부터 적용됩니다.",
     priceIncreaseNextBody: "{plan} 멤버십 가격이 다음 결제부터 {amount}(으)로 오릅니다.",

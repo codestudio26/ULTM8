@@ -302,6 +302,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "تم تأكيد الدفعة",
     paymentConfirmedBody: "تم تأكيد دفعتك البالغة {amount} مقابل {plan}. عضويتك نشطة الآن.",
     childPaymentConfirmedBody: "تم تأكيد دفعة {name} البالغة {amount} مقابل {plan}. العضوية نشطة الآن.",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "اكتملت دفعتك البالغة {amount} مقابل {plan}. هذه هي الدفعة نفسها التي دفعتها عند الشراء وليست دفعة جديدة: تم الخصم منك مرة واحدة فقط. عضويتك نشطة الآن.",
+    childPaymentConfirmedOnceBody: "اكتملت دفعة {name} البالغة {amount} مقابل {plan}. هذه هي الدفعة نفسها التي تمت عند الشراء وليست دفعة جديدة: تم الخصم مرة واحدة فقط. العضوية نشطة الآن.",
     priceIncreaseTitle: "سعر العضوية سيرتفع",
     priceIncreaseBody: "سيرتفع سعر عضويتك {plan} إلى {amount}. يُطبَّق السعر الجديد اعتبارًا من {day}.",
     priceIncreaseNextBody: "سيرتفع سعر عضويتك {plan} إلى {amount} اعتبارًا من دفعتك التالية.",

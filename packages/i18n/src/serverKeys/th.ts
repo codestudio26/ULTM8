@@ -232,6 +232,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "ยืนยันการชำระเงินแล้ว",
     paymentConfirmedBody: "ยืนยันการชำระเงิน {amount} สำหรับ {plan} ของคุณแล้ว สมาชิกภาพของคุณใช้งานได้แล้ว",
     childPaymentConfirmedBody: "ยืนยันการชำระเงิน {amount} สำหรับ {plan} ของ {name} แล้ว สมาชิกภาพใช้งานได้แล้ว",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "การชำระเงิน {amount} สำหรับ {plan} ของคุณเสร็จสมบูรณ์แล้ว นี่คือการชำระเงินเดียวกับที่คุณทำตอนซื้อ ไม่ใช่การชำระใหม่ คุณถูกเรียกเก็บเงินเพียงครั้งเดียว สมาชิกภาพของคุณใช้งานได้แล้ว",
+    childPaymentConfirmedOnceBody: "การชำระเงิน {amount} สำหรับ {plan} ของ {name} เสร็จสมบูรณ์แล้ว นี่คือการชำระเงินเดียวกับตอนซื้อ ไม่ใช่การชำระใหม่ มีการเรียกเก็บเงินเพียงครั้งเดียว สมาชิกภาพใช้งานได้แล้ว",
     priceIncreaseTitle: "ราคาสมาชิกภาพจะขึ้น",
     priceIncreaseBody: "ราคาสมาชิกภาพ {plan} ของคุณจะขึ้นเป็น {amount} ราคาใหม่มีผลตั้งแต่ {day}",
     priceIncreaseNextBody: "ราคาสมาชิกภาพ {plan} ของคุณจะขึ้นเป็น {amount} ตั้งแต่การชำระเงินครั้งถัดไป",

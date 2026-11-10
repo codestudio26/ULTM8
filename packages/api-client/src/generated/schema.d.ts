@@ -15244,11 +15244,13 @@ export interface components {
             refunded: number;
             /** @description Charges revenue that month: received − refunded. */
             net: number;
-            /** @description Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received). */
+            /** @description Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received), nor are fees (Decision 449 item 10, fees). */
             memberships: number;
-            /** @description Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received or memberships, which are the price of what was sold. */
+            /** @description Decision 449 item 10: fee revenue that month: late-cancellation, freeze and no-show fees, counted as memberships are (Successful and Refunded payments by billing date, less what was refunded on them, the card surcharge apart). */
+            fees: number;
+            /** @description Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received, memberships or fees, which are the price of what was sold. */
             surcharges: number;
-            /** @description net + memberships + surcharges. */
+            /** @description net + memberships + fees + surcharges. */
             total: number;
         };
         ChargeOverviewCurrencyDto: {
@@ -15261,9 +15263,11 @@ export interface components {
             paid: number;
             /** @description Membership revenue over the months covered (the sum of memberships by month). */
             memberships: number;
+            /** @description Decision 449 item 10: fee revenue over the months covered (the sum of fees by month). */
+            fees: number;
             /** @description Card surcharges over the months covered (the sum of surcharges by month). */
             surcharges: number;
-            /** @description Total revenue over the months covered: paid + memberships + surcharges. */
+            /** @description Total revenue over the months covered: paid + memberships + fees + surcharges. */
             total: number;
             /** @description Oldest month first. */
             revenueByMonth: components["schemas"]["ChargeRevenueMonthDto"][];

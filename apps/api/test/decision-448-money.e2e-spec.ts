@@ -388,7 +388,8 @@ describeIfDb('Decision 448: money (surcharge revenue, plan-switch quote, Pix in 
       const summary = await get(s, `/transactions/summary?kind=NO_SHOW_FEE`);
       expect(summary.body).toMatchObject({ successful: 1, revenue: [{ currency: 'USD', amount: 800 }] });
       const overview = await get(s, '/charge-reports/overview?months=1');
-      expect(overview.body.currencies[0]).toMatchObject({ memberships: 800 });
+      // Decision 449 item 10: on the "Fees" line, not in memberships.
+      expect(overview.body.currencies[0]).toMatchObject({ memberships: 0, fees: 800, total: 800 });
 
       // Refunded in the Stripe dashboard: the row says so, and revenue drops.
       await dashboardRefund(s, made.id, 800);
@@ -453,7 +454,10 @@ describeIfDb('Decision 448: money (surcharge revenue, plan-switch quote, Pix in 
       await event(s, 'payment_intent.succeeded', made.id, { transactionId: row.id });
       await event(s, 'payment_intent.succeeded', made.id, { transactionId: row.id });
       await autoPay.resolveStaleAttempts(later());
-      expect((await notices(student.id, 'Payment confirmed')).map((n) => n.body)).toEqual(['Your payment of 30.00 USD for Five classes was confirmed. Your membership is now active.']);
+      // Decision 449 item 11: its own text: the same payment, charged once.
+      expect((await notices(student.id, 'Payment confirmed')).map((n) => n.body)).toEqual([
+        'Your payment of 30.00 USD for Five classes is complete. This is the same payment you made when you bought it, not a new one: you have been charged only once. Your membership is now active.',
+      ]);
       expect(await settledNotices(student.id, 'Payment confirmed')).toHaveLength(1);
     });
 
