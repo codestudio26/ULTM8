@@ -457,6 +457,14 @@ model User {
   /// Decision 403: the School that made this account's temporary passcode.
   /// Only that School's owner can make a new one, and only while it is unused.
   temporaryPasscodeSchoolId  String?
+  /// Decision 449 item 13: when staff approved the front-desk tablet sign-up
+  /// that made this account (Decision 392). The person typed their own
+  /// details on the tablet, which checks the 18th birthday as sign-up does
+  /// (Decision 448 item 14), so the account counts as "signed up themselves"
+  /// for the 18th-birthday rule of waivers and purchases (Decision 446 item 8,
+  /// signedUpThemselves and self_signed_up_users). Null for every other
+  /// account, including an existing one invited from a tablet sign-up.
+  signedUpOnTabletAt         DateTime?
 
   /// Set once Twilio Verify OTP confirms this phone (Spec §8.1's registerScreen ->
   /// verificationPin flow). NOT a confirmed schema field — a Developer-added column
@@ -5251,6 +5259,11 @@ model StaffPermission {
   /// Stripe payment account; creating it is owners only (Decision 445 item 3).
   /// Branch Staff only; off by default and in no preset; owners always can.
   canConnectStripe      Boolean  @default(false)
+  /// Decision 449 item 7: "Manage students" for a coach: may edit the
+  /// profiles of the students of their own branches (Decision 448 item 11).
+  /// Coaches only (Branch Staff have canManageStudents); off by default; set
+  /// by the School's main owner (Decision 448 item 6).
+  canManageStudentsAsCoach Boolean @default(false)
 
   grantedById String?
   grantedBy   User?   @relation("StaffPermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)

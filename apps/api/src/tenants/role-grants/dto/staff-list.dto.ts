@@ -123,6 +123,21 @@ export class StaffAccessDto {
   importData!: boolean;
 }
 
+/** Decision 449 item 7 — a coach's own switch, on their Access window. */
+export class CoachAccessDto {
+  @ApiProperty({ description: "Manage students: edit the profiles of their branches' students (off by default; Decision 449 item 7)." })
+  @IsBoolean()
+  manageStudents!: boolean;
+}
+
+export class CoachAccessResponseDto {
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty({ type: CoachAccessDto })
+  coachAccess!: CoachAccessDto;
+}
+
 export class StaffAccessResponseDto {
   @ApiProperty()
   userId!: string;
@@ -144,7 +159,7 @@ export class MyStaffAccessResponseDto {
 
   @ApiProperty({
     description:
-      "Decision 448 item 11 — may edit students' profiles: owners, and Branch Staff with the students switch (\"Manage students\"). False for coaches who aren't also such Branch Staff, whatever `access.students` says.",
+      "Decision 448 item 11 — may edit students' profiles: owners, Branch Staff with the students switch (\"Manage students\"), and (Decision 449 item 7) coaches the main owner gave \"Manage students\". False for other coaches, whatever `access.students` says.",
   })
   editStudents!: boolean;
 
@@ -213,6 +228,13 @@ export class StaffMemberDto {
     description: "Decision 387: their access switches, for active or paused Branch Staff in the owner's view; null otherwise.",
   })
   access!: StaffAccessDto | null;
+
+  @ApiPropertyOptional({
+    type: CoachAccessDto,
+    nullable: true,
+    description: "Decision 449 item 7: a coach's own switch, for active or paused coaches in the owner's view; null otherwise.",
+  })
+  coachAccess!: CoachAccessDto | null;
 
   @ApiProperty({ type: [StaffRoleDto], description: 'Active roles first, then ended ones, newest first.' })
   roles!: StaffRoleDto[];

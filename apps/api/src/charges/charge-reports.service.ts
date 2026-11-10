@@ -100,8 +100,9 @@ export class ChargeReportsService {
     if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { wholeSchool: true };
     const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { branchStaffCanRecordPayments: true } });
     if (grants.length === 0 || !school?.branchStaffCanRecordPayments) {
-      // Decision 448 item 17: someone with no role at the School gets 404.
-      if (grants.length === 0) await this.tenantAuth.assertSchoolVisible(callerId, schoolId);
+      // Decision 449 item 6: 404 only for someone with no link to the School;
+      // paused staff, members and Guardians are told why.
+      if (grants.length === 0) await this.tenantAuth.staffRolesOrRefuse(callerId, schoolId);
       // Decision 347's own wording, as for a desk payment.
       throw new ForbiddenException(grants.length > 0 ? 'The School owner has not let Branch Staff record payments.' : "Only that School's Owner/Manager may perform this action.");
     }

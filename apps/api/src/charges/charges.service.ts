@@ -160,15 +160,12 @@ export class ChargesService {
     const can = await this.abilities(callerId, schoolId, studentId);
     const allowed = what === 'read' ? can.create || can.cancel || can.recordPayment : can[what];
     if (allowed) return can;
-    // Decision 448 item 17: someone with no role at the School gets 404, not
-    // the owner's switch.
-    await this.tenantAuth.assertSchoolVisible(callerId, schoolId);
+    // Decision 449 item 6: 404 only for someone with no link to the School;
+    // paused staff, members and Guardians are told why.
+    const roles = await this.tenantAuth.staffRolesOrRefuse(callerId, schoolId);
     if (what === 'recordPayment') {
       // Decision 347's own wording, as for a membership sold at the desk.
-      const staff = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.roleGrant.findFirst({ where: { userId: callerId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } }),
-      );
-      throw new ForbiddenException(staff ? 'The School owner has not let Branch Staff record payments.' : "Only that School's Owner/Manager may perform this action.");
+      throw new ForbiddenException(roles.branchStaff ? 'The School owner has not let Branch Staff record payments.' : "Only that School's Owner/Manager may perform this action.");
     }
     const message = {
       create: "The School owner hasn't let you create charges.",

@@ -30,8 +30,10 @@ const MESSAGES: Record<SelfAttestedAction, { noBirthDate: string; under18: strin
  * birthday is counted on the School's own date (Decision 430 item 10), or,
  * for someone who signed up themselves, from the moment sign-up counts it
  * (the earliest time zone, Decision 444 item 6; Decision 446 item 8), so an
- * account made on its 18th birthday can sign and buy at once. People the
- * School or a parent created keep the School's date.
+ * account made on its 18th birthday can sign and buy at once. An account
+ * made by approving the person's own front-desk tablet sign-up counts as
+ * signing up themselves (Decision 449 item 13). Other people the School or a
+ * parent created keep the School's date.
  *
  * `childMayAct` lets the waiver path keep Decision 318 item 8 (a School that
  * lets children of an age sign their own waivers). `db` is a connection that

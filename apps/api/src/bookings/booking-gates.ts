@@ -123,7 +123,7 @@ export async function selectAndConsumeMembership(
     if (candidates.some((m) => m.membershipPlan.type === 'CLASS_PACK' && m.classesRemaining !== null && m.classesRemaining <= 0)) {
       throw new BadRequestException(PACK_USED_UP);
     }
-    throw new BadRequestException('This Student has no Active Membership eligible to fund this Booking.');
+    throw new BadRequestException(NO_ELIGIBLE_MEMBERSHIP);
   }
   // Decision 304 item 3: an open mat while "Open mat uses a class credit" is
   // off still needs a pack with classes left, but takes none of them.
@@ -146,6 +146,10 @@ export const PLAN_NOT_STARTED = { code: 'PLAN_NOT_STARTED', message: "This plan 
 
 /** Decision 393: no other membership pays for the seat and a Class Pack has
  * no classes left. */
+
+/** No active plan pays for this Class: none at all, or none that covers it.
+ * Decision 449 item 8: coded, so the member app offers "Buy a plan". */
+export const NO_ELIGIBLE_MEMBERSHIP = { code: 'NO_ELIGIBLE_MEMBERSHIP', message: 'This Student has no Active Membership eligible to fund this Booking.' };
 
 export const PACK_USED_UP = { code: 'PACK_USED_UP', message: 'This Class Pack has no classes left. Buy the same pack to check in.' };
 
