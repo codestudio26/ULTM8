@@ -28,17 +28,23 @@ export class ChargeRevenueMonthDto {
 
   @ApiProperty({
     description:
-      'Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received).',
+      'Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received), nor are fees (Decision 449 item 10, fees).',
   })
   memberships!: number;
 
   @ApiProperty({
     description:
-      'Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received or memberships, which are the price of what was sold.',
+      'Decision 449 item 10: fee revenue that month: late-cancellation, freeze and no-show fees, counted as memberships are (Successful and Refunded payments by billing date, less what was refunded on them, the card surcharge apart).',
+  })
+  fees!: number;
+
+  @ApiProperty({
+    description:
+      'Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received, memberships or fees, which are the price of what was sold.',
   })
   surcharges!: number;
 
-  @ApiProperty({ description: 'net + memberships + surcharges.' })
+  @ApiProperty({ description: 'net + memberships + fees + surcharges.' })
   total!: number;
 }
 
@@ -58,10 +64,13 @@ export class ChargeOverviewCurrencyDto {
   @ApiProperty({ description: 'Membership revenue over the months covered (the sum of memberships by month).' })
   memberships!: number;
 
+  @ApiProperty({ description: 'Decision 449 item 10: fee revenue over the months covered (the sum of fees by month).' })
+  fees!: number;
+
   @ApiProperty({ description: 'Card surcharges over the months covered (the sum of surcharges by month).' })
   surcharges!: number;
 
-  @ApiProperty({ description: 'Total revenue over the months covered: paid + memberships + surcharges.' })
+  @ApiProperty({ description: 'Total revenue over the months covered: paid + memberships + fees + surcharges.' })
   total!: number;
 
   @ApiProperty({ type: [ChargeRevenueMonthDto], description: 'Oldest month first.' })

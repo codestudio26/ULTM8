@@ -243,6 +243,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "Betaling bevestigd",
     paymentConfirmedBody: "Je betaling van {amount} voor {plan} is bevestigd. Je lidmaatschap is nu actief.",
     childPaymentConfirmedBody: "De betaling van {amount} voor {plan} van {name} is bevestigd. Het lidmaatschap is nu actief.",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "Je betaling van {amount} voor {plan} is voltooid. Dit is dezelfde betaling als bij je aankoop, geen nieuwe: er is maar één keer afgeschreven. Je lidmaatschap is nu actief.",
+    childPaymentConfirmedOnceBody: "De betaling van {amount} voor {plan} van {name} is voltooid. Dit is dezelfde betaling als bij de aankoop, geen nieuwe: er is maar één keer afgeschreven. Het lidmaatschap is nu actief.",
     priceIncreaseTitle: "Prijs lidmaatschap gaat omhoog",
     priceIncreaseBody: "De prijs van je lidmaatschap {plan} gaat omhoog naar {amount}. De nieuwe prijs geldt vanaf {day}.",
     priceIncreaseNextBody: "De prijs van je lidmaatschap {plan} gaat vanaf je volgende betaling omhoog naar {amount}.",

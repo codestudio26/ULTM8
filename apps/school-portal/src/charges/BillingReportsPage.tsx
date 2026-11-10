@@ -46,7 +46,8 @@ function Tile({ label, hint, value, danger }: { label: string; hint: string; val
 /**
  * The billing reports (v1.3 backlog §3.6 step 4; Decision 338 item 11), next
  * to Transactions: an Overview (charges scheduled and overdue; revenue from
- * charges and from memberships, and the total, Decision 414 item 3, over the
+ * charges, from memberships and, Decision 449 item 10, from fees, and the
+ * total, Decision 414 item 3, over the
  * period and by month) and Member balances (everyone who owes or is in credit),
  * with a CSV of the balances. The owner sees the whole School; Branch Staff
  * whose School lets them take payments (Decision 347) see their own
@@ -108,6 +109,8 @@ function Overview({ schoolId }: { schoolId: string }) {
                 hint={t('charges.reports.revenueMembershipsHint', { count: data.months })}
                 value={formatMoney(c.memberships, c.currency)}
               />
+              {/* Decision 449 item 10: late-cancellation, no-show and freeze fees as their own line, once there are any. */}
+              {c.fees > 0 ? <Tile label={t('charges.reports.revenueFees')} hint={t('charges.reports.revenueFeesHint', { count: data.months })} value={formatMoney(c.fees, c.currency)} /> : null}
               {/* Decision 448 item 1: the card surcharge as its own line. */}
               {c.surcharges > 0 ? (
                 <Tile label={t('charges.reports.revenueSurcharges')} hint={t('charges.reports.revenueSurchargesHint', { count: data.months })} value={formatMoney(c.surcharges, c.currency)} />
@@ -126,6 +129,9 @@ function Overview({ schoolId }: { schoolId: string }) {
                 { key: 'refunded', header: t('charges.reports.columnRefunded'), render: (m) => formatMoney(m.refunded, c.currency) },
                 { key: 'net', header: t('charges.reports.columnCharges'), render: (m) => formatMoney(m.net, c.currency) },
                 { key: 'memberships', header: t('charges.reports.columnMemberships'), render: (m) => formatMoney(m.memberships, c.currency) },
+                ...(c.fees > 0 || c.revenueByMonth.some((m) => m.fees > 0)
+                  ? [{ key: 'fees', header: t('charges.reports.columnFees'), render: (m: ChargeOverview['currencies'][number]['revenueByMonth'][number]) => formatMoney(m.fees, c.currency) }]
+                  : []),
                 ...(c.surcharges > 0 || c.revenueByMonth.some((m) => m.surcharges > 0)
                   ? [{ key: 'surcharges', header: t('charges.reports.columnSurcharges'), render: (m: ChargeOverview['currencies'][number]['revenueByMonth'][number]) => formatMoney(m.surcharges, c.currency) }]
                   : []),

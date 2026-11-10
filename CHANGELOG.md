@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Fees on their own revenue line; "Payment confirmed" says one charge**
+  (Track A; Decision 449 items 10 and 11). No migration.
+  - Billing reports: late-cancellation, no-show and freeze fees are now a
+    "Fees" figure of their own (per currency and per month), no longer
+    inside "Memberships", and still counted in Total revenue. The Fees tile
+    and column show once there are any fees in the period, as Card
+    surcharges do. The API's billing overview has a new `fees` field (per
+    currency and per month). The Transactions page is unchanged: its
+    "Total revenue" never split by type.
+  - The "Payment confirmed" notice that arrives after a saved-card purchase
+    has already shown success on the purchase screen (settled by Stripe's
+    webhook or the stale-payment check) now has its own wording: the payment
+    is complete, it is the same payment made when buying, not a new one, and
+    the member was charged only once. Guardians of a linked minor get their
+    own version. Still sent once, to the same people; in all 15 languages.
+
 - **Launch rehearsal 2** — the same UK and Brazilian Schools taken through
   every journey of rehearsal 1 again, plus everything built since (Decisions
   441–448): Brazil's monthly plans, Branch Staff confirming Pix and cash,

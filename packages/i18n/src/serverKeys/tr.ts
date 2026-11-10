@@ -243,6 +243,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "Ödeme onaylandı",
     paymentConfirmedBody: "{plan} için {amount} tutarındaki ödemen onaylandı. Üyeliğin artık aktif.",
     childPaymentConfirmedBody: "{name} için {plan} karşılığındaki {amount} tutarındaki ödeme onaylandı. Üyelik artık aktif.",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "{plan} için {amount} tutarındaki ödemen tamamlandı. Bu, satın alırken yaptığın ödemenin aynısı, yeni bir ödeme değil: senden yalnızca bir kez ücret alındı. Üyeliğin artık aktif.",
+    childPaymentConfirmedOnceBody: "{name} için {plan} karşılığındaki {amount} tutarındaki ödeme tamamlandı. Bu, satın alma sırasında yapılan ödemenin aynısı, yeni bir ödeme değil: yalnızca bir kez ücret alındı. Üyelik artık aktif.",
     priceIncreaseTitle: "Üyelik fiyatı artıyor",
     priceIncreaseBody: "{plan} üyeliğinizin fiyatı {amount} olarak artıyor. Yeni fiyat {day} tarihinden itibaren geçerli.",
     priceIncreaseNextBody: "{plan} üyeliğinizin fiyatı bir sonraki ödemenizden itibaren {amount} olarak artıyor.",
