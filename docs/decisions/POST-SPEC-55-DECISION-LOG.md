@@ -8159,3 +8159,34 @@ User (Code), 10 Nov 2026, item by item in chat. Rehearsal: A1 "We have no data, 
 ### Recorded by
 
 User (Code), 10 Nov 2026, in chat: Franchise owner "a" (read-only overview of totals); demo findings "fix it"; #530 points: "ok" (Fees shown once any exist), "charge" (late fees on charges), "ok" (wording), "setting own its own", "ok" (translations); "ULTM8 Launch Checklist - Add Create a website for ULTM8 and onboarding process". Still open: whether the Transactions page should split revenue by type.
+
+---
+
+## Decision 451 — Stress test round 7: the owner's answers and fixes
+
+**Date:** 10 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 382, 404, 449, 450 · **Found by:** stress test round 7 (testers S, D, R) on v1.4.0
+
+### Decision
+
+**Fixes (all to be built)**
+1. **Refunding or losing a dispute on a fee never touches the member's plan** (D-1, High). A full Stripe refund or a lost dispute on a freeze fee (or any other fee row that carries a membership id) only changes that fee's row; the plan and its bookings are left alone. Owner: refunding a fee, or a member winning a dispute on one, never affects their plan.
+2. **Paused staff are told their access is paused everywhere** (R-1): at sign-in (a page saying their access to the School has been paused) and on every School page they open, not only the switch-gated ones (Decision 449 item 6).
+3. **Paused or removed coaches and staff opening or saving a student's profile** get the Decision 449 messages, not "School not found" (S-3).
+4. **Front-desk mode never tells a stranger whether a School or Branch exists** (S-1): the caller check runs before any School or Branch check, and strangers get "not found".
+5. **The member app on the web clears its saved screens** (bookings, notifications, memberships) on sign-out, when the session ends, and whenever a different person signs in, so the next person on a shared browser never sees them (S-6).
+6. **Student tags use the Decision 449 messages** (paused / no permission / not found) (S-4).
+7. **The plans-on-sale screen gives a School's own coach or staff "no permission"**, not "not found" (S-2).
+8. **A malformed or out-of-range bookings-list cursor answers 400**, never a server error (S-5).
+9. **Branch Staff confirming a Pix/cash order without the "record payments" switch get "no permission"**, not "not found" (R-2).
+10. **After too many login tries, every language shows a plain sentence**, never the raw "ThrottlerException" text (R-3).
+11. **Test harness:** Redis is always started with its own empty data folder, and the fake file storage takes its own port, so no old saved jobs are ever loaded (round 7 harness finding).
+
+**Answers**
+12. A freeze fee paid later at the desk keeps the date it was raised, so it counts in that month under Fees, as built.
+13. A closed Franchise's owner keeps the Franchise overview during the 90 days before the Franchise is purged, as built.
+14. A coach with "Manage students" may change a member's join date; **a member's birth date stays owner-only** (coaches can no longer change it, even within the same age group). To be built.
+15. After logging out, an already-issued sign-in token stays usable until it expires (up to 15 minutes), as built.
+
+### Recorded by
+
+User (Code), 10 Nov 2026: R-1 "ok"; R-2, R-3 and the harness problem "fix it"; then "ok to all" to the round 7 list (bugs D-1, S-1, S-3, S-6, S-4, S-2, S-5 and questions 1–6 with the suggested answers).
