@@ -542,6 +542,16 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
     /^(.+?)'s payment of ([\d.]+) ([A-Z]{3}) for (.+) was confirmed\. The membership is now active\.$/s,
     (m, { t, locale }) => n(t, 'childPaymentConfirmedBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
   ],
+  // Decision 449 item 11 — off-session-purchase.ts savedCardPaymentConfirmedBody(): the late
+  // "Payment confirmed" for a saved-card purchase (the same payment, charged once).
+  [
+    /^Your payment of ([\d.]+) ([A-Z]{3}) for (.+) is complete\. This is the same payment you made when you bought it, not a new one: you have been charged only once\. Your membership is now active\.$/s,
+    (m, { t, locale }) => n(t, 'paymentConfirmedOnceBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),
+  ],
+  [
+    /^(.+?)'s payment of ([\d.]+) ([A-Z]{3}) for (.+) is complete\. This is the same payment made when it was bought, not a new one: only one charge was made\. The membership is now active\.$/s,
+    (m, { t, locale }) => n(t, 'childPaymentConfirmedOnceBody', { name: m[1], amount: formatAmount(m[2], m[3], locale), plan: m[4] }),
+  ],
   [
     /^Your School cancelled your cash or bank payment of ([\d.]+) ([A-Z]{3}) for (.+)\.$/s,
     (m, { t, locale }) => n(t, 'paymentCancelledBody', { amount: formatAmount(m[1], m[2], locale), plan: m[3] }),

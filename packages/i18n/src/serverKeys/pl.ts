@@ -271,6 +271,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "Płatność potwierdzona",
     paymentConfirmedBody: "Twoja płatność {amount} za {plan} została potwierdzona. Twoje członkostwo jest już aktywne.",
     childPaymentConfirmedBody: "Płatność {amount} za {plan} ({name}) została potwierdzona. Członkostwo jest już aktywne.",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "Twoja płatność {amount} za {plan} została zrealizowana. To ta sama płatność, którą wykonano przy zakupie, a nie nowa: obciążono Cię tylko raz. Twoje członkostwo jest już aktywne.",
+    childPaymentConfirmedOnceBody: "Płatność {amount} za {plan} ({name}) została zrealizowana. To ta sama płatność, którą wykonano przy zakupie, a nie nowa: obciążenie nastąpiło tylko raz. Członkostwo jest już aktywne.",
     priceIncreaseTitle: "Cena członkostwa rośnie",
     priceIncreaseBody: "Cena Twojego członkostwa {plan} wzrasta do {amount}. Nowa cena obowiązuje od {day}.",
     priceIncreaseNextBody: "Cena Twojego członkostwa {plan} wzrasta do {amount} od następnej płatności.",

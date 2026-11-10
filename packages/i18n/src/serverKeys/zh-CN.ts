@@ -229,6 +229,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "付款已确认",
     paymentConfirmedBody: "你为 {plan} 支付的 {amount} 已确认。你的会员资格现已生效。",
     childPaymentConfirmedBody: "{name} 为 {plan} 支付的 {amount} 已确认。会员资格现已生效。",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "你为 {plan} 支付的 {amount} 已完成。这是你购买时的同一笔付款，不是新的付款：你只被扣款一次。你的会员资格现已生效。",
+    childPaymentConfirmedOnceBody: "{name} 为 {plan} 支付的 {amount} 已完成。这是购买时的同一笔付款，不是新的付款：只扣款了一次。会员资格现已生效。",
     priceIncreaseTitle: "会员价格将上调",
     priceIncreaseBody: "你的 {plan} 会员价格将上调至 {amount}。新价格自 {day} 起生效。",
     priceIncreaseNextBody: "你的 {plan} 会员价格将从下次付款起上调至 {amount}。",

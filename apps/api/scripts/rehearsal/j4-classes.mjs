@@ -187,7 +187,7 @@ export async function j4Classes(s) {
     ok('Transactions: revenue and card surcharges are separate lines that add up to what was kept', sum.status === 200 && sur > 0 && rev + sur === kept, `revenue ${rev}, surcharges ${sur}, kept in the ledger ${kept}`);
     const ov = await call('GET', `/schools/${sid}/charge-reports/overview`, O());
     const cur = ov.body?.currencies?.find?.((x) => x.currency === c.currency);
-    ok('the billing overview shows the card surcharges as their own figure', ov.status === 200 && cur?.surcharges === sur && cur?.total === cur?.memberships + cur?.surcharges + (cur?.net ?? cur?.paid ?? 0), `${ov.status} memberships ${cur?.memberships}, surcharges ${cur?.surcharges}, total ${cur?.total}`);
+    ok('the billing overview shows the card surcharges as their own figure', ov.status === 200 && cur?.surcharges === sur && cur?.total === cur?.memberships + (cur?.fees ?? 0) + cur?.surcharges + (cur?.net ?? cur?.paid ?? 0), `${ov.status} memberships ${cur?.memberships}, fees ${cur?.fees}, surcharges ${cur?.surcharges}, total ${cur?.total}`);
   }
 
   if (c.cards && s.plans.sub) {

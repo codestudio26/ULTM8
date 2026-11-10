@@ -271,6 +271,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "Платёж подтверждён",
     paymentConfirmedBody: "Ваш платёж {amount} за {plan} подтверждён. Абонемент активен.",
     childPaymentConfirmedBody: "Платёж {amount} за {plan} ({name}) подтверждён. Абонемент активен.",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "Ваш платёж {amount} за {plan} завершён. Это тот же платёж, что и при покупке, а не новый: деньги списаны только один раз. Абонемент активен.",
+    childPaymentConfirmedOnceBody: "Платёж {amount} за {plan} ({name}) завершён. Это тот же платёж, что и при покупке, а не новый: деньги списаны только один раз. Абонемент активен.",
     priceIncreaseTitle: "Цена абонемента повышается",
     priceIncreaseBody: "Цена вашего абонемента {plan} повышается до {amount}. Новая цена действует с {day}.",
     priceIncreaseNextBody: "Цена вашего абонемента {plan} повышается до {amount} со следующего платежа.",

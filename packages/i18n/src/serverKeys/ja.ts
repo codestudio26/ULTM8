@@ -229,6 +229,9 @@ export const server: PartialMessages<ServerKeys> = {
     paymentConfirmedTitle: "支払いが確認されました",
     paymentConfirmedBody: "{plan}の{amount}の支払いが確認されました。メンバーシップが有効になりました。",
     childPaymentConfirmedBody: "{name}さんの{plan}の{amount}の支払いが確認されました。メンバーシップが有効になりました。",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "{plan}の{amount}の支払いが完了しました。これは購入時と同じ支払いで、新しい支払いではありません。請求は1回だけです。メンバーシップが有効になりました。",
+    childPaymentConfirmedOnceBody: "{name}さんの{plan}の{amount}の支払いが完了しました。これは購入時と同じ支払いで、新しい支払いではありません。請求は1回だけです。メンバーシップが有効になりました。",
     priceIncreaseTitle: "会員プランの値上げ",
     priceIncreaseBody: "{plan}の料金が{amount}に上がります。新しい料金は{day}から適用されます。",
     priceIncreaseNextBody: "{plan}の料金が次回のお支払いから{amount}に上がります。",

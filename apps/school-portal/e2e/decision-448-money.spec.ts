@@ -68,12 +68,14 @@ test('Billing reports: the card surcharge is its own line, in the total too, and
   await signIn(page, s.ownerToken);
   await page.goto('/billing-reports');
   const overview = page.getByTestId('charge-overview');
-  await expect(overview).toContainText('Memberships58.00 GBP');
+  // Decision 449 item 10: the no-show fee is on its own "Fees" line, not in Memberships.
+  await expect(overview).toContainText('Memberships50.00 GBP');
+  await expect(overview).toContainText('Fees8.00 GBP');
   await expect(overview).toContainText('Card surcharges1.50 GBP');
   await expect(overview).toContainText('Total revenue59.50 GBP');
   const rows = overview.getByRole('row');
-  await expect(rows.nth(0)).toHaveText(/Month\s*Received\s*Given back\s*Charges\s*Memberships\s*Card surcharges\s*Total/);
-  await expect(rows.nth(1)).toContainText(/58\.00 GBP\s*1\.50 GBP\s*59\.50 GBP/);
+  await expect(rows.nth(0)).toHaveText(/Month\s*Received\s*Given back\s*Charges\s*Memberships\s*Fees\s*Card surcharges\s*Total/);
+  await expect(rows.nth(1)).toContainText(/50\.00 GBP\s*8\.00 GBP\s*1\.50 GBP\s*59\.50 GBP/);
 });
 
 test('Pix only in Brazil: the desk sale and Record a payment offer it to a Brazilian School only, and say so', async ({ page }) => {
