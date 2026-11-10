@@ -193,6 +193,7 @@ export const serverMessages: Record<string, string> = {
   "SubscriptionPlan not found": "Platform abonelik planı bulunamadı",
   "That is already the student's rank date.": "Bu zaten öğrencinin derece tarihi.",
   "The Franchise School roster is not available during an impersonation session.": "Franchise okul listesi, kimliğe bürünme oturumu sırasında kullanılamaz.",
+  "The Franchise overview is not available during an impersonation session.": "Franchise genel bakışı, kimliğe bürünme oturumu sırasında kullanılamaz.",
   "The check-in window for this Class has closed.": "Bu dersin giriş süresi sona erdi.",
   "The current rank counts time only, so classes are not counted.": "Mevcut derece yalnızca süreyi sayar, bu nedenle dersler sayılmaz.",
   "The grading date can't be in the future.": "Sınav tarihi gelecekte olamaz.",

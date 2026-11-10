@@ -215,6 +215,7 @@ export const SERVER_MESSAGES: string[] = [
  "That Branch isn't an open Branch of this School. Pick another one.",
  "That is already the student's rank date.",
  "The Franchise School roster is not available during an impersonation session.",
+ "The Franchise overview is not available during an impersonation session.",
  "The check-in window for this Class has closed.",
  "The current rank counts time only, so classes are not counted.",
  "The grading date can't be in the future.",

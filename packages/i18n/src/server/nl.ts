@@ -193,6 +193,7 @@ export const serverMessages: Record<string, string> = {
   "SubscriptionPlan not found": "Platformabonnement niet gevonden",
   "That is already the student's rank date.": "Dat is al de graaddatum van de leerling.",
   "The Franchise School roster is not available during an impersonation session.": "De lijst met scholen van de franchise is niet beschikbaar tijdens een imitatiesessie.",
+  "The Franchise overview is not available during an impersonation session.": "Het overzicht van de franchise is niet beschikbaar tijdens een imitatiesessie.",
   "The check-in window for this Class has closed.": "De incheckperiode voor deze les is gesloten.",
   "The current rank counts time only, so classes are not counted.": "De huidige graad telt alleen tijd, dus lessen worden niet meegeteld.",
   "The grading date can't be in the future.": "De examendatum mag niet in de toekomst liggen.",

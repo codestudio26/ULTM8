@@ -193,6 +193,7 @@ export const serverMessages: Record<string, string> = {
   "SubscriptionPlan not found": "خطة اشتراك المنصة غير موجودة",
   "That is already the student's rank date.": "هذا هو تاريخ رتبة الطالب الحالي بالفعل.",
   "The Franchise School roster is not available during an impersonation session.": "قائمة مدارس الامتياز التجاري غير متاحة أثناء جلسة الدخول نيابةً عن مستخدم.",
+  "The Franchise overview is not available during an impersonation session.": "نظرة الامتياز التجاري العامة غير متاحة أثناء جلسة الدخول نيابةً عن مستخدم.",
   "The check-in window for this Class has closed.": "انتهت فترة تسجيل الحضور لهذه الحصة.",
   "The current rank counts time only, so classes are not counted.": "الرتبة الحالية تعتمد على المدة فقط، لذا لا تُحتسب الحصص.",
   "The grading date can't be in the future.": "لا يمكن أن يكون تاريخ الترقية في المستقبل.",
