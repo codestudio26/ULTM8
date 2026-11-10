@@ -11,9 +11,11 @@ type StudentRank = components['schemas']['StudentRankResponseDto'];
 type StudentRankList = components['schemas']['StudentRankListResponseDto'];
 type DisciplineList = components['schemas']['DisciplineListResponseDto'];
 
-/** A Rank has no name — belt colour + order + (if awarded) a stripe count is the real
- * shape (see rankQueries.ts's own comment). `currentStripeId`, when set, is matched
- * against the resolved Rank's own `stripeTiers` array to find the count/colour. This
+/** The belt's name and stripes, as the School typed them for the rung (e.g.
+ * "Blue Belt · 2 Stripes"), as My Grading shows them; the belt's own name
+ * when no rung matches (Decision 450 item 4). The demo showed "Rank 13 · 3 stripes" (the ladder
+ * position), which a member can't read. `currentStripeId`, when set, is matched
+ * against the resolved Rank's own `stripeTiers` array to find the rung. This
  * is the one genuinely unavoidable per-row fetch (confirmed on review: no batch
  * `GET /ranks?ids=` endpoint exists) — flagged as a backend follow-up, not "fixed"
  * client-side. */
@@ -44,9 +46,7 @@ function MyRankRow({ studentRank, disciplineName }: { studentRank: StudentRank; 
         {isError ? <InlineError message={getApiErrorMessage(error, t('ranks.myRank.rankError'))} /> : null}
         {rank ? (
           <Text style={{ color: '#5F6368', fontSize: 12 }}>
-            {stripeTier
-              ? t('ranks.myRank.rankWithStripes', { order: rank.order, count: stripeTier.count })
-              : t('ranks.myRank.rank', { order: rank.order })}
+            {stripeTier?.name ?? rank.name}
           </Text>
         ) : null}
       </View>

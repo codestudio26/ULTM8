@@ -4710,6 +4710,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Une contestation d'un paiement par carte",
       noticeDueReminder: "Un rappel 3 jours avant l'échéance de frais",
       noticeRefund: "Un remboursement d'un paiement",
+      noticeCardPaymentConfirmed: "Un achat par carte enregistrée confirmé plus tard",
+      noticeCardPaymentConfirmedHint: "Envoyée quand un paiement par carte d'une formule est confirmé après que le membre a quitté l'écran d'achat. Elle précise qu'il s'agit du même paiement, débité une seule fois.",
     },
     card: {
       title: "Paiements",

@@ -4710,6 +4710,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Een geschil over een kaartbetaling",
       noticeDueReminder: "Een herinnering 3 dagen voordat kosten vervallen",
       noticeRefund: "Een terugbetaling van een betaling",
+      noticeCardPaymentConfirmed: "Een aankoop met opgeslagen kaart die later is bevestigd",
+      noticeCardPaymentConfirmedHint: "Verstuurd wanneer een kaartbetaling voor een abonnement wordt bevestigd nadat het lid het aankoopscherm heeft verlaten. Er staat in dat het dezelfde betaling is, één keer afgeschreven.",
     },
     card: {
       title: "Betalingen",

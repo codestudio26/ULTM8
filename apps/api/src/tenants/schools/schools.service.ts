@@ -1110,6 +1110,8 @@ export class SchoolsService {
           chargeNoticeDueReminder: dto.chargeNoticeDueReminder,
           // Decision 414 item 4.
           chargeNoticeRefund: dto.chargeNoticeRefund,
+          // Decision 450 item 8: the late saved-card "Payment confirmed".
+          chargeNoticeCardConfirmed: dto.chargeNoticeCardConfirmed,
         },
       }),
     );

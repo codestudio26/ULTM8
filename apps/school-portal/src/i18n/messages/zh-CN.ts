@@ -4664,6 +4664,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "银行卡付款争议",
       noticeDueReminder: "费用到期前 3 天提醒",
       noticeRefund: "付款退款",
+      noticeCardPaymentConfirmed: "稍后确认的已保存卡购买",
+      noticeCardPaymentConfirmedHint: "当会员离开购买页面后套餐的银行卡付款才被确认时发送。说明这是同一笔付款，只扣款一次。",
     },
     card: {
       title: "付款",

@@ -15,6 +15,39 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Decision 450: demo findings (date order, role label, belt names, web
+  sign-in kept) and its own switch for the late "Payment confirmed"** (Track A
+  and Track B; Decision 450 items 2, 3, 4, 5 and 8).
+  **Needs a database migration** (`20270405000001_charge_notice_card_confirmed`).
+  - *My Bookings in date order (item 2):* `GET /bookings/me` lists by the class's date
+    and time instead of by booking id: classes not yet ended first, soonest
+    first (a class in progress at the top), then ended ones, newest first, then
+    any whose class the member can no longer see. Pages are keyed on the class
+    start time and the booking id, so paging never skips or repeats a booking;
+    the cursor stays opaque (an old id cursor is refused with 400, not
+    restarted).
+  - *Franchise fee charges newest first (item 2):* the Franchise page's fee-charge list
+    (`GET /franchises/:id/fee-charges`) and the School page's
+    (`GET /schools/:id/fee-charges`) list the newest billing period first,
+    paged the same way as the Transactions ledger.
+  - *Role label (item 3):* the School Portal header shows "Franchise owner" (in all 15
+    languages) instead of the raw `FRANCHISE_OWNER`; any other known role is
+    shown by its name too, as is a role in the staff activity log.
+  - *Belt names in the member app (item 4):* the School page's "My Rank" shows the belt
+    and stripes as the School named them (e.g. "Blue Belt · 3 Stripes"), as My
+    Grading does, instead of "Rank 13 · 3 stripes".
+  - *Member app on the web keeps the session on reload (item 5):* the web build keeps
+    the access and refresh tokens in the browser tab's `sessionStorage`, as the
+    School Portal does; a reload uses them (or renews with the refresh token).
+    Closing the tab still signs out. iOS and Android keep the Keychain/Keystore.
+  - *"Payment confirmed" switch (item 8):* the late "Payment
+    confirmed" notice for a saved-card purchase has its own notification type
+    (`CARD_PAYMENT_CONFIRMED`, was the cash notice's `CASH_PAYMENT`) and its own
+    switch among the School page's payment notifications, "A saved-card
+    purchase confirmed later" (`School.chargeNoticeCardConfirmed`, on by
+    default, owner only), translated in all 15 languages. The cash and bank
+    payment notice is unchanged and still always sent.
+
 - **Decision 449: clear refusals, coaches can manage students, "Buy a plan",
   browser language, tablet sign-ups** (Track A and Track B; Decision 449
   items 3, 6, 7, 8 and 13). **Needs a database migration**

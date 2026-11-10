@@ -1073,10 +1073,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "ประเภทกีฬาที่ไม่รู้จัก",
       loading: "กำลังโหลดระดับ…",
       rankError: "ไม่สามารถโหลดรายละเอียดระดับได้",
-      rank: "ระดับ {order}",
-      rankWithStripes: {
-        other: "ระดับ {order} · {count} แถบ",
-      },
     },
   },
   transactions: {

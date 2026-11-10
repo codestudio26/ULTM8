@@ -4710,6 +4710,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Kart ödemesine itiraz",
       noticeDueReminder: "Bir ücretin vadesinden 3 gün önce hatırlatma",
       noticeRefund: "Bir ödemenin iadesi",
+      noticeCardPaymentConfirmed: "Kayıtlı kartla yapılan ve sonradan onaylanan satın alma",
+      noticeCardPaymentConfirmedHint: "Bir planın kart ödemesi, üye satın alma ekranından ayrıldıktan sonra onaylandığında gönderilir. Bunun aynı ödeme olduğunu ve yalnızca bir kez tahsil edildiğini söyler.",
     },
     card: {
       title: "Ödemeler",

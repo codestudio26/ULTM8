@@ -57,6 +57,8 @@ export const charges = {
     noticeDispute: 'A dispute on a card payment',
     noticeDueReminder: 'A reminder 3 days before a charge is due',
     noticeRefund: 'A refund of a payment',
+    noticeCardPaymentConfirmed: 'A saved-card purchase confirmed later',
+    noticeCardPaymentConfirmedHint: 'Sent when a card payment for a plan is confirmed after the member left the purchase screen. It says this is the same payment, charged once.',
   },
   card: {
     title: 'Payments',

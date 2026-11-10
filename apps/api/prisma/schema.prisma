@@ -1349,6 +1349,11 @@ model School {
   /// refunded (Decision 415 item 4: every refund, charges or memberships; not
   /// a lost dispute, which has its own notice). On by default.
   chargeNoticeRefund             Boolean                         @default(true)
+  /// Decision 450 item 8 (10 Nov 2026): the late "Payment
+  /// confirmed" notice for a saved-card purchase (Decision 449 item 11),
+  /// type CARD_PAYMENT_CONFIRMED, has its own switch, separate from the cash
+  /// and bank payment notice (CASH_PAYMENT, always sent). On by default.
+  chargeNoticeCardConfirmed      Boolean                         @default(true)
   /// Decision 413: late fees, the School's choice. Off by default; switching
   /// them on needs the owner's tick "I confirm late fees are legal where my
   /// School operates" (when and by whom: lateFeeConfirmedAt/ById). A fixed

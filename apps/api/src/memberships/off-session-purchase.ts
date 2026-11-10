@@ -149,7 +149,9 @@ type NoticeDb = Pick<Prisma.TransactionClient, 'membership' | 'membershipPlan' |
  * or bank payment sends (PaymentsService.notifyCashPayment(): the member, or
  * the Guardians of a linked minor), for what left the card. Decision 449 item
  * 11: its own text, which says it is the same payment and only one charge was
- * made, since the purchase screen may already have shown success. Only the
+ * made, since the purchase screen may already have shown success. Decision 449
+ * follow-up: its own type (CARD_PAYMENT_CONFIRMED) and its own School switch
+ * (School.chargeNoticeCardConfirmed, on by default). Only the
  * settler that turned the row Successful sends it, so it goes once, and never
  * when the purchase request itself saved the answer (the member saw it then).
  * A declined one: nothing, as before.
@@ -178,13 +180,18 @@ export async function offSessionPurchaseNotices(db: NoticeDb, row: Transaction, 
 
 /** Decision 448 item 19: "Payment confirmed" for a saved-card purchase
  * settled after the request that made it (offSessionPurchaseNotices()), with
- * the title, type and keys of PaymentsService.notifyCashPayment('confirmed').
+ * the title and keys of PaymentsService.notifyCashPayment('confirmed').
  * Decision 449 item 11: its body is its own (not the cash notice's): it is the
  * same payment, charged once. Translated by @ultm8/i18n's patterns
  * (paymentConfirmedOnceBody, childPaymentConfirmedOnceBody). It may be sent
- * up to a day later (the stale-attempt sweep), so it doesn't say "just". */
+ * up to a day later (the stale-attempt sweep), so it doesn't say "just".
+ * Decision 450 item 8: its type is its own, CARD_PAYMENT_CONFIRMED
+ * (no longer the cash notice's CASH_PAYMENT), and the School can switch it
+ * off on its own (School.chargeNoticeCardConfirmed, on by default)
+ * without touching the cash and bank one. */
 async function paymentConfirmedNotices(db: NoticeDb, row: Transaction): Promise<NotificationFanoutJobData[]> {
   if (!row.currency) return [];
+  if (!(await chargeNoticeSwitches(db, row.schoolId)).cardPaymentConfirmed) return [];
   const [plan, student, guardians] = await Promise.all([
     row.membershipPlanId ? db.membershipPlan.findUnique({ where: { id: row.membershipPlanId }, select: { title: true } }) : null,
     db.user.findUnique({ where: { id: row.studentId }, select: { firstName: true, surname: true } }),
@@ -202,11 +209,16 @@ async function paymentConfirmedNotices(db: NoticeDb, row: Transaction): Promise<
     userId: n.userId,
     title: 'Payment confirmed',
     body: n.body,
-    type: 'CASH_PAYMENT',
+    type: CARD_PAYMENT_CONFIRMED_TYPE,
     schoolId: row.schoolId,
     targetType: 'PAYMENT' as const,
   }));
 }
+
+/** Decision 450 item 8: the notification type of the late saved-card
+ * "Payment confirmed" notice, its own (not CASH_PAYMENT) so it has its own
+ * School switch (School.chargeNoticeCardConfirmed). */
+export const CARD_PAYMENT_CONFIRMED_TYPE = 'CARD_PAYMENT_CONFIRMED';
 
 /** Decision 449 item 11: the body of the late "Payment confirmed" notice for a
  * saved-card purchase: the member's own, or (with `name`) a Guardian's. */
