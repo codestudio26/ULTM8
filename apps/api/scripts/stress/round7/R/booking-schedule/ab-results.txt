@@ -1,0 +1,42 @@
+== base 1 load 1.36 1.28 1.11
+89 bookings: 29.0 SQL statements and 1.3 ms of SQL each (all API traffic in the window)
+│ 0       │ 'ab:single' │ 89 │ 46  │ 57  │ 125 │ 125 │ '{"201":89}' │
+race: 2 rounds × 10 Schools × (30→10, 20→3): codes {"201":260,"409":729}; classes not exactly full: 0
+│ 0       │ 'ab:race' │ 989 │ 7124 │ 8960 │ 9072 │ 9323 │ '{"201":260,"409":729}' │
+== new 2 load 1.29 1.28 1.12
+89 bookings: 29.0 SQL statements and 1.2 ms of SQL each (all API traffic in the window)
+│ 0       │ 'ab:single' │ 89 │ 48  │ 66  │ 115 │ 115 │ '{"201":89}' │
+race: 2 rounds × 10 Schools × (30→10, 20→3): codes {"201":260,"409":722,"503":7}; classes not exactly full: 0
+a 5xx body: {"error":{"code":"SERVICE_UNAVAILABLE","message":"The server is busy. Please try again in a moment."}}
+│ 0       │ 'ab:race' │ 989 │ 7488 │ 9941 │ 10163 │ 10358 │ '{"201":260,"409":722,"503":7}' │
+== base 2 load 2.63 1.61 1.24
+89 bookings: 29.0 SQL statements and 1.2 ms of SQL each (all API traffic in the window)
+│ 0       │ 'ab:single' │ 89 │ 47  │ 56  │ 128 │ 128 │ '{"201":89}' │
+race: 2 rounds × 10 Schools × (30→10, 20→3): codes {"201":260,"409":729}; classes not exactly full: 0
+│ 0       │ 'ab:race' │ 989 │ 7546 │ 10002 │ 10293 │ 10430 │ '{"201":260,"409":729}' │
+== new 3 load 3.46 1.92 1.35
+89 bookings: 29.0 SQL statements and 1.2 ms of SQL each (all API traffic in the window)
+│ 0       │ 'ab:single' │ 89 │ 45  │ 57  │ 147 │ 147 │ '{"201":89}' │
+race: 2 rounds × 10 Schools × (30→10, 20→3): codes {"201":260,"409":729}; classes not exactly full: 0
+│ 0       │ 'ab:race' │ 989 │ 7154 │ 9100 │ 9402 │ 9597 │ '{"201":260,"409":729}' │
+== new b1 load 2.82 1.97 1.40
+1 class(es) × 40 bookers, 20 seats: filled 20; codes {"201":20,"409":20}; p50 1355 ms, max 1682 ms, wall 1.7s
+1 class(es) × 100 bookers, 30 seats: filled 30; codes {"201":30,"409":70}; p50 2246 ms, max 2815 ms, wall 2.8s
+5 class(es) × 40 bookers, 20 seats: filled 20,20,20,20; codes {"201":80,"409":80}; p50 2662 ms, max 3487 ms, wall 3.5s
+10 class(es) × 40 bookers, 20 seats: filled 20,20,20,20; codes {"201":80,"409":80}; p50 3207 ms, max 3782 ms, wall 3.8s
+== base b1 load 3.41 2.16 1.47
+1 class(es) × 40 bookers, 20 seats: filled 20; codes {"201":20,"409":20}; p50 1508 ms, max 1999 ms, wall 2.1s
+1 class(es) × 100 bookers, 30 seats: filled 30; codes {"201":30,"409":70}; p50 2616 ms, max 3361 ms, wall 3.4s
+5 class(es) × 40 bookers, 20 seats: filled 20,20,20,20; codes {"201":80,"409":80}; p50 2795 ms, max 3623 ms, wall 3.6s
+10 class(es) × 40 bookers, 20 seats: filled 20,20,20,20; codes {"201":80,"409":80}; p50 3289 ms, max 3941 ms, wall 4.0s
+== new 4 load 3.37 2.26 1.52
+89 bookings: 29.0 SQL statements and 1.1 ms of SQL each (all API traffic in the window)
+│ 0       │ 'ab:single' │ 89 │ 45  │ 58  │ 121 │ 121 │ '{"201":89}' │
+race: 2 rounds × 10 Schools × (30→10, 20→3): codes {"201":260,"409":729}; classes not exactly full: 0
+│ 0       │ 'ab:race' │ 989 │ 7336 │ 9163 │ 9501 │ 9753 │ '{"201":260,"409":729}' │
+== base 3 load 3.78 2.48 1.62
+89 bookings: 29.0 SQL statements and 1.3 ms of SQL each (all API traffic in the window)
+│ 0       │ 'ab:single' │ 89 │ 52  │ 61  │ 132 │ 132 │ '{"201":89}' │
+race: 2 rounds × 10 Schools × (30→10, 20→3): codes {"201":260,"409":703,"503":26}; classes not exactly full: 0
+a 5xx body: {"error":{"code":"SERVICE_UNAVAILABLE","message":"The server is busy. Please try again in a moment."}}
+│ 0       │ 'ab:race' │ 989 │ 7338 │ 9333 │ 9496 │ 9668 │ '{"201":260,"409":703,"503":26}' │
