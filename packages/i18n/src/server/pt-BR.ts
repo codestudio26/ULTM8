@@ -193,6 +193,7 @@ export const serverMessages: Record<string, string> = {
   "SubscriptionPlan not found": "SubscriptionPlan não encontrado",
   "That is already the student's rank date.": "Essa já é a data de graduação do aluno.",
   "The Franchise School roster is not available during an impersonation session.": "A lista de escolas da franquia não está disponível durante uma sessão de personificação.",
+  "The Franchise overview is not available during an impersonation session.": "A visão geral da franquia não está disponível durante uma sessão de personificação.",
   "The check-in window for this Class has closed.": "O período de check-in desta aula foi encerrado.",
   "The current rank counts time only, so classes are not counted.": "A graduação atual conta apenas o tempo, então as aulas não são contadas.",
   "The grading date can't be in the future.": "A data da graduação não pode estar no futuro.",

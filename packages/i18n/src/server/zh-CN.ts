@@ -193,6 +193,7 @@ export const serverMessages: Record<string, string> = {
   "SubscriptionPlan not found": "未找到订阅方案",
   "That is already the student's rank date.": "这已经是该学员的段位日期。",
   "The Franchise School roster is not available during an impersonation session.": "代登录会话期间无法查看加盟品牌的学校名单。",
+  "The Franchise overview is not available during an impersonation session.": "代登录会话期间无法查看加盟品牌概览。",
   "The check-in window for this Class has closed.": "此课程的签到时间已结束。",
   "The current rank counts time only, so classes are not counted.": "当前段位仅按时间计算，因此不统计课时数。",
   "The grading date can't be in the future.": "晋级日期不能是将来的日期。",

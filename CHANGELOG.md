@@ -15,6 +15,24 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Decision 450 item 1: the Franchise owner's overview of its member
+  Schools** (Track A). **Needs a database migration**
+  (`20270406000001_franchise_overview`). A new "Overview" button on the
+  Franchise page opens read-only totals of the Schools that are members now,
+  for the whole Franchise or one School: active and enrolled students,
+  check-ins over the last 30 days and by month, new and cancelled students by
+  month, and revenue over the last 12 months (memberships, charges, fees,
+  card surcharges, total). The figures follow each School's own Dashboard,
+  Growth, Attendance and billing overview, so the School's owner and the
+  Franchise owner see the same numbers. Revenue stays in each currency: a
+  Franchise with Schools in different currencies sees one line per currency,
+  never a sum across them. Only totals cross the School boundary: no
+  member's name or details, and the Franchise owner still can't open a
+  School's students, classes or payments or change anything there. Only the
+  Franchise's owner can open it: people at a member School are told they
+  don't have permission, anyone else gets "not found", and it isn't
+  available during impersonation. New API: `GET /franchises/{id}/overview`.
+  Text in all 15 languages.
 - **Decision 450: demo findings (date order, role label, belt names, web
   sign-in kept) and its own switch for the late "Payment confirmed"** (Track A
   and Track B; Decision 450 items 2, 3, 4, 5 and 8).

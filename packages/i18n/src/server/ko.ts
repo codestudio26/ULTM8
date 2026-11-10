@@ -193,6 +193,7 @@ export const serverMessages: Record<string, string> = {
   "SubscriptionPlan not found": "구독 플랜을 찾을 수 없습니다",
   "That is already the student's rank date.": "이미 해당 날짜가 수련생의 급 취득일입니다.",
   "The Franchise School roster is not available during an impersonation session.": "대리 로그인 세션 중에는 프랜차이즈 도장 목록을 사용할 수 없습니다.",
+  "The Franchise overview is not available during an impersonation session.": "대리 로그인 세션 중에는 프랜차이즈 개요를 사용할 수 없습니다.",
   "The check-in window for this Class has closed.": "이 수업의 출석 체크 시간이 종료되었습니다.",
   "The current rank counts time only, so classes are not counted.": "현재 급은 기간만으로 판정되므로 수업 횟수는 집계되지 않습니다.",
   "The grading date can't be in the future.": "승급일은 미래 날짜일 수 없습니다.",

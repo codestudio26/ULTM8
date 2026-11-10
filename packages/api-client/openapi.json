@@ -2796,6 +2796,41 @@
         ]
       }
     },
+    "/v1/franchises/{id}/overview": {
+      "get": {
+        "operationId": "FranchisesController_overview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseOverviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/franchises/{id}/join-requests": {
       "get": {
         "operationId": "FranchisesController_listJoinRequests",
@@ -28529,6 +28564,231 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "FranchiseOverviewMonthDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "The month, YYYY-MM (each School's months are in its own time zone)."
+          },
+          "checkIns": {
+            "type": "number",
+            "description": "Check-ins (members and Friend Pass guests) at classes that started this month, up to now, as Students → Attendance counts them."
+          },
+          "newStudents": {
+            "type": "number",
+            "description": "Students whose join date at the School falls in this month, as Students → Growth counts them."
+          },
+          "cancelled": {
+            "type": "number",
+            "description": "Students whose Subscription ended by cancellation this month, up to now, as Students → Growth counts them."
+          }
+        },
+        "required": [
+          "month",
+          "checkIns",
+          "newStudents",
+          "cancelled"
+        ]
+      },
+      "FranchiseOverviewRevenueMonthDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "The month, YYYY-MM."
+          },
+          "memberships": {
+            "type": "number",
+            "description": "Memberships: what was kept of plan purchases and renewals (minor units)."
+          },
+          "charges": {
+            "type": "number",
+            "description": "Charges: paid toward charges, less money given back (minor units)."
+          },
+          "fees": {
+            "type": "number",
+            "description": "Fees: late-cancellation, freeze and no-show fees kept (minor units)."
+          },
+          "surcharges": {
+            "type": "number",
+            "description": "Card surcharges kept (minor units)."
+          },
+          "total": {
+            "type": "number",
+            "description": "memberships + charges + fees + surcharges: the billing overview's \"Total revenue\"."
+          }
+        },
+        "required": [
+          "month",
+          "memberships",
+          "charges",
+          "fees",
+          "surcharges",
+          "total"
+        ]
+      },
+      "FranchiseOverviewRevenueDto": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency code. Different currencies are never added together."
+          },
+          "memberships": {
+            "type": "number",
+            "description": "The last 12 months added up (minor units)."
+          },
+          "charges": {
+            "type": "number"
+          },
+          "fees": {
+            "type": "number"
+          },
+          "surcharges": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "byMonth": {
+            "description": "Each month, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewRevenueMonthDto"
+            }
+          }
+        },
+        "required": [
+          "currency",
+          "memberships",
+          "charges",
+          "fees",
+          "surcharges",
+          "total",
+          "byMonth"
+        ]
+      },
+      "FranchiseOverviewTotalsDto": {
+        "type": "object",
+        "properties": {
+          "enrolledStudents": {
+            "type": "number",
+            "description": "Enrolled students now (an active student role at the School)."
+          },
+          "activeStudents": {
+            "type": "number",
+            "description": "Active students now: the Dashboard's and Growth's count (Decision 317 item 5, Decision 422 item 5)."
+          },
+          "checkInsLast30Days": {
+            "type": "number",
+            "description": "Check-ins over the last 30 days, as Students → Attendance counts them."
+          },
+          "months": {
+            "description": "The last 12 months, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewMonthDto"
+            }
+          },
+          "revenue": {
+            "description": "Revenue over the last 12 months, one entry per currency, by currency code.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewRevenueDto"
+            }
+          }
+        },
+        "required": [
+          "enrolledStudents",
+          "activeStudents",
+          "checkInsLast30Days",
+          "months",
+          "revenue"
+        ]
+      },
+      "FranchiseOverviewSchoolDto": {
+        "type": "object",
+        "properties": {
+          "enrolledStudents": {
+            "type": "number",
+            "description": "Enrolled students now (an active student role at the School)."
+          },
+          "activeStudents": {
+            "type": "number",
+            "description": "Active students now: the Dashboard's and Growth's count (Decision 317 item 5, Decision 422 item 5)."
+          },
+          "checkInsLast30Days": {
+            "type": "number",
+            "description": "Check-ins over the last 30 days, as Students → Attendance counts them."
+          },
+          "months": {
+            "description": "The last 12 months, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewMonthDto"
+            }
+          },
+          "revenue": {
+            "description": "Revenue over the last 12 months, one entry per currency, by currency code.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewRevenueDto"
+            }
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Set when the School has been closed."
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The time zone the School's months and days are in (UTC when it has none)."
+          }
+        },
+        "required": [
+          "enrolledStudents",
+          "activeStudents",
+          "checkInsLast30Days",
+          "months",
+          "revenue",
+          "schoolId",
+          "name",
+          "archivedAt",
+          "timeZone"
+        ]
+      },
+      "FranchiseOverviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "totals": {
+            "description": "Every member School added up; revenue per currency. A month's figures add up each School's own month of that name.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FranchiseOverviewTotalsDto"
+              }
+            ]
+          },
+          "schools": {
+            "description": "The Schools that are members of the Franchise now, by name.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewSchoolDto"
+            }
+          }
+        },
+        "required": [
+          "totals",
+          "schools"
         ]
       },
       "FranchiseJoinRequestListResponseDto": {

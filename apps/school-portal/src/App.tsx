@@ -62,6 +62,7 @@ import { WaiversPage } from './waivers/WaiversPage';
 import { WaiverSettingsPage } from './waivers/WaiverSettingsPage';
 import { FranchisesPage } from './franchises/FranchisesPage';
 import { FranchiseDetailPage } from './franchises/FranchiseDetailPage';
+import { FranchiseOverviewPage } from './franchises/FranchiseOverviewPage';
 import { StripeConnectReturnPage } from './franchises/StripeConnectReturnPage';
 import { NotificationsPage } from './notifications/NotificationsPage';
 import { WhatsNewPage } from './whatsNew/WhatsNewPage';
@@ -607,6 +608,17 @@ export function App() {
           <RequireAuth>
             <Shell>
               <FranchiseDetailPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      {/* Decision 450 item 1 — the Franchise owner's totals of its member Schools. */}
+      <Route
+        path="/franchises/:id/overview"
+        element={
+          <RequireAuth>
+            <Shell>
+              <FranchiseOverviewPage />
             </Shell>
           </RequireAuth>
         }
