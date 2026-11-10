@@ -1,0 +1,2410 @@
+[
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "owner signs up (register, SMS code, sign in)",
+  "status": "PASS",
+  "evidence": "olivia.hart.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "creating a School without ticking the School and Franchise Agreement is refused",
+  "status": "PASS",
+  "evidence": "400 AGREEMENT_NOT_ACCEPTED"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "owner creates the School",
+  "status": "PASS",
+  "evidence": "Rehearsal Dojo London: GB, GBP, Europe/London, en-GB"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "Dashboard checklist includes \"Connect Stripe\"",
+  "status": "PASS",
+  "evidence": "BRANCH,STYLE_AND_BELTS,CLASS,MEMBERSHIP_PLAN,WAIVER,STRIPE,STAFF"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a Branch",
+  "status": "PASS",
+  "evidence": "Shoreditch"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a style with belts (BJJ from the IBJJF template)",
+  "status": "PASS",
+  "evidence": "BJJ: 20 belts"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "owner also coaches at the Branch",
+  "status": "PASS",
+  "evidence": "instructor c341ba98-09b6-4647-9970-d274d0f3ebee"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a weekly timetable slot",
+  "status": "PASS",
+  "evidence": "TUESDAY 18:30-20:00"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "make the weeks' classes from the timetable",
+  "status": "PASS",
+  "evidence": "4 classes made for the slot"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add one-off classes (1 place tomorrow; one now)",
+  "status": "PASS",
+  "evidence": "48ee78dc-dd82-465c-8d36-794c40466e56, 741f7085-93a0-4f4f-96f8-d1bbb260add0"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "turn on a 2% card surcharge",
+  "status": "PASS",
+  "evidence": "{\"available\":true,\"country\":\"GB\",\"enabled\":true,\"bps\":200,\"confirmedAt\":\"2026-11-10T21:07:08.402Z\",\"applies\":false}"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a Stripe payment account",
+  "status": "PASS",
+  "evidence": "provider STRIPE, connectAvailable true"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "Connect Stripe: get the onboarding link (fake Stripe)",
+  "status": "PASS",
+  "evidence": "https://connect.stripe.test/al_004eb6ebbc687b98c4"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "while Stripe onboarding isn't finished: checklist not ticked, no card payments",
+  "status": "PASS",
+  "evidence": "STRIPE done=false; cardPayments=false"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "Stripe says onboarding is finished (account.updated): the account is ready and the checklist ticks \"Connect Stripe\"",
+  "status": "PASS",
+  "evidence": "webhook 200; ready true; cardPayments true; STRIPE done=true"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "switch joining fees on",
+  "status": "PASS",
+  "evidence": "joiningFeesEnabled=true"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "plan with a joining fee and a member limit",
+  "status": "PASS",
+  "evidence": "joiningFee 2500, memberLimit 2"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "plan that switches to another when it ends",
+  "status": "PASS",
+  "evidence": "Intro week → 5-class pack"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "a monthly Subscription",
+  "status": "PASS",
+  "evidence": "201 6500 GBP"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "add a waiver",
+  "status": "PASS",
+  "evidence": "Liability waiver"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "Dashboard checklist ticks each step as it is done",
+  "status": "PASS",
+  "evidence": "[{\"key\":\"BRANCH\",\"done\":true},{\"key\":\"STYLE_AND_BELTS\",\"done\":true},{\"key\":\"CLASS\",\"done\":true},{\"key\":\"MEMBERSHIP_PLAN\",\"done\":true},{\"key\":\"WAIVER\",\"done\":true},{\"key\":\"STRIPE\",\"done\":true},{\"key\":\"STAFF\",\"done\":true}]"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner finds them by email",
+  "status": "PASS",
+  "evidence": "found=true"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner invites them as Branch Staff",
+  "status": "PASS",
+  "evidence": "grant 7cb9d5bf-e5ad-4b6e-ae46-383b77b238a1"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner sets the coach's pay rates",
+  "status": "PASS",
+  "evidence": "{\"userId\":\"8236f709-3a6b-41dc-ac79-a13bf6c926ce\",\"name\":\"Olivia Hart\",\"roles\":[\"SCHOOL_OWNER_MANAGER\",\"INSTRUCTOR\"],\"hourlyRate\":3000,\"perClassRate\":1500}"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "without the Payroll switch, staff can't open the payroll report",
+  "status": "PASS",
+  "evidence": "403 The School owner hasn't let you see payroll."
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner turns on the Payroll switch",
+  "status": "PASS",
+  "evidence": "{\"userId\":\"5ed19a41-9318-4da4-9045-9bd63b5966ed\",\"access\":{\"classes\":false,\"bookings\":true,\"students\":true,\"cancelClasses\":true,\"staffList\":false,\"disciplines\":false,\"checkInRules\":false,\"exportStudents\":false,\"freezeMemberships\":false,\"attendanceStats\":false,\"memberFiles\":false,\"importData\":false,\""
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "with the switch, staff open the payroll report",
+  "status": "PASS",
+  "evidence": "200; 1 rows; totals 0 classes, 0 min"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "rates are hidden from staff by default (page and CSV use the same data)",
+  "status": "PASS",
+  "evidence": "ratesShown=false; coach row {\"userId\":\"8236f709-3a6b-41dc-ac79-a13bf6c926ce\",\"name\":\"Olivia Hart\",\"onStaff\":true,\"hourlyRate\":null,\"perClassRate\":null,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "the owner always sees the rates",
+  "status": "PASS",
+  "evidence": "ratesShown=true; {\"userId\":\"8236f709-3a6b-41dc-ac79-a13bf6c926ce\",\"name\":\"Olivia Hart\",\"onStaff\":true,\"hourlyRate\":3000,\"perClassRate\":1500,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "report only: staff can't open the rates page or change any rate",
+  "status": "PASS",
+  "evidence": "rates 403, own rate 403, owner's rate 403"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "staff can't turn \"Show pay rates in the report\" on themselves",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "owner turns on \"Show pay rates in the report\"",
+  "status": "PASS",
+  "evidence": "payrollStaffSeeRates=true"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "then staff see the rates, read only",
+  "status": "PASS",
+  "evidence": "ratesShown=true; {\"userId\":\"8236f709-3a6b-41dc-ac79-a13bf6c926ce\",\"name\":\"Olivia Hart\",\"onStaff\":true,\"hourlyRate\":3000,\"perClassRate\":1500,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "and still can't change them",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "Branch Staff and the transactions list (not part of Payroll)",
+  "status": "NOTE",
+  "evidence": "GET transactions as Branch Staff: 403"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "a coach signs up and is given the Instructor role",
+  "status": "PASS",
+  "evidence": "ryan.cole.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "the main owner adds a co-owner",
+  "status": "PASS",
+  "evidence": "grace.hill.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "the payment account: owner and Branch Staff with a payments permission see it; a coach doesn't",
+  "status": "PASS",
+  "evidence": "owner 200; Branch Staff (charges on by default) 200; coach 403 NO_PERMISSION"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "Branch Staff with no payments permission don't see the payment account",
+  "status": "PASS",
+  "evidence": "403 NO_PERMISSION"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "a co-owner can't change staff access switches (main owner only)",
+  "status": "PASS",
+  "evidence": "403 STAFF_SWITCHES_MAIN_OWNER_ONLY"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "nor the charge permissions",
+  "status": "PASS",
+  "evidence": "403 STAFF_SWITCHES_MAIN_OWNER_ONLY"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "Branch Staff without \"Connect Stripe\" can't open Stripe onboarding",
+  "status": "PASS",
+  "evidence": "403 STAFF_ACCESS_OFF The School owner hasn't let you connect Stripe."
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "with \"Connect Stripe\" on, Branch Staff can continue Stripe onboarding",
+  "status": "PASS",
+  "evidence": "201"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "but only an owner chooses how the School is paid (creating the payment account)",
+  "status": "PASS",
+  "evidence": "403 FORBIDDEN"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "a co-owner may connect Stripe; a coach may not",
+  "status": "PASS",
+  "evidence": "co-owner 201; coach 403 NOT_FOR_COACHES"
+ },
+ {
+  "school": "A",
+  "journey": "2",
+  "step": "Dashboard checklist ticks \"Add staff\"",
+  "status": "PASS",
+  "evidence": "{\"key\":\"STAFF\",\"done\":true}"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "adult member signs up",
+  "status": "PASS",
+  "evidence": "james.wright.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "adult joins the School",
+  "status": "PASS",
+  "evidence": "{\"id\":\"b90bb3dd-bb1f-49c5-adf3-613e837f89bd\",\"role\":\"STUDENT\",\"userId\":\"77e81225-493c-4180-ac40-cf8b11b3a6d2\",\"franchiseId\":null,\"schoolId\":\"e92512b2-c4cd-481e-"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "a new School has \"Waiver must be signed before booking or check-in\" on",
+  "status": "PASS",
+  "evidence": "checkInRequireWaiver=true"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "booking a class before signing the waiver is refused (WAIVER_REQUIRED)",
+  "status": "PASS",
+  "evidence": "403 WAIVER_REQUIRED This School needs a signed waiver before booking a class or checking in."
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "buying a plan before signing the waiver is allowed (Decision 441 item 5)",
+  "status": "PASS",
+  "evidence": "201 requires_checkout"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the waiver shows as waiting for the member",
+  "status": "PASS",
+  "evidence": "200; {\"id\":\"f08d29ad-b803-4ae3-a563-4ba00a0a3d51\",\"waiverId\":\"f5f61050-0912-4205-8677-16d4aa632fa1\",\"studentId\":\"77e81225-493c-4180-ac40-cf8b11b3a6d2\",\"signedById\":null,\"schoolId\":\"e92512b2-c4cd-481e-8428-"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "adult signs the waiver",
+  "status": "PASS",
+  "evidence": "signature f08d29ad-b803-4ae3-a563-4ba00a0a3d51"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the joining fee is shown before buying (first plan here)",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":2500,\"refundable\":false,\"cardSurchargeAmount\":50}"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "adult buys the 10-class pack by card (Checkout)",
+  "status": "PASS",
+  "evidence": "webhook 200; order SUCCESSFUL"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "Checkout charges plan + joining fee + 2% surcharge",
+  "status": "PASS",
+  "evidence": "lines [{\"name\":\"10-class pack\",\"amount\":8000},{\"name\":\"Joining fee\",\"amount\":2500},{\"name\":\"Card surcharge\",\"amount\":210}]; charged 10710, expected 10710; order amount 10500, joining fee 2500, surcharge 210"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the member has the pack with 10 classes",
+  "status": "PASS",
+  "evidence": "{\"id\":\"4bb83383-3541-45ca-bd8d-0a39296475a0\",\"studentId\":\"77e81225-493c-4180-ac40-cf8b11b3a6d2\",\"membershipPlanId\":\"1ef15c04-b171-4cde-9450-acee9dd25505\",\"schoolId\":\"e92512b2-c4cd-481e-8428-5b690e4665d1\",\"status\":\"ACTIVE"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "no joining fee on a second plan",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":0,\"refundable\":false,\"cardSurchargeAmount\":0}"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent signs up",
+  "status": "PASS",
+  "evidence": "emma.clarke.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent adds a child (consent ticked)",
+  "status": "PASS",
+  "evidence": "{\"alreadyAdded\":false,\"linkId\":\"89c1b554-6554-4ebc-b2f3-27aed59a1688\",\"studentId\":\"e7e6dd43-0750-457a-ad3b-c4ce7545ad4b\",\"firstName\":\"Lily\",\"surname\":\"Clarke\",\"dateOfBirth\":\"2016-05-20T00:00:00.000Z\","
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the parent's consent is recorded with the child",
+  "status": "PASS",
+  "evidence": "{\"state\":\"GIVEN\",\"guardians\":[{\"guardianId\":\"9133ae8a-e647-437f-8d74-ed7086f76d6c\",\"name\":\"Emma Clarke\",\"isMe\":true,\"records\":[{\"id\":\"d5de550e-ec0a-464f-bc73-2eea47dc12aa\",\"tier\":\"BASELINE\",\"status\":\"ACTIVE\",\"policyVersi"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the consent is saved with the server's Children notice version, not the app's placeholder",
+  "status": "PASS",
+  "evidence": "Children notice version \"unpublished\"; consent saved with [\"unpublished\"]"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent gives camera consent too",
+  "status": "PASS",
+  "evidence": "201"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent adds the child to the School",
+  "status": "PASS",
+  "evidence": "{\"id\":\"8e74dfc9-0b61-4f81-83b2-f636800a566f\",\"role\":\"STUDENT\",\"userId\":\"e7e6dd43-0750-457a-ad3b-c4ce7545ad4b\",\"franchise"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the child's waiver shows for the parent",
+  "status": "PASS",
+  "evidence": "{\"items\":[{\"id\":\"f5f61050-0912-4205-8677-16d4aa632fa1\",\"schoolId\":\"e92512b2-c4cd-481e-8428-5b690e4665d1\",\"title\":\"Liability waiver\",\"body\":\"I understand that martial arts training carries a risk of in"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent signs the child's waiver",
+  "status": "PASS",
+  "evidence": "{\"id\":\"eae3dd1e-f331-4b0a-a4e9-e6fd35afcaf9\",\"waiverId\":\"f5f61050-0912-4205-8677-16d4aa632fa1\",\"stud"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "parent buys a plan for the child",
+  "status": "PASS",
+  "evidence": "order SUCCESSFUL; for the child; lines [{\"name\":\"Kids 8-class pack\",\"amount\":5000},{\"name\":\"Card surcharge\",\"amount\":100}]"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "the child has the plan",
+  "status": "PASS",
+  "evidence": "8 classes"
+ },
+ {
+  "school": "A",
+  "journey": "3",
+  "step": "buying the switching plan records the member's agreement",
+  "status": "PASS",
+  "evidence": "requires_checkout; order switches to 5-class pack"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "adult books the 1-place class",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"fd74dedf-cec5-4cd0-b5a8-7675efa1f4f6\",\"studentId\":\"77e81225-493c-4180-ac40-cf8b11b3a6d2\",\"classId\":\"48ee78dc-dd82-465c-8d36-794c40466e56\",\"schoolId\":\"e92"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the child can't book it once it is full",
+  "status": "PASS",
+  "evidence": "409 This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist)."
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "parent puts the child on the class waitlist",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"08c3d780-b864-41cf-a3fc-568601814da9\",\"studentId\":\"e7e6dd43-0750-457a-ad3b-c4ce7545ad4b\",\"classId\":\"48ee78dc-dd82-465c-8d36-794c40466e56\",\"schoolId\":\"e92"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "adult cancels the booking",
+  "status": "PASS",
+  "evidence": "200 refundResolution PENDING"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the owner gives the class back (manual cancellation policy)",
+  "status": "PASS",
+  "evidence": "200; classesRemaining 10"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the freed place is offered to the child",
+  "status": "PASS",
+  "evidence": "{\"id\":\"08c3d780-b864-41cf-a3fc-568601814da9\",\"studentId\":\"e7e6dd43-0750-457a-ad3b-c4ce7545ad4b\",\"classId\":\"48ee78dc-dd82-465c-8d36-794c40466e56\",\"schoolId\":\"e92512b2-c4cd-481e-8428-5b690e4665d1\",\"branchId\":\"00c98c48-e681-4bbd-8d8c-0b18f8250cbf\",\"position\":1,\"status\":\"NOTIFIED\",\"joinedAt\":\"2026-11-10T21:07:16.495Z\",\"notifiedAt\":\"2026-11-10T21:07:16.552Z\",\"claimByDeadline\":\"2026-11-10T22:07:16.552Z\",\"claimedBookingId\":null,\"createdAt\":\"2026-11-10T21:07:16.495Z\",\"updatedAt\":\"2026-11-10T21:07:16.553Z\"}"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "parent claims the place for the child",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"fc0e3065-3289-41ef-a34f-cf5c3a6ef3a1\",\"studentId\":\"e7e6dd43-0750-457a-ad3b-c4ce7545ad4b\",\"classId\":\"48ee78dc-dd82-465c-8d36-794c40466e56\",\"schoolId\":\"e92"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the child is booked in",
+  "status": "PASS",
+  "evidence": "UPCOMING"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "a second member buys the limited plan",
+  "status": "PASS",
+  "evidence": "1 holder(s) before; requires_checkout"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the third member can't buy: the plan is full",
+  "status": "PASS",
+  "evidence": "409 This plan is full. Join its waiting list to be told when a place frees up."
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "they join the plan's waiting list",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"d6ee0a72-3951-4692-88d2-0e4e41113192\",\"status\":\"WAITING\",\"position\":1,\"offerExpiresAt\":null}"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "a parent puts their child on the plan's waiting list",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"277c877a-07fb-4938-9b2a-5479746fcfd7\",\"status\":\"WAITING\",\"position\":2,\"offerExpiresAt\":null}"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the owner sees the plan's waiting list",
+  "status": "PASS",
+  "evidence": "{\"memberLimit\":2,\"placesTaken\":2,\"items\":[{\"id\":\"d6ee0a72-3951-4692-88d2-0e4e41113192\",\"studentId\":\"c1bd40bb-24eb-40ce-8868-0a9a0e30e8cd\",\"firstName\":\"Mark\",\"surname\":\"Evans\",\"status\":\"WAITING\",\"joine"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the owner can still sell it at the desk (over the limit)",
+  "status": "PASS",
+  "evidence": "201 {\"membership\":{\"id\":\"199e8254-0b63-40b4-a2dd-b99f782561ba\",\"studentId\":\"c1bd40bb-24eb-40ce-8868-0a9a0e30e8cd\",\"membershipPlanId\":\"1ef15c04-b171-4cde-9450-acee9dd25505\",\"schoolId\":\"e92512b2-c4cd-481e-8"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "adult books the class that is on now",
+  "status": "PASS",
+  "evidence": "201 "
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "adult checks in by scanning the class QR code",
+  "status": "PASS",
+  "evidence": "qr 200; scan 201 {\"id\":\"d20159c1-be70-472e-8825-9008400e8954\",\"studentId\":\"77e81225-493c-4180-ac40-cf8b11b3a6d2\",\"classId\":\"741f7085-93a0-4f4f-96f8-d1bbb260add0\",\"schoolId\":\"e92512b2-c4cd-481e-8428-5b690e4665d1\",\"bran"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "Branch Staff check the child in at the desk",
+  "status": "PASS",
+  "evidence": "200 {\"done\":true,\"classes\":[{\"classId\":\"741f7085-93a0-4f4f-96f8-d1bbb260add0\",\"ok\":true,\"bookingId\":\"3777d8ff-79dc-433d-ae2c-b4a6be366fc6\"}],\"guests\":[]}"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "attendance is recorded once each",
+  "status": "PASS",
+  "evidence": "2 attended bookings"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the pack is used once for the class",
+  "status": "PASS",
+  "evidence": "classesRemaining 9"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the class roster shows both as checked in",
+  "status": "PASS",
+  "evidence": "200 {\"items\":[{\"id\":\"3777d8ff-79dc-433d-ae2c-b4a6be366fc6\",\"studentId\":\"e7e6dd43-0750-457a-ad3b-c4ce7545ad4b\",\"classId\":\"741f7085-93a0-4f4f-96f8-d1bbb260add0\",\"schoolId\":\"e92512b2-c4cd-481e-8428-5b690e466"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the owner promotes the adult",
+  "status": "PASS",
+  "evidence": "201 ; before none, after White Belt"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the owner refunds a desk sale by hand and ends the plan",
+  "status": "PASS",
+  "evidence": "201 {\"refund\":{\"id\":\"d0faa651-db50-447e-825b-e0c04a55ddfc\",\"transactionId\":\"e3c58e80-6c8c-4617-8ff5-126a7360283b\",\"amount\":8000,\"currency\":\"GBP\",\"notes\":\"Changed their mind\",\"endedMembership\":true,\"create; membership EXPIRED"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "a class pack can't be frozen",
+  "status": "PASS",
+  "evidence": "400 FREEZE_CLASS_PACK"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the owner freezes a week pass for 7 days; it ends later",
+  "status": "PASS",
+  "evidence": "sell 201; freeze 201 {\"id\":\"f44afc3b-14f2-4fd1-ab34-4888a3b29357\",\"membershipId\":\"ec1f24e3-73be-49a3-a02b-54eea548224d\",\"schoolId\":\"e92512b2-c4cd-481e-8428-5b690e4665d1\",\"studentId\":\"c1bd40bb-24eb-40ce-8868-0a9a0e30e8cd\",; expiry 2026-11-17 → 2026-11-24"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "a card refund made in Stripe reaches the app (plan + its surcharge; joining fee kept)",
+  "status": "PASS",
+  "evidence": "webhook 200; order REFUNDED, refunded 8160 of 10710"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the refund ends the plan and the freed place is held 24 h for the first person waiting",
+  "status": "PASS",
+  "evidence": "membership EXPIRED; waiting-list entry OFFERED, held 24 h"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the membership remembers the agreed switch",
+  "status": "PASS",
+  "evidence": "switch to 5-class pack, agreed 2026-11-10T21:07:21.356Z"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the member is told before the switch",
+  "status": "PASS",
+  "evidence": "notice sent 2026-11-10T21:07:21.644Z; \"Your plan is about to change\""
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "with no saved card the membership simply ends; nothing is charged; the member is told",
+  "status": "PASS",
+  "evidence": "outcome NO_CARD; next plan not started; charges 0; last notice \"Membership ended\""
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "Transactions: revenue and card surcharges are separate lines that add up to what was kept",
+  "status": "PASS",
+  "evidence": "revenue 23500, surcharges 390, kept in the ledger 23890"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the billing overview shows the card surcharges as their own figure",
+  "status": "PASS",
+  "evidence": "200 memberships 23500, fees 0, surcharges 390, total 23890"
+ },
+ {
+  "school": "A",
+  "journey": "4",
+  "step": "the parent starts a monthly Subscription (card, in-app)",
+  "status": "PASS",
+  "evidence": "201 requires_payment"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "adult sees what deleting means (30 days, nothing pending)",
+  "status": "PASS",
+  "evidence": "{\"pending\":false,\"requestedAt\":null,\"dueAt\":null,\"graceDays\":30,\"blockedBy\":[],\"childrenDeleted\":[],\"childrenKept\":[]}"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "asking needs the passcode again (step-up)",
+  "status": "PASS",
+  "evidence": "403 Re-enter your passcode to confirm this action."
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "adult asks to delete their account",
+  "status": "PASS",
+  "evidence": "200 due 2026-12-10T21:07:25.175Z"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the account is locked at once (old session and refresh refused)",
+  "status": "PASS",
+  "evidence": "old token 401 ACCOUNT_LOCKED; refresh 401"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "staff can't book for a locked member",
+  "status": "PASS",
+  "evidence": "403 This account is being deleted, so it can no longer book, check in or buy."
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the School can't add a charge for a member whose deletion is pending (ACCOUNT_CLOSING)",
+  "status": "PASS",
+  "evidence": "403 ACCOUNT_CLOSING"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "nor sell them a plan at the desk",
+  "status": "PASS",
+  "evidence": "403 ACCOUNT_CLOSING"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "signing in again within 30 days cancels the deletion",
+  "status": "PASS",
+  "evidence": "login says deletionCancelled=true; deletionRequestedAt null"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "and they can use the app as before",
+  "status": "PASS",
+  "evidence": "200; 1 memberships"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "setup: the child is booked, has notes and a file",
+  "status": "PASS",
+  "evidence": "booking 201 ; file upload 201 "
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the confirmation names the child who will be deleted too",
+  "status": "PASS",
+  "evidence": "[{\"studentId\":\"8cafb0ae-20c2-4836-89ca-2fb1552d126d\",\"firstName\":\"Toby\",\"surname\":\"Evans\"}]"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the parent asks; the child is marked for deletion with them",
+  "status": "PASS",
+  "evidence": "200; child deletionRequestedAt 2026-11-10T21:08:26.614Z"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the daily erasure job runs",
+  "status": "PASS",
+  "evidence": "null"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "parent anonymised (\"Erased User\": no email, phone, birth date)",
+  "status": "PASS",
+  "evidence": "name \"Erased User\", email erased+c1bd40bb-24eb-40ce-8868-0a9a0e30e8cd@erased.ultm8.internal, phone null, dob null, erasedAt 2026-11-10T21:08:26.970Z"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "child anonymised too",
+  "status": "PASS",
+  "evidence": "name \"Erased User\", email erased+8cafb0ae-20c2-4836-89ca-2fb1552d126d@erased.ultm8.internal, dob null"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the child's upcoming booking is cancelled",
+  "status": "PASS",
+  "evidence": "booking CANCELLED"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "their roles end, and the plan waiting-list place is given up at the next 15-minute run",
+  "status": "PASS",
+  "evidence": "active roles 0; plan waiting list [\"OFFERED\"] → [\"LEFT\"]"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "staff notes about them are cleared",
+  "status": "PASS",
+  "evidence": "0 notes left"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the file the School uploaded is deleted (row and stored copy)",
+  "status": "PASS",
+  "evidence": "0 file rows; stored copies 1 → 0"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "payments and the signed waiver stay with the School, unnamed",
+  "status": "PASS",
+  "evidence": "3 payments kept; waiver signer \"Erased User\""
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the erased account can never sign in",
+  "status": "PASS",
+  "evidence": "401"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the School's owner gets a notice that doesn't name them",
+  "status": "PASS",
+  "evidence": "A member left: A member deleted their ULTM8 account and left your School. Their details have been removed. Their payments, waivers and belt history stay with your School under \"Erased User\". | A member left: A member del"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "a permanent record without personal details is kept",
+  "status": "PASS",
+  "evidence": "REQUESTED,REQUESTED,ERASED,ERASED"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "their \"I agree\" records are kept as proof, against the \"Erased User\"",
+  "status": "PASS",
+  "evidence": "2 acceptance rows (terms-and-conditions@unpublished, privacy-statement@unpublished); user \"Erased User\""
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "the Students list no longer shows their names",
+  "status": "PASS",
+  "evidence": "200; not listed"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "owner signs up (register, SMS code, sign in)",
+  "status": "PASS",
+  "evidence": "joo.silva.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "creating a School without ticking the School and Franchise Agreement is refused",
+  "status": "PASS",
+  "evidence": "400 AGREEMENT_NOT_ACCEPTED"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "owner creates the School",
+  "status": "PASS",
+  "evidence": "Academia Ensaio São Paulo: BR, BRL, America/Sao_Paulo, pt-BR"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "Dashboard checklist drops \"Connect Stripe\" (no card payments in Brazil)",
+  "status": "PASS",
+  "evidence": "stripeConnectAvailable=false; steps BRANCH,STYLE_AND_BELTS,CLASS,MEMBERSHIP_PLAN,WAIVER,STAFF"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a Branch",
+  "status": "PASS",
+  "evidence": "Consolação"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a style with belts (BJJ from the IBJJF template)",
+  "status": "PASS",
+  "evidence": "BJJ: 20 belts"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "owner also coaches at the Branch",
+  "status": "PASS",
+  "evidence": "instructor 64f86531-f8d6-43a9-ab7e-964e2b5057e6"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a weekly timetable slot",
+  "status": "PASS",
+  "evidence": "TUESDAY 18:30-20:00"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "make the weeks' classes from the timetable",
+  "status": "PASS",
+  "evidence": "4 classes made for the slot"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add one-off classes (1 place tomorrow; one now)",
+  "status": "PASS",
+  "evidence": "d2980ac6-da4e-45b8-ba71-a42ded95eb5b, 83340f6e-c3dd-4b3b-bf95-604e27b27529"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a bank transfer (Pix) payment account",
+  "status": "PASS",
+  "evidence": "provider BANK_TRANSFER, connectAvailable false"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "Connect Stripe refused in Brazil, with a translated reason",
+  "status": "PASS",
+  "evidence": "onboard 400; connectAvailable false; en \"Card payments through Stripe aren't available in this country yet. Members pay by cash or bank transfer, and staff confirm the payment.\"; pt-BR \"Pagamentos com cartão pelo Stripe ainda não estão disponíveis neste país. Os membros pagam em dinheiro ou por transferência bancária (Pix), e a equipe confirma o pagamento.\""
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "no Stripe connected account is created for the refused Brazilian School",
+  "status": "PASS",
+  "evidence": "Stripe accounts.create calls: 1 before, 1 after"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "switch joining fees on",
+  "status": "PASS",
+  "evidence": "joiningFeesEnabled=true"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "plan with a joining fee and a member limit",
+  "status": "PASS",
+  "evidence": "joiningFee 2500, memberLimit 2"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "\"switch to another plan when it ends\" is refused at a School without cards",
+  "status": "PASS",
+  "evidence": "400 SWITCH_NEEDS_CARDS"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "a monthly plan at a School without card payments",
+  "status": "PASS",
+  "evidence": "201 18000 BRL"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "add a waiver",
+  "status": "PASS",
+  "evidence": "Termo de responsabilidade"
+ },
+ {
+  "school": "B",
+  "journey": "1",
+  "step": "Dashboard checklist ticks each step as it is done",
+  "status": "PASS",
+  "evidence": "[{\"key\":\"BRANCH\",\"done\":true},{\"key\":\"STYLE_AND_BELTS\",\"done\":true},{\"key\":\"CLASS\",\"done\":true},{\"key\":\"MEMBERSHIP_PLAN\",\"done\":true},{\"key\":\"WAIVER\",\"done\":true},{\"key\":\"STAFF\",\"done\":true}]"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner finds them by email",
+  "status": "PASS",
+  "evidence": "found=true"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner invites them as Branch Staff",
+  "status": "PASS",
+  "evidence": "grant 66097c66-4273-4e15-8390-3c23e435bc92"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner sets the coach's pay rates",
+  "status": "PASS",
+  "evidence": "{\"userId\":\"f5400ad0-e2a9-49da-89e3-dfe8a3645365\",\"name\":\"João Silva\",\"roles\":[\"SCHOOL_OWNER_MANAGER\",\"INSTRUCTOR\"],\"hourlyRate\":3000,\"perClassRate\":1500}"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "without the Payroll switch, staff can't open the payroll report",
+  "status": "PASS",
+  "evidence": "403 The School owner hasn't let you see payroll."
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner turns on the Payroll switch",
+  "status": "PASS",
+  "evidence": "{\"userId\":\"78686c11-9f20-4cce-a8af-26ff93401d6b\",\"access\":{\"classes\":false,\"bookings\":true,\"students\":true,\"cancelClasses\":true,\"staffList\":false,\"disciplines\":false,\"checkInRules\":false,\"exportStudents\":false,\"freezeMemberships\":false,\"attendanceStats\":false,\"memberFiles\":false,\"importData\":false,\""
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "with the switch, staff open the payroll report",
+  "status": "PASS",
+  "evidence": "200; 1 rows; totals 0 classes, 0 min"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "rates are hidden from staff by default (page and CSV use the same data)",
+  "status": "PASS",
+  "evidence": "ratesShown=false; coach row {\"userId\":\"f5400ad0-e2a9-49da-89e3-dfe8a3645365\",\"name\":\"João Silva\",\"onStaff\":true,\"hourlyRate\":null,\"perClassRate\":null,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "the owner always sees the rates",
+  "status": "PASS",
+  "evidence": "ratesShown=true; {\"userId\":\"f5400ad0-e2a9-49da-89e3-dfe8a3645365\",\"name\":\"João Silva\",\"onStaff\":true,\"hourlyRate\":3000,\"perClassRate\":1500,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "report only: staff can't open the rates page or change any rate",
+  "status": "PASS",
+  "evidence": "rates 403, own rate 403, owner's rate 403"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "staff can't turn \"Show pay rates in the report\" on themselves",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "owner turns on \"Show pay rates in the report\"",
+  "status": "PASS",
+  "evidence": "payrollStaffSeeRates=true"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "then staff see the rates, read only",
+  "status": "PASS",
+  "evidence": "ratesShown=true; {\"userId\":\"f5400ad0-e2a9-49da-89e3-dfe8a3645365\",\"name\":\"João Silva\",\"onStaff\":true,\"hourlyRate\":3000,\"perClassRate\":1500,\"classesTaught\":0,\"minutesTaught\":0,\"pay\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "and still can't change them",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "Branch Staff and the transactions list (not part of Payroll)",
+  "status": "NOTE",
+  "evidence": "GET transactions as Branch Staff: 403"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "a coach signs up and is given the Instructor role",
+  "status": "PASS",
+  "evidence": "thiago.ramos.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "the main owner adds a co-owner",
+  "status": "PASS",
+  "evidence": "paula.mendes.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "the payment account: owner and Branch Staff with a payments permission see it; a coach doesn't",
+  "status": "PASS",
+  "evidence": "owner 200; Branch Staff (charges on by default) 200; coach 403 NO_PERMISSION"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "Branch Staff with no payments permission don't see the payment account",
+  "status": "PASS",
+  "evidence": "403 NO_PERMISSION"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "a co-owner can't change staff access switches (main owner only)",
+  "status": "PASS",
+  "evidence": "403 STAFF_SWITCHES_MAIN_OWNER_ONLY"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "nor the charge permissions",
+  "status": "PASS",
+  "evidence": "403 STAFF_SWITCHES_MAIN_OWNER_ONLY"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "Dashboard checklist ticks \"Add staff\"",
+  "status": "PASS",
+  "evidence": "{\"key\":\"STAFF\",\"done\":true}"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "adult member signs up",
+  "status": "PASS",
+  "evidence": "lucas.oliveira.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "adult joins the School",
+  "status": "PASS",
+  "evidence": "{\"id\":\"1816490f-095e-4d1e-805d-5715c4146536\",\"role\":\"STUDENT\",\"userId\":\"c060d181-d0a7-4e27-808d-af54bafbce81\",\"franchiseId\":null,\"schoolId\":\"0358b52e-b03e-429b-"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "a new School has \"Waiver must be signed before booking or check-in\" on",
+  "status": "PASS",
+  "evidence": "checkInRequireWaiver=true"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "booking a class before signing the waiver is refused (WAIVER_REQUIRED)",
+  "status": "PASS",
+  "evidence": "403 WAIVER_REQUIRED This School needs a signed waiver before booking a class or checking in."
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "buying a plan before signing the waiver is allowed (Decision 441 item 5)",
+  "status": "PASS",
+  "evidence": "201 pending_confirmation"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the waiver shows as waiting for the member",
+  "status": "PASS",
+  "evidence": "200; {\"id\":\"a8bcde9a-c0e3-4dc0-bce1-95e17199ac82\",\"waiverId\":\"ff465aff-ace0-4462-8778-3dfd3af1c712\",\"studentId\":\"c060d181-d0a7-4e27-808d-af54bafbce81\",\"signedById\":null,\"schoolId\":\"0358b52e-b03e-429b-b0cf-"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "adult signs the waiver",
+  "status": "PASS",
+  "evidence": "signature a8bcde9a-c0e3-4dc0-bce1-95e17199ac82"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the joining fee is shown before buying (first plan here)",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":2500,\"refundable\":false,\"cardSurchargeAmount\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "adult places a Pix/cash order for the 10-class pack",
+  "status": "PASS",
+  "evidence": "pending_confirmation; order PENDING BANK_TRANSFER"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the order includes the joining fee and no card surcharge",
+  "status": "PASS",
+  "evidence": "amount 10500, joining fee 2500, surcharge 0"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "with the \"record payments\" switch off, Branch Staff can't confirm the Pix/cash order",
+  "status": "PASS",
+  "evidence": "404 NOT_FOUND Transaction not found"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "…and aren't sent the \"Cash payment waiting\" notice",
+  "status": "PASS",
+  "evidence": "0 notices"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "with the switch on, Branch Staff confirm the Pix/cash order",
+  "status": "PASS",
+  "evidence": "200; order SUCCESSFUL"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "…and get back only the order's id, status, amount and membership (Decision 445 item 5)",
+  "status": "PASS",
+  "evidence": "membershipCreated,transaction"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the member has the pack with 10 classes",
+  "status": "PASS",
+  "evidence": "{\"id\":\"6e329a06-7185-40ee-9a23-d042808537d8\",\"studentId\":\"c060d181-d0a7-4e27-808d-af54bafbce81\",\"membershipPlanId\":\"e353674e-6141-40d1-b6ec-7fa54385ba00\",\"schoolId\":\"0358b52e-b03e-429b-b0cf-cb10b415a620\",\"status\":\"ACTIVE"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "no joining fee on a second plan",
+  "status": "PASS",
+  "evidence": "{\"joiningFee\":0,\"refundable\":false,\"cardSurchargeAmount\":0}"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent signs up",
+  "status": "PASS",
+  "evidence": "ana.souza.mwb6kwno@rehearsal.test"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent adds a child (consent ticked)",
+  "status": "PASS",
+  "evidence": "{\"alreadyAdded\":false,\"linkId\":\"9f55fe4c-5127-496a-8899-daf865304e5f\",\"studentId\":\"54f943f9-74c6-4cb9-8b31-aafd69be2375\",\"firstName\":\"Beatriz\",\"surname\":\"Souza\",\"dateOfBirth\":\"2016-05-20T00:00:00.000Z"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the parent's consent is recorded with the child",
+  "status": "PASS",
+  "evidence": "{\"state\":\"GIVEN\",\"guardians\":[{\"guardianId\":\"56ebca6c-61c0-478f-84ff-ceb2008321e0\",\"name\":\"Ana Souza\",\"isMe\":true,\"records\":[{\"id\":\"47254573-6c88-40a0-a83d-d7023bcceb1c\",\"tier\":\"BASELINE\",\"status\":\"ACTIVE\",\"policyVersion"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the consent is saved with the server's Children notice version, not the app's placeholder",
+  "status": "PASS",
+  "evidence": "Children notice version \"unpublished\"; consent saved with [\"unpublished\"]"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent gives camera consent too",
+  "status": "PASS",
+  "evidence": "201"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent adds the child to the School",
+  "status": "PASS",
+  "evidence": "{\"id\":\"d694df7c-87f3-44b5-9555-709b9b736bb1\",\"role\":\"STUDENT\",\"userId\":\"54f943f9-74c6-4cb9-8b31-aafd69be2375\",\"franchise"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the child's waiver shows for the parent",
+  "status": "PASS",
+  "evidence": "{\"items\":[{\"id\":\"ff465aff-ace0-4462-8778-3dfd3af1c712\",\"schoolId\":\"0358b52e-b03e-429b-b0cf-cb10b415a620\",\"title\":\"Termo de responsabilidade\",\"body\":\"Declaro estar ciente dos riscos da prática de artes"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent signs the child's waiver",
+  "status": "PASS",
+  "evidence": "{\"id\":\"bd74b1aa-eae7-4923-873b-edbac279f5a0\",\"waiverId\":\"ff465aff-ace0-4462-8778-3dfd3af1c712\",\"stud"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "Branch Staff who may confirm get the \"Cash payment waiting\" notice, pointing to the student",
+  "status": "PASS",
+  "evidence": "\"Cash payment waiting: Beatriz Souza chose to pay 50.00 BRL for Kids 8 aulas by cash or bank transfer. Mark it as paid on their Payments card o\" → STUDENT"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "parent buys a plan for the child (Pix/cash, confirmed)",
+  "status": "PASS",
+  "evidence": "order SUCCESSFUL, confirm 200"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "the child has the plan",
+  "status": "PASS",
+  "evidence": "8 classes"
+ },
+ {
+  "school": "B",
+  "journey": "3",
+  "step": "at a School without cards no plan offers a switch, so \"agree to switch\" has nothing to agree to",
+  "status": "PASS",
+  "evidence": "400 PLAN_HAS_NO_SWITCH"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "adult books the 1-place class",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"d8a45076-ba46-4b72-8b88-7e90d39c768b\",\"studentId\":\"c060d181-d0a7-4e27-808d-af54bafbce81\",\"classId\":\"d2980ac6-da4e-45b8-ba71-a42ded95eb5b\",\"schoolId\":\"035"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the child can't book it once it is full",
+  "status": "PASS",
+  "evidence": "409 This Class is full for the requested party size — join the waitlist instead (POST /classes/{id}/waitlist)."
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "parent puts the child on the class waitlist",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"079e52c3-60f5-4d99-b4a7-dec16bd79abd\",\"studentId\":\"54f943f9-74c6-4cb9-8b31-aafd69be2375\",\"classId\":\"d2980ac6-da4e-45b8-ba71-a42ded95eb5b\",\"schoolId\":\"035"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "adult cancels the booking",
+  "status": "PASS",
+  "evidence": "200 refundResolution PENDING"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the owner gives the class back (manual cancellation policy)",
+  "status": "PASS",
+  "evidence": "200; classesRemaining 10"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the freed place is offered to the child",
+  "status": "PASS",
+  "evidence": "{\"id\":\"079e52c3-60f5-4d99-b4a7-dec16bd79abd\",\"studentId\":\"54f943f9-74c6-4cb9-8b31-aafd69be2375\",\"classId\":\"d2980ac6-da4e-45b8-ba71-a42ded95eb5b\",\"schoolId\":\"0358b52e-b03e-429b-b0cf-cb10b415a620\",\"branchId\":\"5bc0398b-7d34-476b-a542-b00ce6956a66\",\"position\":1,\"status\":\"NOTIFIED\",\"joinedAt\":\"2026-11-10T21:08:39.450Z\",\"notifiedAt\":\"2026-11-10T21:08:39.509Z\",\"claimByDeadline\":\"2026-11-10T22:08:39.509Z\",\"claimedBookingId\":null,\"createdAt\":\"2026-11-10T21:08:39.450Z\",\"updatedAt\":\"2026-11-10T21:08:39.510Z\"}"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "parent claims the place for the child",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"7755a917-f8bb-43a4-add2-1ab8836bce4c\",\"studentId\":\"54f943f9-74c6-4cb9-8b31-aafd69be2375\",\"classId\":\"d2980ac6-da4e-45b8-ba71-a42ded95eb5b\",\"schoolId\":\"035"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the child is booked in",
+  "status": "PASS",
+  "evidence": "UPCOMING"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "a second member buys the limited plan",
+  "status": "PASS",
+  "evidence": "1 holder(s) before; pending_confirmation"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the third member can't buy: the plan is full",
+  "status": "PASS",
+  "evidence": "409 This plan is full. Join its waiting list to be told when a place frees up."
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "they join the plan's waiting list",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"d7de3238-6576-43ec-b44a-98e181735af9\",\"status\":\"WAITING\",\"position\":1,\"offerExpiresAt\":null}"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "a parent puts their child on the plan's waiting list",
+  "status": "PASS",
+  "evidence": "201 {\"id\":\"215ed243-cf40-40ca-a753-e95831533c19\",\"status\":\"WAITING\",\"position\":2,\"offerExpiresAt\":null}"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the owner sees the plan's waiting list",
+  "status": "PASS",
+  "evidence": "{\"memberLimit\":2,\"placesTaken\":2,\"items\":[{\"id\":\"d7de3238-6576-43ec-b44a-98e181735af9\",\"studentId\":\"1ed0006d-efab-4ba5-ab30-1a89cc01b7cb\",\"firstName\":\"Pedro\",\"surname\":\"Lima\",\"status\":\"WAITING\",\"joine"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the owner can still sell it at the desk (over the limit)",
+  "status": "PASS",
+  "evidence": "201 {\"membership\":{\"id\":\"708d5f61-7864-4211-9a08-553358c1e4d1\",\"studentId\":\"1ed0006d-efab-4ba5-ab30-1a89cc01b7cb\",\"membershipPlanId\":\"e353674e-6141-40d1-b6ec-7fa54385ba00\",\"schoolId\":\"0358b52e-b03e-429b-b"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "adult books the class that is on now",
+  "status": "PASS",
+  "evidence": "201 "
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "adult checks in by scanning the class QR code",
+  "status": "PASS",
+  "evidence": "qr 200; scan 201 {\"id\":\"cb713cd8-933c-4d69-b1fc-3f98a5a239d2\",\"studentId\":\"c060d181-d0a7-4e27-808d-af54bafbce81\",\"classId\":\"83340f6e-c3dd-4b3b-bf95-604e27b27529\",\"schoolId\":\"0358b52e-b03e-429b-b0cf-cb10b415a620\",\"bran"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "Branch Staff check the child in at the desk",
+  "status": "PASS",
+  "evidence": "200 {\"done\":true,\"classes\":[{\"classId\":\"83340f6e-c3dd-4b3b-bf95-604e27b27529\",\"ok\":true,\"bookingId\":\"14af0b61-002f-4ae1-b7d2-e128ef6f63ae\"}],\"guests\":[]}"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "attendance is recorded once each",
+  "status": "PASS",
+  "evidence": "2 attended bookings"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the pack is used once for the class",
+  "status": "PASS",
+  "evidence": "classesRemaining 9"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the class roster shows both as checked in",
+  "status": "PASS",
+  "evidence": "200 {\"items\":[{\"id\":\"14af0b61-002f-4ae1-b7d2-e128ef6f63ae\",\"studentId\":\"54f943f9-74c6-4cb9-8b31-aafd69be2375\",\"classId\":\"83340f6e-c3dd-4b3b-bf95-604e27b27529\",\"schoolId\":\"0358b52e-b03e-429b-b0cf-cb10b415a"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the owner promotes the adult",
+  "status": "PASS",
+  "evidence": "201 ; before none, after Faixa Branca"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the owner refunds a desk sale by hand and ends the plan",
+  "status": "PASS",
+  "evidence": "201 {\"refund\":{\"id\":\"d7d9c126-2d51-4a96-a72f-42394edbc6a1\",\"transactionId\":\"cdc0c681-f02b-4d40-a8a7-ce3e33dc7f19\",\"amount\":8000,\"currency\":\"BRL\",\"notes\":\"Desistiu\",\"endedMembership\":true,\"createdAt\":\"2026; membership EXPIRED"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "a class pack can't be frozen",
+  "status": "PASS",
+  "evidence": "400 FREEZE_CLASS_PACK"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the owner freezes a week pass for 7 days; it ends later",
+  "status": "PASS",
+  "evidence": "sell 201; freeze 201 {\"id\":\"138a4a71-943d-4301-8213-4f43cc645e21\",\"membershipId\":\"770702e0-49a1-43a2-862a-847dfc53b6fb\",\"schoolId\":\"0358b52e-b03e-429b-b0cf-cb10b415a620\",\"studentId\":\"1ed0006d-efab-4ba5-ab30-1a89cc01b7cb\",; expiry 2026-11-17 → 2026-11-24"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the School cancels an unpaid Pix/cash order",
+  "status": "PASS",
+  "evidence": "order 201; cancel 200; status FAILED, cancelled true, reason \"Não pagou\""
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "a confirmed Pix order is refunded by hand; the non-refundable joining fee can't be",
+  "status": "PASS",
+  "evidence": "refund 105,00: 400 REFUND_MORE_THAN_LEFT; refund 80,00: 201; payment REFUNDED, refunded 8000"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "a member orders the monthly plan; the first month is a Pix/cash order",
+  "status": "PASS",
+  "evidence": "201 pending_confirmation; PENDING 18000 BANK_TRANSFER"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "once confirmed, the membership is billed to the balance with a monthly charge from next month",
+  "status": "PASS",
+  "evidence": "confirm 200; billedToBalance true; series MONTHLY 18000 first 2026-11-10 next 2026-12-10"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "freezing the monthly plan from 2026-11-12 to 2026-12-12 moves its next charge 30 days later",
+  "status": "PASS",
+  "evidence": "freeze 201 APPROVED; next charge 2026-12-10 → 2027-01-09 (30 days)"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "a desk sale of the monthly plan (Pix) also sets up the monthly balance charge",
+  "status": "PASS",
+  "evidence": "201 ; series 2026-12-10"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "the next month becomes a charge on the member's balance, with the \"New invoice\" notice",
+  "status": "PASS",
+  "evidence": "charge #1 \"Mensal ilimitado\" 18000 for 2026-11-10; last notice \"New invoice\""
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "Branch Staff record the Pix payment against it",
+  "status": "PASS",
+  "evidence": "201 ; charge PAID, owed 0"
+ },
+ {
+  "school": "B",
+  "journey": "4",
+  "step": "a desk refund that ends the monthly plan stops its monthly charge too",
+  "status": "PASS",
+  "evidence": "refund 201 ; series stopped - end 2026-11-09"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "adult sees what deleting means (30 days, nothing pending)",
+  "status": "PASS",
+  "evidence": "{\"pending\":false,\"requestedAt\":null,\"dueAt\":null,\"graceDays\":30,\"blockedBy\":[],\"childrenDeleted\":[],\"childrenKept\":[]}"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "asking needs the passcode again (step-up)",
+  "status": "PASS",
+  "evidence": "403 Re-enter your passcode to confirm this action."
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "adult asks to delete their account",
+  "status": "PASS",
+  "evidence": "200 due 2026-12-10T21:09:45.190Z"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the account is locked at once (old session and refresh refused)",
+  "status": "PASS",
+  "evidence": "old token 401 ACCOUNT_LOCKED; refresh 401"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "staff can't book for a locked member",
+  "status": "PASS",
+  "evidence": "403 This account is being deleted, so it can no longer book, check in or buy."
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the School can't add a charge for a member whose deletion is pending (ACCOUNT_CLOSING)",
+  "status": "PASS",
+  "evidence": "403 ACCOUNT_CLOSING"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "nor sell them a plan at the desk",
+  "status": "PASS",
+  "evidence": "403 ACCOUNT_CLOSING"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "nor confirm their waiting Pix/cash order (Decision 445 item 2)",
+  "status": "PASS",
+  "evidence": "403 ACCOUNT_CLOSING"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "signing in again within 30 days cancels the deletion",
+  "status": "PASS",
+  "evidence": "login says deletionCancelled=true; deletionRequestedAt null"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "and they can use the app as before",
+  "status": "PASS",
+  "evidence": "200; 1 memberships"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "once the deletion is cancelled, the waiting order can be confirmed again",
+  "status": "PASS",
+  "evidence": "200 "
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "setup: the child is booked, has notes and a file",
+  "status": "PASS",
+  "evidence": "booking 201 ; file upload 201 "
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the confirmation names the child who will be deleted too",
+  "status": "PASS",
+  "evidence": "[{\"studentId\":\"3ff553d5-c018-41a1-97aa-727f1eb33a18\",\"firstName\":\"Gabriel\",\"surname\":\"Lima\"}]"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the parent asks; the child is marked for deletion with them",
+  "status": "PASS",
+  "evidence": "200; child deletionRequestedAt 2026-11-10T21:09:46.692Z"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the daily erasure job runs",
+  "status": "PASS",
+  "evidence": "null"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "parent anonymised (\"Erased User\": no email, phone, birth date)",
+  "status": "PASS",
+  "evidence": "name \"Erased User\", email erased+1ed0006d-efab-4ba5-ab30-1a89cc01b7cb@erased.ultm8.internal, phone null, dob null, erasedAt 2026-11-10T21:09:47.046Z"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "child anonymised too",
+  "status": "PASS",
+  "evidence": "name \"Erased User\", email erased+3ff553d5-c018-41a1-97aa-727f1eb33a18@erased.ultm8.internal, dob null"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the child's upcoming booking is cancelled",
+  "status": "PASS",
+  "evidence": "booking CANCELLED"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "their roles end, and the plan waiting-list place is given up at the next 15-minute run",
+  "status": "PASS",
+  "evidence": "active roles 0; plan waiting list [\"WAITING\"] → [\"LEFT\"]"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "staff notes about them are cleared",
+  "status": "PASS",
+  "evidence": "0 notes left"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the file the School uploaded is deleted (row and stored copy)",
+  "status": "PASS",
+  "evidence": "0 file rows; stored copies 1 → 0"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "payments and the signed waiver stay with the School, unnamed",
+  "status": "PASS",
+  "evidence": "3 payments kept; waiver signer \"Erased User\""
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the erased account can never sign in",
+  "status": "PASS",
+  "evidence": "401"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the School's owner gets a notice that doesn't name them",
+  "status": "PASS",
+  "evidence": "A member left: A member deleted their ULTM8 account and left your School. Their details have been removed. Their payments, waivers and belt history stay with your School under \"Erased User\". | A member left: A member del"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "a permanent record without personal details is kept",
+  "status": "PASS",
+  "evidence": "REQUESTED,REQUESTED,ERASED,ERASED"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "their \"I agree\" records are kept as proof, against the \"Erased User\"",
+  "status": "PASS",
+  "evidence": "2 acceptance rows (terms-and-conditions@unpublished, privacy-statement@unpublished); user \"Erased User\""
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "the Students list no longer shows their names",
+  "status": "PASS",
+  "evidence": "200; not listed"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "sign-up without ticking \"I agree\" is refused; under 18 is refused",
+  "status": "PASS",
+  "evidence": "no tick 400 TERMS_NOT_ACCEPTED; 18 tomorrow (earliest time zone) 403 REGISTER_UNDER_18"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "…and no account is made",
+  "status": "PASS",
+  "evidence": "0 accounts"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "the five legal pages are open without signing in, each with a version",
+  "status": "PASS",
+  "evidence": "terms-and-conditions 200 v=unpublished; privacy-statement 200 v=unpublished; school-agreement 200 v=unpublished; children-notice 200 v=unpublished; cookie-notice 200 v=unpublished"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "the owner's sign-up and the School's Agreement are recorded at the versions the server publishes",
+  "status": "PASS",
+  "evidence": "terms-and-conditions@unpublished, privacy-statement@unpublished, school-agreement@unpublished (School)"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "the added member signs in, changes the temporary passcode, and their token asks for \"I agree\"",
+  "status": "PASS",
+  "evidence": "login 201; change 201; legalPending true"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "added manually: until they tick \"I agree\", every call but their profile answers LEGAL_ACCEPTANCE_REQUIRED",
+  "status": "PASS",
+  "evidence": "GET /memberships/me 403 LEGAL_ACCEPTANCE_REQUIRED; GET /users/me 200"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "added manually: the tick is required, then recorded (Terms + Privacy, at first sign-in) and the app carries on",
+  "status": "PASS",
+  "evidence": "no tick 400 TERMS_NOT_ACCEPTED; tick 201; then 200; rows terms-and-conditions@unpublished (first sign-in), privacy-statement@unpublished (first sign-in)"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "tablet sign-up: 18 today in the earliest time zone is accepted; 18 tomorrow is not",
+  "status": "PASS",
+  "evidence": "born 2008-11-11: 201; born 2008-11-12: 400 SIGN_UP_UNDER_18"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "an approved tablet sign-up gets an account; at first sign-in it asks for \"I agree\"",
+  "status": "PASS",
+  "evidence": "approve 200 accountCreated true; legalPending true"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "approved tablet sign-up: until they tick \"I agree\", every call but their profile answers LEGAL_ACCEPTANCE_REQUIRED",
+  "status": "PASS",
+  "evidence": "GET /memberships/me 403 LEGAL_ACCEPTANCE_REQUIRED; GET /users/me 200"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "approved tablet sign-up: the tick is required, then recorded (Terms + Privacy, at first sign-in) and the app carries on",
+  "status": "PASS",
+  "evidence": "no tick 400 TERMS_NOT_ACCEPTED; tick 201; then 200; rows terms-and-conditions@unpublished (first sign-in), privacy-statement@unpublished (first sign-in)"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "an older account signing in is asked for \"I agree\" too",
+  "status": "PASS",
+  "evidence": "legalPending true"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "older account: until they tick \"I agree\", every call but their profile answers LEGAL_ACCEPTANCE_REQUIRED",
+  "status": "PASS",
+  "evidence": "GET /memberships/me 403 LEGAL_ACCEPTANCE_REQUIRED; GET /users/me 200"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "older account: the tick is required, then recorded (Terms + Privacy, at first sign-in) and the app carries on",
+  "status": "PASS",
+  "evidence": "no tick 400 TERMS_NOT_ACCEPTED; tick 201; then 200; rows terms-and-conditions@unpublished (first sign-in), privacy-statement@unpublished (first sign-in)"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "a member is imported (an account the School creates)",
+  "status": "PASS",
+  "evidence": "201 CREATED NEW_MEMBER Member added and sent a temporary passcode."
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "their past attendance imports although they never signed the waiver",
+  "status": "PASS",
+  "evidence": "201 CREATED NEW_ATTENDANCE Attendance logged.; booking COMPLETED; waivers signed 0"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "but a check-in at the desk today is refused until the waiver is signed",
+  "status": "PASS",
+  "evidence": "200 {\"classId\":\"741f7085-93a0-4f4f-96f8-d1bbb260add0\",\"ok\":false,\"code\":\"WAIVER_REQUIRED\",\"message\":\"This School needs a signed waiver before booking a class or checking in.\"}"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "editing a member's profile: owners and Branch Staff with \"Manage students\"; not staff without it, nor a coach",
+  "status": "PASS",
+  "evidence": "owner 200; staff with it 200 ; staff without 403 STAFF_ACCESS_OFF; coach 403 NOT_FOR_COACHES"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "a member can't read the School's payment account",
+  "status": "PASS",
+  "evidence": "403 NO_PERMISSION"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "searching students for \"%\" or \"_\" finds nobody; a name still finds them",
+  "status": "PASS",
+  "evidence": "\"%\" 0, \"_\" 0, \"James\" 1"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "a UK School can't record Pix (desk sale or a payment toward a charge)",
+  "status": "PASS",
+  "evidence": "desk sale 400 \"Pix can only be used by a School in Brazil. Choose another way to pay.\"; charge payment 400 Pix can only be used by a School in Brazil. Choose another way to pay."
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "sign-up without ticking \"I agree\" is refused; under 18 is refused",
+  "status": "PASS",
+  "evidence": "no tick 400 TERMS_NOT_ACCEPTED; 18 tomorrow (earliest time zone) 403 REGISTER_UNDER_18"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "…and no account is made",
+  "status": "PASS",
+  "evidence": "0 accounts"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "the owner's sign-up and the School's Agreement are recorded at the versions the server publishes",
+  "status": "PASS",
+  "evidence": "terms-and-conditions@unpublished, privacy-statement@unpublished, school-agreement@unpublished (School)"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "the added member signs in, changes the temporary passcode, and their token asks for \"I agree\"",
+  "status": "PASS",
+  "evidence": "login 201; change 201; legalPending true"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "added manually: until they tick \"I agree\", every call but their profile answers LEGAL_ACCEPTANCE_REQUIRED",
+  "status": "PASS",
+  "evidence": "GET /memberships/me 403 LEGAL_ACCEPTANCE_REQUIRED; GET /users/me 200"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "added manually: the tick is required, then recorded (Terms + Privacy, at first sign-in) and the app carries on",
+  "status": "PASS",
+  "evidence": "no tick 400 TERMS_NOT_ACCEPTED; tick 201; then 200; rows terms-and-conditions@unpublished (first sign-in), privacy-statement@unpublished (first sign-in)"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "tablet sign-up: 18 today in the earliest time zone is accepted; 18 tomorrow is not",
+  "status": "PASS",
+  "evidence": "born 2008-11-11: 201; born 2008-11-12: 400 SIGN_UP_UNDER_18"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "an approved tablet sign-up gets an account; at first sign-in it asks for \"I agree\"",
+  "status": "PASS",
+  "evidence": "approve 200 accountCreated true; legalPending true"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "approved tablet sign-up: until they tick \"I agree\", every call but their profile answers LEGAL_ACCEPTANCE_REQUIRED",
+  "status": "PASS",
+  "evidence": "GET /memberships/me 403 LEGAL_ACCEPTANCE_REQUIRED; GET /users/me 200"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "approved tablet sign-up: the tick is required, then recorded (Terms + Privacy, at first sign-in) and the app carries on",
+  "status": "PASS",
+  "evidence": "no tick 400 TERMS_NOT_ACCEPTED; tick 201; then 200; rows terms-and-conditions@unpublished (first sign-in), privacy-statement@unpublished (first sign-in)"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "an older account signing in is asked for \"I agree\" too",
+  "status": "PASS",
+  "evidence": "legalPending true"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "older account: until they tick \"I agree\", every call but their profile answers LEGAL_ACCEPTANCE_REQUIRED",
+  "status": "PASS",
+  "evidence": "GET /memberships/me 403 LEGAL_ACCEPTANCE_REQUIRED; GET /users/me 200"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "older account: the tick is required, then recorded (Terms + Privacy, at first sign-in) and the app carries on",
+  "status": "PASS",
+  "evidence": "no tick 400 TERMS_NOT_ACCEPTED; tick 201; then 200; rows terms-and-conditions@unpublished (first sign-in), privacy-statement@unpublished (first sign-in)"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "a member is imported (an account the School creates)",
+  "status": "PASS",
+  "evidence": "201 CREATED NEW_MEMBER Member added and sent a temporary passcode."
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "their past attendance imports although they never signed the waiver",
+  "status": "PASS",
+  "evidence": "201 CREATED NEW_ATTENDANCE Attendance logged.; booking COMPLETED; waivers signed 0"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "but a check-in at the desk today is refused until the waiver is signed",
+  "status": "PASS",
+  "evidence": "200 {\"classId\":\"83340f6e-c3dd-4b3b-bf95-604e27b27529\",\"ok\":false,\"code\":\"WAIVER_REQUIRED\",\"message\":\"This School needs a signed waiver before booking a class or checking in.\"}"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "editing a member's profile: owners and Branch Staff with \"Manage students\"; not staff without it, nor a coach",
+  "status": "PASS",
+  "evidence": "owner 200; staff with it 200 ; staff without 403 STAFF_ACCESS_OFF; coach 403 NOT_FOR_COACHES"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "a member can't read the School's payment account",
+  "status": "PASS",
+  "evidence": "403 NO_PERMISSION"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "searching students for \"%\" or \"_\" finds nobody; a name still finds them",
+  "status": "PASS",
+  "evidence": "\"%\" 0, \"_\" 0, \"Lucas\" 1"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "a Brazilian School can record a desk sale paid by Pix",
+  "status": "PASS",
+  "evidence": "201 "
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "a card purchase is refused with CARD_PAYMENTS_NOT_READY until Stripe says the account is ready",
+  "status": "PASS",
+  "evidence": "400 CARD_PAYMENTS_NOT_READY"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "meanwhile members order and pay at the School, with no card surcharge, and never as Pix",
+  "status": "PASS",
+  "evidence": "201 pending_confirmation; PENDING CASH, surcharge 0; card-payments {\"hasPaymentAccount\":true,\"cardPayments\":false}"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "\"switch to another plan\" before Stripe is ready",
+  "status": "NOTE",
+  "evidence": "400 SWITCH_NEEDS_CARDS: a UK School that hasn't finished Stripe onboarding can't set \"switch to\" on a plan yet (it works as a School without cards, Decision 442 item 2). Owners need to finish Stripe first."
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "the member can't read this School's payment account either",
+  "status": "PASS",
+  "evidence": "403"
+ },
+ {
+  "school": "A",
+  "journey": "9",
+  "step": "a member saves a card on Stripe's page; the app shows it",
+  "status": "PASS",
+  "evidence": "webhook 200; card visa …4242"
+ },
+ {
+  "school": "A",
+  "journey": "9",
+  "step": "when Stripe's answer is lost, nothing is settled yet and the payment waits, not lost",
+  "status": "PASS",
+  "evidence": "purchase 503 A required service is temporarily unavailable. Please try again shortly.; order PENDING; Stripe charged 5100 (succeeded)"
+ },
+ {
+  "school": "A",
+  "journey": "9",
+  "step": "Stripe's notice settles it later: the plan starts and the member is sent \"Payment confirmed\" once",
+  "status": "PASS",
+  "evidence": "webhook 200; order SUCCESSFUL; plan started; \"Payment confirmed\" notices 0 → 1"
+ },
+ {
+  "school": "A",
+  "journey": "9",
+  "step": "…and the same notice from Stripe again changes nothing",
+  "status": "PASS",
+  "evidence": "notices 1; plans 1"
+ },
+ {
+  "school": "A",
+  "journey": "9",
+  "step": "the switch charges what the 7-day notice quoted, not the higher surcharge set since",
+  "status": "PASS",
+  "evidence": "bought active; notice quoted 4590; outcome SWITCHED; charged 4590 (price 4500 + surcharge 90); at 3% it would be 4635"
+ },
+ {
+  "school": "A",
+  "journey": "9",
+  "step": "the no-show fee is charged to the saved card and listed on Transactions",
+  "status": "PASS",
+  "evidence": "booked 201; booking NO_SHOW, fee CHARGED 500; Transactions (no-show fees) 200: NO_SHOW_FEE 500+0 SUCCESSFUL"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "School Portal: every English key has a pt-BR text",
+  "status": "PASS",
+  "evidence": "4742 keys; missing 0"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "School Portal: pt-BR texts identical to the English",
+  "status": "NOTE",
+  "evidence": "1: charges.create.descriptionPlaceholder=\"Rash guard\""
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "School Portal: the 120 strings added or changed since 22cd5e4f are translated",
+  "status": "PASS",
+  "evidence": "e.g. schools.stripeConnect.title=\"Conta Stripe\"; schools.stripeConnect.connected=\"Conectada\"; schools.stripeConnect.actionNeeded=\"Ação necessária\"; schools.stripeConnect.notConnected=\"Não conectada\""
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "member app: every English key has a pt-BR text",
+  "status": "PASS",
+  "evidence": "1352 keys; missing 0"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "member app: pt-BR texts identical to the English",
+  "status": "PASS",
+  "evidence": "0"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "member app: the 30 strings added or changed since 22cd5e4f are translated",
+  "status": "PASS",
+  "evidence": "e.g. bookings.classRow.buyPlan=\"Comprar um plano\"; memberships.planRow.monthlyToBalance=\"Você paga o primeiro mês agora. Depois, cada mês é\"; transactions.row.noShowFee=\"Taxa de não comparecimento: {class}\"; transactions.row.noShowFeeNoClass=\"Taxa de não comparecimento\""
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "API error messages: every one has a pt-BR text",
+  "status": "PASS",
+  "evidence": "658 messages; missing 0"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "API error messages added since 22cd5e4f (8) are translated",
+  "status": "PASS",
+  "evidence": "\"This School doesn't take card payments, so a plan …\" → \"Esta escola não aceita pagamentos com cartão, entã…\"; \"The Franchise overview is not available during an …\" → \"A visão geral da franquia não está disponível dura…\"; \"This Student already holds an active Subscription …\" → \"Este aluno já tem uma matrícula ativa de acesso ge…\""
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "every API error School B's people got has a pt-BR text (or a code the apps word themselves)",
+  "status": "PASS",
+  "evidence": "25 distinct errors (20 with their own code); not in the pt-BR table: none"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's owner can't read or change B's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's owner gets \"not found\" (404) from B's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's co-owner can't read or change B's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's co-owner gets \"not found\" (404) from B's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's Branch Staff can't read or change B's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's Branch Staff gets \"not found\" (404) from B's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's coach can't read or change B's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's coach gets \"not found\" (404) from B's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's member can't read or change B's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's member gets \"not found\" (404) from B's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's parent can't read or change B's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "A's parent gets \"not found\" (404) from B's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "A→B",
+  "journey": "7",
+  "step": "nothing of B's changed",
+  "status": "PASS",
+  "evidence": "notes 0, plans 0, description null, payment accounts 1, charges 0, profile null, record-payments switch true"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's owner can't read or change A's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's owner gets \"not found\" (404) from A's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's co-owner can't read or change A's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's co-owner gets \"not found\" (404) from A's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's Branch Staff can't read or change A's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's Branch Staff gets \"not found\" (404) from A's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's coach can't read or change A's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's coach gets \"not found\" (404) from A's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's member can't read or change A's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's member gets \"not found\" (404) from A's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's parent can't read or change A's data (38 reads, 23 writes)",
+  "status": "PASS",
+  "evidence": "allowed: none; leaks: none; 5xx: none"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "B's parent gets \"not found\" (404) from A's switch-gated pages",
+  "status": "PASS",
+  "evidence": "all 9 answered 404"
+ },
+ {
+  "school": "B→A",
+  "journey": "7",
+  "step": "nothing of A's changed",
+  "status": "PASS",
+  "evidence": "notes 0, plans 0, description null, payment accounts 1, charges 0, profile null, record-payments switch false"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "setup: the coach adds a postal address and a certification file",
+  "status": "PASS",
+  "evidence": "upload url 201; profile 200 ; stored true"
+ },
+ {
+  "school": "A",
+  "journey": "5",
+  "step": "after erasure: the coach profile has no phone, bio, address or certification, and the file is deleted",
+  "status": "PASS",
+  "evidence": "deletion 200; erased true; fields left: none; certificationKey null; file stored false; archived true"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "setup: the coach adds a postal address and a certification file",
+  "status": "PASS",
+  "evidence": "upload url 201; profile 200 ; stored true"
+ },
+ {
+  "school": "B",
+  "journey": "5",
+  "step": "after erasure: the coach profile has no phone, bio, address or certification, and the file is deleted",
+  "status": "PASS",
+  "evidence": "deletion 200; erased true; fields left: none; certificationKey null; file stored false; archived true"
+ }
+]

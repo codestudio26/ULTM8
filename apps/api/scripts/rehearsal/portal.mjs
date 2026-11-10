@@ -153,10 +153,11 @@ journey('B', '8', 'Portal in a browser (pt-BR): new screens');
   // The legal pages, without signing in.
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'pt-BR' });
   const page = await ctx.newPage();
-  // A first visit: before signing in, the portal uses the language last
-  // chosen in this browser, so a new visitor reads English whatever the browser's language.
+  // A first visit: before signing in, with nothing chosen in this browser,
+  // the portal uses the browser's language (Decision 449 item 3; it was
+  // English in rehearsal 2, a note then). English now is a failure.
   const first = await open(page, '/legal/terms-and-conditions');
-  check('a first visit to a legal page, browser in Portuguese, nothing chosen yet', /Terms of Service/.test(first.text) ? 'NOTE' : 'PASS', `lang ${first.lang}: "${first.text.trim().slice(0, 90).replace(/\n/g, ' / ')}" (the portal follows the language last picked in this browser, not the browser's own)`);
+  check('a first visit to a legal page, browser in Portuguese, nothing chosen yet', /Terms of Service/.test(first.text) || first.lang !== 'pt-BR' ? 'FAIL' : 'PASS', `lang ${first.lang}: "${first.text.trim().slice(0, 90).replace(/\n/g, ' / ')}" (Decision 449 item 3: the browser's language when nothing was chosen)`);
   await page.evaluate(() => localStorage.setItem('ultm8.language', 'pt-BR'));
   const bad = [];
   for (const slug of ['terms-and-conditions', 'privacy-statement', 'school-agreement', 'children-notice', 'cookie-notice']) {
