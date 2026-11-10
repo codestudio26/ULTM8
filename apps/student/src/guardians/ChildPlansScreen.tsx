@@ -21,9 +21,10 @@ export function ChildPlansScreen({ route }: Props) {
   const { studentId, name } = route.params;
   const t = useT();
   const schools = useMinorSchools(studentId);
-  const [pickedSchoolId, setPickedSchoolId] = useState<string | null>(null);
+  // Decision 449 item 8: "Buy a plan" opens at the School that refused.
+  const [pickedSchoolId, setPickedSchoolId] = useState<string | null>(route.params.schoolId ?? null);
   const schoolList = schools.data?.items ?? [];
-  const schoolId = pickedSchoolId ?? schoolList[0]?.schoolId ?? null;
+  const schoolId = (pickedSchoolId && schoolList.some((s) => s.schoolId === pickedSchoolId) ? pickedSchoolId : null) ?? schoolList[0]?.schoolId ?? null;
   const academy = useAcademy(schoolId);
 
   if (schools.isLoading) {

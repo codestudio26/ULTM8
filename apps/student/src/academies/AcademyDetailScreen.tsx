@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Button, ErrorBanner, Screen } from '../components/ui';
@@ -63,6 +63,11 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
   const studentRanks = useStudentRanks(claims?.sub ?? null, academyId);
   const disciplines = useDisciplines(academyId);
   const slots = timetable?.pages.flatMap((p) => p.items) ?? [];
+  // Decision 449 item 8: "Buy a plan" under a refused booking scrolls up to
+  // this School's plans, on this same page.
+  const scrollRef = useRef<ScrollView>(null);
+  const plansY = useRef(0);
+  const showPlans = () => scrollRef.current?.scrollTo({ y: plansY.current, animated: true });
 
   // Opportunistic cache for MyMembershipsScreen's own "resolve a raw membershipPlanId
   // to a title" problem (see planNameCache.ts) — every plan a Student ever browses
@@ -97,7 +102,7 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
   }
 
   return (
-    <ScrollView>
+    <ScrollView ref={scrollRef}>
       <Screen>
         <Text style={{ fontSize: 22, fontWeight: '700' }}>{academy.name}</Text>
         {academy.address ? <Text style={{ color: '#5F6368', marginTop: 4 }}>{localizeAddressCountry(academy.address, formatLocale())}</Text> : null}
@@ -126,7 +131,7 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
         ) : null}
 
         {academy.membershipPlans.length ? (
-          <View style={{ marginTop: 16 }}>
+          <View style={{ marginTop: 16 }} onLayout={(e) => (plansY.current = e.nativeEvent.layout.y)}>
             <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.membershipPlans')}</Text>
             {academy.membershipPlans.map((plan) => (
               <MembershipPlanRow
@@ -147,7 +152,7 @@ export function AcademyDetailScreen({ route, navigation }: Props) {
           <View style={{ marginTop: 16 }}>
             <Text style={{ fontWeight: '600', marginBottom: 6 }}>{t('academies.detail.upcomingClasses')}</Text>
             {academy.upcomingClasses.map((c) => (
-              <ClassBookingRow key={c.id} classItem={c} schoolId={academyId} />
+              <ClassBookingRow key={c.id} classItem={c} schoolId={academyId} onShowPlans={academy.membershipPlans.length ? showPlans : undefined} />
             ))}
           </View>
         ) : null}

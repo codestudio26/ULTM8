@@ -320,6 +320,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "无法加载预约，请重试。",
     },
     classRow: {
+      buyPlan: "购买方案",
       dateRange: "{start} – {end}",
       breakLine: "休息 {start} – {end}",
       endsNextDay: "次日结束",

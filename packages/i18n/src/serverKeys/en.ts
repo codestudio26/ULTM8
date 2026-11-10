@@ -69,6 +69,10 @@ export const server = {
     checkInOneClass: "This School checks people in to one class at a time.",
     checkInPaymentOverdue: "This School doesn't check members in while a payment is overdue. Pay it in the app or at the desk.",
     packUsedUp: 'This Class Pack has no classes left. Buy the same pack to check in.',
+    // Decision 449 items 6 and 8.
+    accessPaused: "Your access to this School has been paused. Please contact the School owner.",
+    noPermission: "You don't have permission to view this page.",
+    noEligibleMembership: "None of your plans covers this class. Buy a plan to book it.",
     membershipFrozen: "This membership is frozen, so it can't be used to book or check in until the freeze ends.",
     freezeTooShort: "A freeze must last at least 7 days.",
     freezeStartPassed: "A freeze must start today or later.",

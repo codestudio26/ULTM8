@@ -12,6 +12,7 @@ export type StaffMember = components['schemas']['StaffMemberDto'];
 export type StaffRoleEntry = components['schemas']['StaffRoleDto'];
 export type RemoveFromSchoolInput = components['schemas']['RemoveFromSchoolDto'];
 export type StaffAccess = components['schemas']['StaffAccessDto'];
+export type CoachAccess = components['schemas']['CoachAccessDto'];
 export type StaffListFilters = { status: 'active' | 'paused' | 'removed' | 'all'; role?: StaffRoleEntry['role']; branchId?: string; q?: string };
 
 /** One user's grants (GET /users/{userId}/role-grants) — what Instructor and
@@ -91,6 +92,17 @@ export function useSetStaffAccess(schoolId: string) {
   return useMutation({
     mutationFn: ({ userId, access }: { userId: string; access: StaffAccess }) =>
       unwrap(apiClient.PUT('/v1/schools/{schoolId}/staff/{userId}/access', { params: { path: { schoolId, userId } }, body: access })),
+    onSuccess: () => invalidateStaffLists(queryClient),
+  });
+}
+
+/** Decision 449 item 7 — the main owner sets a coach's own switch,
+ * "Manage students". */
+export function useSetCoachAccess(schoolId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, coachAccess }: { userId: string; coachAccess: CoachAccess }) =>
+      unwrap(apiClient.PUT('/v1/schools/{schoolId}/staff/{userId}/coach-access', { params: { path: { schoolId, userId } }, body: coachAccess })),
     onSuccess: () => invalidateStaffLists(queryClient),
   });
 }

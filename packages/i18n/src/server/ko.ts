@@ -739,6 +739,7 @@ export const serverMessages: Record<string, string> = {
   "The export couldn't be started. Try again.": "내보내기를 시작할 수 없습니다. 다시 시도하세요.",
   "This export is not ready to download.": "이 내보내기는 아직 다운로드할 수 없습니다.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "접근 스위치는 지점 직원용입니다. 코치는 역할에 따른 권한을, 소유자는 모든 권한을 가집니다.",
+  "This switch is for coaches. Branch Staff have their own Access window, and owners have every right.": "이 스위치는 코치용입니다. 지점 직원은 별도의 접근 권한 창이 있고, 소유자는 모든 권한을 가집니다.",
   "You are not on the staff of this School.": "이 도장의 직원이 아닙니다.",
   "Branch Staff need a branch (branchId).": "지점 직원에게는 지점이 필요합니다(branchId).",
   "This School asks new staff to accept first. Send them an invite instead.": "이 도장은 새 직원이 먼저 수락하도록 합니다. 대신 초대를 보내세요.",

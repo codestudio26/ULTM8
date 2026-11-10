@@ -321,6 +321,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Não foi possível carregar as reservas — tente novamente.",
     },
     classRow: {
+      buyPlan: "Comprar um plano",
       dateRange: "{start} – {end}",
       breakLine: "Intervalo {start} – {end}",
       endsNextDay: "termina no dia seguinte",

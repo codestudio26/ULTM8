@@ -323,6 +323,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Не удалось загрузить записи — попробуйте ещё раз.",
     },
     classRow: {
+      buyPlan: "Купить абонемент",
       dateRange: "{start} – {end}",
       breakLine: "Перерыв {start} – {end}",
       endsNextDay: "заканчивается на следующий день",

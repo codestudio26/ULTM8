@@ -739,6 +739,7 @@ export const serverMessages: Record<string, string> = {
   "The export couldn't be started. Try again.": "エクスポートを開始できませんでした。もう一度お試しください。",
   "This export is not ready to download.": "このエクスポートはまだダウンロードできません。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "アクセス設定は支部スタッフ用です。コーチには役割に応じた権限があり、オーナーにはすべての権限があります。",
+  "This switch is for coaches. Branch Staff have their own Access window, and owners have every right.": "この設定はコーチ用です。支部スタッフには専用のアクセス画面があり、オーナーにはすべての権限があります。",
   "You are not on the staff of this School.": "あなたはこのスクールのスタッフではありません。",
   "Branch Staff need a branch (branchId).": "支部スタッフには支部が必要です（branchId）。",
   "This School asks new staff to accept first. Send them an invite instead.": "このスクールでは新しいスタッフに先に承諾してもらいます。代わりに招待を送ってください。",

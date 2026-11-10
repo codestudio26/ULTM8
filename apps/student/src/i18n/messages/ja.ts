@@ -320,6 +320,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "予約を読み込めませんでした。もう一度お試しください。",
     },
     classRow: {
+      buyPlan: "プランを購入",
       dateRange: "{start} – {end}",
       breakLine: "休憩 {start} – {end}",
       endsNextDay: "翌日に終了",

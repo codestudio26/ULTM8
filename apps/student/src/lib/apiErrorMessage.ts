@@ -47,6 +47,14 @@ function codedMessage(err: ApiError): string | null {
     // Decision 393: a Class Pack with no classes left.
     case 'PACK_USED_UP':
       return translate('lib.apiError.packUsedUp');
+    // Decision 449 item 8: no plan of theirs pays for this class.
+    case 'NO_ELIGIBLE_MEMBERSHIP':
+      return translate('server.codes.noEligibleMembership');
+    // Decision 449 item 6: people connected to the School are told why.
+    case 'ACCESS_PAUSED':
+      return translate('server.codes.accessPaused');
+    case 'NO_PERMISSION':
+      return translate('server.codes.noPermission');
     case 'CHECK_IN_NOT_OPEN': {
       const iso = err.message.match(/opens at (\S+?)\.?$/)?.[1];
       return iso && !Number.isNaN(new Date(iso).getTime())
@@ -162,6 +170,16 @@ function codedMessage(err: ApiError): string | null {
  * are already queued for it — either way, the next step is the waitlist. */
 export function isWaitlistNext(err: unknown): boolean {
   return err instanceof ApiError && (err.code === 'CLASS_FULL' || err.code === 'WAITLIST_FIRST');
+}
+
+/** Decision 449 item 8: whether a booking or a waiting-list claim was refused
+ * because no plan of the member's covers it (none at all, none for this
+ * class, or a Class Pack used up): the refusal that gets a "Buy a plan"
+ * button. A one-off class's own ticket (TICKET_REQUIRED) has its own offer
+ * (ClassTicketOffer), and a frozen or not-yet-started plan isn't fixed by
+ * buying another. */
+export function isPlanRefusal(err: unknown): boolean {
+  return err instanceof ApiError && (err.code === 'NO_ELIGIBLE_MEMBERSHIP' || err.code === 'PACK_USED_UP');
 }
 
 /** Whether a booking, a waiting-list join or claim, or a check-in was refused

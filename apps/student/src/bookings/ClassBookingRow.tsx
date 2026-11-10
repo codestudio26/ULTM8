@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import { ApiError } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
-import { getApiErrorMessage, isWaitlistNext, isWaiverRefusal } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isPlanRefusal, isWaitlistNext, isWaiverRefusal } from '../lib/apiErrorMessage';
 import { formatClassTimes, formatTime } from '../lib/formatDate';
 import { classZone, endsNextDayInZone } from '../lib/classTime';
 import { useBookClass, useMyBookings, useMyFriendPasses } from './bookingQueries';
@@ -11,6 +11,7 @@ import { ClassTicketOffer } from './ClassTicketOffer';
 import { useJoinWaitlist, useMyWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 import { useT } from '../i18n/I18nProvider';
 import { SignWaiverButton } from '../waivers/SignWaiverButton';
+import { BuyPlanButton } from '../memberships/BuyPlanButton';
 
 interface ClassSummary {
   id: string;
@@ -54,6 +55,7 @@ export function ClassBookingRow({
   schoolId = null,
   studentId,
   childName,
+  onShowPlans,
 }: {
   classItem: ClassSummary;
   schoolId?: string | null;
@@ -61,6 +63,8 @@ export function ClassBookingRow({
   studentId?: string;
   /** The child's name, for "Sign the waiver" (Decision 442 item 1) when a parent books. */
   childName?: string;
+  /** Decision 449 item 8: the School's plans are on the same screen; "Buy a plan" shows them. */
+  onShowPlans?: () => void;
 }) {
   const t = useT();
   // Decision 427 (SP6): the class's own clock (its Branch's zone, else the School's, else UTC).
@@ -105,6 +109,8 @@ export function ClassBookingRow({
   const [ticketNeeded, setTicketNeeded] = useState(false);
   // Decision 442 item 1: the School needs a signed waiver first.
   const [waiverNeeded, setWaiverNeeded] = useState(false);
+  // Decision 449 item 8: none of the member's plans pays for this class.
+  const [planNeeded, setPlanNeeded] = useState(false);
   const bookClass = useBookClass(studentId);
   const joinWaitlist = useJoinWaitlist(studentId);
   const withdrawWaitlist = useWithdrawWaitlist(studentId);
@@ -116,6 +122,7 @@ export function ClassBookingRow({
     if (bookClass.isPending) return;
     setActionError(null);
     setWaiverNeeded(false);
+    setPlanNeeded(false);
     try {
       const booking = await bookClass.mutateAsync({ classId: classItem.id, guestPassIds: usablePasses.slice(0, guests).map((p) => p.membershipId) });
       setState({ kind: 'booked', bookingId: booking.id });
@@ -131,6 +138,7 @@ export function ClassBookingRow({
         setActionError(getApiErrorMessage(err, t('bookings.classRow.bookError')));
         if (err instanceof ApiError && err.code === 'TICKET_REQUIRED') setTicketNeeded(true);
         setWaiverNeeded(isWaiverRefusal(err));
+        setPlanNeeded(isPlanRefusal(err));
       }
     }
   }
@@ -184,6 +192,9 @@ export function ClassBookingRow({
       {actionError ? <InlineError message={actionError} /> : null}
       {actionError && waiverNeeded ? (
         <SignWaiverButton schoolId={schoolId} child={studentId ? { studentId, name: childName ?? '' } : undefined} />
+      ) : null}
+      {actionError && planNeeded && schoolId ? (
+        <BuyPlanButton schoolId={schoolId} child={studentId ? { studentId, name: childName ?? '' } : undefined} onShowPlans={onShowPlans} />
       ) : null}
       {ticketNeeded && state.kind === 'idle' && schoolId ? (
         <ClassTicketOffer classId={classItem.id} schoolId={schoolId} studentId={studentId} />

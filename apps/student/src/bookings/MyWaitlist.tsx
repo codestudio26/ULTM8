@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { Text, View } from 'react-native';
 import type { components } from '@ultm8/api-client';
 import { Button, InlineError } from '../components/ui';
-import { getApiErrorMessage, isWaiverRefusal } from '../lib/apiErrorMessage';
+import { getApiErrorMessage, isPlanRefusal, isWaiverRefusal } from '../lib/apiErrorMessage';
 import { formatClassTimes } from '../lib/formatDate';
 import { classZone, formatInZone } from '../lib/classTime';
 import { useT } from '../i18n/I18nProvider';
 import { SignWaiverButton } from '../waivers/SignWaiverButton';
+import { BuyPlanButton } from '../memberships/BuyPlanButton';
 import { useClaimWaitlist, useMyWaitlist, useWithdrawWaitlist } from './waitlistMutations';
 
 type Entry = components['schemas']['MyWaitlistEntryDto'];
@@ -39,16 +40,20 @@ function WaitlistRow({ entry }: { entry: Entry }) {
   const [error, setError] = useState<string | null>(null);
   // Decision 442 item 1: claiming was refused for want of a signed waiver.
   const [waiverNeeded, setWaiverNeeded] = useState(false);
+  // Decision 449 item 8: claiming was refused because no plan pays for it.
+  const [planNeeded, setPlanNeeded] = useState(false);
   const offered = entry.status === 'NOTIFIED';
 
   async function run(action: () => Promise<unknown>, fallback: string) {
     setError(null);
     setWaiverNeeded(false);
+    setPlanNeeded(false);
     try {
       await action();
     } catch (err) {
       setError(getApiErrorMessage(err, fallback));
       setWaiverNeeded(isWaiverRefusal(err));
+      setPlanNeeded(isPlanRefusal(err));
     }
   }
 
@@ -66,6 +71,7 @@ function WaitlistRow({ entry }: { entry: Entry }) {
       )}
       {error ? <InlineError message={error} /> : null}
       {error && waiverNeeded ? <SignWaiverButton schoolId={entry.schoolId} /> : null}
+      {error && planNeeded && entry.schoolId ? <BuyPlanButton schoolId={entry.schoolId} schoolName={entry.schoolName} /> : null}
       <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
         {offered ? (
           <View style={{ flex: 1 }}>

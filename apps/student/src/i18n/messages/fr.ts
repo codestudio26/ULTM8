@@ -321,6 +321,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Impossible de charger les réservations — veuillez réessayer.",
     },
     classRow: {
+      buyPlan: "Acheter une formule",
       dateRange: "{start} – {end}",
       breakLine: "Pause {start} – {end}",
       endsNextDay: "se termine le lendemain",

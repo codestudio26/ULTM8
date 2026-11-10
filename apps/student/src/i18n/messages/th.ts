@@ -320,6 +320,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "ไม่สามารถโหลดการจองได้ โปรดลองอีกครั้ง",
     },
     classRow: {
+      buyPlan: "ซื้อแผน",
       dateRange: "{start} – {end}",
       breakLine: "พัก {start} – {end}",
       endsNextDay: "จบวันถัดไป",
