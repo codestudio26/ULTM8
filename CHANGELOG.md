@@ -10,6 +10,14 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **Refunding a fee, or losing a dispute on one, no longer ends the member's
+  plan** (Decision 451 item 1, stress round 7 D-1). A freeze fee's payment
+  carries its plan's id, so refunding it in full in the Stripe dashboard (or a
+  member winning a dispute on it) used to expire the plan, cancel its future
+  bookings and its Subscription. Now only the plan's own purchase or renewal
+  ends it (Decisions 55 and 382, unchanged); a freeze, late-cancel or no-show
+  fee only changes its own row (Refunded, or Disputed and lost).
+
 - **The populated demo on staging** (tooling only, no product change). A
   manual GitHub Actions workflow, **Seed staging demo**, seeds the Apex
   Jiu-Jitsu demo (`apps/api/scripts/demo/`) into the staging database with only
