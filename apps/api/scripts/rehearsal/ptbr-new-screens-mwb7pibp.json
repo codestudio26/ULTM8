@@ -1,0 +1,23 @@
+[
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "Billing reports with fees, pt-BR: the Fees tile is translated, no English",
+  "status": "PASS",
+  "evidence": "path /billing-reports; API GBP fees 500; fee words [\"Taxas\"]; lang pt-BR; \"escola — British English American English Português (Brasil) Español العربية Français Deutsch Italiano Nederlands Polski Русский Türkçe 日本語 한국어 中文（中国） ไทย Relatórios de cobrança Receita de cobranças e planos, o que está \"; raw []; English []"
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "ACCESS_PAUSED / NO_PERMISSION / Buy a plan: translated in the portal and the member app (pt-BR differs from English)",
+  "status": "FAIL",
+  "evidence": "server-keys codes.accessPaused=\"Seu acesso a esta escola foi pausado. Entre em contato com o proprietário da escola.\"; server-keys codes.noPermission=\"Você não tem permissão para ver esta página.\"; server-keys codes.noEligibleMembership=\"Nenhum dos seus planos cobre esta aula. Compre um plano para reservá-la.\"; app bookings.classRow.buyPlan=\"Comprar um plano\""
+ },
+ {
+  "school": "B",
+  "journey": "R7",
+  "step": "booking with no plan: the refusal is NO_ELIGIBLE_MEMBERSHIP (or an earlier gate)",
+  "status": "NOTE",
+  "evidence": "403 WAIVER_REQUIRED This School needs a signed waiver before booking a class or checking in."
+ }
+]
