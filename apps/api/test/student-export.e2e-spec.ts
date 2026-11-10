@@ -180,12 +180,15 @@ describeIfDb('Student list export', () => {
 
   it("someone with no role at the School, or a School that doesn't exist, gets 404 as on the roster (stress test round 6, R-3)", async () => {
     const roster = (who: string, id = schoolId) => http().get(`/v1/schools/${id}/students`).set('Authorization', `Bearer ${tokens[who]}`);
-    for (const who of ['outsider', 'formerOwner']) {
-      const res = await exportAs(who);
-      expect(res.status).toBe(404);
-      expect(res.body.error).toMatchObject({ code: 'NOT_FOUND', message: 'School not found' });
-      expect((await roster(who)).status).toBe(404);
-    }
+    for (const who of ['outsider', 'formerOwner']) expect((await roster(who)).status).toBe(404);
+    const res0 = await exportAs('outsider');
+    expect(res0.status).toBe(404);
+    expect(res0.body.error).toMatchObject({ code: 'NOT_FOUND', message: 'School not found' });
+    // Decision 449 item 6: a former owner had a role here, so they are
+    // connected to the School and told they have no permission, not "not found".
+    const former = await exportAs('formerOwner');
+    expect(former.status).toBe(403);
+    expect(former.body.error.code).toBe('NO_PERMISSION');
     const nowhere = randomUUID();
     const res = await http().get(`/v1/schools/${nowhere}/students/export`).set('Authorization', `Bearer ${tokens.owner}`);
     expect(res.status).toBe(404);

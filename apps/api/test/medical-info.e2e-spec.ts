@@ -270,8 +270,12 @@ describeIfDb('Medical information (Decision 315 item 10)', () => {
   describe('member-facing endpoints never show it', () => {
     it('the member and the Guardian are refused the staff read, and their own reads carry no medical text', async () => {
       expect((await read('adult', users.adult.id)).status).toBe(403);
-      // The parent holds no role at the School itself (Decision 448 item 17): 404.
-      expect((await read('parent', users.kid.id)).status).toBe(404);
+      // The parent holds no role at the School itself but is a Guardian of
+      // one of its students, so they are told they have no permission
+      // (Decision 449 item 6, replacing Decision 448 item 17's 404 for them).
+      const parent = await read('parent', users.kid.id);
+      expect(parent.status).toBe(403);
+      expect(parent.body.error.code).toBe('NO_PERMISSION');
       for (const [who, path] of [
         ['adult', '/v1/users/me'],
         ['adult', `/v1/academies/${schoolA.id}`],
