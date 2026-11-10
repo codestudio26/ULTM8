@@ -253,7 +253,7 @@ export const serverMessages: Record<string, string> = {
   "This Student already has an active Waitlist entry for this Class.": "นักเรียนคนนี้อยู่ในรายชื่อรอของคลาสนี้แล้ว",
   "This Student already holds a non-Expired signature for this Waiver.": "นักเรียนคนนี้มีลายเซ็นที่ยังไม่หมดอายุในหนังสือสละสิทธิ์นี้แล้ว",
   "This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.": "นักเรียนคนนี้มีสมาชิกภาพทั่วไปที่ใช้งานอยู่ที่โรงเรียนนี้แล้ว — บัตรที่บันทึกไว้ของคุณถูกเรียกเก็บเงินและได้คืนเงินแล้ว",
-  "This Student already holds an active general-access Membership at this School.": "นักเรียนคนนี้มีสมาชิกภาพทั่วไปที่ใช้งานอยู่ที่โรงเรียนนี้แล้ว",
+  "This Student already holds an active Subscription or Weekly Pass at this School.": "นักเรียนคนนี้มีสมาชิกภาพทั่วไปที่ใช้งานอยู่ที่โรงเรียนนี้แล้ว",
   "This Student has no Active Membership eligible to fund this Booking.": "นักเรียนคนนี้ไม่มีสมาชิกภาพที่ใช้งานอยู่ซึ่งใช้กับการจองนี้ได้",
   "This Student has no existing rank in this Discipline to award a stripe within.": "นักเรียนคนนี้ยังไม่มีระดับในสไตล์นี้ที่จะมอบแถบให้ได้",
   "This Student has no existing rank in this Discipline to downgrade from.": "นักเรียนคนนี้ยังไม่มีระดับในสไตล์นี้ที่จะลดระดับลงได้",

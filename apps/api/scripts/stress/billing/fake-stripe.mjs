@@ -26,6 +26,11 @@ function parseForm(body) {
 
 function save(obj) { store.set(obj.id, obj); return obj; }
 
+// Test hook state: POST /__payment_intents/lose-next-answer makes the next
+// off-session PaymentIntent succeed at "Stripe" while its answer is lost (a
+// 500 to the caller), as when Stripe can't be reached after charging.
+let loseNextAnswer = false;
+
 function paymentIntent(params, account) {
   const pi = id('pi');
   const offSession = params.off_session === 'true' && params.confirm === 'true';
@@ -33,6 +38,11 @@ function paymentIntent(params, account) {
   const declined = offSession && String(params.amount).endsWith('13');
   const obj = save({ id: pi, object: 'payment_intent', amount: Number(params.amount ?? 0), currency: params.currency, client_secret: `${pi}_secret_x`, status: offSession ? (declined ? 'requires_payment_method' : 'succeeded') : 'requires_payment_method', metadata: params.metadata ?? {}, account, latest_charge: { id: id('ch'), receipt_url: `https://pay.stripe.test/receipts/${pi}` } });
   if (declined) return { error: { status: 402, body: { error: { type: 'card_error', code: 'card_declined', message: 'Your card was declined.', payment_intent: obj } } } };
+  if (offSession && loseNextAnswer) {
+    loseNextAnswer = false;
+    save({ id: obj.latest_charge.id, object: 'charge', amount: obj.amount, amount_refunded: 0, refunded: false, currency: obj.currency, payment_intent: pi, receipt_url: obj.latest_charge.receipt_url });
+    return { error: { status: 500, body: { error: { type: 'api_error', message: 'fake-stripe: the answer was lost' } } } };
+  }
   return obj;
 }
 
@@ -57,7 +67,10 @@ const handlers = {
     const inv = save({ id: id('in'), object: 'invoice', payment_intent: pi, payments: { object: 'list', data: [{ is_default: true, payment: { type: 'payment_intent', payment_intent: pi.id } }] }, confirmation_secret: { type: 'payment_intent', client_secret: pi.client_secret } });
     return save({ id: id('sub'), object: 'subscription', status: 'incomplete', latest_invoice: inv, items: { object: 'list', data: [{ id: id('si'), price: { id: p.items?.['0']?.price ?? id('price') } }] }, metadata: p.metadata ?? {} });
   },
-  'POST /v1/accounts': () => save({ id: id('acct'), object: 'account', charges_enabled: true }),
+  // A new connected account, as Stripe makes it: onboarding not finished yet,
+  // so not ready to take charges (Decision 442 item 2). The test hook
+  // POST /__accounts/:id/complete finishes onboarding.
+  'POST /v1/accounts': () => save({ id: id('acct'), object: 'account', details_submitted: false, charges_enabled: false }),
   'POST /v1/account_links': () => ({ object: 'account_link', url: `https://connect.stripe.test/${id('al')}` }),
   'POST /v1/prices': (p) => save({ id: id('price'), object: 'price', unit_amount: Number(p.unit_amount ?? 0), currency: p.currency }),
   'POST /v1/products': (p) => save({ id: id('prod'), object: 'product', name: p.name }),
@@ -93,6 +106,24 @@ http.createServer((req, res) => {
       cs.payment_intent = pi.id; cs.status = 'complete'; cs.payment_status = 'paid';
       return send(200, { session: cs, payment_intent: pi, lines: items.map((li) => ({ name: li.price_data?.product_data?.name, amount: Number(li.price_data?.unit_amount ?? 0) })) });
     }
+    if (req.method === 'POST' && path === '/__payment_intents/lose-next-answer') { loseNextAnswer = true; return send(200, { ok: true }); }
+    if (req.method === 'GET' && path === '/__payment_intents') return send(200, [...store.values()].filter((o) => o.object === 'payment_intent'));
+    // Test hook: the member saves a card on a hosted Checkout in setup mode:
+    // the SetupIntent and its card PaymentMethod are made then.
+    const setup = path.match(/^\/__checkout\/(cs_[0-9a-f]+)\/save-card$/);
+    if (req.method === 'POST' && setup && store.has(setup[1])) {
+      const cs = store.get(setup[1]);
+      // With no Customer given, Checkout makes one for the saved card.
+      if (!cs.customer) cs.customer = save({ id: id('cus'), object: 'customer', invoice_settings: { default_payment_method: null }, metadata: {} }).id;
+      const pm = save({ id: id('pm'), object: 'payment_method', type: 'card', card: { brand: 'visa', last4: '4242', exp_month: 12, exp_year: 2030, country: 'GB' }, customer: cs.customer });
+      const seti = save({ id: cs.setup_intent, object: 'setup_intent', status: 'succeeded', payment_method: pm.id, customer: cs.customer });
+      cs.status = 'complete';
+      return send(200, { session: cs, setup_intent: seti, payment_method: pm });
+    }
+    // Test hook: the School finishes Stripe's onboarding (details given,
+    // charges enabled). Stripe then sends account.updated.
+    const done = path.match(/^\/__accounts\/(acct_[0-9a-f]+)\/complete$/);
+    if (req.method === 'POST' && done && store.has(done[1])) return send(200, Object.assign(store.get(done[1]), { details_submitted: true, charges_enabled: true }));
     // Test hook: the School refunds a card payment in its Stripe Dashboard.
     const rf = path.match(/^\/__charges\/(ch_[0-9a-f]+)\/refund$/);
     if (req.method === 'POST' && rf && store.has(rf[1])) {
@@ -129,6 +160,19 @@ http.createServer((req, res) => {
       const obj = store.get(m[1]);
       if (m[2] === 'cancel' || req.method === 'DELETE') obj.status = 'canceled';
       if (req.method === 'POST' && !m[2]) Object.assign(obj, params);
+      // expand[]: a field holding another object's id is returned as that object.
+      const expand = [...url.searchParams.entries()].filter(([k]) => k.startsWith('expand')).map(([, v]) => v);
+      if (expand.length) {
+        const out = JSON.parse(JSON.stringify(obj));
+        for (const field of expand) {
+          const keys = field.split('.');
+          let o = out;
+          for (const k of keys.slice(0, -1)) o = o?.[k];
+          const last = keys[keys.length - 1];
+          if (o && typeof o[last] === 'string' && store.has(o[last])) o[last] = store.get(o[last]);
+        }
+        return send(200, out);
+      }
       return send(200, obj);
     }
     if (m && req.method === 'GET') return send(404, { error: { type: 'invalid_request_error', message: `No such object: ${m[1]}` } });

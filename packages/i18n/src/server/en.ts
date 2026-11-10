@@ -278,7 +278,7 @@ export const SERVER_MESSAGES: string[] = [
  "This Student already has an active Waitlist entry for this Class.",
  "This Student already holds a non-Expired signature for this Waiver.",
  "This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.",
- "This Student already holds an active general-access Membership at this School.",
+ "This Student already holds an active Subscription or Weekly Pass at this School.",
  "This Student has no Active Membership eligible to fund this Booking.",
  "This Student has no existing rank in this Discipline to award a stripe within.",
  "This Student has no existing rank in this Discipline to downgrade from.",

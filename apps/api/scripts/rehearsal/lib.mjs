@@ -99,7 +99,7 @@ export async function signUp({ first, last, dob = '1988-04-12', country = 'GB', 
   const email = `${first}.${last}.${RUN}@rehearsal.test`.toLowerCase().replace(/[^a-z0-9.@]/g, '');
   const phone = phoneFor(country);
   const passcode = '482913';
-  await must(`register ${first}`, 'POST', '/auth/register', null, { email, phone, firstName: first, surname: last, passcode, passcodeConfirm: passcode, dateOfBirth: dob, language, currency });
+  await must(`register ${first}`, 'POST', '/auth/register', null, { email, phone, firstName: first, surname: last, passcode, passcodeConfirm: passcode, dateOfBirth: dob, language, currency, acceptTerms: true });
   await must(`otp ${first}`, 'POST', '/auth/otp/verify', null, { phone, code: OTP });
   const person = { email, phone, passcode, first, last };
   await signIn(person);

@@ -10,7 +10,7 @@
 //   MEMBER_APP  default http://localhost:5318     CHROMIUM  a Chromium binary
 import fs from 'fs';
 import { createRequire } from 'module';
-import { journey, check, ok, save, db } from './lib.mjs';
+import { journey, check, ok, save, db, call } from './lib.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
@@ -109,6 +109,60 @@ const where = Object.entries(seen).find(([, t]) => t && note && t.includes(note)
 check('the "card payments aren\'t available, pay by Pix or cash" note shows where they would pay', where ? 'PASS' : 'NOTE', where ? `on the ${where[0]} screen: "${note}…"` : `not seen on ${visited.join(', ')} (key ${noteKey}); screens saved for review`);
 check('member app console errors', consoleErrors.length ? 'NOTE' : 'PASS', consoleErrors.slice(0, 4).join(' | ') || 'none');
 await page.screenshot({ path: `${dir}member-B-${visited[visited.length - 1] ?? 'home'}.png` }).catch(() => {});
+
+// --- Rehearsal 2 -------------------------------------------------------------
+journey('B', '8', 'Member app in a browser (pt-BR): new screens');
+// The monthly plan, bought by Pix or cash, with no "switch" opt-in (Decisions 441 items 1 and 3).
+const plans = seen.schoolPlans ?? '';
+const monthly = cast.B.monthlyPlanId ? await db.membershipPlan.findUnique({ where: { id: cast.B.monthlyPlanId } }) : null;
+const switchText = String(pt['memberships.planRow.agreeToSwitch'] ?? '').split('{')[0];
+ok('the School\'s plans show the monthly plan to buy, with the Pix/cash note and no "switch" opt-in', !!monthly && plans.includes(monthly.title) && (!note || plans.includes(note)) && !!switchText && !plans.includes(switchText),
+  `monthly "${monthly?.title}" listed ${plans.includes(monthly?.title ?? '#')}; Pix note ${note ? plans.includes(note) : 'n/a'}; switch opt-in text shown ${plans.includes(switchText)}`);
+
+// A member the School added signs in to the app for the first time: "I agree" first.
+{
+  const owner = await call('POST', '/auth/login', null, { email: B.owner.email, passcode: B.owner.passcode });
+  const stamp = Date.now().toString(36);
+  const branch = await db.branch.findFirst({ where: { schoolId: B.schoolId } });
+  const add = await call('POST', `/schools/${B.schoolId}/students/add-manually`, owner.body.accessToken, { firstName: 'Diego', surname: 'Moraes', email: `diego.moraes.${stamp}@rehearsal.test`, dateOfBirth: '1989-09-09', branchId: branch.id });
+  const l = add.body?.temporaryPasscode ? await call('POST', '/auth/login', null, { email: add.body.email, passcode: add.body.temporaryPasscode }) : null;
+  const ch = l?.body?.passcodeChangeToken ? await call('POST', '/auth/passcode-change/first-login', l.body.passcodeChangeToken, { newPasscode: '615283' }) : null;
+  if (ch?.status < 300) {
+    const p2 = await browser.newPage({ viewport: { width: 400, height: 860 }, locale: 'pt-BR' });
+    await p2.goto(APP, { waitUntil: 'networkidle' });
+    await p2.waitForTimeout(800);
+    if (await p2.getByRole('tab', { name: 'Código de entrada' }).count()) {
+      await p2.getByRole('tab', { name: 'Código de entrada' }).click();
+      await p2.locator('input').first().fill(school.joinCode);
+      await p2.getByText('Encontrar minha escola', { exact: false }).first().click().catch(() => p2.keyboard.press('Enter'));
+      await p2.waitForTimeout(1500);
+      await p2.getByText(school.name).first().click();
+      await p2.waitForTimeout(800);
+    }
+    // The legal pages are reachable before signing in.
+    const loginText = await p2.evaluate(() => document.body.innerText);
+    void loginText;
+    await p2.locator('input[type=email]').fill(add.body.email);
+    await p2.locator('input[type=password]').fill('615283');
+    await p2.getByText(/^Entrar$/).last().click();
+    await p2.waitForTimeout(3500);
+    const agreeText = await p2.evaluate(() => document.body.innerText);
+    const sc = scan(agreeText);
+    ok('a member the School added: the app shows "Antes de continuar" first, in Portuguese, with links to the Terms and the Privacy Policy', agreeText.includes(pt['legal.firstSignIn.title']) && agreeText.includes(pt['legal.agree.account']) && agreeText.includes(pt['legal.titles.terms']) && agreeText.includes(pt['legal.titles.privacy']) && sc.raw.length === 0 && sc.leftovers.length === 0,
+      `"${agreeText.trim().slice(0, 160).replace(/\n/g, ' / ')}"; raw ${sc.raw.join(' ')}; English ${sc.leftovers.slice(0, 3).join(' | ')}`);
+    await p2.getByRole('switch').first().click().catch(() => p2.locator('[role=switch], input[type=checkbox]').first().click().catch(() => {}));
+    await p2.getByText(pt['legal.firstSignIn.submit'], { exact: true }).last().click().catch(() => {});
+    await p2.waitForTimeout(3000);
+    const homeText = await p2.evaluate(() => document.body.innerText);
+    const rows = await db.legalAcceptance.count({ where: { userId: add.body.id, atFirstSignIn: true } });
+    ok('ticking it records the acceptance and opens Home', rows === 2 && !homeText.includes(pt['legal.firstSignIn.title']), `acceptance rows ${rows}; now "${homeText.trim().slice(0, 100).replace(/\n/g, ' / ')}"`);
+    seen.firstSignIn = agreeText;
+    await p2.close();
+  } else {
+    check('first sign-in "I agree" in the app', 'BLOCKED', `add ${add.status} ${add.body?.error?.message ?? ''}; login ${l?.status}; change ${ch?.status}`);
+  }
+}
+fs.writeFileSync(`${dir}member-screens-${castFile.replace(/^cast-|\.json$/g, '')}.json`, JSON.stringify(seen, null, 1));
 await browser.close();
 save(`member-results-${castFile.replace(/^cast-|\.json$/g, '')}.json`);
 await db.$disconnect();

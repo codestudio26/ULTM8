@@ -1,5 +1,5 @@
 // Journey 1: the owner signs up and sets the School up.
-import { call, must, journey, check, ok, step, signUp, signIn, db, days } from './lib.mjs';
+import { call, must, journey, check, ok, step, signUp, signIn, db, days, FAKE_STRIPE, stripeWebhook } from './lib.mjs';
 
 const at = (offsetMs) => new Date(Date.now() + offsetMs).toISOString();
 const stepKeys = (d) => d?.setupChecklist?.steps?.map((x) => x.key) ?? [];
@@ -14,8 +14,11 @@ export async function j1Setup(s) {
   if (!s.owner) return;
   check('owner signs up (register, SMS code, sign in)', 'PASS', s.owner.email);
 
+  // Decision 444 item 2: a School is created only with the Agreement ticked.
+  const noTick = await call('POST', '/schools', s.owner.tok, { name: c.name + ' (no tick)', timezone: c.timezone, defaultCurrency: c.currency, defaultLanguage: c.language, postalAddress: c.address });
+  ok('creating a School without ticking the School and Franchise Agreement is refused', noTick.status === 400 && noTick.body?.error?.code === 'AGREEMENT_NOT_ACCEPTED', `${noTick.status} ${noTick.body?.error?.code}`);
   s.school = await step('owner creates the School', () => must('school', 'POST', '/schools', s.owner.tok, {
-    name: c.name, timezone: c.timezone, defaultCurrency: c.currency, defaultLanguage: c.language, postalAddress: c.address, ranksToggle: true,
+    name: c.name, timezone: c.timezone, defaultCurrency: c.currency, defaultLanguage: c.language, postalAddress: c.address, ranksToggle: true, acceptAgreement: true,
   }));
   if (!s.school) return;
   ok('owner creates the School', s.school.addressCountry === c.country && s.school.defaultCurrency === c.currency && s.school.timezone === c.timezone,
@@ -67,34 +70,6 @@ export async function j1Setup(s) {
   s.nowClass = await step('add a class starting now', () => mkClass(c.key === 'B' ? 'Treino livre agora' : 'Open mat now', -10 * 60e3, 50 * 60e3, { capacity: 20 }));
   if (s.smallClass && s.nowClass) check('add one-off classes (1 place tomorrow; one now)', 'PASS', `${s.smallClass.id}, ${s.nowClass.id}`);
 
-  // Plans: a joining fee and a member limit; a plan that switches to another.
-  const fees = await step('switch joining fees on', () => must('joining fees', 'PATCH', `/schools/${sid}`, T(), { joiningFeesEnabled: true }));
-  if (fees) ok('switch joining fees on', fees.joiningFeesEnabled === true, `joiningFeesEnabled=${fees.joiningFeesEnabled}`);
-  const plan = (body) => must(`plan ${body.title}`, 'POST', `/schools/${sid}/membership-plans`, T(), { currency: c.currency, ...body });
-  s.plans = {};
-  s.plans.pack = await step('plan with a joining fee and a member limit', () => plan({ type: 'CLASS_PACK', title: c.plans.pack, price: 8000, classesIncluded: 10, expiryDurationDays: 90, joiningFee: 2500, joiningFeeRefundable: false, memberLimit: 2 }));
-  if (s.plans.pack) ok('plan with a joining fee and a member limit', s.plans.pack.joiningFee === 2500 && s.plans.pack.memberLimit === 2, `joiningFee ${s.plans.pack.joiningFee}, memberLimit ${s.plans.pack.memberLimit}`);
-  s.plans.next = await step('the plan to switch into', () => plan({ type: 'CLASS_PACK', title: c.plans.next, price: 4500, classesIncluded: 5, expiryDurationDays: 60 }));
-  s.plans.week = await step('plan that switches to another when it ends', () => plan({ type: 'WEEKLY_PASS', title: c.plans.week, price: 1500, expiryDurationDays: 7, switchToPlanId: s.plans.next?.id }));
-  if (s.plans.week) ok('plan that switches to another when it ends', s.plans.week.switchToPlanId === s.plans.next?.id, `${c.plans.week} → ${s.plans.next?.title}`);
-  s.plans.kids = await step('a plan for the children', () => plan({ type: 'CLASS_PACK', title: c.plans.kids, price: 5000, classesIncluded: 8, expiryDurationDays: 60 }));
-  // A monthly Subscription. At a School without card payments nobody can sell
-  // one (in the app or at the desk); journey 3 shows what a member sees.
-  const sub = await call('POST', `/schools/${sid}/membership-plans`, T(), { currency: c.currency, type: 'SUBSCRIPTION', title: c.plans.sub, price: c.cards ? 6500 : 18000 });
-  if (c.cards) {
-    ok('a monthly Subscription', sub.status < 300, `${sub.status} ${sub.body?.price} ${sub.body?.currency}`);
-    s.plans.sub = sub.body;
-  } else {
-    check('a monthly Subscription at a School without card payments', 'NOTE', `created: ${sub.status} (allowed, though it can never be sold here; see journey 3)`);
-    s.plans.subNoCards = sub.status < 300 ? sub.body : null;
-  }
-
-  s.waiver = await step('add a waiver', () => must('waiver', 'POST', `/schools/${sid}/waivers`, T(), {
-    title: c.key === 'B' ? 'Termo de responsabilidade' : 'Liability waiver',
-    body: c.key === 'B' ? 'Declaro estar ciente dos riscos da prática de artes marciais.' : 'I understand that martial arts training carries a risk of injury.',
-  }));
-  if (s.waiver) check('add a waiver', 'PASS', s.waiver.title);
-
   // Payments.
   if (c.cards) {
     // Decision 406: the surcharge country list is Platform Admin's; Platform
@@ -107,7 +82,18 @@ export async function j1Setup(s) {
     const ob = await step('Connect Stripe: get the onboarding link (fake Stripe)', () => must('onboard', 'POST', `/payment-accounts/${s.payAcct.id}/connect/onboard`, T(), {}));
     if (ob) ok('Connect Stripe: get the onboarding link (fake Stripe)', /^https:\/\/connect\.stripe\.test\//.test(ob.onboardingUrl ?? ''), ob.onboardingUrl);
     s.acct = (await db.paymentAccount.findUnique({ where: { id: s.payAcct?.id ?? '' } }))?.stripeConnectedAccountId;
-    check('School Portal has a Connect Stripe screen for a School', 'NOTE', 'No: the checklist says ULTM8 support connects Stripe ("Stripe has no portal screen yet", SetupChecklist.tsx). Rehearsed through the API, as the owner.');
+    // Decision 441 item 6 / 442 item 2: onboarding started is not ready.
+    const mid = (await call('GET', `/schools/${sid}/dashboard`, T())).body;
+    const pa0 = (await call('GET', `/schools/${sid}/payment-account`, T())).body;
+    ok('while Stripe onboarding isn\'t finished: checklist not ticked, no card payments', stepDone(mid, 'STRIPE') === false && pa0?.cardPayments === false, `STRIPE done=${stepDone(mid, 'STRIPE')}; cardPayments=${pa0?.cardPayments}`);
+    // The owner finishes Stripe's onboarding; Stripe sends account.updated.
+    await fetch(`${FAKE_STRIPE}/__accounts/${s.acct}/complete`, { method: 'POST' });
+    const wh = await stripeWebhook({ id: `evt_acct_${Date.now()}`, object: 'event', type: 'account.updated', account: s.acct, data: { object: { id: s.acct, object: 'account', details_submitted: true, charges_enabled: true } } });
+    let ready = null;
+    for (let i = 0; i < 40 && !ready; i++) { ready = (await db.paymentAccount.findUnique({ where: { id: s.payAcct.id } }))?.stripeAccountReady ? true : null; if (!ready) await new Promise((r) => setTimeout(r, 250)); }
+    const pa1 = (await call('GET', `/schools/${sid}/payment-account`, T())).body;
+    const done = (await call('GET', `/schools/${sid}/dashboard`, T())).body;
+    ok('Stripe says onboarding is finished (account.updated): the account is ready and the checklist ticks "Connect Stripe"', wh.status === 200 && ready === true && pa1?.cardPayments === true && stepDone(done, 'STRIPE') === true, `webhook ${wh.status}; ready ${ready}; cardPayments ${pa1?.cardPayments}; STRIPE done=${stepDone(done, 'STRIPE')}`);
   } else {
     s.payAcct = await step('add a bank transfer (Pix) payment account', () => must('payment account', 'POST', `/schools/${sid}/payment-accounts`, T(), { provider: c.provider, accountTitle: 'Pix', country: 'BR' }));
     if (s.payAcct) ok('add a bank transfer (Pix) payment account', s.payAcct.provider === 'BANK_TRANSFER' && s.payAcct.connectAvailable === false, `provider ${s.payAcct.provider}, connectAvailable ${s.payAcct.connectAvailable}`);
@@ -115,7 +101,7 @@ export async function j1Setup(s) {
     // payment account, and the portal never creates a Stripe one there.
     await step('Connect Stripe refused in Brazil, with a translated reason', async () => {
       const o2 = await signUp({ first: 'Rafael', last: 'Teste', country: 'BR', language: 'pt-BR', currency: 'BRL' });
-      const s2 = await must('school2', 'POST', '/schools', o2.tok, { name: 'Academia Recusa Connect', timezone: c.timezone, defaultCurrency: 'BRL', defaultLanguage: 'pt-BR', postalAddress: c.address });
+      const s2 = await must('school2', 'POST', '/schools', o2.tok, { name: 'Academia Recusa Connect', timezone: c.timezone, defaultCurrency: 'BRL', defaultLanguage: 'pt-BR', postalAddress: c.address, acceptAgreement: true });
       await signIn(o2);
       const acct = await must('stripe acct BR', 'POST', `/schools/${s2.id}/payment-accounts`, o2.tok, { provider: 'STRIPE', accountTitle: 'Cartão', country: 'BR' });
       const callsUrl = `http://localhost:${process.env.FAKE_STRIPE_PORT || 12111}/__calls`;
@@ -131,11 +117,46 @@ export async function j1Setup(s) {
     });
   }
 
+  // Plans: a joining fee and a member limit; a plan that switches to another.
+  const fees = await step('switch joining fees on', () => must('joining fees', 'PATCH', `/schools/${sid}`, T(), { joiningFeesEnabled: true }));
+  if (fees) ok('switch joining fees on', fees.joiningFeesEnabled === true, `joiningFeesEnabled=${fees.joiningFeesEnabled}`);
+  const plan = (body) => must(`plan ${body.title}`, 'POST', `/schools/${sid}/membership-plans`, T(), { currency: c.currency, ...body });
+  s.plans = {};
+  s.plans.pack = await step('plan with a joining fee and a member limit', () => plan({ type: 'CLASS_PACK', title: c.plans.pack, price: 8000, classesIncluded: 10, expiryDurationDays: 90, joiningFee: 2500, joiningFeeRefundable: false, memberLimit: 2 }));
+  if (s.plans.pack) ok('plan with a joining fee and a member limit', s.plans.pack.joiningFee === 2500 && s.plans.pack.memberLimit === 2, `joiningFee ${s.plans.pack.joiningFee}, memberLimit ${s.plans.pack.memberLimit}`);
+  s.plans.next = await step('the plan to switch into', () => plan({ type: 'CLASS_PACK', title: c.plans.next, price: 4500, classesIncluded: 5, expiryDurationDays: 60 }));
+  if (c.cards) {
+    s.plans.week = await step('plan that switches to another when it ends', () => plan({ type: 'WEEKLY_PASS', title: c.plans.week, price: 1500, expiryDurationDays: 7, switchToPlanId: s.plans.next?.id }));
+    if (s.plans.week) ok('plan that switches to another when it ends', s.plans.week.switchToPlanId === s.plans.next?.id, `${c.plans.week} → ${s.plans.next?.title}`);
+  } else {
+    // Decision 441 item 3: no "switch to" where the School takes no cards.
+    const r = await call('POST', `/schools/${sid}/membership-plans`, T(), { currency: c.currency, type: 'WEEKLY_PASS', title: c.plans.week, price: 1500, expiryDurationDays: 7, switchToPlanId: s.plans.next?.id });
+    ok('"switch to another plan when it ends" is refused at a School without cards', r.status === 400 && r.body?.error?.code === 'SWITCH_NEEDS_CARDS', `${r.status} ${r.body?.error?.code}`);
+    s.plans.week = await step('the week pass, without a switch', () => plan({ type: 'WEEKLY_PASS', title: c.plans.week, price: 1500, expiryDurationDays: 7 }));
+  }
+  s.plans.kids = await step('a plan for the children', () => plan({ type: 'CLASS_PACK', title: c.plans.kids, price: 5000, classesIncluded: 8, expiryDurationDays: 60 }));
+  // A monthly Subscription. At a School without card payments nobody can sell
+  // one (in the app or at the desk); journey 3 shows what a member sees.
+  const sub = await call('POST', `/schools/${sid}/membership-plans`, T(), { currency: c.currency, type: 'SUBSCRIPTION', title: c.plans.sub, price: c.cards ? 6500 : 18000 });
+  if (c.cards) {
+    ok('a monthly Subscription', sub.status < 300, `${sub.status} ${sub.body?.price} ${sub.body?.currency}`);
+    s.plans.sub = sub.body;
+  } else {
+    // Decision 441 item 1: sold as a Pix/cash first month, then billed to the balance.
+    ok('a monthly plan at a School without card payments', sub.status < 300, `${sub.status} ${sub.body?.price} ${sub.body?.currency}`);
+    s.plans.subNoCards = sub.status < 300 ? sub.body : null;
+  }
+
+  s.waiver = await step('add a waiver', () => must('waiver', 'POST', `/schools/${sid}/waivers`, T(), {
+    title: c.key === 'B' ? 'Termo de responsabilidade' : 'Liability waiver',
+    body: c.key === 'B' ? 'Declaro estar ciente dos riscos da prática de artes marciais.' : 'I understand that martial arts training carries a risk of injury.',
+  }));
+  if (s.waiver) check('add a waiver', 'PASS', s.waiver.title);
+
   // The checklist afterwards.
   const dash = (await call('GET', `/schools/${sid}/dashboard`, T())).body;
   const want = ['BRANCH', 'STYLE_AND_BELTS', 'CLASS', 'MEMBERSHIP_PLAN', 'WAIVER'];
   ok('Dashboard checklist ticks each step as it is done', want.every((k) => stepDone(dash, k) === true), JSON.stringify(dash?.setupChecklist?.steps));
-  if (c.cards) check('Dashboard "Connect Stripe" step after onboarding started', stepDone(dash, 'STRIPE') ? 'PASS' : 'NOTE', `STRIPE done=${stepDone(dash, 'STRIPE')} (onboarding with Stripe itself is not finished in the fake)`);
 }
 
 /** The apps' table of API error messages for one language (packages/i18n,
