@@ -87,6 +87,12 @@ const SETTLEABLE: Transaction['status'][] = ['PENDING', 'FAILED'];
 /** A payment that went through (Decision 415 item 4: its refunds tell the member). */
 const PAID_STATUSES: Transaction['status'][] = ['SUCCESSFUL', 'REFUNDED', 'DISPUTED'];
 
+/** Decision 451 item 1 (on Decisions 55 and 382): the Transaction kinds that pay
+ * for a Membership itself. Only these end it when fully refunded in Stripe or
+ * lost in a dispute; a fee (freeze, late-cancel, no-show) never does, even when
+ * its row carries the Membership's id. */
+const PLAN_PAYMENT_KINDS: Transaction['kind'][] = ['MEMBERSHIP', 'RENEWAL'];
+
 /**
  * Consumes the `stripe-webhook-processing` queue — the dedup+handling half of Spec
  * 55 §10.2's confirmed webhook flow; signature verification and enqueueing happen
@@ -1736,6 +1742,8 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
    * its future Bookings cancelled (Decision 122), and — for a Subscription — the
    * Stripe cancellation returned for process() to send after the commit.
    * Shared by a lost dispute (Decision 55) and a full Stripe refund (Decision 382).
+   * Only for the plan's own purchase or renewal (PLAN_PAYMENT_KINDS, Decision
+   * 451 item 1): a fee's row is left to say what happened to the fee alone.
    */
   private async endMembershipPaidBy(
     tx: Prisma.TransactionClient,
@@ -1744,6 +1752,14 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
   ): Promise<Pick<DisputeSideEffects, 'subscriptionCancellations' | 'freedClassIds'>> {
     const subscriptionCancellations: DisputeSideEffects['subscriptionCancellations'] = [];
     if (!transaction.membershipId) return { subscriptionCancellations, freedClassIds: [] };
+    // Decision 451 item 1: only the plan's own payment (its purchase or a
+    // renewal) ends it. A fee row may carry the plan's id too (a freeze fee
+    // does), but refunding a fee, or losing a dispute on one, only changes
+    // that fee's own row; the plan and its bookings are left alone.
+    if (!PLAN_PAYMENT_KINDS.includes(transaction.kind)) {
+      this.logger.log(`${reason} — a ${transaction.kind} payment: Membership ${transaction.membershipId} is left as it is (Decision 451).`);
+      return { subscriptionCancellations, freedClassIds: [] };
+    }
     const membershipUpdate = await tx.membership.updateMany({ where: { id: transaction.membershipId, status: 'ACTIVE' }, data: { status: 'EXPIRED' } });
     if (membershipUpdate.count === 0) return { subscriptionCancellations, freedClassIds: [] };
     this.logger.log(`${reason} — Membership ${transaction.membershipId} force-Expired.`);
