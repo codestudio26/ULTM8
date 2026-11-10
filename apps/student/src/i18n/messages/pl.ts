@@ -323,6 +323,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Nie udało się wczytać rezerwacji — spróbuj ponownie.",
     },
     classRow: {
+      buyPlan: "Kup plan",
       dateRange: "{start} – {end}",
       breakLine: "Przerwa {start} – {end}",
       endsNextDay: "kończy się następnego dnia",

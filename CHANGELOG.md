@@ -15,6 +15,46 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Decision 449: clear refusals, coaches can manage students, "Buy a plan",
+  browser language, tablet sign-ups** (Track A and Track B; Decision 449
+  items 3, 6, 7, 8 and 13). **Needs a database migration**
+  (`20270404000001_coach_manage_students_and_tablet_sign_ups`).
+  - *Refusals (item 6, replacing Decision 448 item 17 for people connected to
+    the School):* on every page an owner's switch guards, and on the School's
+    payment account record, staff whose access is paused are told "Your access
+    to this School has been paused. Please contact the School owner."
+    (`ACCESS_PAUSED`), and members, former members or staff, and Guardians of
+    the School's students are told "You don't have permission to view this
+    page." (`NO_PERMISSION`), instead of "not found". Staff refused by a
+    switch keep their own message ("The School owner hasn't let you…",
+    "Coaches can't do this"). Someone with no link to the School, such as
+    another School's owner or staff, still gets "not found", so ULTM8 never
+    confirms to another business that a School or record exists. Staff
+    without a payments permission and coaches now get the no-permission
+    message for the payment account record, which stays hidden. Shown in all
+    15 languages in the portal and the app.
+  - *Coaches (item 7):* the School's main owner can give a coach "Manage
+    students" on the coach's own Access window on the Staff page (off by
+    default). With it the coach may edit the profiles of their own branches'
+    students; `staff/me/access.editStudents` says so and the portal shows
+    "Edit profile". It is logged in the staff activity and switched off again
+    when the coach role ends.
+  - *"Buy a plan" (item 8, app only):* when booking a class or claiming a
+    waiting-list place is refused because none of the member's plans covers
+    it (no active plan, a plan that doesn't cover the class, or a Class Pack
+    used up), the app offers "Buy a plan": it shows the School's plans (on the
+    School's page, or a parent's plans screen for their child, at that
+    School). The booking refusal now carries the code
+    `NO_ELIGIBLE_MEMBERSHIP` (same message). The School Portal shows the
+    refusal only, with no button.
+  - *Language before sign-in (item 3):* when no language has been chosen in
+    this browser, the portal uses the browser's language if it is one of the
+    15 (matched exactly or by language, e.g. `pt` → Portuguese (Brazil)),
+    else English. The member app already used the phone's language.
+  - *Tablet sign-ups (item 13):* an account made by approving a front-desk
+    tablet sign-up counts as "signed up themselves" for the 18th-birthday rule
+    (Decision 446 item 8), so its waivers and purchases (and the waiver
+    renewal sweep) use the tablet's rule, not the School's date.
 - **Fees on their own revenue line; "Payment confirmed" says one charge**
   (Track A; Decision 449 items 10 and 11). No migration.
   - Billing reports: late-cancellation, no-show and freeze fees are now a

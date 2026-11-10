@@ -321,6 +321,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Boekingen konden niet worden geladen — probeer het opnieuw.",
     },
     classRow: {
+      buyPlan: "Lidmaatschap kopen",
       dateRange: "{start} – {end}",
       breakLine: "Pauze {start} – {end}",
       endsNextDay: "eindigt de volgende dag",

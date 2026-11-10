@@ -28,10 +28,14 @@ test('the owner picks a preset, changes one switch, and saves', async ({ page })
   await page.goto('/staff');
 
   await expect(listRow(page, 'Bea Desk').getByText('Custom access')).toBeVisible();
-  // Coaches have the rights of their role: no Access for them.
+  // Coaches have the rights of their role, and their own Access window has
+  // only "Manage students" (Decision 449 item 7): no presets on it.
   await listRow(page, 'Cal Coach').getByRole('button', { name: 'Actions for Cal Coach' }).click();
-  await expect(page.getByRole('menuitem', { name: 'Access' })).toHaveCount(0);
-  await page.keyboard.press('Escape');
+  await page.getByRole('menuitem', { name: 'Access' }).click();
+  const coachDialog = page.getByRole('dialog', { name: 'Access for Cal Coach' });
+  await expect(coachDialog.getByRole('button', { name: 'Front desk' })).toHaveCount(0);
+  await expect(coachDialog.getByLabel('Manage students')).not.toBeChecked();
+  await coachDialog.getByRole('button', { name: 'Cancel' }).click();
 
   await listRow(page, 'Bea Desk').getByRole('button', { name: 'Actions for Bea Desk' }).click();
   await page.getByRole('menuitem', { name: 'Access' }).click();
@@ -88,4 +92,24 @@ test('Branch Staff see the staff list read only, and Students, only when switche
   await page.getByRole('link', { name: 'Students', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Students' }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Invite a Student' })).toHaveCount(0);
+});
+
+test("Decision 449 item 7: the main owner gives a coach \"Manage students\" on the coach's Access window", async ({ page }) => {
+  const north = await addBranch(s, 'North');
+  const cal = await addPerson('Cal', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId, branchId: north.id }]);
+  await signIn(page, s.ownerToken);
+  await page.goto('/staff');
+
+  await listRow(page, 'Cal Coach').getByRole('button', { name: 'Actions for Cal Coach' }).click();
+  await page.getByRole('menuitem', { name: 'Access' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Access for Cal Coach' });
+  await expect(dialog.getByText('Choose what this coach may do besides teaching.', { exact: false })).toBeVisible();
+  await dialog.getByLabel('Manage students').check();
+  await dialog.getByRole('button', { name: 'Save' }).click();
+
+  await expect(page.getByText('Access saved for Cal Coach.')).toBeVisible();
+  const row = await db.staffPermission.findFirstOrThrow({ where: { userId: cal.id, schoolId: s.schoolId } });
+  expect(row.canManageStudentsAsCoach).toBe(true);
+  // Their Branch Staff switches are untouched: a coach has none.
+  expect(row.canManageStudents).toBe(true);
 });

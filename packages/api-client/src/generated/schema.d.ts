@@ -740,6 +740,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/schools/{schoolId}/staff/{userId}/coach-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RoleGrantsController_setCoachAccess"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff/activity": {
         parameters: {
             query?: never;
@@ -8992,6 +9008,10 @@ export interface components {
             /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */
             importData: boolean;
         };
+        CoachAccessDto: {
+            /** @description Manage students: edit the profiles of their branches' students (off by default; Decision 449 item 7). */
+            manageStudents: boolean;
+        };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
             grantId: string;
@@ -9032,6 +9052,8 @@ export interface components {
             workPhone?: string | null;
             /** @description Decision 387: their access switches, for active or paused Branch Staff in the owner's view; null otherwise. */
             access?: components["schemas"]["StaffAccessDto"] | null;
+            /** @description Decision 449 item 7: a coach's own switch, for active or paused coaches in the owner's view; null otherwise. */
+            coachAccess?: components["schemas"]["CoachAccessDto"] | null;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
         };
@@ -9053,7 +9075,7 @@ export interface components {
             owner: boolean;
             /** @description The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10) and set staff access switches and grading permissions (Decision 448 item 6). False for co-owners and everyone else. */
             mainOwner: boolean;
-            /** @description Decision 448 item 11 — may edit students' profiles: owners, and Branch Staff with the students switch ("Manage students"). False for coaches who aren't also such Branch Staff, whatever `access.students` says. */
+            /** @description Decision 448 item 11 — may edit students' profiles: owners, Branch Staff with the students switch ("Manage students"), and (Decision 449 item 7) coaches the main owner gave "Manage students". False for other coaches, whatever `access.students` says. */
             editStudents: boolean;
             /** @description Holds an active Branch Staff role here. */
             branchStaff: boolean;
@@ -9065,6 +9087,10 @@ export interface components {
         StaffAccessResponseDto: {
             userId: string;
             access: components["schemas"]["StaffAccessDto"];
+        };
+        CoachAccessResponseDto: {
+            userId: string;
+            coachAccess: components["schemas"]["CoachAccessDto"];
         };
         StaffActivityEntryDto: {
             id: string;
@@ -16879,6 +16905,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffAccessResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_setCoachAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachAccessDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachAccessResponseDto"];
                 };
             };
         };

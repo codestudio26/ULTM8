@@ -379,8 +379,11 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
       // Paused (Decision 390): the role's revokedAt is set.
       await superuser.roleGrant.updateMany({ where: { schoolId: schoolA, userId: users.desk.id }, data: { revokedAt: new Date(), pausedAt: new Date() } });
       try {
-        // Paused, they hold no live role here, so "School not found" (Decision 448 item 17).
-        expect((await as('desk').get(report(march))).status).toBe(404);
+        // Paused: told their access is paused (Decision 449 item 6, replacing
+        // Decision 448 item 17's "School not found" for them).
+        const paused = await as('desk').get(report(march));
+        expect(paused.status).toBe(403);
+        expect(paused.body.error.code).toBe('ACCESS_PAUSED');
         expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count())).toBe(0);
       } finally {
         await superuser.roleGrant.updateMany({ where: { schoolId: schoolA, userId: users.desk.id }, data: { revokedAt: null, pausedAt: null } });

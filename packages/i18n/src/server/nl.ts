@@ -739,6 +739,7 @@ export const serverMessages: Record<string, string> = {
   "The export couldn't be started. Try again.": "De export kon niet worden gestart. Probeer het opnieuw.",
   "This export is not ready to download.": "Deze export is nog niet klaar om te downloaden.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Toegangsschakelaars zijn voor vestigingspersoneel. Instructeurs hebben de rechten van hun rol en eigenaren hebben alle rechten.",
+  "This switch is for coaches. Branch Staff have their own Access window, and owners have every right.": "Deze schakelaar is voor instructeurs. Vestigingspersoneel heeft een eigen toegangsvenster en eigenaren hebben alle rechten.",
   "You are not on the staff of this School.": "Je hoort niet bij het personeel van deze school.",
   "Branch Staff need a branch (branchId).": "Vestigingspersoneel heeft een vestiging nodig (branchId).",
   "This School asks new staff to accept first. Send them an invite instead.": "Deze school vraagt nieuw personeel eerst te accepteren. Stuur in plaats daarvan een uitnodiging.",

@@ -231,6 +231,10 @@ export const roleGrants = {
     groupPayments: "Payments",
     connectStripe: "Connect Stripe",
     connectStripeHint: "Connect the School's Stripe account so members can pay by card: start or finish Stripe's setup and see whether it's connected. Payments, refunds, plans and prices stay with the School's owners.",
+    // Decision 449 item 7: a coach's Access window.
+    coachIntro: "Choose what this coach may do besides teaching. A change applies from their next action.",
+    coachManageStudents: "Manage students",
+    coachManageStudentsHint: "Edit the profile details of their branches' students. Off by default. Memberships and payments stay yours.",
     ownerOnly: "Money (payments, refunds, plans and prices), School settings and owners always stay with the School's owners.",
     saved: 'Access saved for {name}.',
     readOnlyIntro: "The staff at your branches. Only the School's owners can change roles or access.",

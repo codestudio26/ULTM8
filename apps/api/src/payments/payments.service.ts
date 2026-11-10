@@ -196,16 +196,18 @@ export class PaymentsService {
    *
    * Decision 448 item 9 answers it: the record is read only by people with
    * access to the payments area (TenantAuthorizationService.mayAccessPayments:
-   * owners, and Branch Staff with a payments permission). Everyone else at the
-   * School (other staff, coaches, members) gets the same 404 as a School with
-   * no account, so it stays hidden; whether the School takes cards is on
+   * owners, and Branch Staff with a payments permission). Decision 449 item 6:
+   * everyone else connected to the School (other staff, coaches, members,
+   * Guardians) is told they don't have permission (403 NO_PERMISSION; paused
+   * staff 403 ACCESS_PAUSED), and someone with no link to it gets 404, so the
+   * record stays hidden either way; whether the School takes cards is on
    * GET /schools/:schoolId/card-payments for them.
    */
   async findForSchool(callerId: string, schoolId: string) {
-    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     if (!(await this.tenantAuth.mayAccessPayments(callerId, schoolId))) {
-      throw new NotFoundException('PaymentAccount not found');
+      await this.tenantAuth.refuseNoPermission(callerId, schoolId);
     }
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.findUnique({ where: { schoolId } }),
     );
@@ -356,8 +358,10 @@ export class PaymentsService {
    * up to date even before Stripe's account.updated arrives.
    */
   async getSchoolConnectStatus(callerId: string, schoolId: string): Promise<ConnectStatus> {
-    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    // Decision 449 item 6: the switch first, so people connected to the School
+    // are told why (404 only for strangers and an unknown School).
     await this.tenantAuth.assertMayConnectStripe(callerId, schoolId);
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { schoolId } }));
     return this.readConnectStatus(callerId, account, school.addressCountry);
   }

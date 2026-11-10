@@ -305,6 +305,15 @@ describeIfDb('Families (Decision 430)', () => {
       expect((await buy(edge)).status).toBe(201);
     });
 
+    it('made by approving their own tablet sign-up (Decision 449 item 13): signs the waiver and buys, as the tablet counted them 18', async () => {
+      const tablet = await person('edge-tablet', born(), [{ role: 'STUDENT', schoolId: otherSchool.id }]);
+      await superuser.user.update({ where: { id: tablet.id }, data: { signedUpOnTabletAt: new Date() } });
+      // Their first-sign-in "I agree" alone wouldn't count (Decision 448 item 8).
+      await superuser.legalAcceptance.create({ data: { id: randomUUID(), userId: tablet.id, documentSlug: 'terms-and-conditions', version: 'unpublished', atFirstSignIn: true } });
+      expect((await sign(tablet)).status).toBe(201);
+      expect((await buy(tablet)).status).toBe(201);
+    });
+
     it('made by the School: still 17 on the School\'s own date', async () => {
       const made = await person('edge-made', born(), [{ role: 'STUDENT', schoolId: otherSchool.id }]);
       // An Agreement accepted for a School is not a sign-up.

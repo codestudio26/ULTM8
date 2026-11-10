@@ -739,6 +739,7 @@ export const serverMessages: Record<string, string> = {
   "The export couldn't be started. Try again.": "Não foi possível iniciar a exportação. Tente novamente.",
   "This export is not ready to download.": "Esta exportação ainda não está pronta para download.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Os controles de acesso são para a equipe da unidade. Instrutores têm os direitos do seu papel, e proprietários têm todos os direitos.",
+  "This switch is for coaches. Branch Staff have their own Access window, and owners have every right.": "Este controle é para instrutores. A equipe da unidade tem sua própria janela de acesso, e proprietários têm todos os direitos.",
   "You are not on the staff of this School.": "Você não faz parte da equipe desta escola.",
   "Branch Staff need a branch (branchId).": "A Equipe da unidade precisa de uma unidade (branchId).",
   "This School asks new staff to accept first. Send them an invite instead.": "Esta escola pede que a nova equipe aceite primeiro. Envie um convite em vez disso.",

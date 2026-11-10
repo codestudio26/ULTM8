@@ -320,6 +320,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "예약을 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     classRow: {
+      buyPlan: "플랜 구매",
       dateRange: "{start} – {end}",
       breakLine: "휴식 {start} – {end}",
       endsNextDay: "다음 날 종료",

@@ -19,6 +19,8 @@ export const bookings = {
     loadError: 'Failed to load bookings — please try again.',
   },
   classRow: {
+    /** Decision 449 item 8: under a refusal no plan of theirs covers. */
+    buyPlan: "Buy a plan",
     /** A Class's start and end dates. */
     dateRange: '{start} – {end}',
     /** Decision 353 (Q6): the class's break, shown only. */

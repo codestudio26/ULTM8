@@ -86,9 +86,9 @@ export class RecurringChargesService {
   private async assertMay(callerId: string, schoolId: string, studentId: string, what: 'read' | 'create' | 'stop' | 'restart') {
     const can = await this.may(callerId, schoolId, studentId);
     if (can[what]) return can;
-    // Decision 448 item 17: someone with no role at the School gets 404, not
-    // the owner's switch.
-    await this.tenantAuth.assertSchoolVisible(callerId, schoolId);
+    // Decision 449 item 6: 404 only for someone with no link to the School;
+    // paused staff, members and Guardians are told why.
+    await this.tenantAuth.staffRolesOrRefuse(callerId, schoolId);
     const message = {
       read: "The School owner hasn't let you see this student's charges.",
       create: "The School owner hasn't let you create charges.",

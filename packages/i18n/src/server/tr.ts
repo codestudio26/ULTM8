@@ -739,6 +739,7 @@ export const serverMessages: Record<string, string> = {
   "The export couldn't be started. Try again.": "Dışa aktarma başlatılamadı. Tekrar deneyin.",
   "This export is not ready to download.": "Bu dışa aktarma henüz indirilmeye hazır değil.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "Erişim anahtarları şube personeli içindir. Eğitmenler rollerinin haklarına, sahipler ise tüm haklara sahiptir.",
+  "This switch is for coaches. Branch Staff have their own Access window, and owners have every right.": "Bu anahtar eğitmenler içindir. Şube personelinin kendi Erişim penceresi vardır ve sahipler tüm haklara sahiptir.",
   "You are not on the staff of this School.": "Bu okulun personelinde değilsiniz.",
   "Branch Staff need a branch (branchId).": "Şube Personelinin bir şubeye ihtiyacı var (branchId).",
   "This School asks new staff to accept first. Send them an invite instead.": "Bu okul yeni personelin önce kabul etmesini istiyor. Bunun yerine davet gönderin.",

@@ -739,6 +739,7 @@ export const serverMessages: Record<string, string> = {
   "The export couldn't be started. Try again.": "ไม่สามารถเริ่มการส่งออกได้ ลองอีกครั้ง",
   "This export is not ready to download.": "การส่งออกนี้ยังไม่พร้อมให้ดาวน์โหลด",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "สวิตช์การเข้าถึงมีไว้สำหรับพนักงานสาขา โค้ชมีสิทธิ์ตามบทบาท และเจ้าของมีสิทธิ์ทั้งหมด",
+  "This switch is for coaches. Branch Staff have their own Access window, and owners have every right.": "สวิตช์นี้มีไว้สำหรับโค้ช พนักงานสาขามีหน้าต่างการเข้าถึงของตนเอง และเจ้าของมีสิทธิ์ทั้งหมด",
   "You are not on the staff of this School.": "คุณไม่ได้เป็นพนักงานของโรงเรียนนี้",
   "Branch Staff need a branch (branchId).": "พนักงานสาขาต้องมีสาขา (branchId)",
   "This School asks new staff to accept first. Send them an invite instead.": "โรงเรียนนี้ให้พนักงานใหม่ตอบรับก่อน โปรดส่งคำเชิญแทน",

@@ -223,6 +223,12 @@ describeIfDb('Front-desk sign-ups (Decision 392)', () => {
       expect(res.body).toMatchObject({ accountCreated: true, invited: false, visitPassGiven: false, emailFailed: false, temporaryPasscode: null });
       const user = await superuser.user.findUniqueOrThrow({ where: { email: body.email } });
       expect(user).toMatchObject({ firstName: 'Carla', surname: 'New', gender: 'FEMALE', mustChangePasscode: true });
+      // Decision 449 item 13: an approved tablet sign-up counts as signing up
+      // themselves for the 18th-birthday rule, in the app and in the
+      // waiver-renewal sweep (self_signed_up_users).
+      expect(user.signedUpOnTabletAt).toBeInstanceOf(Date);
+      const self = await superuser.$queryRaw<Array<{ id: string }>>`SELECT "self_signed_up_users" AS id FROM "self_signed_up_users"(${[user.id, users.member.id]}::text[])`;
+      expect(self.map((r) => r.id)).toEqual([user.id]);
       expect(await superuser.roleGrant.count({ where: { userId: user.id, schoolId: school.id, role: 'STUDENT', revokedAt: null } })).toBe(1);
       expect((await superuser.studentHomeBranch.findFirstOrThrow({ where: { studentId: user.id } })).branchId).toBe(branchA.id);
       const row = await superuser.signUp.findUniqueOrThrow({ where: { id } });
@@ -309,6 +315,9 @@ describeIfDb('Front-desk sign-ups (Decision 392)', () => {
       expect(await superuser.roleGrant.count({ where: { userId: users.existing.id, schoolId: school.id, role: 'STUDENT', revokedAt: null } })).toBe(1);
       expect((await superuser.signUp.findUniqueOrThrow({ where: { id } })).status).toBe('APPROVED');
       expect((await http().get('/v1/sign-ups/invites/me').set(as('existing'))).body.items).toEqual([]);
+      // Decision 449 item 13 covers the accounts the tablet sign-up made: an
+      // existing account keeps whatever it was (here, made by a School).
+      expect((await superuser.user.findUniqueOrThrow({ where: { id: users.existing.id } })).signedUpOnTabletAt).toBeNull();
     });
 
     it('the account can decline instead', async () => {

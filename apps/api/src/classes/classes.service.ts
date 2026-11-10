@@ -46,8 +46,10 @@ export class ClassesService {
    * (Decision 387); a School-wide class stays the owner's.
    */
   async create(callerId: string, schoolId: string, dto: CreateClassDto) {
-    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    // Decision 449 item 6: the switch first, so people connected to the
+    // School are told why (404 only for strangers and an unknown School).
     await this.tenantAuth.assertMayManageClasses(callerId, schoolId, [dto.branchId ?? null]);
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     // Decision 110 (Phase 56) — a closed School accepts no further writes.
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     // Spec 55 §10.2's confirmed read-only degraded-portal state — "no new Classes"

@@ -628,6 +628,7 @@ export const SERVER_MESSAGES: string[] = [
   "The export couldn't be started. Try again.",
   "This export is not ready to download.",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.",
+  "This switch is for coaches. Branch Staff have their own Access window, and owners have every right.",
   "You are not on the staff of this School.",
   "Branch Staff need a branch (branchId).",
   "This School asks new staff to accept first. Send them an invite instead.",

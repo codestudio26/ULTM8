@@ -273,8 +273,12 @@ describeIfDb('Files on a member (backlog 5.11)', () => {
     expect((await as('ana').get(`${filesOf(users.ana.id)}/${anaFile.id}/download`)).status).toBe(403);
     expect((await upload('ana', users.ana.id, PDF, 'x.pdf')).status).toBe(403);
     expect((await as('ana').delete(`${filesOf(users.ana.id)}/${anaFile.id}`)).status).toBe(403);
-    // The parent holds no role at the School itself (Decision 448 item 17): 404.
-    expect((await as('parent').get(filesOf(users.kid.id))).status).toBe(404);
+    // The parent holds no role at the School itself but is a Guardian of one
+    // of its students: told they have no permission (Decision 449 item 6,
+    // replacing Decision 448 item 17's 404 for them).
+    const parent = await as('parent').get(filesOf(users.kid.id));
+    expect(parent.status).toBe(403);
+    expect(parent.body.error.code).toBe('NO_PERMISSION');
 
     const markers = [...(await superuser.memberFile.findMany({ where: { studentId: { in: [users.ana.id, users.kid.id] } } }))].flatMap((f) => [f.id, f.fileName, f.objectKey]);
     expect(markers.length).toBeGreaterThan(0);

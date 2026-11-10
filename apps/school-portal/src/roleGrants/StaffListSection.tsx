@@ -266,7 +266,8 @@ export function StaffListSection({
                 const actions = [
                   ...(p.active || p.paused ? [{ label: t('roleGrants.list.editDetails'), onClick: () => setEditing(p) }] : []),
                   // Decision 448 item 6: only the main owner sets the switches.
-                  ...(p.access && canManageRoles ? [{ label: t('roleGrants.access.action'), onClick: () => setSettingAccess(p) }] : []),
+                  // Decision 449 item 7: a coach's Access window ("Manage students").
+                  ...((p.access || p.coachAccess) && canManageRoles ? [{ label: t('roleGrants.access.action'), onClick: () => setSettingAccess(p) }] : []),
                   ...(iAmMainOwner && isCoOwner(p) && p.userId !== claims?.sub
                     ? [{ label: t('roleGrants.list.makeMainOwner'), onClick: () => setHandingOver(p) }]
                     : []),

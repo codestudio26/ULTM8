@@ -739,6 +739,7 @@ export const serverMessages: Record<string, string> = {
   "The export couldn't be started. Try again.": "无法开始导出。请重试。",
   "This export is not ready to download.": "此导出尚不可下载。",
   "Access switches are for Branch Staff. Coaches have the rights of their role, and owners have every right.": "访问开关仅适用于分校员工。教练拥有其角色的权限，所有者拥有全部权限。",
+  "This switch is for coaches. Branch Staff have their own Access window, and owners have every right.": "此开关仅适用于教练。分校员工有自己的访问权限窗口，所有者拥有全部权限。",
   "You are not on the staff of this School.": "你不是这所学校的员工。",
   "Branch Staff need a branch (branchId).": "分店员工需要一个分店（branchId）。",
   "This School asks new staff to accept first. Send them an invite instead.": "本学校要求新员工先接受。请改为发送邀请。",

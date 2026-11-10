@@ -2203,6 +2203,59 @@
         ]
       }
     },
+    "/v1/schools/{schoolId}/staff/{userId}/coach-access": {
+      "put": {
+        "operationId": "RoleGrantsController_setCoachAccess",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachAccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachAccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff/activity": {
       "get": {
         "operationId": "RoleGrantsController_listStaffActivity",
@@ -27614,6 +27667,18 @@
           "importData"
         ]
       },
+      "CoachAccessDto": {
+        "type": "object",
+        "properties": {
+          "manageStudents": {
+            "type": "boolean",
+            "description": "Manage students: edit the profiles of their branches' students (off by default; Decision 449 item 7)."
+          }
+        },
+        "required": [
+          "manageStudents"
+        ]
+      },
       "StaffRoleDto": {
         "type": "object",
         "properties": {
@@ -27732,6 +27797,15 @@
               }
             ]
           },
+          "coachAccess": {
+            "nullable": true,
+            "description": "Decision 449 item 7: a coach's own switch, for active or paused coaches in the owner's view; null otherwise.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoachAccessDto"
+              }
+            ]
+          },
           "roles": {
             "description": "Active roles first, then ended ones, newest first.",
             "type": "array",
@@ -27814,7 +27888,7 @@
           },
           "editStudents": {
             "type": "boolean",
-            "description": "Decision 448 item 11 — may edit students' profiles: owners, and Branch Staff with the students switch (\"Manage students\"). False for coaches who aren't also such Branch Staff, whatever `access.students` says."
+            "description": "Decision 448 item 11 — may edit students' profiles: owners, Branch Staff with the students switch (\"Manage students\"), and (Decision 449 item 7) coaches the main owner gave \"Manage students\". False for other coaches, whatever `access.students` says."
           },
           "branchStaff": {
             "type": "boolean",
@@ -27855,6 +27929,21 @@
         "required": [
           "userId",
           "access"
+        ]
+      },
+      "CoachAccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "coachAccess": {
+            "$ref": "#/components/schemas/CoachAccessDto"
+          }
+        },
+        "required": [
+          "userId",
+          "coachAccess"
         ]
       },
       "StaffActivityEntryDto": {

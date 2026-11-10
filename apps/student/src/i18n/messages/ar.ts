@@ -325,6 +325,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "تعذّر تحميل الحجوزات، يُرجى المحاولة مرة أخرى.",
     },
     classRow: {
+      buyPlan: "اشترِ خطة",
       dateRange: "{start} – {end}",
       breakLine: "استراحة {start} – {end}",
       endsNextDay: "تنتهي في اليوم التالي",

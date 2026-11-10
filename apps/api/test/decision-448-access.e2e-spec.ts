@@ -212,12 +212,15 @@ describeIfDb('Decision 448: staff switches, payment account, profiles, outsiders
       }
     });
 
-    it('other staff, coaches and members get 404, the record hidden', async () => {
+    it('other staff, coaches and members are told they have no permission, the record hidden (Decision 449 item 6)', async () => {
       for (const who of ['staffNoPay', 'coach', 'ana']) {
         const res = await account(who);
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(403);
+        expect(res.body.error.code).toBe('NO_PERMISSION');
         expect(JSON.stringify(res.body)).not.toContain('acct_d448_');
       }
+      // Someone with no link to the School still gets 404.
+      expect((await account('outsider')).status).toBe(404);
     });
 
     it('anyone at the School reads whether it takes cards; an outsider gets 404', async () => {

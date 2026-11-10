@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Button, ErrorBanner, Modal, Switch } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
-import { useSetStaffAccess, type StaffAccess, type StaffMember } from './roleGrantQueries';
+import { ROLE_LABELS } from '../lib/enumLabels';
+import { useSetCoachAccess, useSetStaffAccess, type CoachAccess, type StaffAccess, type StaffMember } from './roleGrantQueries';
 
 type AccessKey = keyof StaffAccess;
 
@@ -69,6 +70,10 @@ export function presetOf(access: StaffAccess): TranslationKey | null {
  * switches in groups, and the "Front desk" and "Branch manager" presets,
  * which only tick the switches (the owner can change any of them before
  * saving). Money and School settings are never here: they stay the owner's.
+ *
+ * Decision 449 item 7 — a coach's Access window: their one switch, "Manage
+ * students" (off by default). Someone who is both Branch Staff and a coach
+ * gets both, the coach's under its own heading.
  */
 export function StaffAccessModal({
   schoolId,
@@ -85,15 +90,20 @@ export function StaffAccessModal({
 }) {
   const t = useT();
   const save = useSetStaffAccess(schoolId);
-  const [access, setAccess] = useState<StaffAccess>(person.access!);
+  const saveCoach = useSetCoachAccess(schoolId);
+  const [access, setAccess] = useState<StaffAccess | null>(person.access ?? null);
+  const [coachAccess, setCoachAccess] = useState<CoachAccess | null>(person.coachAccess ?? null);
   const [error, setError] = useState<string | null>(null);
-  const preset = presetOf(access);
+  const preset = access ? presetOf(access) : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     try {
-      await save.mutateAsync({ userId: person.userId, access });
+      if (access) await save.mutateAsync({ userId: person.userId, access });
+      if (coachAccess && coachAccess.manageStudents !== person.coachAccess?.manageStudents) {
+        await saveCoach.mutateAsync({ userId: person.userId, coachAccess });
+      }
       onDone();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('common.tryAgain'));
@@ -103,24 +113,26 @@ export function StaffAccessModal({
   return (
     <Modal title={t('roleGrants.access.title', { name })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
-        <p>{t('roleGrants.access.intro')}</p>
+        <p>{t(access ? 'roleGrants.access.intro' : 'roleGrants.access.coachIntro')}</p>
         {error ? <ErrorBanner message={error} /> : null}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
-          <span>{t('roleGrants.access.presets')}</span>
-          {PRESETS.map((p) => (
-            <Button
-              key={p.name}
-              type="button"
-              variant={preset === p.name ? undefined : 'secondary'}
-              aria-pressed={preset === p.name}
-              onClick={() => setAccess(p.access)}
-            >
-              {t(p.name)}
-            </Button>
-          ))}
-          <span style={{ fontSize: 13, opacity: 0.75 }}>{preset ? t('roleGrants.access.usingPreset', { name: t(preset) }) : t('roleGrants.access.custom')}</span>
-        </div>
-        {GROUPS.map((g) => (
+        {access ? (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+            <span>{t('roleGrants.access.presets')}</span>
+            {PRESETS.map((p) => (
+              <Button
+                key={p.name}
+                type="button"
+                variant={preset === p.name ? undefined : 'secondary'}
+                aria-pressed={preset === p.name}
+                onClick={() => setAccess(p.access)}
+              >
+                {t(p.name)}
+              </Button>
+            ))}
+            <span style={{ fontSize: 13, opacity: 0.75 }}>{preset ? t('roleGrants.access.usingPreset', { name: t(preset) }) : t('roleGrants.access.custom')}</span>
+          </div>
+        ) : null}
+        {access && GROUPS.map((g) => (
           <fieldset key={g.heading} style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
             <legend style={{ fontWeight: 600, marginBottom: 4 }}>{t(g.heading)}</legend>
             {g.keys.map((k) => (
@@ -130,14 +142,26 @@ export function StaffAccessModal({
                 label={t(LABELS[k].label)}
                 description={t(LABELS[k].hint)}
                 checked={access[k]}
-                onChange={(on) => setAccess((a) => ({ ...a, [k]: on }))}
+                onChange={(on) => setAccess((a) => (a ? { ...a, [k]: on } : a))}
               />
             ))}
           </fieldset>
         ))}
+        {coachAccess ? (
+          <fieldset style={{ border: 0, padding: 0, margin: '0 0 12px' }}>
+            {access ? <legend style={{ fontWeight: 600, marginBottom: 4 }}>{t(ROLE_LABELS.INSTRUCTOR!)}</legend> : null}
+            <Switch
+              id="staff-access-coachManageStudents"
+              label={t('roleGrants.access.coachManageStudents')}
+              description={t('roleGrants.access.coachManageStudentsHint')}
+              checked={coachAccess.manageStudents}
+              onChange={(on) => setCoachAccess({ manageStudents: on })}
+            />
+          </fieldset>
+        ) : null}
         <p style={{ fontSize: 13, opacity: 0.75 }}>{t('roleGrants.access.ownerOnly')}</p>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={save.isPending}>
+          <Button type="submit" loading={save.isPending || saveCoach.isPending}>
             {t('common.save')}
           </Button>
           <Button type="button" variant="secondary" onClick={onClose}>

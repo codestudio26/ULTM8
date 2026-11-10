@@ -71,13 +71,18 @@ export function assertAgreementAccepted(accepted: boolean | undefined): void {
 /** Decision 446 item 8: whether `userId` made their own account (sign-up
  * records the Terms acceptance, with no School or Franchise; the first-sign-in
  * acceptance of an account the School made is marked atFirstSignIn and
- * doesn't count, Decision 448 item 8). Read in the user's own tenant context. */
-export async function signedUpThemselves(db: Pick<Prisma.TransactionClient, 'legalAcceptance'>, userId: string): Promise<boolean> {
+ * doesn't count, Decision 448 item 8). Decision 449 item 13: an account made
+ * by approving a front-desk tablet sign-up (User.signedUpOnTabletAt) counts
+ * too. Read in the user's own tenant context. Mirrors the SQL function
+ * self_signed_up_users, which the waiver-renewal sweep uses. */
+export async function signedUpThemselves(db: Pick<Prisma.TransactionClient, 'legalAcceptance' | 'user'>, userId: string): Promise<boolean> {
   const row = await db.legalAcceptance.findFirst({
     where: { userId, documentSlug: LEGAL_SLUGS.terms, schoolId: null, franchiseId: null, atFirstSignIn: false },
     select: { id: true },
   });
-  return !!row;
+  if (row) return true;
+  const user = await db.user.findUnique({ where: { id: userId }, select: { signedUpOnTabletAt: true } });
+  return !!user?.signedUpOnTabletAt;
 }
 
 /** What someone ticks at sign-up, and at their first sign-in when they didn't

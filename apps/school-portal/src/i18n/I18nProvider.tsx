@@ -6,7 +6,7 @@ import { apiClient } from '../api';
 import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser } from '../auth/currentUserQueries';
 import { messages as english, type EnglishMessages } from './messages/en-GB';
-import { DEFAULT_LOCALE, LOCALE_LOADERS, directionFor, resolveLocale } from './locales';
+import { DEFAULT_LOCALE, LOCALE_LOADERS, browserLocale, directionFor, resolveLocale } from './locales';
 import { setFormatLocale } from './format';
 import { SERVER_MESSAGE_LOADERS, createEnglishServerTextTranslator, createServerTextTranslator, type ServerTextTranslator } from './server/translate';
 import { translateByCode } from './server/codes';
@@ -26,7 +26,9 @@ import type { MessageKey, MessageTree, MessageVars } from './types';
  *
  * Which locale: the signed-in user's saved `language` (GET /users/me), or —
  * before login, when there's no profile to read — the last choice made in
- * this browser, kept in localStorage.
+ * this browser, kept in localStorage, or, when none has been made here, the
+ * browser's own language if the portal has it, else English (Decision 449
+ * item 3).
  */
 
 export type TranslationKey = MessageKey<EnglishMessages>;
@@ -82,7 +84,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const { claims } = useAuth();
   const { data: me } = useCurrentUser({ enabled: !!claims });
   const [storedLocale, setStoredLocale] = useState(readStoredLocale);
-  const locale = resolveLocale((claims ? me?.language : null) ?? storedLocale);
+  // Decision 449 item 3: no choice in this browser yet, so the browser's language.
+  const [fromBrowser] = useState(() => browserLocale());
+  const locale = resolveLocale((claims ? me?.language : null) ?? storedLocale ?? fromBrowser);
   // "English (US)" reads the English (UK) text; only its dates differ (Decision 434).
   const textLocale = messageLocaleFor(locale);
   const dir = directionFor(locale);

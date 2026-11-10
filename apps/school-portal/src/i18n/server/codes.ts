@@ -231,6 +231,12 @@ export function translateByCode(t: Translate, code: string, message: string): st
     // Decision 423 item 10: only the main owner adds or removes people.
     case 'MAIN_OWNER_ONLY':
       return t('server.codes.mainOwnerOnly');
+    // Decision 449 item 6: people connected to the School are told why,
+    // never "not found".
+    case 'ACCESS_PAUSED':
+      return t('server.codes.accessPaused');
+    case 'NO_PERMISSION':
+      return t('server.codes.noPermission');
     case 'SCHOOL_CURRENCY_REQUIRED':
       return t('server.codes.schoolCurrencyRequired');
     default:
