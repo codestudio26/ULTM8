@@ -1,0 +1,153 @@
+# Seeds the populated ULTM8 demo (the "Apex Jiu-Jitsu" Franchise: four Schools,
+# about 1,200 members, three months of history; apps/api/scripts/demo/) into the
+# STAGING database, so it can be opened in the staging School Portal and member
+# app. Manual only: Actions -> "Seed staging demo" -> Run workflow, and type
+# SEED STAGING. Owner steps: docs/deploy/STAGING-DEMO.md.
+#
+# What it needs, and why each one:
+# - secret STAGING_DATABASE_URL: Supabase's session-pooler connection string
+#   (the `postgres` user). The bulk history is written straight into the
+#   tables, and this is the user that owns them.
+# - secret DEMO_PASSCODE: the 6-digit passcode for every demo login. The
+#   seed refuses to run on staging without one, and refuses 123456 (the
+#   passcode written in this repo).
+# - variable STAGING_DB_HOST (not a secret): the database host you expect,
+#   for example aws-0-us-west-1.pooler.supabase.com. The seed refuses any
+#   database whose host isn't exactly this (apps/api/prisma/dev-seed-guard.js),
+#   so the secret can't point it somewhere else by mistake.
+# Nothing else: the seed signs in to the staging API as each demo owner with
+# DEMO_PASSCODE, like the apps do (no API signing secret), and making each
+# weekly class through the API makes its coming weeks of Classes (no Redis,
+# which is private to Render anyway).
+#
+# It never runs migrations. Render's build does (`prisma migrate deploy` in
+# render.yaml); this only checks that staging's database is up to date with
+# this branch, and stops if it isn't.
+#
+# Safe to run again: it wipes and rebuilds only its own demo tenants (the
+# Franchise de300000-0000-4000-8000-000000000001, its Schools and the
+# @apex-demo.example accounts). Never point it at production.
+name: Seed staging demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type SEED STAGING to confirm'
+        required: true
+        type: string
+      reseed:
+        description: 'If the demo is already there, wipe it and build it again (its dates start from today)'
+        required: false
+        type: boolean
+        default: true
+      api_url:
+        description: 'The staging API address'
+        required: false
+        type: string
+        default: 'https://ultm8-staging-api.onrender.com'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seed-staging-demo
+  cancel-in-progress: false
+
+jobs:
+  seed:
+    name: Seed the demo into staging
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Check the confirmation and settings
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+          API_URL: ${{ inputs.api_url }}
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DEMO_PASSCODE: ${{ secrets.DEMO_PASSCODE }}
+          STAGING_DB_HOST: ${{ vars.STAGING_DB_HOST }}
+        run: |
+          fail() { echo "::error::$1"; exit 1; }
+          [ "$CONFIRM" = "SEED STAGING" ] || fail 'Type SEED STAGING (capitals, one space) in the confirm box to run this.'
+          [ -n "$STAGING_DATABASE_URL" ] || fail 'The repository secret STAGING_DATABASE_URL is not set. See docs/deploy/STAGING-DEMO.md, step 3.'
+          [ -n "$DEMO_PASSCODE" ] || fail 'The repository secret DEMO_PASSCODE is not set. See docs/deploy/STAGING-DEMO.md, step 3.'
+          printf '%s' "$DEMO_PASSCODE" | grep -Eq '^[0-9]{6}$' || fail 'DEMO_PASSCODE must be exactly 6 digits.'
+          [ "$DEMO_PASSCODE" != "123456" ] || fail 'DEMO_PASSCODE is 123456, which is written in this repo. Choose another 6-digit passcode.'
+          [ -n "$STAGING_DB_HOST" ] || fail 'The repository variable STAGING_DB_HOST is not set. See docs/deploy/STAGING-DEMO.md, step 3.'
+          case "$API_URL" in https://*) ;; *) fail 'api_url must start with https://' ;; esac
+          host="$(node -e 'try { console.log(new URL(process.env.STAGING_DATABASE_URL).hostname) } catch { process.exit(1) }')" \
+            || fail 'STAGING_DATABASE_URL is not a valid connection string.'
+          [ "$host" = "$STAGING_DB_HOST" ] \
+            || fail "STAGING_DATABASE_URL's host is not STAGING_DB_HOST ($STAGING_DB_HOST). Check both against Supabase's session-pooler string."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+          cache: npm
+
+      # Only apps/api and the root tooling, the same install as Render's build.
+      - name: Install
+        run: npm install --workspace=apps/api --include-workspace-root=true --include=dev --no-audit --no-fund
+
+      - name: Generate the Prisma client
+        run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+
+      - name: Check staging's database is up to date
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: |
+          if ! npx prisma migrate status --schema=apps/api/prisma/schema.prisma; then
+            echo "::error::Staging's database is not in step with this branch's migrations (see above). Redeploy ultm8-staging-api on Render from the latest master (its build applies them), wait for it to be Live, then run this again. This workflow never applies migrations itself."
+            exit 1
+          fi
+
+      - name: Wake the staging API
+        env:
+          API_URL: ${{ inputs.api_url }}
+        run: |
+          # A free Render instance sleeps when idle and takes about a minute to wake.
+          for _ in $(seq 1 40); do
+            if curl -fsS --max-time 20 "$API_URL/v1/health"; then echo; exit 0; fi
+            sleep 10
+          done
+          echo "::error::$API_URL/v1/health did not answer in about 7 minutes. Check ultm8-staging-api on Render is Live."
+          exit 1
+
+      - name: Seed the demo
+        working-directory: apps/api
+        env:
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DEMO_PASSCODE: ${{ secrets.DEMO_PASSCODE }}
+          ULTM8_ALLOW_DEV_SEED_HOST: ${{ vars.STAGING_DB_HOST }}
+          API: ${{ inputs.api_url }}/v1
+          DEMO_KEEP_EXISTING: ${{ inputs.reseed && '0' || '1' }}
+        run: node scripts/demo/seed-demo.mjs
+
+      - name: Summary
+        if: success()
+        run: |
+          # The backticks below are Markdown, not shell.
+          # shellcheck disable=SC2016
+          {
+            echo '## The staging demo is ready'
+            echo
+            echo 'Every demo login uses the passcode saved in the `DEMO_PASSCODE` secret.'
+            echo 'Logins and links: `docs/deploy/STAGING-DEMO.md`, step 5.'
+            echo
+            echo '| Role | Email | Where |'
+            echo '|---|---|---|'
+            echo '| School owner (HQ) | owner.hq@apex-demo.example | School Portal |'
+            echo '| Head coach (HQ) | coach.hq@apex-demo.example | School Portal |'
+            echo '| Front desk (HQ) | desk.hq@apex-demo.example | School Portal |'
+            echo '| Franchise owner | founder@apex-demo.example | School Portal |'
+            echo '| School owner (São Paulo, Portuguese) | owner.saopaulo@apex-demo.example | School Portal |'
+            echo '| Adult member | member@apex-demo.example | Member app (School: Apex Jiu-Jitsu HQ) |'
+            echo '| Parent | parent@apex-demo.example | Member app (School: Apex Jiu-Jitsu HQ) |'
+            echo '| New member, first sign-in | new.member@apex-demo.example | Member app (School: Apex Jiu-Jitsu HQ) |'
+            echo '| Member in São Paulo | aluno@apex-demo.example | Member app (School: Apex Jiu-Jitsu São Paulo) |'
+          } >> "$GITHUB_STEP_SUMMARY"

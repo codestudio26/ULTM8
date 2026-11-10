@@ -8,7 +8,20 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 ## Unreleased
 
-Post-v1.4.0 work on `master`. Nothing yet.
+Post-v1.4.0 work on `master`.
+
+- **The populated demo on staging** (tooling only, no product change). A
+  manual GitHub Actions workflow, **Seed staging demo**, seeds the Apex
+  Jiu-Jitsu demo (`apps/api/scripts/demo/`) into the staging database with only
+  the `STAGING_DATABASE_URL` and `DEMO_PASSCODE` secrets and a
+  `STAGING_DB_HOST` variable: the seed now signs in through the API with the
+  seeded passcode instead of minting tokens, needs no Redis, refuses a
+  non-local database without its own passcode (or with `123456`), and the
+  workflow stops if staging's migrations are behind (it never applies them).
+  The member app gets a web build for Vercel (`apps/student/vercel.json`;
+  `apps/student/app.config.js` takes the API address from
+  `EXPO_PUBLIC_API_BASE_URL` at build time). Owner steps:
+  `docs/deploy/STAGING-DEMO.md`.
 
 ## v1.4.0 — 2026-11-10
 
