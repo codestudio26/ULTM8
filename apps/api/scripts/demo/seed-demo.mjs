@@ -5,11 +5,13 @@
 //
 //   API=http://127.0.0.1:3540/v1 node scripts/demo/seed-demo.mjs     (from apps/api)
 //
-// Needs: DATABASE_URL (a superuser: bulk history is written straight into the
-// database), JWT_ACCESS_SECRET and a running API at $API (the ladders, plans,
-// waiver and timetable go through the real API, signed in as each owner) with
-// its Redis (the class generator job). DEMO_PASSCODE sets every login's
-// passcode (default 123456).
+// Needs: DATABASE_URL (the database owner: bulk history is written straight
+// into the database) and the API that uses that database at $API (the ladders,
+// plans, waiver and timetable go through the real API, signed in as each owner
+// with the seeded passcode). Making a weekly class makes its coming weeks of
+// Classes. REDIS_URL is optional: when set, the seed also runs the class
+// generator job there. DEMO_PASSCODE sets every login's passcode (default
+// 123456 on a local database; required, and not 123456, on any other).
 //
 // Safe to re-run: it first deletes its own demo tenants (the Franchise below,
 // its Schools, and every account on the demo email domain or a child account
@@ -25,16 +27,17 @@ if (String(process.env.STRIPE_SECRET_KEY || '').startsWith('sk_live_')) throw ne
 
 const { PrismaClient, Prisma } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
-const { JwtService } = require('@nestjs/jwt');
-const { Queue } = require('bullmq');
 const { DateTime } = require('luxon');
 
-const API = process.env.API || 'http://127.0.0.1:3540/v1';
+const API = (process.env.API || 'http://127.0.0.1:3540/v1').replace(/\/+$/, '');
+// A database that isn't on this machine (staging) must get its own passcode:
+// the default one is in this repo for anyone to read.
+const LOCAL_DB = ['localhost', '127.0.0.1', '::1', '[::1]', 'db'].includes(new URL(process.env.DATABASE_URL).hostname);
+if (!LOCAL_DB && !process.env.DEMO_PASSCODE) throw new Error('seed-demo.mjs: DEMO_PASSCODE is not set. A non-local database needs its own 6-digit passcode for the demo logins.');
+if (!LOCAL_DB && process.env.DEMO_PASSCODE === '123456') throw new Error('seed-demo.mjs: DEMO_PASSCODE is 123456, the passcode written in this repo. Choose another 6-digit passcode.');
 const PASSCODE = process.env.DEMO_PASSCODE || '123456';
-if (!/^\d{6}$/.test(PASSCODE)) throw new Error('DEMO_PASSCODE must be 6 digits');
-if (!process.env.JWT_ACCESS_SECRET) throw new Error('JWT_ACCESS_SECRET is not set (the seed signs in to the API as each owner).');
+if (!/^\d{6}$/.test(PASSCODE)) throw new Error('DEMO_PASSCODE must be exactly 6 digits');
 const db = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL });
-const jwt = new JwtService({ secret: process.env.JWT_ACCESS_SECRET });
 
 export const DOMAIN = 'apex-demo.example'; // RFC 2606 reserved: never a real inbox
 const MINOR_DOMAIN = 'guardian-managed.ultm8.internal'; // the API's own child-account domain
@@ -232,16 +235,48 @@ const WAIVER = {
 };
 
 // ---------------------------------------------------------------- helpers
-const grantClaim = (role, schoolId = null, branchId = null, franchiseId = null) => ({ role, franchiseId, schoolId, branchId });
-const token = (userId, email, grants) => jwt.sign({ sub: userId, email, grants }, { expiresIn: '2h' });
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function api(method, path, tok, body) {
+/** One HTTP call to the API. Waits out its rate limit (60 calls a minute per
+ * address by default) instead of failing. */
+async function call(method, path, headers, body) {
   for (let attempt = 0; ; attempt++) {
-    const res = await fetch(API + path, { method, headers: { 'content-type': 'application/json', authorization: `Bearer ${tok}` }, body: body === undefined ? undefined : JSON.stringify(body) });
+    const res = await fetch(API + path, { method, headers: { 'content-type': 'application/json', ...headers }, body: body === undefined ? undefined : JSON.stringify(body) });
     const text = await res.text();
     let json; try { json = text ? JSON.parse(text) : null; } catch { json = text; }
-    if (res.status === 429 && attempt < 10) { await new Promise((r) => setTimeout(r, 1500)); continue; }
-    if (res.status >= 300) throw new Error(`${method} ${path} -> ${res.status} ${typeof json === 'string' ? json : JSON.stringify(json)}`);
+    if (res.status === 429 && attempt < 30) { await sleep(Math.max(2, Number(res.headers.get('retry-after')) || 5) * 1000); continue; }
+    return { status: res.status, json };
+  }
+}
+
+/** Waits for the API (a sleeping free Render instance takes about a minute to wake). */
+async function waitForApi() {
+  const until = Date.now() + 5 * 60_000;
+  for (;;) {
+    try { const res = await fetch(`${API}/health`); if (res.ok) return; } catch { /* not up yet */ }
+    if (Date.now() > until) throw new Error(`seed-demo.mjs: the API at ${API} did not answer /health within 5 minutes.`);
+    await sleep(5000);
+  }
+}
+
+/** Signs in through the API with the seeded passcode, as the apps do. */
+async function login(email) {
+  const { status, json } = await call('POST', '/auth/login', {}, { email, passcode: PASSCODE });
+  if (status >= 300 || !json?.accessToken) {
+    throw new Error(`seed-demo.mjs: signing in as ${email} through ${API} failed (${status} ${JSON.stringify(json)}). Is that API using this same database?`);
+  }
+  return json.accessToken;
+}
+
+/** A signed-in session for one account; signs in again when the access token runs out. */
+const session = (email) => ({ email, token: null });
+
+async function api(method, path, who, body) {
+  for (let attempt = 0; ; attempt++) {
+    who.token ??= await login(who.email);
+    const { status, json } = await call(method, path, { authorization: `Bearer ${who.token}` }, body);
+    if (status === 401 && attempt < 2) { who.token = null; continue; }
+    if (status >= 300) throw new Error(`${method} ${path} -> ${status} ${typeof json === 'string' ? json : JSON.stringify(json)}`);
     return json;
   }
 }
@@ -320,6 +355,11 @@ async function wipe() {
 
 // ---------------------------------------------------------------- main
 async function main() {
+  // DEMO_KEEP_EXISTING=1: leave a demo that's already there as it is.
+  if (process.env.DEMO_KEEP_EXISTING === '1' && (await db.franchise.findUnique({ where: { id: FRANCHISE_ID }, select: { id: true } }))) {
+    return log('the demo is already there and DEMO_KEEP_EXISTING=1: nothing changed. Re-seed to rebuild it, dated from today.');
+  }
+  await waitForApi();
   await wipe();
   const legal = Object.fromEntries((await db.legalDocument.findMany({ select: { slug: true, version: true } })).map((r) => [r.slug, r.version]));
   const ver = (slug) => legal[slug] ?? 'unpublished';
@@ -518,10 +558,10 @@ async function main() {
   log('people done');
 
   // ---- Through the API, as each owner: styles, plans, waiver, timetable.
-  await new Promise((r) => setTimeout(r, 1200)); // tokens must postdate the grants (rolesChangedAt)
+  await sleep(1200); // tokens must postdate the grants (rolesChangedAt)
   for (const ctx of world) {
     const { S } = ctx;
-    const tok = token(ctx.owner.id, ctx.owner.email, [grantClaim('SCHOOL_OWNER_MANAGER', S.id)]);
+    const tok = session(ctx.owner.email);
     ctx.tok = tok;
     const isPt = S.language === 'pt-BR';
     const adult = await api('POST', `/schools/${S.id}/disciplines/from-template`, tok, { templateId: 'ibjjf', name: isPt ? 'Jiu-Jitsu Adulto' : 'Brazilian Jiu-Jitsu' });
@@ -589,17 +629,19 @@ async function main() {
     log(`${S.name}: 2 styles, ${Object.keys(ctx.plans).length} plans, waiver, ${ctx.slots.length} weekly classes`);
   }
 
-  // ---- Classes: the generator (the real job) makes the coming weeks; the past
-  // weeks are the same slots' occurrences, back-dated.
-  const q = new Queue('class-occurrence-generation', { connection: { url: process.env.REDIS_URL } });
-  await q.add('run', {});
+  // ---- Classes: making each weekly class (above) made its coming weeks, as
+  // the class generator job does; with REDIS_URL set, the job is also run.
+  // The past weeks are the same slots' occurrences, back-dated.
   const slotIds = world.flatMap((c) => c.slots.map((s) => s.id));
+  const q = process.env.REDIS_URL ? new (require('bullmq').Queue)('class-occurrence-generation', { connection: { url: process.env.REDIS_URL } }) : null;
+  if (q) await q.add('run', {});
   for (let i = 0; ; i++) {
     const n = await db.class.count({ where: { timetableSlotId: { in: slotIds } } });
-    if (n >= slotIds.length * 3 || i > 120) { log(`generator: ${n} upcoming classes`); break; }
-    await new Promise((r) => setTimeout(r, 1000));
+    if (n >= slotIds.length * 3) { log(`upcoming classes: ${n}`); break; }
+    if (i > (q ? 120 : 10)) throw new Error(`seed-demo.mjs: only ${n} upcoming classes for ${slotIds.length} weekly classes. The API at ${API} should make each new weekly class's coming weeks: is it running the latest master?`);
+    await sleep(1000);
   }
-  await q.close();
+  if (q) await q.close();
 
   const classRows = [];
   for (const ctx of world) {

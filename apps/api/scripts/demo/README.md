@@ -83,18 +83,19 @@ No live key is used: the env in `start-demo.sh` is the CI's dummy test values. O
 
 ## Seed a real server (staging)
 
-`seed-demo.mjs` is the whole seed. From `apps/api`, with the API running against the same database:
+On the shared staging server, use the GitHub Actions workflow **Seed staging demo** (`.github/workflows/seed-staging-demo.yml`); the owner's click-by-click steps are in `docs/deploy/STAGING-DEMO.md`. By hand, from `apps/api`, with the API running against the same database:
 
 ```sh
-DATABASE_URL=postgresql://<owner>@<host>/<db> JWT_ACCESS_SECRET=<the API's> REDIS_URL=<the API's> \
+DATABASE_URL=postgresql://<owner>@<host>/<db> DEMO_PASSCODE=<6 digits> \
 ULTM8_ALLOW_DEV_SEED_HOST=<host> API=https://<api-host>/v1 node scripts/demo/seed-demo.mjs
 ```
 
 - `DATABASE_URL`: the database owner (bulk history is written straight into the tables, as the app would have written it). Not the app's RLS role.
-- `JWT_ACCESS_SECRET` and `API`: the styles, plans, waivers and timetable go through the real API, signed in as each School's owner.
-- `REDIS_URL`: the API's Redis; the seed starts the class generator job there.
-- `DEMO_PASSCODE`: a different 6-digit passcode for every demo login (recommended on a shared server).
-- It takes about a minute.
+- `API`: the styles, plans, waivers and timetable go through the real API, signed in as each School's owner with the seeded passcode (as the apps do; no API secret is needed). Making each weekly class makes its coming four weeks of Classes. It waits up to five minutes for a sleeping API to wake.
+- `DEMO_PASSCODE`: the 6-digit passcode for every demo login. Required, and not `123456`, on any database that isn't local.
+- `REDIS_URL` (optional): the API's Redis; when set, the seed also runs the class generator job there.
+- `DEMO_KEEP_EXISTING=1` (optional): if the demo is already there, leave it as it is.
+- It takes a minute or two locally, longer against a remote database.
 
 Re-running it is safe: it first deletes its own tenants (the Franchise `de300000-0000-4000-8000-000000000001`, its Schools, every account on `@apex-demo.example`, and the children only those accounts look after), with everything that depends on them, then seeds them again. Nothing else in the database is touched. The data is dated from the day it runs ("today" always has classes), so re-seed to bring a demo back up to date.
 

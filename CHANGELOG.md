@@ -15,6 +15,19 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **The populated demo on staging** (tooling only, no product change). A
+  manual GitHub Actions workflow, **Seed staging demo**, seeds the Apex
+  Jiu-Jitsu demo (`apps/api/scripts/demo/`) into the staging database with only
+  the `STAGING_DATABASE_URL` and `DEMO_PASSCODE` secrets and a
+  `STAGING_DB_HOST` variable: the seed now signs in through the API with the
+  seeded passcode instead of minting tokens, needs no Redis, refuses a
+  non-local database without its own passcode (or with `123456`), and the
+  workflow stops if staging's migrations are behind (it never applies them).
+  The member app gets a web build for Vercel (`apps/student/vercel.json`;
+  `apps/student/app.config.js` takes the API address from
+  `EXPO_PUBLIC_API_BASE_URL` at build time). Owner steps:
+  `docs/deploy/STAGING-DEMO.md`.
+
 - **Decision 450: demo findings (date order, role label, belt names, web
   sign-in kept) and its own switch for the late "Payment confirmed"** (Track A
   and Track B; Decision 450 items 2, 3, 4, 5 and 8).
