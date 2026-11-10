@@ -2115,6 +2115,32 @@
         ]
       }
     },
+    "/v1/users/me/paused-schools": {
+      "get": {
+        "operationId": "RoleGrantsController_myPausedSchools",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPausedSchoolsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff/me/access": {
       "get": {
         "operationId": "RoleGrantsController_myStaffAccess",
@@ -2188,6 +2214,59 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StaffAccessResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/staff/{userId}/coach-access": {
+      "put": {
+        "operationId": "RoleGrantsController_setCoachAccess",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CoachAccessDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachAccessResponseDto"
                 }
               }
             }
@@ -2728,6 +2807,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/FranchiseMemberSchoolListResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "franchises"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/franchises/{id}/overview": {
+      "get": {
+        "operationId": "FranchisesController_overview",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseOverviewResponseDto"
                 }
               }
             }
@@ -5686,6 +5800,41 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PaymentAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "payments"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/schools/{schoolId}/card-payments": {
+      "get": {
+        "operationId": "PaymentsController_getSchoolCardPayments",
+        "parameters": [
+          {
+            "name": "schoolId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardPaymentsResponseDto"
                 }
               }
             }
@@ -24439,6 +24588,10 @@
             "type": "boolean",
             "description": "Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on)."
           },
+          "chargeNoticeCardConfirmed": {
+            "type": "boolean",
+            "description": "Decision 450 item 8: tell the member \"Payment confirmed\" when a saved-card purchase is confirmed after the purchase screen (default on)."
+          },
           "heardFromOptions": {
             "nullable": true,
             "description": "Decision 392 (Decision 315 item 6): the \"How did you hear about us?\" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list.",
@@ -24818,6 +24971,10 @@
             "type": "boolean",
             "description": "Decisions 414 and 415 item 4: \"Refund\" notices to the member, for every refund (default on)."
           },
+          "chargeNoticeCardConfirmed": {
+            "type": "boolean",
+            "description": "Decision 450 item 8: the late \"Payment confirmed\" notice for a saved-card purchase (default on)."
+          },
           "visitorPeriodDays": {
             "type": "number",
             "nullable": true,
@@ -24984,6 +25141,7 @@
           "chargeNoticeDispute",
           "chargeNoticeDueReminder",
           "chargeNoticeRefund",
+          "chargeNoticeCardConfirmed",
           "medicalInfoEnabled",
           "memberAppEditProfile",
           "memberAppCancelMembership",
@@ -25256,6 +25414,10 @@
           "chargeNoticeRefund": {
             "type": "boolean",
             "description": "Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on)."
+          },
+          "chargeNoticeCardConfirmed": {
+            "type": "boolean",
+            "description": "Decision 450 item 8: tell the member \"Payment confirmed\" when a saved-card purchase is confirmed after the purchase screen (default on)."
           },
           "heardFromOptions": {
             "nullable": true,
@@ -27579,6 +27741,18 @@
           "importData"
         ]
       },
+      "CoachAccessDto": {
+        "type": "object",
+        "properties": {
+          "manageStudents": {
+            "type": "boolean",
+            "description": "Manage students: edit the profiles of their branches' students (off by default; Decision 449 item 7)."
+          }
+        },
+        "required": [
+          "manageStudents"
+        ]
+      },
       "StaffRoleDto": {
         "type": "object",
         "properties": {
@@ -27697,6 +27871,15 @@
               }
             ]
           },
+          "coachAccess": {
+            "nullable": true,
+            "description": "Decision 449 item 7: a coach's own switch, for active or paused coaches in the owner's view; null otherwise.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CoachAccessDto"
+              }
+            ]
+          },
           "roles": {
             "description": "Active roles first, then ended ones, newest first.",
             "type": "array",
@@ -27766,6 +27949,21 @@
           "userId"
         ]
       },
+      "MyPausedSchoolsResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolIds": {
+            "description": "The Schools where the caller's coach or Branch Staff access is paused and they hold no live staff role.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "schoolIds"
+        ]
+      },
       "MyStaffAccessResponseDto": {
         "type": "object",
         "properties": {
@@ -27775,7 +27973,11 @@
           },
           "mainOwner": {
             "type": "boolean",
-            "description": "The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10). False for co-owners and everyone else."
+            "description": "The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10) and set staff access switches and grading permissions (Decision 448 item 6). False for co-owners and everyone else."
+          },
+          "editStudents": {
+            "type": "boolean",
+            "description": "Decision 448 item 11 — may edit students' profiles: owners, Branch Staff with the students switch (\"Manage students\"), and (Decision 449 item 7) coaches the main owner gave \"Manage students\". False for other coaches, whatever `access.students` says."
           },
           "branchStaff": {
             "type": "boolean",
@@ -27797,6 +27999,7 @@
         "required": [
           "owner",
           "mainOwner",
+          "editStudents",
           "branchStaff",
           "access",
           "cancelCharges"
@@ -27815,6 +28018,21 @@
         "required": [
           "userId",
           "access"
+        ]
+      },
+      "CoachAccessResponseDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "coachAccess": {
+            "$ref": "#/components/schemas/CoachAccessDto"
+          }
+        },
+        "required": [
+          "userId",
+          "coachAccess"
         ]
       },
       "StaffActivityEntryDto": {
@@ -28387,6 +28605,231 @@
         },
         "required": [
           "items"
+        ]
+      },
+      "FranchiseOverviewMonthDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "The month, YYYY-MM (each School's months are in its own time zone)."
+          },
+          "checkIns": {
+            "type": "number",
+            "description": "Check-ins (members and Friend Pass guests) at classes that started this month, up to now, as Students → Attendance counts them."
+          },
+          "newStudents": {
+            "type": "number",
+            "description": "Students whose join date at the School falls in this month, as Students → Growth counts them."
+          },
+          "cancelled": {
+            "type": "number",
+            "description": "Students whose Subscription ended by cancellation this month, up to now, as Students → Growth counts them."
+          }
+        },
+        "required": [
+          "month",
+          "checkIns",
+          "newStudents",
+          "cancelled"
+        ]
+      },
+      "FranchiseOverviewRevenueMonthDto": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "description": "The month, YYYY-MM."
+          },
+          "memberships": {
+            "type": "number",
+            "description": "Memberships: what was kept of plan purchases and renewals (minor units)."
+          },
+          "charges": {
+            "type": "number",
+            "description": "Charges: paid toward charges, less money given back (minor units)."
+          },
+          "fees": {
+            "type": "number",
+            "description": "Fees: late-cancellation, freeze and no-show fees kept (minor units)."
+          },
+          "surcharges": {
+            "type": "number",
+            "description": "Card surcharges kept (minor units)."
+          },
+          "total": {
+            "type": "number",
+            "description": "memberships + charges + fees + surcharges: the billing overview's \"Total revenue\"."
+          }
+        },
+        "required": [
+          "month",
+          "memberships",
+          "charges",
+          "fees",
+          "surcharges",
+          "total"
+        ]
+      },
+      "FranchiseOverviewRevenueDto": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "type": "string",
+            "description": "ISO currency code. Different currencies are never added together."
+          },
+          "memberships": {
+            "type": "number",
+            "description": "The last 12 months added up (minor units)."
+          },
+          "charges": {
+            "type": "number"
+          },
+          "fees": {
+            "type": "number"
+          },
+          "surcharges": {
+            "type": "number"
+          },
+          "total": {
+            "type": "number"
+          },
+          "byMonth": {
+            "description": "Each month, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewRevenueMonthDto"
+            }
+          }
+        },
+        "required": [
+          "currency",
+          "memberships",
+          "charges",
+          "fees",
+          "surcharges",
+          "total",
+          "byMonth"
+        ]
+      },
+      "FranchiseOverviewTotalsDto": {
+        "type": "object",
+        "properties": {
+          "enrolledStudents": {
+            "type": "number",
+            "description": "Enrolled students now (an active student role at the School)."
+          },
+          "activeStudents": {
+            "type": "number",
+            "description": "Active students now: the Dashboard's and Growth's count (Decision 317 item 5, Decision 422 item 5)."
+          },
+          "checkInsLast30Days": {
+            "type": "number",
+            "description": "Check-ins over the last 30 days, as Students → Attendance counts them."
+          },
+          "months": {
+            "description": "The last 12 months, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewMonthDto"
+            }
+          },
+          "revenue": {
+            "description": "Revenue over the last 12 months, one entry per currency, by currency code.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewRevenueDto"
+            }
+          }
+        },
+        "required": [
+          "enrolledStudents",
+          "activeStudents",
+          "checkInsLast30Days",
+          "months",
+          "revenue"
+        ]
+      },
+      "FranchiseOverviewSchoolDto": {
+        "type": "object",
+        "properties": {
+          "enrolledStudents": {
+            "type": "number",
+            "description": "Enrolled students now (an active student role at the School)."
+          },
+          "activeStudents": {
+            "type": "number",
+            "description": "Active students now: the Dashboard's and Growth's count (Decision 317 item 5, Decision 422 item 5)."
+          },
+          "checkInsLast30Days": {
+            "type": "number",
+            "description": "Check-ins over the last 30 days, as Students → Attendance counts them."
+          },
+          "months": {
+            "description": "The last 12 months, oldest first.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewMonthDto"
+            }
+          },
+          "revenue": {
+            "description": "Revenue over the last 12 months, one entry per currency, by currency code.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewRevenueDto"
+            }
+          },
+          "schoolId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Set when the School has been closed."
+          },
+          "timeZone": {
+            "type": "string",
+            "description": "The time zone the School's months and days are in (UTC when it has none)."
+          }
+        },
+        "required": [
+          "enrolledStudents",
+          "activeStudents",
+          "checkInsLast30Days",
+          "months",
+          "revenue",
+          "schoolId",
+          "name",
+          "archivedAt",
+          "timeZone"
+        ]
+      },
+      "FranchiseOverviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "totals": {
+            "description": "Every member School added up; revenue per currency. A month's figures add up each School's own month of that name.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FranchiseOverviewTotalsDto"
+              }
+            ]
+          },
+          "schools": {
+            "description": "The Schools that are members of the Franchise now, by name.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FranchiseOverviewSchoolDto"
+            }
+          }
+        },
+        "required": [
+          "totals",
+          "schools"
         ]
       },
       "FranchiseJoinRequestListResponseDto": {
@@ -30818,6 +31261,23 @@
           "cardPayments",
           "createdAt",
           "updatedAt"
+        ]
+      },
+      "CardPaymentsResponseDto": {
+        "type": "object",
+        "properties": {
+          "hasPaymentAccount": {
+            "type": "boolean",
+            "description": "Whether the School has set up a payment account (any provider)."
+          },
+          "cardPayments": {
+            "type": "boolean",
+            "description": "Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready. The same value as the payment account's cardPayments, for people who may not read the account itself."
+          }
+        },
+        "required": [
+          "hasPaymentAccount",
+          "cardPayments"
         ]
       },
       "ConnectStatusResponseDto": {
@@ -47526,15 +47986,19 @@
           },
           "memberships": {
             "type": "number",
-            "description": "Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received)."
+            "description": "Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received), nor are fees (Decision 449 item 10, fees)."
+          },
+          "fees": {
+            "type": "number",
+            "description": "Decision 449 item 10: fee revenue that month: late-cancellation, freeze and no-show fees, counted as memberships are (Successful and Refunded payments by billing date, less what was refunded on them, the card surcharge apart)."
           },
           "surcharges": {
             "type": "number",
-            "description": "Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received or memberships, which are the price of what was sold."
+            "description": "Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received, memberships or fees, which are the price of what was sold."
           },
           "total": {
             "type": "number",
-            "description": "net + memberships + surcharges."
+            "description": "net + memberships + fees + surcharges."
           }
         },
         "required": [
@@ -47543,6 +48007,7 @@
           "refunded",
           "net",
           "memberships",
+          "fees",
           "surcharges",
           "total"
         ]
@@ -47569,13 +48034,17 @@
             "type": "number",
             "description": "Membership revenue over the months covered (the sum of memberships by month)."
           },
+          "fees": {
+            "type": "number",
+            "description": "Decision 449 item 10: fee revenue over the months covered (the sum of fees by month)."
+          },
           "surcharges": {
             "type": "number",
             "description": "Card surcharges over the months covered (the sum of surcharges by month)."
           },
           "total": {
             "type": "number",
-            "description": "Total revenue over the months covered: paid + memberships + surcharges."
+            "description": "Total revenue over the months covered: paid + memberships + fees + surcharges."
           },
           "revenueByMonth": {
             "description": "Oldest month first.",
@@ -47591,6 +48060,7 @@
           "overdue",
           "paid",
           "memberships",
+          "fees",
           "surcharges",
           "total",
           "revenueByMonth"

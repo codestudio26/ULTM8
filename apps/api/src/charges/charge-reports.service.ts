@@ -9,10 +9,15 @@ import { dayIn, freezeZone } from '../memberships/freeze/membership-freeze';
 import { chargeRemaining } from './charge-ledger';
 
 /** The Transaction kinds that are membership revenue (Decision 414 item 3):
- * plans bought in the app or sold at the desk, and Subscription renewals;
- * and the late-cancellation and freeze fees (Decision 415 item 2), and the
- * no-show fees, on the ledger since Decision 448 item 18. */
-export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL', 'LATE_CANCEL_FEE', 'FREEZE_FEE', 'NO_SHOW_FEE'] as const;
+ * plans bought in the app or sold at the desk, and Subscription renewals. */
+export const MEMBERSHIP_REVENUE_KINDS = ['MEMBERSHIP', 'RENEWAL'] as const;
+
+/** The Transaction kinds that are fee revenue: the late-cancellation and
+ * freeze fees (Decision 415 item 2) and the no-show fees (on the ledger since
+ * Decision 448 item 18). Counted inside "Memberships" until Decision 449 item
+ * 10 gave them their own "Fees" line. */
+export const FEE_REVENUE_KINDS = ['LATE_CANCEL_FEE', 'FREEZE_FEE', 'NO_SHOW_FEE'] as const;
+const FEE_KINDS: ReadonlySet<string> = new Set(FEE_REVENUE_KINDS);
 
 /**
  * Decision 446 item 4: the payment rows revenue counts, each at its amount less
@@ -80,8 +85,10 @@ export function keptRevenue(t: { amount: number; surchargeAmount: number; refund
  * CHARGE_PAYMENT rows are left out: they are the ledger's payments above, so
  * counting them here would count them twice. Decision 448 item 1: the card
  * surcharge (of memberships, fees and payments toward charges alike) is its
- * own line, by billing date, apart from both, and part of the total. Late-cancellation and freeze fees
- * are neither part (Decision 414 names charges and memberships only).
+ * own line, by billing date, apart from both, and part of the total.
+ * Decision 449 item 10: the late-cancellation, freeze and no-show fees
+ * (FEE_REVENUE_KINDS) are their own "Fees" line, counted by the same rule as
+ * memberships, and part of the total; they are no longer in memberships.
  */
 @Injectable()
 export class ChargeReportsService {
@@ -100,6 +107,9 @@ export class ChargeReportsService {
     if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return { wholeSchool: true };
     const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { branchStaffCanRecordPayments: true } });
     if (grants.length === 0 || !school?.branchStaffCanRecordPayments) {
+      // Decision 449 item 6: 404 only for someone with no link to the School;
+      // paused staff, members and Guardians are told why.
+      if (grants.length === 0) await this.tenantAuth.staffRolesOrRefuse(callerId, schoolId);
       // Decision 347's own wording, as for a desk payment.
       throw new ForbiddenException(grants.length > 0 ? 'The School owner has not let Branch Staff record payments.' : "Only that School's Owner/Manager may perform this action.");
     }
@@ -162,18 +172,18 @@ export class ChargeReportsService {
       this.prismaJobs.transaction.findMany({
         where: {
           ...this.where(schoolId, scope),
-          OR: [{ kind: { in: [...MEMBERSHIP_REVENUE_KINDS] } }, { kind: 'CHARGE_PAYMENT', surchargeAmount: { gt: 0 } }],
+          OR: [{ kind: { in: [...MEMBERSHIP_REVENUE_KINDS, ...FEE_REVENUE_KINDS] } }, { kind: 'CHARGE_PAYMENT', surchargeAmount: { gt: 0 } }],
           status: { in: [...REVENUE_STATUSES] },
           billingDate: { gte: first.toJSDate() },
         },
         select: { ...KEPT_REVENUE_SELECT, kind: true, currency: true, billingDate: true },
       }),
     ]);
-    const byCurrency = new Map<string, { scheduled: number; overdue: number; months: Map<string, { received: number; refunded: number; memberships: number; surcharges: number }> }>();
+    const byCurrency = new Map<string, { scheduled: number; overdue: number; months: Map<string, { received: number; refunded: number; memberships: number; fees: number; surcharges: number }> }>();
     const bucket = (currency: string) => {
       let b = byCurrency.get(currency);
       if (!b) {
-        b = { scheduled: 0, overdue: 0, months: new Map(monthKeys.map((m) => [m, { received: 0, refunded: 0, memberships: 0, surcharges: 0 }])) };
+        b = { scheduled: 0, overdue: 0, months: new Map(monthKeys.map((m) => [m, { received: 0, refunded: 0, memberships: 0, fees: 0, surcharges: 0 }])) };
         byCurrency.set(currency, b);
       }
       return b;
@@ -198,7 +208,8 @@ export class ChargeReportsService {
       if (!monthKeys.includes(month)) continue;
       const m = bucket(t.currency.toUpperCase()).months.get(month)!;
       const kept = keptRevenue(t);
-      if (t.kind !== 'CHARGE_PAYMENT') m.memberships += kept.price;
+      if (FEE_KINDS.has(t.kind)) m.fees += kept.price;
+      else if (t.kind !== 'CHARGE_PAYMENT') m.memberships += kept.price;
       m.surcharges += kept.surcharge;
     }
     const currencies = [...byCurrency.entries()]
@@ -207,12 +218,13 @@ export class ChargeReportsService {
         const revenueByMonth = monthKeys.map((month) => {
           const m = b.months.get(month)!;
           const net = m.received - m.refunded;
-          return { month, received: m.received, refunded: m.refunded, net, memberships: m.memberships, surcharges: m.surcharges, total: net + m.memberships + m.surcharges };
+          return { month, received: m.received, refunded: m.refunded, net, memberships: m.memberships, fees: m.fees, surcharges: m.surcharges, total: net + m.memberships + m.fees + m.surcharges };
         });
         const paid = revenueByMonth.reduce((n, m) => n + m.net, 0);
         const membershipRevenue = revenueByMonth.reduce((n, m) => n + m.memberships, 0);
+        const fees = revenueByMonth.reduce((n, m) => n + m.fees, 0);
         const surcharges = revenueByMonth.reduce((n, m) => n + m.surcharges, 0);
-        return { currency, scheduled: b.scheduled, overdue: b.overdue, paid, memberships: membershipRevenue, surcharges, total: paid + membershipRevenue + surcharges, revenueByMonth };
+        return { currency, scheduled: b.scheduled, overdue: b.overdue, paid, memberships: membershipRevenue, fees, surcharges, total: paid + membershipRevenue + fees + surcharges, revenueByMonth };
       });
     return { months, wholeSchool: scope.wholeSchool, currencies };
   }

@@ -123,6 +123,21 @@ export class StaffAccessDto {
   importData!: boolean;
 }
 
+/** Decision 449 item 7 — a coach's own switch, on their Access window. */
+export class CoachAccessDto {
+  @ApiProperty({ description: "Manage students: edit the profiles of their branches' students (off by default; Decision 449 item 7)." })
+  @IsBoolean()
+  manageStudents!: boolean;
+}
+
+export class CoachAccessResponseDto {
+  @ApiProperty()
+  userId!: string;
+
+  @ApiProperty({ type: CoachAccessDto })
+  coachAccess!: CoachAccessDto;
+}
+
 export class StaffAccessResponseDto {
   @ApiProperty()
   userId!: string;
@@ -138,9 +153,15 @@ export class MyStaffAccessResponseDto {
 
   @ApiProperty({
     description:
-      "The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10). False for co-owners and everyone else.",
+      "The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10) and set staff access switches and grading permissions (Decision 448 item 6). False for co-owners and everyone else.",
   })
   mainOwner!: boolean;
+
+  @ApiProperty({
+    description:
+      "Decision 448 item 11 — may edit students' profiles: owners, Branch Staff with the students switch (\"Manage students\"), and (Decision 449 item 7) coaches the main owner gave \"Manage students\". False for other coaches, whatever `access.students` says.",
+  })
+  editStudents!: boolean;
 
   @ApiProperty({ description: 'Holds an active Branch Staff role here.' })
   branchStaff!: boolean;
@@ -207,6 +228,13 @@ export class StaffMemberDto {
     description: "Decision 387: their access switches, for active or paused Branch Staff in the owner's view; null otherwise.",
   })
   access!: StaffAccessDto | null;
+
+  @ApiPropertyOptional({
+    type: CoachAccessDto,
+    nullable: true,
+    description: "Decision 449 item 7: a coach's own switch, for active or paused coaches in the owner's view; null otherwise.",
+  })
+  coachAccess!: CoachAccessDto | null;
 
   @ApiProperty({ type: [StaffRoleDto], description: 'Active roles first, then ended ones, newest first.' })
   roles!: StaffRoleDto[];
@@ -307,6 +335,12 @@ export class StaffDetailsResponseDto {
 
   @ApiPropertyOptional({ type: String, nullable: true })
   workPhone!: string | null;
+}
+
+/** GET /users/me/paused-schools (Decision 451 item 2). */
+export class MyPausedSchoolsResponseDto {
+  @ApiProperty({ type: [String], description: "The Schools where the caller's coach or Branch Staff access is paused and they hold no live staff role." })
+  schoolIds!: string[];
 }
 
 /** POST /schools/{schoolId}/staff/{userId}/pause (Decision 390). */

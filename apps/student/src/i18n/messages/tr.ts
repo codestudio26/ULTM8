@@ -321,6 +321,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Rezervasyonlar yüklenemedi — lütfen tekrar deneyin.",
     },
     classRow: {
+      buyPlan: "Plan satın al",
       dateRange: "{start} – {end}",
       breakLine: "Mola {start} – {end}",
       endsNextDay: "ertesi gün biter",
@@ -1082,11 +1083,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Bilinmeyen branş",
       loading: "Kuşak yükleniyor…",
       rankError: "Kuşak ayrıntıları yüklenemedi.",
-      rank: "Derece {order}",
-      rankWithStripes: {
-        one: "Derece {order} · {count} şerit",
-        other: "Derece {order} · {count} şerit",
-      },
     },
   },
   transactions: {

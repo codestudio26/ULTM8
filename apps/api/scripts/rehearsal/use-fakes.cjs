@@ -9,8 +9,13 @@
 //     treats SMS as configured.
 //   - R2 (S3) object storage: PutObject, DeleteObject, HeadObject and
 //     GetObject are kept in memory, so staff can upload a member's file and
-//     the erasure job can delete it. GET http://localhost:REHEARSAL_R2_PORT
-//     (default 12518) lists the keys held.
+//     the erasure job can delete it. GET http://localhost:<its port> lists
+//     the keys held; PUT /<bucket>/<key> stores one, as a browser's upload to
+//     a presigned URL would. Its port is REHEARSAL_R2_PORT when set; otherwise
+//     a free port the system picks for this run (Decision 451 item 11: a
+//     fixed port clashed with another run). Either way the port is printed
+//     and written to fake-r2-port.cjs's file for this API's PORT, where the
+//     journeys (j5-delete.mjs) read it.
 // Never load this in a deployed API.
 require('../stress/billing/use-fake-stripe.cjs');
 const Module = require('module');
@@ -54,5 +59,27 @@ Module._load = function (request) {
   };
   return mod;
 };
-require('http').createServer((req, res) => { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify([...objects.keys()])); })
-  .listen(Number(process.env.REHEARSAL_R2_PORT || 12518), '127.0.0.1');
+// PUT /<bucket>/<key> stands in for the browser's own upload to a presigned
+// URL (a coach's certification file): the object is then held like the rest.
+const fakeR2 = require('http').createServer((req, res) => {
+  res.setHeader('content-type', 'application/json');
+  if (req.method === 'PUT') {
+    let size = 0;
+    req.on('data', (c) => (size += c.length));
+    req.on('end', () => { objects.set(decodeURIComponent(req.url.slice(1)), { size, type: req.headers['content-type'] }); res.end('{}'); });
+    return;
+  }
+  res.end(JSON.stringify([...objects.keys()]));
+});
+fakeR2.listen(Number(process.env.REHEARSAL_R2_PORT || 0), '127.0.0.1', () => {
+  const { port } = fakeR2.address();
+  const file = require('./fake-r2-port.cjs').fakeR2PortFile(process.env.PORT || 3000);
+  try {
+    require('fs').writeFileSync(file, String(port));
+  } catch (err) {
+    console.warn(`[use-fakes] could not write ${file}: ${err.message}`);
+  }
+  console.log(`[use-fakes] fake R2 storage on http://127.0.0.1:${port} (written to ${file})`);
+});
+// Never keep the process alive for the fake alone.
+fakeR2.unref();

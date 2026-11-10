@@ -321,6 +321,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Boekingen konden niet worden geladen — probeer het opnieuw.",
     },
     classRow: {
+      buyPlan: "Lidmaatschap kopen",
       dateRange: "{start} – {end}",
       breakLine: "Pauze {start} – {end}",
       endsNextDay: "eindigt de volgende dag",
@@ -1082,11 +1083,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Onbekende discipline",
       loading: "Graad laden…",
       rankError: "De details van de graad konden niet worden geladen.",
-      rank: "Graad {order}",
-      rankWithStripes: {
-        one: "Graad {order} · {count} streep",
-        other: "Graad {order} · {count} strepen",
-      },
     },
   },
   transactions: {

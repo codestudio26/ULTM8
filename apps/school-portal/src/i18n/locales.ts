@@ -34,9 +34,46 @@ export const LOCALE_LOADERS: Record<string, () => Promise<PartialMessages<Englis
 
 export const directionFor = sharedDirectionFor;
 
+/** The locales this portal can show: English, its formatting variants and
+ * every catalogue above. */
+function knownLocales(): string[] {
+  return [DEFAULT_LOCALE, ...Object.keys(FORMAT_VARIANTS), ...Object.keys(LOCALE_LOADERS)];
+}
+
+/**
+ * Decision 449 item 3 — before signing in, when no language has been chosen
+ * in this browser, the browser's own language: the first of its languages
+ * (`navigator.languages`, in the person's order) that is one of the 15
+ * languages, matched exactly or by language (`pt` → `pt-BR`, `en-US` →
+ * English), else null (English). The same matching as resolveLocale.
+ */
+export function browserLocale(languages: readonly string[] | undefined = readBrowserLanguages()): string | null {
+  // The 15 languages, not the formatting variants: an "en-US" browser reads
+  // English (UK), as before, until someone picks "English (US)".
+  const known = [DEFAULT_LOCALE, ...Object.keys(LOCALE_LOADERS)];
+  for (const tag of languages ?? []) {
+    if (!tag) continue;
+    const exact = known.find((code) => code.toLowerCase() === tag.toLowerCase());
+    if (exact) return exact;
+    const language = tag.split('-')[0].toLowerCase();
+    const sameLanguage = known.find((code) => code.split('-')[0].toLowerCase() === language);
+    if (sameLanguage) return sameLanguage;
+  }
+  return null;
+}
+
+function readBrowserLanguages(): readonly string[] | undefined {
+  try {
+    if (typeof navigator === 'undefined') return undefined;
+    return navigator.languages?.length ? navigator.languages : navigator.language ? [navigator.language] : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Picks the locale for a stored preference: an exact match first, then the
  * same language with any region (`pt` → `pt-BR`), else English. "English (US)"
  * (Decision 434) is a formatting variant: English text, US dates. */
 export function resolveLocale(preferred: string | null | undefined): string {
-  return sharedResolveLocale(preferred, [DEFAULT_LOCALE, ...Object.keys(FORMAT_VARIANTS), ...Object.keys(LOCALE_LOADERS)]);
+  return sharedResolveLocale(preferred, knownLocales());
 }

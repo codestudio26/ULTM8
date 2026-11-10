@@ -88,7 +88,7 @@ export class FrontDeskCheckInService {
      * and may book, as the scan or code it came from could. */
     proven?: { method: CheckInMethod },
   ): Promise<DeskCheckInResponseDto> {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings');
     const { studentId } = dto;
     const guestRefs = dto.guests ?? [];
@@ -144,7 +144,7 @@ export class FrontDeskCheckInService {
         continue;
       }
       try {
-        await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, cls.branchId);
+        await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId, cls.branchId);
         await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', cls.branchId);
         assertAtKioskBranch(kiosk, cls.branchId);
         if (cls.cancelledAt) throw new ConflictException('This class has been cancelled by the school.');
@@ -181,7 +181,7 @@ export class FrontDeskCheckInService {
         continue;
       }
       try {
-        await this.tenantAuth.assertStaffAtSchool(callerId, schoolId, booking.branchId);
+        await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId, booking.branchId);
         await this.tenantAuth.assertStaffMay(callerId, schoolId, 'bookings', booking.branchId);
         assertAtKioskBranch(kiosk, booking.class.branchId);
         if (seat.checkedInAt) throw new ConflictException('This guest is already checked in.');

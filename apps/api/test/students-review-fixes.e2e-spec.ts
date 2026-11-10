@@ -237,15 +237,19 @@ describeIfDb('Students page review fixes (Decision 341)', () => {
     });
   });
 
-  describe('S5 part 2: only the owner changes a birth date across 18 (Decision 342)', () => {
+  describe('S5 part 2: only the owner changes a birth date (Decision 342; Decision 451 item 14)', () => {
     // Decision 430 item 13: nora is shared with another School, so her birth date is locked;
     // kid has no login of their own and is this School's alone.
-    it('staff can correct a date that keeps the same side of 18, not one that crosses it', async () => {
-      expect((await patch('northStaff', 'kid', { dateOfBirth: '1999-03-04' })).status).toBe(200);
-      const crossing = await patch('northStaff', 'kid', { dateOfBirth: '2015-03-04' });
-      expect(crossing.status).toBe(403);
-      expect(crossing.body.error.message).toBe('Only the School owner can change a birth date that makes someone an adult or a child.');
-      expect((await superuser.user.findUniqueOrThrow({ where: { id: id.kid } })).dateOfBirth?.toISOString().slice(0, 10)).toBe('1999-03-04');
+    it('staff can change neither a date that keeps the same side of 18 nor one that crosses it', async () => {
+      const before = (await superuser.user.findUniqueOrThrow({ where: { id: id.kid } })).dateOfBirth?.toISOString().slice(0, 10);
+      for (const dateOfBirth of ['1999-03-04', '2015-03-04']) {
+        const res = await patch('northStaff', 'kid', { dateOfBirth });
+        expect(res.status).toBe(403);
+        expect(res.body.error.message).toBe("Only the School owner can change a member's birth date.");
+      }
+      expect((await superuser.user.findUniqueOrThrow({ where: { id: id.kid } })).dateOfBirth?.toISOString().slice(0, 10)).toBe(before);
+      // Sending the birth date they already have back is not a change.
+      expect((await patch('northStaff', 'kid', { dateOfBirth: before, nationality: 'BR' })).status).toBe(200);
     });
 
     it('the owner can make that change', async () => {

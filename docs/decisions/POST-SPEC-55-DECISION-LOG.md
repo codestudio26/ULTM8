@@ -8094,3 +8094,99 @@ User (Code), 7 Nov 2026: "fix it any bugs you have founded", applied to the bugs
 ### Recorded by
 
 User (Code), 7 Nov 2026, item by item in chat: 1 "if we can separated them mighty be a good idea"; 2 "yes"; 3 "But the price should not increase"; 4 "yes"; 5 "Pix foes not work outside of brazil, it should not be shown"; 6 "Main Account owner"; 7 "ok"; 8 "ok"; 9 "only people with who has been given access to tht payment area, not every one"; 10 "delete"; 11 "again only people that has been granted access"; 12 "ok"; 13 "Also explain the symbols shuld not be use"; 14 "ok"; 15–20 "ok".
+
+---
+
+## Decision 449 — Launch rehearsal 2 questions and the points to confirm of #524–#526
+
+**Date:** 10 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 406, 444, 446, 448 · **Answers:** the questions of launch rehearsal 2 (#528) and the choices listed in #524, #525 and #526 · **Changes:** Decision 448 item 17 (see item 6 below)
+
+### Decision
+
+**From launch rehearsal 2**
+1. **Legal texts.** The reviewed Terms, Privacy and other legal texts are loaded before go-live. There is no live data yet, so nobody who ticked the "unpublished" version needs to be asked again.
+2. **"When it ends, switch to" before Stripe is ready** stays refused at a School that will take cards (`SWITCH_NEEDS_CARDS`), as built; the owner is told to finish connecting Stripe first.
+3. **Before signing in, the portal uses the browser's language** when no language has been chosen in that browser, instead of English. To be built.
+4. **No card surcharge on no-show fees**, as built.
+
+**Access (#524)**
+5. As built: Branch Staff with a payments permission (including "Can create charges") see the payment account and coaches never do; only the student profile form needs "Manage students" (tags, notes, custom fields keep their rules); a pending deletion blocks staff-created charges only, not automatic monthly charges or fees; staff switches are set by the School's main owner only, and a Franchise owner doesn't set them.
+6. **Refusal messages: clear for people connected to the School, "not found" only for strangers.** Someone with a link to the School gets a message that says what is wrong, never "not found", which looks like a mistake:
+   - staff whose access is paused: their access to this School has been paused, contact the School owner;
+   - a coach or staff member without the permission, a Guardian or member trying a staff page: they don't have permission to view this page.
+   Someone with no link to the School at all (for example another School's owner or staff) still gets "not found", so ULTM8 never confirms to another business that a School or record exists. This replaces Decision 448 item 17 for people connected to the School. To be built.
+7. **Coaches can be given "Manage students"** by the School owner (off by default), letting them edit a student's profile. To be built.
+8. **"Buy a plan" in the member app.** When a member tries something their plan doesn't cover (for example booking with no active plan), the message offers a button to the School's plans, where the app doesn't already. In the School Portal a refusal is only a message, with no button. To be built.
+
+**Money (#525)**
+9. As built: the billing overview's Total revenue includes card surcharges, while the Transactions page's "Total revenue" is the price only with surcharges on their own tile, shown once any surcharge exists; a refund comes off the price first, then the surcharge, and a non-refundable joining fee last; a capped plan switch reduces the surcharge first; if the School's currency changed after the notice, the switch doesn't happen and nothing is charged; Pix needs a Brazilian address and is never shown or offered outside Brazil; a no-show fee is recorded only when a card was tried; older no-show fees are dated when the class's check-in closed.
+10. **Fees get their own line in revenue.** No-show, late-cancellation and freeze fees are shown as "Fees" on the billing overview, not inside "Memberships". To be built.
+11. **"Payment confirmed" says the member was charged once.** When the notice arrives after the purchase screen already showed success, its wording makes clear it is the same payment and only one charge was made. To be built.
+
+**Privacy (#526)**
+12. As built: "I agree" at first sign-in applies to everyone with no acceptance on record; ticking it doesn't count as "signed up themselves", so the School's date still decides the 18th birthday; the page can't be skipped, only logged out of; a coach photo is deleted at purge only if uploaded for a coach profile and unused elsewhere; the symbols hint is on the Students page only; the certification consent date is kept at erasure.
+13. **Approved tablet sign-ups count as "signed up themselves"**, so after approval waivers and purchases use the same 18th-birthday rule as the tablet. To be built.
+
+### Recorded by
+
+User (Code), 10 Nov 2026, item by item in chat. Rehearsal: A1 "We have no data, So it will be done before we go live"; A2 "ok"; A3 "ok"; A4 "No charge". Access: B1 "ok"; B2/B6 "Never not found, it looks like a mistake from us. It should tell them they do not have the permmision to vew this page", "If their permission is revoke, we should be able to tell them", then "ok" to clear messages for people connected to the School and "not found" only for strangers from other Schools; B3 "yes they should, if the school owner wish to grant them access"; B4 "ok"; B5 "ok"; B7 "correct"; on "option to buy": member app offers buying a plan, School Portal just says no access — "ok". Money: C1 "ok"; C2 "ok"; C3 "yes"; C4 "ok"; C5 "if that happens yes"; C6 "correct"; C7 "Pix should not be available outside brazil, neither show it"; C8 "fees on their own line"; C9 "yes"; C10 "ok"; C11 "Ok but make sure the sustomers understands they were charge once". Privacy: D1 "ok"; D2 "go with your recommendation"; D3 "ok"; D4 "yes"; D5–D7 "ok".
+
+---
+
+## Decision 450 — Franchise owner's overview, demo findings, and the points to confirm of #530
+
+**Date:** 10 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 80, 98, 270, 449 · **Answers:** the points to confirm of #530 and the questions raised by the populated demo
+
+### Decision
+
+**Franchise owner (first part of the open question Decisions 80 and 270 left)**
+1. **A Franchise owner gets a read-only overview of each member School's totals**: students, attendance, revenue and growth, per School and added up across the Franchise, on a Franchise dashboard. The Franchise owner can't open a School's individual students, classes or payments and can't change anything at a School. Only totals cross the School boundary, never a member's personal details. Everything else about what a Franchise owner may do inside its Schools stays as before (Decisions 80, 270). To be built.
+
+**Demo findings (owner: "fix it")**
+2. The member app's bookings and the Franchise page's fee charges are listed in date order. To be built.
+3. The portal shows a translated role name for the Franchise owner, never the raw code. To be built.
+4. The member app shows the belt's name, not its position number. To be built.
+5. The member app on the web keeps the person signed in across a page reload. To be built.
+
+**Points to confirm of #530**
+6. As built: the "Fees" figure shows only once a School has any fees; the reworded "Payment confirmed" notice says "the same payment you made when you bought it", because it can arrive up to a day later; the first-draft translations of "Fees" go to the translators.
+7. **Late fees on an unpaid charge stay under "Charges"**, as built: they belong to that charge's bill.
+8. **The late saved-card "Payment confirmed" notice gets its own notification setting**, apart from the cash-payment notice. To be built.
+
+**Launch checklist**
+9. A public ULTM8 website and an onboarding process for new Schools are added to the launch checklist. Their content and steps are for the owner to give.
+
+### Recorded by
+
+User (Code), 10 Nov 2026, in chat: Franchise owner "a" (read-only overview of totals); demo findings "fix it"; #530 points: "ok" (Fees shown once any exist), "charge" (late fees on charges), "ok" (wording), "setting own its own", "ok" (translations); "ULTM8 Launch Checklist - Add Create a website for ULTM8 and onboarding process". Still open: whether the Transactions page should split revenue by type.
+
+---
+
+## Decision 451 — Stress test round 7: the owner's answers and fixes
+
+**Date:** 10 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 382, 404, 449, 450 · **Found by:** stress test round 7 (testers S, D, R) on v1.4.0
+
+### Decision
+
+**Fixes (all to be built)**
+1. **Refunding or losing a dispute on a fee never touches the member's plan** (D-1, High). A full Stripe refund or a lost dispute on a freeze fee (or any other fee row that carries a membership id) only changes that fee's row; the plan and its bookings are left alone. Owner: refunding a fee, or a member winning a dispute on one, never affects their plan.
+2. **Paused staff are told their access is paused everywhere** (R-1): at sign-in (a page saying their access to the School has been paused) and on every School page they open, not only the switch-gated ones (Decision 449 item 6).
+3. **Paused or removed coaches and staff opening or saving a student's profile** get the Decision 449 messages, not "School not found" (S-3).
+4. **Front-desk mode never tells a stranger whether a School or Branch exists** (S-1): the caller check runs before any School or Branch check, and strangers get "not found".
+5. **The member app on the web clears its saved screens** (bookings, notifications, memberships) on sign-out, when the session ends, and whenever a different person signs in, so the next person on a shared browser never sees them (S-6).
+6. **Student tags use the Decision 449 messages** (paused / no permission / not found) (S-4).
+7. **The plans-on-sale screen gives a School's own coach or staff "no permission"**, not "not found" (S-2).
+8. **A malformed or out-of-range bookings-list cursor answers 400**, never a server error (S-5).
+9. **Branch Staff confirming a Pix/cash order without the "record payments" switch get "no permission"**, not "not found" (R-2).
+10. **After too many login tries, every language shows a plain sentence**, never the raw "ThrottlerException" text (R-3).
+11. **Test harness:** Redis is always started with its own empty data folder, and the fake file storage takes its own port, so no old saved jobs are ever loaded (round 7 harness finding).
+
+**Answers**
+12. A freeze fee paid later at the desk keeps the date it was raised, so it counts in that month under Fees, as built.
+13. A closed Franchise's owner keeps the Franchise overview during the 90 days before the Franchise is purged, as built.
+14. A coach with "Manage students" may change a member's join date; **a member's birth date stays owner-only** (coaches can no longer change it, even within the same age group). To be built.
+15. After logging out, an already-issued sign-in token stays usable until it expires (up to 15 minutes), as built.
+
+### Recorded by
+
+User (Code), 10 Nov 2026: R-1 "ok"; R-2, R-3 and the harness problem "fix it"; then "ok to all" to the round 7 list (bugs D-1, S-1, S-3, S-6, S-4, S-2, S-5 and questions 1–6 with the suggested answers).

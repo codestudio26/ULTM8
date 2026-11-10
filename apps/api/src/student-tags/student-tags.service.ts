@@ -41,9 +41,12 @@ export class StudentTagsService {
     private readonly schools: SchoolsService,
   ) {}
 
-  /** The School's list, by name, with how many students have each tag. */
+  /** The School's list, by name, with how many students have each tag.
+   * Decision 451 item 6 (S-4; Decision 449 item 6): 404 to someone with no
+   * link to the School, 403 ACCESS_PAUSED to paused staff and 403
+   * NO_PERMISSION to anyone else connected to it, like the other tag routes. */
   async listTags(callerId: string, schoolId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     const rows = await this.prismaJobs.schoolTag.findMany({
       where: { schoolId },
       select: { id: true, name: true, _count: { select: { students: true } } },
@@ -84,7 +87,7 @@ export class StudentTagsService {
   /** The students with this tag, for the Students list's tag filter. Staff
    * other than the owner get only the students they cover. */
   async taggedStudents(callerId: string, schoolId: string, tagId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     await this.findTag(schoolId, tagId);
     const rows = await this.prismaJobs.studentTag.findMany({ where: { schoolId, tagId }, select: { studentId: true } });
@@ -132,7 +135,7 @@ export class StudentTagsService {
 
   /** The same staff who can edit a student's details, School-wide. */
   private async assertMayManage(callerId: string, schoolId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     await this.tenantAuth.assertStaffMay(callerId, schoolId, 'students');
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
   }

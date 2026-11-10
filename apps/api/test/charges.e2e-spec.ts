@@ -501,7 +501,8 @@ describeIfDb('Staff-created charges and the member balance (Decisions 303, 338, 
     it('another School cannot read or act on them (API and RLS)', async () => {
       const student = await mkStudent('isolated');
       const charge = await createCharge(student.id, { description: 'Belt', amount: 1000 });
-      expect((await as(tokens.otherOwner).get(`/v1/schools/${school.id}/students/${student.id}/charges`)).status).toBe(403);
+      // Decision 448 item 17: no role at this School, so "School not found".
+      expect((await as(tokens.otherOwner).get(`/v1/schools/${school.id}/students/${student.id}/charges`)).status).toBe(404);
       expect((await as(tokens.otherOwner).post(`/v1/schools/${otherSchool.id}/charges/${charge.body.id}/cancel`, { reason: 'x' })).status).toBe(404);
       expect((await as(tokens.otherOwner).post(`/v1/schools/${otherSchool.id}/students/${student.id}/charge-payments`, { amount: 100, paymentMethod: 'CASH' })).status).toBe(400);
 

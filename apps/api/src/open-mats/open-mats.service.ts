@@ -161,10 +161,12 @@ export class OpenMatsService {
     return { items };
   }
 
-  /** PUT /schools/{schoolId}/open-mats/permissions/{userId}. Owner only;
+  /** PUT /schools/{schoolId}/open-mats/permissions/{userId}. The main owner
+   * only (Decision 448 item 6);
    * Branch Staff and coaches only. */
   async setPermission(callerId: string, schoolId: string, userId: string, canStartOpenMat: boolean) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 448 item 6: the main owner only.
+    await this.tenantAuth.assertMaySetStaffSwitches(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const isStaff = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.roleGrant.findFirst({ where: { userId, schoolId, role: { in: [...STAFF_ROLES] }, revokedAt: null }, select: { id: true } }),

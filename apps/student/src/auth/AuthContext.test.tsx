@@ -32,9 +32,20 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   setItem: jest.fn(async () => undefined),
   removeItem: jest.fn(async () => undefined),
 }));
-jest.mock('../lib/queryPersister', () => ({
-  asyncStoragePersister: { removeClient: jest.fn(async () => undefined) },
-}));
+// The saved-screens store, in memory (Decision 451 item 5: keyed by its owner).
+jest.mock('../lib/queryPersister', () => {
+  const saved = new Map<string, string>();
+  return {
+    QUERY_CACHE_KEY: 'ultm8-student-query-cache',
+    asyncStoragePersister: { removeClient: jest.fn(async () => undefined) },
+    queryCacheStorage: {
+      saved,
+      getItem: jest.fn(async (key: string) => saved.get(key) ?? null),
+      setItem: jest.fn(async (key: string, value: string) => void saved.set(key, value)),
+      removeItem: jest.fn(async (key: string) => void saved.delete(key)),
+    },
+  };
+});
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { secureTokenStore } = require('./secureTokenStore') as {
@@ -262,5 +273,92 @@ describe('AuthProvider — first sign-in with a temporary passcode (Decision 371
       expect.objectContaining({ body: { newPasscode: '654321' }, headers: { Authorization: 'Bearer change-token' } }),
     );
     expect(result.current.accessToken).toBe(token);
+  });
+});
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { queryCacheStorage, asyncStoragePersister } = require('../lib/queryPersister') as {
+  queryCacheStorage: { saved: Map<string, string> };
+  asyncStoragePersister: { removeClient: ReturnType<typeof jest.fn> };
+};
+const OWNER_KEY = 'ultm8-student-query-cache-owner';
+
+describe('AuthProvider — saved screens belong to one person (Decision 451 item 5)', () => {
+  beforeEach(() => {
+    secureTokenStore.get.mockReset().mockResolvedValue(null);
+    secureTokenStore.getRefreshToken.mockReset().mockResolvedValue(null);
+    authClient.POST.mockReset();
+    queryCacheStorage.saved.clear();
+    asyncStoragePersister.removeClient.mockClear();
+  });
+
+  afterEach(() => {
+    activeQueryClient?.clear();
+    activeQueryClient = undefined;
+  });
+
+  function signInAs(sub: string) {
+    const token = fakeToken(Math.floor(Date.now() / 1000) + 15 * 60, sub);
+    authClient.POST.mockImplementation((path: string) => {
+      if (path === '/v1/auth/login') return okResponse({ accessToken: token, refreshToken: 'refresh' });
+      throw new Error(`unexpected call: ${path}`);
+    });
+    return token;
+  }
+
+  it('starting with no session (a closed web tab, or signed out) empties the saved screens and forgets whose they were', async () => {
+    queryCacheStorage.saved.set(OWNER_KEY, 'someone-else');
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(asyncStoragePersister.removeClient).toHaveBeenCalled();
+    expect(queryCacheStorage.saved.has(OWNER_KEY)).toBe(false);
+  });
+
+  it('a different person signing in never sees the previous person’s bookings', async () => {
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    // The previous person's screens, as a restore from the device would leave them.
+    activeQueryClient!.setQueryData(['my-bookings'], { items: [{ id: 'theirs' }] });
+    queryCacheStorage.saved.set(OWNER_KEY, 'previous-person');
+    asyncStoragePersister.removeClient.mockClear();
+
+    const token = signInAs('next-person');
+    await act(async () => {
+      await result.current.login('next@example.test', '123456');
+    });
+    expect(result.current.accessToken).toBe(token);
+    expect(activeQueryClient!.getQueryData(['my-bookings'])).toBeUndefined();
+    expect(asyncStoragePersister.removeClient).toHaveBeenCalled();
+    expect(queryCacheStorage.saved.get(OWNER_KEY)).toBe('next-person');
+  });
+
+  it('the same person signing in again keeps their own saved screens', async () => {
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    activeQueryClient!.setQueryData(['my-bookings'], { items: [{ id: 'mine' }] });
+    queryCacheStorage.saved.set(OWNER_KEY, 'same-person');
+    asyncStoragePersister.removeClient.mockClear();
+
+    signInAs('same-person');
+    await act(async () => {
+      await result.current.login('me@example.test', '123456');
+    });
+    expect(activeQueryClient!.getQueryData(['my-bookings'])).toEqual({ items: [{ id: 'mine' }] });
+    expect(asyncStoragePersister.removeClient).not.toHaveBeenCalled();
+  });
+
+  it('signing out empties the saved screens and forgets whose they were', async () => {
+    const token = fakeToken(Math.floor(Date.now() / 1000) + 15 * 60, 'u1');
+    secureTokenStore.get.mockResolvedValue(token);
+    queryCacheStorage.saved.set(OWNER_KEY, 'u1');
+    const { result } = await renderAuth();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    activeQueryClient!.setQueryData(['notifications'], { items: [{ id: 'n1' }] });
+
+    await act(async () => {
+      await result.current.logout();
+    });
+    expect(activeQueryClient!.getQueryData(['notifications'])).toBeUndefined();
+    await waitFor(() => expect(queryCacheStorage.saved.has(OWNER_KEY)).toBe(false));
   });
 });

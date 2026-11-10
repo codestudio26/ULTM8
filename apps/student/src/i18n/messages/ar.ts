@@ -325,6 +325,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "تعذّر تحميل الحجوزات، يُرجى المحاولة مرة أخرى.",
     },
     classRow: {
+      buyPlan: "اشترِ خطة",
       dateRange: "{start} – {end}",
       breakLine: "استراحة {start} – {end}",
       endsNextDay: "تنتهي في اليوم التالي",
@@ -1153,15 +1154,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "رياضة غير معروفة",
       loading: "جارٍ تحميل الحزام…",
       rankError: "تعذّر تحميل تفاصيل الحزام.",
-      rank: "الدرجة {order}",
-      rankWithStripes: {
-        zero: "الدرجة {order} · بلا أشرطة",
-        one: "الدرجة {order} · شريط واحد",
-        two: "الدرجة {order} · شريطان",
-        few: "الدرجة {order} · {count} أشرطة",
-        many: "الدرجة {order} · {count} شريطًا",
-        other: "الدرجة {order} · {count} شريط",
-      },
     },
   },
   transactions: {

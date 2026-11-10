@@ -323,6 +323,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Не удалось загрузить записи — попробуйте ещё раз.",
     },
     classRow: {
+      buyPlan: "Купить абонемент",
       dateRange: "{start} – {end}",
       breakLine: "Перерыв {start} – {end}",
       endsNextDay: "заканчивается на следующий день",
@@ -1125,13 +1126,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Неизвестная дисциплина",
       loading: "Загрузка ранга…",
       rankError: "Не удалось загрузить сведения о ранге.",
-      rank: "Ранг {order}",
-      rankWithStripes: {
-        one: "Ранг {order} · {count} полоска",
-        few: "Ранг {order} · {count} полоски",
-        many: "Ранг {order} · {count} полосок",
-        other: "Ранг {order} · {count} полоски",
-      },
     },
   },
   transactions: {

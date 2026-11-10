@@ -8,6 +8,8 @@ export const auth = {
   verificationCodeLabel: 'Verification code',
   newPasscodeMismatch: 'New passcode and confirmation must match.',
   logIn: 'Log in',
+  /** Decision 451 item 2: a coach or Branch Staff member whose access is paused, at sign-in. */
+  accessPausedTitle: 'Access paused',
   createAccountLink: 'Create an account',
   login: {
     successTitle: 'Successful',

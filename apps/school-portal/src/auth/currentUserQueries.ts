@@ -27,3 +27,14 @@ export function useUpdateCurrentUser() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['currentUser'] }),
   });
 }
+
+/** Decision 451 item 2 (R-1) — the Schools where the caller's own coach or
+ * Branch Staff access is paused (GET /users/me/paused-schools), so sign-in
+ * can say so instead of offering to create a School. */
+export function useMyPausedSchools(options: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: ['myPausedSchools'],
+    queryFn: () => unwrap(apiClient.GET('/v1/users/me/paused-schools', {})),
+    enabled: options.enabled ?? true,
+  });
+}

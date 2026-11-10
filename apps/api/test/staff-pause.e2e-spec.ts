@@ -155,7 +155,7 @@ describeIfDb('Pause and Unpause staff (Decision 390)', () => {
     expect(back.body).toEqual({ userId: staff.id, restoredRoles: 1, closedBranches: [] });
     const restored = await superuser.roleGrant.findUniqueOrThrow({ where: { id: staffGrant.id } });
     expect(restored).toMatchObject({ revokedAt: null, pausedAt: null, pausedById: null, grantedAt: staffGrant.grantedAt });
-    expect((await staffApi.get(`${base}/me/access`)).body).toEqual({ owner: false, mainOwner: false, branchStaff: true, access: custom, cancelCharges: false });
+    expect((await staffApi.get(`${base}/me/access`)).body).toEqual({ owner: false, mainOwner: false, editStudents: custom.students, branchStaff: true, access: custom, cancelCharges: false });
     expect((await list('active')).find((p) => p.userId === staff.id)).toMatchObject({ active: true, paused: false, pausedAt: null });
   });
 

@@ -310,3 +310,62 @@ describe('ClassBookingRow — Sign the waiver', () => {
     expect(screen.queryByText('Sign the waiver')).toBeNull();
   });
 });
+
+/** Decision 449 item 8: a refusal because no plan of theirs covers the class
+ * offers "Buy a plan", opening that School's plans. */
+describe('ClassBookingRow — "Buy a plan"', () => {
+  let book: ReturnType<typeof idleMutation>;
+  const NO_PLAN = () => new ApiError(400, 'NO_ELIGIBLE_MEMBERSHIP', 'This Student has no Active Membership eligible to fund this Booking.');
+
+  beforeEach(() => {
+    mockNavigate.mockClear();
+    book = idleMutation();
+    mocked(bookingQueries.useBookClass).mockReturnValue(book);
+    mocked(bookingQueries.useMyFriendPasses).mockReturnValue({ data: { items: [] } });
+    mocked(waitlistMutations.useMyWaitlist).mockReturnValue({ data: { items: [] } });
+    mocked(waitlistMutations.useJoinWaitlist).mockReturnValue(idleMutation());
+    mocked(waitlistMutations.useWithdrawWaitlist).mockReturnValue(idleMutation());
+  });
+
+  it('shows the plans on the same page when booking finds no plan', async () => {
+    book.mutateAsync.mockRejectedValue(NO_PLAN());
+    const showPlans = jest.fn();
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" onShowPlans={showPlans} />);
+    expect(screen.queryByText('Buy a plan')).toBeNull();
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('None of your plans covers this class. Buy a plan to book it.')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Buy a plan'));
+    expect(showPlans).toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  it('offers it for a used-up Class Pack too, opening the School', async () => {
+    book.mutateAsync.mockRejectedValue(new ApiError(400, 'PACK_USED_UP', 'This Class Pack has no classes left. Buy the same pack to check in.'));
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Buy a plan')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Buy a plan'));
+    expect(mockNavigate).toHaveBeenCalledWith('AcademyDetail', { academyId: 'school-1', name: '' });
+  });
+
+  it("takes a parent to their child's plans at that School", async () => {
+    book.mutateAsync.mockRejectedValue(NO_PLAN());
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" studentId="child-1" childName="Mia" />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(screen.getByText('Buy a plan')).toBeTruthy());
+    await fireEvent.press(screen.getByText('Buy a plan'));
+    expect(mockNavigate).toHaveBeenCalledWith('ChildPlans', { studentId: 'child-1', name: 'Mia', schoolId: 'school-1' });
+  });
+
+  it.each([
+    ['a frozen plan', new ApiError(400, 'MEMBERSHIP_FROZEN', "This membership is frozen, so it can't be used to book or check in until the freeze ends.")],
+    ['a one-off class ticket', new ApiError(400, 'TICKET_REQUIRED', 'This one-off class needs its own ticket.')],
+  ])('is not offered for %s', async (_what, err) => {
+    book.mutateAsync.mockRejectedValue(err);
+    const screen = await render(<ClassBookingRow classItem={classItem} schoolId="school-1" />);
+    await fireEvent.press(screen.getByText('Book'));
+    await waitFor(() => expect(book.mutateAsync).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByText('Book')).toBeTruthy());
+    expect(screen.queryByText('Buy a plan')).toBeNull();
+  });
+});

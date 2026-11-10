@@ -257,23 +257,10 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
   expect(user.addressPostalCode).toBe('NW1 6XE');  await db.user.update({ where: { id: s.newStudent.id }, data: { mustChangePasscode: false } });
 });
 
-test('a coach (non-Owner Staff) can also edit a student\'s profile', async ({ page }) => {
-  // Plain INSTRUCTOR RoleGrant, no grading permission at all — Edit profile is
-  // gated by the backend's assertStaffAtSchool (any Staff role), not by
-  // per-discipline grading permissions, so it must still show.
+test('a coach without "Manage students" can open a student but not edit their profile (Decision 448 item 11)', async ({ page }) => {
   const coach = await addPerson('Cora', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, coach.token);
-  // Decision 430 item 13: gender is locked once the member has signed in, so
-  // this member is one the School added who hasn't yet.
-  await db.user.update({ where: { id: s.student.id }, data: { mustChangePasscode: true } });
   await page.goto(`/students/${s.student.id}`);
-  await page.getByRole('button', { name: 'Edit profile' }).click();
-  await expect(page).toHaveURL(new RegExp(`/students/${s.student.id}/edit$`));
-  await page.getByLabel('Gender').selectOption('FEMALE');
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByText('Profile saved.')).toBeVisible();
-
-  const user = await db.user.findUniqueOrThrow({ where: { id: s.student.id } });
-  expect(user.gender).toBe('FEMALE');
-  await db.user.update({ where: { id: s.student.id }, data: { mustChangePasscode: false } });
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit profile' })).toHaveCount(0);
 });

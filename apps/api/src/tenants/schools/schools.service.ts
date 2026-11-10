@@ -1110,6 +1110,8 @@ export class SchoolsService {
           chargeNoticeDueReminder: dto.chargeNoticeDueReminder,
           // Decision 414 item 4.
           chargeNoticeRefund: dto.chargeNoticeRefund,
+          // Decision 450 item 8: the late saved-card "Payment confirmed".
+          chargeNoticeCardConfirmed: dto.chargeNoticeCardConfirmed,
         },
       }),
     );
@@ -1230,9 +1232,9 @@ export class SchoolsService {
    * profile on their behalf. `PATCH /users/me` (UsersController) is self-service
    * only and obviously can't serve this.
    *
-   * Authorization: any staff member at the School (Owner/Manager, Branch Staff or
-   * Instructor), not only the owner, since editing a Student's contact details is
-   * an ordinary Staff action. Staff other than the owner may edit only the students
+   * Authorization: the School's owners, and Branch Staff the owner granted
+   * "Manage students" (Decision 448 item 11; coaches no longer, unless they are
+   * also such Branch Staff). Staff other than the owner may edit only the students
    * they cover by the Grading Board's branch rule (Decision 341) — see
    * assertStaffCanEditStudent.
    *
@@ -1248,16 +1250,20 @@ export class SchoolsService {
    */
   async updateStudentProfile(callerId: string, schoolId: string, studentId: string, dto: UpdateStudentProfileDto) {
     await this.assertStaffCanEditStudent(callerId, schoolId, studentId);
+    // Decision 448 item 11: editing is for owners and Branch Staff with
+    // "Manage students"; a coach can still open the student, not edit them.
+    await this.tenantAuth.assertMayEditStudentProfiles(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
-    // A birth date that turns a child into an adult, or an adult into a
-    // child, changes whether a Guardian must consent (Decision 67): only the
-    // School owner may make that change (Decision 342).
-    if (dto.dateOfBirth && !(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
+    // Decision 451 item 14: a member's birth date is owner-only. Coaches
+    // with "Manage students" and Branch Staff may change the join date and
+    // the rest of the profile, never the birth date (before, Decision 342
+    // only kept them from moving someone across 18). Sending the birth date
+    // the member already has changes nothing and is allowed, so the edit
+    // form can send the whole profile back.
+    if (dto.dateOfBirth !== undefined && !(await this.tenantAuth.isSchoolOwner(callerId, schoolId))) {
       const current = await this.usersService.getProfileFor(callerId, studentId);
-      const zone = await schoolZone(this.prismaJobs, schoolId);
-      const now = new Date();
-      if (isAdultOn(current.dateOfBirth, now, zone) !== isAdultOn(new Date(dto.dateOfBirth), now, zone)) {
-        throw new ForbiddenException('Only the School owner can change a birth date that makes someone an adult or a child.');
+      if (changedIdentityFields(current, { dateOfBirth: dto.dateOfBirth }).length > 0) {
+        throw new ForbiddenException("Only the School owner can change a member's birth date.");
       }
     }
     // Decision 315 item 4: the join date, checked before anything is saved.
@@ -1360,10 +1366,15 @@ export class SchoolsService {
    * Branch Staff also need the owner's students switch (Decision 387).
    * Enrolment is read under the student's own context, as grading's
    * assertEnrolledStudent does, so a student outside the caller's branches
-   * gets the branch message rather than "not a Student". */
+   * gets the branch message rather than "not a Student".
+   *
+   * Decision 451 item 3 (S-3; Decision 449 item 6): who the caller is comes
+   * first. Someone with no link to the School, or an unknown School, gets 404
+   * School not found; paused staff 403 ACCESS_PAUSED; anyone else connected
+   * to it (a removed coach, a member, a Guardian) 403 NO_PERMISSION
+   * (assertStaffAtSchoolOrNotFound). */
   async assertStaffCanEditStudent(callerId: string, schoolId: string, studentId: string): Promise<void> {
-    await this.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     const enrolled = await this.prismaApp.withTenantContext(studentId, (tx) =>
       tx.roleGrant.findFirst({
         where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null },

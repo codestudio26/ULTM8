@@ -2,6 +2,7 @@ import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/rea
 import { ApiError, unwrap } from '@ultm8/api-client';
 import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
+import { useSchoolCardPayments } from '../schools/schoolQueries';
 import { ALL_PAGES_LIMIT, fetchAllPages } from '../lib/fetchAllPages';
 
 export type MembershipPlanResponse = components['schemas']['MembershipPlanResponseDto'];
@@ -17,20 +18,11 @@ export type UpdateMembershipPlanInput = components['schemas']['UpdateMembershipP
  * School that takes cards, so the desk stays as it was there.
  */
 export function useSchoolTakesNoCards(schoolId: string | null) {
-  const account = useQuery({
-    queryKey: ['school-payment-account', schoolId],
-    queryFn: async () => {
-      try {
-        return await unwrap(apiClient.GET('/v1/schools/{schoolId}/payment-account', { params: { path: { schoolId: schoolId! } } }));
-      } catch (err) {
-        if (err instanceof ApiError && err.status === 404) return null;
-        throw err;
-      }
-    },
-    enabled: !!schoolId,
-  });
+  // Decision 448 item 9: read from GET .../card-payments, which says whether
+  // the School has a payment account at all without showing it.
+  const payments = useSchoolCardPayments(schoolId);
   // Decision 442 item 2: a Stripe account not ready yet takes no cards either.
-  return !!account.data && !account.data.cardPayments;
+  return !!payments.data?.hasPaymentAccount && !payments.data.cardPayments;
 }
 
 /** Every plan of the School, all pages. The API returns 20 a page by

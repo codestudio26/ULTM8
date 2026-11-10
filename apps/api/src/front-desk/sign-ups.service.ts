@@ -199,6 +199,10 @@ export class SignUpsService {
         // contact. Only on this path, a new account, whose fields are all empty;
         // an invited existing account is never changed.
         contacts: walkInContacts(signUp),
+        // Decision 449 item 13: the person signed themselves up on the
+        // tablet, so the 18th-birthday rule of waivers and purchases is the
+        // tablet's (Decision 446 item 8), not the School's date.
+        signedUpOnTablet: true,
       }));
       await this.roleGrants.enrolNewAccount(userId, () => this.schools.join(userId, schoolId, { branchId: branchId ?? undefined }, { notify: false }));
     } catch (err) {

@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
+import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 
 /**
  * Decision 370 — a School's main owner: the live owner grant flagged
@@ -24,12 +25,37 @@ export const MAIN_OWNER_ONLY = {
   message: "Only the School's main owner can add or remove people.",
 } as const;
 
+/** Decision 448 item 6 — the 403 a co-owner gets for setting a staff
+ * member's access switches (the Access window, grading permissions, "Can
+ * manage disciplines", "Can create/cancel charges", "Can start open mat
+ * sessions"): like adding or removing people (Decision 423 item 10), only the
+ * School's main owner sets them. */
+export const STAFF_SWITCHES_MAIN_OWNER_ONLY = {
+  code: 'STAFF_SWITCHES_MAIN_OWNER_ONLY',
+  message: "Only the School's main owner can change what staff are allowed to do.",
+} as const;
+
 /** Decision 425 Q6: coaches have no owner switches, so a coach refused one of
  * the Branch Staff switches' actions is told it isn't for coaches, not that
  * the owner hasn't let them (stress test round 5, PRIV-5). */
 export const NOT_FOR_COACHES = {
   code: 'NOT_FOR_COACHES',
   message: "Coaches can't do this. Ask the School owner.",
+} as const;
+
+/** Decision 449 item 6 — the 403 for a coach or Branch Staff member whose
+ * access to the School is paused (Decision 390), instead of "not found". */
+export const ACCESS_PAUSED = {
+  code: 'ACCESS_PAUSED',
+  message: 'Your access to this School has been paused. Please contact the School owner.',
+} as const;
+
+/** Decision 449 item 6 — the 403 for someone connected to the School (a
+ * member, a Guardian of one of its students, staff without the permission)
+ * trying a page that isn't theirs, instead of "not found". */
+export const NO_PERMISSION = {
+  code: 'NO_PERMISSION',
+  message: "You don't have permission to view this page.",
 } as const;
 
 /**
@@ -189,9 +215,30 @@ export const STAFF_ACCESS_SELECT = {
   canConnectStripe: true,
 } as const;
 
+/** The roles that make someone the School's staff. */
+const STAFF_ROLE_SET: ReadonlySet<Role> = new Set<Role>(['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR']);
+
+/**
+ * Decision 448 item 11 and Decision 449 item 7 — whether someone with these
+ * live roles here (owners aside) may edit a student's profile: Branch Staff
+ * with "Manage students" (StaffAccess.students), or a coach the main owner
+ * gave "Manage students" (canManageStudentsAsCoach, off by default).
+ */
+export function mayEditStudentProfiles(
+  roles: Role[],
+  row: (Parameters<typeof staffAccessFrom>[0] & { canManageStudentsAsCoach?: boolean }) | null | undefined,
+): boolean {
+  if (roles.includes('SCHOOL_OWNER_MANAGER')) return true;
+  if (roles.includes('BRANCH_STAFF') && staffAccessFrom(row).students) return true;
+  return roles.includes('INSTRUCTOR') && !!row?.canManageStudentsAsCoach;
+}
+
 @Injectable()
 export class TenantAuthorizationService {
-  constructor(private readonly prismaApp: PrismaAppService) {}
+  constructor(
+    private readonly prismaApp: PrismaAppService,
+    private readonly prismaJobs: PrismaJobsService,
+  ) {}
 
   /**
    * Throws ForbiddenException unless `userId` currently holds an active
@@ -246,6 +293,188 @@ export class TenantAuthorizationService {
     if (await this.isSchoolMainOwner(userId, schoolId)) return;
     if (await this.isStaffAtSchool(userId, schoolId)) throw new ForbiddenException(MAIN_OWNER_ONLY);
     throw new NotFoundException(notFoundMessage);
+  }
+
+  /**
+   * Decision 448 item 6 — only the School's main owner sets a staff member's
+   * access switches (every per-staff permission: StaffPermission's switches
+   * and GradingPermission). A co-owner gets 403 STAFF_SWITCHES_MAIN_OWNER_ONLY;
+   * anyone who isn't an owner gets assertSchoolOwner's refusal, as before.
+   */
+  async assertMaySetStaffSwitches(userId: string, schoolId: string): Promise<void> {
+    if (await this.isSchoolMainOwner(userId, schoolId)) return;
+    await this.assertSchoolOwner(userId, schoolId);
+    throw new ForbiddenException(STAFF_SWITCHES_MAIN_OWNER_ONLY);
+  }
+
+  /**
+   * Decision 449 item 6 (replacing Decision 448 item 17 for people connected
+   * to the School) — how `userId` is linked to `schoolId`:
+   * - 'staff': holds a live owner, Branch Staff or coach role there;
+   * - 'paused': no live staff role, but a coach or Branch Staff role that is
+   *   paused (Decision 390);
+   * - 'connected': has or had any other role there (a member, a former
+   *   member, removed staff), or is the live Guardian of someone who has or
+   *   had a student role there;
+   * - 'none': no link at all, or no such School.
+   * The caller's own role grants (ended ones too) and Guardian links are read
+   * under their own context (RLS: self only). Whether a ward is a student
+   * there is read on the jobs connection, for those ward ids only. The
+   * answer only ever picks which refusal the caller sees; it grants nothing.
+   */
+  async linkToSchool(userId: string, schoolId: string): Promise<'staff' | 'paused' | 'connected' | 'none'> {
+    if (!UUID_PATTERN.test(schoolId)) return 'none';
+    const { grants, wardIds } = await this.prismaApp.withTenantContext(userId, async (tx) => ({
+      grants: await tx.roleGrant.findMany({ where: { userId, schoolId }, select: { role: true, revokedAt: true, pausedAt: true } }),
+      wardIds: (await tx.guardianLink.findMany({ where: { guardianId: userId, revokedAt: null }, select: { studentId: true } })).map((l) => l.studentId),
+    }));
+    if (grants.some((g) => !g.revokedAt && STAFF_ROLE_SET.has(g.role))) return 'staff';
+    if (grants.some((g) => g.pausedAt)) return 'paused';
+    if (grants.length > 0) return 'connected';
+    if (wardIds.length > 0) {
+      const ward = await this.prismaJobs.roleGrant.findFirst({ where: { userId: { in: wardIds }, schoolId, role: 'STUDENT' }, select: { id: true } });
+      if (ward) return 'connected';
+    }
+    return 'none';
+  }
+
+  /**
+   * Decision 451 item 2 (R-1) — is `userId` linked to `schoolId` only through
+   * a paused coach or Branch Staff role? True when they hold a paused role
+   * there and nothing live: no live role of any kind (staff or member) and no
+   * live Guardian link to someone with a live student role there. Such a
+   * person is told their access is paused on every School page
+   * (PausedAccessInterceptor), instead of each page's own "not found". Someone
+   * still linked another way (a paused coach who is also a member there, or a
+   * Guardian of one) keeps what that link gives them, and the pages that are
+   * staff-only still answer ACCESS_PAUSED through staffRolesOrRefuse.
+   *
+   * The common case (no paused role at the School) is one indexed read of the
+   * caller's own grants on the jobs connection, keyed by the caller's own id;
+   * the rest runs only for someone with a paused role. It grants nothing.
+   */
+  async isPausedOnly(userId: string, schoolId: string): Promise<boolean> {
+    if (!UUID_PATTERN.test(userId) || !UUID_PATTERN.test(schoolId)) return false;
+    const grants = await this.prismaJobs.roleGrant.findMany({
+      where: { userId, schoolId, OR: [{ pausedAt: { not: null } }, { revokedAt: null }] },
+      select: { revokedAt: true, pausedAt: true },
+    });
+    if (!grants.some((g) => g.pausedAt)) return false;
+    if (grants.some((g) => !g.revokedAt)) return false;
+    const wardIds = (await this.prismaJobs.guardianLink.findMany({ where: { guardianId: userId, revokedAt: null }, select: { studentId: true } })).map((l) => l.studentId);
+    if (wardIds.length > 0) {
+      const ward = await this.prismaJobs.roleGrant.findFirst({ where: { userId: { in: wardIds }, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
+      if (ward) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Decision 451 item 2 (R-1) — the Schools where `userId`'s staff access is
+   * paused: a paused coach or Branch Staff role there and no live staff role
+   * (linkToSchool's 'paused'). Only the caller's own grants are read, so the
+   * answer is ids the caller is already linked to; the School Portal uses it
+   * to show "your access has been paused" at sign-in instead of "Create your
+   * School".
+   */
+  async pausedSchoolIds(userId: string): Promise<string[]> {
+    const grants = await this.prismaApp.withTenantContext(userId, (tx) =>
+      tx.roleGrant.findMany({
+        where: { userId, schoolId: { not: null }, OR: [{ pausedAt: { not: null } }, { revokedAt: null, role: { in: [...STAFF_ROLE_SET] } }] },
+        select: { schoolId: true, revokedAt: true, pausedAt: true },
+      }),
+    );
+    const live = new Set(grants.filter((g) => !g.revokedAt).map((g) => g.schoolId));
+    return [...new Set(grants.filter((g) => g.pausedAt && !live.has(g.schoolId)).map((g) => g.schoolId as string))].sort();
+  }
+
+  /**
+   * Decision 449 item 6 — the start of every refusal on a page one of the
+   * owner's switches (or the payments area) guards: someone with no link to
+   * the School, or an unknown School, gets 404 School not found, so ULTM8
+   * never confirms to another business that a School or record exists;
+   * staff whose access is paused get 403 ACCESS_PAUSED; anyone else linked
+   * to the School but not on its staff now (a member, a Guardian) gets 403
+   * NO_PERMISSION. Returns the caller's live staff roles otherwise, for the
+   * caller to give the staff refusal that fits.
+   */
+  async staffRolesOrRefuse(userId: string, schoolId: string): Promise<{ owner: boolean; branchStaff: boolean; coach: boolean }> {
+    const link = await this.linkToSchool(userId, schoolId);
+    if (link === 'none') throw new NotFoundException('School not found');
+    if (link === 'paused') throw new ForbiddenException(ACCESS_PAUSED);
+    if (link === 'connected') throw new ForbiddenException(NO_PERMISSION);
+    const roles = await this.prismaApp.withTenantContext(userId, (tx) =>
+      tx.roleGrant.findMany({ where: { userId, schoolId, role: { in: [...STAFF_ROLE_SET] }, revokedAt: null }, select: { role: true } }),
+    );
+    return {
+      owner: roles.some((g) => g.role === 'SCHOOL_OWNER_MANAGER'),
+      branchStaff: roles.some((g) => g.role === 'BRANCH_STAFF'),
+      coach: roles.some((g) => g.role === 'INSTRUCTOR'),
+    };
+  }
+
+  /** staffRolesOrRefuse, then 403 NO_PERMISSION for the staff too: for a
+   * page the caller's staff role doesn't open either (Decision 449 item 6:
+   * "you don't have permission to view this page"). */
+  async refuseNoPermission(userId: string, schoolId: string): Promise<never> {
+    await this.staffRolesOrRefuse(userId, schoolId);
+    throw new ForbiddenException(NO_PERMISSION);
+  }
+
+  /**
+   * Decision 448 item 9 — who has access to the School's payments area, and
+   * so may read its payment account record (including the Stripe account
+   * id): the School's owners, and Branch Staff with a payments permission:
+   * "Record a payment" (the School's Decision 347 switch), "Can create
+   * charges" (on by default for Branch Staff, Decision 303 item 3), "Can
+   * cancel charges" (Decision 338 item 1) or "Can connect Stripe" (Decision
+   * 442 item 3). Coaches, other staff and members don't.
+   */
+  async mayAccessPayments(userId: string, schoolId: string): Promise<boolean> {
+    return this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF'] }, revokedAt: null },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return true;
+      if (grants.length === 0) return false;
+      const [row, school] = await Promise.all([
+        tx.staffPermission.findUnique({
+          where: { schoolId_userId: { schoolId, userId } },
+          select: { canCreateCharges: true, canCancelCharges: true, canConnectStripe: true },
+        }),
+        tx.school.findUnique({ where: { id: schoolId }, select: { branchStaffCanRecordPayments: true } }),
+      ]);
+      return !!school?.branchStaffCanRecordPayments || (row?.canCreateCharges ?? true) || !!row?.canCancelCharges || !!row?.canConnectStripe;
+    });
+  }
+
+  /**
+   * Decision 448 item 11 — editing a student's profile is for the School's
+   * owners and the Branch Staff the owner granted "Manage students"
+   * (StaffPermission.canManageStudents). Decision 449 item 7: a coach may be
+   * given it too (StaffPermission.canManageStudentsAsCoach, off by default).
+   * A coach without it, who isn't also such Branch Staff, gets 403
+   * NOT_FOR_COACHES; Branch Staff with it off get 403 STAFF_ACCESS_OFF. Only
+   * the switch: the caller's branch cover is checked separately.
+   */
+  async assertMayEditStudentProfiles(userId: string, schoolId: string): Promise<void> {
+    const allowed = await this.prismaApp.withTenantContext(userId, async (tx) => {
+      const grants = await tx.roleGrant.findMany({
+        where: { userId, schoolId, role: { in: ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR'] }, revokedAt: null },
+        select: { role: true },
+      });
+      if (grants.some((g) => g.role === 'SCHOOL_OWNER_MANAGER')) return true;
+      if (grants.length === 0) return false;
+      const row = await tx.staffPermission.findUnique({
+        where: { schoolId_userId: { schoolId, userId } },
+        select: { ...STAFF_ACCESS_SELECT, canManageStudentsAsCoach: true },
+      });
+      return mayEditStudentProfiles(grants.map((g) => g.role), row);
+    });
+    if (!allowed) {
+      await this.refuseStaffSwitch(userId, schoolId, "The School owner hasn't let you edit students' profiles.");
+    }
   }
 
   /** assertSchoolMainOwner as a yes/no. */
@@ -603,19 +832,17 @@ export class TenantAuthorizationService {
   }
 
   /**
-   * Throws the refusal for a Branch Staff switch that is off: 403
-   * STAFF_ACCESS_OFF with `message`, or 403 NOT_FOR_COACHES when the caller
-   * is a coach here and not Branch Staff (Decision 425 Q6: coaches have no
-   * switches, so "the owner hasn't let you" would send them to look for one).
+   * Throws the refusal for a Branch Staff switch that is off. Decision 449
+   * item 6: 404 School not found only to someone with no link to the School
+   * (staffRolesOrRefuse), 403 ACCESS_PAUSED to paused staff, 403
+   * NO_PERMISSION to members and Guardians; to staff, 403 NOT_FOR_COACHES
+   * when the caller is a coach here and not Branch Staff (Decision 425 Q6:
+   * coaches have no switches, so "the owner hasn't let you" would send them
+   * to look for one), else 403 STAFF_ACCESS_OFF with `message`.
    */
   private async refuseStaffSwitch(userId: string, schoolId: string, message: string): Promise<never> {
-    const roles = await this.prismaApp.withTenantContext(userId, (tx) =>
-      tx.roleGrant.findMany({
-        where: { userId, schoolId, role: { in: ['INSTRUCTOR', 'BRANCH_STAFF'] }, revokedAt: null },
-        select: { role: true },
-      }),
-    );
-    if (roles.some((g) => g.role === 'INSTRUCTOR') && !roles.some((g) => g.role === 'BRANCH_STAFF')) {
+    const roles = await this.staffRolesOrRefuse(userId, schoolId);
+    if (roles.coach && !roles.branchStaff) {
       throw new ForbiddenException(NOT_FOR_COACHES);
     }
     throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message });
@@ -736,10 +963,25 @@ export class TenantAuthorizationService {
     }
   }
 
+  /**
+   * assertStaffAtSchool for an endpoint one of the owner's switches can
+   * refuse. Decision 449 item 6 (replacing Decision 448 item 17 for people
+   * connected to the School): someone with no link to the School, or a
+   * School that doesn't exist, gets 404 School not found, as on the roster;
+   * paused staff get 403 ACCESS_PAUSED and the School's members and their
+   * Guardians 403 NO_PERMISSION (staffRolesOrRefuse). Staff whose roles
+   * don't cover `targetBranchId` still get assertStaffAtSchool's 403.
+   */
+  async assertStaffAtSchoolOrNotFound(userId: string, schoolId: string, targetBranchId?: string | null): Promise<void> {
+    if (UUID_PATTERN.test(schoolId) && (await this.isStaffAtSchool(userId, schoolId, targetBranchId))) return;
+    await this.staffRolesOrRefuse(userId, schoolId);
+    await this.assertStaffAtSchool(userId, schoolId, targetBranchId);
+  }
+
   /** assertStaffAtSchool as a yes/no. */
-  async isStaffAtSchool(userId: string, schoolId: string): Promise<boolean> {
+  async isStaffAtSchool(userId: string, schoolId: string, targetBranchId?: string | null): Promise<boolean> {
     try {
-      await this.assertStaffAtSchool(userId, schoolId);
+      await this.assertStaffAtSchool(userId, schoolId, targetBranchId);
       return true;
     } catch (err) {
       if (err instanceof ForbiddenException) return false;

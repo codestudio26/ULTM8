@@ -231,7 +231,8 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
   it('is for the School owner, not coaches, students, other Schools or Branch Staff without the switch', async () => {
     for (const who of ['coach', 'desk', 'student', 'ownerB']) {
       expect([who, (await as(who).get(rates())).status]).toEqual([who, 403]);
-      expect([who, (await as(who).get(report(march))).status]).toEqual([who, 403]);
+      // Decision 448 item 17: ownerB has no role at this School, so the report is "School not found".
+      expect([who, (await as(who).get(report(march))).status]).toEqual([who, who === 'ownerB' ? 404 : 403]);
       expect([who, (await as(who).put(`${rates()}/${users.coach.id}`).send({ hourlyRate: 1, perClassRate: 1 })).status]).toEqual([who, 403]);
     }
   });
@@ -296,8 +297,8 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
       expect(inA).toBeGreaterThan(0);
       expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count({ where: { schoolId: schoolA } }))).toBe(inA);
       expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count())).toBe(inA);
-      // Another School stays closed to them.
-      expect((await as('desk').get(report(march, schoolB))).status).toBe(403);
+      // Another School stays closed to them (no role there: 404, Decision 448 item 17).
+      expect((await as('desk').get(report(march, schoolB))).status).toBe(404);
       expect((await as('desk').get(rates(schoolB))).status).toBe(403);
     });
 
@@ -361,8 +362,8 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
         expect(on.body.rows).toEqual(owner.body.rows);
         expect((await as('desk').put(`${rates()}/${users.coach.id}`).send({ hourlyRate: 1, perClassRate: 1 })).status).toBe(403);
         expect((await as('desk').get(rates())).status).toBe(403);
-        // Another School's setting changes nothing here.
-        expect((await as('desk').get(report(march, schoolB))).status).toBe(403);
+        // Another School's setting changes nothing here (no role there: 404, Decision 448 item 17).
+        expect((await as('desk').get(report(march, schoolB))).status).toBe(404);
       } finally {
         expect((await as('owner').patch(school).send({ payrollStaffSeeRates: false })).status).toBe(200);
       }
@@ -378,7 +379,11 @@ describeIfDb('Payroll report (Decision 320 item 4)', () => {
       // Paused (Decision 390): the role's revokedAt is set.
       await superuser.roleGrant.updateMany({ where: { schoolId: schoolA, userId: users.desk.id }, data: { revokedAt: new Date(), pausedAt: new Date() } });
       try {
-        expect((await as('desk').get(report(march))).status).toBe(403);
+        // Paused: told their access is paused (Decision 449 item 6, replacing
+        // Decision 448 item 17's "School not found" for them).
+        const paused = await as('desk').get(report(march));
+        expect(paused.status).toBe(403);
+        expect(paused.body.error.code).toBe('ACCESS_PAUSED');
         expect(await asUser(users.desk.id, (tx) => tx.staffPayRate.count())).toBe(0);
       } finally {
         await superuser.roleGrant.updateMany({ where: { schoolId: schoolA, userId: users.desk.id }, data: { revokedAt: null, pausedAt: null } });

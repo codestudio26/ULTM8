@@ -258,8 +258,10 @@ export class DataImportsService {
   // ---------------------------------------------------------------------------
 
   private async context(callerId: string, schoolId: string): Promise<ImportContext> {
-    await this.schools.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    // Decision 449 item 6: the switch first, so people connected to the
+    // School are told why (404 only for strangers and an unknown School).
     const { isOwner } = await this.tenantAuth.importScope(callerId, schoolId);
+    await this.schools.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     // Read via ultm8_jobs, after the caller's access check: School settings.
     const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { name: true, timezone: true, ranksToggle: true } });

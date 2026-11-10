@@ -1,0 +1,163 @@
+[
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "School B's owner signs in through the portal login page",
+  "status": "PASS",
+  "evidence": "/"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "pt-BR Dashboard: no \"Connect Stripe\" step; the Pix/cash note shows in Portuguese",
+  "status": "PASS",
+  "evidence": "lang pt-BR; Stripe steps 0; note \"Pagamentos com cartão no app ainda não estão disponíveis no seu país, então os membros pagam em dinheiro ou por transferência bancária (Pix no Brasil) e a equipe confirma.\""
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "pt-BR Notifications: the owner's notices show in Portuguese",
+  "status": "PASS",
+  "evidence": "10 notices; English titles on screen: none"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "pt-BR portal: 14 pages with no raw keys, no untranslated English and no server errors",
+  "status": "PASS",
+  "evidence": "/dashboard /students /staff /membership-plans /membership-plans/new /transactions /payroll /waivers /timetable /cancellations /notifications /school /check-in /front-desk"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "Branch Staff with Payroll open the report in the portal; no pay rates shown",
+  "status": "PASS",
+  "evidence": "coach listed true; rates on page false"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "after the owner turns on \"Show pay rates in the report\", the rates show (read only)",
+  "status": "PASS",
+  "evidence": "rates on page true; editable inputs 0"
+ },
+ {
+  "school": "B",
+  "journey": "2",
+  "step": "payroll page as Branch Staff, raw keys / English",
+  "status": "PASS",
+  "evidence": "none"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "UK Dashboard: the \"Connect Stripe\" step is listed and the no-cards note is not",
+  "status": "PASS",
+  "evidence": "lang en-GB; Stripe steps 1; note 0"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "UK owner's main pages: no raw keys and no server errors",
+  "status": "PASS",
+  "evidence": "clean"
+ },
+ {
+  "school": "A",
+  "journey": "1",
+  "step": "phone width: Dashboard, Payroll and Plans don't scroll sideways",
+  "status": "PASS",
+  "evidence": "none"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "a first visit to a legal page, browser in Portuguese, nothing chosen yet",
+  "status": "NOTE",
+  "evidence": "lang en-GB: \"Terms of Service /  / This page is being prepared. It will be published here before ULTM8 goes\" (the portal follows the language last picked in this browser, not the browser's own)"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "with Portuguese chosen, the five legal pages open without signing in, in Portuguese",
+  "status": "PASS",
+  "evidence": "lang pt-BR; \"Termos de Serviço /  / Esta página está sendo preparada. Ela será publicada aqui ant\""
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "a member the School added signs in to the portal and sees the \"I agree\" step first, in Portuguese",
+  "status": "PASS",
+  "evidence": "lang pt-BR; \"Antes de continuar /  / Para usar o ULTM8, aceite os Termos de Serviço e leia a Política de Privacidade. Você só precisa fazer isso uma vez. /  / Concordo com os Termos\"; raw ; English "
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "ticking it records the acceptance and opens the portal",
+  "status": "PASS",
+  "evidence": "links to the pages 2; acceptance rows 2; now \"Crie sua escola /  / Você se tornará o proprietário/gestor automaticamente. /  / Nome da\""
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "pt-BR plan form (Weekly Pass, step 3): no \"When it ends, switch to\" at a School without cards",
+  "status": "PASS",
+  "evidence": "type WEEKLY_PASS; step 3. Políticas; switch field 0; label \"Ao terminar, mudar para\"; raw ; English "
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "pt-BR Students: searching \"%\" shows nobody and explains symbols can't be used",
+  "status": "PASS",
+  "evidence": "hint shown true; rows 0; \"Oliveira\" listed false"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "pt-BR Transactions: Pix is a payment method here",
+  "status": "PASS",
+  "evidence": "Qualquer, Cartão (Stripe), Dinheiro, Transferência bancária, Pix, Maquininha de cartão"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "pt-BR student page of the monthly member: no raw keys, no English, no server errors",
+  "status": "PASS",
+  "evidence": "clean"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "pt-BR Branch Staff notifications (\"Cash payment waiting\" and the rest) show in Portuguese",
+  "status": "PASS",
+  "evidence": "5 notices; English on screen: none"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "UK School page: the Connect Stripe card shows the account as connected",
+  "status": "PASS",
+  "evidence": "card 1; status \"Connected\""
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "UK Transactions: a \"Card surcharges\" figure, and no Pix anywhere",
+  "status": "PASS",
+  "evidence": "surcharge tile true; methods Any, Card (Stripe), Cash, Bank transfer, Card terminal"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "UK plan form (Weekly Pass, step 3) keeps \"When it ends, switch to\" (the School takes cards)",
+  "status": "PASS",
+  "evidence": "type WEEKLY_PASS; switch field 1"
+ },
+ {
+  "school": "A",
+  "journey": "8",
+  "step": "pt-BR: the card surcharge tile on Transactions is translated",
+  "status": "PASS",
+  "evidence": "lang pt-BR; tile \"Taxas de cartão\" shown true; raw ; English ; reports page clean"
+ }
+]

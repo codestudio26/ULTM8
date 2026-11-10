@@ -85,9 +85,9 @@ export class PlanWaitlistService {
    * and their place on its waiting list. */
   async availability(callerId: string, schoolId: string, studentId?: string) {
     const memberId = await this.memberFor(callerId, studentId);
-    return this.prismaApp.withTenantContext(memberId, async (tx) => {
+    const result = await this.prismaApp.withTenantContext(memberId, async (tx) => {
       const enrolled = await tx.roleGrant.findFirst({ where: { userId: memberId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
-      if (!enrolled) throw new NotFoundException('School not found');
+      if (!enrolled) return null;
       const plans = await tx.membershipPlan.findMany({
         where: { schoolId, memberLimit: { not: null }, archivedAt: null, visible: true },
         select: { id: true, memberLimit: true },
@@ -102,6 +102,13 @@ export class PlanWaitlistService {
       }
       return { items };
     });
+    if (result) return result;
+    // Decision 451 item 7 (S-2; Decision 449 item 6): the member isn't
+    // enrolled here. Someone with no link to the School, or an unknown
+    // School, gets 404 School not found as before; the School's own coach or
+    // staff, a former member or a Guardian 403 NO_PERMISSION, paused staff
+    // 403 ACCESS_PAUSED.
+    return this.tenantAuth.refuseNoPermission(callerId, schoolId);
   }
 
   private async view(

@@ -609,6 +609,16 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       }
       // Only the owner changes it.
       expect((await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokens.staffA}`).send({ chargeNoticeRefund: false })).status).toBe(403);
+
+      // Decision 450 item 8: the late saved-card "Payment confirmed" has its
+      // own switch, on by default, set by the owner only, leaving the others.
+      const before = await su.school.findUniqueOrThrow({ where: { id: school.id } });
+      expect(before.chargeNoticeCardConfirmed).toBe(true);
+      const cardOff = await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokens.owner}`).send({ chargeNoticeCardConfirmed: false });
+      expect(cardOff.status).toBe(200);
+      expect(cardOff.body).toMatchObject({ chargeNoticeCardConfirmed: false, chargeNoticeRefund: true, chargeNoticeReceipt: before.chargeNoticeReceipt });
+      await setSchool({ chargeNoticeCardConfirmed: true });
+      expect((await http().patch(`/v1/schools/${school.id}`).set('Authorization', `Bearer ${tokens.staffA}`).send({ chargeNoticeCardConfirmed: false })).status).toBe(403);
     });
   });
 
@@ -695,7 +705,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       const scopedOverview = await as(staffToken).get(`/v1/schools/${r.id}/charge-reports/overview`);
       expect(scopedOverview.body.currencies[0]).toMatchObject({ scheduled: 3000, overdue: 5000, paid: 3000 });
       expect((await as(coachToken).get(`/v1/schools/${r.id}/charge-reports/overview`)).status).toBe(403);
-      expect((await as(tokens.owner).get(`/v1/schools/${r.id}/charge-reports/overview`)).status).toBe(403);
+      // Decision 448 item 17: another School's owner has no role here: 404.
+      expect((await as(tokens.owner).get(`/v1/schools/${r.id}/charge-reports/overview`)).status).toBe(404);
       expect((await as(tokens.north).get(`/v1/schools/${r.id}/charge-reports/member-balances`)).status).toBe(403);
     });
 
@@ -753,7 +764,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       // Counted: a plan bought (North), a renewal partly refunded (North, 100 − 25),
       // a Class Pack sold at the desk with its currency in lower case (South),
       // last month's renewal (North), and a late-cancellation fee and a freeze
-      // fee (North; Decision 415 item 2).
+      // fee (North; Decision 415 item 2), which are their own "Fees" line
+      // (Decision 449 item 10), not memberships.
       await row({ studentId: north.id, amount: 10000 });
       await row({ studentId: north.id, amount: 10000, kind: 'RENEWAL', refundedAmount: 2500 });
       await row({ studentId: south.id, amount: 6000, planId: pack.id, currency: 'brl' });
@@ -786,15 +798,15 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect(overview.status).toBe(200);
       expect(overview.body.currencies.map((c: { currency: string }) => c.currency)).toEqual(['BRL', 'USD']);
       const [brl, usd] = overview.body.currencies;
-      expect(brl).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 27700, total: 31700 });
-      expect(brl.revenueByMonth[2]).toEqual({ month: thisMonth, received: 5000, refunded: 1000, net: 4000, memberships: 24700, surcharges: 0, total: 28700 });
-      expect(brl.revenueByMonth[1]).toMatchObject({ received: 0, net: 0, memberships: 3000, total: 3000 });
+      expect(brl).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 26500, fees: 1200, total: 31700 });
+      expect(brl.revenueByMonth[2]).toEqual({ month: thisMonth, received: 5000, refunded: 1000, net: 4000, memberships: 23500, fees: 1200, surcharges: 0, total: 28700 });
+      expect(brl.revenueByMonth[1]).toMatchObject({ received: 0, net: 0, memberships: 3000, fees: 0, total: 3000 });
       expect(brl.revenueByMonth[0]).toMatchObject({ memberships: 0, total: 0 });
-      expect(usd).toMatchObject({ currency: 'USD', scheduled: 0, overdue: 0, paid: 0, memberships: 1500, total: 1500 });
+      expect(usd).toMatchObject({ currency: 'USD', scheduled: 0, overdue: 0, paid: 0, memberships: 1500, fees: 0, total: 1500 });
 
       // One month: last month's renewal is outside it.
       const oneMonth = await as(ownerToken).get(`/v1/schools/${r.id}/charge-reports/overview?months=1`);
-      expect(oneMonth.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 24700, total: 28700 });
+      expect(oneMonth.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 23500, fees: 1200, total: 28700 });
 
       // Branch Staff (North only, once they may take payments): North's memberships, no South, no USD.
       await su.school.update({ where: { id: r.id }, data: { branchStaffCanRecordPayments: true } });
@@ -802,15 +814,16 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect(scoped.status).toBe(200);
       expect(scoped.body.wholeSchool).toBe(false);
       expect(scoped.body.currencies).toHaveLength(1);
-      expect(scoped.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 21700, total: 25700 });
-      expect(scoped.body.currencies[0].revenueByMonth[2]).toMatchObject({ net: 4000, memberships: 18700, total: 22700 });
+      expect(scoped.body.currencies[0]).toMatchObject({ currency: 'BRL', paid: 4000, memberships: 20500, fees: 1200, total: 25700 });
+      expect(scoped.body.currencies[0].revenueByMonth[2]).toMatchObject({ net: 4000, memberships: 17500, fees: 1200, total: 22700 });
 
       // The other School sees only its own membership.
       const xOwner = await mkUser('revenueOtherOwner');
       await su.roleGrant.create({ data: { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: xOwner.id, schoolId: x.id, isMainOwner: true } });
       const xView = await as(sign(xOwner, 'SCHOOL_OWNER_MANAGER', x.id)).get(`/v1/schools/${x.id}/charge-reports/overview?months=3`);
       expect(xView.body.currencies).toEqual([expect.objectContaining({ currency: 'BRL', paid: 0, memberships: 99999, total: 99999 })]);
-      expect((await as(ownerToken).get(`/v1/schools/${x.id}/charge-reports/overview`)).status).toBe(403);
+      // Decision 448 item 17: no role at that School: 404.
+      expect((await as(ownerToken).get(`/v1/schools/${x.id}/charge-reports/overview`)).status).toBe(404);
     });
   });
 
@@ -889,7 +902,8 @@ describeIfDb('Charges step 4: refunds, credit, reports and notices (backlog 3.6)
       expect(rows).toHaveLength(2);
       expect(rows[1].body).toBe(rows[0].body);
       expect((await as(tokens.coachA).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(403);
-      expect((await as(tokens.otherOwner).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(403);
+      // Decision 448 item 17: another School's owner has no role here: 404.
+      expect((await as(tokens.otherOwner).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(404);
       await as(tokens.owner).post(`/v1/schools/${school.id}/charges/${c.id}/cancel`, { reason: 'Mistake' });
       expect((await as(tokens.owner).post(`/v1/schools/${school.id}/charges/${c.id}/resend-invoice`)).status).toBe(409);
     });

@@ -10,7 +10,7 @@ import { CreatePaymentAccountDto } from './dto/create-payment-account.dto';
 import { CancelTransactionDto } from './dto/cancel-transaction.dto';
 import { RefundDeskSaleDto, RefundDeskSaleResponseDto } from './dto/refund-desk-sale.dto';
 import { DeskSaleRefundsService } from './desk-sale-refunds.service';
-import { ConnectOnboardingResponseDto, ConnectStatusResponseDto, PaymentAccountResponseDto } from './dto/payment-account-response.dto';
+import { CardPaymentsResponseDto, ConnectOnboardingResponseDto, ConnectStatusResponseDto, PaymentAccountResponseDto } from './dto/payment-account-response.dto';
 import { PaymentMethodResponseDto, SetupSessionResponseDto } from './dto/payment-method-response.dto';
 
 // PaymentAccount CRUD + Stripe Connect Express onboarding + webhook receiving only
@@ -52,6 +52,17 @@ export class PaymentsController {
   @Get('schools/:schoolId/payment-account')
   findForSchool(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
     return this.paymentsService.findForSchool(user.sub, schoolId);
+  }
+
+  /** Decision 448 item 9 — whether members can pay by card here, for anyone
+   * with a role at the School: the payment account record itself is for the
+   * payments area only (GET .../payment-account). */
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOkResponse({ type: CardPaymentsResponseDto })
+  @Get('schools/:schoolId/card-payments')
+  getSchoolCardPayments(@CurrentUser() user: JwtPayload, @Param('schoolId') schoolId: string) {
+    return this.paymentsService.cardPaymentsForSchool(user.sub, schoolId);
   }
 
   /** Decision 441 item 6 — Connected / Action needed / Not connected, for the

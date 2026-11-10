@@ -708,6 +708,22 @@ export interface paths {
         patch: operations["RoleGrantsController_updateStaffDetails"];
         trace?: never;
     };
+    "/v1/users/me/paused-schools": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RoleGrantsController_myPausedSchools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/schools/{schoolId}/staff/me/access": {
         parameters: {
             query?: never;
@@ -733,6 +749,22 @@ export interface paths {
         };
         get?: never;
         put: operations["RoleGrantsController_setStaffAccess"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/staff/{userId}/coach-access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RoleGrantsController_setCoachAccess"];
         post?: never;
         delete?: never;
         options?: never;
@@ -876,6 +908,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["FranchisesController_findSchools"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/franchises/{id}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchisesController_overview"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1980,6 +2028,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["PaymentsController_findForSchool"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/schools/{schoolId}/card-payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PaymentsController_getSchoolCardPayments"];
         put?: never;
         post?: never;
         delete?: never;
@@ -7942,6 +8006,8 @@ export interface components {
             chargeNoticeDueReminder?: boolean;
             /** @description Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on). */
             chargeNoticeRefund?: boolean;
+            /** @description Decision 450 item 8: tell the member "Payment confirmed" when a saved-card purchase is confirmed after the purchase screen (default on). */
+            chargeNoticeCardConfirmed?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -8088,6 +8154,8 @@ export interface components {
             chargeNoticeDueReminder: boolean;
             /** @description Decisions 414 and 415 item 4: "Refund" notices to the member, for every refund (default on). */
             chargeNoticeRefund: boolean;
+            /** @description Decision 450 item 8: the late "Payment confirmed" notice for a saved-card purchase (default on). */
+            chargeNoticeCardConfirmed: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 317 item 7: weeks without a check-in before staff get an absence alert. Null: off. */
@@ -8250,6 +8318,8 @@ export interface components {
             chargeNoticeDueReminder?: boolean;
             /** @description Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on). */
             chargeNoticeRefund?: boolean;
+            /** @description Decision 450 item 8: tell the member "Payment confirmed" when a saved-card purchase is confirmed after the purchase screen (default on). */
+            chargeNoticeCardConfirmed?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -8976,6 +9046,10 @@ export interface components {
             /** @description Import members, memberships and past attendance from a spreadsheet, for their branches (off by default; Decision 315 items 12, 13). */
             importData: boolean;
         };
+        CoachAccessDto: {
+            /** @description Manage students: edit the profiles of their branches' students (off by default; Decision 449 item 7). */
+            manageStudents: boolean;
+        };
         StaffRoleDto: {
             /** @description The RoleGrant id — what DELETE /users/{userId}/role-grants/{id} takes. */
             grantId: string;
@@ -9016,6 +9090,8 @@ export interface components {
             workPhone?: string | null;
             /** @description Decision 387: their access switches, for active or paused Branch Staff in the owner's view; null otherwise. */
             access?: components["schemas"]["StaffAccessDto"] | null;
+            /** @description Decision 449 item 7: a coach's own switch, for active or paused coaches in the owner's view; null otherwise. */
+            coachAccess?: components["schemas"]["CoachAccessDto"] | null;
             /** @description Active roles first, then ended ones, newest first. */
             roles: components["schemas"]["StaffRoleDto"][];
         };
@@ -9032,11 +9108,17 @@ export interface components {
             displayName?: string | null;
             workPhone?: string | null;
         };
+        MyPausedSchoolsResponseDto: {
+            /** @description The Schools where the caller's coach or Branch Staff access is paused and they hold no live staff role. */
+            schoolIds: string[];
+        };
         MyStaffAccessResponseDto: {
             /** @description School Owner/Manager: every switch is on, by role. */
             owner: boolean;
-            /** @description The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10). False for co-owners and everyone else. */
+            /** @description The School's main owner (Decision 370), the only person who may add or remove co-owners, coaches and Branch Staff (Decision 423 item 10) and set staff access switches and grading permissions (Decision 448 item 6). False for co-owners and everyone else. */
             mainOwner: boolean;
+            /** @description Decision 448 item 11 — may edit students' profiles: owners, Branch Staff with the students switch ("Manage students"), and (Decision 449 item 7) coaches the main owner gave "Manage students". False for other coaches, whatever `access.students` says. */
+            editStudents: boolean;
             /** @description Holds an active Branch Staff role here. */
             branchStaff: boolean;
             /** @description What the caller may do. An Instructor's own role gives bookings and students. */
@@ -9047,6 +9129,10 @@ export interface components {
         StaffAccessResponseDto: {
             userId: string;
             access: components["schemas"]["StaffAccessDto"];
+        };
+        CoachAccessResponseDto: {
+            userId: string;
+            coachAccess: components["schemas"]["CoachAccessDto"];
         };
         StaffActivityEntryDto: {
             id: string;
@@ -9218,6 +9304,81 @@ export interface components {
         FranchiseMemberSchoolListResponseDto: {
             items: components["schemas"]["FranchiseMemberSchoolResponseDto"][];
             nextCursor?: string | null;
+        };
+        FranchiseOverviewMonthDto: {
+            /** @description The month, YYYY-MM (each School's months are in its own time zone). */
+            month: string;
+            /** @description Check-ins (members and Friend Pass guests) at classes that started this month, up to now, as Students → Attendance counts them. */
+            checkIns: number;
+            /** @description Students whose join date at the School falls in this month, as Students → Growth counts them. */
+            newStudents: number;
+            /** @description Students whose Subscription ended by cancellation this month, up to now, as Students → Growth counts them. */
+            cancelled: number;
+        };
+        FranchiseOverviewRevenueMonthDto: {
+            /** @description The month, YYYY-MM. */
+            month: string;
+            /** @description Memberships: what was kept of plan purchases and renewals (minor units). */
+            memberships: number;
+            /** @description Charges: paid toward charges, less money given back (minor units). */
+            charges: number;
+            /** @description Fees: late-cancellation, freeze and no-show fees kept (minor units). */
+            fees: number;
+            /** @description Card surcharges kept (minor units). */
+            surcharges: number;
+            /** @description memberships + charges + fees + surcharges: the billing overview's "Total revenue". */
+            total: number;
+        };
+        FranchiseOverviewRevenueDto: {
+            /** @description ISO currency code. Different currencies are never added together. */
+            currency: string;
+            /** @description The last 12 months added up (minor units). */
+            memberships: number;
+            charges: number;
+            fees: number;
+            surcharges: number;
+            total: number;
+            /** @description Each month, oldest first. */
+            byMonth: components["schemas"]["FranchiseOverviewRevenueMonthDto"][];
+        };
+        FranchiseOverviewTotalsDto: {
+            /** @description Enrolled students now (an active student role at the School). */
+            enrolledStudents: number;
+            /** @description Active students now: the Dashboard's and Growth's count (Decision 317 item 5, Decision 422 item 5). */
+            activeStudents: number;
+            /** @description Check-ins over the last 30 days, as Students → Attendance counts them. */
+            checkInsLast30Days: number;
+            /** @description The last 12 months, oldest first. */
+            months: components["schemas"]["FranchiseOverviewMonthDto"][];
+            /** @description Revenue over the last 12 months, one entry per currency, by currency code. */
+            revenue: components["schemas"]["FranchiseOverviewRevenueDto"][];
+        };
+        FranchiseOverviewSchoolDto: {
+            /** @description Enrolled students now (an active student role at the School). */
+            enrolledStudents: number;
+            /** @description Active students now: the Dashboard's and Growth's count (Decision 317 item 5, Decision 422 item 5). */
+            activeStudents: number;
+            /** @description Check-ins over the last 30 days, as Students → Attendance counts them. */
+            checkInsLast30Days: number;
+            /** @description The last 12 months, oldest first. */
+            months: components["schemas"]["FranchiseOverviewMonthDto"][];
+            /** @description Revenue over the last 12 months, one entry per currency, by currency code. */
+            revenue: components["schemas"]["FranchiseOverviewRevenueDto"][];
+            schoolId: string;
+            name: string;
+            /**
+             * Format: date-time
+             * @description Set when the School has been closed.
+             */
+            archivedAt: string | null;
+            /** @description The time zone the School's months and days are in (UTC when it has none). */
+            timeZone: string;
+        };
+        FranchiseOverviewResponseDto: {
+            /** @description Every member School added up; revenue per currency. A month's figures add up each School's own month of that name. */
+            totals: components["schemas"]["FranchiseOverviewTotalsDto"];
+            /** @description The Schools that are members of the Franchise now, by name. */
+            schools: components["schemas"]["FranchiseOverviewSchoolDto"][];
         };
         FranchiseJoinRequestListResponseDto: {
             items: components["schemas"]["FranchiseJoinRequestResponseDto"][];
@@ -9971,6 +10132,12 @@ export interface components {
             cardPayments: boolean;
             createdAt: string;
             updatedAt: string;
+        };
+        CardPaymentsResponseDto: {
+            /** @description Whether the School has set up a payment account (any provider). */
+            hasPaymentAccount: boolean;
+            /** @description Decision 442 item 2 — whether members can pay by card: a Stripe account that is connected and that Stripe says is ready. The same value as the payment account's cardPayments, for people who may not read the account itself. */
+            cardPayments: boolean;
         };
         ConnectStatusResponseDto: {
             /** @enum {string} */
@@ -15194,11 +15361,13 @@ export interface components {
             refunded: number;
             /** @description Charges revenue that month: received − refunded. */
             net: number;
-            /** @description Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received). */
+            /** @description Membership revenue that month (Decision 414 item 3): Successful and Refunded payments (Decision 446 item 4) for plans bought in the app or sold at the desk, and Subscription renewals, by billing date, less what was refunded on them. Payments toward charges are not in it (they are in received), nor are fees (Decision 449 item 10, fees). */
             memberships: number;
-            /** @description Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received or memberships, which are the price of what was sold. */
+            /** @description Decision 449 item 10: fee revenue that month: late-cancellation, freeze and no-show fees, counted as memberships are (Successful and Refunded payments by billing date, less what was refunded on them, the card surcharge apart). */
+            fees: number;
+            /** @description Decision 448 item 1: card surcharges kept that month (Decision 406), from payments of every kind (memberships, fees, payments toward charges), by billing date. Not in received, memberships or fees, which are the price of what was sold. */
             surcharges: number;
-            /** @description net + memberships + surcharges. */
+            /** @description net + memberships + fees + surcharges. */
             total: number;
         };
         ChargeOverviewCurrencyDto: {
@@ -15211,9 +15380,11 @@ export interface components {
             paid: number;
             /** @description Membership revenue over the months covered (the sum of memberships by month). */
             memberships: number;
+            /** @description Decision 449 item 10: fee revenue over the months covered (the sum of fees by month). */
+            fees: number;
             /** @description Card surcharges over the months covered (the sum of surcharges by month). */
             surcharges: number;
-            /** @description Total revenue over the months covered: paid + memberships + surcharges. */
+            /** @description Total revenue over the months covered: paid + memberships + fees + surcharges. */
             total: number;
             /** @description Oldest month first. */
             revenueByMonth: components["schemas"]["ChargeRevenueMonthDto"][];
@@ -16808,6 +16979,25 @@ export interface operations {
             };
         };
     };
+    RoleGrantsController_myPausedSchools: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyPausedSchoolsResponseDto"];
+                };
+            };
+        };
+    };
     RoleGrantsController_myStaffAccess: {
         parameters: {
             query?: never;
@@ -16851,6 +17041,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StaffAccessResponseDto"];
+                };
+            };
+        };
+    };
+    RoleGrantsController_setCoachAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoachAccessDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoachAccessResponseDto"];
                 };
             };
         };
@@ -17136,6 +17352,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseMemberSchoolListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseOverviewResponseDto"];
                 };
             };
         };
@@ -18859,6 +19096,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaymentAccountResponseDto"];
+                };
+            };
+        };
+    };
+    PaymentsController_getSchoolCardPayments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                schoolId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardPaymentsResponseDto"];
                 };
             };
         };

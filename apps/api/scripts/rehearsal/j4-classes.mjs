@@ -1,7 +1,7 @@
 // Journey 4: booking, the class waitlist and the plan's member limit; check-in
 // (QR and desk); attendance; a promotion; a freeze; a refund or cancel.
 import { call, must, journey, check, ok, step, signUp, signIn, FAKE_STRIPE, stripeWebhook, runJob, db, days } from './lib.mjs';
-import { buy, joinSchool } from './j3-members.mjs';
+import { buy, joinSchool, monthlyWithoutCards } from './j3-members.mjs';
 
 const waitFor = async (fn, ms = 20000) => { const end = Date.now() + ms; for (;;) { const v = await fn(); if (v || Date.now() > end) return v; await new Promise((r) => setTimeout(r, 300)); } };
 const items = (b) => b?.items ?? (Array.isArray(b) ? b : []);
@@ -144,12 +144,17 @@ export async function j4Classes(s) {
   }
 
   // --- The plan that switches to another when it ends (Decision 435 item 9) ---
-  await step('a member agrees to switch plans when buying; the switch job runs', async () => {
+  if (c.cards) await step('a member agrees to switch plans when buying; the switch job runs', async () => {
     const p = await signUp({ first: c.key === 'B' ? 'Rita' : 'Noah', last: c.key === 'B' ? 'Alves' : 'Green', dob: '1992-02-02', country: c.country, language: c.language, currency: c.currency });
     await joinSchool(s, p); await signIn(p);
     const r = await buy(s, p, s.plans.week.id, { agreeToPlanSwitch: true });
     if (!c.cards) await must('confirm', 'PATCH', `/transactions/${r.transactionId}/confirm`, O(), {});
     let m = await db.membership.findFirst({ where: { studentId: p.id, membershipPlanId: s.plans.week.id } });
+    if (!c.cards) {
+      // Decision 441 item 3: hidden and ignored where the School takes no cards.
+      ok('at a School without cards the plan has no switch and the member\'s "agree" is ignored', !m?.switchToPlanId && !m?.switchAgreedAt && !s.plans.week.switchToPlanId, `membership switch ${m?.switchToPlanId ?? 'none'}, agreed ${m?.switchAgreedAt ?? 'no'}`);
+      return p;
+    }
     ok('the membership remembers the agreed switch', !!m?.switchAgreedAt && m.switchToPlanId === s.plans.next.id, `switch to ${m?.switchToPlanId === s.plans.next.id ? s.plans.next.title : m?.switchToPlanId}, agreed ${m?.switchAgreedAt?.toISOString()}`);
     // "Later": 3 days before the end, then just after it (the hourly job).
     await db.membership.update({ where: { id: m.id }, data: { expiryDate: new Date(Date.now() + days(3)) } });
@@ -169,6 +174,21 @@ export async function j4Classes(s) {
       `outcome ${m.switchOutcome}; next plan ${next ? 'started' : 'not started'}; charges ${charged}; last notice "${told[0]?.title}"`);
     return p;
   });
+
+  if (!c.cards && s.plans.subNoCards && s.extra && s.parent) await monthlyWithoutCards(s, s.extra, s.parent);
+
+  // Decision 448 item 1: the card surcharge is its own revenue line.
+  if (c.cards) {
+    const sum = await call('GET', `/schools/${sid}/transactions/summary`, O());
+    const rows = await db.transaction.findMany({ where: { schoolId: sid, status: { in: ['SUCCESSFUL', 'REFUNDED'] } } });
+    const kept = rows.reduce((n, t) => n + t.amount + (t.surchargeAmount ?? 0) - (t.refundedAmount ?? 0), 0);
+    const rev = sum.body?.revenue?.find?.((x) => x.currency === c.currency)?.amount ?? null;
+    const sur = sum.body?.surcharges?.find?.((x) => x.currency === c.currency)?.amount ?? null;
+    ok('Transactions: revenue and card surcharges are separate lines that add up to what was kept', sum.status === 200 && sur > 0 && rev + sur === kept, `revenue ${rev}, surcharges ${sur}, kept in the ledger ${kept}`);
+    const ov = await call('GET', `/schools/${sid}/charge-reports/overview`, O());
+    const cur = ov.body?.currencies?.find?.((x) => x.currency === c.currency);
+    ok('the billing overview shows the card surcharges as their own figure', ov.status === 200 && cur?.surcharges === sur && cur?.total === cur?.memberships + (cur?.fees ?? 0) + cur?.surcharges + (cur?.net ?? cur?.paid ?? 0), `${ov.status} memberships ${cur?.memberships}, fees ${cur?.fees}, surcharges ${cur?.surcharges}, total ${cur?.total}`);
+  }
 
   if (c.cards && s.plans.sub) {
     // A Subscription, then cancel at period end (member side).

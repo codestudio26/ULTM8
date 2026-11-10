@@ -443,6 +443,11 @@ export class CreateSchoolDto {
   @IsBoolean()
   chargeNoticeRefund?: boolean;
 
+  @ApiPropertyOptional({ description: 'Decision 450 item 8: tell the member "Payment confirmed" when a saved-card purchase is confirmed after the purchase screen (default on).' })
+  @IsOptional()
+  @IsBoolean()
+  chargeNoticeCardConfirmed?: boolean;
+
   @ApiPropertyOptional({
     type: [String],
     nullable: true,

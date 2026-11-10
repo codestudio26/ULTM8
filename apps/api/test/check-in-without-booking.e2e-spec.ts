@@ -319,8 +319,8 @@ describeIfDb('Check-in without a booking (Decision 422 item 2)', () => {
     const there = await setRules('otherOwner', elsewhere.id, { requireBooking: false });
     expect(there.body.requireBooking).toBe(false);
     expect((await as('owner').get(rulesUrl())).body.requireBooking).toBe(true);
-    // The other School's owner can't change this School's rules.
-    expect((await as('otherOwner').put(rulesUrl()).send({ ...there.body, requireBooking: false })).status).toBe(403);
+    // The other School's owner can't change this School's rules: no role here, so 404 (Decision 448 item 17).
+    expect((await as('otherOwner').put(rulesUrl()).send({ ...there.body, requireBooking: false })).status).toBe(404);
 
     const otherPlan = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: elsewhere.id, type: 'SUBSCRIPTION', title: 'Other unlimited', price: 5000 } });
     await subscription('ivy', elsewhere.id, otherPlan.id);

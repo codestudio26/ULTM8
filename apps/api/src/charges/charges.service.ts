@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { assertAccountNotClosing } from '../account-deletion/account-closing';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
@@ -159,12 +160,12 @@ export class ChargesService {
     const can = await this.abilities(callerId, schoolId, studentId);
     const allowed = what === 'read' ? can.create || can.cancel || can.recordPayment : can[what];
     if (allowed) return can;
+    // Decision 449 item 6: 404 only for someone with no link to the School;
+    // paused staff, members and Guardians are told why.
+    const roles = await this.tenantAuth.staffRolesOrRefuse(callerId, schoolId);
     if (what === 'recordPayment') {
       // Decision 347's own wording, as for a membership sold at the desk.
-      const staff = await this.prismaApp.withTenantContext(callerId, (tx) =>
-        tx.roleGrant.findFirst({ where: { userId: callerId, schoolId, role: 'BRANCH_STAFF', revokedAt: null }, select: { id: true } }),
-      );
-      throw new ForbiddenException(staff ? 'The School owner has not let Branch Staff record payments.' : "Only that School's Owner/Manager may perform this action.");
+      throw new ForbiddenException(roles.branchStaff ? 'The School owner has not let Branch Staff record payments.' : "Only that School's Owner/Manager may perform this action.");
     }
     const message = {
       create: "The School owner hasn't let you create charges.",
@@ -212,6 +213,9 @@ export class ChargesService {
     await this.assertMay(callerId, schoolId, studentId, 'create');
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     await this.subscriptionGate.assertNotDegraded(callerId, schoolId);
+    // Decision 448 item 7: no new charge for a member whose deletion is
+    // pending, as for a desk sale (Decision 440 item 6).
+    await assertAccountNotClosing(this.prismaJobs, studentId);
     const isStudent = await this.prismaJobs.roleGrant.findFirst({ where: { userId: studentId, schoolId, role: 'STUDENT', revokedAt: null }, select: { id: true } });
     if (!isStudent) {
       throw new BadRequestException({ code: 'CHARGE_NOT_A_STUDENT', message: 'Charges can only be created for a current student of this School.' });
@@ -894,11 +898,13 @@ export class ChargesService {
     return { items };
   }
 
-  /** PUT /schools/{schoolId}/charge-permissions/{userId}. Owner only; Branch
+  /** PUT /schools/{schoolId}/charge-permissions/{userId}. The main owner only
+   * (Decision 448 item 6); Branch
    * Staff and coaches only. Logged on the Staff page's activity log
    * (Decision 408), one line listing each switch that changed. */
   async setPermission(callerId: string, schoolId: string, userId: string, dto: SetChargePermissionDto) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 448 item 6: the main owner only.
+    await this.tenantAuth.assertMaySetStaffSwitches(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const before = (await this.listPermissions(callerId, schoolId)).items.find((i) => i.userId === userId);
     if (!before) {

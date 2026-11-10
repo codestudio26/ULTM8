@@ -335,13 +335,17 @@ describeIfDb('Card payments wait for a ready Stripe account; who may connect Str
       expect(await su.paymentAccount.findUniqueOrThrow({ where: { schoolId: s.schoolId } })).toMatchObject({ provider: 'BANK_TRANSFER' });
     });
 
-    it('co-owners connect as the main owner does, and may give the switch; coaches, members, other Schools and their staff cannot connect', async () => {
+    it('co-owners connect as the main owner does; only the main owner gives the switch; coaches, members, other Schools and their staff cannot connect', async () => {
       const s = await school();
       const coOwner = await person('SCHOOL_OWNER_MANAGER', s.schoolId);
       expect(await tryConnect(s.schoolId, coOwner.token)).toMatchObject({ created: 201, onboard: 201, status: 200 });
 
       const staff = await person('BRANCH_STAFF', s.schoolId);
-      expect((await put(`/v1/schools/${s.schoolId}/staff/${staff.id}/access`, coOwner.token, { ...ACCESS, connectStripe: true })).status).toBe(200);
+      // Decision 448 item 6: the switches are the main owner's to set, not a co-owner's.
+      const byCoOwner = await put(`/v1/schools/${s.schoolId}/staff/${staff.id}/access`, coOwner.token, { ...ACCESS, connectStripe: true });
+      expect(byCoOwner.status).toBe(403);
+      expect(byCoOwner.body.error.code).toBe('STAFF_SWITCHES_MAIN_OWNER_ONLY');
+      expect((await put(`/v1/schools/${s.schoolId}/staff/${staff.id}/access`, s.owner.token, { ...ACCESS, connectStripe: true })).status).toBe(200);
       // Staff can't give it to themselves or anyone.
       expect((await put(`/v1/schools/${s.schoolId}/staff/${staff.id}/access`, staff.token, { ...ACCESS, connectStripe: true })).status).toBe(403);
 

@@ -13,7 +13,7 @@ The scripts behind `docs/handover/STRESS-TEST-ROUND3.md`. Like `../booking-sched
 ## Run
 
 1. Seed with `../booking-schedule/seed.mjs`, as in that folder's README (a fresh database), and run `load.mjs`.
-2. Start the fake Stripe and the built API as in `../billing/README.md`. Give each API process its own Redis server: the job queue ignores the database number in `REDIS_URL`, so two APIs on one Redis take each other's jobs.
+2. Start the fake Stripe and the built API as in `../billing/README.md`. Give each API process its own Redis server: the job queue ignores the database number in `REDIS_URL`, so two APIs on one Redis take each other's jobs. Start each with `--dir` set to its own new, empty folder (as in `../booking-schedule/README.md`), never the repo: Redis loads any `dump.rdb` in its folder, old jobs included.
 3. From this folder, with the same environment (`DATABASE_URL` as the superuser, `JWT_ACCESS_SECRET`, `STRIPE_WEBHOOK_SECRET`):
 
    ```sh

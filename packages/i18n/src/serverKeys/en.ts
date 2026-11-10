@@ -69,6 +69,10 @@ export const server = {
     checkInOneClass: "This School checks people in to one class at a time.",
     checkInPaymentOverdue: "This School doesn't check members in while a payment is overdue. Pay it in the app or at the desk.",
     packUsedUp: 'This Class Pack has no classes left. Buy the same pack to check in.',
+    // Decision 449 items 6 and 8.
+    accessPaused: "Your access to this School has been paused. Please contact the School owner.",
+    noPermission: "You don't have permission to view this page.",
+    noEligibleMembership: "None of your plans covers this class. Buy a plan to book it.",
     membershipFrozen: "This membership is frozen, so it can't be used to book or check in until the freeze ends.",
     freezeTooShort: "A freeze must last at least 7 days.",
     freezeStartPassed: "A freeze must start today or later.",
@@ -231,6 +235,9 @@ export const server = {
     paymentConfirmedTitle: "Payment confirmed",
     paymentConfirmedBody: "Your payment of {amount} for {plan} was confirmed. Your membership is now active.",
     childPaymentConfirmedBody: "{name}'s payment of {amount} for {plan} was confirmed. The membership is now active.",
+    // Decision 449 item 11: the late notice for a saved-card purchase (same payment, charged once).
+    paymentConfirmedOnceBody: "Your payment of {amount} for {plan} is complete. This is the same payment you made when you bought it, not a new one: you have been charged only once. Your membership is now active.",
+    childPaymentConfirmedOnceBody: "{name}'s payment of {amount} for {plan} is complete. This is the same payment made when it was bought, not a new one: only one charge was made. The membership is now active.",
     priceIncreaseTitle: "Membership price going up",
     priceIncreaseBody: "The price of your {plan} membership is going up to {amount}. The new price applies from {day}.",
     priceIncreaseNextBody: "The price of your {plan} membership is going up to {amount}, from your next payment.",

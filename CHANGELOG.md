@@ -8,12 +8,202 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 ## Unreleased
 
-**Planned: v1.1.0** — the website front-end page redesigns and new features now
-under way. This is a plan, not a release: the product owner decides which
-pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
+Post-v1.4.0 work on `master`.
 
-Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
-`apps/api`) only — Track B (`apps/student`) is versioned separately.
+- **Refunding a fee, or losing a dispute on one, no longer ends the member's
+  plan** (Decision 451 item 1, stress round 7 D-1). A freeze fee's payment
+  carries its plan's id, so refunding it in full in the Stripe dashboard (or a
+  member winning a dispute on it) used to expire the plan, cancel its future
+  bookings and its Subscription. Now only the plan's own purchase or renewal
+  ends it (Decisions 55 and 382, unchanged); a freeze, late-cancel or no-show
+  fee only changes its own row (Refunded, or Disputed and lost).
+
+- **The populated demo on staging** (tooling only, no product change). A
+  manual GitHub Actions workflow, **Seed staging demo**, seeds the Apex
+  Jiu-Jitsu demo (`apps/api/scripts/demo/`) into the staging database with only
+  the `STAGING_DATABASE_URL` and `DEMO_PASSCODE` secrets and a
+  `STAGING_DB_HOST` variable: the seed now signs in through the API with the
+  seeded passcode instead of minting tokens, needs no Redis, refuses a
+  non-local database without its own passcode (or with `123456`), and the
+  workflow stops if staging's migrations are behind (it never applies them).
+  The member app gets a web build for Vercel (`apps/student/vercel.json`;
+  `apps/student/app.config.js` takes the API address from
+  `EXPO_PUBLIC_API_BASE_URL` at build time). Owner steps:
+  `docs/deploy/STAGING-DEMO.md`.
+
+- **Decision 451 items 2–11 and 14: stress test round 7 fixes (access,
+  member app, harness)** (Tracks A and B; no migration).
+  - **Paused staff are told so everywhere** (item 2, R-1): a coach or Branch
+    Staff member whose access is paused and who has no other live link to the
+    School gets 403 "Your access to this School has been paused. Please
+    contact the School owner." on every School page and action (School
+    profile, students, Branches, classes, waivers, plans, transactions, tablet
+    sign-ups, ...), before the page runs, so nothing of it is returned.
+    Strangers still get exactly what a missing School gets. In the School
+    Portal they land on an "Access paused" page with the same sentence
+    instead of "Create your School" (new `GET /users/me/paused-schools`).
+  - **A student's profile and the student tags list** give paused staff
+    ACCESS_PAUSED and removed staff, members and Guardians NO_PERMISSION, not
+    "School not found" or a generic 403 (items 3 and 6).
+  - **Front-desk mode** checks who is calling before anything about the
+    School or its Branches: strangers always get 404 (item 4).
+  - **Plans on sale** (`GET /schools/:id/plan-availability`): the School's own
+    coach or staff get NO_PERMISSION, not "School not found" (item 7).
+  - **`GET /bookings/me`**: a cursor with a date outside 1970–9999 is a 400,
+    never a server error (item 8).
+  - **Confirming a Pix/cash order**: Branch Staff while the School doesn't
+    let them record payments get 403 STAFF_ACCESS_OFF (as on Cancel), a coach
+    NOT_FOR_COACHES, staff for a student outside their branches NO_PERMISSION;
+    other Schools still get 404 (item 9).
+  - **Too many sign-in tries** show a plain translated sentence in every
+    language, English included, never "ThrottlerException: Too Many Requests"
+    (item 10).
+  - **A member's birth date is owner-only** (item 14): coaches with "Manage
+    students" and Branch Staff can change the join date and the rest of the
+    profile, not the birth date (before, only a change across 18 was the
+    owner's). The portal's edit form greys the field out for them.
+  - **Member app on the web** (item 5, S-6): the saved screens (bookings,
+    notifications, memberships) now live in the tab's sessionStorage, like
+    the session, and are keyed by person: emptied on sign-out, when the app
+    starts with no session, and before a different person's session starts.
+    A copy an older build left in localStorage is removed. iOS/Android keep
+    their on-device cache, now also keyed by person (emptied once after the
+    update).
+  - **Test harness** (item 11): the demo's Redis refuses a folder inside the
+    repo and starts with its folder emptied of saved data; the stress and
+    rehearsal READMEs say to start Redis with `--dir` set to its own empty
+    folder; the rehearsal's fake file storage takes a free port per run
+    (`REHEARSAL_R2_PORT` to choose one) and tells the journeys where it is.
+
+## v1.4.0 — 2026-11-10
+
+Named v1.4 by the product owner on 10 Nov 2026. It covers all post-V1 work on
+`master` since `v1.0.0` (the plans earlier called v1.1, v1.2 and v1.3 are part
+of it; no separate v1.1–v1.3 tags exist). Track A (`apps/school-portal`,
+`apps/platform-admin`, `apps/api`) and Track B (`apps/student`) as on `master`.
+
+- **Decision 450 item 1: the Franchise owner's overview of its member
+  Schools** (Track A). **Needs a database migration**
+  (`20270406000001_franchise_overview`). A new "Overview" button on the
+  Franchise page opens read-only totals of the Schools that are members now,
+  for the whole Franchise or one School: active and enrolled students,
+  check-ins over the last 30 days and by month, new and cancelled students by
+  month, and revenue over the last 12 months (memberships, charges, fees,
+  card surcharges, total). The figures follow each School's own Dashboard,
+  Growth, Attendance and billing overview, so the School's owner and the
+  Franchise owner see the same numbers. Revenue stays in each currency: a
+  Franchise with Schools in different currencies sees one line per currency,
+  never a sum across them. Only totals cross the School boundary: no
+  member's name or details, and the Franchise owner still can't open a
+  School's students, classes or payments or change anything there. Only the
+  Franchise's owner can open it: people at a member School are told they
+  don't have permission, anyone else gets "not found", and it isn't
+  available during impersonation. New API: `GET /franchises/{id}/overview`.
+  Text in all 15 languages.
+- **Decision 450: demo findings (date order, role label, belt names, web
+  sign-in kept) and its own switch for the late "Payment confirmed"** (Track A
+  and Track B; Decision 450 items 2, 3, 4, 5 and 8).
+  **Needs a database migration** (`20270405000001_charge_notice_card_confirmed`).
+  - *My Bookings in date order (item 2):* `GET /bookings/me` lists by the class's date
+    and time instead of by booking id: classes not yet ended first, soonest
+    first (a class in progress at the top), then ended ones, newest first, then
+    any whose class the member can no longer see. Pages are keyed on the class
+    start time and the booking id, so paging never skips or repeats a booking;
+    the cursor stays opaque (an old id cursor is refused with 400, not
+    restarted).
+  - *Franchise fee charges newest first (item 2):* the Franchise page's fee-charge list
+    (`GET /franchises/:id/fee-charges`) and the School page's
+    (`GET /schools/:id/fee-charges`) list the newest billing period first,
+    paged the same way as the Transactions ledger.
+  - *Role label (item 3):* the School Portal header shows "Franchise owner" (in all 15
+    languages) instead of the raw `FRANCHISE_OWNER`; any other known role is
+    shown by its name too, as is a role in the staff activity log.
+  - *Belt names in the member app (item 4):* the School page's "My Rank" shows the belt
+    and stripes as the School named them (e.g. "Blue Belt · 3 Stripes"), as My
+    Grading does, instead of "Rank 13 · 3 stripes".
+  - *Member app on the web keeps the session on reload (item 5):* the web build keeps
+    the access and refresh tokens in the browser tab's `sessionStorage`, as the
+    School Portal does; a reload uses them (or renews with the refresh token).
+    Closing the tab still signs out. iOS and Android keep the Keychain/Keystore.
+  - *"Payment confirmed" switch (item 8):* the late "Payment
+    confirmed" notice for a saved-card purchase has its own notification type
+    (`CARD_PAYMENT_CONFIRMED`, was the cash notice's `CASH_PAYMENT`) and its own
+    switch among the School page's payment notifications, "A saved-card
+    purchase confirmed later" (`School.chargeNoticeCardConfirmed`, on by
+    default, owner only), translated in all 15 languages. The cash and bank
+    payment notice is unchanged and still always sent.
+
+- **Decision 449: clear refusals, coaches can manage students, "Buy a plan",
+  browser language, tablet sign-ups** (Track A and Track B; Decision 449
+  items 3, 6, 7, 8 and 13). **Needs a database migration**
+  (`20270404000001_coach_manage_students_and_tablet_sign_ups`).
+  - *Refusals (item 6, replacing Decision 448 item 17 for people connected to
+    the School):* on every page an owner's switch guards, and on the School's
+    payment account record, staff whose access is paused are told "Your access
+    to this School has been paused. Please contact the School owner."
+    (`ACCESS_PAUSED`), and members, former members or staff, and Guardians of
+    the School's students are told "You don't have permission to view this
+    page." (`NO_PERMISSION`), instead of "not found". Staff refused by a
+    switch keep their own message ("The School owner hasn't let you…",
+    "Coaches can't do this"). Someone with no link to the School, such as
+    another School's owner or staff, still gets "not found", so ULTM8 never
+    confirms to another business that a School or record exists. Staff
+    without a payments permission and coaches now get the no-permission
+    message for the payment account record, which stays hidden. Shown in all
+    15 languages in the portal and the app.
+  - *Coaches (item 7):* the School's main owner can give a coach "Manage
+    students" on the coach's own Access window on the Staff page (off by
+    default). With it the coach may edit the profiles of their own branches'
+    students; `staff/me/access.editStudents` says so and the portal shows
+    "Edit profile". It is logged in the staff activity and switched off again
+    when the coach role ends.
+  - *"Buy a plan" (item 8, app only):* when booking a class or claiming a
+    waiting-list place is refused because none of the member's plans covers
+    it (no active plan, a plan that doesn't cover the class, or a Class Pack
+    used up), the app offers "Buy a plan": it shows the School's plans (on the
+    School's page, or a parent's plans screen for their child, at that
+    School). The booking refusal now carries the code
+    `NO_ELIGIBLE_MEMBERSHIP` (same message). The School Portal shows the
+    refusal only, with no button.
+  - *Language before sign-in (item 3):* when no language has been chosen in
+    this browser, the portal uses the browser's language if it is one of the
+    15 (matched exactly or by language, e.g. `pt` → Portuguese (Brazil)),
+    else English. The member app already used the phone's language.
+  - *Tablet sign-ups (item 13):* an account made by approving a front-desk
+    tablet sign-up counts as "signed up themselves" for the 18th-birthday rule
+    (Decision 446 item 8), so its waivers and purchases (and the waiver
+    renewal sweep) use the tablet's rule, not the School's date.
+- **Fees on their own revenue line; "Payment confirmed" says one charge**
+  (Track A; Decision 449 items 10 and 11). No migration.
+  - Billing reports: late-cancellation, no-show and freeze fees are now a
+    "Fees" figure of their own (per currency and per month), no longer
+    inside "Memberships", and still counted in Total revenue. The Fees tile
+    and column show once there are any fees in the period, as Card
+    surcharges do. The API's billing overview has a new `fees` field (per
+    currency and per month). The Transactions page is unchanged: its
+    "Total revenue" never split by type.
+  - The "Payment confirmed" notice that arrives after a saved-card purchase
+    has already shown success on the purchase screen (settled by Stripe's
+    webhook or the stale-payment check) now has its own wording: the payment
+    is complete, it is the same payment made when buying, not a new one, and
+    the member was charged only once. Guardians of a linked minor get their
+    own version. Still sent once, to the same people; in all 15 languages.
+
+- **Launch rehearsal 2** — the same UK and Brazilian Schools taken through
+  every journey of rehearsal 1 again, plus everything built since (Decisions
+  441–448): Brazil's monthly plans, Branch Staff confirming Pix and cash,
+  the waiver rule, Stripe readiness and who may connect Stripe, the "I agree"
+  steps and legal pages, a coach deleting their account, and the round 6
+  money, access and privacy fixes, through the API and in a browser in
+  Portuguese, with six roles trying the other School. 369 checks passed and
+  none failed; four questions for the product owner. Report in
+  `docs/handover/LAUNCH-REHEARSAL-2.md`, scripts in
+  `apps/api/scripts/rehearsal/`.
+  - *Fixed:* a refusal for a member who already has a Weekly Pass or monthly
+    plan ("This Student already holds an active Subscription or Weekly Pass
+    at this School.") now shows its reason in every language. It showed only
+    the generic error text, because the translation tables had its older
+    wording.
 
 - **Legal go-live: "I agree" step, 18+ sign-up and the Children notice version**
   (Track A and Track B; Decision 444). **Needs a database migration**
@@ -142,6 +332,34 @@ Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
     that doesn't exist, now gets "School not found" like every other page.
     Staff without the owner's switch still get "The School owner hasn't let
     you export the student list."
+- **Stress test round 6: access and privacy answers** (Track A; Decision 448
+  items 6, 7, 9, 11 and 17). No migration. New endpoint
+  `GET /schools/{schoolId}/card-payments`.
+  - *Only the main owner sets staff access (item 6):* the Access window,
+    grading permissions, "Can manage disciplines", "Can create / cancel
+    charges" and "Can start open mat sessions" are changed by the School's
+    main owner only, as adding and removing people already was. A co-owner is
+    told "Only the School's main owner can change what staff are allowed to
+    do." The portal shows co-owners these switches locked, with a note, and
+    no "Access" action on the Staff page.
+  - *No charges for a member being deleted (item 7):* creating a charge,
+    setting up a recurring charge or restarting a stopped one for a member
+    whose deletion is pending is refused, as a desk sale is.
+  - *The payment account is for the payments area (item 9):* the School's
+    payment account record (with its Stripe account id) is read only by owners
+    and Branch Staff with a payments permission (Record a payment, Can create
+    charges, Can cancel charges or Can connect Stripe). Other staff, coaches
+    and members get "not found". Whether the School takes cards is read by
+    everyone at the School from the new endpoint, which the plan form and the
+    student's Memberships card now use.
+  - *Editing a student is for those granted it (item 11):* a student's
+    profile is edited by owners and Branch Staff with "Manage students".
+    Coaches can still open the student, their profile and the rest of their
+    page, but not edit the profile; the portal hides "Edit profile" for them.
+  - *"Not found" for outsiders (item 17):* every endpoint refused by one of
+    the owner's switches answers "School not found" to someone with no role at
+    that School, or for a School that doesn't exist, as the student export
+    does. The School's own members still get the switch's message.
 - **Stress test round 6: the timing fixes' follow-ups** (Track A; Decision 447
   items 4–6). **Needs a database migration** (`20270336000001`).
   - *No card payment is lost in a crash on the remaining paths:* no-show fees,

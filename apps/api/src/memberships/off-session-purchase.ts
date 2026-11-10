@@ -144,13 +144,17 @@ type NoticeDb = Pick<Prisma.TransactionClient, 'membership' | 'membershipPlan' |
  * once. A plan switch: "Your plan has changed", or "Membership ended" when it
  * was declined or refused. A saved-card purchase refused and refunded: the
  * "Refund" notice (Decision 415 item 4), unless the School switched refund
- * notices off. Decision 448 item 19: a saved-card purchase paid: the usual
- * "Payment confirmed" notice (the one a confirmed cash or bank payment sends,
- * PaymentsService.notifyCashPayment(), with the same keys and audience: the
- * member, or the Guardians of a linked minor), for what left the card. Only
- * the settler that turned the row Successful sends it, so it goes once, and
- * never when the purchase request itself saved the answer (the member saw it
- * then). A declined one: nothing, as before.
+ * notices off. Decision 448 item 19: a saved-card purchase paid: a "Payment
+ * confirmed" notice, with the keys and audience of the one a confirmed cash
+ * or bank payment sends (PaymentsService.notifyCashPayment(): the member, or
+ * the Guardians of a linked minor), for what left the card. Decision 449 item
+ * 11: its own text, which says it is the same payment and only one charge was
+ * made, since the purchase screen may already have shown success. Decision 449
+ * follow-up: its own type (CARD_PAYMENT_CONFIRMED) and its own School switch
+ * (School.chargeNoticeCardConfirmed, on by default). Only the
+ * settler that turned the row Successful sends it, so it goes once, and never
+ * when the purchase request itself saved the answer (the member saw it then).
+ * A declined one: nothing, as before.
  */
 export async function offSessionPurchaseNotices(db: NoticeDb, row: Transaction, outcome: 'paid' | 'failed' | 'refunded'): Promise<NotificationFanoutJobData[]> {
   if (row.planSwitchFromMembershipId) {
@@ -175,11 +179,19 @@ export async function offSessionPurchaseNotices(db: NoticeDb, row: Transaction, 
 }
 
 /** Decision 448 item 19: "Payment confirmed" for a saved-card purchase
- * settled after the request that made it (offSessionPurchaseNotices()). The
- * English text and keys of PaymentsService.notifyCashPayment('confirmed'),
- * translated by the same @ultm8/i18n patterns. */
+ * settled after the request that made it (offSessionPurchaseNotices()), with
+ * the title and keys of PaymentsService.notifyCashPayment('confirmed').
+ * Decision 449 item 11: its body is its own (not the cash notice's): it is the
+ * same payment, charged once. Translated by @ultm8/i18n's patterns
+ * (paymentConfirmedOnceBody, childPaymentConfirmedOnceBody). It may be sent
+ * up to a day later (the stale-attempt sweep), so it doesn't say "just".
+ * Decision 450 item 8: its type is its own, CARD_PAYMENT_CONFIRMED
+ * (no longer the cash notice's CASH_PAYMENT), and the School can switch it
+ * off on its own (School.chargeNoticeCardConfirmed, on by default)
+ * without touching the cash and bank one. */
 async function paymentConfirmedNotices(db: NoticeDb, row: Transaction): Promise<NotificationFanoutJobData[]> {
   if (!row.currency) return [];
+  if (!(await chargeNoticeSwitches(db, row.schoolId)).cardPaymentConfirmed) return [];
   const [plan, student, guardians] = await Promise.all([
     row.membershipPlanId ? db.membershipPlan.findUnique({ where: { id: row.membershipPlanId }, select: { title: true } }) : null,
     db.user.findUnique({ where: { id: row.studentId }, select: { firstName: true, surname: true } }),
@@ -190,15 +202,28 @@ async function paymentConfirmedNotices(db: NoticeDb, row: Transaction): Promise<
   const name = [student?.firstName, student?.surname].filter(Boolean).join(' ') || 'A student';
   const notices =
     guardians.length === 0
-      ? [{ userId: row.studentId, body: `Your payment of ${amount} for ${planTitle} was confirmed. Your membership is now active.` }]
-      : guardians.map((g) => ({ userId: g.guardianId, body: `${name}'s payment of ${amount} for ${planTitle} was confirmed. The membership is now active.` }));
+      ? [{ userId: row.studentId, body: savedCardPaymentConfirmedBody(amount, planTitle) }]
+      : guardians.map((g) => ({ userId: g.guardianId, body: savedCardPaymentConfirmedBody(amount, planTitle, name) }));
   return notices.map((n) => ({
     notificationId: `cash-payment-confirmed-${row.id}-${n.userId}`,
     userId: n.userId,
     title: 'Payment confirmed',
     body: n.body,
-    type: 'CASH_PAYMENT',
+    type: CARD_PAYMENT_CONFIRMED_TYPE,
     schoolId: row.schoolId,
     targetType: 'PAYMENT' as const,
   }));
+}
+
+/** Decision 450 item 8: the notification type of the late saved-card
+ * "Payment confirmed" notice, its own (not CASH_PAYMENT) so it has its own
+ * School switch (School.chargeNoticeCardConfirmed). */
+export const CARD_PAYMENT_CONFIRMED_TYPE = 'CARD_PAYMENT_CONFIRMED';
+
+/** Decision 449 item 11: the body of the late "Payment confirmed" notice for a
+ * saved-card purchase: the member's own, or (with `name`) a Guardian's. */
+export function savedCardPaymentConfirmedBody(amount: string, plan: string, name?: string): string {
+  return name === undefined
+    ? `Your payment of ${amount} for ${plan} is complete. This is the same payment you made when you bought it, not a new one: you have been charged only once. Your membership is now active.`
+    : `${name}'s payment of ${amount} for ${plan} is complete. This is the same payment made when it was bought, not a new one: only one charge was made. The membership is now active.`;
 }

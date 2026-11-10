@@ -320,6 +320,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "予約を読み込めませんでした。もう一度お試しください。",
     },
     classRow: {
+      buyPlan: "プランを購入",
       dateRange: "{start} – {end}",
       breakLine: "休憩 {start} – {end}",
       endsNextDay: "翌日に終了",
@@ -1073,10 +1074,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "不明な種目",
       loading: "級を読み込み中…",
       rankError: "級の詳細を読み込めませんでした。",
-      rank: "級 {order}",
-      rankWithStripes: {
-        other: "級 {order} · ストライプ {count}本",
-      },
     },
   },
   transactions: {

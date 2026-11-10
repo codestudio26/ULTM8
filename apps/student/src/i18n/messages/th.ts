@@ -320,6 +320,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "ไม่สามารถโหลดการจองได้ โปรดลองอีกครั้ง",
     },
     classRow: {
+      buyPlan: "ซื้อแผน",
       dateRange: "{start} – {end}",
       breakLine: "พัก {start} – {end}",
       endsNextDay: "จบวันถัดไป",
@@ -1072,10 +1073,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "ประเภทกีฬาที่ไม่รู้จัก",
       loading: "กำลังโหลดระดับ…",
       rankError: "ไม่สามารถโหลดรายละเอียดระดับได้",
-      rank: "ระดับ {order}",
-      rankWithStripes: {
-        other: "ระดับ {order} · {count} แถบ",
-      },
     },
   },
   transactions: {

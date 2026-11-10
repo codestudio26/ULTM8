@@ -320,6 +320,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "예약을 불러오지 못했습니다. 다시 시도해 주세요.",
     },
     classRow: {
+      buyPlan: "플랜 구매",
       dateRange: "{start} – {end}",
       breakLine: "휴식 {start} – {end}",
       endsNextDay: "다음 날 종료",
@@ -1073,10 +1074,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "알 수 없는 종목",
       loading: "등급 불러오는 중…",
       rankError: "등급 세부 정보를 불러오지 못했습니다.",
-      rank: "등급 {order}",
-      rankWithStripes: {
-        other: "등급 {order} · 그랄 {count}개",
-      },
     },
   },
   transactions: {

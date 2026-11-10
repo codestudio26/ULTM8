@@ -3,6 +3,7 @@ import { Card, Checkbox, EmptyState, ErrorBanner, Spinner, Table } from '@ultm8/
 import { useT } from '../i18n/I18nProvider';
 import { errorText } from './frontDeskQueries';
 import { useOpenMatPermissions, useSetOpenMatPermission, type OpenMatPermission } from './openMatQueries';
+import { useIsMainOwner } from '../roleGrants/roleGrantQueries';
 
 /** "Can start open mat sessions", per Branch Staff member or coach (Decision
  * 304 item 4, built as Decision 386). Off by default; the owner always can. */
@@ -10,6 +11,8 @@ export function OpenMatPermissions({ schoolId }: { schoolId: string }) {
   const t = useT();
   const staff = useOpenMatPermissions(schoolId);
   const setAllowed = useSetOpenMatPermission(schoolId);
+  // Decision 448 item 6: only the main owner changes these; a co-owner sees them, locked.
+  const isMainOwner = useIsMainOwner(schoolId);
   const [error, setError] = useState<string | null>(null);
   // Shows the new state at once; it goes back if saving fails.
   const [saving, setSaving] = useState<Record<string, boolean>>({});
@@ -32,6 +35,7 @@ export function OpenMatPermissions({ schoolId }: { schoolId: string }) {
         {t('frontDesk.openMatPermissions.heading')}
       </h2>
       <p style={{ marginTop: 0 }}>{t('frontDesk.openMatPermissions.intro')}</p>
+      {isMainOwner === false ? <p className="ultm8-field__hint">{t('roleGrants.staff.switchesMainOwnerOnly')}</p> : null}
       {error ? <ErrorBanner message={error} /> : null}
       {staff.isLoading ? (
         <Spinner />
@@ -51,7 +55,7 @@ export function OpenMatPermissions({ schoolId }: { schoolId: string }) {
                 <Checkbox
                   label={t('frontDesk.openMatPermissions.checkboxLabel', { name: `${p.firstName} ${p.surname}` })}
                   checked={saving[p.userId] ?? p.canStartOpenMat}
-                  disabled={p.userId in saving}
+                  disabled={isMainOwner !== true || p.userId in saving}
                   onChange={(e) => toggle(p, e.target.checked)}
                 />
               ),

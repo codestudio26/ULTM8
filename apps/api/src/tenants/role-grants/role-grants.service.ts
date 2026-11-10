@@ -22,6 +22,7 @@ import {
   StaffAccessSet,
   TenantAuthorizationService,
   mainOwnerGrant,
+  mayEditStudentProfiles,
   staffAccessFrom,
 } from '../tenant-authorization.service';
 import { CoachInvitesService } from '../coach-invites/coach-invites.service';
@@ -42,7 +43,7 @@ import { CONTACT_FIELDS } from '../../users/dto/update-user.dto';
 import { assertJoinDateAllowed, setJoinDate } from '../schools/student-join-dates';
 import { isAdultOn } from '../../common/decorators/is-birth-date.decorator';
 import { schoolZone } from '../../common/school-zone';
-import { STAFF_ROLES, StaffAccessDto, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
+import { CoachAccessDto, STAFF_ROLES, StaffAccessDto, StaffListQueryDto, StaffMemberDto, StaffRole, UpdateStaffDetailsDto } from './dto/staff-list.dto';
 import { StepUpService } from '../../auth/step-up.service';
 import { RolesChangedService } from '../../common/prisma/roles-changed.service';
 import { recordStaffActivity } from '../staff-activity/staff-activity';
@@ -547,6 +548,9 @@ export class RoleGrantsService {
     schoolId: string;
     /** Decision 315 item 5, from Add manually. */
     contacts?: Partial<Record<(typeof CONTACT_FIELDS)[number], string | null>>;
+    /** Decision 449 item 13: made by approving a front-desk tablet sign-up,
+     * so it counts as "signed up themselves" (User.signedUpOnTabletAt). */
+    signedUpOnTablet?: boolean;
   }) {
     const email = data.email.trim().toLowerCase();
     const existingUser = await this.prismaAuth.user.findUnique({ where: { email }, select: { id: true } });
@@ -574,6 +578,7 @@ export class RoleGrantsService {
             mustChangePasscode: true,
             temporaryPasscodeExpiresAt: expiresAt,
             temporaryPasscodeSchoolId: data.schoolId,
+            signedUpOnTabletAt: data.signedUpOnTablet ? new Date() : null,
           },
         });
       } catch (err) {
@@ -916,6 +921,10 @@ export class RoleGrantsService {
       // Every Branch Staff switch goes back to its default (Decision 387).
       await tx.staffPermission.updateMany({ where: { userId, schoolId }, data: toPermissionColumns(DEFAULT_STAFF_ACCESS) });
     }
+    if (!remaining.some((g) => g.role === 'INSTRUCTOR')) {
+      // Decision 449 item 7: a coach's "Manage students" goes back to off.
+      await tx.staffPermission.updateMany({ where: { userId, schoolId }, data: { canManageStudentsAsCoach: false } });
+    }
   }
 
   /**
@@ -946,7 +955,7 @@ export class RoleGrantsService {
       branches: await tx.branch.findMany({ where: { schoolId }, select: { id: true, name: true } }),
       permissions: await tx.staffPermission.findMany({
         where: { schoolId },
-        select: { userId: true, displayName: true, workPhone: true, ...STAFF_ACCESS_SELECT },
+        select: { userId: true, displayName: true, workPhone: true, ...STAFF_ACCESS_SELECT, canManageStudentsAsCoach: true },
       }),
     }));
 
@@ -1005,6 +1014,10 @@ export class RoleGrantsService {
         displayName: permission?.displayName ?? null,
         workPhone: permission?.workPhone ?? null,
         access: own.some((g) => g.role === 'BRANCH_STAFF' && (!g.revokedAt || g.pausedAt)) ? staffAccessFrom(permission) : null,
+        // Decision 449 item 7: a coach's own switch.
+        coachAccess: own.some((g) => g.role === 'INSTRUCTOR' && (!g.revokedAt || g.pausedAt))
+          ? { manageStudents: permission?.canManageStudentsAsCoach ?? false }
+          : null,
         roles: roles.map((g) => ({
           grantId: g.id,
           role: g.role as StaffRole,
@@ -1093,6 +1106,7 @@ export class RoleGrantsService {
         displayName: detail?.displayName ?? null,
         workPhone: detail?.workPhone ?? null,
         access: null,
+        coachAccess: null,
         roles: own.map((g) => ({
           grantId: g.id,
           role: g.role as StaffRole,
@@ -1110,7 +1124,8 @@ export class RoleGrantsService {
   }
 
   /**
-   * PUT /schools/{schoolId}/staff/{userId}/access (Decision 387) — the owner
+   * PUT /schools/{schoolId}/staff/{userId}/access (Decision 387) — the main
+   * owner (Decision 448 item 6; co-owners get STAFF_SWITCHES_MAIN_OWNER_ONLY)
    * sets a Branch Staff member's six access switches, all at once (the
    * portal's presets are just ticks). Only for someone who holds a Branch
    * Staff role here now, or one that is paused (Decision 390: the switches
@@ -1120,7 +1135,8 @@ export class RoleGrantsService {
    * switch any more: only the main owner adds people (Decision 423 item 10).
    */
   async setStaffAccess(callerId: string, schoolId: string, userId: string, dto: StaffAccessDto) {
-    await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
+    // Decision 448 item 6: the main owner only.
+    await this.tenantAuth.assertMaySetStaffSwitches(callerId, schoolId);
     await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
     const access: StaffAccessSet = Object.fromEntries(STAFF_ACCESS.map((k) => [k, dto[k]])) as StaffAccessSet;
     await this.prismaApp.withTenantContext(callerId, async (tx) => {
@@ -1145,6 +1161,49 @@ export class RoleGrantsService {
     return { userId, access };
   }
 
+  /**
+   * PUT /schools/{schoolId}/staff/{userId}/coach-access (Decision 449 item 7)
+   * — the main owner (Decision 448 item 6) gives a coach "Manage students"
+   * or takes it away: with it, the coach may edit the profiles of their own
+   * branches' students (Decision 448 item 11). Off by default. Only for
+   * someone who holds a coach role here now, or one that is paused (it
+   * applies again when they are unpaused). Their next request sees the
+   * change.
+   */
+  async setCoachAccess(callerId: string, schoolId: string, userId: string, dto: CoachAccessDto) {
+    await this.tenantAuth.assertMaySetStaffSwitches(callerId, schoolId);
+    await this.tenantAuth.assertSchoolNotArchived(callerId, schoolId);
+    await this.prismaApp.withTenantContext(callerId, async (tx) => {
+      const isCoach = await tx.roleGrant.findFirst({ where: { userId, schoolId, role: 'INSTRUCTOR', ...LIVE_OR_PAUSED }, select: { id: true } });
+      if (!isCoach) {
+        throw new BadRequestException("This switch is for coaches. Branch Staff have their own Access window, and owners have every right.");
+      }
+      const before = await tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId } }, select: { canManageStudentsAsCoach: true } });
+      await tx.staffPermission.upsert({
+        where: { schoolId_userId: { schoolId, userId } },
+        create: { id: randomUUID(), schoolId, userId, canManageStudentsAsCoach: dto.manageStudents, grantedById: callerId },
+        update: { canManageStudentsAsCoach: dto.manageStudents, grantedById: callerId },
+      });
+      if ((before?.canManageStudentsAsCoach ?? false) !== dto.manageStudents) {
+        await recordStaffActivity(tx, {
+          schoolId,
+          actorId: callerId,
+          targetUserId: userId,
+          action: 'ACCESS_CHANGED',
+          details: { changes: [{ switch: 'coachManageStudents', on: dto.manageStudents }] },
+        });
+      }
+    });
+    return { userId, coachAccess: { manageStudents: dto.manageStudents } };
+  }
+
+  /** Decision 451 item 2 (R-1) — GET /users/me/paused-schools: the Schools
+   * where the caller's own staff access is paused, so the School Portal can
+   * say so at sign-in. See TenantAuthorizationService.pausedSchoolIds. */
+  async myPausedSchools(callerId: string): Promise<{ schoolIds: string[] }> {
+    return { schoolIds: await this.tenantAuth.pausedSchoolIds(callerId) };
+  }
+
   /** GET /schools/{schoolId}/staff/me/access (Decision 387) — what the caller
    * may do at this School, so the portal shows only the pages they can use. */
   async myStaffAccess(callerId: string, schoolId: string) {
@@ -1157,18 +1216,24 @@ export class RoleGrantsService {
     if (owner) {
       // Decision 423 item 10: whether they may add or remove people.
       const mainOwner = await this.tenantAuth.isSchoolMainOwner(callerId, schoolId);
-      return { owner, mainOwner, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet, cancelCharges: true };
+      return { owner, mainOwner, editStudents: true, branchStaff, access: Object.fromEntries(STAFF_ACCESS.map((k) => [k, true])) as StaffAccessSet, cancelCharges: true };
     }
     // One read of the School's StaffPermission row: the Branch Staff switches
     // above, and "Can cancel charges", which Branch Staff and coaches both
     // may have (Decision 338 item 1; Decision 420 item 2: it also lets them
     // waive or cancel promotion fees, so the portal shows those buttons).
     const row = await this.prismaApp.withTenantContext(callerId, (tx) =>
-      tx.staffPermission.findUnique({ where: { schoolId_userId: { schoolId, userId: callerId } }, select: { ...STAFF_ACCESS_SELECT, canCancelCharges: true } }),
+      tx.staffPermission.findUnique({
+        where: { schoolId_userId: { schoolId, userId: callerId } },
+        select: { ...STAFF_ACCESS_SELECT, canCancelCharges: true, canManageStudentsAsCoach: true },
+      }),
     );
     let access: StaffAccessSet = branchStaff ? staffAccessFrom(row) : (Object.fromEntries(STAFF_ACCESS.map((k) => [k, false])) as StaffAccessSet);
+    // Decision 448 item 11: the switch itself, before a coach's role adds
+    // "students"; Decision 449 item 7: or a coach's own "Manage students".
+    const editStudents = mayEditStudentProfiles(grants.map((g) => g.role), row);
     if (grants.some((g) => g.role === 'INSTRUCTOR')) access = { ...access, bookings: true, students: true };
-    return { owner, mainOwner: false, branchStaff, access, cancelCharges: row?.canCancelCharges ?? false };
+    return { owner, mainOwner: false, editStudents, branchStaff, access, cancelCharges: row?.canCancelCharges ?? false };
   }
 
   /**

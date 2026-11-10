@@ -11,6 +11,8 @@ import { FranchisesQueryDto } from './dto/franchises-query.dto';
 import { FranchiseBillingStatusResponseDto } from './dto/franchise-billing-status-response.dto';
 import { CloseOwnFranchiseDto, FranchiseJoinRequestListResponseDto, FranchiseJoinRequestResponseDto } from './dto/franchise-join-request.dto';
 import { RemoveFranchiseSchoolResponseDto } from './dto/remove-franchise-school-response.dto';
+import { FranchiseOverviewService } from './franchise-overview.service';
+import { FranchiseOverviewResponseDto } from './dto/franchise-overview-response.dto';
 
 // Create / read / update only — no delete endpoint, same reasoning as SchoolsController
 // (general tenant offboarding is [UNRESOLVED], ultm8-app-publishing §4).
@@ -19,7 +21,10 @@ import { RemoveFranchiseSchoolResponseDto } from './dto/remove-franchise-school-
 @UseGuards(JwtAuthGuard)
 @Controller('franchises')
 export class FranchisesController {
-  constructor(private readonly franchisesService: FranchisesService) {}
+  constructor(
+    private readonly franchisesService: FranchisesService,
+    private readonly franchiseOverview: FranchiseOverviewService,
+  ) {}
 
   @ApiCreatedResponse({ type: FranchiseResponseDto })
   @Post()
@@ -87,6 +92,22 @@ export class FranchisesController {
     }
     const items = await this.franchisesService.findSchoolsForFranchise(user.sub, id);
     return { items, nextCursor: null };
+  }
+
+  /**
+   * Decision 450 item 1 — the Franchise owner's read-only overview of its
+   * member Schools' totals (students, attendance, revenue, growth). Totals
+   * only; see FranchiseOverviewService. Not during impersonation, for the
+   * same reason as the School roster above.
+   */
+  @ApiOkResponse({ type: FranchiseOverviewResponseDto })
+  @Get(':id/overview')
+  overview(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
+    if (user.impersonation) {
+      // Decision 39
+      throw new ForbiddenException('The Franchise overview is not available during an impersonation session.');
+    }
+    return this.franchiseOverview.overview(user.sub, id);
   }
 
   /** Decision 352 — Schools asking to join; Franchise Owner only. */

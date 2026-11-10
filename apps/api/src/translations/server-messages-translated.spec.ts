@@ -2,6 +2,7 @@ import { readdirSync, readFileSync, statSync } from 'fs';
 import { join } from 'path';
 import * as ts from 'typescript';
 import { SERVER_MESSAGE_LOADERS, createServerTextTranslator } from '@ultm8/i18n';
+import { GeneralAccessConflictError } from '../memberships/membership-creation-guard';
 
 /**
  * Decisions 273/323: every message this API can put in an error response is
@@ -61,7 +62,19 @@ describe('API error messages are translated', () => {
     expect(messages.size).toBeGreaterThan(500);
   });
 
+  // Not a `new …Exception('…')` literal, so the scan above misses it: the
+  // guard's own Error, sent as a 409 by MembershipsService and PaymentsService
+  // (launch rehearsal 2: a desk sale to a member who already holds a Weekly
+  // Pass showed Brazilian staff the generic 409 text).
+  const wrapped = [new GeneralAccessConflictError().message];
+
   for (const locale of Object.keys(SERVER_MESSAGE_LOADERS)) {
+    it(`${locale} translates the messages of errors the API turns into exceptions`, async () => {
+      const t = (key: string) => (key.startsWith('server.generic.') ? GENERIC : key);
+      const translator = createServerTextTranslator(t, locale, SERVER_MESSAGE_LOADERS[locale]);
+      for (const text of wrapped) expect(await translator.error(409, '', text)).not.toBe(GENERIC);
+    });
+
     it(`${locale} translates every one`, async () => {
       const t = (key: string) => (key.startsWith('server.generic.') ? GENERIC : key);
       const translator = createServerTextTranslator(t, locale, SERVER_MESSAGE_LOADERS[locale]);

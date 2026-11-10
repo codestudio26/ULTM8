@@ -321,6 +321,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Impossibile caricare le prenotazioni — riprova.",
     },
     classRow: {
+      buyPlan: "Acquista un piano",
       dateRange: "{start} – {end}",
       breakLine: "Pausa {start} – {end}",
       endsNextDay: "finisce il giorno dopo",
@@ -1099,12 +1100,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Disciplina sconosciuta",
       loading: "Caricamento del grado…",
       rankError: "Impossibile caricare i dettagli del grado.",
-      rank: "Grado {order}",
-      rankWithStripes: {
-        one: "Grado {order} · {count} striscia",
-        many: "Grado {order} · {count} strisce",
-        other: "Grado {order} · {count} strisce",
-      },
     },
   },
   transactions: {

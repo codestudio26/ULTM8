@@ -8,6 +8,7 @@ import type { components } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
+import { useIsMainOwner } from '../roleGrants/roleGrantQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 
 type Permission = components['schemas']['GradingPermissionResponseDto'];
@@ -61,6 +62,9 @@ export function GradingPermissionsPage() {
   const knownUser = !!useAuth().claims;
   const permissions = useGradingPermissions(schoolId);
   const disciplines = useDisciplines(schoolId);
+  // Decision 448 item 6: only the main owner sets grading permissions; a
+  // co-owner sees them, locked.
+  const isMainOwner = useIsMainOwner(schoolId);
   const t = useT();
 
   // Coaches review CP5: owner-only — anyone else goes back to their own home
@@ -81,6 +85,7 @@ export function GradingPermissionsPage() {
         subtitle={t('grading.permissions.subtitle')}
       />
       <GradingTabs />
+      {isMainOwner === false ? <p className="ultm8-field__hint">{t('roleGrants.staff.switchesMainOwnerOnly')}</p> : null}
       {staff.length === 0 ? (
         <Card>
           <EmptyState title={t('grading.permissions.noCoachesTitle')} description={t('grading.permissions.noCoachesDescription')} />
@@ -96,6 +101,7 @@ export function GradingPermissionsPage() {
             schoolId={schoolId}
             member={member}
             styles={styles}
+            locked={isMainOwner !== true}
             saved={(permissions.data?.items ?? []).filter((p) => p.userId === member.userId)}
           />
         ))
@@ -115,7 +121,7 @@ function draftFrom(saved: Permission[], styles: DisciplineResponse[]): Draft {
   );
 }
 
-function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: string; member: Staff; styles: DisciplineResponse[]; saved: Permission[] }) {
+function StaffPermissions({ schoolId, member, styles, saved, locked }: { schoolId: string; member: Staff; styles: DisciplineResponse[]; saved: Permission[]; locked: boolean }) {
   const set = useSetGradingPermissions(schoolId);
   const t = useT();
   const [draft, setDraft] = useState<Draft>(() => draftFrom(saved, styles));
@@ -151,14 +157,16 @@ function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: strin
             ))}
           </h2>
           <div style={{ display: 'flex', gap: 8 }}>
-            {dirty ? (
+            {locked ? null : dirty ? (
               <Button variant="secondary" onClick={() => setDraft(JSON.parse(savedKey) as Draft)}>
                 {t('grading.permissions.undo')}
               </Button>
             ) : null}
-            <Button onClick={save} disabled={!dirty} loading={set.isPending} aria-label={t('grading.permissions.saveAria', { name })}>
-              {t('common.save')}
-            </Button>
+            {locked ? null : (
+              <Button onClick={save} disabled={!dirty} loading={set.isPending} aria-label={t('grading.permissions.saveAria', { name })}>
+                {t('common.save')}
+              </Button>
+            )}
           </div>
         </div>
         {error ? <ErrorBanner message={error} /> : null}
@@ -186,6 +194,7 @@ function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: strin
                       <input
                         type="checkbox"
                         checked={row !== null}
+                        disabled={locked}
                         aria-label={t('grading.permissions.mayGradeAria', { name, style: style.name })}
                         onChange={(e) => setDraft((d) => ({ ...d, [style.id]: e.target.checked ? { ...ALL_ON } : null }))}
                       />
@@ -194,7 +203,7 @@ function StaffPermissions({ schoolId, member, styles, saved }: { schoolId: strin
                       <td key={toggle.key} style={{ textAlign: 'center', padding: '6px 8px' }}>
                         <input
                           type="checkbox"
-                          disabled={row === null}
+                          disabled={locked || row === null}
                           checked={row?.[toggle.key] ?? false}
                           title={t(toggle.hint)}
                           aria-label={t('grading.permissions.toggleAria', { name, style: style.name, toggle: t(toggle.label) })}

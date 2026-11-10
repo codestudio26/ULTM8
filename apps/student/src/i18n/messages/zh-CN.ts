@@ -320,6 +320,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "无法加载预约，请重试。",
     },
     classRow: {
+      buyPlan: "购买方案",
       dateRange: "{start} – {end}",
       breakLine: "休息 {start} – {end}",
       endsNextDay: "次日结束",
@@ -1072,10 +1073,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "未知项目",
       loading: "正在加载级别…",
       rankError: "无法加载级别详情。",
-      rank: "第 {order} 级",
-      rankWithStripes: {
-        other: "第 {order} 级 · {count} 道条纹",
-      },
     },
   },
   transactions: {

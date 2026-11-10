@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { localCountryNames } from '../lib/countryNames';
@@ -90,6 +90,7 @@ function subscriptionStatusBadge(status: FranchiseSchool['franchiseFeeSubscripti
  * webhook handlers — see FranchiseFeesController's own header comment). */
 export function FranchiseDetailPage() {
   const t = useT();
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const franchiseId = id ?? null;
   const { data: franchise, isLoading: franchiseLoading, error: franchiseError } = useFranchise(franchiseId);
@@ -151,6 +152,12 @@ export function FranchiseDetailPage() {
         subtitle={t('franchises.detail.subtitle', {
           feeModel: franchise?.feeModel === 'PER_HEADCOUNT' ? t('franchises.feeModels.perHeadcount') : t('franchises.feeModels.flat'),
         })}
+        actions={
+          // Decision 450 item 1 — the member Schools' totals.
+          <Button variant="secondary" data-testid="franchise-overview-link" onClick={() => navigate(`/franchises/${franchiseId}/overview`)}>
+            {t('franchises.overview.open')}
+          </Button>
+        }
       />
 
       <div style={{ marginBottom: 24 }}>

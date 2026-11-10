@@ -8,8 +8,11 @@
 //     checked in the database.
 import { call, must, journey, check, ok, step, signIn, stepUp, runJob, db, days, API } from './lib.mjs';
 import { joinSchool } from './j3-members.mjs';
+import { createRequire } from 'module';
 
-const R2 = `http://localhost:${process.env.REHEARSAL_R2_PORT || 12518}`;
+// The fake R2 storage use-fakes.cjs started next to the API (its port is no
+// longer fixed: Decision 451 item 11).
+const R2 = createRequire(import.meta.url)('./fake-r2-port.cjs').fakeR2Url(API);
 
 async function requestDeletion(person) {
   const su = await stepUp(person);
@@ -30,6 +33,8 @@ export async function j5Delete(s) {
   const noStepUp = await call('POST', '/users/me/deletion', a.tok);
   ok('asking needs the passcode again (step-up)', noStepUp.status >= 400, `${noStepUp.status} ${noStepUp.body?.error?.message ?? ''}`);
   const oldTok = a.tok, oldRefresh = a.refresh;
+  // A Pix/cash order placed just before asking (Decision 445 item 2).
+  const waiting = !c.cards ? await call('POST', `/membership-plans/${s.plans.week.id}/purchase`, a.tok, {}) : null;
   const req = await requestDeletion(a);
   ok('adult asks to delete their account', req.status < 300 && !!req.body?.dueAt, `${req.status} due ${req.body?.dueAt ?? JSON.stringify(req.body).slice(0, 160)}`);
   const locked = await call('GET', '/memberships/me', oldTok);
@@ -37,11 +42,25 @@ export async function j5Delete(s) {
   ok('the account is locked at once (old session and refresh refused)', locked.status === 401 && refreshed.status === 401, `old token ${locked.status} ${locked.body?.error?.code ?? ''}; refresh ${refreshed.status}`);
   const staffBook = await call('POST', `/classes/${s.smallClass.id}/book`, O(), { studentId: a.id, overrideReason: 'rehearsal' });
   check('staff can\'t book for a locked member', staffBook.status >= 400 ? 'PASS' : 'FAIL', `${staffBook.status} ${staffBook.body?.error?.message ?? ''}`);
+  // Decision 448 item 7: no new charge to a member whose deletion is pending.
+  const due = new Date(Date.now() + days(7)).toISOString().slice(0, 10);
+  const ch = await call('POST', `/schools/${sid}/students/${a.id}/charges`, O(), { description: c.key === 'B' ? 'Kimono' : 'Gi', amount: 4000, dueDate: due });
+  ok('the School can\'t add a charge for a member whose deletion is pending (ACCOUNT_CLOSING)', ch.status === 403 && ch.body?.error?.code === 'ACCOUNT_CLOSING', `${ch.status} ${ch.body?.error?.code}`);
+  const sell = await call('POST', `/schools/${sid}/students/${a.id}/memberships/sell`, O(), { membershipPlanId: s.plans.week.id, paymentMethod: 'CASH' });
+  ok('nor sell them a plan at the desk', sell.status === 403 && sell.body?.error?.code === 'ACCOUNT_CLOSING', `${sell.status} ${sell.body?.error?.code}`);
+  if (waiting?.status < 300) {
+    const cf = await call('PATCH', `/transactions/${waiting.body.transactionId}/confirm`, O(), {});
+    ok('nor confirm their waiting Pix/cash order (Decision 445 item 2)', cf.status === 403 && cf.body?.error?.code === 'ACCOUNT_CLOSING', `${cf.status} ${cf.body?.error?.code}`);
+  }
   const back = await signIn(a);
   const u = await db.user.findUnique({ where: { id: a.id } });
   ok('signing in again within 30 days cancels the deletion', back?.deletionCancelled === true && u.deletionRequestedAt === null && u.erasedAt === null, `login says deletionCancelled=${back?.deletionCancelled}; deletionRequestedAt ${u.deletionRequestedAt}`);
   const again = await call('GET', '/memberships/me', a.tok);
   ok('and they can use the app as before', again.status === 200 && (again.body?.items ?? []).length > 0, `${again.status}; ${(again.body?.items ?? []).length} memberships`);
+  if (waiting?.status < 300) {
+    const cf2 = await call('PATCH', `/transactions/${waiting.body.transactionId}/confirm`, O(), {});
+    ok('once the deletion is cancelled, the waiting order can be confirmed again', cf2.status < 300, `${cf2.status} ${cf2.body?.error?.code ?? ''}`);
+  }
 
   // --- b) a parent who is a child's only parent; the child has no login ---
   const p = s.lonely;
@@ -106,7 +125,36 @@ export async function j5Delete(s) {
   ok('the School\'s owner gets a notice that doesn\'t name them', notices.length > 0 && notices.every((n) => !`${n.title} ${n.body}`.includes(p.last)), notices.map((n) => `${n.title}: ${n.body}`).join(' | ').slice(0, 220));
   const log = await db.accountErasureLog.findMany({ where: { userId: { in: [p.id, kidId] } } });
   ok('a permanent record without personal details is kept', log.some((l) => l.event === 'ERASED'), log.map((l) => l.event).join(','));
+  // Decision 444 item 3: what they accepted is kept, with nothing that names them.
+  const accepted = await db.legalAcceptance.findMany({ where: { userId: p.id } });
+  ok('their "I agree" records are kept as proof, against the "Erased User"', accepted.length >= 2 && /Erased/.test(`${pu?.firstName} ${pu?.surname}`) && accepted.every((r) => !JSON.stringify(r).includes(p.email)), `${accepted.length} acceptance rows (${accepted.map((r) => `${r.documentSlug}@${r.version}`).join(', ')}); user "${pu?.firstName} ${pu?.surname}"`);
   const staffList = await call('GET', `/schools/${sid}/students`, O());
   const shown = JSON.stringify(staffList.body);
   ok('the Students list no longer shows their names', staffList.status === 200 && !shown.includes(p.last) && !shown.includes(kf), `${staffList.status}; ${shown.includes('Erased') ? 'shows "Erased User"' : 'not listed'}`);
+}
+
+/** Decisions 445 item 1, 448 item 10: a coach deletes their account; their
+ * coach profile's phone, bio, postal address and certification file go. */
+export async function coachErasure(s) {
+  const c = s.cfg;
+  const coach = s.coach;
+  if (!coach) return;
+  journey(c.key, '5', 'Delete my account (a coach)');
+  const up = await call('POST', '/instructors/me/certification-upload-url', coach.tok, { contentType: 'application/pdf' });
+  const key = up.body?.objectKey;
+  // The coach's browser uploads straight to storage (the presigned URL).
+  if (key) await fetch(`${R2}/${process.env.R2_BUCKET_NAME}/${key}`, { method: 'PUT', headers: { 'content-type': 'application/pdf' }, body: '%PDF-1.4 certificate' });
+  const prof = await call('PATCH', '/instructors/me/profile', coach.tok, { bio: c.key === 'B' ? 'Faixa preta' : 'Black belt coach', phone: c.key === 'B' ? '+5511987001234' : '+447911000123', postalAddress: c.address, certificationKey: key, certificationConsent: true });
+  const before = await db.instructor.findFirst({ where: { userId: coach.id } });
+  const keys0 = await (await fetch(R2)).json();
+  ok('setup: the coach adds a postal address and a certification file', up.status < 300 && prof.status < 300 && !!before?.certificationKey && keys0.some((k) => k.endsWith(key)), `upload url ${up.status}; profile ${prof.status} ${prof.body?.error?.message ?? ''}; stored ${keys0.some((k) => k.endsWith(key ?? '#'))}`);
+  const req = await requestDeletion(coach);
+  await db.user.update({ where: { id: coach.id }, data: { deletionRequestedAt: new Date(Date.now() - days(31)), deletionDueAt: new Date(Date.now() - days(1)) } });
+  await runJob('account-erasure');
+  const after = await db.instructor.findFirst({ where: { userId: coach.id } });
+  const u = await db.user.findUnique({ where: { id: coach.id } });
+  const keys1 = await (await fetch(R2)).json();
+  const addr = Object.entries(after ?? {}).filter(([k, v]) => /address|postal|phone|bio/i.test(k) && v != null && v !== '' && !(Array.isArray(v) && !v.length)).map(([k]) => k);
+  ok('after erasure: the coach profile has no phone, bio, address or certification, and the file is deleted', req.status < 300 && !!u?.erasedAt && addr.length === 0 && !after?.certificationKey && !keys1.some((k) => k.endsWith(key ?? '#')) && !!after?.archivedAt,
+    `deletion ${req.status}; erased ${!!u?.erasedAt}; fields left: ${addr.join(',') || 'none'}; certificationKey ${after?.certificationKey}; file stored ${keys1.some((k) => k.endsWith(key ?? '#'))}; archived ${!!after?.archivedAt}`);
 }

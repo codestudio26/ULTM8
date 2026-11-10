@@ -5,7 +5,7 @@ import { createHash, randomUUID } from 'crypto';
 import Stripe from 'stripe';
 import { Prisma, Transaction } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
-import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
+import { NO_PERMISSION, NOT_FOR_COACHES, TenantAuthorizationService } from '../tenants/tenant-authorization.service';
 import { SchoolsService } from '../tenants/schools/schools.service';
 import { FranchisesService } from '../tenants/franchises/franchises.service';
 import { StripeClientService } from './stripe-client.service';
@@ -22,7 +22,7 @@ import { fromStripeAmount, toStripeAmount } from './stripe-amount';
 import { FIRST_INVOICE_PAYMENT_EXPAND, firstInvoicePayment } from './stripe-first-invoice';
 import { cardSurchargeAmount } from './card-surcharge';
 import { ConnectStatus, isStripeAccountReady } from './stripe-account-ready';
-import { cardPaymentsNotReady, takesCards } from './takes-cards';
+import { CARD_ACCOUNT_SELECT, cardPaymentsNotReady, takesCards } from './takes-cards';
 import { SUBSCRIPTION_SURCHARGE_METADATA, invoiceSurchargeAmount, splitSubscriptionItems } from './stripe-subscription-surcharge';
 import { chargeAbilities, mayConfirmDeskOrder } from '../charges/charge-abilities';
 import { RefundNotice, chargeNoticeSwitches } from '../charges/charge-ledger';
@@ -193,8 +193,20 @@ export class PaymentsService {
    * narrowing) a business rule Spec 55 doesn't itself state. Confirmed step-up MFA
    * (§11.5) gates payout/bank-detail *changes*, not reads — this code follows that
    * literally, not by extension.
+   *
+   * Decision 448 item 9 answers it: the record is read only by people with
+   * access to the payments area (TenantAuthorizationService.mayAccessPayments:
+   * owners, and Branch Staff with a payments permission). Decision 449 item 6:
+   * everyone else connected to the School (other staff, coaches, members,
+   * Guardians) is told they don't have permission (403 NO_PERMISSION; paused
+   * staff 403 ACCESS_PAUSED), and someone with no link to it gets 404, so the
+   * record stays hidden either way; whether the School takes cards is on
+   * GET /schools/:schoolId/card-payments for them.
    */
   async findForSchool(callerId: string, schoolId: string) {
+    if (!(await this.tenantAuth.mayAccessPayments(callerId, schoolId))) {
+      await this.tenantAuth.refuseNoPermission(callerId, schoolId);
+    }
     const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     const found = await this.prismaApp.withTenantContext(callerId, (tx) =>
       tx.paymentAccount.findUnique({ where: { schoolId } }),
@@ -209,6 +221,20 @@ export class PaymentsService {
     }
     // Decision 437: whether the Connect Stripe button may show for this School.
     return { ...found, connectAvailable: stripeConnectAvailable(found, school.addressCountry), cardPayments: takesCards(found) };
+  }
+
+  /**
+   * GET /schools/:schoolId/card-payments — Decision 448 item 9: what the rest
+   * of the School's people need of its payment account, without the record
+   * itself: whether it has one (a School with none sells as before), and
+   * whether members can pay by card (takesCards, Decision 442 item 2). Anyone with a role at the School; 404 to anyone else.
+   */
+  async cardPaymentsForSchool(callerId: string, schoolId: string): Promise<{ hasPaymentAccount: boolean; cardPayments: boolean }> {
+    await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    const account = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.paymentAccount.findUnique({ where: { schoolId }, select: CARD_ACCOUNT_SELECT }),
+    );
+    return { hasPaymentAccount: !!account, cardPayments: takesCards(account) };
   }
 
   // ---------------------------------------------------------------------------
@@ -332,8 +358,10 @@ export class PaymentsService {
    * up to date even before Stripe's account.updated arrives.
    */
   async getSchoolConnectStatus(callerId: string, schoolId: string): Promise<ConnectStatus> {
-    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
+    // Decision 449 item 6: the switch first, so people connected to the School
+    // are told why (404 only for strangers and an unknown School).
     await this.tenantAuth.assertMayConnectStripe(callerId, schoolId);
+    const school = await this.schoolsService.findOne(callerId, schoolId); // 404s if not visible/doesn't exist
     const account = await this.prismaApp.withTenantContext(callerId, (tx) => tx.paymentAccount.findUnique({ where: { schoolId } }));
     return this.readConnectStatus(callerId, account, school.addressCountry);
   }
@@ -1510,6 +1538,9 @@ export class PaymentsService {
       );
       return { ...settled, byStaff: true };
     }
+    if (row && row.studentId !== callerId && !(await this.tenantAuth.isSchoolOwner(callerId, row.schoolId))) {
+      await this.refuseDeskOrderConfirm(callerId, row.schoolId);
+    }
     const settled = await this.prismaApp.withTenantContext(callerId, async (tx) => {
       const transaction = await tx.transaction.findUnique({ where: { id: transactionId } });
       if (!transaction) {
@@ -1519,6 +1550,29 @@ export class PaymentsService {
       return this.settleCashPayment(tx, transaction);
     }, CASH_SETTLE_TX_OPTIONS);
     return { ...settled, byStaff: false };
+  }
+
+  /**
+   * Decision 451 item 9 (R-2; Decision 449 item 6) — someone connected to the
+   * order's School who may not confirm it is told why, never "not found":
+   * Branch Staff while the School doesn't let them record payments get 403
+   * STAFF_ACCESS_OFF (like Cancel), a coach 403 NOT_FOR_COACHES, Branch Staff
+   * for a student outside their branches, a member or a Guardian 403
+   * NO_PERMISSION, paused staff 403 ACCESS_PAUSED. Returns, leaving the
+   * owner's path its 404, for someone with no link to the School.
+   */
+  private async refuseDeskOrderConfirm(callerId: string, schoolId: string): Promise<void> {
+    if ((await this.tenantAuth.linkToSchool(callerId, schoolId)) === 'none') return;
+    const roles = await this.tenantAuth.staffRolesOrRefuse(callerId, schoolId);
+    if (roles.branchStaff) {
+      const school = await this.prismaJobs.school.findUnique({ where: { id: schoolId }, select: { branchStaffCanRecordPayments: true } });
+      if (!school?.branchStaffCanRecordPayments) {
+        throw new ForbiddenException({ code: 'STAFF_ACCESS_OFF', message: 'The School owner has not let Branch Staff record payments.' });
+      }
+      throw new ForbiddenException(NO_PERMISSION);
+    }
+    if (roles.coach) throw new ForbiddenException(NOT_FOR_COACHES);
+    throw new ForbiddenException(NO_PERMISSION);
   }
 
   /** The confirm itself, once the caller may: flips the Pending row to

@@ -323,6 +323,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       loadError: "Nie udało się wczytać rezerwacji — spróbuj ponownie.",
     },
     classRow: {
+      buyPlan: "Kup plan",
       dateRange: "{start} – {end}",
       breakLine: "Przerwa {start} – {end}",
       endsNextDay: "kończy się następnego dnia",
@@ -1125,13 +1126,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Nieznana dyscyplina",
       loading: "Wczytywanie stopnia…",
       rankError: "Nie udało się wczytać szczegółów stopnia.",
-      rank: "Stopień {order}",
-      rankWithStripes: {
-        one: "Stopień {order} · {count} belka",
-        few: "Stopień {order} · {count} belki",
-        many: "Stopień {order} · {count} belek",
-        other: "Stopień {order} · {count} belki",
-      },
     },
   },
   transactions: {
