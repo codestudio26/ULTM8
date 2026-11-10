@@ -193,6 +193,7 @@ export const serverMessages: Record<string, string> = {
   "SubscriptionPlan not found": "ไม่พบแพ็กเกจสมัครใช้แพลตฟอร์ม",
   "That is already the student's rank date.": "วันที่นี้เป็นวันที่ได้รับระดับของนักเรียนอยู่แล้ว",
   "The Franchise School roster is not available during an impersonation session.": "รายชื่อโรงเรียนในแฟรนไชส์ไม่พร้อมใช้งานระหว่างเซสชันเข้าใช้งานแทนผู้ใช้",
+  "The Franchise overview is not available during an impersonation session.": "ภาพรวมของแฟรนไชส์ไม่พร้อมใช้งานระหว่างเซสชันเข้าใช้งานแทนผู้ใช้",
   "The check-in window for this Class has closed.": "หมดเวลาเช็กอินสำหรับคลาสนี้แล้ว",
   "The current rank counts time only, so classes are not counted.": "ระดับปัจจุบันนับเฉพาะระยะเวลา จึงไม่มีการนับคลาส",
   "The grading date can't be in the future.": "วันที่เลื่อนระดับต้องไม่อยู่ในอนาคต",

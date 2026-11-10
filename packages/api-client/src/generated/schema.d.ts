@@ -900,6 +900,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/franchises/{id}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["FranchisesController_overview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/franchises/{id}/join-requests": {
         parameters: {
             query?: never;
@@ -9263,6 +9279,81 @@ export interface components {
             items: components["schemas"]["FranchiseMemberSchoolResponseDto"][];
             nextCursor?: string | null;
         };
+        FranchiseOverviewMonthDto: {
+            /** @description The month, YYYY-MM (each School's months are in its own time zone). */
+            month: string;
+            /** @description Check-ins (members and Friend Pass guests) at classes that started this month, up to now, as Students → Attendance counts them. */
+            checkIns: number;
+            /** @description Students whose join date at the School falls in this month, as Students → Growth counts them. */
+            newStudents: number;
+            /** @description Students whose Subscription ended by cancellation this month, up to now, as Students → Growth counts them. */
+            cancelled: number;
+        };
+        FranchiseOverviewRevenueMonthDto: {
+            /** @description The month, YYYY-MM. */
+            month: string;
+            /** @description Memberships: what was kept of plan purchases and renewals (minor units). */
+            memberships: number;
+            /** @description Charges: paid toward charges, less money given back (minor units). */
+            charges: number;
+            /** @description Fees: late-cancellation, freeze and no-show fees kept (minor units). */
+            fees: number;
+            /** @description Card surcharges kept (minor units). */
+            surcharges: number;
+            /** @description memberships + charges + fees + surcharges: the billing overview's "Total revenue". */
+            total: number;
+        };
+        FranchiseOverviewRevenueDto: {
+            /** @description ISO currency code. Different currencies are never added together. */
+            currency: string;
+            /** @description The last 12 months added up (minor units). */
+            memberships: number;
+            charges: number;
+            fees: number;
+            surcharges: number;
+            total: number;
+            /** @description Each month, oldest first. */
+            byMonth: components["schemas"]["FranchiseOverviewRevenueMonthDto"][];
+        };
+        FranchiseOverviewTotalsDto: {
+            /** @description Enrolled students now (an active student role at the School). */
+            enrolledStudents: number;
+            /** @description Active students now: the Dashboard's and Growth's count (Decision 317 item 5, Decision 422 item 5). */
+            activeStudents: number;
+            /** @description Check-ins over the last 30 days, as Students → Attendance counts them. */
+            checkInsLast30Days: number;
+            /** @description The last 12 months, oldest first. */
+            months: components["schemas"]["FranchiseOverviewMonthDto"][];
+            /** @description Revenue over the last 12 months, one entry per currency, by currency code. */
+            revenue: components["schemas"]["FranchiseOverviewRevenueDto"][];
+        };
+        FranchiseOverviewSchoolDto: {
+            /** @description Enrolled students now (an active student role at the School). */
+            enrolledStudents: number;
+            /** @description Active students now: the Dashboard's and Growth's count (Decision 317 item 5, Decision 422 item 5). */
+            activeStudents: number;
+            /** @description Check-ins over the last 30 days, as Students → Attendance counts them. */
+            checkInsLast30Days: number;
+            /** @description The last 12 months, oldest first. */
+            months: components["schemas"]["FranchiseOverviewMonthDto"][];
+            /** @description Revenue over the last 12 months, one entry per currency, by currency code. */
+            revenue: components["schemas"]["FranchiseOverviewRevenueDto"][];
+            schoolId: string;
+            name: string;
+            /**
+             * Format: date-time
+             * @description Set when the School has been closed.
+             */
+            archivedAt: string | null;
+            /** @description The time zone the School's months and days are in (UTC when it has none). */
+            timeZone: string;
+        };
+        FranchiseOverviewResponseDto: {
+            /** @description Every member School added up; revenue per currency. A month's figures add up each School's own month of that name. */
+            totals: components["schemas"]["FranchiseOverviewTotalsDto"];
+            /** @description The Schools that are members of the Franchise now, by name. */
+            schools: components["schemas"]["FranchiseOverviewSchoolDto"][];
+        };
         FranchiseJoinRequestListResponseDto: {
             items: components["schemas"]["FranchiseJoinRequestResponseDto"][];
         };
@@ -17216,6 +17307,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FranchiseMemberSchoolListResponseDto"];
+                };
+            };
+        };
+    };
+    FranchisesController_overview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FranchiseOverviewResponseDto"];
                 };
             };
         };

@@ -11,6 +11,7 @@ import { RoleGrantsController } from './role-grants/role-grants.controller';
 import { RoleGrantsService } from './role-grants/role-grants.service';
 import { FranchisesController } from './franchises/franchises.controller';
 import { FranchisesService } from './franchises/franchises.service';
+import { FranchiseOverviewService } from './franchises/franchise-overview.service';
 import { TenantAuthorizationService } from './tenant-authorization.service';
 import { CoachInviteLinksController, CoachInvitesController } from './coach-invites/coach-invites.controller';
 import { CoachInvitesService } from './coach-invites/coach-invites.service';
@@ -104,7 +105,7 @@ import { MedicalInfoService } from '../medical-info/medical-info.service';
 @Module({
   imports: [AuthModule, GuardiansModule, NotificationsModule, UsersModule, WaiverAssignmentModule, QueueModule, TimeZoneChangeModule],
   controllers: [SchoolsController, BranchesController, RoleGrantsController, FranchisesController, CoachInvitesController, CoachInviteLinksController, MedicalInfoController, MemberMedicalInfoController],
-  providers: [SchoolsService, StudentExportService, MemberDataExportService, BranchesService, RoleGrantsService, FranchisesService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
+  providers: [SchoolsService, StudentExportService, MemberDataExportService, BranchesService, RoleGrantsService, FranchisesService, FranchiseOverviewService, TenantAuthorizationService, CoachInvitesService, StripeClientService, MedicalInfoService],
   exports: [SchoolsService, FranchisesService, TenantAuthorizationService, RoleGrantsService, MedicalInfoService],
 })
 export class TenantsModule {}

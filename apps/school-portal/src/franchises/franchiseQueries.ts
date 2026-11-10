@@ -10,6 +10,7 @@ export type FranchiseFeeChargeResponse = components['schemas']['FranchiseFeeChar
 export type FranchiseMemberSchool = components['schemas']['FranchiseMemberSchoolResponseDto'];
 export type FranchiseJoinRequest = components['schemas']['FranchiseJoinRequestResponseDto'];
 export type FeeModel = components['schemas']['FranchiseResponseDto']['feeModel'];
+export type FranchiseOverview = components['schemas']['FranchiseOverviewResponseDto'];
 
 export interface FranchisesFilter {
   feeModel?: FeeModel;
@@ -88,6 +89,16 @@ export function useFranchiseSchools(franchiseId: string | null) {
   return useQuery({
     queryKey: ['franchise-schools', franchiseId],
     queryFn: () => unwrap(apiClient.GET('/v1/franchises/{id}/schools', { params: { path: { id: franchiseId! } } })),
+    enabled: !!franchiseId,
+  });
+}
+
+/** Decision 450 item 1 — the Franchise owner's read-only totals of its
+ * member Schools (GET /franchises/{id}/overview). */
+export function useFranchiseOverview(franchiseId: string | null) {
+  return useQuery({
+    queryKey: ['franchise-overview', franchiseId],
+    queryFn: () => unwrap(apiClient.GET('/v1/franchises/{id}/overview', { params: { path: { id: franchiseId! } } })),
     enabled: !!franchiseId,
   });
 }

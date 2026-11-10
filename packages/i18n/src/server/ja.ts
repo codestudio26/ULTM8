@@ -193,6 +193,7 @@ export const serverMessages: Record<string, string> = {
   "SubscriptionPlan not found": "サブスクリプションプランが見つかりません",
   "That is already the student's rank date.": "すでにその日付がこの生徒の段級取得日です。",
   "The Franchise School roster is not available during an impersonation session.": "代理ログインセッション中はフランチャイズのスクール一覧を利用できません。",
+  "The Franchise overview is not available during an impersonation session.": "代理ログインセッション中はフランチャイズの概要を利用できません。",
   "The check-in window for this Class has closed.": "このクラスのチェックイン受付時間は終了しました。",
   "The current rank counts time only, so classes are not counted.": "現在の段級は期間のみで判定されるため、受講回数はカウントされません。",
   "The grading date can't be in the future.": "昇級日を未来の日付にすることはできません。",
