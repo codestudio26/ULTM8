@@ -1,0 +1,51 @@
+[
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "School B's member picks the School by join code and signs in, in pt-BR",
+  "status": "PASS",
+  "evidence": "ULTM8 Aluno / ULTM8 Aluno / Meu perfil / Alterar código de acesso / Explorar academias / Fazer check-in / Minha graduação / Anotações da sua Escola / Minhas reservas / Minhas mat"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "member app screens (login, home, myMemberships, myBookings, waivers, notifications, myGrading, paymentHistory, myMinors, charges, schoolPlans, profile, deleteAccount): no raw keys and no untranslated English",
+  "status": "PASS",
+  "evidence": "clean"
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "the \"card payments aren't available, pay by Pix or cash\" note shows where they would pay",
+  "status": "PASS",
+  "evidence": "on the schoolPlans screen: \"Pagamentos com cartão ainda não estão di…\""
+ },
+ {
+  "school": "B",
+  "journey": "6",
+  "step": "member app console errors",
+  "status": "PASS",
+  "evidence": "none"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "the School's plans show the monthly plan to buy, with the Pix/cash note and no \"switch\" opt-in",
+  "status": "PASS",
+  "evidence": "monthly \"Mensal ilimitado\" listed true; Pix note true; switch opt-in text shown false"
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "a member the School added: the app shows \"Antes de continuar\" first, in Portuguese, with links to the Terms and the Privacy Policy",
+  "status": "PASS",
+  "evidence": "\"Antes de continuar / Para usar o ULTM8, aceite os Termos de Serviço e leia a Política de Privacidade. Você só precisa fazer isso uma vez. / Concordo com os Termos d\"; raw ; English "
+ },
+ {
+  "school": "B",
+  "journey": "8",
+  "step": "ticking it records the acceptance and opens Home",
+  "status": "PASS",
+  "evidence": "acceptance rows 2; now \"ULTM8 Aluno / ULTM8 Aluno / Meu perfil / Alterar código de acesso / Explorar academias / Fazer check-in / Minha \""
+ }
+]

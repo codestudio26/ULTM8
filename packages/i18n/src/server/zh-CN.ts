@@ -253,7 +253,7 @@ export const serverMessages: Record<string, string> = {
   "This Student already has an active Waitlist entry for this Class.": "该学员已在此课程的候补名单中。",
   "This Student already holds a non-Expired signature for this Waiver.": "该学员已持有此免责声明的有效签名。",
   "This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.": "该学员已在此学校持有有效的通用会员资格——已从你保存的卡中扣款，现已退款。",
-  "This Student already holds an active general-access Membership at this School.": "该学员已在此学校持有有效的通用会员资格。",
+  "This Student already holds an active Subscription or Weekly Pass at this School.": "该学员已在此学校持有有效的通用会员资格。",
   "This Student has no Active Membership eligible to fund this Booking.": "该学员没有可用于此预约的有效会员资格。",
   "This Student has no existing rank in this Discipline to award a stripe within.": "该学员在此项目中没有段位，无法授予条纹。",
   "This Student has no existing rank in this Discipline to downgrade from.": "该学员在此项目中没有段位，无法降级。",

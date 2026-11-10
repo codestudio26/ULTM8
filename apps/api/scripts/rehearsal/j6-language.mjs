@@ -1,6 +1,6 @@
 // Journey 6 (part 1, no browser): School B runs in Brazilian Portuguese.
-//  - Every string added since LANG_BASE (default 08bdcddf, just before the
-//    launch-week builds #484–#501) in the portal, the member app and the API's
+//  - Every string added since LANG_BASE (default 22cd5e4f, rehearsal 1's
+//    merge, so everything built since: Decisions 441–448) in the portal, the member app and the API's
 //    error messages has a pt-BR text that isn't the English one.
 //  - Every API error message School B's people actually got in this run has a
 //    pt-BR text (the apps show the API's English message through that table).
@@ -14,7 +14,7 @@ import { execFileSync } from 'child_process';
 import { journey, check, ok, errorsSeen } from './lib.mjs';
 
 const ROOT = new URL('../../../../', import.meta.url).pathname;
-const BASE = process.env.LANG_BASE || '08bdcddf';
+const BASE = process.env.LANG_BASE || '22cd5e4f'; // rehearsal 1's merge (#504)
 const FILES = {
   portalEn: 'apps/school-portal/src/i18n/messages/en-GB.ts',
   portalPt: 'apps/school-portal/src/i18n/messages/pt-BR.ts',

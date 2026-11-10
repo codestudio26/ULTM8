@@ -253,7 +253,7 @@ export const serverMessages: Record<string, string> = {
   "This Student already has an active Waitlist entry for this Class.": "Ten uczeń jest już na liście oczekujących na te zajęcia.",
   "This Student already holds a non-Expired signature for this Waiver.": "Ten uczeń ma już ważny podpis pod tym oświadczeniem.",
   "This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.": "Ten uczeń ma już aktywne członkostwo z ogólnym dostępem w tej szkole — Twoja zapisana karta została obciążona, a kwota została już zwrócona.",
-  "This Student already holds an active general-access Membership at this School.": "Ten uczeń ma już aktywne członkostwo z ogólnym dostępem w tej szkole.",
+  "This Student already holds an active Subscription or Weekly Pass at this School.": "Ten uczeń ma już aktywne członkostwo z ogólnym dostępem w tej szkole.",
   "This Student has no Active Membership eligible to fund this Booking.": "Ten uczeń nie ma aktywnego członkostwa, z którego można opłacić tę rezerwację.",
   "This Student has no existing rank in this Discipline to award a stripe within.": "Ten uczeń nie ma jeszcze stopnia w tej dyscyplinie, w ramach którego można przyznać belkę.",
   "This Student has no existing rank in this Discipline to downgrade from.": "Ten uczeń nie ma jeszcze stopnia w tej dyscyplinie, który można obniżyć.",

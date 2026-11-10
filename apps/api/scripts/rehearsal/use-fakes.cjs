@@ -10,7 +10,8 @@
 //   - R2 (S3) object storage: PutObject, DeleteObject, HeadObject and
 //     GetObject are kept in memory, so staff can upload a member's file and
 //     the erasure job can delete it. GET http://localhost:REHEARSAL_R2_PORT
-//     (default 12518) lists the keys held.
+//     (default 12518) lists the keys held; PUT /<bucket>/<key> stores one,
+//     as a browser's upload to a presigned URL would.
 // Never load this in a deployed API.
 require('../stress/billing/use-fake-stripe.cjs');
 const Module = require('module');
@@ -54,5 +55,16 @@ Module._load = function (request) {
   };
   return mod;
 };
-require('http').createServer((req, res) => { res.setHeader('content-type', 'application/json'); res.end(JSON.stringify([...objects.keys()])); })
+// PUT /<bucket>/<key> stands in for the browser's own upload to a presigned
+// URL (a coach's certification file): the object is then held like the rest.
+require('http').createServer((req, res) => {
+  res.setHeader('content-type', 'application/json');
+  if (req.method === 'PUT') {
+    let size = 0;
+    req.on('data', (c) => (size += c.length));
+    req.on('end', () => { objects.set(decodeURIComponent(req.url.slice(1)), { size, type: req.headers['content-type'] }); res.end('{}'); });
+    return;
+  }
+  res.end(JSON.stringify([...objects.keys()]));
+})
   .listen(Number(process.env.REHEARSAL_R2_PORT || 12518), '127.0.0.1');

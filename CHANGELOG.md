@@ -15,6 +15,22 @@ pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
 Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
 `apps/api`) only — Track B (`apps/student`) is versioned separately.
 
+- **Launch rehearsal 2** — the same UK and Brazilian Schools taken through
+  every journey of rehearsal 1 again, plus everything built since (Decisions
+  441–448): Brazil's monthly plans, Branch Staff confirming Pix and cash,
+  the waiver rule, Stripe readiness and who may connect Stripe, the "I agree"
+  steps and legal pages, a coach deleting their account, and the round 6
+  money, access and privacy fixes, through the API and in a browser in
+  Portuguese, with six roles trying the other School. 369 checks passed and
+  none failed; four questions for the product owner. Report in
+  `docs/handover/LAUNCH-REHEARSAL-2.md`, scripts in
+  `apps/api/scripts/rehearsal/`.
+  - *Fixed:* a refusal for a member who already has a Weekly Pass or monthly
+    plan ("This Student already holds an active Subscription or Weekly Pass
+    at this School.") now shows its reason in every language. It showed only
+    the generic error text, because the translation tables had its older
+    wording.
+
 - **Legal go-live: "I agree" step, 18+ sign-up and the Children notice version**
   (Track A and Track B; Decision 444). **Needs a database migration**
   (`20270324000001_legal_acceptance`).

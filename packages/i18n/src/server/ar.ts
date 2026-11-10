@@ -253,7 +253,7 @@ export const serverMessages: Record<string, string> = {
   "This Student already has an active Waitlist entry for this Class.": "هذا الطالب مُدرج بالفعل في قائمة الانتظار لهذه الحصة.",
   "This Student already holds a non-Expired signature for this Waiver.": "لدى هذا الطالب توقيع ساري المفعول على إقرار إخلاء المسؤولية هذا بالفعل.",
   "This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.": "لدى هذا الطالب اشتراك عام نشط في هذه المدرسة بالفعل — خُصم المبلغ من بطاقتك المحفوظة ثم أُعيد إليها.",
-  "This Student already holds an active general-access Membership at this School.": "لدى هذا الطالب اشتراك عام نشط في هذه المدرسة بالفعل.",
+  "This Student already holds an active Subscription or Weekly Pass at this School.": "لدى هذا الطالب اشتراك عام نشط في هذه المدرسة بالفعل.",
   "This Student has no Active Membership eligible to fund this Booking.": "ليس لدى هذا الطالب اشتراك نشط يمكن استخدامه لهذا الحجز.",
   "This Student has no existing rank in this Discipline to award a stripe within.": "ليس لدى هذا الطالب رتبة في هذا الأسلوب لمنح شريط ضمنها.",
   "This Student has no existing rank in this Discipline to downgrade from.": "ليس لدى هذا الطالب رتبة في هذا الأسلوب لخفضها.",

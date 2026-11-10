@@ -253,7 +253,7 @@ export const serverMessages: Record<string, string> = {
   "This Student already has an active Waitlist entry for this Class.": "이 수련생은 이미 이 수업의 대기자 명단에 등록되어 있습니다.",
   "This Student already holds a non-Expired signature for this Waiver.": "이 수련생은 이미 이 면책 동의서에 유효한 서명을 했습니다.",
   "This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.": "이 수련생은 이미 이 도장의 전체 수업 이용 회원권을 보유하고 있습니다. 저장된 카드로 결제된 금액은 환불되었습니다.",
-  "This Student already holds an active general-access Membership at this School.": "이 수련생은 이미 이 도장의 전체 수업 이용 회원권을 보유하고 있습니다.",
+  "This Student already holds an active Subscription or Weekly Pass at this School.": "이 수련생은 이미 이 도장의 전체 수업 이용 회원권을 보유하고 있습니다.",
   "This Student has no Active Membership eligible to fund this Booking.": "이 수련생에게는 이 예약에 사용할 수 있는 활성 회원권이 없습니다.",
   "This Student has no existing rank in this Discipline to award a stripe within.": "이 수련생은 이 종목에 급이 없어 그랄을 수여할 수 없습니다.",
   "This Student has no existing rank in this Discipline to downgrade from.": "이 수련생은 이 종목에 급이 없어 강등할 수 없습니다.",

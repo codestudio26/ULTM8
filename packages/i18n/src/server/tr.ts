@@ -253,7 +253,7 @@ export const serverMessages: Record<string, string> = {
   "This Student already has an active Waitlist entry for this Class.": "Bu öğrenci bu dersin bekleme listesinde zaten etkin olarak bulunuyor.",
   "This Student already holds a non-Expired signature for this Waiver.": "Bu öğrencinin bu feragatname için süresi dolmamış bir imzası zaten var.",
   "This Student already holds an active general-access Membership at this School — your saved card was charged and has now been refunded.": "Bu öğrencinin bu okulda zaten etkin bir genel erişim üyeliği var — kayıtlı kartınızdan ücret alındı ve iade edildi.",
-  "This Student already holds an active general-access Membership at this School.": "Bu öğrencinin bu okulda zaten etkin bir genel erişim üyeliği var.",
+  "This Student already holds an active Subscription or Weekly Pass at this School.": "Bu öğrencinin bu okulda zaten etkin bir genel erişim üyeliği var.",
   "This Student has no Active Membership eligible to fund this Booking.": "Bu öğrencinin bu rezervasyonu karşılayabilecek etkin bir üyeliği yok.",
   "This Student has no existing rank in this Discipline to award a stripe within.": "Bu öğrencinin bu branşta şerit verilebilecek bir derecesi henüz yok.",
   "This Student has no existing rank in this Discipline to downgrade from.": "Bu öğrencinin bu branşta düşürülebilecek bir derecesi henüz yok.",
