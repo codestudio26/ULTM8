@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaAppService } from '../common/prisma/prisma-app.service';
 import { TenantAuthorizationService } from '../tenants/tenant-authorization.service';
-import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { CursorPage, decodeDescCursor, encodeDescCursor, resolveLimit } from '../common/pagination/cursor-paginate';
 import { StripeClientService } from '../payments/stripe-client.service';
 import { PrismaJobsService } from '../common/prisma/prisma-jobs.service';
 import { FranchiseFeeBillingService } from './franchise-fee-billing.service';
@@ -121,9 +122,7 @@ export class FranchiseFeesService {
    * FranchisesService.findSchoolsForFranchise's own convention of relying on the
    * tenant-boundary check alone for a read, not a role-specific one. */
   async findAllForFranchise(callerId: string, franchiseId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.franchiseFeeCharge.findMany({ ...args, where: { franchiseId } }), cursor, limit),
-    );
+    return this.pageNewestFirst(callerId, { franchiseId }, cursor, limit);
   }
 
   /** GET /schools/:id/fee-charges — the School's Owner/Manager only (Decision
@@ -131,9 +130,43 @@ export class FranchiseFeesService {
    * admits every role at the School, so the narrowing is here. */
   async findAllForSchool(callerId: string, schoolId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
     await this.tenantAuth.assertSchoolOwner(callerId, schoolId);
-    return this.prismaApp.withTenantContext(callerId, (tx) =>
-      cursorPaginate((args) => tx.franchiseFeeCharge.findMany({ ...args, where: { schoolId } }), cursor, limit),
+    return this.pageNewestFirst(callerId, { schoolId }, cursor, limit);
+  }
+
+  /** Decision 450 item 2 (demo finding): the fee-charge lists came back in id order
+   * (random UUIDs), so the Franchise page's charges were in no date order.
+   * Newest billing period first, ties on id, with the same `(sortValue, id)
+   * DESC` keyset as the Transactions ledger (Decision 339, T2); the cursor is
+   * opaque, as before. Same RLS-scoped read (withTenantContext) as before. */
+  private async pageNewestFirst(
+    callerId: string,
+    where: Prisma.FranchiseFeeChargeWhereInput,
+    cursor: string | undefined,
+    limit: number | undefined,
+  ): Promise<CursorPage<{ id: string }>> {
+    const take = resolveLimit(limit);
+    let after: { sortValue: Date; id: string } | null = null;
+    if (cursor) {
+      try {
+        after = decodeDescCursor(cursor);
+      } catch {
+        throw new BadRequestException('cursor is not valid');
+      }
+      if (Number.isNaN(after.sortValue.getTime()) || typeof after.id !== 'string') throw new BadRequestException('cursor is not valid');
+    }
+    const rows = await this.prismaApp.withTenantContext(callerId, (tx) =>
+      tx.franchiseFeeCharge.findMany({
+        where: after
+          ? { AND: [where, { OR: [{ billingPeriodStart: { lt: after.sortValue } }, { billingPeriodStart: after.sortValue, id: { lt: after.id } }] }] }
+          : where,
+        orderBy: [{ billingPeriodStart: 'desc' }, { id: 'desc' }],
+        take: take + 1,
+      }),
     );
+    const hasMore = rows.length > take;
+    const items = hasMore ? rows.slice(0, take) : rows;
+    const last = items[items.length - 1];
+    return { items, nextCursor: hasMore && last ? encodeDescCursor(last.billingPeriodStart, last.id) : null };
   }
 
   async findOne(callerId: string, id: string) {

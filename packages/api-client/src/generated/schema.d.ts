@@ -7974,6 +7974,8 @@ export interface components {
             chargeNoticeDueReminder?: boolean;
             /** @description Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on). */
             chargeNoticeRefund?: boolean;
+            /** @description Decision 450 item 8: tell the member "Payment confirmed" when a saved-card purchase is confirmed after the purchase screen (default on). */
+            chargeNoticeCardConfirmed?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**
@@ -8120,6 +8122,8 @@ export interface components {
             chargeNoticeDueReminder: boolean;
             /** @description Decisions 414 and 415 item 4: "Refund" notices to the member, for every refund (default on). */
             chargeNoticeRefund: boolean;
+            /** @description Decision 450 item 8: the late "Payment confirmed" notice for a saved-card purchase (default on). */
+            chargeNoticeCardConfirmed: boolean;
             /** @description Decision 391: days a Visitor's visit pass lasts. Null until the School sets it. */
             visitorPeriodDays?: number | null;
             /** @description Decision 317 item 7: weeks without a check-in before staff get an absence alert. Null: off. */
@@ -8282,6 +8286,8 @@ export interface components {
             chargeNoticeDueReminder?: boolean;
             /** @description Decisions 414 and 415 item 4: tell the member when a payment is refunded (default on). */
             chargeNoticeRefund?: boolean;
+            /** @description Decision 450 item 8: tell the member "Payment confirmed" when a saved-card purchase is confirmed after the purchase screen (default on). */
+            chargeNoticeCardConfirmed?: boolean;
             /** @description Decision 392 (Decision 315 item 6): the "How did you hear about us?" choices, in order (1 to 30, each up to 60 characters, no repeats). null goes back to the starting list. */
             heardFromOptions?: string[] | null;
             /**

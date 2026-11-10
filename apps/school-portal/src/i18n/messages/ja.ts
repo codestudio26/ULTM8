@@ -4664,6 +4664,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "カード払いの異議申し立て",
       noticeDueReminder: "請求の期限の3日前にリマインダー",
       noticeRefund: "お支払いの返金",
+      noticeCardPaymentConfirmed: "後から確認された保存済みカードでの購入",
+      noticeCardPaymentConfirmedHint: "会員が購入画面を離れた後にプランのカード支払いが確認されたときに送信されます。同じ支払いで、請求は1回だけであることを伝えます。",
     },
     card: {
       title: "支払い",

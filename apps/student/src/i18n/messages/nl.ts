@@ -1083,11 +1083,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "Onbekende discipline",
       loading: "Graad laden…",
       rankError: "De details van de graad konden niet worden geladen.",
-      rank: "Graad {order}",
-      rankWithStripes: {
-        one: "Graad {order} · {count} streep",
-        other: "Graad {order} · {count} strepen",
-      },
     },
   },
   transactions: {

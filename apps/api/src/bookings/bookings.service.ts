@@ -12,7 +12,8 @@ import { TenantAuthorizationService } from '../tenants/tenant-authorization.serv
 import { GuardiansService } from '../guardians/guardians.service';
 import { SubscriptionGateService } from '../subscription-plans/subscription-gate.service';
 import { NoSavedPaymentMethodError, PaymentsService } from '../payments/payments.service';
-import { cursorPaginate, CursorPage } from '../common/pagination/cursor-paginate';
+import { cursorPaginate, CursorPage, resolveLimit } from '../common/pagination/cursor-paginate';
+import { decodeMyBookingsCursor, encodeMyBookingsCursor, MY_BOOKINGS_PARTS, myBookingsPartQuery, type MyBookingsPart } from './my-bookings-order';
 import { WAITLIST_CASCADE_PROCESSING_QUEUE } from '../jobs/queue.constants';
 import { CancellationService, creditSeats, SeatRef, StripeRefundPlan } from './cancellation.service';
 import { lateCancellationFee } from './late-cancellation-fee';
@@ -758,13 +759,40 @@ export class BookingsService {
     };
   }
 
+  /** Decision 450 item 2 (demo finding): in the class's date order, not by id — upcoming
+   * classes soonest first, then past ones newest first (the app's one list),
+   * then any whose class can no longer be read; see my-bookings-order.ts for
+   * the parts and the cursor. */
   async findMyBookings(callerId: string, cursor?: string, limit?: number): Promise<CursorPage<{ id: string }>> {
+    const after = cursor ? decodeMyBookingsCursor(cursor) : null;
+    const at = after?.at ?? new Date();
+    const take = resolveLimit(limit);
     return this.prismaApp.withTenantContext(callerId, async (tx) => {
-      const page = await cursorPaginate(
-        (args) => tx.booking.findMany({ ...args, where: { studentId: callerId }, include: { attendees: true } }),
-        cursor,
-        limit,
-      );
+      // Over-fetch by one across the parts, in order, to know whether a next page exists.
+      const rows: Array<{ row: Awaited<ReturnType<typeof findPart>>[number]; part: MyBookingsPart; start: Date | null }> = [];
+      function findPart(part: MyBookingsPart, n: number) {
+        const q = myBookingsPartQuery(part, at, after);
+        return tx.booking.findMany({ where: { studentId: callerId, ...q.where }, orderBy: q.orderBy, take: n, include: { attendees: true } });
+      }
+      for (const part of MY_BOOKINGS_PARTS.slice(after ? MY_BOOKINGS_PARTS.indexOf(after.part) : 0)) {
+        if (rows.length > take) break;
+        const found = await findPart(part, take + 1 - rows.length);
+        // The start time, for the cursor. Read apart from the rows: a "gone"
+        // booking's class is hidden by RLS, which a required-relation include
+        // can't return (Prisma refuses the null).
+        const starts =
+          part === 'gone'
+            ? new Map<string, Date>()
+            : new Map((await tx.class.findMany({ where: { id: { in: found.map((b) => b.classId) } }, select: { id: true, startDate: true } })).map((c) => [c.id, c.startDate]));
+        for (const row of found) rows.push({ row, part, start: starts.get(row.classId) ?? null });
+      }
+      const hasMore = rows.length > take;
+      const pageRows = hasMore ? rows.slice(0, take) : rows;
+      const last = pageRows[pageRows.length - 1];
+      const page = {
+        items: pageRows.map((r) => r.row),
+        nextCursor: hasMore && last ? encodeMyBookingsCursor({ part: last.part, at, start: last.start, id: last.row.id }) : null,
+      };
       // Student portal review SP4 (Decision 427): the app showed "Class <id>".
       // Each booking now carries its class's name and times and its School's
       // name. Read separately, not as an include: a class or School this

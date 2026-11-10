@@ -1074,10 +1074,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       unknownDiscipline: "不明な種目",
       loading: "級を読み込み中…",
       rankError: "級の詳細を読み込めませんでした。",
-      rank: "級 {order}",
-      rankWithStripes: {
-        other: "級 {order} · ストライプ {count}本",
-      },
     },
   },
   transactions: {

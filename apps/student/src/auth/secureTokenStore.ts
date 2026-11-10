@@ -22,7 +22,20 @@
  * this app's actual shipped platform per Decision 113) is unaffected — Keychain/Keystore
  * both work normally. `isAvailableAsync()` now makes the web gap an explicit, one-time
  * warning instead of a silent no-op indistinguishable from "everything's fine."
+ *
+ * CLOSED (Decision 450 item 5, a demo finding): on web the store now keeps both tokens in the
+ * browser's `sessionStorage`, exactly as the School Portal does (`@ultm8/auth`'s
+ * `sessionStorageTokenStore`, whose header comment gives the reasoning: tab-scoped,
+ * cleared when the tab closes, never localStorage), under the same keys. So a reload
+ * keeps the session: the stored access token is used, or the stored refresh token
+ * renews it (AuthContext's launch path, the portal's own refresh flow). Same posture
+ * as the portal, so no new security trade-off: readable by script on the origin like
+ * any web token (the portal's XSS note applies), and gone with the tab, so a new tab
+ * or a restarted browser signs in again. iOS/Android are unchanged: Keychain/Keystore
+ * via expo-secure-store, never web storage (`webSessionBackend` is used only when
+ * `Platform.OS === 'web'`).
  */
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 const STORAGE_KEY = 'ultm8.accessToken';
@@ -50,7 +63,43 @@ async function warnIfUnavailable(): Promise<void> {
   }
 }
 
-export const secureTokenStore: AsyncTokenStore = {
+/** Web only: the browser's sessionStorage, as the School Portal keeps its tokens
+ * (see the header comment). A storage that is missing or refused (private
+ * browsing, storage switched off) reads as "logged out" rather than crashing, as
+ * the portal's store does. Exported for its tests. */
+export function createWebSessionTokenStore(storage: () => Storage | undefined = () => (typeof window === 'undefined' ? undefined : window.sessionStorage)): AsyncTokenStore {
+  const read = (key: string): string | null => {
+    try {
+      return storage()?.getItem(key) ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const write = (key: string, value: string): void => {
+    try {
+      storage()?.setItem(key, value);
+    } catch {
+      // A failed write just means the session won't survive a reload.
+    }
+  };
+  return {
+    get: async () => read(STORAGE_KEY),
+    set: async (token) => write(STORAGE_KEY, token),
+    clear: async () => {
+      try {
+        // Both keys, always together (see secureTokenStore.clear() below).
+        storage()?.removeItem(STORAGE_KEY);
+        storage()?.removeItem(REFRESH_STORAGE_KEY);
+      } catch {
+        /* noop */
+      }
+    },
+    getRefreshToken: async () => read(REFRESH_STORAGE_KEY),
+    setRefreshToken: async (token) => write(REFRESH_STORAGE_KEY, token),
+  };
+}
+
+const nativeSecureTokenStore: AsyncTokenStore = {
   async get() {
     try {
       await warnIfUnavailable();
@@ -97,3 +146,7 @@ export const secureTokenStore: AsyncTokenStore = {
     }
   },
 };
+
+/** iOS/Android: Keychain/Keystore (expo-secure-store). Web: sessionStorage, as
+ * the School Portal (see the header comment). */
+export const secureTokenStore: AsyncTokenStore = Platform.OS === 'web' ? createWebSessionTokenStore() : nativeSecureTokenStore;

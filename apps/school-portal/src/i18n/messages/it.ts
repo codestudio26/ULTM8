@@ -4710,6 +4710,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Una contestazione su un pagamento con carta",
       noticeDueReminder: "Un promemoria 3 giorni prima della scadenza di un addebito",
       noticeRefund: "Un rimborso di un pagamento",
+      noticeCardPaymentConfirmed: "Un acquisto con carta salvata confermato in seguito",
+      noticeCardPaymentConfirmedHint: "Inviata quando un pagamento con carta per un piano viene confermato dopo che il membro ha lasciato la schermata di acquisto. Dice che è lo stesso pagamento, addebitato una sola volta.",
     },
     card: {
       title: "Pagamenti",

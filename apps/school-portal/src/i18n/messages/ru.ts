@@ -4822,6 +4822,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Спор по платежу картой",
       noticeDueReminder: "Напоминание за 3 дня до срока оплаты начисления",
       noticeRefund: "Возврат платежа",
+      noticeCardPaymentConfirmed: "Покупка сохранённой картой, подтверждённая позже",
+      noticeCardPaymentConfirmedHint: "Отправляется, когда оплата плана картой подтверждается после того, как участник покинул экран покупки. Сообщает, что это тот же платёж, списанный один раз.",
     },
     card: {
       title: "Платежи",

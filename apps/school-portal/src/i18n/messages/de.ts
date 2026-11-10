@@ -4710,6 +4710,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Eine Anfechtung einer Kartenzahlung",
       noticeDueReminder: "Eine Erinnerung 3 Tage vor Fälligkeit einer Gebühr",
       noticeRefund: "Eine Rückerstattung einer Zahlung",
+      noticeCardPaymentConfirmed: "Ein später bestätigter Kauf mit gespeicherter Karte",
+      noticeCardPaymentConfirmedHint: "Wird gesendet, wenn eine Kartenzahlung für einen Tarif bestätigt wird, nachdem das Mitglied den Kaufbildschirm verlassen hat. Sie sagt, dass es dieselbe Zahlung ist, nur einmal belastet.",
     },
     card: {
       title: "Zahlungen",

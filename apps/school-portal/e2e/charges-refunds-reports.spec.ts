@@ -97,3 +97,21 @@ test('the refund notice has its own switch among the payment notifications, on b
   await expect(settings.getByText('Saved.')).toBeVisible();
   expect((await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).chargeNoticeRefund).toBe(false);
 });
+
+test('the late saved-card "Payment confirmed" notice has its own switch, on by default (Decision 450 item 8)', async ({ page }) => {
+  await page.goto('/school');
+  const settings = page.getByTestId('charge-settings');
+  const cardSwitch = settings.getByRole('switch', { name: 'A saved-card purchase confirmed later' });
+  await expect(cardSwitch).toBeChecked();
+  await expect(settings.getByText('It says this is the same payment, charged once.', { exact: false })).toBeVisible();
+  const before = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
+  await cardSwitch.click();
+  await expect(cardSwitch).not.toBeChecked();
+  await settings.getByRole('button', { name: 'Save' }).click();
+  await expect(settings.getByText('Saved.')).toBeVisible();
+  const after = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
+  expect(after.chargeNoticeCardConfirmed).toBe(false);
+  // The other payment notices keep their own switches.
+  expect(after.chargeNoticeRefund).toBe(before.chargeNoticeRefund);
+  expect(after.chargeNoticeReceipt).toBe(before.chargeNoticeReceipt);
+});

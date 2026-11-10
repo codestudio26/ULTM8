@@ -4710,6 +4710,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Una disputa de un pago con tarjeta",
       noticeDueReminder: "Un recordatorio 3 días antes de que venza un cargo",
       noticeRefund: "Un reembolso de un pago",
+      noticeCardPaymentConfirmed: "Una compra con tarjeta guardada confirmada más tarde",
+      noticeCardPaymentConfirmedHint: "Se envía cuando un pago con tarjeta de un plan se confirma después de que el miembro salió de la pantalla de compra. Indica que es el mismo pago, cobrado una sola vez.",
     },
     card: {
       title: "Pagos",

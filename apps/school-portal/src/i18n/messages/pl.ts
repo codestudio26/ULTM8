@@ -4822,6 +4822,8 @@ export const messages: PartialMessages<EnglishMessages> = {
       noticeDispute: "Spór o płatność kartą",
       noticeDueReminder: "Przypomnienie 3 dni przed terminem należności",
       noticeRefund: "Zwrot płatności",
+      noticeCardPaymentConfirmed: "Zakup zapisaną kartą potwierdzony później",
+      noticeCardPaymentConfirmedHint: "Wysyłane, gdy płatność kartą za plan zostanie potwierdzona po opuszczeniu przez członka ekranu zakupu. Informuje, że to ta sama płatność, pobrana tylko raz.",
     },
     card: {
       title: "Płatności",

@@ -103,3 +103,11 @@ test('clicking the Name cell navigates to the Franchise detail page, same as "Vi
   await expect(page).toHaveURL(/\/franchises\/[\w-]+$/);
   await expect(page.getByRole('heading', { name: 'Flat Jiu Jitsu Co' })).toBeVisible();
 });
+
+test('the header names a Franchise owner\'s role as "Franchise owner", never the raw code (Decision 450 item 3)', async ({ page }) => {
+  await signIn(page, ownerToken);
+  await page.goto('/franchises');
+  await expect(page.getByRole('cell', { name: 'Flat Jiu Jitsu Co' })).toBeVisible();
+  await expect(page.getByText('Franchise owner', { exact: true })).toBeVisible();
+  await expect(page.getByText('FRANCHISE_OWNER')).toHaveCount(0);
+});

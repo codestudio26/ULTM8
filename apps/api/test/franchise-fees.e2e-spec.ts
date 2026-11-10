@@ -141,15 +141,15 @@ describeIfDb('FranchiseFeesModule — HTTP-level cross-tenant isolation and refu
    * invoice.paid handler, neither of which is exercisable without live Stripe
    * — see this file's own header comment), same convention every other
    * cross-boundary fixture in this suite already uses. */
-  async function seedCharge(overrides: Partial<{ status: string; amount: number }> = {}) {
+  async function seedCharge(overrides: Partial<{ status: string; amount: number; periodStart: Date }> = {}) {
     const charge = await superuser.franchiseFeeCharge.create({
       data: {
         id: randomUUID(),
         franchiseId: franchise.id,
         schoolId: school.id,
         franchisePaymentAccountId: paymentAccount.id,
-        billingPeriodStart: new Date('2026-09-01'),
-        billingPeriodEnd: new Date('2026-09-30'),
+        billingPeriodStart: overrides.periodStart ?? new Date('2026-09-01'),
+        billingPeriodEnd: new Date((overrides.periodStart ?? new Date('2026-09-01')).getTime() + 29 * 86_400_000),
         feeBasisSnapshot: 'FLAT',
         amount: overrides.amount ?? 10000,
         currency: 'USD',
@@ -177,6 +177,38 @@ describeIfDb('FranchiseFeesModule — HTTP-level cross-tenant isolation and refu
       .set('Authorization', `Bearer ${tokenSchoolOwner}`);
     expect(res.status).toBe(200);
     expect(res.body.items.map((c: { id: string }) => c.id)).toContain(charge.id);
+  });
+
+  it('both lists are newest billing period first, paged without skipping or repeating (Decision 450 item 2)', async () => {
+    const seeded = [
+      await seedCharge({ periodStart: new Date('2026-07-01') }),
+      await seedCharge({ periodStart: new Date('2026-11-01') }),
+      await seedCharge({ periodStart: new Date('2026-08-01') }),
+      await seedCharge({ periodStart: new Date('2026-10-01') }),
+    ];
+    for (const [path, token] of [
+      [`/v1/franchises/${franchise.id}/fee-charges`, tokenFranchiseOwner],
+      [`/v1/schools/${school.id}/fee-charges`, tokenSchoolOwner],
+    ] as const) {
+      const all: Array<{ id: string; billingPeriodStart: string }> = [];
+      let cursor: string | null = null;
+      for (let i = 0; i < 50; i++) {
+        const res = await request(app.getHttpServer())
+          .get(`${path}?limit=2${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`)
+          .set('Authorization', `Bearer ${token}`);
+        expect(res.status).toBe(200);
+        all.push(...res.body.items);
+        cursor = res.body.nextCursor;
+        if (!cursor) break;
+      }
+      expect(new Set(all.map((c) => c.id)).size).toBe(all.length);
+      const sorted = [...all].sort((a, b) => b.billingPeriodStart.localeCompare(a.billingPeriodStart) || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0));
+      expect(all.map((c) => c.id)).toEqual(sorted.map((c) => c.id));
+      expect(all[0].id).toBe(seeded[1].id);
+      expect(all.map((c) => c.id)).toEqual(expect.arrayContaining(seeded.map((c) => c.id)));
+      const bad = await request(app.getHttpServer()).get(`${path}?cursor=${seeded[0].id}`).set('Authorization', `Bearer ${token}`);
+      expect(bad.status).toBe(400);
+    }
   });
 
   it('a Franchise Owner with zero relationship to this Franchise gets 404, not the other Franchise\'s charges', async () => {
