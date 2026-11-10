@@ -8,12 +8,14 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 ## Unreleased
 
-**Planned: v1.1.0** — the website front-end page redesigns and new features now
-under way. This is a plan, not a release: the product owner decides which
-pages complete v1.1, and only then is this heading renamed and `v1.1.0` tagged.
+Post-v1.4.0 work on `master`. Nothing yet.
 
-Post-V1 work on `master`. Track A (`apps/school-portal`, `apps/platform-admin`,
-`apps/api`) only — Track B (`apps/student`) is versioned separately.
+## v1.4.0 — 2026-11-10
+
+Named v1.4 by the product owner on 10 Nov 2026. It covers all post-V1 work on
+`master` since `v1.0.0` (the plans earlier called v1.1, v1.2 and v1.3 are part
+of it; no separate v1.1–v1.3 tags exist). Track A (`apps/school-portal`,
+`apps/platform-admin`, `apps/api`) and Track B (`apps/student`) as on `master`.
 
 - **Decision 450 item 1: the Franchise owner's overview of its member
   Schools** (Track A). **Needs a database migration**
