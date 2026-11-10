@@ -8130,3 +8130,32 @@ User (Code), 7 Nov 2026, item by item in chat: 1 "if we can separated them might
 ### Recorded by
 
 User (Code), 10 Nov 2026, item by item in chat. Rehearsal: A1 "We have no data, So it will be done before we go live"; A2 "ok"; A3 "ok"; A4 "No charge". Access: B1 "ok"; B2/B6 "Never not found, it looks like a mistake from us. It should tell them they do not have the permmision to vew this page", "If their permission is revoke, we should be able to tell them", then "ok" to clear messages for people connected to the School and "not found" only for strangers from other Schools; B3 "yes they should, if the school owner wish to grant them access"; B4 "ok"; B5 "ok"; B7 "correct"; on "option to buy": member app offers buying a plan, School Portal just says no access — "ok". Money: C1 "ok"; C2 "ok"; C3 "yes"; C4 "ok"; C5 "if that happens yes"; C6 "correct"; C7 "Pix should not be available outside brazil, neither show it"; C8 "fees on their own line"; C9 "yes"; C10 "ok"; C11 "Ok but make sure the sustomers understands they were charge once". Privacy: D1 "ok"; D2 "go with your recommendation"; D3 "ok"; D4 "yes"; D5–D7 "ok".
+
+---
+
+## Decision 450 — Franchise owner's overview, demo findings, and the points to confirm of #530
+
+**Date:** 10 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 80, 98, 270, 449 · **Answers:** the points to confirm of #530 and the questions raised by the populated demo
+
+### Decision
+
+**Franchise owner (first part of the open question Decisions 80 and 270 left)**
+1. **A Franchise owner gets a read-only overview of each member School's totals**: students, attendance, revenue and growth, per School and added up across the Franchise, on a Franchise dashboard. The Franchise owner can't open a School's individual students, classes or payments and can't change anything at a School. Only totals cross the School boundary, never a member's personal details. Everything else about what a Franchise owner may do inside its Schools stays as before (Decisions 80, 270). To be built.
+
+**Demo findings (owner: "fix it")**
+2. The member app's bookings and the Franchise page's fee charges are listed in date order. To be built.
+3. The portal shows a translated role name for the Franchise owner, never the raw code. To be built.
+4. The member app shows the belt's name, not its position number. To be built.
+5. The member app on the web keeps the person signed in across a page reload. To be built.
+
+**Points to confirm of #530**
+6. As built: the "Fees" figure shows only once a School has any fees; the reworded "Payment confirmed" notice says "the same payment you made when you bought it", because it can arrive up to a day later; the first-draft translations of "Fees" go to the translators.
+7. **Late fees on an unpaid charge stay under "Charges"**, as built: they belong to that charge's bill.
+8. **The late saved-card "Payment confirmed" notice gets its own notification setting**, apart from the cash-payment notice. To be built.
+
+**Launch checklist**
+9. A public ULTM8 website and an onboarding process for new Schools are added to the launch checklist. Their content and steps are for the owner to give.
+
+### Recorded by
+
+User (Code), 10 Nov 2026, in chat: Franchise owner "a" (read-only overview of totals); demo findings "fix it"; #530 points: "ok" (Fees shown once any exist), "charge" (late fees on charges), "ok" (wording), "setting own its own", "ok" (translations); "ULTM8 Launch Checklist - Add Create a website for ULTM8 and onboarding process". Still open: whether the Transactions page should split revenue by type.
