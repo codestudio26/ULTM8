@@ -337,6 +337,12 @@ export class StaffDetailsResponseDto {
   workPhone!: string | null;
 }
 
+/** GET /users/me/paused-schools (Decision 451 item 2). */
+export class MyPausedSchoolsResponseDto {
+  @ApiProperty({ type: [String], description: "The Schools where the caller's coach or Branch Staff access is paused and they hold no live staff role." })
+  schoolIds!: string[];
+}
+
 /** POST /schools/{schoolId}/staff/{userId}/pause (Decision 390). */
 export class PauseStaffResponseDto {
   @ApiProperty()

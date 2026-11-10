@@ -104,6 +104,10 @@ describeIfDb('Branch Staff confirm a member order (Decision 441 item 2)', () => 
 
   const http = () => request(app.getHttpServer());
   const confirm = (id: string, tok: string) => http().patch(`/v1/transactions/${id}/confirm`).set('Authorization', `Bearer ${tok}`);
+  const refusal = async (res: request.Test) => {
+    const r = await res;
+    return [r.status, r.body.error?.code];
+  };
   const card = (s: Seeded, tok: string) => http().get(`/v1/schools/${s.school.id}/students/${s.student.id}/charges`).set('Authorization', `Bearer ${tok}`);
   const switchOn = (s: Seeded, on: boolean) => su.school.update({ where: { id: s.school.id }, data: { branchStaffCanRecordPayments: on } });
   const homeBranch = (s: Seeded) => su.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.school.id, studentId: s.student.id, branchId: s.branch.id } });
@@ -138,14 +142,16 @@ describeIfDb('Branch Staff confirm a member order (Decision 441 item 2)', () => 
     const s = await seedSchool();
     const tx = await order(s);
 
-    // Switch on, but the student has no home branch yet: not theirs.
+    // Switch on, but the student has no home branch yet: not theirs. Decision
+    // 451 item 9 (Decision 449 item 6): the School's own staff are told they
+    // have no permission, never "not found".
     await switchOn(s, true);
-    expect((await confirm(tx.id, s.staffToken)).status).toBe(404);
+    expect(await refusal(confirm(tx.id, s.staffToken))).toEqual([403, 'NO_PERMISSION']);
 
-    // Switch off: as before, Branch Staff can't see the order at all.
+    // Switch off: Branch Staff are told the School doesn't let them, as on Cancel.
     await homeBranch(s);
     await switchOn(s, false);
-    expect((await confirm(tx.id, s.staffToken)).status).toBe(404);
+    expect(await refusal(confirm(tx.id, s.staffToken))).toEqual([403, 'STAFF_ACCESS_OFF']);
     const offCard = await card(s, s.staffToken);
     expect(offCard.status).toBe(200);
     expect(offCard.body.can.confirmPayment).toBe(false);
@@ -153,8 +159,8 @@ describeIfDb('Branch Staff confirm a member order (Decision 441 item 2)', () => 
 
     await switchOn(s, true);
     // Another branch's staff and the branch's coach still can't.
-    expect((await confirm(tx.id, s.otherStaffToken)).status).toBe(404);
-    expect((await confirm(tx.id, s.coachToken)).status).toBe(404);
+    expect(await refusal(confirm(tx.id, s.otherStaffToken))).toEqual([403, 'NO_PERMISSION']);
+    expect(await refusal(confirm(tx.id, s.coachToken))).toEqual([403, 'NOT_FOR_COACHES']);
     expect(await su.transaction.findUniqueOrThrow({ where: { id: tx.id } })).toMatchObject({ status: 'PENDING', membershipId: null });
 
     // The Payments card offers it to them.
@@ -207,7 +213,7 @@ describeIfDb('Branch Staff confirm a member order (Decision 441 item 2)', () => 
     const tx = await order(s);
     await su.roleGrant.updateMany({ where: { userId: s.student.id, schoolId: s.school.id, role: 'STUDENT' }, data: { revokedAt: new Date() } });
     // A student who has left is no longer one of theirs, as for Record a payment.
-    expect((await confirm(tx.id, s.staffToken)).status).toBe(404);
+    expect(await refusal(confirm(tx.id, s.staffToken))).toEqual([403, 'NO_PERMISSION']);
     expect((await confirm(tx.id, s.ownerToken)).status).toBe(409);
     expect(await su.transaction.findUniqueOrThrow({ where: { id: tx.id } })).toMatchObject({ status: 'PENDING' });
   });

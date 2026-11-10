@@ -4,7 +4,11 @@ The scripts behind `docs/handover/BOOKING-SCHEDULE-STRESS-TEST.md`. They are not
 
 ## Run
 
-1. A fresh Postgres 16 database with every migration applied (`npx prisma migrate deploy`), and Redis.
+1. A fresh Postgres 16 database with every migration applied (`npx prisma migrate deploy`), and a Redis of its own, started with `--dir` set to a new, empty folder of its own. Never start it from the repo or with its folder left as the current one: Redis loads any `dump.rdb` it finds there, and with it old saved jobs (Decision 451 item 11, round 7):
+
+   ```sh
+   mkdir -p /var/tmp/redis-mine && redis-server --port 6390 --dir /var/tmp/redis-mine --save '' --appendonly no --daemonize yes
+   ```
 2. The built API on its own port. Raise the per-IP limit, because every request comes from one machine:
 
    ```sh

@@ -8,8 +8,11 @@
 //     checked in the database.
 import { call, must, journey, check, ok, step, signIn, stepUp, runJob, db, days, API } from './lib.mjs';
 import { joinSchool } from './j3-members.mjs';
+import { createRequire } from 'module';
 
-const R2 = `http://localhost:${process.env.REHEARSAL_R2_PORT || 12518}`;
+// The fake R2 storage use-fakes.cjs started next to the API (its port is no
+// longer fixed: Decision 451 item 11).
+const R2 = createRequire(import.meta.url)('./fake-r2-port.cjs').fakeR2Url(API);
 
 async function requestDeletion(person) {
   const su = await stepUp(person);

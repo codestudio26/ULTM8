@@ -41,9 +41,12 @@ export class StudentTagsService {
     private readonly schools: SchoolsService,
   ) {}
 
-  /** The School's list, by name, with how many students have each tag. */
+  /** The School's list, by name, with how many students have each tag.
+   * Decision 451 item 6 (S-4; Decision 449 item 6): 404 to someone with no
+   * link to the School, 403 ACCESS_PAUSED to paused staff and 403
+   * NO_PERMISSION to anyone else connected to it, like the other tag routes. */
   async listTags(callerId: string, schoolId: string) {
-    await this.tenantAuth.assertStaffAtSchool(callerId, schoolId);
+    await this.tenantAuth.assertStaffAtSchoolOrNotFound(callerId, schoolId);
     const rows = await this.prismaJobs.schoolTag.findMany({
       where: { schoolId },
       select: { id: true, name: true, _count: { select: { students: true } } },

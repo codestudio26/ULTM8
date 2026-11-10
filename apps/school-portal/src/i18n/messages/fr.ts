@@ -201,6 +201,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "Code de vérification",
     newPasscodeMismatch: "Le nouveau code d’accès et sa confirmation doivent correspondre.",
     logIn: "Se connecter",
+    accessPausedTitle: "Accès suspendu",
     createAccountLink: "Créer un compte",
     login: {
       successTitle: "Connexion réussie",
@@ -3293,6 +3294,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Taille de ceinture",
       joinedOn: "Date d'inscription",
       joinedOnHint: "Le jour où la personne a rejoint cette école. Il peut être antérieur à aujourd'hui, jamais postérieur.",
+      dateOfBirthOwnerOnly: "Seul le propriétaire de l’école peut modifier la date de naissance d’un membre.",
       secondaryPhone: "Téléphone secondaire",
       secondaryEmail: "E-mail secondaire",
       secondaryHint: "Un autre moyen de la joindre. Ne sert pas à se connecter.",

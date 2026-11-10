@@ -177,6 +177,7 @@ export const SERVER_MESSAGES: string[] = [
  "Only that School's Owner/Manager may perform this action.",
  "Only the Comment's own author, or School staff, may delete it.",
  "Only the School owner can change a birth date that makes someone an adult or a child.",
+ "Only the School owner can change a member's birth date.",
  "Stripe couldn't stop this student's Subscription, so they haven't been removed. Please try again in a moment.",
  "Add manually is for adults (18 or over). A child joins through their Guardian's app.",
  "An account with this email already exists \u2014 use \"Invite\" instead.",

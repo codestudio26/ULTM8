@@ -1197,6 +1197,13 @@ export class RoleGrantsService {
     return { userId, coachAccess: { manageStudents: dto.manageStudents } };
   }
 
+  /** Decision 451 item 2 (R-1) — GET /users/me/paused-schools: the Schools
+   * where the caller's own staff access is paused, so the School Portal can
+   * say so at sign-in. See TenantAuthorizationService.pausedSchoolIds. */
+  async myPausedSchools(callerId: string): Promise<{ schoolIds: string[] }> {
+    return { schoolIds: await this.tenantAuth.pausedSchoolIds(callerId) };
+  }
+
   /** GET /schools/{schoolId}/staff/me/access (Decision 387) — what the caller
    * may do at this School, so the portal shows only the pages they can use. */
   async myStaffAccess(callerId: string, schoolId: string) {

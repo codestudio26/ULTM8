@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient, authClient } from '../api';
-import { asyncStoragePersister } from '../lib/queryPersister';
+import { claimQueryCache, forgetQueryCache, removeOldWebQueryCache } from '../lib/queryCacheOwner';
 import { registerForPushNotificationsAsync } from '../notifications/pushRegistration';
 import { decodeJwtPayload } from './decodeJwt';
 import { secureTokenStore } from './secureTokenStore';
@@ -101,11 +101,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // track uses).
   const claims = useMemo(() => (accessToken ? decodeJwtPayload<JwtClaims>(accessToken) : null), [accessToken]);
 
-  const applyToken = useCallback(async (token: string) => {
-    await secureTokenStore.set(token);
-    setCachedAccessToken(token);
-    setAccessTokenState(token);
-  }, []);
+  const applyToken = useCallback(
+    async (token: string) => {
+      // Decision 451 item 5 (S-6): the saved screens are emptied before a
+      // different person's session starts (the same person keeps theirs).
+      const userId = decodeJwtPayload<JwtClaims>(token)?.sub;
+      if (userId) await claimQueryCache(queryClient, userId);
+      await secureTokenStore.set(token);
+      setCachedAccessToken(token);
+      setAccessTokenState(token);
+    },
+    [queryClient],
+  );
 
   // Not gated behind `loading` above — unlike the access token, nothing in this
   // app's startup flow (login vs. home screen) depends on this value, so there's
@@ -261,21 +268,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // login) — without this, react-query's cache would show the previous account's
     // cached My Bookings/Academies data for a moment after the next login, since no
     // query key here is scoped by user id. Found on review, before this ever shipped.
-    queryClient.clear();
-    // FOUND ON REVIEW: this does NOT reliably "win" against queryClient.clear()'s own
-    // effect on the persisted copy — clear()'s cache-event notifications are deferred
-    // (react-query's notifyManager batches them via setTimeout(fn, 0), a macrotask),
-    // so the persist subscription's own write can still land after this call,
-    // re-creating an entry under the same key. That's not a data leak — clear() has
-    // already synchronously emptied the in-memory cache by the time that deferred
-    // write's own dehydrate() runs, so at worst it re-writes an empty snapshot, never
-    // the previous account's real data — but this call is a best-effort belt-and-
-    // braces attempt, not the guaranteed-immediate clear an earlier version of this
-    // comment claimed. `.catch` swallows a rejected AsyncStorage.removeItem (e.g. a
-    // storage I/O error) rather than leaving an unhandled promise rejection at the
-    // exact moment a user expects a clean logout; maxAge already bounds how long any
-    // leftover entry could matter regardless.
-    void Promise.resolve(asyncStoragePersister.removeClient()).catch(() => {});
+    // forgetQueryCache also removes the saved copy and whose it was (Decision 451
+    // item 5). The persisted copy's removal is best-effort: clear()'s cache-event
+    // notifications are deferred (react-query's notifyManager batches them via
+    // setTimeout(fn, 0)), so the persist subscription can still write after it —
+    // but only an empty snapshot, since clear() has already emptied the in-memory
+    // cache, and the next sign-in's owner check empties it again regardless.
+    void forgetQueryCache(queryClient);
   }, [queryClient]);
 
   // The one answer to `createApiClient`'s `onUnauthorized` (see api.ts and
@@ -324,7 +323,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      void removeOldWebQueryCache();
       const token = await secureTokenStore.get();
+      if (cancelled) return;
+      // Decision 451 item 5 (S-6): no session (signed out, or on the web a
+      // closed tab ended it) means no saved screens either; a session whose
+      // person isn't the one the cache was saved for empties it first.
+      const userId = token ? decodeJwtPayload<JwtClaims>(token)?.sub : undefined;
+      if (userId) await claimQueryCache(queryClient, userId);
+      else await forgetQueryCache(queryClient);
       if (cancelled) return;
       // Track B roadmap's own flagged "Not yet" item, closed here: this used to
       // apply whatever token was in SecureStore unconditionally, even a dead one
@@ -354,7 +361,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [refreshSession]);
+  }, [refreshSession, queryClient]);
 
   useEffect(() => {
     setUnauthorizedHandler(refreshSession);

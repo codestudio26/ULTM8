@@ -177,8 +177,9 @@ describeIfDb('Student tags', () => {
     // School A's owner can't reach School B's student, under either School.
     expect((await as('owner').post(tagsOf(users.otherStudent.id, schoolId)).send({ tagId: aTag.id })).status).toBe(404);
     expect((await as('owner').post(tagsOf(users.otherStudent.id, otherSchoolId)).send({ tagId: aTag.id })).status).toBeGreaterThanOrEqual(403);
-    // Nor read School B's list.
-    expect((await as('owner').get(listOf(otherSchoolId))).status).toBe(403);
+    // Nor read School B's list: someone with no link to it gets "not found"
+    // (Decision 451 item 6; it was a generic 403 before).
+    expect((await as('owner').get(listOf(otherSchoolId))).status).toBe(404);
     // And the database itself refuses a row pairing School A's tag with School B.
     await expect(superuser.studentTag.create({ data: { tagId: aTag.id, schoolId: otherSchoolId, studentId: users.otherStudent.id } })).rejects.toThrow();
     expect(await superuser.studentTag.count({ where: { studentId: users.otherStudent.id } })).toBe(0);

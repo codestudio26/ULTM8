@@ -497,6 +497,7 @@ export const students = {
     beltSize: 'Belt size',
     joinedOn: 'Join date',
     joinedOnHint: 'The day they joined this School. It can be earlier than today, never later.',
+    dateOfBirthOwnerOnly: "Only the School owner can change a member's birth date.",
     secondaryPhone: 'Secondary phone',
     secondaryEmail: 'Secondary email',
     secondaryHint: 'Another way to reach them. Not used to sign in.',

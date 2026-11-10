@@ -201,6 +201,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "Doğrulama kodu",
     newPasscodeMismatch: "Yeni giriş kodu ve onayı aynı olmalıdır.",
     logIn: "Giriş yap",
+    accessPausedTitle: "Erişim duraklatıldı",
     createAccountLink: "Hesap oluştur",
     login: {
       successTitle: "Başarılı",
@@ -3293,6 +3294,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "Kuşak bedeni",
       joinedOn: "Katılma tarihi",
       joinedOnHint: "Bu okula katıldığı gün. Bugünden önce olabilir, sonra olamaz.",
+      dateOfBirthOwnerOnly: "Bir üyenin doğum tarihini yalnızca okul sahibi değiştirebilir.",
       secondaryPhone: "İkincil telefon",
       secondaryEmail: "İkincil e-posta",
       secondaryHint: "Ulaşmanın başka bir yolu. Giriş için kullanılmaz.",

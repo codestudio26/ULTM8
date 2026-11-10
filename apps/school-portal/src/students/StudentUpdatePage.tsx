@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AddressFields, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
-import { useGradingSchoolId } from '../auth/AuthContext';
+import { useGradingSchoolId, useOwnedSchoolIds } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useCurrencies, useLanguages } from '../settings/settingsQueries';
@@ -101,6 +101,9 @@ export function StudentUpdatePage() {
   const { id } = useParams<{ id: string }>();
   const studentId = id ?? null;
   const schoolId = useGradingSchoolId();
+  // Decision 451 item 14: a member's birth date is owner-only. The API
+  // decides; this only greys the field out for everyone else.
+  const ownsSchool = useOwnedSchoolIds().includes(schoolId ?? '');
   const navigate = useNavigate();
   const profile = useStudentProfile(schoolId, studentId);
   const updateProfile = useUpdateStudentProfile(schoolId);
@@ -208,8 +211,8 @@ export function StudentUpdatePage() {
           <Field label={t('students.update.username')} htmlFor="student-update-username" hint={t('auth.register.usernameHint')}>
             <TextField value={form.username} onChange={(e) => set('username', e.target.value)} />
           </Field>
-          <Field label={t('students.update.dateOfBirth')} htmlFor="student-update-dob">
-            <TextField type="date" value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
+          <Field label={t('students.update.dateOfBirth')} htmlFor="student-update-dob" hint={ownsSchool ? undefined : t('students.update.dateOfBirthOwnerOnly')}>
+            <TextField type="date" disabled={!ownsSchool} value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
           </Field>
           <Field label={t('students.update.joinedOn')} htmlFor="student-update-joined-on" hint={t('students.update.joinedOnHint')}>
             <TextField id="student-update-joined-on" type="date" max={dayFromToday(0)} value={form.joinedOn} onChange={(e) => set('joinedOn', e.target.value)} />

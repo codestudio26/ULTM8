@@ -198,6 +198,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     verificationCodeLabel: "인증 코드",
     newPasscodeMismatch: "새 패스코드와 확인 값이 일치해야 합니다.",
     logIn: "로그인",
+    accessPausedTitle: "접근이 일시 중지됨",
     createAccountLink: "계정 만들기",
     login: {
       successTitle: "완료",
@@ -3254,6 +3255,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       beltSize: "띠 사이즈",
       joinedOn: "가입일",
       joinedOnHint: "이 도장에 가입한 날입니다. 오늘보다 이전일 수는 있지만 이후일 수는 없습니다.",
+      dateOfBirthOwnerOnly: "회원의 생년월일은 학원 소유자만 변경할 수 있습니다.",
       secondaryPhone: "보조 전화번호",
       secondaryEmail: "보조 이메일",
       secondaryHint: "다른 연락 방법입니다. 로그인에는 쓰이지 않습니다.",

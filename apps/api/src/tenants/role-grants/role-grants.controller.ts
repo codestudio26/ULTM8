@@ -18,6 +18,7 @@ import { CreateStudentManuallyResponseDto } from './dto/create-student-manually-
 import {
   HandOverMainOwnerDto,
   MainOwnerResponseDto,
+  MyPausedSchoolsResponseDto,
   MyStaffAccessResponseDto,
   PauseStaffResponseDto,
   CoachAccessDto,
@@ -143,6 +144,14 @@ export class RoleGrantsController {
     @Body() dto: UpdateStaffDetailsDto,
   ) {
     return this.roleGrantsService.updateStaffDetails(user.sub, schoolId, userId, dto);
+  }
+
+  /** Decision 451 item 2 (R-1) — the Schools where the caller's own staff
+   * access is paused, for the School Portal's sign-in. */
+  @ApiOkResponse({ type: MyPausedSchoolsResponseDto })
+  @Get('users/me/paused-schools')
+  myPausedSchools(@CurrentUser() user: JwtPayload) {
+    return this.roleGrantsService.myPausedSchools(user.sub);
   }
 
   /** Decision 387 — what the caller may do at this School. Declared before

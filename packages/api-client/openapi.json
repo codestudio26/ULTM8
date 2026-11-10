@@ -2115,6 +2115,32 @@
         ]
       }
     },
+    "/v1/users/me/paused-schools": {
+      "get": {
+        "operationId": "RoleGrantsController_myPausedSchools",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MyPausedSchoolsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "role-grants"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/v1/schools/{schoolId}/staff/me/access": {
       "get": {
         "operationId": "RoleGrantsController_myStaffAccess",
@@ -27921,6 +27947,21 @@
         },
         "required": [
           "userId"
+        ]
+      },
+      "MyPausedSchoolsResponseDto": {
+        "type": "object",
+        "properties": {
+          "schoolIds": {
+            "description": "The Schools where the caller's coach or Branch Staff access is paused and they hold no live staff role.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "schoolIds"
         ]
       },
       "MyStaffAccessResponseDto": {
