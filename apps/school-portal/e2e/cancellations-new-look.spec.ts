@@ -6,7 +6,8 @@ import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
  * Cancellations to resolve in the new look (Decision 453). The approved design
  * draws no Cancellations screen, so the page keeps its columns and actions and
  * takes the new header, card, table, tags and pill buttons (the Billing
- * pages' pieces). What the actions do is covered by class-cancellations.spec.
+ * pages' pieces); when the table doesn't fit its card each row becomes a card
+ * (Decision 458 item 3). What the actions do is covered by class-cancellations.spec.
  */
 let s: GradingSchool;
 let branchId: string;
@@ -94,16 +95,65 @@ test('Branch Staff: no Refund or Mark refund paid, only credit back and keep', a
   await expect(card.getByRole('row').filter({ hasText: 'Evening Open Mat' })).toHaveCount(0);
 });
 
-test('phone: the table scrolls sideways inside its card, the page never does', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
+test('desktop: a table with column headings while it fits its card', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
   await signIn(page, s.ownerToken);
   await page.goto('/cancellations');
-  const card = page.getByTestId('cancellations-card');
-  await expect(card.getByRole('row').filter({ hasText: 'Evening Open Mat' })).toBeVisible();
-  const scroll = card.locator('.ultm8-table-scroll');
-  expect(await scroll.evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const list = page.getByTestId('cancellations-list');
+  await expect(list.getByRole('row').filter({ hasText: 'Evening Open Mat' })).toBeVisible();
+  await expect(list).toHaveAttribute('data-layout', 'table');
+  await expect(list.locator('thead th').filter({ hasText: 'Membership' })).toBeVisible();
+  expect(await list.evaluate((el) => el.querySelector('table')!.scrollWidth <= el.clientWidth + 1)).toBe(true);
 });
+
+/** Decision 458 item 3: on a phone each row is a card (class, student,
+ * status, then the buttons stacked) and nothing scrolls sideways. */
+for (const role of ['owner', 'staff'] as const) {
+  test(`phone (${role}): each row is a card with the buttons stacked, nothing scrolls sideways`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const token = role === 'owner' ? s.ownerToken : (await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId }])).token;
+    await signIn(page, token);
+    await page.goto('/cancellations');
+    const list = page.getByTestId('cancellations-list');
+    const pending = list.getByRole('row').filter({ hasText: 'Evening Open Mat' });
+    await expect(pending).toBeVisible();
+    await expect(list).toHaveAttribute('data-layout', 'cards');
+    await expect(list.locator('thead')).toBeHidden();
+
+    // Class, then student, then status, then the buttons, top to bottom.
+    const top = async (selector: string) => (await pending.locator(selector).boundingBox())!.y;
+    const [cls, student, status, buttons] = [await top('.u8x-class'), await top('.u8x-student'), await top('.u8x-status'), await top('.u8x-actions')];
+    expect(cls).toBeLessThan(student);
+    expect(student).toBeLessThan(status);
+    expect(status).toBeLessThan(buttons);
+    // The plan line keeps its column name in front of it.
+    await expect(pending.locator('.u8x-detail').first()).toContainText('Membership');
+
+    const names = role === 'owner' ? ['Refund', 'Give credit back', 'Keep'] : ['Give credit back', 'Keep'];
+    await expect(pending.getByRole('button')).toHaveText(names);
+    const boxes = await Promise.all(names.map(async (name) => (await pending.getByRole('button', { name, exact: true }).boundingBox())!));
+    for (let i = 1; i < boxes.length; i++) {
+      expect(Math.abs(boxes[i].x - boxes[0].x)).toBeLessThan(1);
+      expect(Math.abs(boxes[i].width - boxes[0].width)).toBeLessThan(1);
+      expect(boxes[i].y).toBeGreaterThan(boxes[i - 1].y + boxes[i - 1].height - 1);
+    }
+
+    const owed = list.getByRole('row').filter({ hasText: 'Saturday Fundamentals' });
+    if (role === 'owner') {
+      await expect(owed.getByRole('button')).toHaveText(['Mark refund paid']);
+    } else {
+      await expect(owed).toContainText('Waiting for the owner to pay it back');
+      await expect(owed.getByRole('button')).toHaveCount(0);
+    }
+
+    expect(await list.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+    // The card still works: Keep resolves the row.
+    await pending.getByRole('button', { name: 'Keep' }).click();
+    await expect(list.getByRole('row').filter({ hasText: 'Evening Open Mat' })).toHaveCount(0);
+  });
+}
 
 test('nothing to resolve: the empty state sits inside the card', async ({ page }) => {
   await db.booking.deleteMany({ where: { schoolId: s.schoolId } });

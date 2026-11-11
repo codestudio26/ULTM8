@@ -8284,3 +8284,24 @@ User (Code), 11 Nov 2026, answering the questions on #547:
 - On the switch tables: "keep it".
 - On the old look: "everything should look like the new design and nothing from the old should be kept".
 - On one Team page with three tabs, and where the extra features sit: "ok".
+
+---
+
+## Decision 458 — New look: the owner's answers on Cancellations
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454 · **Raised in:** #556 (Cancellations)
+
+### Decision
+
+1. **Restyle only.** The approved design has no Cancellations screen and none is to be drawn. Cancellations to resolve keeps its columns, data, actions and per-role rules, and takes the new look: page header, one white card with the table, soft status tags and pill buttons.
+2. **Class avatars on the rows, as a follow-up.** Each row is to show the class avatar (DESIGN.md → "Avatars") once the Schedule PR's class avatar (#545) is merged. Not in #556.
+3. **Cards on a phone.** When the table doesn't fit its card (a phone, a tablet or a narrow window), each row becomes a card: the class, the student, the status, the membership, payment and refund lines, then the buttons stacked. Nothing scrolls sideways. A computer wide enough keeps the table.
+
+This is a layout change only. Business rules, the data model, API contracts, tenancy/RLS and permissions are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026, answering the questions on #556:
+- On the missing design: "Ok".
+- On class avatars: "yes".
+- On the phone layout: "go with your recommendation".
