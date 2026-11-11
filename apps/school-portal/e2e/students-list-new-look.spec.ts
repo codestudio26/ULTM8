@@ -130,4 +130,35 @@ test.describe('on a phone', () => {
     await expect(page.getByRole('row', { name: /Sam Lee/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Show all students (2)' })).toBeHidden();
   });
+
+  // DESIGN.md → "Phone layout": no page scrolls sideways on a phone; the wide
+  // Rows table scrolls inside its own card. Before the fix the page measured
+  // ~594px for the owner, from the table's hidden column heading.
+  test('the page never scrolls sideways, in Rows or Grid, for the owner, a coach and Branch Staff', async ({ browser, baseURL }) => {
+    const north = await addBranch(s, 'North');
+    await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: north.id } });
+    // At a School with branches, coaches and Branch Staff see their branch's students.
+    const coach = await addPerson('Cora', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId, branchId: north.id }]);
+    const staff = await addPerson('Bo', 'Front', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId, branchId: north.id }]);
+
+    for (const [who, token] of [['owner', s.ownerToken], ['coach', coach.token], ['Branch Staff', staff.token]] as const) {
+      const context = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 } });
+      const page = await context.newPage();
+      const fitsTheScreen = () => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+      await signIn(page, token);
+      await page.goto('/students');
+      const view = page.getByRole('group', { name: 'Students view' });
+      await expect(page.getByRole('row', { name: /Sam Lee/ }), who).toBeVisible();
+      await expect(view.getByRole('button', { name: 'Rows' })).toHaveAttribute('aria-pressed', 'true');
+      expect(await fitsTheScreen(), `${who}, Rows`).toBe(true);
+      // The table itself is still wider than the phone: it scrolls in its card.
+      const table = await page.locator('.u8n-list__scroll').evaluate((el) => ({ scroll: el.scrollWidth, box: el.clientWidth }));
+      expect(table.scroll, `${who}, table scrolls in its card`).toBeGreaterThan(table.box);
+
+      await view.getByRole('button', { name: 'Grid' }).click();
+      await expect(page.getByRole('listitem').filter({ hasText: 'Sam Lee' })).toBeVisible();
+      expect(await fitsTheScreen(), `${who}, Grid`).toBe(true);
+      await context.close();
+    }
+  });
 });
