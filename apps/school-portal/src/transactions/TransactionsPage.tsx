@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, SuccessBanner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { formatMoney } from '../lib/money';
@@ -27,6 +27,8 @@ import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
 import { offersPix, useDeskMethods } from '../lib/deskMethods';
 import { JoiningFeeNotice, useDeskTotal } from '../membershipPlans/JoiningFeeNotice';
+import { BillingCard, BillingDate, BillingMore, BillingPage, BillingSelect, BillingStat, BillingStats } from '../billing/BillingLook';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 
 /** How a desk payment was taken (Decision 348's desk methods). */
 type DeskMethod = 'CASH' | 'BANK_TRANSFER' | 'PIX' | 'CARD_TERMINAL';
@@ -59,36 +61,10 @@ function ReceiptCell({ transactionId }: { transactionId: string }) {
 
   return (
     <div>
-      <Button variant="secondary" loading={getReceiptUrl.isPending} onClick={handleClick}>
+      <Button variant="secondary" className="u8b-pill u8b-pill--row" loading={getReceiptUrl.isPending} onClick={handleClick}>
         {t('transactions.receipt')}
       </Button>
       {error ? <div style={{ color: 'var(--text-danger)', fontSize: 12 }}>{error}</div> : null}
-    </div>
-  );
-}
-
-/** Small, page-local summary tile — see MembershipPlansPage's own StatTile for why
- * this isn't promoted to @ultm8/ui yet (only two occurrences, and this one needs no
- * `proposed`/placeholder variant at all — every stat here is real). */
-function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        flex: 1,
-        minWidth: 140,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        padding: '14px 18px',
-        background: 'var(--surface-0)',
-        border: '1px solid var(--border-strong)',
-        borderRadius: 'var(--radius-md)',
-      }}
-    >
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-        {label}
-      </span>
-      <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)' }}>{value}</span>
     </div>
   );
 }
@@ -275,15 +251,23 @@ function StaffDeskPayment() {
   const [recorded, setRecorded] = useState(false);
   if (isBranchStaff && isLoading) return <Spinner />;
   if (!schoolId || !isBranchStaff || !school?.branchStaffCanRecordPayments) {
-    return <EmptyState title={t('transactions.ownerOnlyTitle')} description={t('transactions.ownerOnlyDescription')} />;
+    return (
+      <BillingPage>
+        <NewLookPageHeader title={t('transactions.title')} />
+        <BillingCard>
+          <EmptyState title={t('transactions.ownerOnlyTitle')} description={t('transactions.ownerOnlyDescription')} />
+        </BillingCard>
+      </BillingPage>
+    );
   }
   return (
-    <>
-      <PageHeader title={t('transactions.recordTitle')} subtitle={school.name} />
+    <BillingPage>
+      <NewLookPageHeader title={t('transactions.recordTitle')} subtitle={school.name} />
       {recorded ? <SuccessBanner message={t('transactions.recorded')} /> : null}
-      <Card>
+      <BillingCard>
         <p style={{ marginTop: 0 }}>{t('transactions.staffBody')}</p>
         <Button
+          className="u8b-pill u8b-pill--primary"
           onClick={() => {
             setRecorded(false);
             setRecording(true);
@@ -291,9 +275,9 @@ function StaffDeskPayment() {
         >
           {t('transactions.recordPayment')}
         </Button>
-      </Card>
+      </BillingCard>
       {recording ? <RecordPaymentDialog schoolId={schoolId} onClose={() => setRecording(false)} onRecorded={() => setRecorded(true)} /> : null}
-    </>
+    </BillingPage>
   );
 }
 
@@ -388,109 +372,103 @@ export function TransactionsPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <BillingPage>
+      <NewLookPageHeader
         title={t('transactions.title')}
         subtitle={t('transactions.subtitle')}
         actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Button variant="secondary" loading={exporting} onClick={handleExport}>
-              {t('transactions.exportCsv')}
+          <>
+            <Button className="u8b-pill u8b-pill--primary" onClick={() => setRecording(true)}>
+              {t('transactions.recordPayment')}
             </Button>
-            <Button onClick={() => setRecording(true)}>{t('transactions.recordPayment')}</Button>
-          </div>
+            {/* Export CSV is a secondary action: under ⋯ More on a phone. */}
+            <BillingMore>
+              <Button variant="secondary" className="u8b-pill" loading={exporting} onClick={handleExport}>
+                {t('transactions.exportCsv')}
+              </Button>
+            </BillingMore>
+          </>
         }
       />
       {exportError ? <ErrorBanner message={exportError} /> : null}
 
-      {/* Filters (Decision 346, G3) narrow the rows, the tiles and the export. */}
-      <Card>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 150 }}>
-            <Field label={t('transactions.columnStatus')} htmlFor="tx-filter-status">
-              <SelectField
-                id="tx-filter-status"
-                value={filters.status}
-                onChange={(e) => setFilter('status', e.target.value as TransactionFilters['status'])}
-                options={[
-                  { value: '', label: t('transactions.filterAny') },
-                  ...Object.entries(PAYMENT_STATUS_LABELS).map(([value, key]) => ({ value, label: t(key) })),
-                ]}
-              />
-            </Field>
+      {/* One list card: the filters (Decision 346, G3), which narrow the rows,
+          the tiles and the export; the tiles, counted over the whole ledger (or
+          the filtered rows) by GET /schools/:id/transactions/summary (Decisions
+          339, 346); the rows; and Prev / Next. */}
+      <BillingCard
+        flush
+        toolbar={
+          <div className="u8b-toolbar__group">
+            <BillingSelect
+              id="tx-filter-status"
+              label={t('transactions.columnStatus')}
+              value={filters.status}
+              onChange={(v) => setFilter('status', v as TransactionFilters['status'])}
+              options={[
+                { value: '', label: t('transactions.filterAny') },
+                ...Object.entries(PAYMENT_STATUS_LABELS).map(([value, key]) => ({ value, label: t(key) })),
+              ]}
+            />
+            <BillingSelect
+              id="tx-filter-method"
+              label={t('transactions.columnMethod')}
+              value={filters.paymentMethod}
+              onChange={(v) => setFilter('paymentMethod', v as TransactionFilters['paymentMethod'])}
+              options={[
+                { value: '', label: t('transactions.filterAny') },
+                // Decision 448 item 5: Pix only at a School in Brazil.
+                ...Object.entries(PAYMENT_METHOD_LABELS)
+                  .filter(([value]) => value !== 'PIX' || pix)
+                  .map(([value, key]) => ({ value, label: t(key) })),
+              ]}
+            />
+            <BillingSelect
+              id="tx-filter-kind"
+              label={t('transactions.columnKind')}
+              value={filters.kind}
+              onChange={(v) => setFilter('kind', v as TransactionFilters['kind'])}
+              options={[
+                { value: '', label: t('transactions.filterAny') },
+                ...Object.entries(KIND_LABELS).map(([value, key]) => ({ value, label: t(key) })),
+              ]}
+            />
+            <BillingSelect
+              id="tx-filter-plan"
+              label={t('transactions.columnPlan')}
+              value={filters.membershipPlanId}
+              onChange={(v) => setFilter('membershipPlanId', v)}
+              options={[{ value: '', label: t('transactions.filterAny') }, ...(planData ?? []).map((p) => ({ value: p.id, label: p.title }))]}
+            />
+            <BillingDate id="tx-filter-from" label={t('transactions.filterFrom')} value={filters.from} max={filters.to || undefined} onChange={(v) => setFilter('from', v)} />
+            <BillingDate id="tx-filter-to" label={t('transactions.filterTo')} value={filters.to} min={filters.from || undefined} onChange={(v) => setFilter('to', v)} />
+            {filtered ? (
+              <div className="u8b-select">
+                <span className="u8b-select__label" aria-hidden="true">
+                  &nbsp;
+                </span>
+                <Button variant="secondary" className="u8b-pill" onClick={() => setFilters(NO_FILTERS)}>
+                  {t('transactions.filterClear')}
+                </Button>
+              </div>
+            ) : null}
           </div>
-          <div style={{ minWidth: 150 }}>
-            <Field label={t('transactions.columnMethod')} htmlFor="tx-filter-method">
-              <SelectField
-                id="tx-filter-method"
-                value={filters.paymentMethod}
-                onChange={(e) => setFilter('paymentMethod', e.target.value as TransactionFilters['paymentMethod'])}
-                options={[
-                  { value: '', label: t('transactions.filterAny') },
-                  // Decision 448 item 5: Pix only at a School in Brazil.
-                  ...Object.entries(PAYMENT_METHOD_LABELS)
-                    .filter(([value]) => value !== 'PIX' || pix)
-                    .map(([value, key]) => ({ value, label: t(key) })),
-                ]}
-              />
-            </Field>
-          </div>
-          <div style={{ minWidth: 170 }}>
-            <Field label={t('transactions.columnKind')} htmlFor="tx-filter-kind">
-              <SelectField
-                id="tx-filter-kind"
-                value={filters.kind}
-                onChange={(e) => setFilter('kind', e.target.value as TransactionFilters['kind'])}
-                options={[
-                  { value: '', label: t('transactions.filterAny') },
-                  ...Object.entries(KIND_LABELS).map(([value, key]) => ({ value, label: t(key) })),
-                ]}
-              />
-            </Field>
-          </div>
-          <div style={{ minWidth: 180 }}>
-            <Field label={t('transactions.columnPlan')} htmlFor="tx-filter-plan">
-              <SelectField
-                id="tx-filter-plan"
-                value={filters.membershipPlanId}
-                onChange={(e) => setFilter('membershipPlanId', e.target.value)}
-                options={[{ value: '', label: t('transactions.filterAny') }, ...(planData ?? []).map((p) => ({ value: p.id, label: p.title }))]}
-              />
-            </Field>
-          </div>
-          <div style={{ minWidth: 150 }}>
-            <Field label={t('transactions.filterFrom')} htmlFor="tx-filter-from">
-              <TextField id="tx-filter-from" type="date" value={filters.from} max={filters.to || undefined} onChange={(e) => setFilter('from', e.target.value)} />
-            </Field>
-          </div>
-          <div style={{ minWidth: 150 }}>
-            <Field label={t('transactions.filterTo')} htmlFor="tx-filter-to">
-              <TextField id="tx-filter-to" type="date" value={filters.to} min={filters.from || undefined} onChange={(e) => setFilter('to', e.target.value)} />
-            </Field>
-          </div>
-          {filtered ? (
-            <Button variant="secondary" onClick={() => setFilters(NO_FILTERS)}>
-              {t('transactions.filterClear')}
-            </Button>
-          ) : null}
-        </div>
-      </Card>
+        }
+      >
+        <BillingStats>
+          <BillingStat label={t('transactions.statTotal')} value={summary?.total ?? '—'} />
+          <BillingStat label={t('transactions.statSuccessful')} value={summary?.successful ?? '—'} />
+          <BillingStat label={t('transactions.statPending')} value={summary?.pending ?? '—'} />
+          <BillingStat label={t('transactions.statFailedOrDisputed')} value={summary?.failedOrDisputed ?? '—'} />
+          <BillingStat label={t('transactions.statCancelled')} value={summary?.cancelled ?? '—'} />
+          <BillingStat label={t('transactions.statRevenue')} value={summary ? revenueLabel || formatMoney(0, null) : '—'} />
+          {surcharges.length > 0 ? <BillingStat label={t('transactions.statSurcharges')} value={surchargesLabel} /> : null}
+        </BillingStats>
 
-      {/* Stats ribbon — counted over the whole ledger (or the filtered rows) by
-          GET /schools/:id/transactions/summary (Decisions 339, 346). */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', margin: '24px 0' }}>
-        <StatTile label={t('transactions.statTotal')} value={summary?.total ?? '—'} />
-        <StatTile label={t('transactions.statSuccessful')} value={summary?.successful ?? '—'} />
-        <StatTile label={t('transactions.statPending')} value={summary?.pending ?? '—'} />
-        <StatTile label={t('transactions.statFailedOrDisputed')} value={summary?.failedOrDisputed ?? '—'} />
-        <StatTile label={t('transactions.statCancelled')} value={summary?.cancelled ?? '—'} />
-        <StatTile label={t('transactions.statRevenue')} value={summary ? revenueLabel || formatMoney(0, null) : '—'} />
-        {surcharges.length > 0 ? <StatTile label={t('transactions.statSurcharges')} value={surchargesLabel} /> : null}
-      </div>
-
-      <Card>
         {isLoading ? (
-          <Spinner />
+          <div className="u8b-pad" style={{ padding: 20 }}>
+            <Spinner />
+          </div>
         ) : transactions.length === 0 ? (
           filtered ? (
             <EmptyState title={t('transactions.noMatchTitle')} description={t('transactions.noMatchDescription')} />
@@ -505,7 +483,7 @@ export function TransactionsPage() {
               // The server sends the plan's name with each row (T6); a renewal or
               // a late-cancellation fee says so (Decision 346).
               { key: 'plan', header: t('transactions.columnPlan'), render: (row) => itemLabel(row) },
-              { key: 'student', header: t('transactions.columnStudent'), render: (row) => studentName(row) },
+              { key: 'student', header: t('transactions.columnStudent'), render: (row) => <span className="u8b-name">{studentName(row)}</span> },
               {
                 key: 'amount',
                 header: t('transactions.columnAmount'),
@@ -548,17 +526,17 @@ export function TransactionsPage() {
                 header: t('transactions.columnActions'),
                 render: (row) =>
                   row.status === 'PENDING' && row.paymentMethod !== 'STRIPE' ? (
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      <Button variant="secondary" onClick={() => setSettling({ row, action: 'confirm' })}>
+                    <div className="u8b-row-actions">
+                      <Button variant="secondary" className="u8b-pill u8b-pill--row" onClick={() => setSettling({ row, action: 'confirm' })}>
                         {t('transactions.markPaid')}
                       </Button>
-                      <Button variant="secondary" onClick={() => setSettling({ row, action: 'cancel' })}>
+                      <Button variant="secondary" className="u8b-pill u8b-pill--row" onClick={() => setSettling({ row, action: 'cancel' })}>
                         {t('transactions.cancelPayment')}
                       </Button>
                     </div>
                   ) : isRefundableDeskSale(row) ? (
                     // Decision 431 (MON-8): a membership paid at the desk can be refunded by hand.
-                    <Button variant="secondary" onClick={() => setSettling({ row, action: 'refund' })}>
+                    <Button variant="secondary" className="u8b-pill u8b-pill--row" onClick={() => setSettling({ row, action: 'refund' })}>
                       {t('transactions.refund.action')}
                     </Button>
                   ) : (
@@ -568,19 +546,19 @@ export function TransactionsPage() {
             ]}
           />
         )}
-      </Card>
 
-      {transactions.length > 0 || pageIndex > 0 ? (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
-          <Button variant="secondary" disabled={pageIndex === 0} onClick={() => setPageIndex((i) => Math.max(0, i - 1))}>
-            {t('transactions.prev')}
-          </Button>
-          <Button variant="secondary" disabled={!data?.nextCursor} onClick={() => goToNextPage(data!.nextCursor ?? null)}>
-            {t('transactions.next')}
-          </Button>
-          <span className="ultm8-field__hint">{t('transactions.page', { page: pageIndex + 1 })}</span>
-        </div>
-      ) : null}
+        {transactions.length > 0 || pageIndex > 0 ? (
+          <div className="u8b-foot">
+            <Button variant="secondary" className="u8b-pill u8b-pill--row" disabled={pageIndex === 0} onClick={() => setPageIndex((i) => Math.max(0, i - 1))}>
+              {t('transactions.prev')}
+            </Button>
+            <Button variant="secondary" className="u8b-pill u8b-pill--row" disabled={!data?.nextCursor} onClick={() => goToNextPage(data!.nextCursor ?? null)}>
+              {t('transactions.next')}
+            </Button>
+            <span>{t('transactions.page', { page: pageIndex + 1 })}</span>
+          </div>
+        ) : null}
+      </BillingCard>
 
       {settling?.action === 'confirm' ? <MarkPaidDialog row={settling.row} schoolId={schoolId} onClose={() => setSettling(null)} /> : null}
       {settling?.action === 'cancel' ? (
@@ -609,6 +587,6 @@ export function TransactionsPage() {
         />
       ) : null}
       {recording ? <RecordPaymentDialog schoolId={schoolId} onClose={() => setRecording(false)} /> : null}
-    </>
+    </BillingPage>
   );
 }

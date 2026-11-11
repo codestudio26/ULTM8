@@ -15,6 +15,12 @@ Post-v1.4.0 work on `master`.
   Total / Unread / Read within 24h as number cards, the inbox as a card of rows
   (unread dot, status tag, time, ⋯ menu) and the sent messages as a card; the
   Snooze and Broadcast forms use our own drop-downs. Same data and actions.
+- **New look: the Billing pages** (Decision 453; visual only). Membership
+  plans, Transactions, Billing reports and Payroll get the new page header,
+  white list cards, stat rows, our own drop-downs for every filter, the page
+  tabs (Overview / Member balances, Report / Rates) in the header, and on a
+  phone Export CSV / Download CSV under ⋯ More. Same numbers, filters,
+  exports, actions and permissions as before.
 - **New look: Dashboard** (Decision 453; visual only). The owner's Dashboard
   has the new page header (the Branch scope under the title, our own Branch
   drop-down), number cards, Today's classes (from this week's Bookings

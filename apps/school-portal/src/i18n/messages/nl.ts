@@ -713,6 +713,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Meer acties",
     columnSurcharge: "Kaarttoeslag",
     surchargeLine: "+ {amount} kaarttoeslag",
     title: "Transacties",
