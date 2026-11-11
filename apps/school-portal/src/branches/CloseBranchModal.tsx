@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { NewLookSelect } from '../layout/NewLookSelect';
@@ -99,14 +99,14 @@ export function CloseBranchModal({
           <p style={{ color: 'var(--ultm8-text-muted, inherit)' }}>{t('branches.close.noChargesNoEmails')}</p>
         </>
       ) : null}
-      <div className="u8o-pair">
+      <ModalActions>
+        <Button type="button" variant="secondary" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
         <Button variant="danger" onClick={confirm} loading={closeBranch.isPending} disabled={!ready}>
           {t('branches.archive')}
         </Button>
-        <Button variant="secondary" onClick={onClose}>
-          {t('common.cancel')}
-        </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

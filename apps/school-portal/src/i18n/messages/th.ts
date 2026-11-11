@@ -4190,6 +4190,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   ui: {
     loading: "กำลังโหลด",
     dismiss: "ปิด",
+    closeDialog: "ปิดหน้าต่าง",
     showPasscode: "แสดงรหัสผ่าน",
     hidePasscode: "ซ่อนรหัสผ่าน",
     noMatchingTimezone: "ไม่พบเขตเวลาที่ตรงกัน",

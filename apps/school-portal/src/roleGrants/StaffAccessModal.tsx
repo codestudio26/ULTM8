@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Modal, Switch } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions, Switch } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { ROLE_LABELS } from '../lib/enumLabels';
@@ -160,14 +160,14 @@ export function StaffAccessModal({
           </fieldset>
         ) : null}
         <p style={{ fontSize: 13, opacity: 0.75 }}>{t('roleGrants.access.ownerOnly')}</p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={save.isPending || saveCoach.isPending}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={save.isPending || saveCoach.isPending}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
