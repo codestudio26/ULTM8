@@ -1,0 +1,316 @@
+/* The board and student grading dialogs in the new look (Decision 453,
+ * Decision 460; DESIGN.md → "Grading screens" → Dialogs): the shared dialog
+ * frame and button band (packages/ui Modal / ModalActions), the new look's
+ * own drop-downs (NewLookSelect in `.u8n-dd-field`; RankPicker for ranks),
+ * and this file's pieces: the calm notes, "A class / No class" as pills, the
+ * bulk promote list and the "Promote {name}?" belts. Look only: the same
+ * fields, checks and actions. */
+[data-look='redesign'] {
+  --u8gd-info-bg: #e5ecf6;
+  --u8gd-info-text: #2b4f80;
+  --u8gd-warn-bg: #f6ecdc;
+  --u8gd-warn-text: #7a4f12;
+  --u8gd-bad-text: #9b1c1c;
+  --u8gd-row-bg: #f6f7f8;
+  --u8gd-row-line: #e1e3e5;
+  --u8gd-muted: #6c767f;
+  --u8gd-option-on: #def2e2;
+  --u8gd-option-hover: #edf0f2;
+  --u8gd-tick: #3a7556;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8gd-info-bg: rgba(188, 203, 226, 0.12);
+    --u8gd-info-text: #bccbe2;
+    --u8gd-warn-bg: rgba(230, 207, 165, 0.14);
+    --u8gd-warn-text: #e6cfa5;
+    --u8gd-bad-text: #f3b4b4;
+    --u8gd-row-bg: var(--surface-2);
+    --u8gd-row-line: var(--border);
+    --u8gd-muted: var(--text-secondary);
+    --u8gd-option-on: var(--nav-active-bg);
+    --u8gd-option-hover: rgba(255, 255, 255, 0.06);
+    --u8gd-tick: #9fd3b2;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8gd-info-bg: rgba(188, 203, 226, 0.12);
+  --u8gd-info-text: #bccbe2;
+  --u8gd-warn-bg: rgba(230, 207, 165, 0.14);
+  --u8gd-warn-text: #e6cfa5;
+  --u8gd-bad-text: #f3b4b4;
+  --u8gd-row-bg: var(--surface-2);
+  --u8gd-row-line: var(--border);
+  --u8gd-muted: var(--text-secondary);
+  --u8gd-option-on: var(--nav-active-bg);
+  --u8gd-option-hover: rgba(255, 255, 255, 0.06);
+  --u8gd-tick: #9fd3b2;
+}
+
+/* The line a dialog opens with (the entry, the intro). */
+.u8gd-summary {
+  margin-top: 0;
+}
+
+/* Notes: amber for a skip or a check not met, blue for the Adult program. */
+.u8gd-note {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-warning);
+  color: var(--text-warning);
+}
+.u8gd-note--info {
+  background: var(--bg-accent);
+  color: var(--text-primary);
+}
+[data-look='redesign'] .u8gd-note--warn {
+  background: var(--u8gd-warn-bg);
+  color: var(--u8gd-warn-text);
+}
+[data-look='redesign'] .u8gd-note--info {
+  background: var(--u8gd-info-bg);
+  color: var(--u8gd-info-text);
+}
+
+.u8gd-fieldset {
+  min-width: 0;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  border: 0;
+}
+.u8gd-fieldset > legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+/* "A class" or "No class": radios drawn as the new look's pills (a grey
+ * track, the chosen one white with a soft shadow). */
+.u8gd-choice {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  max-width: 100%;
+}
+.u8gd-choice__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8gd-choice {
+  padding: var(--space-1);
+  border-radius: 999px;
+  background: var(--form-pill-track);
+}
+[data-look='redesign'] .u8gd-choice__option {
+  position: relative;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-size: var(--font-size-footnote);
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+[data-look='redesign'] .u8gd-choice__option > input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+[data-look='redesign'] .u8gd-choice__option:has(input:checked) {
+  background: var(--form-pill-on-bg);
+  color: var(--form-pill-on-text);
+  box-shadow: 0 1px 3px rgba(21, 23, 25, 0.18);
+}
+[data-look='redesign'] .u8gd-choice__option:has(input:focus-visible) {
+  outline: 2px solid var(--form-field-focus-ring);
+  outline-offset: 1px;
+}
+[data-look='redesign'] .u8gd-choice__option:has(input:disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+@media (hover: hover) {
+  [data-look='redesign'] .u8gd-choice__option:not(:has(input:checked)):not(:has(input:disabled)):hover {
+    color: var(--text-strong);
+  }
+}
+
+/* Rank pickers in a dialog match the form fields beside them (DESIGN.md →
+ * "Drop-downs": the soft form's size, a slate outline while open, the chosen
+ * rank pale green with a green ✓, in dark mode too). */
+[data-look='redesign'] .ultm8-modal .ultm8-rank-picker__field {
+  min-height: var(--form-field-height);
+  border: 0;
+  border-radius: var(--form-field-radius);
+  box-shadow: inset 0 0 0 1px var(--border);
+  font-size: var(--font-size-field);
+}
+[data-look='redesign'] .ultm8-modal .ultm8-rank-picker__field:focus-visible,
+[data-look='redesign'] .ultm8-modal .ultm8-rank-picker__field--open {
+  box-shadow: 0 0 0 2px var(--form-field-focus-ring);
+}
+[data-look='redesign'] .ultm8-modal .ultm8-rank-picker__list {
+  background: var(--surface-1);
+  border-radius: 12px;
+}
+[data-look='redesign'] .ultm8-modal .ultm8-rank-picker__option {
+  font-size: var(--font-size-field);
+}
+[data-look='redesign'] .ultm8-modal .ultm8-rank-picker__option--active {
+  background: var(--u8gd-option-hover);
+}
+[data-look='redesign'] .ultm8-modal .ultm8-rank-picker__option--selected {
+  background: var(--u8gd-option-on);
+}
+[data-look='redesign'] .ultm8-modal .ultm8-rank-picker__option--selected > span[aria-hidden='true'] {
+  color: var(--u8gd-tick);
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .ultm8-modal .ultm8-rank-picker__field,
+  [data-look='redesign'] .ultm8-modal .ultm8-rank-picker__option {
+    font-size: 16px;
+  }
+}
+
+/* A note's change log, and the "Students promoted" list. */
+.u8gd-log,
+.u8gd-report {
+  margin: 0 0 12px;
+  padding-inline-start: 20px;
+}
+.u8gd-log > li {
+  margin-bottom: 8px;
+}
+.u8gd-report > li {
+  margin-bottom: 4px;
+}
+
+/* Bulk promote: one date and one note, then the calling order. 640px wide
+ * (DESIGN.md → "Grading screens" → Dialogs). */
+[data-look='redesign'] .ultm8-modal:has(.u8gd-bulk__fields) {
+  max-width: 640px;
+}
+.u8gd-bulk__fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+}
+.u8gd-bulk__date {
+  min-width: 160px;
+}
+.u8gd-bulk__note {
+  flex: 1;
+  min-width: 200px;
+}
+.u8gd-bulk__list {
+  display: grid;
+  gap: 6px;
+  max-height: 45vh;
+  margin: 8px 0 12px;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+.u8gd-bulk__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: grab;
+}
+.u8gd-bulk__row--skipped {
+  opacity: 0.6;
+}
+.u8gd-bulk__number {
+  width: 20px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.u8gd-bulk__who {
+  flex: 1;
+  min-width: 120px;
+}
+.u8gd-bulk__line {
+  font-size: 12px;
+}
+.u8gd-bulk__line--info {
+  color: var(--text-accent);
+}
+.u8gd-bulk__line--warn {
+  color: var(--text-warning);
+}
+.u8gd-bulk__line--bad {
+  color: var(--text-danger);
+}
+.u8gd-bulk__to {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+}
+.u8gd-bulk__moves {
+  display: inline-flex;
+  gap: 4px;
+  margin-inline-start: auto;
+}
+[data-look='redesign'] .u8gd-bulk__row {
+  padding: 10px 12px;
+  border-color: var(--u8gd-row-line);
+  border-radius: 12px;
+  background: var(--u8gd-row-bg);
+}
+[data-look='redesign'] .u8gd-bulk__number {
+  color: var(--u8gd-muted);
+}
+[data-look='redesign'] .u8gd-bulk__line--info {
+  color: var(--u8gd-info-text);
+}
+[data-look='redesign'] .u8gd-bulk__line--warn {
+  color: var(--u8gd-warn-text);
+}
+[data-look='redesign'] .u8gd-bulk__line--bad {
+  color: var(--u8gd-bad-text);
+}
+/* ↑ ↓ ✕ are small round buttons, not full-size pills. */
+[data-look='redesign'] .u8gd-bulk__moves > .ultm8-btn {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+@media (max-width: 767px) {
+  .u8gd-bulk__list {
+    max-height: none;
+  }
+}
+
+/* "Promote {name}?": the blue line, then from → to with the belt pictures. */
+.u8gd-decide__cancelled {
+  margin-top: 0;
+  color: var(--text-accent);
+}
+[data-look='redesign'] .u8gd-decide__cancelled {
+  color: var(--u8gd-info-text);
+}
+.u8gd-decide__ranks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.u8gd-decide__rank {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-look='redesign'] .u8gd-decide__ranks {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--u8gd-row-bg);
+}

@@ -149,6 +149,9 @@ test('works with the keyboard only', async ({ page }) => {
     if (await dialog.getByLabel('Note').evaluate((el) => el === document.activeElement)) break;
   }
   await page.keyboard.type('Keyboard grade');
+  // The button band: Cancel first, then Grade.
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(dialog.getByRole('button', { name: 'Grade' })).toBeFocused();
   await page.keyboard.press('Enter');
