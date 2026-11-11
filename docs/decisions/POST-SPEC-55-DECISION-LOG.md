@@ -8312,3 +8312,75 @@ User (Code), 11 Nov 2026, answering the questions on #547:
 - On the switch tables: "keep it".
 - On the old look: "everything should look like the new design and nothing from the old should be kept".
 - On one Team page with three tabs, and where the extra features sit: "ok".
+
+---
+
+## Decision 457 — New look: the owner's answers on Schedule, Curriculum and the Student page
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 455, 456 · **Raised in:** #545 (Schedule), #553 (Student page), #554 (Curriculum)
+
+### Decision
+
+**Schedule (#545)**
+1. **The class panel shows nothing the row already shows (option B, DESIGN.md "nothing shown twice").** The Classes row already shows the name, "coach · branch", Starts, Ends, Capacity, the status tags and the activity tags, so the Classes panel is the class's avatar and name as its heading, then the row's actions as buttons (View bookings, Show QR, Roll call, Edit, Archive/Unarchive). On Timetable the panel adds only Capacity, and only for a slot with no class yet (that row has no seats line), then the row's actions. (When the owner was asked, the example wrongly listed Branch and Coach as staying in the panel; they don't, because the row already shows them. The owner's answer was the rule, "B".)
+
+**Curriculum (#554)**
+2. **Restyle only.** Curriculum keeps its current layout and features in the new look. No new Curriculum screen is designed.
+3. **Lesson actions in a ⋮ menu.** Each lesson row keeps Comments, ↑, ↓ and Edit as buttons. Upload video (or Upload again), Archive (or Unarchive) and Delete move into the row's ⋮ menu, with the same rules and the same "video uploads are off" reason as before.
+
+**Student page (#553, merged)**
+4. **The page actions stay in the header.** Log attendance, Merge a duplicate, Re-enrol and Revoke enrollment stay as buttons on the right of the page header.
+5. **From grading, the student page opens on Ranks.** Links to a student from the Grading Board (the card or row name and the panel's "Open student page") and from the "Belts waiting to be verified" notice open the student page on its Ranks tab (`?tab=ranks`). All other links still open Profile.
+6. **The Profile card order stays as built:** Upcoming Booking, Memberships, Notes, Payments, then the other cards.
+7. **The Guardians sit under Contact** in the student panel, with the owner's Remove and "+ Add another Guardian". There is no separate "Manage family account" screen.
+8. **The panel shows the student's phone, birthday with age, and gender**, to the same staff who saw the old member details card.
+
+This is a layout and navigation change only. Business rules, the data model, API contracts, tenancy/RLS and permissions are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026:
+- On the Schedule panel (A or B): "B".
+- On Curriculum: "restyling".
+- On the lesson buttons: "use the ⋮ menu".
+- On the five Student page questions: "ok to all".
+
+---
+
+## Decision 458 — New look: the owner's answers on Cancellations
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454 · **Raised in:** #556 (Cancellations)
+
+### Decision
+
+1. **Restyle only.** The approved design has no Cancellations screen and none is to be drawn. Cancellations to resolve keeps its columns, data, actions and per-role rules, and takes the new look: page header, one white card with the table, soft status tags and pill buttons.
+2. **Class avatars on the rows, as a follow-up.** Each row is to show the class avatar (DESIGN.md → "Avatars") once the Schedule PR's class avatar (#545) is merged. Not in #556.
+3. **Cards on a phone.** When the table doesn't fit its card (a phone, a tablet or a narrow window), each row becomes a card: the class, the student, the status, the membership, payment and refund lines, then the buttons stacked. Nothing scrolls sideways. A computer wide enough keeps the table.
+
+This is a layout change only. Business rules, the data model, API contracts, tenancy/RLS and permissions are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026, answering the questions on #556:
+- On the missing design: "Ok".
+- On class avatars: "yes".
+- On the phone layout: "go with your recommendation".
+
+---
+
+## Decision 459 — Check-in stays in both places; CHANGELOG entries are added in batches
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454
+
+### Decision
+
+1. **Check-in keeps both tabs.** For coaches and Branch Staff, "Check-in" shows both in the top tabs and in the Students page's own tabs. Both stay, as an owner-approved exception to DESIGN.md's "nothing shown twice": they open the same page, and keeping both keeps Check-in one click away from anywhere in the Students section. (Decision 454 had left this open.)
+2. **CHANGELOG entries are added in batches.** New-look page PRs no longer edit `CHANGELOG.md`; each states its entry in its PR description, and the entries are added under `## Unreleased` in a batch PR every few merges. Decision-log entries made while several PRs are open go in the same batch. Every user-visible change is still recorded; this only stops parallel PRs clashing on the same lines, which forced a fresh 35-minute check run after every merge.
+3. **The Platform Admin new look runs in a second session**, in parallel, under the same rules as the School Portal pages; its decisions use numbers 470–479.
+4. **CI keeps the browser tests running when Ubuntu's mirrors are unreachable** (#557).
+
+### Recorded by
+
+User (Code), 11 Nov 2026:
+- On Check-in shown twice: "why not have both".
+- On batching the CHANGELOG, a second session for Platform Admin, and the CI fix: "yes to all three".
