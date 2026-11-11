@@ -10,7 +10,6 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
-- **From grading, a student's page opens on Ranks** (Decision 457). Links from the Grading Board and from the "Belts waiting to be verified" notice open the student page on its Ranks tab, so coaches can grade without an extra click.
 - **New look: the student's full page** (Decision 453; visual only). Two tabs,
   Profile and Ranks; white cards with light header bars; the summary panel on
   the right (status, Edit, check-in code, contact, personal details, home
