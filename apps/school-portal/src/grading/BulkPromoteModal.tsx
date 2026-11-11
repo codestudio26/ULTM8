@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, Spinner, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import { BeltChip } from './BeltChip';
@@ -7,6 +7,7 @@ import { promoteToOptions, type Rung } from './ladder';
 import { RankPicker } from './RankPicker';
 import { BulkPromotePartialError, type BulkPromoteResult, type BulkPromoteStudent, type GradingBoardItem, useBulkPromote } from './gradingQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
+import './gradingDialogs.css';
 
 const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
 
@@ -294,14 +295,14 @@ export function BulkPromoteModal({
       <Modal title={t('grading.bulk.title')} onClose={() => finish(partial.done, partial.batch, partial.remaining)}>
         <ErrorBanner message={t('grading.bulk.stoppedPartWay', { done: partial.done.ready.length, total })} />
         {error ? <ErrorBanner message={error} /> : null}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-          <Button type="button" onClick={() => send(partial.remaining, partial.batch, partial.done)} loading={bulk.isPending}>
-            {t('grading.bulk.tryRemaining', { count: partial.remaining.length })}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={() => finish(partial.done, partial.batch, partial.remaining)} disabled={bulk.isPending}>
             {t('grading.bulk.stopHere')}
           </Button>
-        </div>
+          <Button type="button" onClick={() => send(partial.remaining, partial.batch, partial.done)} loading={bulk.isPending}>
+            {t('grading.bulk.tryRemaining', { count: partial.remaining.length })}
+          </Button>
+        </ModalActions>
       </Modal>
     );
   }
@@ -311,7 +312,7 @@ export function BulkPromoteModal({
       <Modal title={t('grading.bulk.doneTitle')} onClose={onClose}>
         {error ? <ErrorBanner message={error} /> : null}
         <p>{t('grading.bulk.youPromoted', { count: report.rows.length })}</p>
-        <ol style={{ paddingLeft: 20 }}>
+        <ol className="u8gd-report">
           {report.rows.map((r, i) => (
             <li key={i}>
               {r.name}: {r.from} → {r.to}
@@ -319,7 +320,7 @@ export function BulkPromoteModal({
           ))}
         </ol>
         {report.waiting.length > 0 ? (
-          <p role="note" data-testid="bulk-waiting-for-fee" style={{ padding: '8px 12px', borderRadius: 8, background: 'var(--bg-warning)' }}>
+          <p role="note" data-testid="bulk-waiting-for-fee" className="u8gd-note u8gd-note--warn">
             {t('grading.bulk.waitingForFee', { list: report.waiting.map((r) => `${r.name} (${r.to})`).join(', ') })}
           </p>
         ) : null}
@@ -328,14 +329,14 @@ export function BulkPromoteModal({
             message={t('grading.bulk.notPromoted', { list: report.skipped.map((s) => `${s.name} (${s.reasons.join('; ')})`).join(', ') })}
           />
         ) : null}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={openReport} disabled={report.rows.length === 0}>
             {t('grading.bulk.openReport')}
           </Button>
           <Button type="button" onClick={onClose}>
             {t('common.done')}
           </Button>
-        </div>
+        </ModalActions>
       </Modal>
     );
   }
@@ -344,16 +345,14 @@ export function BulkPromoteModal({
   return (
     <Modal title={t('grading.bulk.title')} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-        {t('grading.bulk.intro')}
-      </p>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ minWidth: 160 }}>
+      <p className="ultm8-field__hint u8gd-summary">{t('grading.bulk.intro')}</p>
+      <div className="u8gd-bulk__fields">
+        <div className="u8gd-bulk__date">
           <Field label={t('grading.bulk.dateLabel')} htmlFor="bulk-date" hint={t('grading.bulk.dateHint')}>
             <TextField type="date" max={todayLocal()} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
         </div>
-        <div style={{ flex: 1, minWidth: 200 }}>
+        <div className="u8gd-bulk__note">
           <Field label={t('grading.bulk.noteLabel')} htmlFor="bulk-note" hint={t('grading.bulk.noteHint')}>
             <TextField maxLength={1000} value={note} onChange={(e) => setNote(e.target.value)} />
           </Field>
@@ -363,7 +362,7 @@ export function BulkPromoteModal({
       {order.length === 0 ? (
         <p>{t('grading.bulk.nothingSelected')}</p>
       ) : (
-        <ol aria-label={t('grading.bulk.callingOrder')} style={{ listStyle: 'none', padding: 0, margin: '8px 0', display: 'grid', gap: 6, maxHeight: '45vh', overflow: 'auto' }}>
+        <ol aria-label={t('grading.bulk.callingOrder')} className="u8gd-bulk__list">
           {order.map((id, i) => {
             const s = byId(id);
             if (!s) return null;
@@ -387,30 +386,20 @@ export function BulkPromoteModal({
                   dropOn(id);
                 }}
                 aria-label={`${i + 1}. ${name}`}
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  alignItems: 'center',
-                  gap: 8,
-                  border: '1px solid var(--border)',
-                  borderRadius: 8,
-                  padding: '6px 10px',
-                  cursor: 'grab',
-                  opacity: skip ? 0.6 : 1,
-                }}
+                className={'u8gd-bulk__row' + (skip ? ' u8gd-bulk__row--skipped' : '')}
               >
-                <span style={{ width: 20, color: 'var(--text-secondary)' }}>{i + 1}</span>
-                <span style={{ flex: 1, minWidth: 120 }}>
+                <span className="u8gd-bulk__number">{i + 1}</span>
+                <span className="u8gd-bulk__who">
                   <strong>{name}</strong>
-                  {toAdult ? <div style={{ color: 'var(--text-accent)', fontSize: 12 }}>{t('grading.modals.grade.adultNote')}</div> : null}
-                  {skipped > 0 ? <div style={{ color: 'var(--text-accent)', fontSize: 12 }}>{t('grading.modals.grade.skips', { count: skipped })}</div> : null}
-                  {flag ? <div style={{ color: 'var(--text-warning)', fontSize: 12 }}>{t('grading.bulk.needsLook', { reasons: flag.reasons.join('; ') })}</div> : null}
-                  {skip ? <div style={{ color: 'var(--text-danger)', fontSize: 12 }}>{t('grading.bulk.cantPromote', { reasons: skip.reasons.join('; ') })}</div> : null}
+                  {toAdult ? <div className="u8gd-bulk__line u8gd-bulk__line--info">{t('grading.modals.grade.adultNote')}</div> : null}
+                  {skipped > 0 ? <div className="u8gd-bulk__line u8gd-bulk__line--info">{t('grading.modals.grade.skips', { count: skipped })}</div> : null}
+                  {flag ? <div className="u8gd-bulk__line u8gd-bulk__line--warn">{t('grading.bulk.needsLook', { reasons: flag.reasons.join('; ') })}</div> : null}
+                  {skip ? <div className="u8gd-bulk__line u8gd-bulk__line--bad">{t('grading.bulk.cantPromote', { reasons: skip.reasons.join('; ') })}</div> : null}
                 </span>
                 {from ? <BeltChip rung={from} /> : null}
                 <span aria-hidden="true">→</span>
                 {options.length > 0 ? (
-                  <span style={{ display: 'inline-flex', minWidth: 0, maxWidth: '100%' }}>
+                  <span className="u8gd-bulk__to">
                     <RankPicker
                       id={`bulk-to-${id}`}
                       ariaLabel={t('grading.bulk.promoteToAria', { name })}
@@ -422,7 +411,7 @@ export function BulkPromoteModal({
                     />
                   </span>
                 ) : null}
-                <span style={{ display: 'inline-flex', gap: 4, marginLeft: 'auto' }}>
+                <span className="u8gd-bulk__moves">
                   <Button type="button" variant="secondary" onClick={() => moveBy(id, -1)} disabled={i === 0} aria-label={t('grading.bulk.moveUpAria', { name })}>
                     ↑
                   </Button>
@@ -451,7 +440,10 @@ export function BulkPromoteModal({
         <p className="ultm8-field__hint">{t('grading.bulk.willBeSkipped', { count: cannot.length })}</p>
       ) : null}
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+      <ModalActions>
+        <Button type="button" variant="secondary" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
         <Button
           type="button"
           onClick={confirm}
@@ -460,10 +452,7 @@ export function BulkPromoteModal({
         >
           {t('grading.bulk.promoteCount', { count: toPromote.length })}
         </Button>
-        <Button type="button" variant="secondary" onClick={onClose}>
-          {t('common.cancel')}
-        </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

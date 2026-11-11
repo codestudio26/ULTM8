@@ -1,0 +1,95 @@
+/* The membership plan form (`/membership-plans/new`, `/:id/edit`) in the new
+ * look (Decision 453, Decision 460): form pattern "F" on a white sheet
+ * (students/studentForms.css), one step's chapter at a time. This file only
+ * lays out what is particular to this page: the step pills above the sheet,
+ * the two-choice pills inside it, the footer's Back / Cancel and Next / Save,
+ * and the contract's own sheet under the form. Look only. */
+
+/* The steps: the shared pill track, wrapping onto a second line when narrow. */
+[data-look='redesign'] .u8p-steps {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 16px;
+  border-radius: 26px;
+  /* The track is grey like the page, so a thin line keeps it in view
+     ("Never the same colour twice"). */
+  box-shadow: inset 0 0 0 1px var(--u8n-line);
+}
+
+/* A label, its hint, the pills and the chosen option's hint, stacked. */
+[data-look='redesign'] .u8p-choice {
+  gap: 8px;
+}
+[data-look='redesign'] .u8p-choice > .ultm8-field__hint {
+  margin: 0;
+}
+[data-look='redesign'] .u8p-choice > .ultm8-pills {
+  align-self: flex-start;
+  border-radius: 26px;
+}
+[data-look='redesign'] .u8p-choice > .ultm8-field {
+  margin: 8px 0 0;
+  max-width: 320px;
+}
+
+/* A tick box's line of explanation sits right under it. */
+[data-look='redesign'] .u8p-check-hint {
+  margin: 4px 0 0;
+}
+[data-look='redesign'] .u8p-note {
+  margin: 0;
+}
+
+/* The styles a plan covers: one tick box per row. */
+[data-look='redesign'] .u8p-styles {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
+/* Back and Cancel on the left, Next or Save on the right. */
+[data-look='redesign'] .u8p-actions {
+  justify-content: space-between;
+  gap: 10px;
+}
+[data-look='redesign'] .u8p-actions__left {
+  display: flex;
+  gap: 10px;
+}
+[data-look='redesign'] .u8p-actions .ultm8-btn {
+  min-width: 120px;
+}
+
+/* The contract: its own sheet under the plan form. */
+[data-look='redesign'] .u8p-contract {
+  margin-top: 16px;
+}
+[data-look='redesign'] .u8p-contract .ultm8-chapter__title {
+  margin-top: 0;
+}
+[data-look='redesign'] .u8p-contract .ultm8-chapter__fields > .u8f-wide > .ultm8-field,
+[data-look='redesign'] .u8p-contract .ultm8-chapter__fields > .ultm8-field {
+  margin: 0;
+}
+[data-look='redesign'] .u8p-contract .u8f-wide > .ultm8-banner {
+  margin: 0;
+}
+
+/* Phones: the footer's buttons share the row (DESIGN.md → "Button pairs"). */
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8p-actions {
+    flex-wrap: wrap;
+  }
+  [data-look='redesign'] .u8p-actions__left {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8p-actions__left > .ultm8-btn,
+  [data-look='redesign'] .u8p-actions > .ultm8-btn {
+    flex: 1;
+    min-width: 0;
+  }
+  [data-look='redesign'] .u8p-steps .ultm8-pills__option {
+    padding: 0 14px;
+  }
+}

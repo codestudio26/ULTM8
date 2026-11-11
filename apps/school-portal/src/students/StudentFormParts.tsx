@@ -15,7 +15,8 @@ export function Chapter({
   doneLabel,
   children,
 }: {
-  number: number;
+  /** Left out for a chapter that stands on its own, outside a numbered run. */
+  number?: number;
   title: string;
   description?: string;
   done?: boolean;
@@ -26,9 +27,11 @@ export function Chapter({
   return (
     <section className={'ultm8-chapter' + (done ? ' ultm8-chapter--done' : '')}>
       <div>
-        <div className="ultm8-chapter__number" aria-hidden="true">
-          {String(number).padStart(2, '0')}
-        </div>
+        {number != null ? (
+          <div className="ultm8-chapter__number" aria-hidden="true">
+            {String(number).padStart(2, '0')}
+          </div>
+        ) : null}
         <h2 className="ultm8-chapter__title">
           <span id={titleId}>{title}</span>
           {done && doneLabel ? <span className="u8f-done">{doneLabel}</span> : null}

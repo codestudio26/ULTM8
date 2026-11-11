@@ -55,7 +55,8 @@ test('Move puts a student in another column after confirming, and it is recorded
   await page.goto('/grading');
   await card(page, ben.name).getByRole('button', { name: `Move ${ben.name} to another column` }).click();
   const dialog = page.getByRole('dialog', { name: `Move ${ben.name}` });
-  await dialog.getByLabel('Move to').selectOption({ label: 'Ready to Grade' });
+  await dialog.getByRole('combobox', { name: 'Move to' }).click();
+  await dialog.getByRole('option', { name: 'Ready to Grade' }).click();
   await expect(dialog.getByText(/changes their class count/)).toBeVisible();
   await dialog.getByRole('button', { name: 'Move' }).click();
   await expect(dialog).toBeHidden();
@@ -68,7 +69,7 @@ test('dragging a card to another column asks to confirm first', async ({ page })
   await page.goto('/grading');
   await card(page, cat.name).dragTo(column(page, 'Just Starting'));
   const dialog = page.getByRole('dialog', { name: `Move ${cat.name}` });
-  await expect(dialog.getByLabel('Move to')).toHaveValue('JUST_STARTING');
+  await expect(dialog.getByRole('combobox', { name: 'Move to' }).locator('[data-shown="true"]')).toHaveText('Just Starting');
   await dialog.getByRole('button', { name: 'Cancel' }).click();
   await expect(column(page, 'Getting There').getByRole('link', { name: cat.name })).toBeVisible();
 });
@@ -280,7 +281,13 @@ test('works with the keyboard only: move a student', async ({ page }) => {
     await page.keyboard.press('Tab');
     if (await dialog.getByLabel('Move to').evaluate((el) => el === document.activeElement)) break;
   }
+  await page.keyboard.press('ArrowDown'); // opens the list on Getting There
   await page.keyboard.press('ArrowDown'); // Getting There → Ready to Grade
+  await page.keyboard.press('Enter');
+  await expect(dialog.getByRole('combobox', { name: 'Move to' }).locator('[data-shown="true"]')).toHaveText('Ready to Grade');
+  // The button band: Cancel first, then Move.
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(dialog.getByRole('button', { name: 'Move' })).toBeFocused();
   await page.keyboard.press('Enter');

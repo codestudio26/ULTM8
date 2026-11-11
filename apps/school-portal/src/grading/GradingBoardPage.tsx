@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, ModalActions, PageHeader, SelectField, Spinner, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -22,6 +22,8 @@ import {
 import { BulkPromoteModal } from './BulkPromoteModal';
 import { GradeModal } from './GradingModals';
 import { GradingTabs } from './GradingTabs';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import './gradingDialogs.css';
 import { Avatar, DecideDialog, FeeTag, SelectionPanel, StudentPanel, fullName } from './BoardPanels';
 import { feeRankName } from './feeRank';
 import { programPair, useAdultProgram } from './adultProgram';
@@ -829,22 +831,28 @@ function MoveDialog({
     <Modal title={t('grading.board.moveDialog.title', { name: fullName(item) })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label={t('grading.board.moveDialog.toLabel')} htmlFor="move-to">
-          <SelectField value={to} onChange={(e) => setTo(e.target.value as BoardColumn)} options={others.map((c) => ({ value: c.key, label: t(c.label) }))} />
-        </Field>
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="move-to"
+            label={t('grading.board.moveDialog.toLabel')}
+            value={to}
+            onChange={(v) => setTo(v as BoardColumn)}
+            options={others.map((c) => ({ value: c.key, label: t(c.label) }))}
+          />
+        </div>
         <p className="ultm8-field__hint">
           {item.eligibility.timeOnly
             ? t('grading.board.moveDialog.hintTimeOnly', { column: label ?? '' })
             : t('grading.board.moveDialog.hintClasses', { column: label ?? '' })}
         </p>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={move.isPending}>
-            {t('grading.board.moveDialog.submit')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={move.isPending}>
+            {t('grading.board.moveDialog.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -878,9 +886,7 @@ function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClo
     <Modal title={t('grading.board.thresholds.title', { style: style.name })} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-          {t('grading.board.thresholds.explanation')}
-        </p>
+        <p className="ultm8-field__hint u8gd-summary">{t('grading.board.thresholds.explanation')}</p>
         <Field label={t('grading.board.thresholds.gettingThereLabel')} htmlFor="threshold-getting-there">
           <TextField type="number" min={1} max={98} step={1} required value={gettingThere} onChange={(e) => setGettingThere(e.target.value)} />
         </Field>
@@ -896,9 +902,9 @@ function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClo
             {t('grading.board.thresholds.invalid')}
           </p>
         )}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={set.isPending} disabled={!valid}>
-            {t('common.save')}
+        <ModalActions>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
           </Button>
           <Button
             type="button"
@@ -910,10 +916,10 @@ function ThresholdsDialog({ style, onClose }: { style: DisciplineResponse; onClo
           >
             {t('grading.board.thresholds.reset')}
           </Button>
-          <Button type="button" variant="secondary" onClick={onClose}>
-            {t('common.cancel')}
+          <Button type="submit" loading={set.isPending} disabled={!valid}>
+            {t('common.save')}
           </Button>
-        </div>
+        </ModalActions>
       </form>
     </Modal>
   );
