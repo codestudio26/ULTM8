@@ -168,6 +168,7 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
     await superuser.membershipPlan.deleteMany({ where: { schoolId: school.id } });
     await superuser.paymentAccount.deleteMany({ where: { schoolId: school.id } });
     await superuser.class.deleteMany({ where: { schoolId: school.id } });
+    await superuser.timetableSlot.deleteMany({ where: { schoolId: school.id } });
     await superuser.branch.deleteMany({ where: { schoolId: school.id } });
     await superuser.roleGrant.deleteMany({ where: { schoolId: school.id } });
     await superuser.user.deleteMany({ where: { id: { in: userIds } } });
@@ -193,7 +194,12 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
 
   it('Manual: the seat waits for staff (no credit back yet), shows in the list, and the Owner can give the credit back', async () => {
     const pack = await mkPack();
-    const cls = await mkClass();
+    // A class from a timetable slot, with its own banner (Decision 458 item 2: the row's avatar).
+    const slot = await superuser.timetableSlot.create({
+      data: { id: randomUUID(), schoolId: school.id, weekday: 'TUESDAY', startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)), endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)), title: 'Slot class' },
+    });
+    const bannerUrl = 'https://cdn.example.test/banners/slot-class.jpg';
+    const cls = await mkClass({ timetableSlotId: slot.id, occurrenceDate: new Date(Date.UTC(2030, 0, 1)), bannerUrl });
     const booking = await book(cls.id);
     expect(await credits(pack.id)).toBe(4);
 
@@ -206,6 +212,7 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
     expect(list.status).toBe(200);
     const row = list.body.find((r: { bookingId: string }) => r.bookingId === booking.id);
     expect(row).toMatchObject({ resolution: 'PENDING', planTitle: '5-Class Pack', paymentMethod: 'CASH', studentName: 'student Tester' });
+    expect(row).toMatchObject({ classId: cls.id, classBannerUrl: bannerUrl, classTimetableSlotId: slot.id });
 
     const resolved = await request(app.getHttpServer()).patch(`/v1/bookings/${booking.id}/resolution`).set('Authorization', `Bearer ${tokenOwner}`).send({ action: 'CREDIT' });
     expect(resolved.status).toBe(200);
@@ -226,6 +233,9 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
     const row = list.body.find((r: { bookingId: string }) => r.bookingId === booking.id);
     expect(row.planTitle).toBeNull();
     expect(row.paymentMethod).toBeNull();
+    // A one-off class with no banner: both avatar fields come back null (the row shows initials).
+    expect(row.classBannerUrl).toBeNull();
+    expect(row.classTimetableSlotId).toBeNull();
 
     const refund = await request(app.getHttpServer()).patch(`/v1/bookings/${booking.id}/resolution`).set('Authorization', `Bearer ${tokenStaff}`).send({ action: 'REFUND' });
     expect(refund.status).toBe(403);
@@ -235,6 +245,79 @@ describeIfDb('Decision 291 — class cancellation settings', () => {
     }
     const credit = await request(app.getHttpServer()).patch(`/v1/bookings/${booking.id}/resolution`).set('Authorization', `Bearer ${tokenStaff}`).send({ action: 'CREDIT' });
     expect(credit.status).toBe(200);
+  });
+
+  it("School A's list never carries School B's cancellations or class data (banner, slot), and A's Owner cannot read B's list", async () => {
+    // School B, set up as superuser: its own Owner, Student, slot, bannered class and an open cancelled seat.
+    const schoolB = await superuser.school.create({ data: { id: randomUUID(), name: 'Cancellation Policy Other School', defaultCurrency: 'GBP' } });
+    const mkOther = (label: string) =>
+      superuser.user.create({
+        data: {
+          id: randomUUID(),
+          email: `cancel-policy-b-${label}-${randomUUID()}@example.test`,
+          phone: `+1555${Math.floor(1_000_000_000 + Math.random() * 9_000_000_000)}`,
+          firstName: label,
+          surname: 'OtherSchool',
+          passcodeHash: 'x',
+          dateOfBirth: new Date('2000-01-01'),
+          phoneVerifiedAt: new Date(),
+        },
+      });
+    const ownerB = await mkOther('owner');
+    const studentB = await mkOther('student');
+    try {
+      await superuser.roleGrant.createMany({
+        data: [
+          { id: randomUUID(), role: 'SCHOOL_OWNER_MANAGER', userId: ownerB.id, schoolId: schoolB.id },
+          { id: randomUUID(), role: 'STUDENT', userId: studentB.id, schoolId: schoolB.id },
+        ],
+      });
+      const planB = await superuser.membershipPlan.create({ data: { id: randomUUID(), schoolId: schoolB.id, type: 'CLASS_PACK', title: 'B Pack', price: 3000, classesIncluded: 5, currency: 'gbp' } });
+      const membershipB = await superuser.membership.create({
+        data: { id: randomUUID(), studentId: studentB.id, membershipPlanId: planB.id, schoolId: schoolB.id, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 4 },
+      });
+      const slotB = await superuser.timetableSlot.create({
+        data: { id: randomUUID(), schoolId: schoolB.id, weekday: 'MONDAY', startTime: new Date(Date.UTC(1970, 0, 1, 9, 0)), endTime: new Date(Date.UTC(1970, 0, 1, 10, 0)), title: 'B slot' },
+      });
+      const bannerB = 'https://cdn.example.test/banners/school-b-only.jpg';
+      const start = new Date(Date.now() + 24 * 3_600_000);
+      const classB = await superuser.class.create({
+        data: { id: randomUUID(), schoolId: schoolB.id, title: 'School B class', startDate: start, endDate: new Date(start.getTime() + 3_600_000), membershipInclusion: true, timetableSlotId: slotB.id, occurrenceDate: new Date(Date.UTC(2030, 0, 2)), bannerUrl: bannerB },
+      });
+      const bookingB = await superuser.booking.create({
+        data: { id: randomUUID(), studentId: studentB.id, classId: classB.id, schoolId: schoolB.id, status: 'CANCELLED', sourceMembershipId: membershipB.id, refundResolution: 'PENDING' },
+      });
+
+      // School B's own Owner sees it, with the class's banner and slot.
+      const listB = await request(app.getHttpServer()).get(`/v1/schools/${schoolB.id}/cancellations`).set('Authorization', `Bearer ${jwt.sign({ sub: ownerB.id, email: ownerB.email, grants: [{ role: 'SCHOOL_OWNER_MANAGER', franchiseId: null, schoolId: schoolB.id, branchId: null }] })}`);
+      expect(listB.status).toBe(200);
+      expect(listB.body.find((r: { bookingId: string }) => r.bookingId === bookingB.id)).toMatchObject({ classId: classB.id, classBannerUrl: bannerB, classTimetableSlotId: slotB.id });
+
+      // School A's Owner (and Branch Staff): nothing of School B's, by booking, class, banner or slot.
+      for (const token of [tokenOwner, tokenStaff]) {
+        const listA = await request(app.getHttpServer()).get(`/v1/schools/${school.id}/cancellations`).set('Authorization', `Bearer ${token}`);
+        expect(listA.status).toBe(200);
+        for (const r of listA.body as Array<{ bookingId: string; classId: string; classBannerUrl: string | null; classTimetableSlotId: string | null }>) {
+          expect(r.bookingId).not.toBe(bookingB.id);
+          expect(r.classId).not.toBe(classB.id);
+          expect(r.classBannerUrl).not.toBe(bannerB);
+          expect(r.classTimetableSlotId).not.toBe(slotB.id);
+        }
+      }
+
+      // And School A's Owner may not ask for School B's list at all.
+      const crossRead = await request(app.getHttpServer()).get(`/v1/schools/${schoolB.id}/cancellations`).set('Authorization', `Bearer ${tokenOwner}`);
+      expect(crossRead.status).toBe(403);
+    } finally {
+      await superuser.booking.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.class.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.timetableSlot.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.membership.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.membershipPlan.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.roleGrant.deleteMany({ where: { schoolId: schoolB.id } });
+      await superuser.user.deleteMany({ where: { id: { in: [ownerB.id, studentB.id] } } });
+      await superuser.school.delete({ where: { id: schoolB.id } });
+    }
   });
 
   it('Auto-refund, paid in cash: one class\'s share is owed (credit not also restored), and the Owner marks it paid', async () => {

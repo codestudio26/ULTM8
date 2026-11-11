@@ -4,7 +4,8 @@
  * This file only adds the row cards (Decision 458 item 3): when the table
  * doesn't fit its card, CancellationsPage sets data-layout="cards" and each
  * row becomes a card: class, student, status, then the plan, payment and
- * refund lines, then the buttons stacked. Nothing scrolls sideways.
+ * refund lines, then the buttons stacked. Nothing scrolls sideways. The class
+ * cell leads with the class's avatar in both layouts (Decision 458 item 2).
  */
 
 [data-look='redesign'] .u8x-list {
@@ -12,6 +13,15 @@
 }
 [data-look='redesign'] .u8x-cell-label {
   display: none;
+}
+/* The class's avatar (schedule.css's `.u8s-avatar`) in front of its name and time. */
+[data-look='redesign'] .u8x-class__cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+[data-look='redesign'] .u8x-class__text {
+  min-width: 0;
 }
 
 [data-look='redesign'] .u8x-list[data-layout='cards'] table,

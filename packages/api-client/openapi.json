@@ -32941,6 +32941,14 @@
           "classCancelledBySchool": {
             "type": "boolean"
           },
+          "classBannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "classTimetableSlotId": {
+            "type": "string",
+            "nullable": true
+          },
           "resolution": {
             "type": "string",
             "enum": [

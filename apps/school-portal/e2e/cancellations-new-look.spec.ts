@@ -12,13 +12,17 @@ import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
 let s: GradingSchool;
 let branchId: string;
 
-async function seedCancelled(resolution: 'PENDING' | 'REFUND_OWED', title: string) {
+/** A banner for one class (an inline image, so the test needs no network);
+ * the other class has none and shows its initials (Decision 458 item 2). */
+const BANNER = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect width="80" height="80" fill="#3a6"/></svg>')}`;
+
+async function seedCancelled(resolution: 'PENDING' | 'REFUND_OWED', title: string, extra: { bannerUrl?: string; timetableSlotId?: string; occurrenceDate?: Date } = {}) {
   const plan = await db.membershipPlan.create({ data: { id: randomUUID(), schoolId: s.schoolId, type: 'CLASS_PACK', title: '5-Class Pack', price: 3000, classesIncluded: 5, currency: 'GBP' } });
   const membership = await db.membership.create({
     data: { id: randomUUID(), studentId: s.student.id, membershipPlanId: plan.id, schoolId: s.schoolId, status: 'ACTIVE', frequency: 'ONE_TIME', classesRemaining: 4 },
   });
   const start = new Date(Date.now() + 24 * 3_600_000);
-  const cls = await db.class.create({ data: { id: randomUUID(), schoolId: s.schoolId, branchId, title, startDate: start, endDate: new Date(start.getTime() + 3_600_000) } });
+  const cls = await db.class.create({ data: { id: randomUUID(), schoolId: s.schoolId, branchId, title, startDate: start, endDate: new Date(start.getTime() + 3_600_000), ...extra } });
   return db.booking.create({
     data: {
       id: randomUUID(), studentId: s.student.id, classId: cls.id, schoolId: s.schoolId, branchId, sourceMembershipId: membership.id,
@@ -31,13 +35,40 @@ test.beforeEach(async () => {
   s = await seedGradingSchool();
   branchId = (await db.branch.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'Riverside' } })).id;
   await seedCancelled('PENDING', 'Evening Open Mat');
-  await seedCancelled('REFUND_OWED', 'Saturday Fundamentals');
+  await seedCancelled('REFUND_OWED', 'Saturday Fundamentals', { bannerUrl: BANNER });
 });
+
+/** Each row (table or card) leads with its class's avatar: the banner when the
+ * class has one, its initials on a soft circle otherwise. */
+async function expectAvatars(list: import('@playwright/test').Locator) {
+  const pendingAvatar = list.getByRole('row').filter({ hasText: 'Evening Open Mat' }).locator('.u8x-class .u8s-avatar');
+  await expect(pendingAvatar).toHaveCount(1);
+  await expect(pendingAvatar).toBeVisible();
+  await expect(pendingAvatar).toHaveText('EO');
+  await expect(pendingAvatar).toHaveClass(/u8s-avatar--c\d/);
+  const owedAvatar = list.getByRole('row').filter({ hasText: 'Saturday Fundamentals' }).locator('.u8x-class .u8s-avatar');
+  await expect(owedAvatar).toHaveCount(1);
+  await expect(owedAvatar).toBeVisible();
+  await expect(owedAvatar).toHaveJSProperty('tagName', 'IMG');
+  await expect(owedAvatar).toHaveAttribute('src', BANNER);
+  // Every body row has exactly one, in front of (left of) the class name.
+  const rows = list.locator('tbody tr');
+  const count = await rows.count();
+  expect(count).toBe(2);
+  for (let i = 0; i < count; i++) {
+    const avatar = rows.nth(i).locator('.u8s-avatar');
+    await expect(avatar).toHaveCount(1);
+    const a = (await avatar.boundingBox())!;
+    const text = (await rows.nth(i).locator('.u8x-class__text').boundingBox())!;
+    expect(a.x + a.width).toBeLessThanOrEqual(text.x);
+  }
+}
 
 test.afterEach(async () => {
   const where = { schoolId: s.schoolId };
   await db.booking.deleteMany({ where });
   await db.class.deleteMany({ where });
+  await db.timetableSlot.deleteMany({ where });
   await db.membership.deleteMany({ where });
   await db.membershipPlan.deleteMany({ where });
   await db.staffPermission.deleteMany({ where });
@@ -103,6 +134,7 @@ test('desktop: a table with column headings while it fits its card', async ({ pa
   await expect(list.getByRole('row').filter({ hasText: 'Evening Open Mat' })).toBeVisible();
   await expect(list).toHaveAttribute('data-layout', 'table');
   await expect(list.locator('thead th').filter({ hasText: 'Membership' })).toBeVisible();
+  await expectAvatars(list);
   expect(await list.evaluate((el) => el.querySelector('table')!.scrollWidth <= el.clientWidth + 1)).toBe(true);
 });
 
@@ -119,6 +151,7 @@ for (const role of ['owner', 'staff'] as const) {
     await expect(pending).toBeVisible();
     await expect(list).toHaveAttribute('data-layout', 'cards');
     await expect(list.locator('thead')).toBeHidden();
+    await expectAvatars(list);
 
     // Class, then student, then status, then the buttons, top to bottom.
     const top = async (selector: string) => (await pending.locator(selector).boundingBox())!.y;
@@ -160,4 +193,23 @@ test('nothing to resolve: the empty state sits inside the card', async ({ page }
   await signIn(page, s.ownerToken);
   await page.goto('/cancellations');
   await expect(page.getByTestId('cancellations-card').getByText('Nothing to resolve')).toBeVisible();
+});
+
+/** Decision 458 item 2: the avatar's colour follows the class's timetable
+ * slot, as on the Classes and Timetable pages, so two dates of one slot match. */
+test('two dates of one timetable slot share the avatar colour', async ({ page }) => {
+  await db.booking.deleteMany({ where: { schoolId: s.schoolId } });
+  const slot = await db.timetableSlot.create({
+    data: { id: randomUUID(), schoolId: s.schoolId, branchId, weekday: 'TUESDAY', startTime: new Date(Date.UTC(1970, 0, 1, 18, 0)), endTime: new Date(Date.UTC(1970, 0, 1, 19, 0)), title: 'Kids Judo' },
+  });
+  await seedCancelled('PENDING', 'Kids Judo', { timetableSlotId: slot.id, occurrenceDate: new Date(Date.UTC(2030, 0, 1)) });
+  await seedCancelled('REFUND_OWED', 'Kids Judo', { timetableSlotId: slot.id, occurrenceDate: new Date(Date.UTC(2030, 0, 8)) });
+  await signIn(page, s.ownerToken);
+  await page.goto('/cancellations');
+  const avatars = page.getByTestId('cancellations-list').locator('tbody tr .u8s-avatar');
+  await expect(avatars).toHaveCount(2);
+  await expect(avatars).toHaveText(['KJ', 'KJ']);
+  const colours = await avatars.evaluateAll((els) => els.map((el) => [...el.classList].find((c) => /^u8s-avatar--c\d$/.test(c))));
+  expect(colours[0]).toBeTruthy();
+  expect(colours[1]).toBe(colours[0]);
 });

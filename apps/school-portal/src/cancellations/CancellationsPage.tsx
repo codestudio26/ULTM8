@@ -8,6 +8,8 @@ import { useT } from '../i18n/I18nProvider';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { BillingCard, BillingPage } from '../billing/BillingLook';
 import { NewLookPageHeader } from '../layout/NewLookPage';
+import { ClassAvatar } from '../schedule/ClassAvatar';
+import '../schedule/schedule.css';
 import './cancellations.css';
 import { useOpenCancellations, useResolveCancellation, type OpenCancellation, type ResolveAction } from './cancellationQueries';
 
@@ -28,6 +30,10 @@ type Row = OpenCancellation & { id: string };
  * When the table doesn't fit its card (a phone, a tablet or a narrow window)
  * each row becomes a card: class, student, status, the money lines, then the
  * buttons stacked (Decision 458 item 3). Nothing scrolls sideways.
+ * Each row leads with its class's avatar, the same `ClassAvatar` the Classes
+ * and Timetable pages show: the class banner, or its initials on a soft
+ * colour that stays the same for every date of one timetable slot
+ * (Decision 458 item 2).
  */
 export function CancellationsPage() {
   const t = useT();
@@ -179,10 +185,15 @@ function CancellationsList({ rows, actions }: { rows: Row[]; actions: (row: Row)
                 <span className="u8b-name">{`${r.studentName ?? r.studentId.slice(0, 8)}${r.attendeeId ? ` ${t('cancellations.guestSuffix')}` : ''}`}</span>
               </td>
               <td className="u8x-class">
-                <div>{r.classTitle ?? '—'}</div>
-                <div className="ultm8-field__hint">
-                  {r.classStartDate ? new Date(r.classStartDate).toLocaleString(formatLocale()) : ''}
-                  {r.classCancelledBySchool ? ` · ${t('cancellations.cancelledBySchool')}` : ''}
+                <div className="u8x-class__cell">
+                  <ClassAvatar title={r.classTitle ?? ''} bannerUrl={r.classBannerUrl} colourKey={r.classTimetableSlotId ?? r.classId} />
+                  <div className="u8x-class__text">
+                    <div>{r.classTitle ?? '—'}</div>
+                    <div className="ultm8-field__hint">
+                      {r.classStartDate ? new Date(r.classStartDate).toLocaleString(formatLocale()) : ''}
+                      {r.classCancelledBySchool ? ` · ${t('cancellations.cancelledBySchool')}` : ''}
+                    </div>
+                  </div>
                 </div>
               </td>
               <td className="u8x-detail">
