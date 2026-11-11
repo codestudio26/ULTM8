@@ -8384,3 +8384,42 @@ User (Code), 11 Nov 2026, answering the questions on #556:
 User (Code), 11 Nov 2026:
 - On Check-in shown twice: "why not have both".
 - On batching the CHANGELOG, a second session for Platform Admin, and the CI fix: "yes to all three".
+
+---
+
+## Decision 460 — New look: the owner's answers on Check-in, the coach dashboard, Waiver settings and the Students forms
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 457, 459 · **Raised in:** #559 (Check-in), #558 (coach dashboard), #561 (Waiver settings), #563 (Students forms)
+
+### Decision
+
+**Check-in (#559), kept as built**
+1. Front-desk tablets (the owner's exit code, ending a tablet) stays as a card under the check-in area.
+2. The Branch picker stays above the classes for Schools with more than one Branch.
+3. Check-in rules stays next to Front-desk mode, for the same people as before.
+4. No "All check-ins" button: there is no page for it.
+5. The subtitle is the School's name, as in the design.
+
+**Coach dashboard (#558)**
+6. The panel's heading says "Today" when the coach's next class is today, otherwise "Next class".
+7. No "Only students of your branch" note: a coach can have several branches or none.
+8. Birthdays stays as a card; Branch Staff keep "Classes at your branch this week".
+9. Branch Staff who don't teach see only Ready to grade in the panel.
+10. When the Ready to grade list shows, the Notifications card leaves out the "ready to grade" alerts (they stay on the Notifications page).
+
+**Waiver settings (#561), kept as built**
+11. The page keeps its layout (no move to the Settings pattern), and each setting keeps both its explanation and its "most schools choose" line.
+
+**Students forms (#563) and every dialog**
+12. Date of birth keeps the restyled date picker.
+13. Every dialog gets the design's round ✕ in its header. With unsaved changes it behaves as Cancel does (it asks before discarding).
+14. The shared address fields' Country picker becomes searchable, like Currency.
+15. On Add student, "+ Secondary phone / email / Emergency contact" stay at the end of Personal details.
+16. Edit a student uses the same chapters, with no preview panel.
+17. The pages still using the old page header (Sign-ups, Import, Rosters, Attendance, Growth, the Grading pages, Disciplines, the Class page, the Membership plan form, My profile, Check-in rules and others) join the forms groups and take the new look.
+
+This is a layout change only. Business rules, the data model, API contracts, tenancy/RLS and permissions are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #558, #559, #561 and #563 with the recommendations given.
