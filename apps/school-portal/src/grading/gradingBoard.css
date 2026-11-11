@@ -1,0 +1,453 @@
+/* The Grading Board page in the new look (Decision 453, Decision 460;
+ * DESIGN.md → "Grading screens" → Board, "Drop-downs", "Style switch",
+ * "One accent: mint", "Greens", "Phone layout"). The page sits in `.u8b`, so
+ * its header spacing, white cards, pill buttons, tick boxes and tags come
+ * from billing/billingLook.css, as on the other redone pages; the board's
+ * trays, cards and bars keep their pieces in packages/ui components.css. This
+ * file only lays out the board's toolbar and restyles its own pieces. Look
+ * only: the same filters, sort, selection, columns and actions. */
+[data-look='redesign'] {
+  --u8gb-tray-bg: #f9fafa;
+  --u8gb-card-on: #eef7f0;
+  --u8gb-ring: #5d7081;
+  --u8gb-green-text: #3a7556;
+  --u8gb-no-branch-strip: #e6cfa5;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8gb-tray-bg: rgba(255, 255, 255, 0.03);
+    --u8gb-card-on: rgba(159, 211, 178, 0.12);
+    --u8gb-ring: #9fb0c0;
+    --u8gb-green-text: #9fd3b2;
+    --u8gb-no-branch-strip: rgba(230, 207, 165, 0.6);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8gb-tray-bg: rgba(255, 255, 255, 0.03);
+  --u8gb-card-on: rgba(159, 211, 178, 0.12);
+  --u8gb-ring: #9fb0c0;
+  --u8gb-green-text: #9fd3b2;
+  --u8gb-no-branch-strip: rgba(230, 207, 165, 0.6);
+}
+
+[data-look='redesign'] .u8gb-hint {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+
+/* ------------------------------------------------------------- Toolbar */
+
+/* The filters on one wrapping line, every control's foot on the same line. */
+[data-look='redesign'] .u8gb-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+}
+[data-look='redesign'] .u8gb-tools--views {
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8gb-tools > .u8n-dd-field,
+[data-look='redesign'] .u8gb-search .ultm8-field {
+  margin: 0;
+}
+[data-look='redesign'] .u8gb-search {
+  flex: 0 1 240px;
+  min-width: 180px;
+}
+[data-look='redesign'] .u8gb-check,
+[data-look='redesign'] .u8gb-percent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-height: 52px;
+}
+[data-look='redesign'] .u8gb-tools__gap {
+  flex: 1;
+}
+
+/* Kids · Adult, Grid · Rows and Belt · Name: the style switch's look, a grey
+ * track with the chosen one white and raised (DESIGN.md → "Style switch"). */
+[data-look='redesign'] .u8gb .ultm8-view-toggle {
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--u8n-tile);
+}
+[data-look='redesign'] .u8gb-switch {
+  align-self: flex-end;
+  margin-bottom: 4px;
+}
+[data-look='redesign'] .u8gb .ultm8-view-toggle__btn,
+[data-look='redesign'] .u8gb .ultm8-view-toggle > .ultm8-btn {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--u8n-text);
+  font-size: 14px;
+  font-weight: 400;
+}
+[data-look='redesign'] .u8gb .ultm8-view-toggle__btn + .ultm8-view-toggle__btn {
+  border-left: 0;
+}
+[data-look='redesign'] .u8gb .ultm8-view-toggle__btn--active,
+[data-look='redesign'] .u8gb .ultm8-view-toggle__btn--active:hover,
+[data-look='redesign'] .u8gb .ultm8-view-toggle > .ultm8-btn[aria-pressed='true'],
+[data-look='redesign'] .u8gb .ultm8-view-toggle > .ultm8-btn[aria-pressed='true']:not(:disabled):hover {
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  box-shadow: 0 1px 3px rgba(21, 23, 25, 0.18);
+}
+[data-look='redesign'] .u8gb .ultm8-view-toggle__btn:not(.ultm8-view-toggle__btn--active):hover,
+[data-look='redesign'] .u8gb .ultm8-view-toggle > .ultm8-btn[aria-pressed='false']:not(:disabled):hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8gb .ultm8-view-toggle > .ultm8-btn:disabled {
+  background: transparent;
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8gb .ultm8-view-toggle__btn:focus-visible,
+[data-look='redesign'] .u8gb .ultm8-view-toggle > .ultm8-btn:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* A smaller pill (DESIGN.md: Change %, the sort direction, Move, Assign),
+ * still a 36px target. */
+[data-look='redesign'] .u8gb .ultm8-btn.u8gb-pill--small {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------- Stages (trays) */
+
+[data-look='redesign'] .u8gb .ultm8-board-layout {
+  margin-top: 0;
+}
+[data-look='redesign'] .u8gb-board {
+  min-width: 0;
+}
+[data-look='redesign'] .u8gb .ultm8-board-tray,
+[data-look='redesign'] .u8gb .ultm8-board-group {
+  background: var(--u8gb-tray-bg);
+  border-radius: 12px;
+  box-shadow: inset 0 0 0 1px var(--u8n-line);
+  padding: 12px;
+}
+/* Rows: the coloured strip on the group's left edge (DESIGN.md → "Grid or
+ * Rows"; "Progress bar colours"). */
+[data-look='redesign'] .u8gb .ultm8-board-group {
+  border-left: 0;
+  box-shadow:
+    inset 4px 0 0 var(--u8gb-strip, var(--u8n-line)),
+    inset 0 0 0 1px var(--u8n-line);
+  padding-left: 16px;
+}
+[data-look='redesign'] .u8gb .ultm8-board-group--ready {
+  --u8gb-strip: #9fd3b2;
+}
+[data-look='redesign'] .u8gb .ultm8-board-group--getting-there {
+  --u8gb-strip: #a8c5ea;
+}
+[data-look='redesign'] .u8gb .ultm8-board-group--just-starting {
+  --u8gb-strip: #f4c7a1;
+}
+[data-look='redesign'] .u8gb-stage__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 4px 4px 0;
+}
+[data-look='redesign'] .u8gb-stage__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8gb-stage__range {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+[data-look='redesign'] .u8gb-stage__empty {
+  margin: 0;
+  padding: 16px 0;
+  text-align: center;
+}
+[data-look='redesign'] .u8gb-stage__empty--row {
+  padding: 0 4px;
+  text-align: start;
+}
+[data-look='redesign'] .u8gb-show-all {
+  margin-top: 10px;
+}
+[data-look='redesign'] .u8gb-show-all .ultm8-btn {
+  min-height: 40px;
+  font-size: 13px;
+}
+
+/* No branch: a white card with an amber strip, as the design draws it. */
+[data-look='redesign'] .u8gb-no-branch {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  background: var(--u8n-surface);
+  box-shadow:
+    inset 4px 0 0 var(--u8gb-no-branch-strip),
+    var(--u8n-shadow);
+}
+[data-look='redesign'] .u8gb-no-branch__hint {
+  margin: 6px 0 14px;
+}
+[data-look='redesign'] .u8gb-no-branch .ultm8-board-card {
+  box-shadow: inset 0 0 0 1px var(--u8n-line);
+}
+
+/* ------------------------------------------------------- Cards and rows */
+
+[data-look='redesign'] .u8gb-cards {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+[data-look='redesign'] .u8gb-cards--grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+[data-look='redesign'] .u8gb-cards--rows {
+  gap: 8px;
+}
+[data-look='redesign'] .u8gb .ultm8-board-card {
+  border: 0;
+  border-radius: 10px;
+  background: var(--u8n-surface);
+  box-shadow:
+    0 1px 2px rgba(21, 23, 25, 0.08),
+    inset 0 0 0 1px var(--u8n-line);
+  padding: 12px;
+  color: var(--u8n-text);
+}
+/* The open student: a slate ring; a ticked one: pale green (DESIGN.md →
+ * "Selection"). */
+[data-look='redesign'] .u8gb .ultm8-board-card--open {
+  box-shadow:
+    inset 0 0 0 2px var(--u8gb-ring),
+    0 2px 8px rgba(21, 23, 25, 0.1);
+}
+[data-look='redesign'] .u8gb .ultm8-board-card--ticked {
+  background: var(--u8gb-card-on);
+}
+[data-look='redesign'] .u8gb-card--drag {
+  cursor: grab;
+}
+[data-look='redesign'] .u8gb-card--inactive {
+  opacity: 0.7;
+}
+[data-look='redesign'] .u8gb-card__top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+[data-look='redesign'] .u8gb-card__name {
+  flex: 1;
+  min-width: 0;
+}
+[data-look='redesign'] .u8gb-card__name > a {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--u8n-tile-icon);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8gb-card__name > a:hover {
+  text-decoration: underline;
+}
+[data-look='redesign'] .u8gb-card__pct {
+  font-size: 18px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+[data-look='redesign'] .u8gb .u8gb-pct--full {
+  color: var(--u8gb-green-text);
+}
+[data-look='redesign'] .u8gb-card__belt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+[data-look='redesign'] .ultm8-board-card > .u8gb-card__belt {
+  margin: 8px 0 4px;
+}
+[data-look='redesign'] .u8gb-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+[data-look='redesign'] .u8gb-card__gap {
+  flex: 1;
+}
+[data-look='redesign'] .u8gb-bar {
+  display: block;
+  padding: 3px 0;
+}
+[data-look='redesign'] .u8gb .ultm8-progress-track {
+  background: var(--u8n-line);
+}
+[data-look='redesign'] .u8gb-row__who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8gb-row__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+[data-look='redesign'] .u8gb-row__belt {
+  min-width: 0;
+  font-size: 13px;
+}
+[data-look='redesign'] .u8gb-row__progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+[data-look='redesign'] .u8gb-row__bar {
+  flex: 1;
+}
+[data-look='redesign'] .u8gb-row__progress > strong {
+  min-width: 40px;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The tick box on a card or row: white, a green tick and border when ticked
+ * (DESIGN.md → "One accent: mint"). */
+[data-look='redesign'] .u8gb .u8gb-tick {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  border-radius: 6px;
+  border: 1.5px solid var(--u8n-subtle);
+  background: var(--u8n-surface) center / 14px 14px no-repeat;
+  cursor: pointer;
+  vertical-align: middle;
+}
+[data-look='redesign'] .u8gb .u8gb-tick:checked {
+  border-color: var(--u8b-tick);
+  background-image: var(--u8b-tick-mark);
+}
+[data-look='redesign'] .u8gb .u8gb-tick:disabled {
+  cursor: not-allowed;
+  background-color: var(--u8n-tile);
+  border-color: var(--u8n-line);
+}
+[data-look='redesign'] .u8gb .u8gb-tick:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* Tags (DESIGN.md → "Grading screens" → Tags): "needs a look" is amber. */
+[data-look='redesign'] .u8gb .ultm8-badge {
+  font-size: 11px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8gb .ultm8-board-card .ultm8-badge--accent {
+  background: var(--u8b-tag-amber-bg);
+  color: var(--u8b-tag-amber-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-amber-line);
+}
+
+/* A student with no home branch: the branch drop-down and Assign. */
+[data-look='redesign'] .u8gb-assign {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+[data-look='redesign'] .u8gb-assign > .u8n-dd-field {
+  margin: 0;
+  min-width: 0;
+  max-width: 100%;
+}
+[data-look='redesign'] .u8gb-assign > .ultm8-btn {
+  margin-bottom: 8px;
+}
+[data-look='redesign'] .u8gb-assign > .ultm8-banner {
+  flex-basis: 100%;
+}
+
+/* ------------------------------------------------------ The right panel */
+
+[data-look='redesign'] .u8gb-panel {
+  padding: 20px;
+}
+[data-look='redesign'] .u8gb-panel__title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8gb-panel h3 {
+  font-weight: 500;
+}
+[data-look='redesign'] .u8gb-panel a.ultm8-btn {
+  text-decoration: none;
+}
+
+/* The minimised selection: a white pill with a soft shadow. */
+[data-look='redesign'] .u8gb .ultm8-selection-pill {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-line);
+}
+
+/* ----------------------------------------------------- Phone: under 768px */
+
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8gb-search {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8gb-check,
+  [data-look='redesign'] .u8gb-percent {
+    min-height: 0;
+  }
+  [data-look='redesign'] .u8gb-tools__gap {
+    display: none;
+  }
+  [data-look='redesign'] .u8gb-cards--grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-look='redesign'] .u8gb-no-branch {
+    padding: 16px;
+  }
+}
