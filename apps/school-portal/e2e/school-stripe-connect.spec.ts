@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 441 item 6 — the School owner connects Stripe from the School page
@@ -194,7 +195,7 @@ test('Decision 442 item 2: until Stripe says the account is ready, the School is
     await page.goto('/membership-plans');
     await page.getByRole('button', { name: 'Add plan' }).click();
     await page.getByLabel('Title').fill('Intro week');
-    await page.getByLabel('Type').selectOption('WEEKLY_PASS');
+    await pickOption(page, 'Type', 'Weekly Pass');
     await page.getByRole('button', { name: '2. Pricing & Access' }).click();
     await page.getByLabel('Price').fill('20');
     await page.getByLabel('Expiry duration (days)').fill('7');
