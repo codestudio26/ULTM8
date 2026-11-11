@@ -1,0 +1,404 @@
+/* The owner's Dashboard in the new look (Decision 453; DashboardPage.tsx).
+ * Design: the New Portal vision's Dashboard; DESIGN.md → "Dashboard: nothing
+ * shown twice, cards first on a phone", "Stat rows", "Avatars", "One accent:
+ * mint", "Side panel buttons sit under the content". Colours come from the
+ * shell's --u8n-* settings (newLookShell.css), so dark mode follows them. */
+
+[data-look='redesign'] {
+  --u8n-dash-link: #3a7556;
+  --u8n-dash-button: #def2e2;
+  --u8n-dash-button-text: #50575e;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8n-dash-link: #9fd3b2;
+    --u8n-dash-button: var(--nav-active-bg);
+    --u8n-dash-button-text: var(--nav-active-text);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8n-dash-link: #9fd3b2;
+  --u8n-dash-button: var(--nav-active-bg);
+  --u8n-dash-button-text: var(--nav-active-text);
+}
+
+[data-look='redesign'] .u8n-dash {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+[data-look='redesign'] .u8n-dash > .ultm8-banner {
+  margin: 0;
+}
+
+/* ------------------------------------------------------- Number cards */
+
+[data-look='redesign'] .u8n-dash__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 16px;
+}
+[data-look='redesign'] .u8n-dash__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 20px 22px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  border: 1px solid transparent;
+}
+/* Stat rows: a 12px grey uppercase label in a two-line slot, so a label
+ * that wraps never pushes its number down. */
+[data-look='redesign'] .u8n-dash__stat-label {
+  display: flex;
+  align-items: flex-end;
+  min-height: calc(2 * 1.35em);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash__stat-value {
+  display: block;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+[data-look='redesign'] .u8n-dash__stat-note {
+  display: block;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash__stat-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+[data-look='redesign'] .u8n-dash__more {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -12px 0 -14px;
+  align-self: flex-start;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--u8n-dash-link);
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-dash__more:hover {
+  text-decoration: underline;
+}
+[data-look='redesign'] .u8n-dash__more:focus-visible,
+[data-look='redesign'] .u8n-dash-notes__all:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------- Cards and rows */
+
+[data-look='redesign'] .u8n-dash__lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr));
+  gap: 20px;
+  align-items: start;
+}
+[data-look='redesign'] .u8n-dash__card {
+  min-width: 0;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  overflow: hidden;
+}
+[data-look='redesign'] .u8n-dash__card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding: 16px 22px 10px;
+}
+[data-look='redesign'] .u8n-dash__card-head .u8n-dash__more {
+  margin: 0;
+}
+[data-look='redesign'] .u8n-dash__card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-dash__card-title svg {
+  flex: none;
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8n-dash__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8n-dash__row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 44px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-dash__row-main {
+  flex: 1;
+  min-width: 0;
+}
+[data-look='redesign'] .u8n-dash__row-name {
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-dash__row-name a {
+  color: inherit;
+}
+[data-look='redesign'] .u8n-dash__row-sub {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash__row-end {
+  flex: none;
+  text-align: end;
+}
+[data-look='redesign'] .u8n-dash__row-end .u8n-dash__row-sub {
+  font-size: 12px;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-dash__row-time {
+  font-weight: 500;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+[data-look='redesign'] .u8n-dash__empty {
+  margin: 0;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+
+/* Class avatars: a circle with the class initials; the colour tells one
+ * class from another. 40px in a list row, 44px on a phone. */
+[data-look='redesign'] .u8n-dash__av {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+[data-look='redesign'] .u8n-dash__av--a {
+  background: #5d7081;
+  color: #ffffff;
+}
+[data-look='redesign'] .u8n-dash__av--b {
+  background: #2f3941;
+  color: #ffffff;
+}
+[data-look='redesign'] .u8n-dash__av--c {
+  background: #def2e2;
+  color: #3a7556;
+}
+[data-look='redesign'] .u8n-dash__av--d {
+  background: #edf0f2;
+  color: #3e4b56;
+}
+[data-look='redesign'] .u8n-dash__av--e {
+  background: #d3d9df;
+  color: #2f3941;
+}
+
+/* ------------------------------------------------------ Setup checklist */
+
+[data-look='redesign'] .u8n-dash-setup__tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+[data-look='redesign'] .u8n-dash-setup__progress {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash-setup__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 6px;
+}
+[data-look='redesign'] .u8n-dash-setup__step {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 22px;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8n-dash-setup__mark {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 1.5px solid var(--u8n-field-line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+[data-look='redesign'] .u8n-dash-setup__mark--done {
+  border-color: #9fd3b2;
+  background: #9fd3b2;
+  color: #20262c;
+}
+[data-look='redesign'] .u8n-dash-setup__text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8n-dash-setup__text a {
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-dash-setup__done {
+  color: var(--u8n-quiet);
+  text-decoration: line-through;
+}
+[data-look='redesign'] .u8n-dash-setup__hint {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash-setup__note {
+  margin: 0;
+  padding: 10px 22px 16px;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash-setup__show {
+  margin: 0;
+}
+
+/* ------------------------------------- Needs attention (the right panel) */
+
+[data-look='redesign'] .u8n-dash-notes__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  padding-bottom: 10px;
+}
+[data-look='redesign'] .u8n-dash-notes__count {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash-notes__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8n-dash-notes__item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-dash-notes__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 50%;
+}
+[data-look='redesign'] .u8n-dash-notes__dot--unread {
+  background: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8n-dash-notes__title {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-dash-notes__item[data-read='false'] .u8n-dash-notes__title {
+  font-weight: 500;
+}
+[data-look='redesign'] .u8n-dash-notes__title a {
+  color: inherit;
+}
+[data-look='redesign'] .u8n-dash-notes__body {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-dash-notes__when {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-dash-notes__empty {
+  margin: 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+/* Sits straight under the last notification, never pinned to the bottom. */
+[data-look='redesign'] .u8n-dash-notes__all {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 16px;
+  border-radius: 999px;
+  background: var(--u8n-dash-button);
+  color: var(--u8n-dash-button-text);
+  font-size: 14px;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-dash-notes__all:hover {
+  filter: brightness(0.97);
+}
+
+/* ------------------------------------------------------------ Phone */
+
+@media (max-width: 767px) {
+  /* Stat rows stay side by side on a phone: two number cards a row. */
+  [data-look='redesign'] .u8n-dash__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  [data-look='redesign'] .u8n-dash__stat {
+    padding: 16px;
+  }
+  [data-look='redesign'] .u8n-dash__lists {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-look='redesign'] .u8n-dash__card-head,
+  [data-look='redesign'] .u8n-dash__row,
+  [data-look='redesign'] .u8n-dash-setup__step {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  [data-look='redesign'] .u8n-dash__av {
+    width: 44px;
+    height: 44px;
+  }
+  [data-look='redesign'] .u8n-dash-branch {
+    width: 100% !important;
+  }
+}

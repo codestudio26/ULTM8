@@ -10,6 +10,11 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Dashboard** (Decision 453; visual only). The owner's Dashboard
+  has the new page header (the Branch scope under the title, our own Branch
+  drop-down), number cards, Today's classes (from this week's Bookings
+  summary) and Birthdays as cards, and a "Needs attention" panel with the
+  owner's notifications; on a phone the cards come first and the panel below.
 - **New look: the Students list** (Decision 453; visual only). One list card
   with search, Filter (our own drop-downs), status chips and "Open full page ›"
   under each name; the selected student sits in the right-hand panel, which
