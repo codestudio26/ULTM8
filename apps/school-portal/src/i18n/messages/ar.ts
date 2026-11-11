@@ -725,6 +725,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "إجراءات أخرى",
     columnSurcharge: "رسوم البطاقة الإضافية",
     surchargeLine: "+ {amount} رسوم بطاقة إضافية",
     title: "المعاملات",

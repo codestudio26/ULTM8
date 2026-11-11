@@ -710,6 +710,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "추가 작업",
     columnSurcharge: "카드 수수료",
     surchargeLine: "+ 카드 수수료 {amount}",
     title: "거래 내역",

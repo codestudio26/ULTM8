@@ -1,0 +1,871 @@
+/* The Billing pages in the new look (BillingLook.tsx): Membership plans,
+ * Transactions, Billing reports and Payroll. DESIGN-BRIEF §8 "Template
+ * rules"; DESIGN.md → "Phone layout", "Stat rows", "Drop-downs", "One
+ * accent: mint", "Button pairs", "Never the same colour twice". Built on the
+ * shell's --u8n-* colours (layout/newLookShell.css), so dark mode follows.
+ * Scoped to [data-look='redesign'], which the portal always sets
+ * (Decision 453). */
+
+[data-look='redesign'] {
+  --u8b-pill-primary: #def2e2;
+  --u8b-pill-primary-text: #50575e;
+  --u8b-head-bg: #f9fafa;
+  --u8b-field-bg: #edf0f2;
+  --u8b-field-text: #383d42;
+  --u8b-ring: #5d7081;
+  --u8b-on: #def2e2;
+  --u8b-tick: #3a7556;
+  --u8b-danger: #b91c1c;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8b-pill-primary: var(--nav-active-bg);
+    --u8b-pill-primary-text: var(--nav-active-text);
+    --u8b-head-bg: rgba(255, 255, 255, 0.03);
+    --u8b-field-bg: var(--surface-2);
+    --u8b-field-text: var(--text-primary);
+    --u8b-ring: #9fd3b2;
+    --u8b-on: var(--nav-active-bg);
+    --u8b-tick: #9fd3b2;
+    --u8b-danger: #f19999;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8b-pill-primary: var(--nav-active-bg);
+  --u8b-pill-primary-text: var(--nav-active-text);
+  --u8b-head-bg: rgba(255, 255, 255, 0.03);
+  --u8b-field-bg: var(--surface-2);
+  --u8b-field-text: var(--text-primary);
+  --u8b-ring: #9fd3b2;
+  --u8b-on: var(--nav-active-bg);
+  --u8b-tick: #9fd3b2;
+  --u8b-danger: #f19999;
+}
+
+[data-look='redesign'] .u8b {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: var(--u8n-text);
+  min-width: 0;
+}
+/* The page header keeps its own spacing; the gap above does the rest. */
+[data-look='redesign'] .u8b > .u8n-page-header,
+[data-look='redesign'] .u8b > .u8b-head {
+  margin-bottom: 8px;
+}
+[data-look='redesign'] .u8b strong {
+  font-weight: 500;
+}
+[data-look='redesign'] .u8b .ultm8-banner {
+  margin: 0;
+}
+
+/* ------------------------------------------------- Header with page tabs */
+
+[data-look='redesign'] .u8b-head {
+  margin: -24px -24px 8px;
+  padding: 0 24px;
+  background: var(--u8n-surface);
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8b-head > .u8n-page-header {
+  margin: 0 -24px;
+  border-bottom: 0;
+}
+[data-look='redesign'] .u8b-head__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 24px;
+}
+[data-look='redesign'] .u8b-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  color: var(--u8n-text);
+  cursor: pointer;
+}
+[data-look='redesign'] .u8b-tab:hover {
+  border-bottom-color: var(--u8n-line);
+}
+[data-look='redesign'] .u8b-tab--active,
+[data-look='redesign'] .u8b-tab--active:hover {
+  border-bottom-color: var(--u8n-tab-line);
+  font-weight: 500;
+}
+[data-look='redesign'] .u8b-tab:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ Cards */
+
+[data-look='redesign'] .u8b-card {
+  background: var(--u8n-surface);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  padding: 20px;
+  min-width: 0;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8b-card--flush {
+  padding: 0;
+  overflow: hidden;
+}
+[data-look='redesign'] .u8b-card__title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+[data-look='redesign'] .u8b-card--flush > .u8b-card__title {
+  padding: 20px 20px 0;
+}
+[data-look='redesign'] .u8b-card__sub {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+[data-look='redesign'] .u8b-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8b-card--flush > .u8b-note,
+[data-look='redesign'] .u8b-card--flush > .u8b-card__sub,
+[data-look='redesign'] .u8b-pad {
+  padding: 0 20px;
+}
+[data-look='redesign'] .u8b-card--flush > .u8b-card__sub {
+  padding-top: 16px;
+}
+[data-look='redesign'] .u8b-card--flush > .u8b-note {
+  padding-bottom: 12px;
+}
+[data-look='redesign'] .u8b-card .ultm8-state {
+  padding: 40px 20px;
+}
+
+/* --------------------------------------------------------------- Toolbar */
+
+[data-look='redesign'] .u8b-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+[data-look='redesign'] .u8b-card--flush > .u8b-toolbar {
+  padding: 20px 20px 0;
+}
+[data-look='redesign'] .u8b-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  min-width: 0;
+}
+[data-look='redesign'] .u8b-toolbar__group--end {
+  align-items: flex-end;
+}
+
+/* ------------------------------------------------------------------ Pills */
+
+[data-look='redesign'] .u8b-pill,
+[data-look='redesign'] .ultm8-btn.u8b-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-sizing: border-box;
+  white-space: nowrap;
+  opacity: 1;
+}
+[data-look='redesign'] .u8b-pill:not(:disabled):hover,
+[data-look='redesign'] .ultm8-btn.u8b-pill:not(:disabled):hover {
+  background: var(--u8n-hover);
+  border-color: var(--u8n-field-line);
+}
+[data-look='redesign'] .u8b-pill:disabled,
+[data-look='redesign'] .ultm8-btn.u8b-pill:disabled {
+  cursor: default;
+  color: var(--u8n-subtle);
+  background: var(--u8n-surface);
+  border-color: var(--u8n-line);
+}
+[data-look='redesign'] .ultm8-btn.u8b-pill--primary,
+[data-look='redesign'] .ultm8-btn.u8b-pill--primary:not(:disabled):hover {
+  background: var(--u8b-pill-primary);
+  color: var(--u8b-pill-primary-text);
+  border-color: transparent;
+}
+[data-look='redesign'] .ultm8-btn.u8b-pill--primary:not(:disabled):hover {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .ultm8-btn.u8b-pill--primary:disabled {
+  background: var(--u8n-tile);
+  color: var(--u8n-subtle);
+  border-color: transparent;
+}
+/* A smaller pill inside a table row, still a 40px target. */
+[data-look='redesign'] .ultm8-btn.u8b-pill--row {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+[data-look='redesign'] .u8b-pill:focus-visible,
+[data-look='redesign'] .ultm8-btn.u8b-pill:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .u8b-row-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+/* Two buttons side by side share the row equally (DESIGN.md → "Button pairs"). */
+[data-look='redesign'] .u8b-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* ---------------------------------------------------------- More (phone) */
+
+[data-look='redesign'] .u8b-more {
+  display: flex;
+  align-items: center;
+}
+[data-look='redesign'] .u8b-more__button {
+  display: none;
+}
+[data-look='redesign'] .u8b-more__items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ------------------------------------------------------------ Stat rows */
+
+[data-look='redesign'] .u8b-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 16px 12px;
+}
+[data-look='redesign'] .u8b-card--flush > .u8b-stats {
+  padding: 16px 20px 20px;
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8b-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+/* Every label in the same two-line slot, so the numbers line up. */
+[data-look='redesign'] .u8b-stat__label {
+  display: flex;
+  align-items: flex-end;
+  min-height: 30px;
+  font-size: 12px;
+  line-height: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8b-stat__num {
+  margin-top: 4px;
+  font-size: 26px;
+  line-height: 1.15;
+  font-weight: 400;
+  color: var(--u8n-text);
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8b-stat__num--danger {
+  color: var(--u8b-danger);
+}
+[data-look='redesign'] .u8b-stat__hint {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--u8n-quiet);
+}
+
+/* ------------------------------------------------------------------ Table */
+
+[data-look='redesign'] .u8b .ultm8-table-scroll {
+  overflow-x: auto;
+}
+[data-look='redesign'] .u8b-card:not(.u8b-card--flush) .ultm8-table-scroll {
+  margin: 0 -20px;
+}
+[data-look='redesign'] .u8b-card:not(.u8b-card--flush) .ultm8-table-scroll:last-child {
+  margin-bottom: -20px;
+}
+[data-look='redesign'] .u8b .ultm8-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8b .ultm8-table th {
+  padding: 12px;
+  background: var(--u8b-head-bg);
+  border-bottom: 0;
+  text-align: start;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-subtle);
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8b .ultm8-table td {
+  padding: 14px 12px;
+  border-top: 1px solid var(--u8n-line);
+  border-bottom: 0;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+/* Rows stay one line each and the table scrolls sideways inside its card
+ * (DESIGN.md → "Phone layout", wide tables); only a note under a value,
+ * such as a cancelled payment's reason, wraps. */
+[data-look='redesign'] .u8b .ultm8-table td .ultm8-field__hint,
+[data-look='redesign'] .u8b .ultm8-table td .ultm8-banner {
+  display: block;
+  max-width: 260px;
+  white-space: normal;
+}
+[data-look='redesign'] .u8b .ultm8-table th:first-child,
+[data-look='redesign'] .u8b .ultm8-table td:first-child {
+  padding-inline-start: 20px;
+}
+[data-look='redesign'] .u8b .ultm8-table th:last-child,
+[data-look='redesign'] .u8b .ultm8-table td:last-child {
+  padding-inline-end: 20px;
+}
+[data-look='redesign'] .u8b .ultm8-table .ultm8-field__hint {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8b .ultm8-table a {
+  color: var(--u8n-tile-icon);
+}
+/* Names in a list row: 15px, 0.06em (DESIGN.md typography table). */
+[data-look='redesign'] .u8b-name {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8b-cell-line {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+[data-look='redesign'] .u8b .ultm8-table tr.u8b-total td {
+  background: var(--u8b-head-bg);
+}
+[data-look='redesign'] .u8b .ultm8-checkbox {
+  font-size: 14px;
+}
+
+/* The list's foot: Prev, Next and the page number. */
+[data-look='redesign'] .u8b-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 14px 20px;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 13px;
+  color: var(--u8n-subtle);
+}
+
+/* ------------------------------------------------------------ Drop-downs */
+
+[data-look='redesign'] .u8b-select {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+}
+[data-look='redesign'] .u8b-select__label {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8b-select__field,
+[data-look='redesign'] .u8b-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--u8b-field-bg);
+  color: var(--u8b-field-text);
+  font: inherit;
+  font-size: 14px;
+  text-align: start;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+[data-look='redesign'] .u8b-date {
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) .u8b-date {
+    color-scheme: dark;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] .u8b-date {
+  color-scheme: dark;
+}
+[data-look='redesign'] .u8b-select__field[aria-expanded='true'],
+[data-look='redesign'] .u8b-date:focus {
+  outline: 0;
+  box-shadow: 0 0 0 2px var(--u8b-ring);
+}
+[data-look='redesign'] .u8b-select__field:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .u8b-select__values {
+  display: inline-grid;
+  min-width: 0;
+}
+[data-look='redesign'] .u8b-select__value {
+  grid-area: 1 / 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-look='redesign'] .u8b-select__value[data-shown='false'] {
+  visibility: hidden;
+}
+[data-look='redesign'] .u8b-select__chevron {
+  flex: none;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8b-select__list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  min-width: 100%;
+  max-width: 100%;
+  max-height: 264px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: var(--u8n-surface);
+  border: 1px solid var(--u8n-line);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(21, 23, 25, 0.08);
+}
+[data-look='redesign'] .u8b-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--u8b-field-text);
+  white-space: nowrap;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8b-select__option--active {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8b-select__option[aria-selected='true'] {
+  background: var(--u8b-on);
+}
+[data-look='redesign'] .u8b-select__option[aria-selected='true'] svg {
+  color: var(--u8b-tick);
+}
+
+/* ------------------------------------- Every control on the Billing pages */
+
+/* Product owner, 11 Nov 2026: "everything should look like the new design
+ * and nothing from the old should be kept". Every button, tick box, field
+ * and <select> on these pages (their dialogs included) takes the new look:
+ * pills (mint for the main action, white with a grey outline otherwise, red
+ * text for danger), a white tick box with a green tick, soft fields with
+ * our chevron, and status tags. Restyle only, scoped to the Billing pages;
+ * the components and their behaviour are unchanged. */
+[data-look='redesign'] {
+  --u8b-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%233a7556' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --u8b-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236c767f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --u8b-red-line: #e8b4b4;
+  --u8b-tag-bg: #edf0f2;
+  --u8b-tag-text: #50575e;
+  --u8b-tag-line: #c2c7cb;
+  --u8b-tag-green-bg: #e3f1ea;
+  --u8b-tag-green-text: #3a7556;
+  --u8b-tag-green-line: #b7dcc6;
+  --u8b-tag-blue-bg: #e5ecf6;
+  --u8b-tag-blue-text: #2b4f80;
+  --u8b-tag-blue-line: #bccbe2;
+  --u8b-tag-amber-bg: #f6ecdc;
+  --u8b-tag-amber-text: #7a4f12;
+  --u8b-tag-amber-line: #e6cfa5;
+  --u8b-tag-red-bg: #f8e4e4;
+  --u8b-tag-red-text: #9b1c1c;
+  --u8b-tag-red-line: #e8b4b4;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8b-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239fd3b2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+    --u8b-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b4bcc3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --u8b-red-line: #7a3434;
+    --u8b-tag-bg: rgba(255, 255, 255, 0.08);
+    --u8b-tag-text: var(--text-secondary);
+    --u8b-tag-line: var(--border-strong);
+    --u8b-tag-green-bg: rgba(159, 211, 178, 0.16);
+    --u8b-tag-green-text: #b9e3c8;
+    --u8b-tag-green-line: rgba(159, 211, 178, 0.4);
+    --u8b-tag-blue-bg: rgba(168, 197, 234, 0.16);
+    --u8b-tag-blue-text: #c4d6ef;
+    --u8b-tag-blue-line: rgba(168, 197, 234, 0.4);
+    --u8b-tag-amber-bg: rgba(244, 199, 161, 0.16);
+    --u8b-tag-amber-text: #f1cfae;
+    --u8b-tag-amber-line: rgba(244, 199, 161, 0.4);
+    --u8b-tag-red-bg: rgba(241, 153, 153, 0.14);
+    --u8b-tag-red-text: #f3a5a5;
+    --u8b-tag-red-line: rgba(241, 153, 153, 0.4);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8b-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239fd3b2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --u8b-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b4bcc3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --u8b-red-line: #7a3434;
+  --u8b-tag-bg: rgba(255, 255, 255, 0.08);
+  --u8b-tag-text: var(--text-secondary);
+  --u8b-tag-line: var(--border-strong);
+  --u8b-tag-green-bg: rgba(159, 211, 178, 0.16);
+  --u8b-tag-green-text: #b9e3c8;
+  --u8b-tag-green-line: rgba(159, 211, 178, 0.4);
+  --u8b-tag-blue-bg: rgba(168, 197, 234, 0.16);
+  --u8b-tag-blue-text: #c4d6ef;
+  --u8b-tag-blue-line: rgba(168, 197, 234, 0.4);
+  --u8b-tag-amber-bg: rgba(244, 199, 161, 0.16);
+  --u8b-tag-amber-text: #f1cfae;
+  --u8b-tag-amber-line: rgba(244, 199, 161, 0.4);
+  --u8b-tag-red-bg: rgba(241, 153, 153, 0.14);
+  --u8b-tag-red-text: #f3a5a5;
+  --u8b-tag-red-line: rgba(241, 153, 153, 0.4);
+}
+
+/* Buttons: pills. */
+[data-look='redesign'] .u8b .ultm8-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 1;
+}
+[data-look='redesign'] .u8b .ultm8-btn--primary,
+[data-look='redesign'] .u8b .ultm8-btn--success {
+  background: var(--u8b-pill-primary);
+  border-color: transparent;
+  color: var(--u8b-pill-primary-text);
+}
+[data-look='redesign'] .u8b .ultm8-btn--primary:not(:disabled):hover,
+[data-look='redesign'] .u8b .ultm8-btn--success:not(:disabled):hover {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .u8b .ultm8-btn--secondary {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-field-line);
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8b .ultm8-btn--secondary:not(:disabled):hover {
+  background: var(--u8n-hover);
+  border-color: var(--u8n-field-line);
+}
+[data-look='redesign'] .u8b .ultm8-btn--danger {
+  background: var(--u8n-surface);
+  border-color: var(--u8b-red-line);
+  color: var(--u8b-danger);
+}
+[data-look='redesign'] .u8b .ultm8-btn--danger:not(:disabled):hover {
+  opacity: 1;
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8b .ultm8-btn:disabled {
+  opacity: 1;
+  background: var(--u8n-tile);
+  border-color: transparent;
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8b .ultm8-btn--secondary:disabled {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-line);
+}
+[data-look='redesign'] .u8b .ultm8-btn:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* A smaller pill inside a table row, still a 40px target. */
+[data-look='redesign'] .u8b .ultm8-btn.u8b-pill--row {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* The row's ⋮ menu button: a round, white, outlined button. */
+[data-look='redesign'] .u8b .ultm8-row-actions__trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--u8n-surface);
+  border: 1px solid var(--u8n-field-line);
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8b .ultm8-row-actions__trigger:hover,
+[data-look='redesign'] .u8b .ultm8-row-actions__trigger[aria-expanded='true'] {
+  background: var(--u8n-hover);
+  border-color: var(--u8n-text);
+}
+[data-look='redesign'] .u8b .ultm8-row-actions__menu {
+  border-radius: 12px;
+  border-color: var(--u8n-line);
+  background: var(--u8n-surface);
+  box-shadow: 0 6px 20px rgba(21, 23, 25, 0.08);
+}
+[data-look='redesign'] .u8b .ultm8-row-actions__item {
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8b .ultm8-row-actions__item:not(:disabled):hover {
+  background: var(--u8n-hover);
+}
+
+/* Tick boxes: white, a green tick and border when ticked. */
+[data-look='redesign'] .u8b .ultm8-checkbox {
+  gap: 10px;
+  font-size: 14px;
+  color: var(--u8n-text);
+  cursor: pointer;
+}
+[data-look='redesign'] .u8b .ultm8-checkbox input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--u8n-field-line);
+  background: var(--u8n-surface) center / 14px 14px no-repeat;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8b .ultm8-checkbox input:checked {
+  border-color: var(--u8b-tick);
+  background-image: var(--u8b-tick-mark);
+}
+[data-look='redesign'] .u8b .ultm8-checkbox input:disabled {
+  cursor: not-allowed;
+  background-color: var(--u8n-tile);
+  border-color: var(--u8n-line);
+}
+[data-look='redesign'] .u8b .ultm8-checkbox:has(input:disabled) {
+  color: var(--u8n-subtle);
+  cursor: not-allowed;
+}
+[data-look='redesign'] .u8b .ultm8-checkbox input:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* Fields: the labels are the soft form's (form pattern F); the fields are
+ * already the soft grey ones (redesign-fixes.css). A browser <select> (the
+ * dialogs) gets our chevron instead of the system one. */
+[data-look='redesign'] .u8b .ultm8-field__label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8b select.ultm8-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 42px;
+  background-image: var(--u8b-chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px 18px;
+  cursor: pointer;
+}
+[dir='rtl'] [data-look='redesign'] .u8b select.ultm8-select,
+[data-look='redesign'][dir='rtl'] .u8b select.ultm8-select {
+  background-position: left 12px center;
+}
+/* Rates: the two money fields and Save on one tidy line. */
+[data-look='redesign'] .u8b .ultm8-table .ultm8-field {
+  margin-bottom: 0;
+}
+[data-look='redesign'] .u8b .ultm8-table .ultm8-input {
+  min-width: 110px;
+}
+
+/* Status and type tags (DESIGN.md → "One accent: mint"): small, 4px
+ * corners, a thin line in a darker shade of their own colour. */
+[data-look='redesign'] .u8b .ultm8-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--u8b-tag-bg);
+  color: var(--u8b-tag-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-line);
+}
+[data-look='redesign'] .u8b .ultm8-badge--success {
+  background: var(--u8b-tag-green-bg);
+  color: var(--u8b-tag-green-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-green-line);
+}
+[data-look='redesign'] .u8b .ultm8-badge--accent,
+[data-look='redesign'] .u8b .ultm8-badge--info {
+  background: var(--u8b-tag-blue-bg);
+  color: var(--u8b-tag-blue-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-blue-line);
+}
+[data-look='redesign'] .u8b .ultm8-badge--warning {
+  background: var(--u8b-tag-amber-bg);
+  color: var(--u8b-tag-amber-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-amber-line);
+}
+[data-look='redesign'] .u8b .ultm8-badge--danger {
+  background: var(--u8b-tag-red-bg);
+  color: var(--u8b-tag-red-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-red-line);
+}
+
+/* ----------------------------------------------------- Phone: under 768px */
+
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8b-head {
+    margin: -16px -16px 8px;
+    padding: 0 16px;
+  }
+  [data-look='redesign'] .u8b-head > .u8n-page-header {
+    margin: 0 -16px;
+  }
+  [data-look='redesign'] .u8b-head__tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  [data-look='redesign'] .u8b-tab {
+    flex: none;
+  }
+  [data-look='redesign'] .u8b-card {
+    padding: 16px;
+  }
+  [data-look='redesign'] .u8b-card--flush {
+    padding: 0;
+  }
+  [data-look='redesign'] .u8b-card--flush > .u8b-toolbar,
+  [data-look='redesign'] .u8b-card--flush > .u8b-card__title {
+    padding: 16px 16px 0;
+  }
+  [data-look='redesign'] .u8b-card--flush > .u8b-note,
+  [data-look='redesign'] .u8b-card--flush > .u8b-card__sub,
+  [data-look='redesign'] .u8b-pad {
+    padding-inline: 16px;
+  }
+  [data-look='redesign'] .u8b-card:not(.u8b-card--flush) .ultm8-table-scroll {
+    margin: 0 -16px;
+  }
+  [data-look='redesign'] .u8b-card:not(.u8b-card--flush) .ultm8-table-scroll:last-child {
+    margin-bottom: -16px;
+  }
+  [data-look='redesign'] .u8b-card--flush > .u8b-stats {
+    padding: 12px 16px 16px;
+  }
+  [data-look='redesign'] .u8b .ultm8-table th:first-child,
+  [data-look='redesign'] .u8b .ultm8-table td:first-child {
+    padding-inline-start: 16px;
+  }
+  [data-look='redesign'] .u8b .ultm8-table th:last-child,
+  [data-look='redesign'] .u8b .ultm8-table td:last-child {
+    padding-inline-end: 16px;
+  }
+  /* Stat rows stay side by side: two equal columns on a phone. */
+  [data-look='redesign'] .u8b-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  [data-look='redesign'] .u8b-stat__num {
+    font-size: 22px;
+  }
+  /* The ⋯ More button; Export CSV and the like open under it as a list. */
+  [data-look='redesign'] .u8b-more {
+    position: relative;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  [data-look='redesign'] .u8b-more__button {
+    display: inline-flex;
+    width: 44px;
+    padding: 0;
+    font-size: 18px;
+  }
+  [data-look='redesign'] .u8b-more__items {
+    display: none;
+  }
+  [data-look='redesign'] .u8b-more[data-open='true'] {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8b-more[data-open='true'] .u8b-more__items {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-basis: 100%;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--u8b-head-bg);
+    border: 1px solid var(--u8n-line);
+  }
+  [data-look='redesign'] .u8b-more[data-open='true'] .u8b-more__items .u8b-pill {
+    justify-content: flex-start;
+  }
+  [data-look='redesign'] .u8b-select__field,
+  [data-look='redesign'] .u8b-date,
+  [data-look='redesign'] .u8b-select__option {
+    font-size: 16px;
+  }
+  [data-look='redesign'] .u8b-select__option {
+    min-height: 48px;
+  }
+}
