@@ -408,3 +408,19 @@
 [data-look='redesign'] .u8st-import .ultm8-chapter__fields > .ultm8-pills {
   justify-self: start;
 }
+@media (max-width: 767px) {
+  /* The three kinds stay on one track on a phone, sharing it equally. */
+  [data-look='redesign'] .u8st-import .ultm8-chapter__fields > .ultm8-pills {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-self: stretch;
+  }
+  [data-look='redesign'] .u8st-import .ultm8-pills__option {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 0 10px;
+    letter-spacing: 0;
+    white-space: normal;
+    line-height: 1.2;
+  }
+}
