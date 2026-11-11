@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button, EmptyState, ErrorBanner, Field, Modal, Spinner, TextField } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Field, Modal, ModalActions, Spinner, TextField } from '@ultm8/ui';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { localCountryNames } from '../lib/countryNames';
 import { ApiError } from '@ultm8/api-client';
@@ -320,14 +320,14 @@ export function FranchiseDetailPage() {
       {removing ? (
         <Modal title={t('franchises.detail.removeConfirmTitle', { name: removing.name })} onClose={() => setRemoving(null)}>
           <p>{t('franchises.detail.removeConfirmBody')}</p>
-          <div className="u8o-pair">
+          <ModalActions>
+            <Button type="button" variant="secondary" onClick={() => setRemoving(null)}>
+              {t('common.cancel')}
+            </Button>
             <Button variant="danger" onClick={handleRemove} loading={removeSchool.isPending}>
               {t('franchises.detail.removeSchool')}
             </Button>
-            <Button variant="secondary" onClick={() => setRemoving(null)}>
-              {t('common.cancel')}
-            </Button>
-          </div>
+          </ModalActions>
         </Modal>
       ) : null}
 
@@ -421,14 +421,14 @@ function RefundModal({
             onChange={(e) => setAmount(e.target.value)}
           />
         </Field>
-        <div className="u8o-pair">
-          <Button type="submit" variant="danger" loading={submitting}>
-            {t('franchises.refundModal.confirm')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" variant="danger" loading={submitting}>
+            {t('franchises.refundModal.confirm')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -522,14 +522,14 @@ function CloseFranchiseModal({ franchiseId, franchiseName, onClose }: { franchis
             autoComplete="current-password"
           />
         </Field>
-        <div className="u8o-pair">
+        <ModalActions>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            {t('common.cancel')}
+          </Button>
           <Button type="submit" variant="danger" loading={close.isPending} disabled={confirmName !== franchiseName}>
             {t('franchises.detail.closeButton')}
           </Button>
-          <Button variant="secondary" onClick={onClose}>
-            {t('common.cancel')}
-          </Button>
-        </div>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -653,14 +653,14 @@ function StripeConnectCard({
                 {t('franchises.stripe.countryHint')}
               </p>
             </div>
-            <div className="u8o-pair">
-              <Button type="submit" loading={connect.isPending} disabled={!country}>
-                {t('franchises.stripe.goToStripe')}
-              </Button>
+            <ModalActions>
               <Button type="button" variant="secondary" onClick={() => setAskingCountry(false)}>
                 {t('common.cancel')}
               </Button>
-            </div>
+              <Button type="submit" loading={connect.isPending} disabled={!country}>
+                {t('franchises.stripe.goToStripe')}
+              </Button>
+            </ModalActions>
           </form>
         </Modal>
       ) : null}

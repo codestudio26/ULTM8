@@ -1,11 +1,12 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { useMaySeeSignUps } from './SignUpsPage';
 import { useSignUps } from './signUpQueries';
 import { useAttendanceAccess } from './AttendancePage';
 import { useMayImport } from './imports/ImportPage';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 
 /** Students and Check-in sit side by side (DESIGN.md → "Check-in and
  * front-desk mode"), with Sign-ups from the tablet for the people who can
@@ -31,17 +32,21 @@ export function useStudentsTabs(): Array<{ to: string; label: TranslationKey; en
   ];
 }
 
-export function StudentsTabs() {
+/** The Students section's page header in the new look (Decision 453): the
+ * title, the page's own line under it, any actions on the right, and the
+ * section's tabs under it, as on the Students list. Used by the Sign-ups,
+ * Attendance, Growth and Import tabs. */
+export function StudentsHeader({ subtitle, actions }: { subtitle?: React.ReactNode; actions?: React.ReactNode }) {
   const t = useT();
   const tabs = useStudentsTabs();
+  const { pathname } = useLocation();
   return (
-    <nav className="ultm8-tabs" aria-label={t('students.tabs.aria')}>
-      {tabs.map((tab) => (
-        <NavLink key={tab.to} to={tab.to} end={tab.end} className={({ isActive }) => `ultm8-tabs__tab${isActive ? ' ultm8-tabs__tab--active' : ''}`}>
-          {t(tab.label)}
-          {tab.count ? ` (${tab.count})` : null}
-        </NavLink>
-      ))}
-    </nav>
+    <NewLookPageHeader
+      title={t('students.title')}
+      subtitle={subtitle}
+      actions={actions}
+      tabs={tabs.map((tab) => ({ to: tab.to, label: tab.count ? `${t(tab.label)} (${tab.count})` : t(tab.label), current: tab.end ? pathname === tab.to : pathname.startsWith(tab.to) }))}
+      tabsLabel={t('students.tabs.aria')}
+    />
   );
 }

@@ -249,23 +249,30 @@
 /* 6. Dialogs and the phone field's country button in the new look.
  *    A dialog is the approved design's: a white card (14px corners) over a
  *    dimmed page, near the top; its title in a header band with a line under
- *    it; its buttons (ModalActions) in a grey band at the foot, on the right,
- *    sharing the row equally (DESIGN.md → "Button pairs"). On a phone it
+ *    it and a round ✕ on its right (Decision 460); its buttons
+ *    (ModalActions) in a grey band at the foot, on the right, sharing the
+ *    row equally (DESIGN.md → "Button pairs"). On a phone it
  *    fills the screen and its buttons stay in view at the bottom, full width.
  *    The country button is a soft field like the number beside it. */
 [data-look='redesign'] {
   --u8-dlg-line: #e1e3e5;
   --u8-dlg-foot: #f9fafa;
+  --u8-dlg-x-bg: #edf0f2;
+  --u8-dlg-x-text: #383d42;
 }
 @media (prefers-color-scheme: dark) {
   :root[data-look='redesign']:not([data-theme='light']) {
     --u8-dlg-line: var(--border);
     --u8-dlg-foot: var(--surface-2);
+    --u8-dlg-x-bg: var(--surface-2);
+    --u8-dlg-x-text: var(--text-primary);
   }
 }
 :root[data-look='redesign'][data-theme='dark'] {
   --u8-dlg-line: var(--border);
   --u8-dlg-foot: var(--surface-2);
+  --u8-dlg-x-bg: var(--surface-2);
+  --u8-dlg-x-text: var(--text-primary);
 }
 [data-look='redesign'] .ultm8-modal-overlay {
   align-items: flex-start;
@@ -291,6 +298,19 @@
   font-size: 19px;
   font-weight: 400;
   letter-spacing: 0.04em;
+}
+/* The round ✕ on the right of the header band (the design's "dlg-x"). */
+[data-look='redesign'] .ultm8-modal__close {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  background: var(--u8-dlg-x-bg);
+  color: var(--u8-dlg-x-text);
+  font-size: 16px;
+}
+[data-look='redesign'] .ultm8-modal__close:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
 }
 [data-look='redesign'] .ultm8-modal__body {
   padding: 20px 24px;
