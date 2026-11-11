@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
-import { AddressFields, Button, Checkbox, ErrorBanner, Field, PageHeader, PhoneField, PhotoUploadField, Spinner, SuccessBanner, TextArea, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, Checkbox, ErrorBanner, Field, PhoneField, PhotoUploadField, Spinner, SuccessBanner, TextArea, postalAddressFromRecord, preparePostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useRequestPublicPhotoUploadUrl } from '../uploads/uploadQueries';
 import { useCompleteMyInstructorProfile, useMyInstructorProfiles, useRequestCertificationUploadUrl, type InstructorResponse } from './instructorQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { Chapter } from '../students/StudentFormParts';
+import '../students/studentForms.css';
+import '../team/teamLook.css';
+import '../team/teamForms.css';
 
 const ALLOWED_CERTIFICATION_TYPES = ['application/pdf', 'image/png', 'image/jpeg'] as const;
 
@@ -99,60 +104,86 @@ function CompleteInstructorProfileForm({ saved: current }: { saved: InstructorRe
 
   const submitting = complete.isPending || uploading;
 
+  // Form pattern "F" (DESIGN.md), as the Students forms: the same fields, in
+  // numbered chapters on a white sheet.
   return (
     <>
-      <PageHeader title={t('instructors.completeProfile.title')} subtitle={t('instructors.completeProfile.subtitle')} />
-      {saved ? <SuccessBanner message={t('instructors.completeProfile.saved')} /> : null}
-      {error ? <ErrorBanner message={error} /> : null}
-      <form onSubmit={handleSubmit}>
-        {current ? (
-          <Field label={t('instructors.form.photo')} htmlFor="complete-profile-photo">
-            <PhotoUploadField
-              value={photoUrl}
-              onChange={setPhotoUrl}
-              requestUpload={(file) =>
-                requestPhotoUpload.mutateAsync({
-                  entityType: 'INSTRUCTOR',
-                  schoolId: current.schoolId,
-                  entityId: current.id,
-                  contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
-                })
-              }
-            />
-          </Field>
-        ) : null}
-        <Field label={t('instructors.form.bio')} htmlFor="complete-profile-bio">
-          <TextArea id="complete-profile-bio" value={bio} maxLength={500} onChange={(e) => setBio(e.target.value)} />
-        </Field>
-        <Field label={t('instructors.form.phone')} htmlFor="complete-profile-phone" hint={t('instructors.completeProfile.phoneHint')}>
-          <PhoneField id="complete-profile-phone" value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
-        </Field>
-        <AddressFields idPrefix="complete-profile-address" value={address} onChange={setAddress} errors={addressErrors} />
-        <Field label={t('instructors.completeProfile.activities')} htmlFor="complete-profile-activities" hint={t('instructors.completeProfile.activitiesHint')}>
-          <TextArea value={activities} onChange={(e) => setActivities(e.target.value)} />
-        </Field>
-        {current?.certificationKey ? (
-          <p style={{ margin: '0 0 8px' }}>{t('instructors.completeProfile.certificationOnFile')}</p>
-        ) : null}
-        <Field label={t('instructors.completeProfile.certification')} htmlFor="complete-profile-certification" hint={t('instructors.completeProfile.certificationHint')}>
-          <input
-            id="complete-profile-certification"
-            type="file"
-            accept="application/pdf,image/png,image/jpeg"
-            onChange={(e) => setCertificationFile(e.target.files?.[0] ?? null)}
-          />
-        </Field>
-        {certificationFile ? (
-          <Checkbox
-            label={t('instructors.completeProfile.consent')}
-            checked={certificationConsent}
-            onChange={(e) => setCertificationConsent(e.target.checked)}
-          />
-        ) : null}
-        <Button type="submit" loading={submitting}>
-          {t('common.save')}
-        </Button>
-      </form>
+      <NewLookPageHeader title={t('instructors.completeProfile.title')} subtitle={t('instructors.completeProfile.subtitle')} />
+      <NewLookPage>
+        {saved ? <SuccessBanner message={t('instructors.completeProfile.saved')} /> : null}
+        {error ? <ErrorBanner message={error} /> : null}
+        <form className="u8f-sheet" onSubmit={handleSubmit}>
+          <Chapter number={1} title={t('students.form.personal')}>
+            {current ? (
+              <div className="u8f-wide">
+                <Field label={t('instructors.form.photo')} htmlFor="complete-profile-photo">
+                  {/* A person's photo is a circle (DESIGN.md → "Avatars"). */}
+                  <div className="u8t-person-photo">
+                    <PhotoUploadField
+                      value={photoUrl}
+                      onChange={setPhotoUrl}
+                      requestUpload={(file) =>
+                        requestPhotoUpload.mutateAsync({
+                          entityType: 'INSTRUCTOR',
+                          schoolId: current.schoolId,
+                          entityId: current.id,
+                          contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+                        })
+                      }
+                    />
+                  </div>
+                </Field>
+              </div>
+            ) : null}
+            <div className="u8f-wide">
+              <Field label={t('instructors.form.bio')} htmlFor="complete-profile-bio">
+                <TextArea id="complete-profile-bio" value={bio} maxLength={500} onChange={(e) => setBio(e.target.value)} />
+              </Field>
+            </div>
+            <Field label={t('instructors.form.phone')} htmlFor="complete-profile-phone" hint={t('instructors.completeProfile.phoneHint')}>
+              <PhoneField id="complete-profile-phone" value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
+            </Field>
+            <Field label={t('instructors.completeProfile.activities')} htmlFor="complete-profile-activities" hint={t('instructors.completeProfile.activitiesHint')}>
+              <TextArea value={activities} onChange={(e) => setActivities(e.target.value)} />
+            </Field>
+          </Chapter>
+          <Chapter number={2} title={t('instructors.completeProfile.address')}>
+            <div className="u8f-wide u8f-address">
+              <AddressFields idPrefix="complete-profile-address" value={address} onChange={setAddress} errors={addressErrors} />
+            </div>
+          </Chapter>
+          <Chapter number={3} title={t('instructors.completeProfile.certification')} description={t('instructors.completeProfile.certificationHint')}>
+            {current?.certificationKey ? <p className="u8f-wide u8f-found">{t('instructors.completeProfile.certificationOnFile')}</p> : null}
+            <div className="u8f-wide">
+              {/* The chapter's title names the file; the label is for screen readers. */}
+              <label htmlFor="complete-profile-certification" className="u8t-hidden">
+                {t('instructors.completeProfile.certification')}
+              </label>
+              <input
+                id="complete-profile-certification"
+                className="u8t-file"
+                type="file"
+                accept="application/pdf,image/png,image/jpeg"
+                onChange={(e) => setCertificationFile(e.target.files?.[0] ?? null)}
+              />
+            </div>
+            {certificationFile ? (
+              <div className="u8f-wide">
+                <Checkbox
+                  label={t('instructors.completeProfile.consent')}
+                  checked={certificationConsent}
+                  onChange={(e) => setCertificationConsent(e.target.checked)}
+                />
+              </div>
+            ) : null}
+          </Chapter>
+          <div className="u8f-actions">
+            <Button type="submit" loading={submitting}>
+              {t('common.save')}
+            </Button>
+          </div>
+        </form>
+      </NewLookPage>
     </>
   );
 }

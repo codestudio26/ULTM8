@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Button, ErrorBanner, Field, PhoneField, SelectField, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, PhoneField, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
@@ -28,6 +28,7 @@ import { useT } from '../i18n/I18nProvider';
 import { ROLE_LABELS } from '../lib/enumLabels';
 import { Trans } from '../i18n/Trans';
 import { NewLookPage } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { useInstructors } from '../instructors/instructorQueries';
 import { FrontDeskSwitches, PersonBelts, TeamCard, TeamHeader, TeamPanelWho, teamPanel } from '../team/TeamParts';
 
@@ -279,14 +280,16 @@ export function StaffPage() {
             <Field label={t('roleGrants.staff.phoneLabel')} htmlFor="invite-phone" hint={t('roleGrants.staff.phoneHint')}>
               <PhoneField value={invitePhone} onChange={setInvitePhone} defaultCountry={guessDefaultCountry()} />
             </Field>
-            <Button type="submit" loading={findLoading}>
-              {t('roleGrants.staff.find')}
-            </Button>
+            <div className="u8t-form-actions">
+              <Button type="submit" loading={findLoading}>
+                {t('roleGrants.staff.find')}
+              </Button>
+            </div>
           </form>
         ) : (
           <form onSubmit={handleInvite}>
             {inviteError ? <ErrorBanner message={inviteError} /> : null}
-            <p className="ultm8-field">
+            <p className="u8t-found">
               <Trans
                 k="roleGrants.staff.found"
                 nodes={{
@@ -298,33 +301,35 @@ export function StaffPage() {
                 }}
               />
             </p>
-            <Field label={t('roleGrants.staff.roleLabel')} htmlFor="invite-role">
-              <SelectField
+            <div className="u8n-dd-field">
+              <NewLookSelect
+                id="invite-role"
+                label={t('roleGrants.staff.roleLabel')}
                 value={role}
-                onChange={(e) => setRole(e.target.value as typeof role)}
+                onChange={(v) => setRole(v as typeof role)}
                 options={[
                   { value: 'INSTRUCTOR', label: t('roleGrants.staff.roleInstructor') },
                   { value: 'BRANCH_STAFF', label: t('roleGrants.staff.roleBranchStaff') },
                   { value: 'SCHOOL_OWNER_MANAGER', label: t('roleGrants.staff.roleCoOwner') },
                 ]}
               />
-            </Field>
+            </div>
             {role === 'SCHOOL_OWNER_MANAGER' ? <p className="ultm8-field">{t('roleGrants.staff.coOwnerHint')}</p> : null}
             {needsBranch ? (
-              <Field
-                label={t('roleGrants.staff.branchLabel')}
-                htmlFor="invite-branch"
-                hint={role === 'INSTRUCTOR' ? t('roleGrants.staff.branchHint') : undefined}
-              >
-                <SelectField
-                  required
+              // No browser `required` check: handleInvite's own branch check
+              // (and its message) decides.
+              <div className="u8n-dd-field">
+                <NewLookSelect
+                  id="invite-branch"
+                  label={t('roleGrants.staff.branchLabel')}
                   value={branchId}
-                  onChange={(e) => setBranchId(e.target.value)}
+                  onChange={setBranchId}
                   options={[{ value: '', label: t('roleGrants.staff.selectBranch') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
                 />
-              </Field>
+                {role === 'INSTRUCTOR' ? <span className="ultm8-field__hint u8n-dd-field__hint">{t('roleGrants.staff.branchHint')}</span> : null}
+              </div>
             ) : null}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="u8t-form-actions">
               <Button type="submit" loading={inviteStaff.isPending}>
                 {sendsInvite ? t('roleGrants.staff.sendInvite') : t('roleGrants.staff.giveRole')}
               </Button>

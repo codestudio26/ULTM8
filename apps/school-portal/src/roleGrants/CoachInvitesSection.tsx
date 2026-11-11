@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, EmptyState, ErrorBanner, Field, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Field, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { TeamCard } from '../team/TeamParts';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
@@ -11,6 +11,7 @@ import {
 } from './coachInviteQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
@@ -98,18 +99,23 @@ export function CoachInvitesSection({
             <TextField type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </Field>
           {branches.length > 0 ? (
-            <Field label={t('roleGrants.coachInvites.branchLabel')} htmlFor="coach-invite-branch">
-              <SelectField
-                required
+            // No browser `required` check: handleSend's own branch check
+            // (and its message) decides.
+            <div className="u8n-dd-field">
+              <NewLookSelect
+                id="coach-invite-branch"
+                label={t('roleGrants.coachInvites.branchLabel')}
                 value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
+                onChange={setBranchId}
                 options={[{ value: '', label: t('roleGrants.coachInvites.selectBranch') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
               />
-            </Field>
+            </div>
           ) : null}
-          <Button type="submit" loading={send.isPending}>
-            {t('roleGrants.coachInvites.sendInvite')}
-          </Button>
+          <div className="u8t-form-actions">
+            <Button type="submit" loading={send.isPending}>
+              {t('roleGrants.coachInvites.sendInvite')}
+            </Button>
+          </div>
         </form>
         ) : canManage === false ? (
           <p className="ultm8-field">{t('roleGrants.staff.mainOwnerOnly')}</p>
