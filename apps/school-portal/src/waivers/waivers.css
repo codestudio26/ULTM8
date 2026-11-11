@@ -590,6 +590,96 @@
   overflow-wrap: anywhere;
 }
 
+/* ------------------------------------------------- Waiver settings */
+/* WaiverSettingsPage.tsx. The design draws no waiver settings screen, so the
+ * page keeps its layout: the settings in one white card, each with its
+ * switch, explanation and "what most schools choose", Save changes /
+ * Discard under them, then the retention rule in a second card. */
+[data-look='redesign'] .u8ws {
+  display: grid;
+  gap: 16px;
+  max-width: 760px;
+}
+[data-look='redesign'] .u8ws .u8w-note {
+  margin: 0;
+}
+[data-look='redesign'] .u8ws-card {
+  padding: 6px 22px 20px;
+}
+[data-look='redesign'] .u8ws-setting {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8ws-setting:last-child {
+  border-bottom: 0;
+}
+[data-look='redesign'] .u8ws .ultm8-switch-row {
+  align-items: center;
+}
+[data-look='redesign'] .u8ws .ultm8-switch-row__label {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--u8n-text);
+  cursor: pointer;
+}
+[data-look='redesign'] .u8ws .ultm8-switch-row .ultm8-field__hint,
+[data-look='redesign'] .u8ws-advice {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8ws-advice {
+  margin-top: 8px;
+}
+[data-look='redesign'] .u8ws .ultm8-switch:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .u8ws-number {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8ws-number .ultm8-input {
+  width: 96px;
+}
+[data-look='redesign'] .u8ws-invalid {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--u8w-bad-text);
+}
+[data-look='redesign'] .u8ws-actions {
+  max-width: 360px;
+  padding-top: 18px;
+  border-top: 1px solid var(--u8n-line);
+}
+/* A disabled Save keeps its outline, so the pair still reads as two buttons. */
+[data-look='redesign'] .u8ws-actions .u8w-pill:disabled {
+  border-color: var(--u8n-line);
+}
+[data-look='redesign'] .u8ws-retention {
+  padding: 18px 22px;
+}
+[data-look='redesign'] .u8ws-heading {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8ws-retention p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--u8n-text);
+}
+
 /* ------------------------------------------------- Phone: under 768px */
 @media (max-width: 767px) {
   [data-look='redesign'] .u8w .u8n-page-header__actions {
@@ -661,5 +751,12 @@
   }
   [data-look='redesign'] .u8w-search input {
     font-size: 16px;
+  }
+  [data-look='redesign'] .u8ws-card,
+  [data-look='redesign'] .u8ws-retention {
+    padding-inline: 16px;
+  }
+  [data-look='redesign'] .u8ws-actions {
+    max-width: none;
   }
 }
