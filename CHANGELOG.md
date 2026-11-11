@@ -10,6 +10,28 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: the staff Check-in tab** (Decision 453; visual only). The new
+  page header with Front-desk mode (and the Students tabs for the owner),
+  today's classes in the grey column, the check-in card, and Recent check-ins
+  in the right-hand panel (below the page on a phone). The Branch and "Paid by"
+  pickers are our own drop-down. Front-desk mode is unchanged.
+- **New look: the coach dashboard** (Decision 453; visual only). Matches the
+  owner Dashboard: Grading, My classes, Notifications, Birthdays and My
+  training as new-look cards (Branch Staff keep "Classes at your branch this
+  week"), and a right-hand panel with the coach's next class (Roll call, Show
+  QR) and the Ready to grade list, whose names open the student's Ranks tab.
+  When that list shows, the Notifications card leaves out the "ready to grade"
+  alerts (still on the Notifications page).
+- **New look: Waiver settings** (Decision 453; visual only). The page keeps its
+  layout and all seven settings in one white card, each with its switch and
+  its explanation; Save changes and Discard as a button pair; notes for
+  messages; the retention rule in its own card; a number out of range now also
+  gets a red ring. One column on a phone.
+- **Cancellations to resolve: class avatars on the rows** (Decision 458 item
+  2). Each row, in the table and in the phone/tablet cards, starts with its
+  class's avatar like Classes and Timetable (the banner, or initials on a soft
+  circle). The list response gains two read-only fields, `classBannerUrl` and
+  `classTimetableSlotId`.
 - **New look: Schedule → Classes and Timetable** (Decision 453; visual only).
   Both list pages use the new page header, white cards, class avatars (banner or
   initials on a soft circle), the new look's own drop-downs and pill buttons,

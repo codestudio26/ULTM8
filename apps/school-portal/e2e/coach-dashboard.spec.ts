@@ -89,6 +89,35 @@ test('a coach lands on their dashboard: grading, classes and notifications', asy
   await expect(page.getByRole('heading', { name: s.student.name })).toBeVisible();
 });
 
+test('the panel heads the next class "Today" when it is today on the School\'s clock, else "Next class" (Decision 460 item 6)', async ({ page }) => {
+  // As in check-in-new-look.spec.ts: a fixed zone where it is about 9 in the
+  // morning, so "today" never ends mid-test. Here it is the School's zone,
+  // which is what "today" means on this page. (Etc/GMT-N is UTC+N.)
+  const offset = ((9 - new Date().getUTCHours() + 36) % 24) - 12;
+  const zone = offset === 0 ? 'Etc/GMT' : `Etc/GMT${offset > 0 ? '-' : '+'}${Math.abs(offset)}`;
+  await db.school.update({ where: { id: s.schoolId }, data: { timezone: zone } });
+  const coach = await coachWith(null);
+  const make = (title: string, startDate: Date) =>
+    db.class.create({ data: { id: randomUUID(), schoolId: s.schoolId, instructorId: coach.id, title, startDate, endDate: new Date(startDate.getTime() + 3_600_000) } });
+  // Tomorrow's class only: "Next class".
+  await make('Tomorrow class', new Date(Date.now() + 86_400_000));
+  await signIn(page, coach.token);
+  await page.goto('/coach');
+  let panel = page.getByRole('complementary', { name: 'Next class' });
+  await expect(panel.getByRole('region', { name: 'Next class' })).toContainText('Tomorrow class');
+  await expect(page.getByRole('complementary', { name: 'Today' })).toHaveCount(0);
+
+  // A class later today (about 11 in the morning there) comes first: "Today".
+  await make('Later today class', new Date(Date.now() + 2 * 3_600_000));
+  await page.reload();
+  panel = page.getByRole('complementary', { name: 'Today' });
+  await expect(panel.getByRole('region', { name: 'Today' })).toContainText('Later today class');
+  await expect(panel.getByText('Today', { exact: true })).toBeVisible();
+  await expect(page.getByRole('complementary', { name: 'Next class' })).toHaveCount(0);
+  // Tomorrow's class is now under Coming up.
+  await expect(page.getByRole('region', { name: 'My classes' }).getByText(/Tomorrow class/)).toBeVisible();
+});
+
 test('Branch Staff with grading rights: the branch\'s classes, and the Ready to grade list in the panel', async ({ page }) => {
   const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId }]);
   await db.gradingPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: staff.id, disciplineId: s.disciplineId } });

@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Recurring charges, step 3 of 6 of staff-created charges (v1.3 backlog §3.6;
@@ -43,9 +44,9 @@ test('set up a monthly recurring charge for 3 payments, then stop and restart it
   const form = page.getByTestId('create-recurring-charge-form');
   await form.getByLabel('Description').fill('Private lesson');
   await form.getByLabel('Price').fill('60');
-  await form.getByLabel('How often').selectOption('MONTHLY');
+  await pickOption(form, 'How often', 'Every month');
   await form.getByLabel('First charge').fill(today);
-  await form.getByLabel('Ends').selectOption('COUNT');
+  await pickOption(form, 'Ends', 'After a number of payments');
   await form.getByLabel('Number of payments').fill('3');
   // Prices include 20% tax: 50.00 + 10.00 = 60.00 each time.
   const preview = page.getByTestId('recurring-charge-preview');

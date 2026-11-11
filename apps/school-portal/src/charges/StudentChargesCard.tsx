@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Checkbox, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, SuccessBanner, Table, TextArea, TextField } from '@ultm8/ui';
+import { Badge, Button, Checkbox, EmptyState, ErrorBanner, Field, Modal, ModalActions, Spinner, SuccessBanner, Table, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -39,6 +39,8 @@ import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCha
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 import { useDeskMethods, useOffersPix } from '../lib/deskMethods';
 import { StudentCard } from '../students/StudentPageLook';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import './billingDialogs.css';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
   OPEN: 'warning',
@@ -341,17 +343,15 @@ function MarkPaymentPaidModal({
   return (
     <Modal title={t('transactions.markPaidTitle')} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ margin: '0 0 16px' }}>
-        {t('transactions.markPaidBody', { student: studentName, plan: planTitle, amount: formatMoney(payment.amount, payment.currency ?? null) })}
-      </p>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+      <p>{t('transactions.markPaidBody', { student: studentName, plan: planTitle, amount: formatMoney(payment.amount, payment.currency ?? null) })}</p>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('transactions.back')}
         </Button>
         <Button variant="primary" loading={settle.isPending} onClick={handleConfirm} data-testid="mark-payment-paid">
           {t('transactions.markPaid')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
@@ -801,18 +801,19 @@ function CreateChargeModal({
         >
           <MoneyField id="charge-amount" disabled={!currency} value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
         </Field>
-        <Field label={t('charges.create.discountLabel')} htmlFor="charge-discount-type">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="charge-discount-type"
+            label={t('charges.create.discountLabel')}
             value={discountType}
-            onChange={(e) => setDiscountType(e.target.value as '' | 'PERCENT' | 'FIXED')}
+            onChange={(v) => setDiscountType(v as '' | 'PERCENT' | 'FIXED')}
             options={[
               { value: '', label: t('charges.create.discountNone') },
               { value: 'PERCENT', label: t('charges.create.discountPercent') },
               { value: 'FIXED', label: t('charges.create.discountFixed') },
             ]}
           />
-        </Field>
+        </div>
         {discountType ? (
           <Field
             label={t('charges.create.discountValueLabel')}
@@ -831,32 +832,33 @@ function CreateChargeModal({
         </Field>
         <NoTaxCheckbox id="charge-no-tax" checked={taxExempt} onChange={setTaxExempt} />
         {categories.data && categories.data.items.length > 0 ? (
-          <Field label={t('charges.incomeCategories.fieldLabel')} htmlFor="charge-income-category">
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="charge-income-category"
+              label={t('charges.incomeCategories.fieldLabel')}
               value={incomeCategoryId}
-              onChange={(e) => setIncomeCategoryId(e.target.value)}
+              onChange={setIncomeCategoryId}
               options={incomeCategoryOptions(categories.data.items, t('charges.incomeCategories.none'))}
             />
-          </Field>
+          </div>
         ) : null}
         {preview && currency ? (
-          <dl data-testid="charge-preview" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '4px 16px', margin: '8px 0 16px' }}>
+          <dl data-testid="charge-preview" className="u8bd-preview">
             <dt>{t('charges.create.previewExTax')}</dt>
-            <dd style={{ margin: 0 }}>{formatMoney(preview.net, currency)}</dd>
+            <dd>{formatMoney(preview.net, currency)}</dd>
             <PreviewTaxRow taxExempt={taxExempt} rate={rate} tax={preview.tax} currency={currency} />
-            <dt style={{ fontWeight: 500 }}>{t('charges.create.previewIncTax')}</dt>
-            <dd style={{ margin: 0, fontWeight: 500 }}>{formatMoney(preview.gross, currency)}</dd>
+            <dt className="u8bd-preview__total">{t('charges.create.previewIncTax')}</dt>
+            <dd className="u8bd-preview__total">{formatMoney(preview.gross, currency)}</dd>
           </dl>
         ) : null}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" loading={create.isPending} disabled={!ready}>
-            {t('charges.create.submit')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={create.isPending} disabled={!ready}>
+            {t('charges.create.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -908,13 +910,14 @@ function RecordPaymentModal({
       <form onSubmit={handleSubmit} data-testid="record-charge-payment-form">
         {error ? <ErrorBanner message={error} /> : null}
         {!currency ? <CurrencyFirstNotice /> : null}
-        <Field label={t('charges.pay.towardLabel')} htmlFor="charge-pay-toward">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="charge-pay-toward"
+            label={t('charges.pay.towardLabel')}
             value={toward}
-            onChange={(e) => {
-              setToward(e.target.value);
-              const next = open.find((c) => c.id === e.target.value);
+            onChange={(v) => {
+              setToward(v);
+              const next = open.find((c) => c.id === v);
               if (next) setAmount({ minorUnits: next.owedAmount, valid: true });
             }}
             options={[
@@ -925,18 +928,19 @@ function RecordPaymentModal({
               })),
             ]}
           />
-        </Field>
+        </div>
         <Field label={t('charges.pay.amountLabel')} htmlFor="charge-pay-amount" hint={t('charges.pay.amountHint')} error={amount.valid ? undefined : t('charges.create.amountInvalid')}>
           <MoneyField id="charge-pay-amount" value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
         </Field>
-        <Field label={t('charges.pay.methodLabel')} htmlFor="charge-pay-method">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="charge-pay-method"
+            label={t('charges.pay.methodLabel')}
             value={method}
-            onChange={(e) => setMethod(e.target.value as (typeof CHARGE_PAYMENT_METHODS)[number])}
+            onChange={(v) => setMethod(v as (typeof CHARGE_PAYMENT_METHODS)[number])}
             options={methods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
           />
-        </Field>
+        </div>
         {data.settings.receiptNotice ? (
           <>
             <Checkbox label={t('charges.pay.sendReceipt')} checked={sendReceipt} onChange={(e) => setSendReceipt(e.target.checked)} />
@@ -947,14 +951,14 @@ function RecordPaymentModal({
         ) : (
           <p className="ultm8-field__hint">{t('charges.pay.receiptsOff')}</p>
         )}
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <Button type="submit" loading={record.isPending} disabled={!ready}>
-            {t('charges.pay.submit')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={record.isPending} disabled={!ready}>
+            {t('charges.pay.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -1003,14 +1007,14 @@ function CancelChargeModal({
         <Field label={reasonRequired ? t('charges.cancelDialog.reasonLabel') : t('charges.cancelDialog.reasonOptional')} htmlFor="charge-cancel-reason">
           <TextArea id="charge-cancel-reason" maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
         </Field>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" variant="danger" loading={cancel.isPending}>
-            {t('charges.cancelDialog.confirm')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('charges.cancelDialog.keep')}
           </Button>
-        </div>
+          <Button type="submit" variant="danger" loading={cancel.isPending}>
+            {t('charges.cancelDialog.confirm')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -1040,14 +1044,14 @@ function WaiveLateFeeModal({ schoolId, studentId, charge, onClose }: { schoolId:
         <LateFeeLines charge={charge} />
         {charge.paidAmount > 0 ? <p>{t('charges.lateFee.waivePaidNote', { amount: formatMoney(charge.paidAmount, charge.currency) })}</p> : null}
         {error ? <ErrorBanner message={error} /> : null}
-        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <Button type="submit" variant="danger" loading={waive.isPending}>
-            {t('charges.lateFee.waiveConfirm')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('charges.lateFee.waiveKeep')}
           </Button>
-        </div>
+          <Button type="submit" variant="danger" loading={waive.isPending}>
+            {t('charges.lateFee.waiveConfirm')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -1116,9 +1120,15 @@ function RefundModal({
         <p>{t('charges.refundDialog.paidLine', { amount: formatMoney(payment.amount, payment.currency), date: formatDay(payment.receivedAt.slice(0, 10)) })}</p>
         {payment.refundedAmount > 0 ? <p>{t('charges.refundDialog.alreadyRefunded', { amount: formatMoney(payment.refundedAmount, payment.currency) })}</p> : null}
         {error ? <ErrorBanner message={error} /> : null}
-        <Field label={t('charges.refundDialog.destinationLabel')} htmlFor="charge-refund-destination">
-          <SelectField id="charge-refund-destination" value={destination} onChange={(e) => choose(e.target.value as 'CARD' | 'MONEY_BACK' | 'CREDIT')} options={options} />
-        </Field>
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="charge-refund-destination"
+            label={t('charges.refundDialog.destinationLabel')}
+            value={destination}
+            onChange={(v) => choose(v as 'CARD' | 'MONEY_BACK' | 'CREDIT')}
+            options={options}
+          />
+        </div>
         {destination === 'MONEY_BACK' ? <p className="ultm8-field__hint">{t('charges.refundDialog.moneyBackHint')}</p> : null}
         {destination === 'CREDIT' ? <p className="ultm8-field__hint">{t('charges.refundDialog.asCreditHint')}</p> : null}
         <Field
@@ -1133,14 +1143,14 @@ function RefundModal({
         <Field label={notesRequired ? t('charges.refundDialog.notesLabel') : t('charges.refundDialog.notesOptional')} htmlFor="charge-refund-notes">
           <TextArea id="charge-refund-notes" maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </Field>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" variant="danger" loading={refund.isPending} disabled={!ready}>
-            {t('charges.refundDialog.submit')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" variant="danger" loading={refund.isPending} disabled={!ready}>
+            {t('charges.refundDialog.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -1194,14 +1204,14 @@ function GiveCreditModal({
         <Field label={t('charges.creditDialog.noteLabel')} htmlFor="charge-credit-note">
           <TextArea id="charge-credit-note" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} />
         </Field>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" loading={give.isPending} disabled={!ready}>
-            {t('charges.creditDialog.submit')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={give.isPending} disabled={!ready}>
+            {t('charges.creditDialog.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
