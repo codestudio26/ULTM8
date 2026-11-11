@@ -3889,6 +3889,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "การดำเนินการเพิ่มเติม",
+      showAll: "แสดงเอกสารสละสิทธิ์ทั้งหมด ({count})",
+    },
     exportAll: {
       button: "ส่งออกเอกสารที่ลงนาม",
       title: "ส่งออกเอกสารที่ลงนามทั้งหมด",

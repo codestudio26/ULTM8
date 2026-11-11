@@ -15,6 +15,10 @@ Post-v1.4.0 work on `master`.
   Total / Unread / Read within 24h as number cards, the inbox as a card of rows
   (unread dot, status tag, time, ⋯ menu) and the sent messages as a card; the
   Snooze and Broadcast forms use our own drop-downs. Same data and actions.
+- **New look: Waivers** (Decision 453; visual only). The waivers list beside
+  the reader, with the selected waiver's Signatures and Guest signatures in
+  the right-hand panel; new-look buttons, chip, search and tags; on a phone
+  the list shrinks to the waiver you tap and Export sits under ⋯ More.
 - **New look: the Billing pages** (Decision 453; visual only). Membership
   plans, Transactions, Billing reports and Payroll get the new page header,
   white list cards, stat rows, our own drop-downs for every filter, the page
