@@ -70,8 +70,11 @@ test('Log a class: picking a class logs one class and its length', async ({ page
   await bjj(page).getByRole('button', { name: 'Log a class' }).click();
   const dialog = page.getByRole('dialog', { name: 'Log a class — BJJ' });
   await expect(dialog.getByRole('radio', { name: 'Class', exact: true })).toBeChecked();
-  await expect(dialog.getByRole('combobox', { name: 'Class' })).toHaveValue(cls.id);
-  await expect(dialog.getByRole('option', { name: /^Adult Fundamentals · .+ · 90 min$/ })).toBeAttached();
+  const classPicker = dialog.getByRole('combobox', { name: 'Class', exact: true });
+  await expect(classPicker.locator('[data-shown="true"]')).toHaveText(/^Adult Fundamentals · .+ · 90 min$/);
+  await classPicker.click();
+  await expect(dialog.getByRole('option', { name: /^Adult Fundamentals · .+ · 90 min$/ })).toHaveAttribute('aria-selected', 'true');
+  await page.keyboard.press('Escape');
   await expect(dialog.getByText(/^Adds 1 class and 1\.5 hours\./)).toBeVisible();
   await dialog.getByRole('button', { name: 'Log class' }).click();
   await expect(dialog).toBeHidden();
