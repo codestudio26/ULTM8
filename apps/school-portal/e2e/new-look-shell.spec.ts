@@ -90,7 +90,8 @@ test("owner: the nine groups and Settings, reaching exactly the owner's pages", 
   await newMenu(page).getByRole('link', { name: 'Team' }).click();
   await expect(page).toHaveURL(/\/staff$/);
   const tabs = page.getByRole('navigation', { name: 'Team pages' });
-  expect(await tabs.getByRole('link').allInnerTexts()).toEqual(['Staff', 'Coaches Info', 'Invite coaches']);
+  // Waits for the tabs to render, then checks all three, in order.
+  await expect(tabs.getByRole('link')).toHaveText(['Staff', 'Coaches Info', 'Invite coaches']);
   await expect(tabs.getByRole('link', { name: 'Staff' })).toHaveAttribute('aria-current', 'page');
   await tabs.getByRole('link', { name: 'Coaches Info' }).click();
   await expect(page).toHaveURL(/\/instructors$/);
