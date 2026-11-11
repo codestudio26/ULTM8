@@ -289,7 +289,7 @@ test('works with the keyboard only: move a student', async ({ page }) => {
 });
 
 test('student panel: "Log a class" adds one, and the Active switch sets attending by hand', async ({ page }) => {
-  await page.goto(`/students/${ben.id}`);
+  await page.goto(`/students/${ben.id}?tab=ranks`);
   const bjj = page.getByRole('region', { name: 'BJJ' });
   await expect(bjj.getByRole('listitem', { name: 'Classes: 0 of 3' })).toBeVisible();
   await bjj.getByRole('button', { name: 'Log a class' }).click();
@@ -299,6 +299,7 @@ test('student panel: "Log a class" adds one, and the Active switch sets attendin
   await expect(bjj.getByRole('listitem', { name: 'Classes: 1 of 3' })).toBeVisible();
   await expect(bjj.getByText(/Class logged by hand/)).toBeVisible();
 
-  await bjj.getByLabel('Currently attending BJJ').selectOption('INACTIVE');
+  await bjj.getByRole('combobox', { name: 'Currently attending BJJ' }).click();
+  await bjj.getByRole('option', { name: 'Inactive (set by hand)' }).click();
   await expect.poll(async () => (await db.studentRank.findFirstOrThrow({ where: { studentId: ben.id } })).boardActiveOverride).toBe(false);
 });

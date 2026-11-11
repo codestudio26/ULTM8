@@ -1,5 +1,5 @@
 import React from 'react';
-import { Badge, Button, Card, ErrorBanner } from '@ultm8/ui';
+import { Badge, Button, ErrorBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -7,6 +7,7 @@ import { useSchool } from '../schools/schoolQueries';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useGiveVisitPass } from '../membershipPlans/membershipPlanQueries';
 import type { StudentSummary } from './studentQueries';
+import { StudentCard } from './StudentPageLook';
 
 function formatDay(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
@@ -31,15 +32,12 @@ export function VisitorCard({ schoolId, student }: { schoolId: string; student: 
   const running = endsAt !== null && endsAt.getTime() > Date.now();
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Card>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 15, margin: 0 }}>
-            {t('students.visitor.title')}
-          </h2>
-          {student.visitor ? <Badge variant="info">{t('students.visitor.badge')}</Badge> : null}
-        </div>
-        <p style={{ margin: '0 0 12px', color: 'var(--color-neutral-600)' }} data-testid="visitor-status">
+    <StudentCard
+      title={t('students.visitor.title')}
+      label={t('students.visitor.title')}
+      titleExtra={student.visitor ? <Badge variant="info">{t('students.visitor.badge')}</Badge> : null}
+    >
+        <p style={{ margin: '0 0 12px' }} data-testid="visitor-status">
           {!student.visitor
             ? t('students.visitor.notVisitor')
             : running
@@ -54,7 +52,6 @@ export function VisitorCard({ schoolId, student }: { schoolId: string; student: 
             {running ? t('students.visitor.giveAnother') : t('students.visitor.give')}
           </Button>
         )}
-      </Card>
-    </div>
+    </StudentCard>
   );
 }

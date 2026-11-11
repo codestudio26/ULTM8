@@ -58,14 +58,14 @@ test('a Guardian-managed child shows "Managed by a Guardian", not a placeholder 
 
 test('a former student\'s page shows their name and an Inactive badge, with nothing to change', async ({ page }) => {
   await db.roleGrant.updateMany({ where: { userId: s.student.id, schoolId: s.schoolId, role: 'STUDENT' }, data: { revokedAt: new Date() } });
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   await expect(page.getByRole('heading', { level: 1, name: s.student.name })).toBeVisible();
   await expect(page.getByText('Inactive', { exact: true })).toBeVisible();
   const card = page.getByRole('region', { name: 'BJJ' });
   await expect(card.getByText('White 1', { exact: true })).toBeVisible();
   await expect(card.getByRole('button', { name: 'Grade' })).toHaveCount(0);
   await expect(card.getByRole('button', { name: /Armbar: .* Change to/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Edit profile' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: `Edit ${s.student.name}` })).toHaveCount(0);
 });
 
 test('"Upcoming Booking" is the soonest class, even with more than 20 bookings', async ({ page }) => {
@@ -86,7 +86,7 @@ test('"Upcoming Booking" is the soonest class, even with more than 20 bookings',
       await db.booking.create({ data: { id: ids[i], studentId: s.newStudent.id, classId: cls.id, schoolId: s.schoolId, sourceMembershipId: membership.id } });
     }
     await page.goto(`/students/${s.newStudent.id}`);
-    const panel = page.getByRole('heading', { name: 'Upcoming Booking' }).locator('..');
+    const panel = page.getByRole('region', { name: 'Upcoming Booking' });
     await expect(panel.getByText('Class 104h')).toBeVisible();
     await expect(panel.getByText('+24 more')).toBeVisible();
   } finally {
@@ -118,7 +118,7 @@ test('branch staff can open and edit a student of their own branch', async ({ pa
   await db.user.update({ where: { id: s.student.id }, data: { mustChangePasscode: true } });
   await page.goto(`/students/${s.student.id}`);
   await expect(page.getByRole('heading', { level: 1, name: s.student.name })).toBeVisible();
-  await page.getByRole('button', { name: 'Edit profile' }).click();
+  await page.getByRole('link', { name: `Edit ${s.student.name}` }).click();
   await expect(page.getByLabel('First name')).toHaveValue('Sam');
   await page.getByLabel('Gender').selectOption('MALE');
   await page.getByRole('button', { name: 'Save' }).click();

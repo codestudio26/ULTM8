@@ -2813,6 +2813,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       training: "การฝึก",
       homeBranch: "สาขาหลัก",
     },
+    page: {
+      tabsAria: "ส่วนของนักเรียน",
+      profile: "โปรไฟล์",
+      ranks: "ระดับ",
+      contact: "การติดต่อ",
+      personal: "ข้อมูลส่วนตัว",
+      account: "บัญชี",
+      birthday: "วันเกิด",
+      balance: "ยอดคงเหลือ",
+    },
     growth: {
       subtitle: "นักเรียนที่ยังใช้งาน ผู้เยี่ยมชม และสมาชิกภาพที่พักอยู่ในตอนนี้ และการเติบโตของโรงเรียนใน 12 เดือนที่ผ่านมา",
       period: "12 เดือนที่ผ่านมา รายเดือนตามเขตเวลาของโรงเรียน ({zone})",

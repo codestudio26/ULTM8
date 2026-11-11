@@ -18,12 +18,18 @@ export function NewLookSelect({
   value,
   options,
   onChange,
+  disabled = false,
+  ariaLabel,
 }: {
   id: string;
   label: string;
   value: string;
   options: NewLookSelectOption[];
   onChange: (value: string) => void;
+  /** While a change is saving: the field can't be opened. */
+  disabled?: boolean;
+  /** A fuller name for screen readers than the visible label. */
+  ariaLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
@@ -97,7 +103,9 @@ export function NewLookSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
-        aria-labelledby={labelId}
+        aria-labelledby={ariaLabel ? undefined : labelId}
+        aria-label={ariaLabel}
+        disabled={disabled}
         aria-activedescendant={open && active >= 0 ? optionId(active) : undefined}
         onClick={() => (open ? setOpen(false) : show())}
         onKeyDown={onKeyDown}

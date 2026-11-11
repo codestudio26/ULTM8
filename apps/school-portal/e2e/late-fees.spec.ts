@@ -86,7 +86,7 @@ test('a late fee shows with a "Late fee" badge and what it is for, and the owner
 
   await page.goto(`/students/${s.student.id}`);
   const card = page.getByTestId('student-charges');
-  await expect(card.getByText('Owes 55.00 GBP')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Owes 55.00 GBP');
   const row = page.getByRole('row', { name: /#0000002/ });
   await expect(row).toContainText('Late fee');
   await expect(row).toContainText('For invoice #0000001 (Rash guard)');
@@ -99,7 +99,7 @@ test('a late fee shows with a "Late fee" badge and what it is for, and the owner
   await expect(dialog).toHaveCount(0);
   await expect(row).toContainText('Cancelled');
   await expect(row).toContainText('Waived on');
-  await expect(card.getByText('Owes 40.00 GBP')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Owes 40.00 GBP');
   const waived = await db.charge.findUniqueOrThrow({ where: { id: feeId } });
   expect(waived).toMatchObject({ lateFeeWaived: true, cancelReason: null });
   expect(waived.cancelledAt).not.toBeNull();

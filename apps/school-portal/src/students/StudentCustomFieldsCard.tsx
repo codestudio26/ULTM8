@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, ErrorBanner, Field, SelectField, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { StudentCard } from './StudentPageLook';
 import {
   CUSTOM_TEXT_VALUE_MAX,
   useCustomMemberStatuses,
@@ -42,94 +44,81 @@ export function StudentCustomFieldsCard({ schoolId, studentId }: { schoolId: str
   const error = save.error ?? setStatus.error;
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
-          {t('students.customFields.title')}
-        </h2>
-        {error ? <ErrorBanner message={errorText(error, t('students.customFields.failed'))} /> : null}
-        {statusItems.length > 0 ? (
-          <div style={{ maxWidth: 320 }}>
-            <Field label={t('students.customFields.statusLabel')} htmlFor={`custom-status-${studentId}`}>
-              <SelectField
-                id={`custom-status-${studentId}`}
-                value={data.data.statusId ?? ''}
-                disabled={setStatus.isPending}
-                onChange={(e) => setStatus.mutate(e.target.value || null)}
-                options={[{ value: '', label: t('students.customFields.statusNone') }, ...statusItems.map((s) => ({ value: s.id, label: s.name }))]}
-              />
-            </Field>
-          </div>
-        ) : null}
-        {fields.length > 0 ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (changed.length === 0) return;
-              setSaved(false);
-              save.mutate(
-                changed.map((f) => ({ fieldId: f.id, value: (draft[f.id] ?? '').trim() || null })),
-                { onSuccess: () => setSaved(true) },
-              );
-            }}
-          >
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0 16px' }}>
-              {fields.map((f) => (
+    <StudentCard title={t('students.customFields.title')}>
+      {error ? <ErrorBanner message={errorText(error, t('students.customFields.failed'))} /> : null}
+      {statusItems.length > 0 ? (
+        <div className="ultm8-field">
+          <NewLookSelect
+            id={`custom-status-${studentId}`}
+            label={t('students.customFields.statusLabel')}
+            value={data.data.statusId ?? ''}
+            disabled={setStatus.isPending}
+            onChange={(v) => setStatus.mutate(v || null)}
+            options={[{ value: '', label: t('students.customFields.statusNone') }, ...statusItems.map((s) => ({ value: s.id, label: s.name }))]}
+          />
+        </div>
+      ) : null}
+      {fields.length > 0 ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (changed.length === 0) return;
+            setSaved(false);
+            save.mutate(
+              changed.map((f) => ({ fieldId: f.id, value: (draft[f.id] ?? '').trim() || null })),
+              { onSuccess: () => setSaved(true) },
+            );
+          }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0 16px' }}>
+            {fields.map((f) => {
+              const onChange = (value: string) => {
+                setSaved(false);
+                setDraft((d) => ({ ...d, [f.id]: value }));
+              };
+              const choices = choicesOf(f, t);
+              return choices ? (
+                <div key={f.id} className="ultm8-field">
+                  <NewLookSelect id={`custom-field-${f.id}`} label={f.name} value={draft[f.id] ?? ''} onChange={onChange} options={choices} />
+                </div>
+              ) : (
                 <Field key={f.id} label={f.name} htmlFor={`custom-field-${f.id}`}>
-                  <ValueInput
-                    id={`custom-field-${f.id}`}
-                    field={f}
-                    value={draft[f.id] ?? ''}
-                    onChange={(value) => {
-                      setSaved(false);
-                      setDraft((d) => ({ ...d, [f.id]: value }));
-                    }}
-                  />
+                  <ValueInput id={`custom-field-${f.id}`} field={f} value={draft[f.id] ?? ''} onChange={onChange} />
                 </Field>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <Button type="submit" disabled={changed.length === 0} loading={save.isPending}>
-                {t('students.customFields.save')}
-              </Button>
-              {saved && changed.length === 0 ? <span className="ultm8-field__hint">{t('students.customFields.saved')}</span> : null}
-            </div>
-          </form>
-        ) : null}
-      </Card>
-    </div>
+              );
+            })}
+          </div>
+          <div className="u8sp-line">
+            <Button type="submit" disabled={changed.length === 0} loading={save.isPending}>
+              {t('students.customFields.save')}
+            </Button>
+            {saved && changed.length === 0 ? <span className="ultm8-field__hint">{t('students.customFields.saved')}</span> : null}
+          </div>
+        </form>
+      ) : null}
+    </StudentCard>
   );
 }
 
+/** A Dropdown or Yes/No field's choices, for our own drop-down; null for a typed value. */
+function choicesOf(field: Field, t: ReturnType<typeof useT>): Array<{ value: string; label: string }> | null {
+  if (field.type === 'DROPDOWN') return [{ value: '', label: t('students.customFields.notSet') }, ...field.options.map((o) => ({ value: o, label: o }))];
+  if (field.type === 'YES_NO') {
+    return [
+      { value: '', label: t('students.customFields.notSet') },
+      { value: 'true', label: t('students.customFields.yes') },
+      { value: 'false', label: t('students.customFields.no') },
+    ];
+  }
+  return null;
+}
+
 function ValueInput({ id, field, value, onChange }: { id: string; field: Field; value: string; onChange: (value: string) => void }) {
-  const t = useT();
   switch (field.type) {
     case 'NUMBER':
       return <TextField id={id} type="number" step="any" value={value} onChange={(e) => onChange(e.target.value)} />;
     case 'DATE':
       return <TextField id={id} type="date" value={value} onChange={(e) => onChange(e.target.value)} />;
-    case 'DROPDOWN':
-      return (
-        <SelectField
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          options={[{ value: '', label: t('students.customFields.notSet') }, ...field.options.map((o) => ({ value: o, label: o }))]}
-        />
-      );
-    case 'YES_NO':
-      return (
-        <SelectField
-          id={id}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          options={[
-            { value: '', label: t('students.customFields.notSet') },
-            { value: 'true', label: t('students.customFields.yes') },
-            { value: 'false', label: t('students.customFields.no') },
-          ]}
-        />
-      );
     default:
       return <TextField id={id} maxLength={CUSTOM_TEXT_VALUE_MAX} value={value} onChange={(e) => onChange(e.target.value)} />;
   }

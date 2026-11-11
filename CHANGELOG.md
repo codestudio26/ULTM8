@@ -16,6 +16,10 @@ Post-v1.4.0 work on `master`.
   each category's lessons, tags, notes, round ↑/↓ buttons, our own drop-downs
   in the lesson form, a pill file button for video upload, and each lesson as
   a card on a phone. Same data, API calls and permissions.
+- **New look: the student's full page** (Decision 453; visual only). Two tabs,
+  Profile and Ranks; white cards with light header bars; the summary panel on
+  the right (status, Edit, check-in code, contact, personal details, home
+  branch, balance and tags), below the cards on a phone. Nothing is shown twice.
 - **New look: the Team pages** (Decisions 453, 456; visual only). Team is one
   page with three tabs: Staff (`/staff`), Coaches Info (`/instructors`, renamed
   from "Instructors' belts") and Invite coaches (`/team/invite-coaches`, the

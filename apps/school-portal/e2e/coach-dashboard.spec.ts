@@ -76,11 +76,13 @@ test('the board and the student panel show only what the coach may do', async ({
 
   await card.getByRole('link', { name: s.student.name }).click();
   await expect(page.getByRole('heading', { name: s.student.name })).toBeVisible();
+  // A student's grading is the Ranks tab of their page (DESIGN.md → "Grading screens").
+  await page.getByRole('navigation', { name: 'Student sections' }).getByRole('link', { name: 'Ranks' }).click();
   const bjj = page.getByRole('region', { name: 'BJJ' });
   await expect(bjj.getByRole('button', { name: 'Grade' })).toBeVisible();
   await expect(bjj.getByRole('button', { name: 'Correct date' })).toHaveCount(0);
   await expect(bjj.getByRole('button', { name: 'Log a class' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: '← Grading Board' })).toBeVisible();
+  await expect(page.locator('.u8n-page-header').getByRole('link', { name: 'Grading Board', exact: true })).toBeVisible();
 });
 
 test('a coach with no styles is told so', async ({ page }) => {

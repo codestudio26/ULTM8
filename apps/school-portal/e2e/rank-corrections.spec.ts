@@ -38,7 +38,7 @@ const ask = (to: string) =>
 
 test('the owner approves a request: the student moves, and the history shows it', async ({ page }) => {
   const request = await ask('Blue 0');
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const box = page.getByRole('region', { name: 'Belt correction asked' });
   await expect(box.getByText(/Sam asked to correct their belt from White 1 to Blue 0/)).toBeVisible();
   await expect(box.getByText('Their note: “I was promoted at my old club.”')).toBeVisible();
@@ -53,7 +53,7 @@ test('the owner approves a request: the student moves, and the history shows it'
 
 test('the owner rejects a request: nothing changes', async ({ page }) => {
   const request = await ask('White 2');
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const box = page.getByRole('region', { name: 'Belt correction asked' });
   await box.getByRole('button', { name: 'Reject' }).click();
   await expect(box).toBeHidden();

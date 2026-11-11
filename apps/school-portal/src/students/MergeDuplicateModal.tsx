@@ -143,7 +143,7 @@ export function MergeDuplicateModal({
           <div data-testid="merge-preview">
             {blockers.length > 0 ? (
               <>
-                <p style={{ fontWeight: 600, marginBottom: 4 }}>{t('students.merge.blockedTitle')}</p>
+                <p style={{ fontWeight: 500, marginBottom: 4 }}>{t('students.merge.blockedTitle')}</p>
                 <ul style={{ marginTop: 0 }}>
                   {blockers.map((b) => (
                     <li key={b.code}>{blockerText(b)}</li>
