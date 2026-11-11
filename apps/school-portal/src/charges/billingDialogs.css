@@ -1,0 +1,34 @@
+/* The billing dialogs opened from the student page (Payments and Memberships
+ * cards) in the new look (Decision 453, Decision 460): the shared dialog frame
+ * and button band (packages/ui Modal / ModalActions), the new look's own
+ * drop-downs (NewLookSelect in `.u8n-dd-field`), and this file's one piece:
+ * the charge's live price preview, as the calm grey preview card of form
+ * pattern "F" (redesign-fixes.css §7). Look only: the figures are the same. */
+.u8bd-preview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 16px;
+  margin: 4px 0 16px;
+}
+.u8bd-preview dd {
+  margin: 0;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.u8bd-preview__total {
+  font-weight: 500;
+}
+[data-look='redesign'] .u8bd-preview {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--form-preview-bg);
+  color: var(--form-preview-text);
+}
+[data-look='redesign'] .u8bd-preview dt:not(.u8bd-preview__total) {
+  color: var(--form-preview-muted);
+}
+[data-look='redesign'] .u8bd-preview .u8bd-preview__total {
+  padding-top: 6px;
+  border-top: 1px solid var(--u8-dlg-line);
+  font-weight: 600;
+}

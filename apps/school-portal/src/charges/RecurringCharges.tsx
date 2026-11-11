@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, ErrorBanner, Field, Modal, SelectField, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, ErrorBanner, Field, Modal, ModalActions, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -19,6 +19,8 @@ import {
   type StudentRecurringCharges,
 } from './chargeQueries';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import './billingDialogs.css';
 
 const STATUS_BADGE: Record<RecurringCharge['status'], 'success' | 'default' | 'info'> = { ACTIVE: 'success', STOPPED: 'default', ENDED: 'info' };
 const FREQUENCIES = ['WEEKLY', 'MONTHLY', 'YEARLY'] as const;
@@ -152,14 +154,14 @@ function StopRecurringModal({ schoolId, studentId, series, onClose }: { schoolId
       <form onSubmit={confirm} data-testid="stop-recurring-charge-form">
         <p>{t('charges.recurring.stopDialog.body')}</p>
         {error ? <ErrorBanner message={error} /> : null}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" variant="danger" loading={stop.isPending}>
-            {t('charges.recurring.stopDialog.confirm')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('charges.recurring.stopDialog.keep')}
           </Button>
-        </div>
+          <Button type="submit" variant="danger" loading={stop.isPending}>
+            {t('charges.recurring.stopDialog.confirm')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -259,18 +261,19 @@ export function CreateRecurringChargeModal({
         >
           <MoneyField id="recurring-amount" disabled={!currency} value={amount.minorUnits} currency={currency} onChange={(minorUnits, valid) => setAmount({ minorUnits, valid })} />
         </Field>
-        <Field label={t('charges.create.discountLabel')} htmlFor="recurring-discount-type">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="recurring-discount-type"
+            label={t('charges.create.discountLabel')}
             value={discountType}
-            onChange={(e) => setDiscountType(e.target.value as '' | 'PERCENT' | 'FIXED')}
+            onChange={(v) => setDiscountType(v as '' | 'PERCENT' | 'FIXED')}
             options={[
               { value: '', label: t('charges.create.discountNone') },
               { value: 'PERCENT', label: t('charges.create.discountPercent') },
               { value: 'FIXED', label: t('charges.create.discountFixed') },
             ]}
           />
-        </Field>
+        </div>
         {discountType ? (
           <Field
             label={t('charges.create.discountValueLabel')}
@@ -284,29 +287,31 @@ export function CreateRecurringChargeModal({
             )}
           </Field>
         ) : null}
-        <Field label={t('charges.recurring.create.frequencyLabel')} htmlFor="recurring-frequency">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="recurring-frequency"
+            label={t('charges.recurring.create.frequencyLabel')}
             value={frequency}
-            onChange={(e) => setFrequency(e.target.value as (typeof FREQUENCIES)[number])}
+            onChange={(v) => setFrequency(v as (typeof FREQUENCIES)[number])}
             options={FREQUENCIES.map((f) => ({ value: f, label: t(`charges.recurring.every.${f}` as TranslationKey) }))}
           />
-        </Field>
+        </div>
         <Field label={t('charges.recurring.create.firstLabel')} htmlFor="recurring-first" hint={t('charges.recurring.create.firstHint')}>
           <TextField id="recurring-first" type="date" min={today()} value={firstDate} onChange={(e) => setFirstDate(e.target.value)} required />
         </Field>
-        <Field label={t('charges.recurring.create.endLabel')} htmlFor="recurring-end">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="recurring-end"
+            label={t('charges.recurring.create.endLabel')}
             value={endKind}
-            onChange={(e) => setEndKind(e.target.value as EndKind)}
+            onChange={(v) => setEndKind(v as EndKind)}
             options={[
               { value: 'NEVER', label: t('charges.recurring.create.endNever') },
               { value: 'DATE', label: t('charges.recurring.create.endOnDate') },
               { value: 'COUNT', label: t('charges.recurring.create.endAfterCount') },
             ]}
           />
-        </Field>
+        </div>
         {endKind === 'DATE' ? (
           <Field
             label={t('charges.recurring.create.endDateLabel')}
@@ -323,35 +328,36 @@ export function CreateRecurringChargeModal({
         ) : null}
         <NoTaxCheckbox id="recurring-no-tax" checked={taxExempt} onChange={setTaxExempt} />
         {categories.data && categories.data.items.length > 0 ? (
-          <Field label={t('charges.incomeCategories.fieldLabel')} htmlFor="recurring-income-category">
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="recurring-income-category"
+              label={t('charges.incomeCategories.fieldLabel')}
               value={incomeCategoryId}
-              onChange={(e) => setIncomeCategoryId(e.target.value)}
+              onChange={setIncomeCategoryId}
               options={incomeCategoryOptions(categories.data.items, t('charges.incomeCategories.none'))}
             />
-          </Field>
+          </div>
         ) : null}
         {preview && currency ? (
-          <dl data-testid="recurring-charge-preview" style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '4px 16px', margin: '8px 0 4px' }}>
+          <dl data-testid="recurring-charge-preview" className="u8bd-preview">
             <dt>{t('charges.create.previewExTax')}</dt>
-            <dd style={{ margin: 0 }}>{formatMoney(preview.net, currency)}</dd>
+            <dd>{formatMoney(preview.net, currency)}</dd>
             <PreviewTaxRow taxExempt={taxExempt} rate={rate} tax={preview.tax} currency={currency} />
-            <dt style={{ fontWeight: 500 }}>{t('charges.recurring.create.previewEach')}</dt>
-            <dd style={{ margin: 0, fontWeight: 500 }}>{formatMoney(preview.gross, currency)}</dd>
+            <dt className="u8bd-preview__total">{t('charges.recurring.create.previewEach')}</dt>
+            <dd className="u8bd-preview__total">{formatMoney(preview.gross, currency)}</dd>
           </dl>
         ) : null}
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
           {taxExempt ? t('charges.recurring.create.noteNoTax') : t('charges.recurring.create.note')}
         </p>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" loading={create.isPending} disabled={!ready}>
-            {t('charges.recurring.create.submit')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={create.isPending} disabled={!ready}>
+            {t('charges.recurring.create.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
