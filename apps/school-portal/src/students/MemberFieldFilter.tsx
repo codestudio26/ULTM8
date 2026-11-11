@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Field, SelectField, TextField } from '@ultm8/ui';
+import { Field, TextField } from '@ultm8/ui';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { useT } from '../i18n/I18nProvider';
 import type { CustomMemberField } from './customMemberFieldsQueries';
 
@@ -27,35 +28,33 @@ export function MemberFieldFilter({ fields, filter, onChange }: { fields: Custom
 
   return (
     <>
-      <div style={{ maxWidth: 220 }}>
-        <Field label={t('students.customFields.fieldFilterLabel')} htmlFor="students-member-field-filter">
-          <SelectField
-            id="students-member-field-filter"
-            value={filter.fieldId}
-            onChange={(e) => onChange({ fieldId: e.target.value, value: '' })}
-            options={[{ value: '', label: t('students.customFields.fieldFilterAll') }, ...fields.map((f) => ({ value: f.id, label: f.name }))]}
-          />
-        </Field>
-      </div>
+      <NewLookSelect
+        id="students-member-field-filter"
+        label={t('students.customFields.fieldFilterLabel')}
+        value={filter.fieldId}
+        onChange={(fieldId) => onChange({ fieldId, value: '' })}
+        options={[{ value: '', label: t('students.customFields.fieldFilterAll') }, ...fields.map((f) => ({ value: f.id, label: f.name }))]}
+      />
       {field ? (
-        <div style={{ maxWidth: 220 }}>
-          <Field label={field.type === 'TEXT' ? t('students.customFields.fieldFilterContains') : t('students.customFields.fieldFilterValue')} htmlFor="students-member-field-value">
-            {field.type === 'DROPDOWN' || field.type === 'YES_NO' ? (
-              <SelectField
-                id="students-member-field-value"
-                value={filter.value}
-                onChange={(e) => onChange({ fieldId: field.id, value: e.target.value })}
-                options={[
-                  { value: '', label: t('students.customFields.fieldFilterAny') },
-                  ...(field.type === 'DROPDOWN'
-                    ? field.options.map((o) => ({ value: o, label: o }))
-                    : [
-                        { value: 'true', label: t('students.customFields.yes') },
-                        { value: 'false', label: t('students.customFields.no') },
-                      ]),
-                ]}
-              />
-            ) : (
+        field.type === 'DROPDOWN' || field.type === 'YES_NO' ? (
+          <NewLookSelect
+            id="students-member-field-value"
+            label={t('students.customFields.fieldFilterValue')}
+            value={filter.value}
+            onChange={(value) => onChange({ fieldId: field.id, value })}
+            options={[
+              { value: '', label: t('students.customFields.fieldFilterAny') },
+              ...(field.type === 'DROPDOWN'
+                ? field.options.map((o) => ({ value: o, label: o }))
+                : [
+                    { value: 'true', label: t('students.customFields.yes') },
+                    { value: 'false', label: t('students.customFields.no') },
+                  ]),
+            ]}
+          />
+        ) : (
+          <div style={{ maxWidth: 220 }}>
+            <Field label={field.type === 'TEXT' ? t('students.customFields.fieldFilterContains') : t('students.customFields.fieldFilterValue')} htmlFor="students-member-field-value">
               <TextField
                 id="students-member-field-value"
                 type={field.type === 'NUMBER' ? 'number' : field.type === 'DATE' ? 'date' : 'text'}
@@ -63,9 +62,9 @@ export function MemberFieldFilter({ fields, filter, onChange }: { fields: Custom
                 value={typed}
                 onChange={(e) => setTyped(e.target.value)}
               />
-            )}
-          </Field>
-        </div>
+            </Field>
+          </div>
+        )
       ) : null}
     </>
   );

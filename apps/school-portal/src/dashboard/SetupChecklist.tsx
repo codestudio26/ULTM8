@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Card } from '@ultm8/ui';
+import { Button } from '@ultm8/ui';
+import './dashboardPage.css';
 import { useSetSetupChecklistHidden, type DashboardOverview, type SetupStepKey } from './dashboardQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { STRIPE_CONNECT_ANCHOR } from '../schools/StripeConnectCard';
@@ -30,7 +31,7 @@ export function SetupChecklist({ schoolId, checklist }: { schoolId: string; chec
   const pix = useOffersPix(schoolId);
   if (checklist.hidden) {
     return (
-      <p style={{ margin: '0 0 16px', fontSize: 13 }}>
+      <p className="u8n-dash-setup__show">
         <Button variant="secondary" onClick={() => setHidden.mutate(false)} disabled={setHidden.isPending}>
           {t('dashboard.setup.show')}
         </Button>
@@ -39,46 +40,46 @@ export function SetupChecklist({ schoolId, checklist }: { schoolId: string; chec
   }
   const done = checklist.steps.filter((s) => s.done).length;
   const allDone = done === checklist.steps.length;
+  // The new look (Decision 453): a white card with a light header, each step a
+  // row with a ✓ or an empty circle; steps still to do link to where they're done.
   return (
-    <section aria-label={t('dashboard.setup.title')} style={{ marginBottom: 16 }}>
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
-            {allDone ? t('dashboard.setup.doneTitle') : t('dashboard.setup.title')}
-          </h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)' }}>
-              {t('dashboard.setup.progress', { done, total: checklist.steps.length })}
-            </span>
-            <Button variant="secondary" onClick={() => setHidden.mutate(true)} disabled={setHidden.isPending}>
-              {t('dashboard.setup.hide')}
-            </Button>
-          </div>
+    <section aria-label={t('dashboard.setup.title')} className="u8n-dash__card u8n-dash-setup">
+      <header className="u8n-dash__card-head">
+        <h2 className="u8n-dash__card-title">{allDone ? t('dashboard.setup.doneTitle') : t('dashboard.setup.title')}</h2>
+        <div className="u8n-dash-setup__tools">
+          <span className="u8n-dash-setup__progress">{t('dashboard.setup.progress', { done, total: checklist.steps.length })}</span>
+          <Button variant="secondary" onClick={() => setHidden.mutate(true)} disabled={setHidden.isPending}>
+            {t('dashboard.setup.hide')}
+          </Button>
         </div>
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
-          {checklist.steps.map((step) => {
-            const meta = STEPS[step.key];
-            return (
-              <li key={step.key} data-step={step.key} data-done={step.done} style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap', fontSize: 14 }}>
-                <span role="img" aria-label={step.done ? t('dashboard.setup.doneLabel') : t('dashboard.setup.todoLabel')} style={{ width: 18, color: step.done ? 'var(--ultm8-color-success, #2e7d4f)' : 'var(--ultm8-color-text-muted, #666)' }}>
-                  {step.done ? '✓' : '○'}
-                </span>
-                {meta.to && !step.done ? <Link to={meta.to}>{t(meta.label)}</Link> : <span style={step.done ? { textDecoration: 'line-through' } : undefined}>{t(meta.label)}</span>}
-                {step.key === 'STRIPE' && !step.done ? (
-                  <span style={{ fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)' }}>{t('dashboard.setup.stripeHint')}</span>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-        {/* Decision 437 — where Stripe can't onboard the School, the API leaves
-            the Stripe step out; say how members pay instead. */}
-        {checklist.stripeConnectAvailable === false ? (
-          <p data-testid="stripe-unavailable" style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)' }}>
-            {t(pix ? 'dashboard.setup.stripeUnavailablePix' : 'dashboard.setup.stripeUnavailable')}
-          </p>
-        ) : null}
-      </Card>
+      </header>
+      <ul className="u8n-dash-setup__steps">
+        {checklist.steps.map((step) => {
+          const meta = STEPS[step.key];
+          return (
+            <li key={step.key} data-step={step.key} data-done={step.done} className="u8n-dash-setup__step">
+              <span
+                role="img"
+                aria-label={step.done ? t('dashboard.setup.doneLabel') : t('dashboard.setup.todoLabel')}
+                className={'u8n-dash-setup__mark' + (step.done ? ' u8n-dash-setup__mark--done' : '')}
+              >
+                {step.done ? '✓' : ''}
+              </span>
+              <div className="u8n-dash-setup__text">
+                {meta.to && !step.done ? <Link to={meta.to}>{t(meta.label)}</Link> : <span className={step.done ? 'u8n-dash-setup__done' : undefined}>{t(meta.label)}</span>}
+                {step.key === 'STRIPE' && !step.done ? <span className="u8n-dash-setup__hint">{t('dashboard.setup.stripeHint')}</span> : null}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {/* Decision 437 — where Stripe can't onboard the School, the API leaves
+          the Stripe step out; say how members pay instead. */}
+      {checklist.stripeConnectAvailable === false ? (
+        <p data-testid="stripe-unavailable" className="u8n-dash-setup__note">
+          {t(pix ? 'dashboard.setup.stripeUnavailablePix' : 'dashboard.setup.stripeUnavailable')}
+        </p>
+      ) : null}
     </section>
   );
 }
