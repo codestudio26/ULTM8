@@ -2768,6 +2768,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "경력(년)",
       bio: "소개",
     },
+    team: {
+      panelLabel: "팀원",
+      openFullPage: "전체 페이지 열기",
+      openFullPageAria: "전체 페이지 열기: {name}",
+      frontDesk: "프런트 데스크와 결제",
+      refundsNote: "환불과 크레딧은 소유자인 당신만 처리합니다.",
+      belts: "벨트",
+      profileTab: "프로필",
+      sectionsAria: "팀원 섹션",
+      about: "소개",
+      roles: "역할",
+      nextClasses: "다음 수업",
+      allClasses: "모든 수업",
+      removeHeading: "팀에서 제외",
+      contact: "연락처",
+    },
   },
   students: {
     growth: {

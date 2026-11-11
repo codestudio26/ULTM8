@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 408: the Staff page's Activity section lists who changed what,
@@ -17,7 +18,7 @@ test.afterAll(async () => {
 });
 
 type Page = import('@playwright/test').Page;
-const listRow = (page: Page, name: string) => page.locator('.ultm8-card').filter({ hasText: 'Your staff' }).getByRole('row').filter({ hasText: name });
+const listRow = (page: Page, name: string) => page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) }).getByRole('row').filter({ hasText: name });
 const activity = (page: Page) => page.getByRole('list', { name: 'Activity' });
 
 test('a change on the Staff page shows in Activity, and the filter picks one person', async ({ page }) => {
@@ -50,7 +51,7 @@ test('a change on the Staff page shows in Activity, and the filter picks one per
   await expect(items.first()).toContainText('Olive Owner paused Bea Desk.');
   await expect(items).toHaveCount(2);
 
-  await page.getByLabel('Person').selectOption({ label: 'Cal Coach' });
+  await pickOption(page, 'Person', 'Cal Coach');
   await expect(items).toHaveCount(1);
   await expect(items.first()).toContainText('Olive Owner gave Cal Coach the Instructor role at North.');
 });

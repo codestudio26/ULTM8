@@ -192,7 +192,7 @@ test('Instructor Detail shows the Instructor\'s own Classes with a real enrolled
     await page.goto('/instructors');
     const row = page.getByRole('row', { name: /Dana Coach/ });
     await expect(row).toBeVisible();
-    await row.getByRole('button', { name: 'View' }).click();
+    await row.getByRole('link', { name: 'Open full page: Dana Coach' }).click();
     await expect(page).toHaveURL(new RegExp(`/instructors/${profile.id}$`));
     await expect(page.getByRole('heading', { level: 1, name: 'Dana Coach' })).toBeVisible();
     await expect(page.getByText('Taught by Dana')).toBeVisible();

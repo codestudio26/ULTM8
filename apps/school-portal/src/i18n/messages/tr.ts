@@ -2807,6 +2807,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Deneyim yılı",
       bio: "Biyografi",
     },
+    team: {
+      panelLabel: "Ekip üyesi",
+      openFullPage: "Tam sayfayı aç",
+      openFullPageAria: "Tam sayfayı aç: {name}",
+      frontDesk: "Resepsiyon ve para",
+      refundsNote: "İadeler ve kredi sende, sahipte kalır.",
+      belts: "Kuşaklar",
+      profileTab: "Profil",
+      sectionsAria: "Ekip üyesi bölümleri",
+      about: "Hakkında",
+      roles: "Roller",
+      nextClasses: "Sonraki dersler",
+      allClasses: "Tüm dersler",
+      removeHeading: "Ekipten çıkar",
+      contact: "İletişim",
+    },
   },
   students: {
     growth: {

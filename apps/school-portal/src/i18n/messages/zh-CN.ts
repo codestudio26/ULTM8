@@ -2768,6 +2768,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "从业年限",
       bio: "简介",
     },
+    team: {
+      panelLabel: "团队成员",
+      openFullPage: "打开完整页面",
+      openFullPageAria: "打开完整页面：{name}",
+      frontDesk: "前台与收款",
+      refundsNote: "退款和余额仍由你（所有者）处理。",
+      belts: "腰带",
+      profileTab: "资料",
+      sectionsAria: "团队成员分区",
+      about: "简介",
+      roles: "角色",
+      nextClasses: "接下来的课程",
+      allClasses: "所有课程",
+      removeHeading: "从团队中移除",
+      contact: "联系方式",
+    },
   },
   students: {
     growth: {

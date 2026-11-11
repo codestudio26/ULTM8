@@ -2807,6 +2807,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Jahre Erfahrung",
       bio: "Über mich",
     },
+    team: {
+      panelLabel: "Teammitglied",
+      openFullPage: "Ganze Seite öffnen",
+      openFullPageAria: "Ganze Seite öffnen: {name}",
+      frontDesk: "Empfang und Geld",
+      refundsNote: "Erstattungen und Guthaben bleiben bei dir, dem Inhaber.",
+      belts: "Gürtel",
+      profileTab: "Profil",
+      sectionsAria: "Bereiche des Teammitglieds",
+      about: "Über",
+      roles: "Rollen",
+      nextClasses: "Nächste Kurse",
+      allClasses: "Alle Kurse",
+      removeHeading: "Aus dem Team entfernen",
+      contact: "Kontakt",
+    },
   },
   students: {
     growth: {

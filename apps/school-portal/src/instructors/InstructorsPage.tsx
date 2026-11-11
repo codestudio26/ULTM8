@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { EmptyState, ErrorBanner, RowActionsMenu, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { matchesNameSearch } from '@ultm8/i18n';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
 import { nullsToUndefined } from '../lib/nullableFields';
-import { Avatar } from '../lib/Avatar';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useInviteStaff } from '../roleGrants/roleGrantQueries';
 import {
@@ -27,6 +26,9 @@ import { InviteToInstructorRoleModal } from './InviteToInstructorRoleModal';
 import { useIsMainOwner } from '../roleGrants/roleGrantQueries';
 import { InstructorBeltsSection } from './InstructorBeltsSection';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookPage } from '../layout/NewLookPage';
+import { TeamSelect } from '../team/TeamSelect';
+import { FrontDeskSwitches, OpenFullPageLink, TeamAvatar, TeamCard, TeamHeader, TeamPanelWho, TeamSearch, pickRow, showPanel, teamPanel } from '../team/TeamParts';
 
 /** Up to 3 specialization badges, then a "+N" overflow badge — keeps a long
  * specializations list from blowing out the row height instead of silently
@@ -36,12 +38,14 @@ function SpecializationBadges({ specializations }: { specializations: string[] }
   const shown = specializations.slice(0, 3);
   const overflow = specializations.length - shown.length;
   return (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 6, alignItems: 'center' }}>
+    <span className="u8t-tags">
       {shown.map((s, idx) => (
-        <Badge key={`${s}-${idx}`}>{s}</Badge>
+        <span key={`${s}-${idx}`} className="u8t-tag u8t-tag--info">
+          {s}
+        </span>
       ))}
-      {overflow > 0 ? <Badge>+{overflow}</Badge> : null}
-    </div>
+      {overflow > 0 ? <span className="u8t-tag">+{overflow}</span> : null}
+    </span>
   );
 }
 
@@ -52,7 +56,6 @@ const AWAITING = '__awaiting__';
 
 export function InstructorsPage() {
   const t = useT();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const schoolId = useOwnedSchoolId();
   // Decision 423 item 10: only the main owner gives the coach role.
@@ -95,6 +98,8 @@ export function InstructorsPage() {
   const [branchFilter, setBranchFilter] = useState('');
   const [styleFilter, setStyleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  // The person in the right-hand panel (the first row until one is picked).
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   // Only the School's owner manages instructors; anyone else who opens this
   // page goes to their own start page instead of a blank one (Decision 311, I11).
@@ -118,158 +123,195 @@ export function InstructorsPage() {
   );
   const filtering = !!(query || branchFilter || styleFilter || statusFilter);
 
+  const selected = instructors.find((i) => i.id === selectedId) ?? instructors[0] ?? null;
+  const nameOf = (i: InstructorResponse) => `${i.firstName} ${i.surname}`.trim();
+  const scopeOf = (i: InstructorResponse) => (i.branchId ? branches.find((b) => b.id === i.branchId)?.name ?? i.branchId : t('instructors.allBranches'));
+  // The belts card below picks a person too, by their account.
+  const pickByUser = (userId: string) => {
+    const match = allInstructors.find((i) => i.userId === userId);
+    if (match) setSelectedId(match.id);
+  };
+
+  // The panel shows only what the list and the belts card don't (DESIGN.md
+  // → "Team member full page": the Coaches Info tab leaves out the belts and
+  // "Open full page ›"): the person, Front desk and money, and the way to
+  // their Grading permissions.
+  const panel = teamPanel(selected ? (
+    <>
+      <TeamPanelWho firstName={selected.firstName} surname={selected.surname} photoUrl={selected.photoUrl} name={nameOf(selected)} />
+      <FrontDeskSwitches schoolId={schoolId} userId={selected.userId} name={nameOf(selected)} />
+      <Link className="u8t-pill u8t-panel-button" to="/grading/permissions">
+        {t('grading.settings.who.link')}
+      </Link>
+    </>
+  ) : null, t('instructors.team.panelLabel'));
+
   return (
     <>
-      {addManuallyNotice?.kind === 'ok' ? <SuccessBanner message={addManuallyNotice.text} /> : null}
-      {addManuallyNotice?.kind === 'warn' ? <ErrorBanner message={addManuallyNotice.text} /> : null}
-      {inviteRoleNotice?.kind === 'ok' ? <SuccessBanner message={inviteRoleNotice.text} /> : null}
-      {inviteRoleNotice?.kind === 'warn' ? <ErrorBanner message={inviteRoleNotice.text} /> : null}
-      <PageHeader
-        title={t('instructors.title')}
-        subtitle={t('instructors.subtitle')}
+      <TeamHeader
+        schoolId={schoolId}
         actions={
           <>
             {isMainOwner ? (
               <>
-                <Button variant="secondary" onClick={() => setInvitingExisting(true)}>
+                <button type="button" className="u8t-pill" onClick={() => setInvitingExisting(true)}>
                   {t('instructors.inviteExisting')}
-                </Button>
-                <Button variant="secondary" onClick={() => setAddingManually(true)}>
+                </button>
+                <button type="button" className="u8t-pill" onClick={() => setAddingManually(true)}>
                   {t('instructors.addManually')}
-                </Button>
+                </button>
               </>
             ) : null}
-            <Button onClick={() => { setCreatePreset(null); setCreating(true); }}>{t('instructors.addInstructor')}</Button>
+            <button type="button" className="u8t-pill u8t-pill--go" onClick={() => { setCreatePreset(null); setCreating(true); }}>
+              {t('instructors.addInstructor')}
+            </button>
           </>
         }
       />
+      {addManuallyNotice?.kind === 'ok' ? <SuccessBanner message={addManuallyNotice.text} /> : null}
+      {addManuallyNotice?.kind === 'warn' ? <ErrorBanner message={addManuallyNotice.text} /> : null}
+      {inviteRoleNotice?.kind === 'ok' ? <SuccessBanner message={inviteRoleNotice.text} /> : null}
+      {inviteRoleNotice?.kind === 'warn' ? <ErrorBanner message={inviteRoleNotice.text} /> : null}
+      <NewLookPage inspector={panel.inspector} inspectorLabel={t('instructors.team.panelLabel')}>
+      <div className="u8t-stack">
       {actionError ? <ErrorBanner message={actionError} /> : null}
-      {isMainOwner === false ? <p className="ultm8-field">{t('roleGrants.staff.mainOwnerOnly')}</p> : null}
-      <Card>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: 12 }}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 200 }}>
-              <Field label={t('instructors.filters.search')} htmlFor="instructors-search">
-                <TextField id="instructors-search" type="search" placeholder={t('instructors.filters.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
-              </Field>
-            </div>
-            {branches.length > 0 ? (
-              <div style={{ minWidth: 160 }}>
-                <Field label={t('instructors.filters.branch')} htmlFor="instructors-branch-filter">
-                  <SelectField
-                    id="instructors-branch-filter"
-                    value={branchFilter}
-                    onChange={(e) => setBranchFilter(e.target.value)}
-                    options={[{ value: '', label: t('instructors.filters.any') }, { value: WHOLE_SCHOOL, label: t('instructors.allBranches') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
-                  />
-                </Field>
-              </div>
-            ) : null}
-            {disciplines.length > 0 ? (
-              <div style={{ minWidth: 160 }}>
-                <Field label={t('instructors.filters.style')} htmlFor="instructors-style-filter">
-                  <SelectField
-                    id="instructors-style-filter"
-                    value={styleFilter}
-                    onChange={(e) => setStyleFilter(e.target.value)}
-                    options={[{ value: '', label: t('instructors.filters.any') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
-                  />
-                </Field>
-              </div>
-            ) : null}
-            <div style={{ minWidth: 140 }}>
-              <Field label={t('instructors.filters.status')} htmlFor="instructors-status-filter">
-                <SelectField
-                  id="instructors-status-filter"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  options={[
-                    { value: '', label: t('instructors.filters.any') },
-                    { value: 'ACTIVE', label: t('lib.instructorStatus.active') },
-                    { value: 'REVOKED', label: t('lib.instructorStatus.revoked') },
-                    { value: AWAITING, label: t('instructors.awaitingFirstLogin') },
-                  ]}
-                />
-              </Field>
-            </div>
-          </div>
-          {/* Decision 226 — archived Instructor profiles are hidden by default. */}
-          <Checkbox label={archivedCount ? t('instructors.showArchivedCount', { count: archivedCount }) : t('instructors.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-        </div>
-        {instructors.length === 0 && filtering ? (
-          <EmptyState title={t('instructors.filters.noMatchTitle')} description={t('instructors.filters.noMatchDescription')} />
-        ) : instructors.length === 0 ? (
-          <EmptyState
-            title={t('instructors.emptyTitle')}
-            description={t('instructors.emptyDescription')}
-          />
-        ) : (
-          <Table<InstructorResponse>
-            rows={instructors}
-            columns={[
-              {
-                key: 'image',
-                header: t('instructors.columnImage'),
-                render: (i) => <Avatar firstName={i.firstName} surname={i.surname} photoUrl={i.photoUrl} />,
-              },
-              { key: 'name', header: t('instructors.columnInstructor'), render: (i) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{`${i.firstName} ${i.surname}`.trim()}{i.archivedAt ? <Badge variant="default">{t('instructors.archived')}</Badge> : null}</div>) },
-              {
-                key: 'specializations',
-                header: t('instructors.columnSpecializations'),
-                render: (i) => <SpecializationBadges specializations={i.specializations} />,
-              },
-              {
-                key: 'scope',
-                header: t('instructors.columnScope'),
-                render: (i) => (i.branchId ? branches.find((b) => b.id === i.branchId)?.name ?? i.branchId : t('instructors.allBranches')),
-              },
-              { key: 'phone', header: t('instructors.columnPhone'), render: (i) => i.phone ?? '—' },
-              // Whether they still hold the Instructor role here (Decision 311, I7).
-              {
-                key: 'status',
-                header: t('instructors.columnStatus'),
-                render: (i) => (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    <Badge variant={i.status === 'ACTIVE' ? 'success' : undefined}>
-                      {i.status === 'ACTIVE' ? t('lib.instructorStatus.active') : t('lib.instructorStatus.revoked')}
-                    </Badge>
-                    {/* Added manually and still on the temporary passcode (Decision 312). */}
-                    {i.awaitingFirstLogin ? <Badge>{t('instructors.awaitingFirstLogin')}</Badge> : null}
-                  </div>
-                ),
-              },
-              {
-                key: 'actions',
-                header: '',
-                render: (i) => (
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Button variant="secondary" onClick={() => navigate(`/instructors/${i.id}`)}>
-                      {t('instructors.view')}
-                    </Button>
-                    <Button variant="secondary" onClick={() => setEditing(i)}>
-                      {t('instructors.edit')}
-                    </Button>
-                    {/* Decision 226 — School Owner/Manager only, idempotent,
-                        blocked (409) by an upcoming Class/TimetableSlot
-                        assignment. Never touches the underlying User or
-                        their INSTRUCTOR RoleGrant. */}
-                    <RowActionsMenu
-                      label={t('instructors.rowActionsAria', { name: `${i.firstName} ${i.surname}`.trim() })}
-                      actions={[
-                        i.archivedAt
-                          ? { label: t('instructors.unarchive'), onClick: () => { setActionError(null); unarchiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.unarchiveFailed')) }); } }
-                          : { label: t('instructors.archive'), onClick: () => { setActionError(null); setConfirmingArchive(i); } },
-                      ]}
-                    />
-                  </div>
-                ),
-              },
+      <TeamCard title={t('instructors.title')} intro={isMainOwner === false ? `${t('instructors.subtitle')} ${t('roleGrants.staff.mainOwnerOnly')}` : t('instructors.subtitle')}>
+        <div className="u8t-toolbar">
+          <TeamSearch id="instructors-search" label={t('instructors.filters.search')} placeholder={t('instructors.filters.searchPlaceholder')} value={search} onChange={setSearch} />
+          {branches.length > 0 ? (
+            <TeamSelect
+              id="instructors-branch-filter"
+              label={t('instructors.filters.branch')}
+              value={branchFilter}
+              onChange={setBranchFilter}
+              options={[{ value: '', label: t('instructors.filters.any') }, { value: WHOLE_SCHOOL, label: t('instructors.allBranches') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+            />
+          ) : null}
+          {disciplines.length > 0 ? (
+            <TeamSelect
+              id="instructors-style-filter"
+              label={t('instructors.filters.style')}
+              value={styleFilter}
+              onChange={setStyleFilter}
+              options={[{ value: '', label: t('instructors.filters.any') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
+            />
+          ) : null}
+          <TeamSelect
+            id="instructors-status-filter"
+            label={t('instructors.filters.status')}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: '', label: t('instructors.filters.any') },
+              { value: 'ACTIVE', label: t('lib.instructorStatus.active') },
+              { value: 'REVOKED', label: t('lib.instructorStatus.revoked') },
+              { value: AWAITING, label: t('instructors.awaitingFirstLogin') },
             ]}
           />
+          {/* Decision 226 — archived Instructor profiles are hidden by default. */}
+          <button type="button" className="u8t-chip" aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}>
+            {archivedCount ? t('instructors.showArchivedCount', { count: archivedCount }) : t('instructors.showArchived')}
+          </button>
+        </div>
+        {instructors.length === 0 && filtering ? (
+          <div className="u8t-state">
+            <EmptyState title={t('instructors.filters.noMatchTitle')} description={t('instructors.filters.noMatchDescription')} />
+          </div>
+        ) : instructors.length === 0 ? (
+          <div className="u8t-state">
+            <EmptyState title={t('instructors.emptyTitle')} description={t('instructors.emptyDescription')} />
+          </div>
+        ) : (
+          <table className="u8t-table">
+            <thead>
+              <tr>
+                <th scope="col">{t('instructors.columnInstructor')}</th>
+                <th scope="col">{t('instructors.columnSpecializations')}</th>
+                <th scope="col">{t('instructors.columnScope')}</th>
+                <th scope="col">{t('instructors.columnPhone')}</th>
+                <th scope="col">{t('instructors.columnStatus')}</th>
+                <th scope="col" />
+              </tr>
+            </thead>
+            <tbody>
+              {instructors.map((i) => (
+                <tr key={i.id} {...pickRow(selected?.id === i.id, () => setSelectedId(i.id))}>
+                  <td className="u8t-c-main">
+                    <div className="u8t-who">
+                      <TeamAvatar firstName={i.firstName} surname={i.surname} photoUrl={i.photoUrl} />
+                      <div className="u8t-who__text">
+                        <button type="button" className="u8t-name" aria-pressed={selected?.id === i.id} onClick={() => { setSelectedId(i.id); showPanel(); }}>
+                          {nameOf(i)}
+                        </button>
+                        {i.archivedAt ? (
+                          <>
+                            {' '}
+                            <span className="u8t-tag">{t('instructors.archived')}</span>
+                          </>
+                        ) : null}
+                        <div>
+                          <OpenFullPageLink to={`/instructors/${i.id}`} name={nameOf(i)} />
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="u8t-k">{t('instructors.columnSpecializations')}: </span>
+                    <SpecializationBadges specializations={i.specializations} />
+                  </td>
+                  <td>
+                    <span className="u8t-k">{t('instructors.columnScope')}: </span>
+                    {scopeOf(i)}
+                  </td>
+                  <td>
+                    <span className="u8t-k">{t('instructors.columnPhone')}: </span>
+                    {i.phone ?? '—'}
+                  </td>
+                  {/* Whether they still hold the Instructor role here (Decision 311, I7). */}
+                  <td className="u8t-c-end">
+                    <div className="u8t-tags">
+                      <span className={'u8t-tag' + (i.status === 'ACTIVE' ? ' u8t-tag--ok' : '')}>
+                        {i.status === 'ACTIVE' ? t('lib.instructorStatus.active') : t('lib.instructorStatus.revoked')}
+                      </span>
+                      {/* Added manually and still on the temporary passcode (Decision 312). */}
+                      {i.awaitingFirstLogin ? <span className="u8t-tag u8t-tag--warn">{t('instructors.awaitingFirstLogin')}</span> : null}
+                    </div>
+                  </td>
+                  <td className="u8t-c-act">
+                    <div className="u8t-actions">
+                      <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setEditing(i)}>
+                        {t('instructors.edit')}
+                      </button>
+                      {/* Decision 226 — School Owner/Manager only, idempotent,
+                          blocked (409) by an upcoming Class/TimetableSlot
+                          assignment. Never touches the underlying User or
+                          their INSTRUCTOR RoleGrant. */}
+                      <RowActionsMenu
+                        label={t('instructors.rowActionsAria', { name: nameOf(i) })}
+                        actions={[
+                          i.archivedAt
+                            ? { label: t('instructors.unarchive'), onClick: () => { setActionError(null); unarchiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.unarchiveFailed')) }); } }
+                            : { label: t('instructors.archive'), onClick: () => { setActionError(null); setConfirmingArchive(i); } },
+                        ]}
+                      />
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
-      </Card>
+      </TeamCard>
+      {panel.underList}
 
-      <InstructorBeltsSection schoolId={schoolId} />
+      <InstructorBeltsSection
+        schoolId={schoolId}
+        selectedUserId={selected?.userId ?? null}
+        onPick={pickByUser}
+        profileOf={(userId) => allInstructors.find((i) => i.userId === userId) ?? null}
+      />
+      </div>
+      </NewLookPage>
 
       {confirmingArchive ? (
         <ConfirmDeleteModal
@@ -366,7 +408,7 @@ export function InstructorsPage() {
   );
 }
 
-function EditInstructorModal({
+export function EditInstructorModal({
   schoolId,
   branches,
   disciplines,

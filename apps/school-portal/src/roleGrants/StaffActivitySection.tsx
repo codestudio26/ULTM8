@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Button, Card, EmptyState, ErrorBanner, Field, SelectField, Spinner } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
+import { TeamCard } from '../team/TeamParts';
+import { TeamSelect } from '../team/TeamSelect';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -97,45 +99,54 @@ export function StaffActivitySection({ schoolId }: { schoolId: string }) {
     new Date(iso).toLocaleString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   return (
-    <Card className="ultm8-field">
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-        {t('roleGrants.activity.heading')}
-      </h2>
-      <p style={{ marginTop: 0 }}>{t('roleGrants.activity.intro')}</p>
-      <Field label={t('roleGrants.activity.personLabel')} htmlFor="staff-activity-person">
-        <SelectField
+    <TeamCard title={t('roleGrants.activity.heading')} intro={t('roleGrants.activity.intro')}>
+      <div className="u8t-toolbar">
+        <TeamSelect
           id="staff-activity-person"
+          label={t('roleGrants.activity.personLabel')}
           value={userId}
-          onChange={(e) => setUserId(e.target.value)}
+          onChange={setUserId}
           options={[
             { value: '', label: t('roleGrants.activity.everyone') },
             ...(people.data?.items ?? []).map((p) => ({ value: p.userId, label: `${p.firstName} ${p.surname}`.trim() })),
           ]}
         />
-      </Field>
+      </div>
       {activity.isLoading ? (
-        <Spinner />
+        <div className="u8t-state">
+          <Spinner />
+        </div>
       ) : activity.error ? (
-        <ErrorBanner message={activity.error instanceof ApiError ? activity.error.message : t('roleGrants.activity.loadFailed')} />
+        <div className="u8t-state">
+          <ErrorBanner message={activity.error instanceof ApiError ? activity.error.message : t('roleGrants.activity.loadFailed')} />
+        </div>
       ) : entries.length === 0 ? (
-        <EmptyState title={t('roleGrants.activity.emptyTitle')} description={t('roleGrants.activity.emptyDescription')} />
+        <div className="u8t-state">
+          <EmptyState title={t('roleGrants.activity.emptyTitle')} description={t('roleGrants.activity.emptyDescription')} />
+        </div>
       ) : (
         <>
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }} aria-label={t('roleGrants.activity.heading')}>
             {entries.map((e) => (
-              <li key={e.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--ultm8-border, #e5e7eb)' }}>
-                <div>{describe(t, e)}</div>
-                <div style={{ fontSize: 13, opacity: 0.75 }}>{when(e.createdAt)}</div>
+              <li key={e.id} className="u8t-li">
+                <span className="u8t-li__main">
+                  <span>{describe(t, e)}</span>
+                  <span className="u8t-sub" style={{ display: 'block' }}>
+                    {when(e.createdAt)}
+                  </span>
+                </span>
               </li>
             ))}
           </ul>
           {activity.hasNextPage ? (
-            <Button variant="secondary" loading={activity.isFetchingNextPage} onClick={() => void activity.fetchNextPage()} style={{ marginTop: 12 }}>
-              {t('roleGrants.activity.loadMore')}
-            </Button>
+            <div className="u8t-state">
+              <Button variant="secondary" loading={activity.isFetchingNextPage} onClick={() => void activity.fetchNextPage()}>
+                {t('roleGrants.activity.loadMore')}
+              </Button>
+            </div>
           ) : null}
         </>
       )}
-    </Card>
+    </TeamCard>
   );
 }

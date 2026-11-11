@@ -10,6 +10,16 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: the Team pages** (Decision 453; visual only). Instructors and
+  Staff open under "Team" with white list cards, our own drop-downs and
+  "Open full page ›" under each name; the picked person sits in a right-hand
+  panel (on a phone, straight under the list) that never repeats the row: on
+  Staff their belts and Front desk and money (the per-person charge and open
+  mat switches, moved there from their own tables), on Instructors Front desk
+  and money and Grading permissions. An instructor's own page gets "‹ Team",
+  Profile and Classes tabs, cards (About, Belts, Front desk and money, Roles,
+  Next classes, Remove from the team) and a Team member panel. Same data, API
+  calls and permissions.
 - **The new look is the School Portal's look, starting with the app shell**
   (Decision 453; visual only). There is no switch and no classic look: the
   portal always sets `data-look="redesign"`, so the new shell and the held-back

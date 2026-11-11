@@ -1,18 +1,20 @@
-import React, { useDeferredValue, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PhoneField, RowActionsMenu, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import React, { useDeferredValue, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button, EmptyState, ErrorBanner, Field, Modal, PhoneField, RowActionsMenu, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
 import type { BranchResponse } from '../branches/branchQueries';
-import { Avatar } from '../lib/Avatar';
 import { ROLE_LABELS } from '../lib/enumLabels';
 import { formatLocale } from '../i18n/format';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useT } from '../i18n/I18nProvider';
 import { RemoveFromSchoolModal } from './RemoveFromSchoolModal';
+import { TeamSelect } from '../team/TeamSelect';
+import { OpenFullPageLink, TeamAvatar, TeamCard, TeamSearch, pickRow, showPanel } from '../team/TeamParts';
 import { StaffAccessModal, presetOf } from './StaffAccessModal';
 import { useHandOverMainOwner, usePauseStaff, useStaffList, useUnpauseStaff, useUpdateStaffDetails, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
 
-/** Table rows need an `id`. */
+/** Rows are keyed by `id`. */
 type StaffRow = StaffMember & { id: string };
 
 /**
@@ -54,6 +56,10 @@ export function StaffListSection({
   onRevokeRole,
   readOnly = false,
   canManageRoles = false,
+  intro,
+  selectedUserId = null,
+  onSelect,
+  fullPageOf,
 }: {
   schoolId: string;
   branches: BranchResponse[];
@@ -61,6 +67,15 @@ export function StaffListSection({
   readOnly?: boolean;
   /** The School's main owner (Decision 423 item 10): may remove and pause. */
   canManageRoles?: boolean;
+  /** The grey line under the card's heading. */
+  intro?: string;
+  /** The person in the page's right-hand panel. */
+  selectedUserId?: string | null;
+  /** Called with the person the panel shows: the one picked, the first row
+   * until one is, and again whenever the list reloads (fresh details). */
+  onSelect?: (person: StaffMember | null) => void;
+  /** Their Instructor profile page, for "Open full page ›" (null: none). */
+  fullPageOf?: (userId: string) => string | null;
 }) {
   const t = useT();
   const [search, setSearch] = useState('');
@@ -122,174 +137,203 @@ export function StaffListSection({
     }
   }
   const iAmMainOwner = (data?.items ?? []).some((p) => p.userId === claims?.sub && p.mainOwner);
+  // Keep the panel's person in step with the list.
+  useEffect(() => {
+    if (!onSelect || !data) return;
+    const items = data.items;
+    onSelect(items.find((p) => p.userId === selectedUserId) ?? items[0] ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onSelect is the page's setter; the list's data and the pick are what matter.
+  }, [data, selectedUserId]);
+  const shownSelected = people.find((p) => p.userId === selectedUserId) ?? people[0] ?? null;
+  const pick = (p: StaffMember) => onSelect?.(p);
+  const roleTags = (p: StaffMember) => {
+    const shown = p.active ? p.roles.filter((r) => !r.revokedAt) : p.paused ? p.roles.filter((r) => r.pausedAt) : p.roles;
+    return (
+      <div className="u8t-tags">
+        {shown.map((r) => (
+          <span key={r.grantId} className={'u8t-tag' + (r.revokedAt ? '' : ' u8t-tag--info')}>
+            {roleText(r, p)}
+          </span>
+        ))}
+        {p.access ? <span className="u8t-tag">{(() => { const preset = presetOf(p.access); return preset ? t(preset) : t('roleGrants.access.custom'); })()}</span> : null}
+      </div>
+    );
+  };
+  const rowActions = (p: StaffMember) => {
+    if (readOnly) return null;
+    const actions = [
+      ...(p.active || p.paused ? [{ label: t('roleGrants.list.editDetails'), onClick: () => setEditing(p) }] : []),
+      // Decision 448 item 6: only the main owner sets the switches.
+      // Decision 449 item 7: a coach's Access window ("Manage students").
+      ...((p.access || p.coachAccess) && canManageRoles ? [{ label: t('roleGrants.access.action'), onClick: () => setSettingAccess(p) }] : []),
+      ...(iAmMainOwner && isCoOwner(p) && p.userId !== claims?.sub
+        ? [{ label: t('roleGrants.list.makeMainOwner'), onClick: () => setHandingOver(p) }]
+        : []),
+      ...(canManageRoles
+        ? [
+            ...removable(p).map((r) =>
+              r.role === 'SCHOOL_OWNER_MANAGER'
+                ? { label: t('roleGrants.list.removeCoOwner'), onClick: () => onRevokeRole(p, r) }
+                : { label: t('roleGrants.list.removeRole', { role: roleText(r) }), onClick: () => onRevokeRole(p, r) },
+            ),
+            ...(pausable(p) ? [{ label: t('roleGrants.list.pause'), onClick: () => setPausing(p) }] : []),
+            ...(p.paused ? [{ label: t('roleGrants.list.unpause'), onClick: () => void unpause(p) }] : []),
+            ...(coachRoles(p).length > 0 ? [{ label: t('roleGrants.list.removeFromSchool'), onClick: () => setConfirmingRemove(p) }] : []),
+          ]
+        : []),
+    ];
+    if (actions.length === 0) return null;
+    return <RowActionsMenu label={t('roleGrants.list.actionsAria', { name: shownName(p) })} actions={actions} />;
+  };
   const isCoOwner = (p: StaffMember) => !p.mainOwner && p.roles.some((r) => !r.revokedAt && r.role === 'SCHOOL_OWNER_MANAGER');
 
   return (
-    <Card className="ultm8-field">
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-        {t('roleGrants.list.heading')}
-      </h2>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap', marginBottom: 12 }}>
-        <div style={{ minWidth: 220 }}>
-          <Field label={t('roleGrants.list.search')} htmlFor="staff-search">
-            <TextField id="staff-search" type="search" placeholder={t('roleGrants.list.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
-          </Field>
-        </div>
-        <div style={{ minWidth: 160 }}>
-          <Field label={t('roleGrants.list.role')} htmlFor="staff-role-filter">
-            <SelectField
-              id="staff-role-filter"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              options={[
-                { value: '', label: t('roleGrants.list.any') },
-                { value: 'SCHOOL_OWNER_MANAGER', label: roleLabel('SCHOOL_OWNER_MANAGER') },
-                { value: 'INSTRUCTOR', label: roleLabel('INSTRUCTOR') },
-                { value: 'BRANCH_STAFF', label: roleLabel('BRANCH_STAFF') },
-              ]}
-            />
-          </Field>
-        </div>
+    <TeamCard
+      title={t('roleGrants.list.heading')}
+      intro={intro}
+      action={
+        readOnly ? undefined : (
+          <Link className="u8t-cardbar__link" to="/grading/permissions">
+            {t('grading.settings.who.link')}
+          </Link>
+        )
+      }
+    >
+      <div className="u8t-toolbar">
+        <TeamSearch id="staff-search" label={t('roleGrants.list.search')} placeholder={t('roleGrants.list.searchPlaceholder')} value={search} onChange={setSearch} />
+        <TeamSelect
+          id="staff-role-filter"
+          label={t('roleGrants.list.role')}
+          value={role}
+          onChange={setRole}
+          options={[
+            { value: '', label: t('roleGrants.list.any') },
+            { value: 'SCHOOL_OWNER_MANAGER', label: roleLabel('SCHOOL_OWNER_MANAGER') },
+            { value: 'INSTRUCTOR', label: roleLabel('INSTRUCTOR') },
+            { value: 'BRANCH_STAFF', label: roleLabel('BRANCH_STAFF') },
+          ]}
+        />
         {branches.length > 0 ? (
-          <div style={{ minWidth: 160 }}>
-            <Field label={t('roleGrants.list.branch')} htmlFor="staff-branch-filter">
-              <SelectField
-                id="staff-branch-filter"
-                value={branchId}
-                onChange={(e) => setBranchId(e.target.value)}
-                options={[{ value: '', label: t('roleGrants.list.any') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
-              />
-            </Field>
-          </div>
+          <TeamSelect
+            id="staff-branch-filter"
+            label={t('roleGrants.list.branch')}
+            value={branchId}
+            onChange={setBranchId}
+            options={[{ value: '', label: t('roleGrants.list.any') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
+          />
         ) : null}
         {readOnly ? null : (
-        <div style={{ minWidth: 140 }}>
-          <Field label={t('roleGrants.list.status')} htmlFor="staff-status-filter">
-            <SelectField
-              id="staff-status-filter"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as StaffListFilters['status'])}
-              options={[
-                { value: 'active', label: t('roleGrants.list.statusActive') },
-                { value: 'paused', label: t('roleGrants.list.statusPaused') },
-                { value: 'removed', label: t('roleGrants.list.statusRemoved') },
-                { value: 'all', label: t('roleGrants.list.statusAll') },
-              ]}
-            />
-          </Field>
-        </div>
+          <TeamSelect
+            id="staff-status-filter"
+            label={t('roleGrants.list.status')}
+            value={status}
+            onChange={(v) => setStatus(v as StaffListFilters['status'])}
+            options={[
+              { value: 'active', label: t('roleGrants.list.statusActive') },
+              { value: 'paused', label: t('roleGrants.list.statusPaused') },
+              { value: 'removed', label: t('roleGrants.list.statusRemoved') },
+              { value: 'all', label: t('roleGrants.list.statusAll') },
+            ]}
+          />
         )}
       </div>
 
-      {handedOverTo ? <SuccessBanner message={t('roleGrants.list.handOverDone', { name: handedOverTo })} /> : null}
-      {savedFor ? <SuccessBanner message={t('roleGrants.list.detailsSaved', { name: savedFor })} /> : null}
-      {accessSavedFor ? <SuccessBanner message={t('roleGrants.access.saved', { name: accessSavedFor })} /> : null}
-      {pauseNotice ? <SuccessBanner message={pauseNotice} /> : null}
-      {unpauseError ? <ErrorBanner message={unpauseError} /> : null}
-      {error ? <ErrorBanner message={t('roleGrants.list.loadFailed')} /> : null}
+      <div className="u8t-banners">
+        {handedOverTo ? <SuccessBanner message={t('roleGrants.list.handOverDone', { name: handedOverTo })} /> : null}
+        {savedFor ? <SuccessBanner message={t('roleGrants.list.detailsSaved', { name: savedFor })} /> : null}
+        {accessSavedFor ? <SuccessBanner message={t('roleGrants.access.saved', { name: accessSavedFor })} /> : null}
+        {pauseNotice ? <SuccessBanner message={pauseNotice} /> : null}
+        {unpauseError ? <ErrorBanner message={unpauseError} /> : null}
+        {error ? <ErrorBanner message={t('roleGrants.list.loadFailed')} /> : null}
+      </div>
       {isLoading ? (
-        <Spinner />
+        <div className="u8t-state">
+          <Spinner />
+        </div>
       ) : people.length === 0 ? (
-        filtering ? (
-          <EmptyState title={t('roleGrants.list.noMatchTitle')} description={t('roleGrants.list.noMatchDescription')} />
-        ) : (
-          <EmptyState title={t('roleGrants.list.emptyTitle')} description={t('roleGrants.list.emptyDescription')} />
-        )
+        <div className="u8t-state">
+          {filtering ? (
+            <EmptyState title={t('roleGrants.list.noMatchTitle')} description={t('roleGrants.list.noMatchDescription')} />
+          ) : (
+            <EmptyState title={t('roleGrants.list.emptyTitle')} description={t('roleGrants.list.emptyDescription')} />
+          )}
+        </div>
       ) : (
-        <Table<StaffRow>
-          rows={people}
-          columns={[
-            {
-              key: 'person',
-              header: t('roleGrants.list.columnPerson'),
-              render: (p) => (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Avatar firstName={p.firstName} surname={p.surname} photoUrl={p.profilePhotoUrl ?? null} />
-                  <div>
-                    <div>{shownName(p)}</div>
-                    {p.displayName ? <div style={{ fontSize: 13, opacity: 0.75 }}>{t('roleGrants.list.accountName', { name: fullName(p) })}</div> : null}
-                    <div style={{ fontSize: 13, opacity: 0.75 }}>{p.email}</div>
-                  </div>
-                </div>
-              ),
-            },
-            {
-              key: 'phone',
-              header: t('roleGrants.list.columnPhone'),
-              render: (p) =>
-                p.workPhone ? (
-                  <div>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      {p.workPhone} <Badge>{t('roleGrants.list.workPhoneTag')}</Badge>
+        <table className="u8t-table">
+          <thead>
+            <tr>
+              <th scope="col">{t('roleGrants.list.columnPerson')}</th>
+              <th scope="col">{t('roleGrants.list.columnPhone')}</th>
+              <th scope="col">{t('roleGrants.list.columnRoles')}</th>
+              <th scope="col">{t('roleGrants.list.columnAdded')}</th>
+              <th scope="col">{t('roleGrants.list.columnStatus')}</th>
+              {readOnly ? null : <th scope="col" />}
+            </tr>
+          </thead>
+          <tbody>
+            {people.map((p) => {
+              const full = fullPageOf?.(p.userId) ?? null;
+              const row = onSelect ? pickRow(shownSelected?.userId === p.userId, () => pick(p)) : {};
+              return (
+                <tr key={p.id} {...row}>
+                  <td className="u8t-c-main">
+                    <div className="u8t-who">
+                      <TeamAvatar firstName={p.firstName} surname={p.surname} photoUrl={p.profilePhotoUrl ?? null} />
+                      <div className="u8t-who__text">
+                        {onSelect ? (
+                          <button type="button" className="u8t-name" aria-pressed={shownSelected?.userId === p.userId} onClick={() => { pick(p); showPanel(); }}>
+                            {shownName(p)}
+                          </button>
+                        ) : (
+                          <span className="u8t-name">{shownName(p)}</span>
+                        )}
+                        {p.displayName ? <div className="u8t-sub">{t('roleGrants.list.accountName', { name: fullName(p) })}</div> : null}
+                        <div className="u8t-sub">{p.email}</div>
+                        {full ? (
+                          <div>
+                            <OpenFullPageLink to={full} name={shownName(p)} />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                    {p.phone ? <div style={{ fontSize: 13, opacity: 0.75 }}>{p.phone}</div> : null}
-                  </div>
-                ) : (
-                  p.phone ?? '—'
-                ),
-            },
-            {
-              key: 'roles',
-              header: t('roleGrants.list.columnRoles'),
-              render: (p) => {
-                const shown = p.active ? p.roles.filter((r) => !r.revokedAt) : p.paused ? p.roles.filter((r) => r.pausedAt) : p.roles;
-                return (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {shown.map((r) => (
-                      <Badge key={r.grantId} variant={r.revokedAt ? undefined : 'accent'}>
-                        {roleText(r, p)}
-                      </Badge>
-                    ))}
-                    {p.access ? <Badge>{(() => { const preset = presetOf(p.access); return preset ? t(preset) : t('roleGrants.access.custom'); })()}</Badge> : null}
-                  </div>
-                );
-              },
-            },
-            { key: 'added', header: t('roleGrants.list.columnAdded'), render: (p) => date(p.addedAt) },
-            {
-              key: 'status',
-              header: t('roleGrants.list.columnStatus'),
-              render: (p) =>
-                p.active ? (
-                  <Badge variant="success">{t('roleGrants.list.statusActive')}</Badge>
-                ) : p.paused ? (
-                  <Badge variant="warning">{t('roleGrants.list.pausedOn', { date: date(p.pausedAt!) })}</Badge>
-                ) : (
-                  <Badge>{t('roleGrants.list.removedOn', { date: date(p.removedAt!) })}</Badge>
-                ),
-            },
-            {
-              key: 'actions',
-              header: '',
-              render: (p) => {
-                if (readOnly) return null;
-                const actions = [
-                  ...(p.active || p.paused ? [{ label: t('roleGrants.list.editDetails'), onClick: () => setEditing(p) }] : []),
-                  // Decision 448 item 6: only the main owner sets the switches.
-                  // Decision 449 item 7: a coach's Access window ("Manage students").
-                  ...((p.access || p.coachAccess) && canManageRoles ? [{ label: t('roleGrants.access.action'), onClick: () => setSettingAccess(p) }] : []),
-                  ...(iAmMainOwner && isCoOwner(p) && p.userId !== claims?.sub
-                    ? [{ label: t('roleGrants.list.makeMainOwner'), onClick: () => setHandingOver(p) }]
-                    : []),
-                  ...(canManageRoles
-                    ? [
-                        ...removable(p).map((r) =>
-                          r.role === 'SCHOOL_OWNER_MANAGER'
-                            ? { label: t('roleGrants.list.removeCoOwner'), onClick: () => onRevokeRole(p, r) }
-                            : { label: t('roleGrants.list.removeRole', { role: roleText(r) }), onClick: () => onRevokeRole(p, r) },
-                        ),
-                        ...(pausable(p) ? [{ label: t('roleGrants.list.pause'), onClick: () => setPausing(p) }] : []),
-                        ...(p.paused ? [{ label: t('roleGrants.list.unpause'), onClick: () => void unpause(p) }] : []),
-                        ...(coachRoles(p).length > 0 ? [{ label: t('roleGrants.list.removeFromSchool'), onClick: () => setConfirmingRemove(p) }] : []),
-                      ]
-                    : []),
-                ];
-                if (actions.length === 0) return null;
-                return <RowActionsMenu label={t('roleGrants.list.actionsAria', { name: shownName(p) })} actions={actions} />;
-              },
-            },
-          ]}
-        />
+                  </td>
+                  <td>
+                    <span className="u8t-k">{t('roleGrants.list.columnPhone')}: </span>
+                    {p.workPhone ? (
+                      <>
+                        <span className="u8t-belt">
+                          {p.workPhone} <span className="u8t-tag">{t('roleGrants.list.workPhoneTag')}</span>
+                        </span>
+                        {p.phone ? <div className="u8t-sub">{p.phone}</div> : null}
+                      </>
+                    ) : (
+                      p.phone ?? '—'
+                    )}
+                  </td>
+                  <td>{roleTags(p)}</td>
+                  <td>
+                    <span className="u8t-k">{t('roleGrants.list.columnAdded')}: </span>
+                    {date(p.addedAt)}
+                  </td>
+                  <td className="u8t-c-end">
+                    {p.active ? (
+                      <span className="u8t-tag u8t-tag--ok">{t('roleGrants.list.statusActive')}</span>
+                    ) : p.paused ? (
+                      <span className="u8t-tag u8t-tag--warn">{t('roleGrants.list.pausedOn', { date: date(p.pausedAt!) })}</span>
+                    ) : (
+                      <span className="u8t-tag">{t('roleGrants.list.removedOn', { date: date(p.removedAt!) })}</span>
+                    )}
+                  </td>
+                  {readOnly ? null : (
+                    <td className="u8t-c-act">
+                      <div className="u8t-actions">{rowActions(p)}</div>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       )}
 
       {confirmingRemove ? (
@@ -353,7 +397,7 @@ export function StaffListSection({
           onClose={() => setHandingOver(null)}
         />
       ) : null}
-    </Card>
+    </TeamCard>
   );
 }
 

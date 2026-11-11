@@ -2885,6 +2885,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Опыт (лет)",
       bio: "О себе",
     },
+    team: {
+      panelLabel: "Участник команды",
+      openFullPage: "Открыть всю страницу",
+      openFullPageAria: "Открыть всю страницу: {name}",
+      frontDesk: "Ресепшен и деньги",
+      refundsNote: "Возвраты и кредит остаются за вами, владельцем.",
+      belts: "Пояса",
+      profileTab: "Профиль",
+      sectionsAria: "Разделы участника команды",
+      about: "О себе",
+      roles: "Роли",
+      nextClasses: "Ближайшие занятия",
+      allClasses: "Все занятия",
+      removeHeading: "Убрать из команды",
+      contact: "Контакты",
+    },
   },
   students: {
     growth: {

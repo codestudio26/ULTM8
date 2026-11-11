@@ -17,7 +17,7 @@ test.afterAll(async () => {
 });
 
 type Page = import('@playwright/test').Page;
-const listCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Your staff' });
+const listCard = (page: Page) => page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) });
 const listRow = (page: Page, name: string) => listCard(page).getByRole('row').filter({ hasText: name });
 
 test('an owner sets and clears a display name and work phone', async ({ page }) => {

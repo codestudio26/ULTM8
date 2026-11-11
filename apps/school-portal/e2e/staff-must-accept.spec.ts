@@ -28,7 +28,7 @@ test('with the setting on, "Give role" sends a Branch Staff invite instead', asy
   await expect(setting).toHaveAttribute('aria-checked', 'true');
   await expect.poll(async () => (await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).staffMustAcceptFirst).toBe(true);
 
-  const card = page.locator('.ultm8-card').filter({ hasText: 'Give a role' });
+  const card = page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Give a role' }) });
   await card.getByLabel('Email').fill(bea.email);
   await card.getByRole('button', { name: 'Find' }).click();
   await expect(card.getByText('Found Bea Hire.')).toBeVisible();

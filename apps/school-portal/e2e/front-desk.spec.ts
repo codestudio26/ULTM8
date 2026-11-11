@@ -335,8 +335,12 @@ test('the owner lets a coach start open mats from the Staff page; the coach then
   const coach = await addPerson('Cora', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
-  await expect(page.getByRole('heading', { name: 'Open mat sessions' })).toBeVisible();
-  await page.getByLabel('Cora Coach can start open mat sessions').check();
+  // Picking her shows her switches in the panel (DESIGN.md → "Team member full page").
+  await page.getByRole('button', { name: 'Cora Coach', exact: true }).click();
+  const allowed = page.getByRole('switch', { name: 'Cora Coach can start open mat sessions' });
+  await expect(allowed).toHaveAttribute('aria-checked', 'false');
+  await allowed.click();
+  await expect(allowed).toHaveAttribute('aria-checked', 'true');
   await expect.poll(async () => (await db.staffPermission.findFirst({ where: { schoolId: s.schoolId, userId: coach.id } }))?.canStartOpenMat).toBe(true);
 
   await signIn(page, coach.token);

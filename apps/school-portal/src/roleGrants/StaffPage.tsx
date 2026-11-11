@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, PhoneField, SelectField, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
@@ -20,14 +20,15 @@ import {
 } from './roleGrantQueries';
 import { StaffListSection } from './StaffListSection';
 import { CoachInvitesSection } from './CoachInvitesSection';
-import { OpenMatPermissions } from '../frontdesk/OpenMatPermissions';
-import { ChargePermissions } from '../charges/ChargePermissions';
 import { StaffActivitySection } from './StaffActivitySection';
 import { AddStaffManuallyModal } from './AddStaffManuallyModal';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useT } from '../i18n/I18nProvider';
 import { ROLE_LABELS } from '../lib/enumLabels';
 import { Trans } from '../i18n/Trans';
+import { NewLookPage } from '../layout/NewLookPage';
+import { useInstructors } from '../instructors/instructorQueries';
+import { FrontDeskSwitches, PersonBelts, TeamCard, TeamHeader, TeamPanelWho, teamPanel } from '../team/TeamParts';
 
 /**
  * Invite / revoke Instructor or Branch Staff — the one confirmed RoleGrant authority
@@ -93,6 +94,10 @@ export function StaffPage() {
   const [addManuallyNotice, setAddManuallyNotice] = useState<{ kind: 'ok' | 'warn'; text: string } | null>(null);
 
   const [confirmingRevoke, setConfirmingRevoke] = useState<{ person: StaffMember; role: StaffRoleEntry } | null>(null);
+  // The person in the right-hand panel (the list keeps it in step).
+  const [selected, setSelected] = useState<StaffMember | null>(null);
+  // Their Instructor profile, for "Open full page ›" on the list.
+  const instructors = useInstructors(schoolId);
 
   // Owner only, except Branch Staff whose owner lets them see the staff list
   // (Decision 387), who get it read only; anyone else goes to their own home
@@ -196,16 +201,30 @@ export function StaffPage() {
     await revokeGrant.mutateAsync({ targetUserId: person.userId, roleGrantId: role.grantId });
   }
 
+  const panel = teamPanel(
+    selected ? (
+      // The Staff list shows each person's roles, branches and "Open
+      // full page ›", and its heading the Grading permissions link, so
+      // the panel shows what it doesn't (DESIGN.md → "Team member full
+      // page"): their belts and Front desk and money.
+      <>
+        <TeamPanelWho firstName={selected.firstName} surname={selected.surname} photoUrl={selected.profilePhotoUrl ?? null} name={selected.displayName ?? `${selected.firstName} ${selected.surname}`.trim()} />
+        <PersonBelts schoolId={schoolId} userId={selected.userId} />
+        <FrontDeskSwitches schoolId={schoolId} userId={selected.userId} name={`${selected.firstName} ${selected.surname}`.trim()} />
+      </>
+    ) : null,
+    t('instructors.team.panelLabel'),
+  );
+
   return (
     <>
-      <PageHeader
-        title={t('roleGrants.staff.title')}
-        subtitle={t('roleGrants.staff.subtitle')}
+      <TeamHeader
+        schoolId={schoolId}
         actions={
           isMainOwner ? (
-            <Button variant="secondary" onClick={() => setAddingManually(true)}>
+            <button type="button" className="u8t-pill" onClick={() => setAddingManually(true)}>
               {t('roleGrants.staff.addManuallyButton')}
-            </Button>
+            </button>
           ) : undefined
         }
       />
@@ -213,20 +232,28 @@ export function StaffPage() {
       {addManuallyNotice?.kind === 'ok' ? <SuccessBanner message={addManuallyNotice.text} /> : null}
       {addManuallyNotice?.kind === 'warn' ? <ErrorBanner message={addManuallyNotice.text} /> : null}
 
-      <StaffListSection
-        schoolId={schoolId}
-        branches={branches}
-        canManageRoles={!!isMainOwner}
-        onRevokeRole={(person, role) => setConfirmingRevoke({ person, role })}
-      />
+      <NewLookPage
+        inspectorLabel={t('instructors.team.panelLabel')}
+        inspector={panel.inspector}
+      >
+        <div className="u8t-stack">
+          <StaffListSection
+            schoolId={schoolId}
+            branches={branches}
+            canManageRoles={!!isMainOwner}
+            onRevokeRole={(person, role) => setConfirmingRevoke({ person, role })}
+            intro={t('roleGrants.staff.subtitle')}
+            selectedUserId={selected?.userId ?? null}
+            onSelect={setSelected}
+            fullPageOf={(userId) => {
+              const profile = instructors.data?.items.find((i) => i.userId === userId);
+              return profile ? `/instructors/${profile.id}` : null;
+            }}
+          />
+          {panel.underList}
 
-      <Card className="ultm8-field">
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-          {t('roleGrants.staff.inviteHeading')}
-        </h2>
-        <p className="ultm8-field">
-          {t('roleGrants.staff.inviteIntro')}
-        </p>
+          <TeamCard title={t('roleGrants.staff.inviteHeading')} intro={t('roleGrants.staff.inviteIntro')}>
+            <div className="u8t-card__body">
         {settingsError ? <ErrorBanner message={settingsError} /> : null}
         <div className="ultm8-field">
           <Switch
@@ -306,15 +333,14 @@ export function StaffPage() {
             </div>
           </form>
         )}
-      </Card>
+            </div>
+          </TeamCard>
 
-      <CoachInvitesSection schoolId={schoolId} canManage={isMainOwner} />
-      {/* Decision 386: who may start an open mat from the Check-in page. */}
-      <OpenMatPermissions schoolId={schoolId} />
-      {/* Decisions 303, 338: who may create and cancel charges. */}
-      <ChargePermissions schoolId={schoolId} />
-      {/* Decision 408: who changed what on this page. */}
-      <StaffActivitySection schoolId={schoolId} />
+          <CoachInvitesSection schoolId={schoolId} canManage={isMainOwner} />
+          {/* Decision 408: who changed what on this page. */}
+          <StaffActivitySection schoolId={schoolId} />
+        </div>
+      </NewLookPage>
 
       {confirmingRevoke?.role.role === 'SCHOOL_OWNER_MANAGER' ? (
         <ConfirmDeleteModal
@@ -379,8 +405,10 @@ function BranchStaffListPage() {
   if (!access.data?.access.staffList) return <Navigate to="/" replace />;
   return (
     <>
-      <PageHeader title={t('roleGrants.staff.title')} subtitle={t('roleGrants.access.readOnlyIntro')} />
-      <StaffListSection schoolId={coachSchoolId} branches={branchData?.items ?? []} onRevokeRole={() => undefined} readOnly />
+      <TeamHeader schoolId={coachSchoolId} />
+      <NewLookPage>
+        <StaffListSection schoolId={coachSchoolId} branches={branchData?.items ?? []} onRevokeRole={() => undefined} readOnly intro={t('roleGrants.access.readOnlyIntro')} />
+      </NewLookPage>
     </>
   );
 }
