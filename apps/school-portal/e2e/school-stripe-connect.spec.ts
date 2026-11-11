@@ -152,10 +152,10 @@ test('Decision 442 item 3: Branch Staff connect Stripe only once an owner switch
   await expect(page.getByText('Access saved for Dee Desk.')).toBeVisible();
   expect((await db.staffPermission.findFirstOrThrow({ where: { userId: dee.id, schoolId: s.schoolId } })).canConnectStripe).toBe(true);
 
-  // Now "Stripe account" is in their menu, with the Stripe card and nothing else of the School page.
+  // Now the Stripe account is in their menu (Organisation, its only page there), with the Stripe card and nothing else of the School page.
   await signIn(page, dee.token);
   await page.goto('/timetable');
-  await page.getByRole('link', { name: 'Stripe account' }).click();
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Organisation' }).click();
   await expect(page).toHaveURL(/\/school$/);
   await expect(page.getByTestId('school-settings')).toHaveCount(0);
   const card = page.getByTestId('school-stripe-connect');

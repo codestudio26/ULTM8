@@ -8214,3 +8214,18 @@ All confirmed as built in #538 and #539, except item 7, which is built with this
 
 User (Code), 11 Nov 2026: "ok to all", answering the choices to confirm on #539 (items 1–6) and the two points on #538 (items 7–8).
 
+---
+
+## Decision 453 — The new look is the portal's look: no switch, no classic look
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Replaces:** the 20 Oct 2026 rule "the live app stays untouched until the new look goes live" (DESIGN-BRIEF §8 "Live app stays untouched", FORMS-F-ROLLOUT, DESIGN.md "Fixes for the current app's styles, held back until the new look goes live")
+
+### Decision
+
+1. **The new look goes live as each page is built.** The School Portal always sets `data-look="redesign"` on `<html>`, so the app shell (PR #541) and every `[data-look='redesign']` style, including `packages/ui/src/redesign-fixes.css`, apply now.
+2. **There is no "Try the new look" switch and no classic look** to go back to. Each later page PR (one page per PR) changes the live page directly.
+3. This is a visual change only. Business rules, the data model, API contracts, tenancy/RLS and who sees which page are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026, on the first draft of #541, which had put the new shell behind a switch: "NO the new look is what we are going for. Stop creating thing I have not ask for".

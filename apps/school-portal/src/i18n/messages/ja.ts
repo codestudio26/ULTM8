@@ -36,6 +36,17 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "{count} 件の結果",
       },
     },
+    newLook: {
+      menuLabel: "メインメニュー",
+      sectionPages: "{section}のページ",
+      groups: {
+        team: "チーム",
+        schedule: "スケジュール",
+        billing: "請求",
+        organisation: "組織",
+        settings: "設定",
+      },
+    },
     notificationsAria: "通知",
     languageAria: "言語",
     accountMenu: {

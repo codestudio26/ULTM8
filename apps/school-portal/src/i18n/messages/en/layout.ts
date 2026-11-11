@@ -19,6 +19,18 @@ export const layout = {
       other: '{count} results',
     },
   },
+  /** The side menu and section tabs (NewLookShell.tsx). */
+  newLook: {
+    menuLabel: "Main menu",
+    sectionPages: "{section} pages",
+    groups: {
+      team: "Team",
+      schedule: "Schedule",
+      billing: "Billing",
+      organisation: "Organisation",
+      settings: "Settings",
+    },
+  },
   notificationsAria: 'Notifications',
   languageAria: 'Language',
   accountMenu: {

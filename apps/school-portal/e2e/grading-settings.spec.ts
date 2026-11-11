@@ -20,7 +20,7 @@ test.afterAll(async () => {
 test('the owner changes columns, the promotion fee and open mat hours, then saves once', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/grading');
-  await page.getByRole('navigation', { name: 'Grading' }).getByRole('link', { name: 'Settings' }).click();
+  await page.getByRole('navigation', { name: 'Grading', exact: true }).getByRole('link', { name: 'Settings' }).click();
   await expect(page).toHaveURL(/\/grading\/settings$/);
 
   await page.getByLabel('BJJ: "Getting There" from (%)').fill('50');

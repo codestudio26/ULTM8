@@ -342,7 +342,9 @@ test('Branch Staff see their own branch on a read-only timetable and book walk-i
 
   await signIn(page, staff.token);
   await page.goto('/coach');
-  await page.getByRole('navigation').getByRole('link', { name: 'Timetable' }).click();
+  // Timetable is a page of Schedule.
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Schedule' }).click();
+  await page.getByRole('navigation', { name: 'Schedule pages' }).getByRole('link', { name: 'Timetable' }).click();
   await expect(page.getByRole('heading', { name: 'Timetable' })).toBeVisible();
   await expect(page.getByText('North Fundamentals')).toBeVisible();
   await expect(page.getByText('Open Mat')).toBeVisible();
@@ -365,7 +367,10 @@ test('an Instructor still has no Timetable screen', async ({ page }) => {
   const coach = await addPerson('Ian', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, coach.token);
   await page.goto('/coach');
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'Timetable' })).toHaveCount(0);
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Schedule' }).click();
+  await expect(page.getByRole('navigation', { name: 'Schedule pages' }).getByRole('link', { name: 'Curriculum' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Schedule pages' }).getByRole('link', { name: 'Timetable' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Timetable' })).toHaveCount(0);
   await page.goto('/timetable');
   await expect(page).not.toHaveURL(/\/timetable$/);
 });

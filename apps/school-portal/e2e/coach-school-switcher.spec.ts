@@ -103,8 +103,9 @@ test('an owner who also coaches at another School picks it in the switcher and g
   await signIn(page, person.token);
   await page.goto('/');
   await expect(page).toHaveURL(/\/dashboard$/);
-  const nav = page.getByRole('navigation');
-  await expect(nav.getByRole('link', { name: 'Transactions' })).toBeVisible();
+  const nav = page.getByRole('navigation', { name: 'Main menu' });
+  // Transactions is a page of Billing.
+  await expect(nav.getByRole('link', { name: 'Billing' })).toBeVisible();
 
   // Typing /coach as an owner goes back to the owner's home: its links would open the owned School.
   await page.goto('/coach');
@@ -117,7 +118,7 @@ test('an owner who also coaches at another School picks it in the switcher and g
   await expect(page).toHaveURL(/\/coach$/);
   await expect(page.getByRole('heading', { name: 'Coach dashboard' })).toBeVisible();
   await expect(page.getByText(coachedSchool.name, { exact: true }).first()).toBeVisible();
-  await expect(nav.getByRole('link', { name: 'Transactions' })).toHaveCount(0);
+  await expect(nav.getByRole('link', { name: 'Billing' })).toHaveCount(0);
   await expect(page.getByText('Coach', { exact: true })).toBeVisible(); // role in the header (CP6)
 
   // The Grading link now opens the coached School's board, where they may promote.

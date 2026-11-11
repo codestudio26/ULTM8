@@ -1,21 +1,19 @@
 # Form pattern "F": site-wide rollout plan
 
-The product owner chose this on 20 Oct 2026: "apply F to the other forms and any form across the site". The live app must not change until the new look goes live.
+The product owner chose this on 20 Oct 2026: "apply F to the other forms and any form across the site". Since 11 Nov 2026 the new look is the portal's only look, with no switch (Decision 453): each form goes live as it is rebuilt.
 
 Pattern F is specified in DESIGN.md → Patterns → Form pattern "F". The reference build is the vision's **4 · Add student**.
 
-## What already applies everywhere (behind the new-look switch)
+## What already applies everywhere
 
 `packages/ui/src/redesign-fixes.css` §4 gives **every** existing form field F's soft look:
 - grey fill, 52px tall, 14px corners
 - a slate ring on focus
 - 14px regular labels
 
-This covers Input, Textarea, Select, and the time zone / currency / phone pickers. So all 44 forms below get it automatically when `data-look="redesign"` is set.
+This covers Input, Textarea, Select, and the time zone / currency / phone pickers. So all 44 forms below get it automatically, because the portal always sets `data-look="redesign"`.
 
 One difference from Add student: the fields keep a faint 1px outline. Many existing forms sit on the grey page background, and without the outline a grey field would disappear into it.
-
-**Live app check:** a check comparing `master` with the redesign branch, switch off, finds 0 differences across all 113 component classes, in light and dark mode.
 
 ## What needs each form rebuilt: chapters + live preview
 
@@ -23,7 +21,7 @@ Full F suits **long create/edit forms**, where staff build a record and benefit 
 
 Short forms (sign-in, single-purpose modals, search/lookup bars) keep their current layout and only take the field look. Splitting a 2-field modal into numbered chapters would add length, not clarity.
 
-Rebuilding a page changes that page's code. Each rebuild therefore happens **behind the new-look switch**, so the live page is unchanged, and only with the product owner's go-ahead.
+Rebuilding a page changes that page's code, and the rebuilt page is live as soon as it merges (Decision 453). Each rebuild happens only with the product owner's go-ahead.
 
 ### Full F: chapters + live preview (22)
 

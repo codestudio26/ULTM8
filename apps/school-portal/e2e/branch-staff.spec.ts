@@ -34,9 +34,9 @@ test('Branch Staff with grading permission land on the dashboard and use the boa
   await expect(page).toHaveURL(/\/coach$/);
   await expect(page.getByText('Branch Staff', { exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Grading' }).getByText('1 ready to grade')).toBeVisible();
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'Invite coaches' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Invite coaches' })).toHaveCount(0);
 
-  await page.getByRole('navigation').getByRole('link', { name: 'Grading', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Grading', exact: true }).click();
   await expect(page.getByRole('listitem', { name: s.student.name })).toBeVisible();
 });
 
@@ -46,7 +46,7 @@ test('Branch Staff no longer invite coaches: the old page says only the main own
   await db.staffPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: staff.id, canSeeStaffList: true, canManageClasses: true } });
   await signIn(page, staff.token);
   await page.goto('/coach');
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'Invite coaches' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Invite coaches' })).toHaveCount(0);
   await page.goto('/coach-invites');
   await expect(page.getByText("Only the account's main owner can add or remove people.")).toBeVisible();
   await expect(page.getByLabel("Coach's email")).toHaveCount(0);

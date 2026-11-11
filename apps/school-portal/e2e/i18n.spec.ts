@@ -40,7 +40,9 @@ test('picking Portuguese in the header translates the menu and the page', async 
 
   await expect(page.getByRole('heading', { name: 'Notificações' })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Alunos' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Sair' })).toBeVisible();
+  // Log out, in the account menu.
+  await page.getByRole('navigation', { name: 'Menu principal' }).locator('button[aria-haspopup="menu"]').click();
+  await expect(page.getByRole('menuitem', { name: 'Sair' })).toBeVisible();
   // Saved to the profile, so it survives a reload.
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Notificações' })).toBeVisible();

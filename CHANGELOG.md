@@ -10,6 +10,19 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **The new look is the School Portal's look, starting with the app shell**
+  (Decision 453; visual only). There is no switch and no classic look: the
+  portal always sets `data-look="redesign"`, so the new shell and the held-back
+  style fixes (`redesign-fixes.css`) are live. The shell (DESIGN-BRIEF §8,
+  design D): a 248px labelled side menu grouped as Dashboard, Students, Team,
+  Schedule, Grading, Billing, Waivers, Organisation and Notifications, with
+  Settings and the signed-in person (My profile, Log out) at the foot; a
+  group's other pages as tabs at the top, with What's new, the bell, the
+  School switcher and language beside them; a sticky sideways top bar on
+  phones; light (white) and dark (Pine) menus. The menu lists exactly the
+  pages each person could open before, so nobody sees more or less. Pages
+  render as they are; later PRs redesign them one at a time.
+
 - **The owner's dispute notice calls a fee a "fee payment"** (Decision 452
   item 7). A dispute on a freeze, late-cancel or no-show fee used to be
   described as a "Membership payment"; it now reads "fee payment", in all 15

@@ -14,11 +14,22 @@ import { useT } from '../i18n/I18nProvider';
  *
  * "School settings" follows the sidebar exactly (Shell.tsx): it shows wherever
  * the sidebar's own "School" link does — everyone except a coach/Branch Staff
- * member who doesn't own the School. "Log out" calls the same `logout()` the
- * sidebar's button does; the menu's items only exist while it is open, so the
- * sidebar button stays the only "Log out" button on the page.
+ * member who doesn't own the School. "Log out" is here, in this menu.
+ *
+ * `placement="up"` opens the menu above the button (the side menu has it at
+ * the very bottom of the screen); `compact` shows just the photo (phones).
  */
-export function AccountMenu({ me, roleLabel }: { me: CurrentUserResponse; roleLabel: string }) {
+export function AccountMenu({
+  me,
+  roleLabel,
+  placement = 'down',
+  compact = false,
+}: {
+  me: CurrentUserResponse;
+  roleLabel: string;
+  placement?: 'down' | 'up';
+  compact?: boolean;
+}) {
   const t = useT();
   const { logout } = useAuth();
   const isCoachOnly = useIsCoachOnly();
@@ -103,10 +114,14 @@ export function AccountMenu({ me, roleLabel }: { me: CurrentUserResponse; roleLa
         }}
       >
         <Avatar firstName={me.firstName} surname={me.surname} photoUrl={me.profilePhotoUrl} size={34} />
-        <div style={{ lineHeight: 1.25 }}>
-          <div style={{ fontSize: 14 }}>{fullName}</div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{roleLabel}</div>
-        </div>
+        {compact ? (
+          <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>{fullName}</span>
+        ) : (
+          <div style={{ lineHeight: 1.25, minWidth: 0 }}>
+            <div style={{ fontSize: 14 }}>{fullName}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{roleLabel}</div>
+          </div>
+        )}
       </button>
       {open ? (
         <div
@@ -115,7 +130,11 @@ export function AccountMenu({ me, roleLabel }: { me: CurrentUserResponse; roleLa
           role="menu"
           aria-label={t('layout.accountMenu.label')}
           className="ultm8-row-actions__menu"
-          style={{ insetInlineEnd: 0, right: 'auto', minWidth: 240 }}
+          style={
+            placement === 'up'
+              ? { insetInlineStart: 0, insetInlineEnd: 0, right: 'auto', left: 'auto', top: 'auto', bottom: 'calc(100% + 4px)', minWidth: 0 }
+              : { insetInlineEnd: 0, right: 'auto', minWidth: 240 }
+          }
           onKeyDown={onMenuKeyDown}
         >
           <div role="presentation" style={{ padding: '8px 12px 10px', borderBottom: '1px solid var(--border)', marginBottom: 4 }}>

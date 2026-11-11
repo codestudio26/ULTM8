@@ -126,7 +126,9 @@ test('Decision 435 item 22: Branch Staff see the payroll report only once the ow
   // The coach teaches at no Branch of Bea's, yet she sees what they earned.
   await signIn(page, bea.token);
   await page.goto('/timetable');
-  await page.getByRole('link', { name: 'Payroll' }).click();
+  // Payroll is in Billing, Bea's only page there.
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Billing' }).click();
+  await expect(page).toHaveURL(/\/payroll$/);
   const report = page.getByTestId('payroll-report');
   await report.getByLabel('Dates').selectOption('CUSTOM');
   await report.getByLabel('From').fill('2026-03-01');

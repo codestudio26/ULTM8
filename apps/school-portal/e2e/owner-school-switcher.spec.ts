@@ -94,5 +94,6 @@ test('an Owner of one School who also coaches at a second starts on the School t
   // coach-school-switcher.spec.ts), but until they pick it they work as owner.
   await expect(page).toHaveURL(/\/dashboard$/);
   await expect(page.getByRole('combobox', { name: 'Switch School' })).toHaveValue(s1.schoolId);
-  await expect(page.getByRole('navigation').getByRole('link', { name: 'Transactions' })).toBeVisible();
+  // Transactions is a page of Billing.
+  await expect(page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Billing' })).toBeVisible();
 });
