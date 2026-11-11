@@ -10672,6 +10672,8 @@ export interface components {
             /** Format: date-time */
             classStartDate?: string | null;
             classCancelledBySchool: boolean;
+            classBannerUrl?: string | null;
+            classTimetableSlotId?: string | null;
             /** @enum {string} */
             resolution: "PENDING" | "REFUND_OWED";
             /** @description Minor units. */
