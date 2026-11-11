@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addCoach, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Instructors features (Decision 312) as the owner and a coach see them:
@@ -44,7 +45,7 @@ test('search and the status filter narrow the roster, and a manually added instr
   await expect(page.getByRole('row', { name: /Bea Fresh/ })).toHaveCount(0);
 
   await page.getByLabel('Search instructors').fill('');
-  await page.getByLabel('Status', { exact: true }).selectOption({ label: "Hasn't signed in yet" });
+  await pickOption(page, 'Status', "Hasn't signed in yet");
   await expect(page.getByRole('row', { name: /Bea Fresh/ })).toBeVisible();
   await expect(page.getByRole('row', { name: /Alma Search/ })).toHaveCount(0);
 
@@ -95,9 +96,13 @@ test('the detail page shows what the instructor filled in, and hands their class
   await expect(page.getByText('1 Main St, Springfield')).toBeVisible();
   await expect(page.getByText(/On file, consent given/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'View' })).toBeVisible();
+  // The weekly timetable is on the full page's Classes tab.
+  await page.getByRole('link', { name: 'Classes', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Weekly timetable' })).toBeVisible();
   await expect(page.getByText('Monday sparring')).toBeVisible();
 
+  // Hand over classes sits under their details, on the Profile tab (Decision 456).
+  await page.getByRole('link', { name: 'Profile', exact: true }).click();
   await page.getByRole('button', { name: 'Hand over classes' }).click();
   const dialog = page.getByRole('dialog', { name: "Hand over Lea Leaving's classes" });
   const picker = dialog.getByLabel('New instructor');

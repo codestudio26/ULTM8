@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * The Staff page (Decisions 296, 361): "Give role" finds someone (ignoring
@@ -20,8 +21,8 @@ test.afterAll(async () => {
 });
 
 type Page = import('@playwright/test').Page;
-const giveCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Give a role' });
-const listCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Your staff' });
+const giveCard = (page: Page) => page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Give a role' }) });
+const listCard = (page: Page) => page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) });
 const listRow = (page: Page, name: string) => listCard(page).getByRole('row').filter({ hasText: name });
 
 test('the owner gives someone Branch Staff, sees them in the list, and removes the role after confirming', async ({ page }) => {
@@ -82,19 +83,19 @@ test('the list filters by role, branch and name, and "Remove from School" ends e
   await expect(listRow(page, 'Cal Coach').getByText('Custom access')).toBeVisible();
   await expect(listRow(page, 'Dee Desk')).toBeVisible();
 
-  await listCard(page).getByLabel('Branch').selectOption({ label: 'South' });
+  await pickOption(listCard(page), 'Branch', 'South');
   await expect(listRow(page, 'Dee Desk')).toHaveCount(0);
   await expect(listRow(page, 'Cal Coach')).toBeVisible();
-  await listCard(page).getByLabel('Branch').selectOption({ label: 'Any' });
+  await pickOption(listCard(page), 'Branch', 'Any');
   // The search also matches email, and fixture emails carry a random hex UUID
   // that can contain "dee"; a full name with a space never appears in one.
   await listCard(page).getByLabel('Search').fill('DEE DESK');
   await expect(listRow(page, 'Cal Coach')).toHaveCount(0);
   await expect(listRow(page, 'Dee Desk')).toBeVisible();
   await listCard(page).getByLabel('Search').fill('');
-  await listCard(page).getByLabel('Role').selectOption('INSTRUCTOR');
+  await pickOption(listCard(page), 'Role', 'Instructor');
   await expect(listRow(page, 'Dee Desk')).toHaveCount(0);
-  await listCard(page).getByLabel('Role').selectOption('');
+  await pickOption(listCard(page), 'Role', 'Any');
 
   // Remove from School asks first, then ends both roles but keeps the student one.
   await listRow(page, 'Cal Coach').getByRole('button', { name: 'Actions for Cal Coach' }).click();
@@ -110,7 +111,7 @@ test('the list filters by role, branch and name, and "Remove from School" ends e
   expect((await db.staffPermission.findFirstOrThrow({ where: { userId: cal.id } })).canSeeStaffList).toBe(false);
 
   // Removed staff stay findable under "Removed".
-  await listCard(page).getByLabel('Status').selectOption('removed');
+  await pickOption(listCard(page), 'Status', 'Removed');
   await expect(listRow(page, 'Cal Coach').getByText(/^Removed /)).toBeVisible();
   await expect(listRow(page, 'Dee Desk')).toHaveCount(0);
   await expect(listRow(page, 'Cal Coach').getByRole('button', { name: 'Actions for Cal Coach' })).toHaveCount(0);

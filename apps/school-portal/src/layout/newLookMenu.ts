@@ -30,7 +30,8 @@ export const MENU_GROUPS: ReadonlyArray<{ id: MenuGroupId; routes: readonly stri
   { id: 'dashboard', routes: ['/dashboard', '/coach'] },
   // DESIGN.md → "Check-in and front-desk mode": Students → Check-in.
   { id: 'students', routes: ['/students', '/check-in'] },
-  { id: 'team', routes: ['/instructors', '/staff'] },
+  // Decision 456: one Team page, its tabs Staff · Coaches Info · Invite coaches.
+  { id: 'team', routes: ['/staff', '/instructors', '/team/invite-coaches'] },
   { id: 'schedule', routes: ['/classes', '/timetable', '/curriculum', '/cancellations'] },
   { id: 'grading', routes: ['/grading', '/disciplines'] },
   { id: 'billing', routes: ['/membership-plans', '/transactions', '/billing-reports', '/payroll'] },

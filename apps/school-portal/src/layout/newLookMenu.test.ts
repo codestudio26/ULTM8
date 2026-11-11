@@ -2,7 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { activeEntry, activePage, buildMenu, isUnder } from './newLookMenu';
 
 const owner = [
-  '/dashboard', '/school', '/branches', '/staff', '/disciplines', '/instructors', '/students', '/grading', '/classes',
+  '/dashboard', '/school', '/branches', '/staff', '/disciplines', '/instructors', '/team/invite-coaches', '/students', '/grading', '/classes',
   '/curriculum', '/timetable', '/membership-plans', '/transactions', '/billing-reports', '/payroll', '/cancellations',
   '/waivers', '/franchises', '/notifications',
 ].map((to) => ({ label: to.slice(1), to }));
@@ -17,8 +17,9 @@ describe('the new look side menu', () => {
     expect(menu.map((e) => e.key)).toEqual(['dashboard', 'students', 'team', 'schedule', 'grading', 'billing', 'waivers', 'organisation', 'notifications']);
     expect(menu.flatMap((e) => e.pages.map((p) => p.to)).sort()).toEqual(owner.map((p) => p.to).sort());
     const team = menu.find((e) => e.key === 'team')!;
-    expect(team.to).toBe('/instructors');
-    expect(team.pages.map((p) => p.to)).toEqual(['/instructors', '/staff']);
+    // Decision 456: Staff · Coaches Info · Invite coaches.
+    expect(team.to).toBe('/staff');
+    expect(team.pages.map((p) => p.to)).toEqual(['/staff', '/instructors', '/team/invite-coaches']);
   });
 
   it("shows only the groups a coach has pages in, and keeps a coach's own pages as rows", () => {

@@ -140,18 +140,21 @@ export function InstructorFormModal({
           />
         </Field>
         <Field label={t('instructors.form.photo')} htmlFor="instructor-photo">
-          <PhotoUploadField
-            value={form.photoUrl}
-            onChange={(photoUrl) => setForm((f) => ({ ...f, photoUrl }))}
-            requestUpload={(file) =>
-              requestPhotoUpload.mutateAsync({
-                entityType: 'INSTRUCTOR',
-                schoolId,
-                entityId: initial?.id,
-                contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
-              })
-            }
-          />
+          {/* A person's photo is a circle (DESIGN.md → "Avatars"). */}
+          <div className="u8t-person-photo">
+            <PhotoUploadField
+              value={form.photoUrl}
+              onChange={(photoUrl) => setForm((f) => ({ ...f, photoUrl }))}
+              requestUpload={(file) =>
+                requestPhotoUpload.mutateAsync({
+                  entityType: 'INSTRUCTOR',
+                  schoolId,
+                  entityId: initial?.id,
+                  contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+                })
+              }
+            />
+          </div>
         </Field>
         {usesStyles ? (
           <Field label={t('instructors.form.specializations')} htmlFor="instructor-specializations" hint={t('instructors.form.specializationsStylesHint')}>

@@ -14,6 +14,20 @@ Post-v1.4.0 work on `master`.
   Profile and Ranks; white cards with light header bars; the summary panel on
   the right (status, Edit, check-in code, contact, personal details, home
   branch, balance and tags), below the cards on a phone. Nothing is shown twice.
+- **New look: the Team pages** (Decisions 453, 456; visual only). Team is one
+  page with three tabs: Staff (`/staff`), Coaches Info (`/instructors`, renamed
+  from "Instructors' belts") and Invite coaches (`/team/invite-coaches`, the
+  invite form and Invites list moved out of Staff). White list cards, our own
+  drop-downs, row actions in each row's ⋮ menu and "Open full page ›" under
+  each name; the picked person sits in a right-hand panel (on a phone,
+  straight under the list) that never repeats the row: on Staff their belts
+  and Front desk and money (the everyone-at-once switch tables stay too), on
+  Coaches Info Front desk and money and Grading permissions. An instructor's
+  own page gets "‹ Team", Profile and Classes tabs, cards (About with Hand over
+  classes and Resend passcode, Belts, Front desk and money, Roles, Next
+  classes, Remove from the team) and a Team member panel. Buttons, tick boxes,
+  selects and switches across the portal take the new look (mint main button,
+  white outlined secondary, green tick). Same data, API calls and permissions.
 - **Fix: the Students list no longer scrolls sideways on a phone** (layout
   only). The whole page measured ~594px on a 390px phone in Rows view; now
   only the table scrolls, inside its card, as DESIGN.md → "Phone layout" says.

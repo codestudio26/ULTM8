@@ -96,3 +96,175 @@
     font-size: var(--font-size-input);
   }
 }
+
+/* 5. Buttons, tick boxes, selects and switches in the new look (product owner,
+ *    11 Nov 2026: "everything should look like the new design and nothing from
+ *    the old should be kept"; DESIGN.md → "One accent: mint", "Button pairs",
+ *    "Greens: mint"). Restyle only: the same components, fields and
+ *    behaviour everywhere they are used.
+ *    - Buttons are round pills. The main one is mint with dark text (never
+ *      slate or black); a secondary one is white with a grey outline; a
+ *      danger one is white with red text and a soft red outline.
+ *    - A ticked box is white with a green tick and a green border.
+ *    - A closed <select> is the soft field with our chevron.
+ *    - A switch that is on has the pale-green track. */
+[data-look='redesign'] {
+  --u8-btn-go: #def2e2;
+  --u8-btn-go-hover: #cfe9d6;
+  --u8-btn-go-text: #383d42;
+  --u8-btn-line: #c2c7cb;
+  --u8-btn-bg: #ffffff;
+  --u8-btn-text: #383d42;
+  --u8-btn-hover: #f4f5f6;
+  --u8-btn-red: #b91c1c;
+  --u8-btn-red-line: #e8b4b4;
+  --u8-tick: #3a7556;
+  --u8-tick-box: #ffffff;
+  --u8-switch-on: #def2e2;
+  --u8-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236c767f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --u8-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%233a7556' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8-btn-go: var(--nav-active-bg);
+    --u8-btn-go-hover: var(--nav-active-bg);
+    --u8-btn-go-text: var(--nav-active-text);
+    --u8-btn-line: var(--border-strong);
+    --u8-btn-bg: var(--surface-1);
+    --u8-btn-text: var(--text-primary);
+    --u8-btn-hover: rgba(255, 255, 255, 0.06);
+    --u8-btn-red: #f3a5a5;
+    --u8-btn-red-line: #7a3434;
+    --u8-tick: #9fd3b2;
+    --u8-tick-box: var(--surface-1);
+    --u8-switch-on: var(--nav-active-bg);
+    --u8-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b4bcc3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --u8-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239fd3b2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8-btn-go: var(--nav-active-bg);
+  --u8-btn-go-hover: var(--nav-active-bg);
+  --u8-btn-go-text: var(--nav-active-text);
+  --u8-btn-line: var(--border-strong);
+  --u8-btn-bg: var(--surface-1);
+  --u8-btn-text: var(--text-primary);
+  --u8-btn-hover: rgba(255, 255, 255, 0.06);
+  --u8-btn-red: #f3a5a5;
+  --u8-btn-red-line: #7a3434;
+  --u8-tick: #9fd3b2;
+  --u8-tick-box: var(--surface-1);
+  --u8-switch-on: var(--nav-active-bg);
+  --u8-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b4bcc3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --u8-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239fd3b2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+
+[data-look='redesign'] .ultm8-btn {
+  border-radius: 999px;
+  padding: 0 var(--space-6);
+  font-size: 14px;
+  font-weight: 500;
+}
+[data-look='redesign'] .ultm8-btn--primary,
+[data-look='redesign'] .ultm8-btn--success {
+  background: var(--u8-btn-go);
+  border-color: transparent;
+  color: var(--u8-btn-go-text);
+}
+[data-look='redesign'] .ultm8-btn--primary:not(:disabled):hover,
+[data-look='redesign'] .ultm8-btn--success:not(:disabled):hover {
+  background: var(--u8-btn-go-hover);
+}
+[data-look='redesign'] .ultm8-btn--secondary {
+  background: var(--u8-btn-bg);
+  border-color: var(--u8-btn-line);
+  color: var(--u8-btn-text);
+}
+[data-look='redesign'] .ultm8-btn--secondary:not(:disabled):hover {
+  background: var(--u8-btn-hover);
+  border-color: var(--u8-btn-line);
+}
+[data-look='redesign'] .ultm8-btn--danger {
+  background: var(--u8-btn-bg);
+  border-color: var(--u8-btn-red-line);
+  color: var(--u8-btn-red);
+}
+[data-look='redesign'] .ultm8-btn--danger:not(:disabled):hover {
+  opacity: 1;
+  background: var(--u8-btn-hover);
+}
+[data-look='redesign'] .ultm8-btn:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+[data-look='redesign'] .ultm8-checkbox input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--u8-btn-line);
+  background: var(--u8-tick-box) center / 14px 14px no-repeat;
+  cursor: pointer;
+}
+[data-look='redesign'] .ultm8-checkbox input:checked {
+  border-color: var(--u8-tick);
+  background-image: var(--u8-tick-mark);
+}
+[data-look='redesign'] .ultm8-checkbox input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+[data-look='redesign'] .ultm8-checkbox input:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .ultm8-checkbox {
+  font-size: 14px;
+  cursor: pointer;
+}
+
+[data-look='redesign'] select.ultm8-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: calc(var(--space-4) + 26px);
+  background-image: var(--u8-chevron);
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 18px 18px;
+  cursor: pointer;
+}
+[dir='rtl'][data-look='redesign'] select.ultm8-select,
+[data-look='redesign'] [dir='rtl'] select.ultm8-select {
+  background-position: left var(--space-3) center;
+}
+
+[data-look='redesign'] .ultm8-switch--on {
+  background: var(--u8-switch-on);
+}
+
+/* 6. Dialogs and the phone field's country button in the new look: the
+ *    dialog's title is the new look's light heading, its corners 14px; the
+ *    country button is a soft field like the number beside it. */
+[data-look='redesign'] .ultm8-modal {
+  border-radius: 14px;
+}
+[data-look='redesign'] .ultm8-modal > h2.ultm8-page-header__title {
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+[data-look='redesign'] .ultm8-phone-field__trigger {
+  min-height: var(--form-field-height);
+  background: var(--form-field-bg);
+  border: 0;
+  box-shadow: inset 0 0 0 1px var(--border);
+  border-radius: var(--form-field-radius);
+  padding: 0 var(--space-3);
+}
+[data-look='redesign'] .ultm8-phone-field__trigger:not(:disabled):hover {
+  background: var(--form-field-bg-focus);
+}

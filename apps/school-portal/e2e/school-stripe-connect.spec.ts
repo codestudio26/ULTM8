@@ -145,7 +145,7 @@ test('Decision 442 item 3: Branch Staff connect Stripe only once an owner switch
   // An owner switches it on in the Access window; it is in neither preset.
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
-  const row = page.locator('.ultm8-card').filter({ hasText: 'Your staff' }).getByRole('row').filter({ hasText: 'Dee Desk' });
+  const row = page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) }).getByRole('row').filter({ hasText: 'Dee Desk' });
   await row.getByRole('button', { name: 'Actions for Dee Desk' }).click();
   await page.getByRole('menuitem', { name: 'Access' }).click();
   const dialog = page.getByRole('dialog', { name: 'Access for Dee Desk' });

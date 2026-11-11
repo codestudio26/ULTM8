@@ -54,7 +54,9 @@ const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.branches', to: '/branches' },
   { label: 'layout.nav.staff', to: '/staff' },
   { label: 'layout.nav.disciplines', to: '/disciplines' },
-  { label: 'layout.nav.instructors', to: '/instructors' },
+  // Team's tabs (Decision 456): Staff · Coaches Info · Invite coaches.
+  { label: 'layout.nav.coachesInfo', to: '/instructors' },
+  { label: 'layout.nav.inviteCoaches', to: '/team/invite-coaches' },
   { label: 'layout.nav.students', to: '/students' },
   // Board, Styles & Belts and Permissions are tabs inside Grading.
   { label: 'layout.nav.grading', to: '/grading' },

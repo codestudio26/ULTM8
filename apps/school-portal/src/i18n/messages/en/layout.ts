@@ -68,6 +68,7 @@ export const layout = {
     franchises: 'Franchises',
     notifications: 'Notifications',
     inviteCoaches: 'Invite coaches',
+    coachesInfo: 'Coaches Info',
     myBelts: 'My belts',
     completeProfile: 'My coach profile',
   },

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Field, SelectField, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { TeamCard } from '../team/TeamParts';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import {
@@ -14,11 +15,12 @@ import { formatLocale } from '../i18n/format';
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString(formatLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
 
-const STATUS: Record<CoachInvite['status'], { label: TranslationKey; variant: 'default' | 'accent' | 'success' | 'danger' }> = {
-  PENDING: { label: 'roleGrants.coachInvites.statusPending', variant: 'accent' },
-  ACCEPTED: { label: 'roleGrants.coachInvites.statusAccepted', variant: 'success' },
-  CANCELLED: { label: 'roleGrants.coachInvites.statusCancelled', variant: 'default' },
-  EXPIRED: { label: 'roleGrants.coachInvites.statusExpired', variant: 'danger' },
+/** Each status's tag: Waiting blue, Accepted green, Cancelled grey, Expired red. */
+const STATUS: Record<CoachInvite['status'], { label: TranslationKey; tag: string }> = {
+  PENDING: { label: 'roleGrants.coachInvites.statusPending', tag: ' u8t-tag--info' },
+  ACCEPTED: { label: 'roleGrants.coachInvites.statusAccepted', tag: ' u8t-tag--ok' },
+  CANCELLED: { label: 'roleGrants.coachInvites.statusCancelled', tag: '' },
+  EXPIRED: { label: 'roleGrants.coachInvites.statusExpired', tag: ' u8t-tag--bad' },
 };
 
 /**
@@ -81,15 +83,12 @@ export function CoachInvitesSection({
     }
   }
 
+  const items = invites.data?.items ?? [];
+  const hasStaffInvites = items.some((i) => i.role === 'BRANCH_STAFF');
   return (
     <>
-      <Card className="ultm8-field">
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-          {t('roleGrants.coachInvites.heading')}
-        </h2>
-        <p style={{ marginTop: 0 }}>
-          {t('roleGrants.coachInvites.intro')}
-        </p>
+      <TeamCard title={t('roleGrants.coachInvites.heading')} intro={t('roleGrants.coachInvites.intro')}>
+        <div className="u8t-card__body">
         {notice?.kind === 'ok' ? <SuccessBanner message={notice.text} /> : null}
         {notice?.kind === 'warn' ? <ErrorBanner message={notice.text} /> : null}
         {error ? <ErrorBanner message={error} /> : null}
@@ -115,54 +114,80 @@ export function CoachInvitesSection({
         ) : canManage === false ? (
           <p className="ultm8-field">{t('roleGrants.staff.mainOwnerOnly')}</p>
         ) : null}
+        </div>
+      </TeamCard>
 
-        <h3 style={{ fontSize: 16, margin: '24px 0 8px' }}>{t('roleGrants.coachInvites.invitesHeading')}</h3>
+      <TeamCard title={t('roleGrants.coachInvites.invitesHeading')}>
         {invites.isLoading ? (
-          <Spinner />
+          <div className="u8t-state">
+            <Spinner />
+          </div>
         ) : invites.error ? (
-          <ErrorBanner message={errorText(invites.error, t('roleGrants.coachInvites.loadFailed'))} />
-        ) : (invites.data?.items ?? []).length === 0 ? (
-          <EmptyState title={t('roleGrants.coachInvites.emptyTitle')} />
+          <div className="u8t-state">
+            <ErrorBanner message={errorText(invites.error, t('roleGrants.coachInvites.loadFailed'))} />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="u8t-state">
+            <EmptyState title={t('roleGrants.coachInvites.emptyTitle')} />
+          </div>
         ) : (
-          <Table<CoachInvite>
-            rows={invites.data!.items}
-            columns={[
-              { key: 'email', header: t('roleGrants.coachInvites.columnEmail'), render: (i) => i.email },
-              // Decision 396: Branch Staff invites, from "New staff must accept first".
-              ...(invites.data!.items.some((i) => i.role === 'BRANCH_STAFF')
-                ? [
-                    {
-                      key: 'role',
-                      header: t('roleGrants.coachInvites.columnRole'),
-                      render: (i: CoachInvite) => (i.role === 'BRANCH_STAFF' ? t('roleGrants.staff.roleBranchStaff') : t('roleGrants.staff.roleInstructor')),
-                    },
-                  ]
-                : []),
-              ...(branches.length > 0 ? [{ key: 'branch', header: t('roleGrants.coachInvites.columnBranch'), render: (i: CoachInvite) => i.branchName ?? branchName(i.branchId) }] : []),
-              { key: 'status', header: t('roleGrants.coachInvites.columnStatus'), render: (i) => <Badge variant={STATUS[i.status].variant}>{t(STATUS[i.status].label)}</Badge> },
-              {
-                key: 'sent',
-                header: t('roleGrants.coachInvites.columnSent'),
-                render: (i) =>
-                  i.invitedByName
-                    ? t('roleGrants.coachInvites.sentBy', { date: shortDate(i.createdAt), name: i.invitedByName })
-                    : shortDate(i.createdAt),
-              },
-              { key: 'expires', header: t('roleGrants.coachInvites.columnExpires'), render: (i) => (i.status === 'PENDING' ? shortDate(i.expiresAt) : '—') },
-              {
-                key: 'actions',
-                header: '',
-                render: (i) =>
-                  canManage && i.status === 'PENDING' ? (
-                    <Button variant="secondary" onClick={() => handleCancel(i)} aria-label={t('roleGrants.coachInvites.cancelAria', { email: i.email })}>
-                      {t('roleGrants.coachInvites.cancel')}
-                    </Button>
-                  ) : null,
-              },
-            ]}
-          />
+          <table className="u8t-table">
+            <thead>
+              <tr>
+                <th scope="col">{t('roleGrants.coachInvites.columnEmail')}</th>
+                {/* Decision 396: Branch Staff invites, from "New staff must accept first". */}
+                {hasStaffInvites ? <th scope="col">{t('roleGrants.coachInvites.columnRole')}</th> : null}
+                {branches.length > 0 ? <th scope="col">{t('roleGrants.coachInvites.columnBranch')}</th> : null}
+                <th scope="col">{t('roleGrants.coachInvites.columnStatus')}</th>
+                <th scope="col">{t('roleGrants.coachInvites.columnSent')}</th>
+                <th scope="col">{t('roleGrants.coachInvites.columnExpires')}</th>
+                <th scope="col" />
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((i) => (
+                <tr key={i.id}>
+                  <td className="u8t-c-main" style={{ overflowWrap: 'anywhere' }}>
+                    {i.email}
+                  </td>
+                  {hasStaffInvites ? (
+                    <td>
+                      <span className="u8t-k">{t('roleGrants.coachInvites.columnRole')}: </span>
+                      {i.role === 'BRANCH_STAFF' ? t('roleGrants.staff.roleBranchStaff') : t('roleGrants.staff.roleInstructor')}
+                    </td>
+                  ) : null}
+                  {branches.length > 0 ? (
+                    <td>
+                      <span className="u8t-k">{t('roleGrants.coachInvites.columnBranch')}: </span>
+                      {i.branchName ?? branchName(i.branchId)}
+                    </td>
+                  ) : null}
+                  <td className="u8t-c-end">
+                    <span className={'u8t-tag' + STATUS[i.status].tag}>{t(STATUS[i.status].label)}</span>
+                  </td>
+                  <td>
+                    <span className="u8t-k">{t('roleGrants.coachInvites.columnSent')}: </span>
+                    {i.invitedByName ? t('roleGrants.coachInvites.sentBy', { date: shortDate(i.createdAt), name: i.invitedByName }) : shortDate(i.createdAt)}
+                  </td>
+                  <td>
+                    <span className="u8t-k">{t('roleGrants.coachInvites.columnExpires')}: </span>
+                    {i.status === 'PENDING' ? shortDate(i.expiresAt) : '—'}
+                  </td>
+                  <td className="u8t-c-act">
+                    {canManage && i.status === 'PENDING' ? (
+                      <div className="u8t-actions">
+                        <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => handleCancel(i)} aria-label={t('roleGrants.coachInvites.cancelAria', { email: i.email })}>
+                          {t('roleGrants.coachInvites.cancel')}
+                        </button>
+                      </div>
+                    ) : null}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
-      </Card>
+      </TeamCard>
     </>
   );
 }

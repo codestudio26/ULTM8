@@ -23,7 +23,7 @@ test.afterAll(async () => {
 });
 
 type Page = import('@playwright/test').Page;
-const listCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Your staff' });
+const listCard = (page: Page) => page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) });
 const listRow = (page: Page, name: string) => listCard(page).getByRole('row').filter({ hasText: name });
 
 /** An Instructor at this School with a profile, so the coach picker lists them. */
