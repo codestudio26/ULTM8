@@ -84,6 +84,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "แฟรนไชส์",
       notifications: "การแจ้งเตือน",
       inviteCoaches: "เชิญโค้ช",
+      coachesInfo: "ข้อมูลโค้ช",
       myBelts: "สายคาดของฉัน",
       completeProfile: "โปรไฟล์โค้ชของฉัน",
     },
@@ -2696,7 +2697,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "ไม่สามารถเพิกถอนการสังกัดนี้ได้ โปรดลองอีกครั้ง",
     },
     belts: {
-      heading: "สายคาดของผู้ฝึกสอน",
       intro: "ผู้ฝึกสอนเลือกสายคาดของตนเองในแต่ละประเภทกีฬา ยืนยัน หรือแก้ไขให้ถูกต้อง",
       loadFailed: "ไม่สามารถโหลดสายคาดของผู้ฝึกสอนได้",
       verifyFailed: "ไม่สามารถยืนยันสายคาดนี้ได้",

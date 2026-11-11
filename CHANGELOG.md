@@ -10,16 +10,20 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
-- **New look: the Team pages** (Decision 453; visual only). Instructors and
-  Staff open under "Team" with white list cards, our own drop-downs and
-  "Open full page ›" under each name; the picked person sits in a right-hand
-  panel (on a phone, straight under the list) that never repeats the row: on
-  Staff their belts and Front desk and money (the per-person charge and open
-  mat switches; the everyone-at-once tables stay on the page too), on
-  Instructors Front desk and money and Grading permissions. An instructor's own page gets "‹ Team",
-  Profile and Classes tabs, cards (About, Belts, Front desk and money, Roles,
-  Next classes, Remove from the team) and a Team member panel. Same data, API
-  calls and permissions.
+- **New look: the Team pages** (Decisions 453, 456; visual only). Team is one
+  page with three tabs: Staff (`/staff`), Coaches Info (`/instructors`, renamed
+  from "Instructors' belts") and Invite coaches (`/team/invite-coaches`, the
+  invite form and Invites list moved out of Staff). White list cards, our own
+  drop-downs, row actions in each row's ⋮ menu and "Open full page ›" under
+  each name; the picked person sits in a right-hand panel (on a phone,
+  straight under the list) that never repeats the row: on Staff their belts
+  and Front desk and money (the everyone-at-once switch tables stay too), on
+  Coaches Info Front desk and money and Grading permissions. An instructor's
+  own page gets "‹ Team", Profile and Classes tabs, cards (About with Hand over
+  classes and Resend passcode, Belts, Front desk and money, Roles, Next
+  classes, Remove from the team) and a Team member panel. Buttons, tick boxes,
+  selects and switches across the portal take the new look (mint main button,
+  white outlined secondary, green tick). Same data, API calls and permissions.
 - **New look: Dashboard** (Decision 453; visual only). The owner's Dashboard
   has the new page header (the Branch scope under the title, our own Branch
   drop-down), number cards, Today's classes (from this week's Bookings

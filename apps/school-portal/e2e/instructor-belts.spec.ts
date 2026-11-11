@@ -38,7 +38,7 @@ test('the owner verifies an instructor\'s belt, then corrects it', async ({ page
   });
   await signIn(page, s.ownerToken);
   await page.goto('/instructors');
-  const section = page.locator('.u8t-card', { has: page.getByRole('heading', { name: "Instructors' belts" }) });
+  const section = page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Belts', exact: true }) });
   await expect(section.getByRole('row', { name: /Cody Coach BJJ White 1 Not verified/ })).toBeVisible();
   await expect(section.getByText('Not chosen yet: Quinn Quiet.')).toBeVisible();
 

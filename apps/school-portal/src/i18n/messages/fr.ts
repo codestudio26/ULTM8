@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franchises",
       notifications: "Notifications",
       inviteCoaches: "Inviter des coachs",
+      coachesInfo: "Infos coachs",
       myBelts: "Mes ceintures",
       completeProfile: "Mon profil de coach",
     },
@@ -2736,7 +2737,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Impossible de révoquer cette inscription. Veuillez réessayer.",
     },
     belts: {
-      heading: "Ceintures des instructeurs",
       intro: "Les instructeurs choisissent leur propre ceinture dans chaque discipline. Vérifiez-la, ou corrigez-la.",
       loadFailed: "Impossible de charger les ceintures des instructeurs.",
       verifyFailed: "Impossible de vérifier cette ceinture.",

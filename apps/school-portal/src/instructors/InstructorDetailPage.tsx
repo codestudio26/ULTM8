@@ -197,22 +197,6 @@ export function InstructorDetailPage() {
         parent={{ to: '/instructors', label: t('layout.newLook.groups.team') }}
         title={name}
         subtitle={instructor.bio ?? undefined}
-        actions={
-          schoolId && ((upcoming.length > 0 || mySlots.length > 0) || (instructor.awaitingFirstLogin && instructor.status === 'ACTIVE')) ? (
-            <>
-              {upcoming.length > 0 || mySlots.length > 0 ? (
-                <button type="button" className="u8t-pill" onClick={() => setHandingOver(true)}>
-                  {t('instructors.detail.handOver')}
-                </button>
-              ) : null}
-              {instructor.awaitingFirstLogin && instructor.status === 'ACTIVE' ? (
-                <button type="button" className="u8t-pill" onClick={() => setResending(true)}>
-                  {t('instructors.detail.resendPasscode')}
-                </button>
-              ) : null}
-            </>
-          ) : undefined
-        }
         tabs={[
           { to: here, label: t('instructors.team.profileTab'), current: tab === 'profile' },
           { to: `${here}?tab=classes`, label: t('instructors.detail.classesHeading'), current: tab === 'classes' },
@@ -287,6 +271,21 @@ export function InstructorDetailPage() {
                     </div>
                   ) : null}
                 </div>
+                {/* Decision 456: these sit under their details. */}
+                {schoolId && (upcoming.length > 0 || mySlots.length > 0 || (instructor.awaitingFirstLogin && instructor.status === 'ACTIVE')) ? (
+                  <div className="u8t-state u8t-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap', paddingTop: 4 }}>
+                    {upcoming.length > 0 || mySlots.length > 0 ? (
+                      <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setHandingOver(true)}>
+                        {t('instructors.detail.handOver')}
+                      </button>
+                    ) : null}
+                    {instructor.awaitingFirstLogin && instructor.status === 'ACTIVE' ? (
+                      <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setResending(true)}>
+                        {t('instructors.detail.resendPasscode')}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </TeamCard>
 
               {schoolId && (myBelts.length > 0 || beltsWaiting) ? (

@@ -84,6 +84,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "フランチャイズ",
       notifications: "通知",
       inviteCoaches: "コーチを招待",
+      coachesInfo: "コーチ情報",
       myBelts: "自分の帯",
       completeProfile: "コーチプロフィール",
     },
@@ -2696,7 +2697,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "所属を取り消せませんでした。もう一度お試しください。",
     },
     belts: {
-      heading: "インストラクターの帯",
       intro: "インストラクターは各種目で自分の帯を選びます。確認するか、正しい帯に修正してください。",
       loadFailed: "インストラクターの帯を読み込めませんでした。",
       verifyFailed: "この帯を確認できませんでした。",

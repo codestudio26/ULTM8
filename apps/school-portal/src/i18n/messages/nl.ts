@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franchises",
       notifications: "Meldingen",
       inviteCoaches: "Coaches uitnodigen",
+      coachesInfo: "Coachinfo",
       myBelts: "Mijn banden",
       completeProfile: "Mijn coachprofiel",
     },
@@ -2736,7 +2737,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Deze inschrijving kon niet worden ingetrokken. Probeer het opnieuw.",
     },
     belts: {
-      heading: "Banden van instructeurs",
       intro: "Instructeurs kiezen zelf hun band in elke discipline. Verifieer deze, of corrigeer naar de juiste band.",
       loadFailed: "De banden van instructeurs konden niet worden geladen.",
       verifyFailed: "Deze band kon niet worden geverifieerd.",

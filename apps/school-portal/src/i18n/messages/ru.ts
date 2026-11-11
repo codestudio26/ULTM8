@@ -87,6 +87,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Франшизы",
       notifications: "Уведомления",
       inviteCoaches: "Пригласить тренеров",
+      coachesInfo: "О тренерах",
       myBelts: "Мои пояса",
       completeProfile: "Мой профиль тренера",
     },
@@ -2816,7 +2817,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Не удалось отозвать роль. Попробуйте ещё раз.",
     },
     belts: {
-      heading: "Пояса инструкторов",
       intro: "Инструкторы сами выбирают свой пояс в каждой дисциплине. Подтвердите его или исправьте на верный.",
       loadFailed: "Не удалось загрузить пояса инструкторов.",
       verifyFailed: "Не удалось подтвердить этот пояс.",

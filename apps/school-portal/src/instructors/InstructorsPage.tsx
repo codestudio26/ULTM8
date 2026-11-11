@@ -279,9 +279,6 @@ export function InstructorsPage() {
                   </td>
                   <td className="u8t-c-act">
                     <div className="u8t-actions">
-                      <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setEditing(i)}>
-                        {t('instructors.edit')}
-                      </button>
                       {/* Decision 226 — School Owner/Manager only, idempotent,
                           blocked (409) by an upcoming Class/TimetableSlot
                           assignment. Never touches the underlying User or
@@ -289,6 +286,7 @@ export function InstructorsPage() {
                       <RowActionsMenu
                         label={t('instructors.rowActionsAria', { name: nameOf(i) })}
                         actions={[
+                          { label: t('instructors.edit'), onClick: () => setEditing(i) },
                           i.archivedAt
                             ? { label: t('instructors.unarchive'), onClick: () => { setActionError(null); unarchiveInstructor.mutate(i.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('instructors.unarchiveFailed')) }); } }
                             : { label: t('instructors.archive'), onClick: () => { setActionError(null); setConfirmingArchive(i); } },

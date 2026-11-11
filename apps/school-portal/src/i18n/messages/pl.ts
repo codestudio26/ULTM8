@@ -87,6 +87,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franczyzy",
       notifications: "Powiadomienia",
       inviteCoaches: "Zaproś trenerów",
+      coachesInfo: "Informacje o trenerach",
       myBelts: "Moje pasy",
       completeProfile: "Mój profil trenera",
     },
@@ -2816,7 +2817,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Nie udało się cofnąć przypisania. Spróbuj ponownie.",
     },
     belts: {
-      heading: "Pasy instruktorów",
       intro: "Instruktorzy sami wybierają swój pas w każdej dyscyplinie. Zweryfikuj go lub popraw na właściwy.",
       loadFailed: "Nie udało się wczytać pasów instruktorów.",
       verifyFailed: "Nie udało się zweryfikować tego pasa.",

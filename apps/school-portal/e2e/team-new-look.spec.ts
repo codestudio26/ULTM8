@@ -96,8 +96,13 @@ test('Instructors: the panel has Front desk and money and Grading permissions; a
   await expect(panel.getByText('Rafael Souza')).toBeVisible();
   await expect(panel.getByRole('switch', { name: 'Can create charges' })).toBeVisible();
   await expect(panel.getByRole('link', { name: 'Grading permissions ›' })).toBeVisible();
+  // Row actions sit in the row's ⋮ menu (Decision 456).
+  await page.getByRole('button', { name: 'Actions for Rafael Souza' }).click();
+  await page.getByRole('menuitem', { name: 'Edit' }).click();
+  await expect(page.getByRole('dialog', { name: 'Edit instructor' })).toBeVisible();
+  await page.keyboard.press('Escape');
 
-  const belts = page.locator('.u8t-card', { has: page.getByRole('heading', { name: "Instructors' belts" }) });
+  const belts = page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Belts', exact: true }) });
   await belts.getByRole('button', { name: 'Ana Pereira', exact: true }).click();
   await expect(panel.getByText('Ana Pereira')).toBeVisible();
   // The belts card shows the belt, so the panel doesn't.
@@ -143,6 +148,31 @@ test('the team member page: ‹ Team, Profile and Classes tabs, Verify, and Edit
   } finally {
     await db.class.deleteMany({ where: { schoolId: s.schoolId } });
   }
+});
+
+test('Team is one page with three tabs, and the old addresses open the right one (Decision 456)', async ({ page }) => {
+  await seedTeam();
+  await signIn(page, s.ownerToken);
+  const tabs = page.getByRole('navigation', { name: 'Team pages' });
+  for (const [path, tab, heading] of [
+    ['/staff', 'Staff', 'Your staff'],
+    ['/instructors', 'Coaches Info', 'Belts'],
+    ['/team/invite-coaches', 'Invite coaches', 'Invite a coach'],
+  ] as const) {
+    await page.goto(path);
+    await expect(tabs.getByRole('link', { name: tab })).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible();
+  }
+  // The invites moved out of Staff; nothing else did.
+  await page.goto('/staff');
+  await expect(page.getByRole('heading', { name: 'Give a role', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Invite a coach', exact: true })).toHaveCount(0);
+
+  // The same people as before: a coach doesn't get the invites tab.
+  const coach = await addPerson('Cody', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
+  await signIn(page, coach.token);
+  await page.goto('/team/invite-coaches');
+  await expect(page).not.toHaveURL(/\/team\/invite-coaches$/);
 });
 
 test.describe('phone', () => {

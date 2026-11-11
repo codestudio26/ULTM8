@@ -84,6 +84,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "加盟",
       notifications: "通知",
       inviteCoaches: "邀请教练",
+      coachesInfo: "教练信息",
       myBelts: "我的腰带",
       completeProfile: "我的教练资料",
     },
@@ -2696,7 +2697,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "无法撤销此任职，请重试。",
     },
     belts: {
-      heading: "教练员腰带",
       intro: "教练员会自行选择各项目的腰带。请确认，或更正为正确的腰带。",
       loadFailed: "无法加载教练员腰带。",
       verifyFailed: "无法确认此腰带。",

@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franchises",
       notifications: "Benachrichtigungen",
       inviteCoaches: "Trainer einladen",
+      coachesInfo: "Trainer-Infos",
       myBelts: "Meine Gürtel",
       completeProfile: "Mein Trainerprofil",
     },
@@ -2736,7 +2737,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Die Zugehörigkeit konnte nicht widerrufen werden. Bitte versuche es erneut.",
     },
     belts: {
-      heading: "Gürtel der Ausbilder",
       intro: "Ausbilder wählen ihren Gürtel in jeder Disziplin selbst. Bestätige ihn oder korrigiere ihn auf den richtigen Gürtel.",
       loadFailed: "Die Gürtel der Ausbilder konnten nicht geladen werden.",
       verifyFailed: "Dieser Gürtel konnte nicht bestätigt werden.",

@@ -19,7 +19,6 @@ import {
   type StaffRoleEntry,
 } from './roleGrantQueries';
 import { StaffListSection } from './StaffListSection';
-import { CoachInvitesSection } from './CoachInvitesSection';
 import { OpenMatPermissions } from '../frontdesk/OpenMatPermissions';
 import { ChargePermissions } from '../charges/ChargePermissions';
 import { StaffActivitySection } from './StaffActivitySection';
@@ -338,7 +337,6 @@ export function StaffPage() {
             </div>
           </TeamCard>
 
-          <CoachInvitesSection schoolId={schoolId} canManage={isMainOwner} />
           {/* Decision 386: who may start an open mat from the Check-in page. */}
           <OpenMatPermissions schoolId={schoolId} />
           {/* Decisions 303, 338: who may create and cancel charges. */}

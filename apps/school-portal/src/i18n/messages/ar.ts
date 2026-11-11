@@ -89,6 +89,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "الامتيازات",
       notifications: "الإشعارات",
       inviteCoaches: "دعوة مدرّبين",
+      coachesInfo: "معلومات المدرّبين",
       myBelts: "أحزمتي",
       completeProfile: "ملفي كمدرب",
     },
@@ -2896,7 +2897,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "تعذّر إلغاء هذا الانتساب. يُرجى المحاولة مرة أخرى.",
     },
     belts: {
-      heading: "أحزمة المدرّبين",
       intro: "يختار المدرّبون حزامهم في كل رياضة. تحقّق منه أو صحّحه إلى الحزام الصحيح.",
       loadFailed: "تعذّر تحميل أحزمة المدرّبين.",
       verifyFailed: "تعذّر التحقق من هذا الحزام.",

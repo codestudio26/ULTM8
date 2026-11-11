@@ -101,6 +101,8 @@ test('the detail page shows what the instructor filled in, and hands their class
   await expect(page.getByRole('heading', { name: 'Weekly timetable' })).toBeVisible();
   await expect(page.getByText('Monday sparring')).toBeVisible();
 
+  // Hand over classes sits under their details, on the Profile tab (Decision 456).
+  await page.getByRole('link', { name: 'Profile', exact: true }).click();
   await page.getByRole('button', { name: 'Hand over classes' }).click();
   const dialog = page.getByRole('dialog', { name: "Hand over Lea Leaving's classes" });
   const picker = dialog.getByLabel('New instructor');

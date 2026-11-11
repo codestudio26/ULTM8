@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franchise’lar",
       notifications: "Bildirimler",
       inviteCoaches: "Antrenör davet et",
+      coachesInfo: "Antrenör bilgileri",
       myBelts: "Kuşaklarım",
       completeProfile: "Koç profilim",
     },
@@ -2736,7 +2737,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Bu kayıt iptal edilemedi. Lütfen tekrar deneyin.",
     },
     belts: {
-      heading: "Eğitmen kuşakları",
       intro: "Eğitmenler her branşta kendi kuşaklarını seçer. Doğrulayın veya doğru kuşakla düzeltin.",
       loadFailed: "Eğitmen kuşakları yüklenemedi.",
       verifyFailed: "Bu kuşak doğrulanamadı.",

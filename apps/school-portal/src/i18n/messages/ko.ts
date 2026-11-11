@@ -84,6 +84,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "프랜차이즈",
       notifications: "알림",
       inviteCoaches: "코치 초대",
+      coachesInfo: "코치 정보",
       myBelts: "내 띠",
       completeProfile: "내 코치 프로필",
     },
@@ -2696,7 +2697,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "소속을 해제할 수 없습니다. 다시 시도해 주세요.",
     },
     belts: {
-      heading: "사범 띠",
       intro: "사범은 각 종목에서 자신의 띠를 직접 선택합니다. 확인하거나 올바른 띠로 수정하세요.",
       loadFailed: "사범 띠 정보를 불러올 수 없습니다.",
       verifyFailed: "이 띠를 확인할 수 없습니다.",

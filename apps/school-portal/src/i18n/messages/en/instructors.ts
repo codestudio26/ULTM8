@@ -118,7 +118,6 @@ export const instructors = {
     resendFailed: 'Could not send a new passcode. Please try again.',
   },
   belts: {
-    heading: "Instructors' belts",
     intro: 'Instructors choose their own belt in each style. Verify it, or correct it to the right belt.',
     loadFailed: "Could not load instructors' belts.",
     verifyFailed: 'Could not verify this belt.',

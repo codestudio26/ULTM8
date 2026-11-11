@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franquias",
       notifications: "Notificações",
       inviteCoaches: "Convidar professores",
+      coachesInfo: "Info dos professores",
       myBelts: "Minhas faixas",
       completeProfile: "Meu perfil de instrutor",
     },
@@ -2736,7 +2737,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Não foi possível revogar este vínculo. Tente novamente.",
     },
     belts: {
-      heading: "Faixas dos instrutores",
       intro: "Os instrutores escolhem a própria faixa em cada modalidade. Verifique-a ou corrija para a faixa certa.",
       loadFailed: "Não foi possível carregar as faixas dos instrutores.",
       verifyFailed: "Não foi possível verificar esta faixa.",

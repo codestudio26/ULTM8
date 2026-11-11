@@ -41,8 +41,11 @@ test('with the setting on, "Give role" sends a Branch Staff invite instead', asy
   const invite = await db.coachInvite.findFirstOrThrow({ where: { schoolId: s.schoolId } });
   expect(invite).toMatchObject({ role: 'BRANCH_STAFF', branchId: north.id, email: bea.email.toLowerCase() });
   expect(await db.roleGrant.count({ where: { userId: bea.id, schoolId: s.schoolId } })).toBe(0);
+  // The invite waits under Team → Invite coaches (Decision 456).
+  await page.goto('/team/invite-coaches');
   const row = page.getByRole('row', { name: new RegExp(bea.email.toLowerCase().replace(/[.+]/g, '\\$&')) });
   await expect(row.getByText('Branch Staff')).toBeVisible();
+  await page.goto('/staff');
 
   // A co-owner still gets the role at once.
   const cara = await addPerson('Cara', 'Partner');

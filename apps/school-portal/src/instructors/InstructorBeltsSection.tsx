@@ -49,7 +49,7 @@ export function InstructorBeltsSection({
   }
 
   return (
-    <TeamCard title={t('instructors.belts.heading')} intro={t('instructors.belts.intro')}>
+    <TeamCard title={t('instructors.team.belts')} intro={t('instructors.belts.intro')}>
       {error ? (
         <div className="u8t-banners">
           <ErrorBanner message={error} />
