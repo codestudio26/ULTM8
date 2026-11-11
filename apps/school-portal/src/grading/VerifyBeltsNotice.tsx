@@ -36,7 +36,7 @@ export function VerifyBeltsNotice() {
       <ul aria-label={t('grading.verifyNotice.listAria')} style={{ paddingLeft: 20, maxHeight: 320, overflowY: 'auto' }}>
         {items.map((i) => (
           <li key={i.studentRankId}>
-            <Link to={`/students/${i.studentId}`} state={{ name: `${i.firstName} ${i.surname}` }} onClick={close}>
+            <Link to={`/students/${i.studentId}?tab=ranks`} state={{ name: `${i.firstName} ${i.surname}` }} onClick={close}>
               {i.firstName} {i.surname}
             </Link>{' '}
             — {i.disciplineName}

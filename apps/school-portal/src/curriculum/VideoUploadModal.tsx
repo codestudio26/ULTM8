@@ -79,6 +79,7 @@ export function VideoUploadModal({
       </p>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <input
+          className="u8c-file"
           type="file"
           accept="video/*"
           disabled={uploading}
@@ -91,7 +92,7 @@ export function VideoUploadModal({
         />
         {uploading ? <Spinner /> : null}
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+      <div className="u8c-buttons">
         <Button type="button" variant="secondary" onClick={onClose} disabled={uploading}>
           {t('common.cancel')}
         </Button>

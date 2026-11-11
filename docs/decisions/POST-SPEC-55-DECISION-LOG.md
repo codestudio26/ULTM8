@@ -8263,6 +8263,34 @@ User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #541
 
 ---
 
+## Decision 455 — New look: the owner's answers on the Schedule pages (Classes and Timetable)
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454 · **Raised in:** #545 (Schedule: Classes list and Timetable)
+
+### Decision
+
+**As built**
+1. **The look.** The approved design has no Classes or Timetable board, so both pages follow the template rules (DESIGN-BRIEF §8) and DESIGN.md in the same style as the Students list: white cards, class avatars, the new look's own drop-downs, pill buttons and phone layouts.
+2. **Classes table columns.** Instructor and Branch are not columns of their own. They sit under the class name as "coach · branch", in DESIGN.md's class-row order.
+3. **Controls the template doesn't draw** stay where they are. Rows / Grid and Show archived sit at the right of the toolbar, the pager at the foot of the Classes card, and Day / Week / Month with Prev / Today / Next at the top of the Timetable card.
+4. **Week Grid** still scrolls sideways when the seven day columns don't fit.
+
+**Built in #545**
+5. **A right-hand panel on both pages** shows the selected class. On Classes that is the picked row (the first until another is picked); on Timetable it is the picked slot or class date in the Day and Week views (Month books from its dots and has no panel). It uses the shell's right panel (`NewLookPage`), and on a phone it sits below the list.
+   - **It never repeats the selected row** (DESIGN.md "nothing shown twice"). The owner was asked whether the panel should keep repeating the row (A) or follow that rule (B), and answered "B" (11 Nov 2026). The panel shows the 64px avatar and the class name, as the Students and Team panels do, and then only what the row doesn't show.
+   - On Classes the row already shows the status tags, "coach · branch", Starts, Ends, Capacity and the tags, so the panel has no facts of its own.
+   - On Timetable the row already shows "coach · branch", the time, the seats booked, the tags and the status, and its day heading shows the date. The panel adds only a timetable slot's capacity, which its row doesn't show (a slot with no class yet has no seats line).
+   - The row's own ⋮ actions sit as buttons straight under the content.
+   - Nothing new is fetched from the API.
+6. **Timetable rows name the coach** as "coach · branch", as on Classes. The calendar already carries each class's and slot's instructor, and the page already loads the Instructors list, so no API change was needed.
+7. **Month dots** use the same soft colours as the class avatars, ringed in the colour's darker shade so they stay clearly visible in light and dark mode.
+
+### Recorded by
+
+User (Code), 11 Nov 2026: "ok to all, carry on", answering the 7 questions on #545; and "B", answering whether the class panel keeps repeating the row (item 5).
+
+---
+
 ## Decision 456 — New look: the owner's answers on the Team pages
 
 **Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454 · **Raised in:** #547 (Team)

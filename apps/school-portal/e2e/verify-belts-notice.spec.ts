@@ -34,7 +34,7 @@ test('the owner sees the waiting belts at login, once', async ({ page }) => {
   await expect(notice.getByRole('list', { name: 'Waiting to be verified' }).getByRole('listitem')).toHaveText(['Sam Lee — BJJ']);
 
   await notice.getByRole('link', { name: 'Sam Lee' }).click();
-  await expect(page).toHaveURL(new RegExp(`/students/${s.student.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/students/${s.student.id}\\?tab=ranks$`));
   await expect(notice).toBeHidden();
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Sam Lee' })).toBeVisible();

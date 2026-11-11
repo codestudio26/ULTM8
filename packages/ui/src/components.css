@@ -394,6 +394,14 @@
 .ultm8-row-actions__item--danger {
   color: var(--text-danger);
 }
+.ultm8-row-actions__hint {
+  display: block;
+  max-width: 240px;
+  padding: 0 var(--space-3) var(--space-2);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
 
 /* Card */
 .ultm8-card {

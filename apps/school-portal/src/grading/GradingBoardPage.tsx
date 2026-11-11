@@ -679,7 +679,7 @@ function BoardCard({ item, rung, selected, open, onOpen, onToggle, onProgress, o
         {onToggle ? <TickBox item={item} selected={selected} onToggle={onToggle} /> : null}
         <Avatar person={item} size={40} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Link to={`/students/${item.studentId}`} state={{ name }} style={{ fontWeight: 700 }}>
+          <Link to={`/students/${item.studentId}?tab=ranks`} state={{ name }} style={{ fontWeight: 700 }}>
             {name}
           </Link>
         </div>
@@ -724,7 +724,7 @@ function BoardRow({ item, rung, next, selected, open, onOpen, onToggle, onProgre
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           <Avatar person={item} size={40} />
           <div style={{ minWidth: 0 }}>
-            <Link to={`/students/${item.studentId}`} state={{ name }} style={{ fontWeight: 700 }}>
+            <Link to={`/students/${item.studentId}?tab=ranks`} state={{ name }} style={{ fontWeight: 700 }}>
               {name}
             </Link>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>

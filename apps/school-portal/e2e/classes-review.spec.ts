@@ -48,7 +48,8 @@ test('the list shows upcoming Classes soonest first, and past ones on their own'
   await expect(rows.nth(0)).toContainText('Sooner class');
   await expect(rows.nth(1)).toContainText('Later class');
 
-  await page.getByLabel('Show', { exact: true }).selectOption({ label: 'Past' });
+  await page.getByRole('combobox', { name: 'Show', exact: true }).click();
+  await page.getByRole('option', { name: 'Past' }).click();
   await expect(rows).toHaveCount(1);
   await expect(rows.nth(0)).toContainText('Last week class');
 });
@@ -126,7 +127,7 @@ test('a coach opens Classes read-only and reaches roll call from the dashboard',
   await expect(page.getByRole('heading', { name: /Coach class/ })).toBeVisible();
 
   await page.getByRole('link', { name: 'Classes', exact: true }).click();
-  await expect(page.getByRole('cell', { name: 'Coach class', exact: true })).toBeVisible();
+  await expect(page.getByRole('row', { name: /Coach class/ })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add class' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Actions for Coach class' }).click();
   const menu = page.getByRole('menu', { name: 'Actions for Coach class' });
