@@ -64,7 +64,7 @@ test('the footer is a full-width band below the ENTIRE shell (sidebar included),
   await page.goto('/dashboard');
 
   const footerBox = await page.locator('.ultm8-shell__legal-footer').boundingBox();
-  const sidebarBox = await page.locator('.ultm8-shell__sidebar').boundingBox();
+  const sidebarBox = await page.getByRole('navigation', { name: 'Main menu' }).boundingBox();
   const pageWidth = await page.evaluate(() => document.documentElement.clientWidth);
   if (!footerBox || !sidebarBox) throw new Error('footer or sidebar not found');
   expect(footerBox.x).toBeLessThanOrEqual(sidebarBox.x + 1);

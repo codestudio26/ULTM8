@@ -27,7 +27,7 @@ const card = (page: Page, name: string) => page.getByRole('listitem', { name });
 
 test('Grading has its tabs, and the old Permissions address still works', async ({ page }) => {
   await page.goto('/grading');
-  const tabs = page.getByRole('navigation', { name: 'Grading' });
+  const tabs = page.getByRole('navigation', { name: 'Grading', exact: true });
   await expect(tabs.getByRole('link', { name: 'Board' })).toHaveAttribute('aria-current', 'page');
   await tabs.getByRole('link', { name: 'Permissions' }).click();
   await expect(page).toHaveURL(/\/grading\/permissions$/);

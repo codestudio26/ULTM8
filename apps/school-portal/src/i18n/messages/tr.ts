@@ -38,9 +38,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     newLook: {
-      tryIt: "Yeni görünümü dene",
-      on: "Açık",
-      off: "Kapalı",
       menuLabel: "Ana menü",
       sectionPages: "{section} sayfaları",
       groups: {

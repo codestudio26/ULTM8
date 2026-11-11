@@ -4,8 +4,6 @@ import { useAuth, useIsCoachOnly } from '../auth/AuthContext';
 import type { CurrentUserResponse } from '../auth/currentUserQueries';
 import { Avatar } from '../lib/Avatar';
 import { useT } from '../i18n/I18nProvider';
-import { setNewLook } from './look';
-import { useNewLook } from './useNewLook';
 
 /**
  * The header's avatar block (photo + name + role) as a menu button: the
@@ -16,15 +14,10 @@ import { useNewLook } from './useNewLook';
  *
  * "School settings" follows the sidebar exactly (Shell.tsx): it shows wherever
  * the sidebar's own "School" link does — everyone except a coach/Branch Staff
- * member who doesn't own the School. "Log out" calls the same `logout()` the
- * sidebar's button does; the menu's items only exist while it is open, so the
- * sidebar button stays the only "Log out" button on the page.
+ * member who doesn't own the School. "Log out" is here, in this menu.
  *
- * "Try the new look" switches this browser between the classic look and the
- * new one (look.ts); it changes only how the portal looks.
- *
- * `placement="up"` opens the menu above the button (the new look's side menu
- * has it at the very bottom of the screen); `compact` shows just the photo.
+ * `placement="up"` opens the menu above the button (the side menu has it at
+ * the very bottom of the screen); `compact` shows just the photo (phones).
  */
 export function AccountMenu({
   me,
@@ -38,7 +31,6 @@ export function AccountMenu({
   compact?: boolean;
 }) {
   const t = useT();
-  const newLook = useNewLook();
   const { logout } = useAuth();
   const isCoachOnly = useIsCoachOnly();
   const [open, setOpen] = useState(false);
@@ -48,7 +40,7 @@ export function AccountMenu({
   const fullName = `${me.firstName} ${me.surname}`.trim();
 
   function items(): HTMLElement[] {
-    return Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"], [role="menuitemcheckbox"]') ?? []);
+    return Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
   }
 
   useEffect(() => {
@@ -158,24 +150,6 @@ export function AccountMenu({
               {t('layout.accountMenu.schoolSettings')}
             </Link>
           ) : null}
-          <button
-            type="button"
-            role="menuitemcheckbox"
-            aria-checked={newLook}
-            tabIndex={-1}
-            className="ultm8-row-actions__item"
-            data-testid="new-look-switch"
-            style={{ ...itemStyle, justifyContent: 'space-between', gap: 12 }}
-            onClick={() => {
-              close(false);
-              setNewLook(!newLook);
-            }}
-          >
-            {t('layout.newLook.tryIt')}
-            <span aria-hidden="true" style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-              {newLook ? t('layout.newLook.on') : t('layout.newLook.off')}
-            </span>
-          </button>
           <button
             type="button"
             role="menuitem"

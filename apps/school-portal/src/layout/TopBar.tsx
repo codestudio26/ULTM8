@@ -1,15 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { SelectField } from '@ultm8/ui';
-import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
+import { useAuth } from '../auth/AuthContext';
 import { useCurrentUser, useUpdateCurrentUser } from '../auth/currentUserQueries';
 import { useNotificationCounts } from '../notifications/notificationQueries';
 import { useLanguages } from '../settings/settingsQueries';
-import { SchoolSwitcher } from '../coach/SchoolSwitcher';
-import { AccountMenu } from './AccountMenu';
-import { GlobalSearch } from './GlobalSearch';
 import { useI18n, useT } from '../i18n/I18nProvider';
-import { roleLabel } from './roleLabel';
 
 /** Who reads "What's new" (Decision 318 item 3): owners and staff, not students. */
 const STAFF_ROLES: string[] = ['SCHOOL_OWNER_MANAGER', 'BRANCH_STAFF', 'INSTRUCTOR', 'FRANCHISE_OWNER'];
@@ -26,65 +22,14 @@ function nativeName(code: string, fallback: string): string {
 }
 
 /**
- * App-shell header — rendered once by AppShell, above every page's own
- * content, not just Instructors'. Notifications and the profile are wired to
- * real data (GET /notifications/me/counts, GET/PATCH /users/me), and the avatar
- * block opens the account menu (AccountMenu.tsx); language is a real,
- * working preference backed by the confirmed GET /settings/languages list —
- * picking one saves it to the profile and switches the portal's text
- * (I18nProvider, Decision 273). The search box is the Global Search
- * (GlobalSearch.tsx, Decision 278).
+ * The header tools of the app shell (NewLookShell.tsx): What's new, the
+ * notifications bell and the language picker. Notifications are wired to real
+ * data (GET /notifications/me/counts); language is a real, working preference
+ * backed by the confirmed GET /settings/languages list — picking one saves it
+ * to the profile and switches the portal's text (I18nProvider, Decision 273).
  */
-export function TopBar() {
-  const { claims } = useAuth();
-  const ownedSchoolId = useOwnedSchoolId();
-  const coachSchoolId = useCoachSchoolId();
-  const { data: me } = useCurrentUser();
-  const t = useT();
 
-  return (
-    <>
-      <span
-        aria-hidden="true"
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 48,
-          height: 48,
-          borderRadius: 'var(--radius-md)',
-          background: 'var(--fill-accent)',
-          color: 'var(--on-accent)',
-          fontSize: 16,
-          fontWeight: 500,
-          flex: 'none',
-        }}
-      >
-        U8
-      </span>
-
-      {/* Wraps on a phone: in one row, search, bell, account and language are
-          wider than a 390px screen and the whole page scrolled sideways
-          (stress test round 4). */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }}>
-        <GlobalSearch />
-
-        <WhatsNewLink />
-
-        <NotificationsBell />
-
-        <SchoolSwitcher />
-
-        {me ? <AccountMenu me={me} roleLabel={roleLabel(claims?.grants, ownedSchoolId ?? coachSchoolId, t)} /> : null}
-
-        <LanguagePicker />
-      </div>
-    </>
-  );
-}
-
-/** Decision 318 item 3: news from ULTM8 HQ, for owners and staff. Shared by
- * the classic header and the new look's (NewLookShell.tsx). */
+/** Decision 318 item 3: news from ULTM8 HQ, for owners and staff. */
 export function WhatsNewLink() {
   const { claims } = useAuth();
   const t = useT();

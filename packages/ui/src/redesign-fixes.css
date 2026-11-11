@@ -1,11 +1,10 @@
-/* Changes that ship WITH the new look (redesign) and never change the live app:
- * fixes to current components, and the site-wide form look (pattern F).
+/* Changes that ship WITH the new look (redesign): fixes to current components,
+ * and the site-wide form look (pattern F).
  *
- * Every rule here is scoped to [data-look='redesign'], an attribute the live app
- * never sets; the redesign turns it on (e.g. <html data-look="redesign">) when the
- * new look goes live. Without it, nothing in this file applies. Product owner,
- * 20 Oct 2026: "don't change the live app; test and fix it for when we change
- * the look". See DESIGN.md → "Never the same colour twice".
+ * Every rule here is scoped to [data-look='redesign']. The School Portal always
+ * sets it on <html> (Decision 453, 11 Nov 2026: the new look is the portal's
+ * look, no switch), so these apply there; an app that doesn't set it (e.g.
+ * platform-admin) is unaffected. See DESIGN.md → "Never the same colour twice".
  */
 
 /* 1. Time zone / currency pickers: the highlighted option used a fixed light

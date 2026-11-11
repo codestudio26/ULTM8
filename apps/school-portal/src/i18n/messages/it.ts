@@ -38,9 +38,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     newLook: {
-      tryIt: "Prova il nuovo aspetto",
-      on: "Attivo",
-      off: "Disattivo",
       menuLabel: "Menu principale",
       sectionPages: "Pagine di {section}",
       groups: {

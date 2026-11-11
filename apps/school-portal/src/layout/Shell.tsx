@@ -1,14 +1,8 @@
 import React from 'react';
-import { AppShell, Button } from '@ultm8/ui';
 import { useAuth, useCoachSchoolId, useIsCoachOnly } from '../auth/AuthContext';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
 import { useSchool } from '../schools/schoolQueries';
-import { TopBar } from './TopBar';
-import { SchoolFooter } from './SchoolFooter';
-import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
-import { TrialBanner } from './TrialBanner';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
-import { useNewLook } from './useNewLook';
 import { NewLookShell } from './NewLookShell';
 
 /** Nav labels are translation keys, resolved at render time. */
@@ -81,9 +75,8 @@ const OWNER_NAV: NavItem[] = [
 /**
  * The pages this person's menu lists, labels translated: owners get
  * OWNER_NAV; a coach or Branch Staff member who doesn't own the School gets
- * their own list, shaped by what the owner lets them do. Both the classic
- * sidebar and the new look's menu (NewLookShell.tsx) use this one list, so the
- * new look never changes who sees what.
+ * their own list, shaped by what the owner lets them do. The side menu
+ * (NewLookShell.tsx) groups this list; it never adds or drops a page.
  */
 export function useShellNavItems(): { label: string; to: string }[] {
   const { claims } = useAuth();
@@ -125,29 +118,6 @@ export function useShellNavItems(): { label: string; to: string }[] {
 }
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { logout } = useAuth();
-  const t = useT();
-  const isCoachOnly = useIsCoachOnly();
   const navItems = useShellNavItems();
-  // "Try the new look" (profile menu): the new shell, chosen here so the
-  // classic shell below stays exactly as it was.
-  const newLook = useNewLook();
-  if (newLook) return <NewLookShell navItems={navItems}>{children}</NewLookShell>;
-  return (
-    <AppShell
-      brand={t('layout.brand')}
-      header={<TopBar />}
-      navItems={navItems}
-      footer={
-        <Button variant="secondary" fullWidth onClick={logout}>
-          {t('layout.logOut')}
-        </Button>
-      }
-      legalFooter={<SchoolFooter />}
-    >
-      <VerifyBeltsNotice />
-      {isCoachOnly ? null : <TrialBanner />}
-      {children}
-    </AppShell>
-  );
+  return <NewLookShell navItems={navItems}>{children}</NewLookShell>;
 }

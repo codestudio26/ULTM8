@@ -7,11 +7,6 @@ import { AuthProvider } from './auth/AuthContext';
 import { I18nProvider } from './i18n/I18nProvider';
 import { App } from './App';
 import { AddressLookupBridge } from './lib/AddressLookupBridge';
-import { initLook } from './layout/look';
-
-// "Try the new look": set data-look on <html> before the first render, so
-// the page never flashes the other look. Off unless this browser chose it.
-initLook();
 
 const queryClient = new QueryClient({
   defaultOptions: {

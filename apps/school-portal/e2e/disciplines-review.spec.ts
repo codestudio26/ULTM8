@@ -113,7 +113,9 @@ test('a coach sees the Disciplines page read-only', async ({ page }) => {
   await page.context().clearCookies();
   await signIn(page, coach.token);
   await page.goto('/coach');
-  await page.getByRole('link', { name: 'Disciplines' }).click();
+  // Disciplines is a page of Grading.
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Grading', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Grading pages' }).getByRole('link', { name: 'Disciplines' }).click();
   await expect(page.getByText('Only the School owner can change them.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add discipline' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Skills and belts of BJJ' }).click();

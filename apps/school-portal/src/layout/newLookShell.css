@@ -71,9 +71,14 @@
 
 /* ------------------------------------------------------------------ Shell */
 
+[data-look='redesign'] .u8n-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
 [data-look='redesign'] .u8n-shell {
   display: flex;
-  min-height: 100vh;
+  flex: 1 0 auto;
   background: var(--u8n-page-bg);
   color: var(--u8n-text);
 }
@@ -291,9 +296,6 @@
   box-sizing: border-box;
   margin: 0 auto;
   padding: 24px;
-}
-[data-look='redesign'] .u8n-legal {
-  border-top: 1px solid var(--u8n-line);
 }
 
 /* ------------------------------------------- Page pieces (NewLookPage.tsx) */

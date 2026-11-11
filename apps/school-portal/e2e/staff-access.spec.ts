@@ -80,16 +80,17 @@ test('Branch Staff see the staff list read only, and Students, only when switche
   await signIn(page, bea.token);
   await page.goto('/staff');
   await expect(page).not.toHaveURL(/\/staff$/);
-  await expect(page.getByRole('link', { name: 'Staff', exact: true })).toHaveCount(0);
+  // Staff is Bea's only page in Team, so no Team either.
+  await expect(page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Team' })).toHaveCount(0);
 
   await db.staffPermission.create({ data: { id: randomUUID(), schoolId: s.schoolId, userId: bea.id, canSeeStaffList: true, canManageStudents: true } });
   await page.goto('/staff');
   await expect(page.getByText("The staff at your branches. Only the School's owners can change roles or access.")).toBeVisible();
   await expect(listRow(page, 'Cal Coach')).toBeVisible();
   await expect(page.getByRole('button', { name: /^Actions for / })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Staff', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Team' })).toHaveAttribute('href', '/staff');
 
-  await page.getByRole('link', { name: 'Students', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Students', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Students' }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Invite a Student' })).toHaveCount(0);
 });

@@ -696,7 +696,7 @@ The grading system as built, shown in the new look. Every label and rule stays a
 ### Greens: mint, not dark green (product owner, 21 Oct 2026)
 - **Fills** (progress bars at 100%, the Ready to Grade strip, ticks, switch tracks, the menu's selected bar): **mint #9fd3b2**, a soft matte green, never a bold solid one.
 - **Green text and icons** (100%, ✓, the text of green tags such as "Signed off" and "Active"): **#3a7556**. It passes 4.5:1 on white and on pale green.
-- The old dark greens (#1f7a4d, #1f6440, #1f4d36) are no longer used in the new look. The live app keeps its own `--color-success` until the new look goes live.
+- The old dark greens (#1f7a4d, #1f6440, #1f4d36) are no longer used in the new look. Pages not yet rebuilt still use `--color-success` where their own styles name it.
 - **The secondary dark button** ("Open full student view", "Invite") is **soft blue: #e5ecf6 with #2b4f80 text**, not black.
 
 ### Progress bar colours: one soft colour per board level (product owner, 21 Oct 2026)
@@ -740,7 +740,7 @@ The cases found so far, with their fixes:
 
 When a new state colour is added, check it against every surface it can appear on, in light and dark mode.
 
-**Fixes for the current app's styles, held back until the new look goes live.** These are in `packages/ui/src/redesign-fixes.css`. Every rule there is scoped to `[data-look='redesign']`, which the live app never sets, so the live app is unchanged. The product owner asked on 20 Oct 2026 that the live app stay untouched.
+**Fixes for the current app's styles.** These are in `packages/ui/src/redesign-fixes.css`. Every rule there is scoped to `[data-look='redesign']`, which the School Portal now always sets, so they are live. (Until 11 Nov 2026 they were held back; Decision 453 made the new look the portal's only look, with no switch.)
 - **Time zone and currency pickers:** the highlighted option used a fixed light colour (dark mode 1.0:1 → 9.1:1).
 - **Dark-mode tinted backgrounds** (`--bg-accent`, `--bg-success`, `--bg-warning`, `--bg-danger`) and their text colours. This changes:
   - the accent badge (1.7:1 → 5.2:1)
@@ -748,7 +748,7 @@ When a new state colour is added, check it against every surface it can appear o
   - danger buttons and banners, which also get softer
 - **Old side menu, selected link:** it was white on an almost-white menu. It now uses the new menu's pale green with a 4px bar.
 
-Turning the new look on means setting `data-look="redesign"` on `<html>`. A check renders all 113 existing component classes from `master` and from the redesign branch with the switch off, in light and dark mode, and finds 0 differences.
+The new look is on because `data-look="redesign"` is set on `<html>` (the School Portal's `index.html`). There is no switch and no classic look (Decision 453).
 
 ## Motion
 

@@ -37,9 +37,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     newLook: {
-      tryIt: "新しいデザインを試す",
-      on: "オン",
-      off: "オフ",
       menuLabel: "メインメニュー",
       sectionPages: "{section}のページ",
       groups: {

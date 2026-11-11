@@ -37,9 +37,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     newLook: {
-      tryIt: "试用新外观",
-      on: "开",
-      off: "关",
       menuLabel: "主菜单",
       sectionPages: "{section}页面",
       groups: {

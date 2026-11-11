@@ -345,7 +345,9 @@ test('Branch Staff with the switch on record a payment for a student of their br
 
   await signIn(page, staff.token);
   await page.goto('/coach');
-  await page.getByRole('link', { name: 'Record a payment' }).click();
+  // Record a payment is a page of Billing.
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Billing' }).click();
+  await page.getByRole('navigation', { name: 'Billing pages' }).getByRole('link', { name: 'Record a payment' }).click();
   await expect(page).toHaveURL(/\/transactions$/);
   await expect(page.locator('table')).toHaveCount(0);
   await page.getByRole('button', { name: 'Record a payment' }).click();

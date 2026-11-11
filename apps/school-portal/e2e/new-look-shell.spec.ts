@@ -3,11 +3,10 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 import { addPerson, cleanup, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
- * New look rollout, PR 1: the app shell behind "Try the new look" (look.ts,
- * NewLookShell.tsx). Off by default, the classic shell is unchanged; on, the
- * new side menu lists exactly the pages the classic sidebar lists for that
- * person (owner, coach, front desk), grouped; phone width shows the top bar;
- * dark mode uses the Pine menu.
+ * The portal's app shell, the new look (NewLookShell.tsx; Decision 453: no
+ * switch, no classic look). The side menu lists exactly the pages each person
+ * may open (Shell.tsx's role and permission checks), grouped; phone width
+ * shows the top bar; dark mode uses the Pine menu.
  */
 let s: GradingSchool;
 
@@ -26,7 +25,6 @@ async function open(page: Page, path: string) {
   await page.waitForLoadState('networkidle');
 }
 
-const classicNav = (page: Page) => page.locator('.ultm8-shell__sidebar nav');
 const newMenu = (page: Page) => page.getByRole('navigation', { name: 'Main menu' });
 
 async function hrefs(links: ReturnType<Page['locator']>): Promise<string[]> {
@@ -52,70 +50,38 @@ async function newLookPages(page: Page): Promise<{ rows: string[]; pages: string
   return { rows, pages: [...pages].sort() };
 }
 
-async function classicPages(page: Page): Promise<string[]> {
-  await expect(classicNav(page).getByRole('link').first()).toBeVisible();
-  await page.waitForLoadState('networkidle');
-  return [...new Set(await hrefs(classicNav(page).getByRole('link')))].sort();
-}
+/** The pages each person's menu offers (Shell.tsx's lists for these roles). */
+const OWNER_PAGES = [
+  '/billing-reports', '/branches', '/cancellations', '/classes', '/curriculum', '/dashboard', '/disciplines', '/franchises', '/grading',
+  '/instructors', '/membership-plans', '/notifications', '/payroll', '/school', '/staff', '/students', '/timetable', '/transactions', '/waivers',
+];
+const COACH_PAGES = [
+  '/check-in', '/classes', '/coach', '/complete-instructor-profile', '/curriculum', '/disciplines', '/grading', '/my-belts', '/notifications', '/students',
+];
+const FRONT_DESK_PAGES = [
+  '/cancellations', '/check-in', '/classes', '/coach', '/curriculum', '/disciplines', '/grading', '/notifications', '/students', '/timetable',
+];
 
-test('switch off by default: the classic shell, unchanged, with no data-look', async ({ page }) => {
+test('the new look is always on: data-look on <html>, the side menu, Log out in the account menu', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await open(page, '/dashboard');
-  await expect(classicNav(page).getByRole('link', { name: 'Dashboard' })).toBeVisible();
-  await expect(page.locator('.ultm8-shell__sidebar')).toContainText('Log out');
-  expect(await page.evaluate(() => document.documentElement.getAttribute('data-look'))).toBeNull();
-  await expect(page.getByTestId('new-look-menu')).toHaveCount(0);
-  await expect(page.getByRole('navigation')).toHaveCount(1);
-});
-
-test('the profile menu turns the new look on and off, remembered in this browser', async ({ page }) => {
-  await signIn(page, s.ownerToken);
-  await open(page, '/dashboard');
-  await page.getByRole('button', { name: /Olive Owner/ }).click();
-  const toggle = page.getByRole('menuitemcheckbox', { name: /Try the new look/ });
-  await expect(toggle).toHaveAttribute('aria-checked', 'false');
-  await toggle.click();
-
   await expect(page.locator('html')).toHaveAttribute('data-look', 'redesign');
   await expect(newMenu(page)).toBeVisible();
   await expect(page.locator('.ultm8-shell__sidebar')).toHaveCount(0);
   await expect(newMenu(page).getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page');
-
-  await page.reload();
-  await page.waitForLoadState('networkidle');
-  await expect(page.locator('html')).toHaveAttribute('data-look', 'redesign');
-  await expect(newMenu(page)).toBeVisible();
-
-  // From the new shell the same menu item turns it back off.
   await newMenu(page).getByRole('button', { name: /Olive Owner/ }).click();
-  await page.getByRole('menuitemcheckbox', { name: /Try the new look/ }).click();
-  expect(await page.evaluate(() => document.documentElement.getAttribute('data-look'))).toBeNull();
-  await expect(classicNav(page)).toBeVisible();
-  await page.reload();
-  await page.waitForLoadState('networkidle');
-  await expect(classicNav(page)).toBeVisible();
+  const menu = page.getByRole('menu', { name: 'Account' });
+  await expect(menu.getByRole('menuitem', { name: 'My profile' })).toBeVisible();
+  await expect(menu.getByRole('menuitem', { name: 'Log out' })).toBeVisible();
+  await expect(menu.getByRole('menuitem')).toHaveCount(3);
 });
 
-test('?look=redesign and ?look=classic set the switch', async ({ page }) => {
-  await signIn(page, s.ownerToken);
-  await open(page, '/dashboard?look=redesign');
-  await expect(newMenu(page)).toBeVisible();
-  await open(page, '/dashboard');
-  await expect(newMenu(page)).toBeVisible();
-  await open(page, '/dashboard?look=classic');
-  await expect(classicNav(page)).toBeVisible();
-  expect(await page.evaluate(() => localStorage.getItem('ultm8.look'))).toBeNull();
-});
-
-test("owner: the nine groups and Settings, reaching exactly the classic sidebar's pages", async ({ page }) => {
+test("owner: the nine groups and Settings, reaching exactly the owner's pages", async ({ page }) => {
   await signIn(page, s.ownerToken);
   await open(page, '/dashboard');
-  const classic = await classicPages(page);
-
-  await open(page, '/dashboard?look=redesign');
   const { rows, pages } = await newLookPages(page);
   expect(rows).toEqual(['Dashboard', 'Students', 'Team', 'Schedule', 'Grading', 'Billing', 'Waivers', 'Organisation', 'Notifications']);
-  expect(pages).toEqual(classic);
+  expect(pages).toEqual(OWNER_PAGES);
   await expect(newMenu(page).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/school');
 
   // A group's other pages are tabs at the top of the page.
@@ -127,30 +93,24 @@ test("owner: the nine groups and Settings, reaching exactly the classic sidebar'
   await expect(newMenu(page).getByRole('link', { name: 'Team' })).toHaveAttribute('aria-current', 'page');
 });
 
-test("coach: only the coach's own pages, the same as the classic sidebar", async ({ page }) => {
+test("coach: only the coach's own pages", async ({ page }) => {
   const coach = await addPerson('Cody', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, coach.token);
   await open(page, '/coach');
-  const classic = await classicPages(page);
-
-  await open(page, '/coach?look=redesign');
   const { rows, pages } = await newLookPages(page);
   expect(rows).toEqual(['Dashboard', 'Students', 'Schedule', 'Grading', 'My belts', 'My coach profile', 'Notifications']);
-  expect(pages).toEqual(classic);
+  expect(pages).toEqual(COACH_PAGES);
   // No Settings for a coach: the profile menu has no "School settings" for them either.
   await expect(newMenu(page).getByRole('link', { name: 'Settings' })).toHaveCount(0);
   await expect(newMenu(page).getByRole('link', { name: 'Billing' })).toHaveCount(0);
 });
 
-test('front desk (Branch Staff): the same pages as the classic sidebar', async ({ page }) => {
+test("front desk (Branch Staff): only the front desk's pages", async ({ page }) => {
   const staff = await addPerson('Bea', 'Desk', [{ role: 'BRANCH_STAFF', schoolId: s.schoolId }]);
   await signIn(page, staff.token);
   await open(page, '/coach');
-  const classic = await classicPages(page);
-
-  await open(page, '/coach?look=redesign');
   const { rows, pages } = await newLookPages(page);
-  expect(pages).toEqual(classic);
+  expect(pages).toEqual(FRONT_DESK_PAGES);
   expect(rows).not.toContain('Billing');
   expect(rows).not.toContain('Organisation');
   expect(rows[0]).toBe('Dashboard');
@@ -162,7 +122,7 @@ test.describe('phone', () => {
 
   test('the menu becomes a top bar of sections; search and account stay reachable', async ({ page }) => {
     await signIn(page, s.ownerToken);
-    await open(page, '/dashboard?look=redesign');
+    await open(page, '/dashboard');
     const menu = newMenu(page);
     await expect(menu).toBeVisible();
     const box = (await menu.boundingBox())!;
@@ -171,9 +131,9 @@ test.describe('phone', () => {
     expect(box.height).toBeLessThan(90);
     await expect(menu.getByRole('link', { name: 'Students' })).toBeVisible();
     await expect(menu.getByRole('combobox')).toBeHidden();
-    // The account (and its Log out / new-look switch) moves to the tools row.
+    // The account (and its Log out) moves to the tools row.
     await page.locator('.u8n-bar__tools').getByRole('button', { name: /Olive Owner/ }).click();
-    await expect(page.getByRole('menuitemcheckbox', { name: /Try the new look/ })).toHaveAttribute('aria-checked', 'true');
+    await expect(page.getByRole('menuitem', { name: 'Log out' })).toBeVisible();
     // No sideways scroll on the page itself.
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
@@ -184,7 +144,7 @@ test.describe('dark mode', () => {
 
   test('the menu is Pine, the selected row is the darker Pine', async ({ page }) => {
     await signIn(page, s.ownerToken);
-    await open(page, '/dashboard?look=redesign');
+    await open(page, '/dashboard');
     const menu = newMenu(page);
     await expect(menu).toHaveCSS('background-color', 'rgb(31, 61, 51)');
     await expect(menu.getByRole('link', { name: 'Dashboard' })).toHaveCSS('background-color', 'rgb(44, 84, 70)');
@@ -193,7 +153,7 @@ test.describe('dark mode', () => {
 
 test('light mode: a white menu with the pale-green selected row', async ({ page }) => {
   await signIn(page, s.ownerToken);
-  await open(page, '/dashboard?look=redesign');
+  await open(page, '/dashboard');
   await expect(newMenu(page)).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   await expect(newMenu(page).getByRole('link', { name: 'Dashboard' })).toHaveCSS('background-color', 'rgb(222, 242, 226)');
 });
@@ -210,7 +170,7 @@ test.describe('screenshots', () => {
     });
     const page = await context.newPage();
     await signIn(page, token);
-    await page.goto(`${path}?look=redesign`);
+    await page.goto(path);
     await expect(newMenu(page)).toBeVisible();
     await page.waitForLoadState('networkidle');
     await page.screenshot({ path: `${process.env.NEW_LOOK_SHOTS}/${name}.png` });

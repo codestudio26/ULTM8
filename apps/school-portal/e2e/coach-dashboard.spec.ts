@@ -51,9 +51,10 @@ test('a coach lands on their dashboard: grading, classes and notifications', asy
   await expect(page).toHaveURL(/\/coach$/);
   await expect(page.getByRole('heading', { name: 'Coach dashboard' })).toBeVisible();
   await expect(page.getByText('Coach', { exact: true })).toBeVisible(); // role in the header
-  const nav = page.getByRole('navigation');
+  const nav = page.getByRole('navigation', { name: 'Main menu' });
   await expect(nav.getByRole('link', { name: 'Grading', exact: true })).toBeVisible();
-  await expect(nav.getByRole('link', { name: 'Transactions' })).toHaveCount(0);
+  // Transactions lives under Billing, which a coach doesn't have.
+  await expect(nav.getByRole('link', { name: 'Billing' })).toHaveCount(0);
 
   const grading = page.getByRole('region', { name: 'Grading' });
   await expect(grading.getByText('BJJ')).toBeVisible();
@@ -145,7 +146,7 @@ test('a coach sees the student list, read only, and "Coming up" shows the time a
   const coach = await coachWith({});
   await signIn(page, coach.token);
   await page.goto('/coach');
-  await page.getByRole('navigation').getByRole('link', { name: 'Students', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Students', exact: true }).click();
   await expect(page).toHaveURL(/\/students$/);
   await expect(page.getByText(s.student.name)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Invite a Student' })).toHaveCount(0);

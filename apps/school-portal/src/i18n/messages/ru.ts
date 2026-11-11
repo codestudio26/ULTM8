@@ -40,9 +40,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     newLook: {
-      tryIt: "Попробовать новый дизайн",
-      on: "Вкл.",
-      off: "Выкл.",
       menuLabel: "Главное меню",
       sectionPages: "Страницы: {section}",
       groups: {

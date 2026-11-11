@@ -41,8 +41,9 @@ test('the avatar opens a menu with name, email, role and the account links; Esca
   await expect(menu.getByRole('menuitem', { name: 'My profile' })).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(menu.getByRole('menuitem', { name: 'School settings' })).toBeFocused();
-  // The sidebar's Log out button is still the only "Log out" button.
-  await expect(page.getByRole('button', { name: 'Log out' })).toHaveCount(1);
+  // Log out is only in this menu: the side menu has no separate button.
+  await expect(page.getByRole('menuitem', { name: 'Log out' })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Log out' })).toHaveCount(0);
 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menu')).toHaveCount(0);
@@ -105,7 +106,9 @@ test('saving a language on My profile switches the portal like the header picker
   await page.getByRole('button', { name: 'Save changes' }).click();
 
   await expect(page.getByRole('heading', { name: 'Meu perfil' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Sair' })).toBeVisible();
+  // Log out, in the account menu.
+  await page.getByRole('navigation', { name: 'Menu principal' }).locator('button[aria-haspopup="menu"]').click();
+  await expect(page.getByRole('menuitem', { name: 'Sair' })).toBeVisible();
   const saved = await db.user.findUniqueOrThrow({ where: { id: s.ownerId } });
   expect(saved.language).toBe('pt-BR');
 });

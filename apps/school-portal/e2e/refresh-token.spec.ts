@@ -153,7 +153,9 @@ test('logging out revokes the refresh token server-side and clears both tokens l
   const owner = await db.user.findUniqueOrThrow({ where: { id: ownerId } });
   await realLogin(page, owner.email);
 
-  await page.getByRole('button', { name: 'Log out' }).click();
+  // Log out is in the account menu at the foot of the side menu.
+  await page.getByRole('navigation', { name: 'Main menu' }).locator('button[aria-haspopup="menu"]').click();
+  await page.getByRole('menuitem', { name: 'Log out' }).click();
   await expect(page).toHaveURL(/\/login/);
 
   const tokens = await page.evaluate(() => ({

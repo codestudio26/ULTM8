@@ -37,9 +37,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     newLook: {
-      tryIt: "ลองโฉมใหม่",
-      on: "เปิด",
-      off: "ปิด",
       menuLabel: "เมนูหลัก",
       sectionPages: "หน้าของ {section}",
       groups: {

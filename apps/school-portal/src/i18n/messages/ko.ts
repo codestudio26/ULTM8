@@ -37,9 +37,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       },
     },
     newLook: {
-      tryIt: "새 디자인 사용해 보기",
-      on: "켜짐",
-      off: "꺼짐",
       menuLabel: "기본 메뉴",
       sectionPages: "{section} 페이지",
       groups: {

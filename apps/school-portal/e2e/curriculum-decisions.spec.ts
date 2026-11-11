@@ -32,7 +32,9 @@ test('a coach sees the curriculum and its comments, read-only', async ({ page })
 
   await signIn(page, coach.token);
   await page.goto('/coach');
-  await page.getByRole('link', { name: 'Curriculum' }).click();
+  // Curriculum is a page of Schedule.
+  await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Schedule' }).click();
+  await page.getByRole('navigation', { name: 'Schedule pages' }).getByRole('link', { name: 'Curriculum' }).click();
   await expect(page.getByText('Only the School owner can change them.', { exact: false })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Armbar from guard', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add lesson' })).toHaveCount(0);
