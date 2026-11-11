@@ -15,13 +15,18 @@ export type UpdateRankInput = components['schemas']['UpdateRankDto'];
  * toggle client-side" convention useBranches already established, so the
  * ladder editor can show an accurate count and let the caller toggle
  * archived belts' visibility without a second request. */
-export function useRanks(disciplineId: string | null) {
-  return useQuery({
+/** The ranks query, also for pages that read several styles' ladders at once. */
+export function ranksQuery(disciplineId: string | null) {
+  return {
     queryKey: ['ranks', disciplineId],
     queryFn: () =>
       unwrap(apiClient.GET('/v1/styles/{disciplineId}/ranks', { params: { path: { disciplineId: disciplineId! }, query: { includeArchived: true } } })),
     enabled: !!disciplineId,
-  });
+  };
+}
+
+export function useRanks(disciplineId: string | null) {
+  return useQuery(ranksQuery(disciplineId));
 }
 
 export function useCreateRank(disciplineId: string) {

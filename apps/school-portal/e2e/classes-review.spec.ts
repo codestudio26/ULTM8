@@ -119,8 +119,9 @@ test('a coach opens Classes read-only and reaches roll call from the dashboard',
   await signIn(page, coach.token);
   await page.goto('/coach');
 
-  const comingUp = page.getByRole('listitem').filter({ hasText: 'Coach class' });
-  await comingUp.getByRole('link', { name: 'Roll call' }).click();
+  // Their only class is the soonest one: the right panel's Next class.
+  const next = page.getByRole('region', { name: 'Next class' }).filter({ hasText: 'Coach class' });
+  await next.getByRole('link', { name: 'Roll call' }).click();
   await expect(page).toHaveURL(/\/classes\/[^/]+\/roll-call$/);
   await expect(page.getByRole('heading', { name: /Coach class/ })).toBeVisible();
 

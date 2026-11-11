@@ -2508,6 +2508,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleFallback: "Branş",
       toNextRank: "Sonraki kuşağa %{percent}",
       readyToGrade: "Sınava hazır",
+      readyNote: "\"Sınava hazır\" bildirimleri Sınava hazır listesinde.",
+      nextClass: "Sonraki ders",
+      noneReady: "Sınava hazır kimse yok.",
       studentsCount: {
         one: "{count} öğrenci",
         other: "{count} öğrenci",

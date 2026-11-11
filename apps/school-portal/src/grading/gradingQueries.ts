@@ -221,8 +221,10 @@ export function useSetHomeBranch(schoolId: string | null) {
   });
 }
 
-export function useGradingBoard(schoolId: string | null, disciplineId: string | null, activeOnly: boolean) {
-  return useQuery({
+/** The board's query, also for pages that read several styles' boards at
+ * once (the coach dashboard's Ready to grade list) under the same cache key. */
+export function gradingBoardQuery(schoolId: string | null, disciplineId: string | null, activeOnly: boolean) {
+  return {
     queryKey: ['grading-board', schoolId, disciplineId, activeOnly],
     queryFn: () =>
       unwrap(
@@ -231,7 +233,11 @@ export function useGradingBoard(schoolId: string | null, disciplineId: string | 
         }),
       ),
     enabled: !!schoolId && !!disciplineId,
-  });
+  };
+}
+
+export function useGradingBoard(schoolId: string | null, disciplineId: string | null, activeOnly: boolean) {
+  return useQuery(gradingBoardQuery(schoolId, disciplineId, activeOnly));
 }
 
 /** Board writes change the board and the student's panel. */

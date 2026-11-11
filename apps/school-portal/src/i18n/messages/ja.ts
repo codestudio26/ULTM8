@@ -2474,6 +2474,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleFallback: "種目",
       toNextRank: "次の帯まで {percent}%",
       readyToGrade: "審査可能",
+      readyNote: "「審査可能」のお知らせは「審査可能」リストにあります。",
+      nextClass: "次のクラス",
+      noneReady: "審査可能な生徒はいません。",
       studentsCount: {
         other: "生徒 {count}人",
       },

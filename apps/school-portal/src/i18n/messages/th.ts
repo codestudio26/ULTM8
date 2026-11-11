@@ -2474,6 +2474,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleFallback: "ประเภทกีฬา",
       toNextRank: "อีก {percent}% ถึงระดับถัดไป",
       readyToGrade: "พร้อมสอบ",
+      readyNote: "การแจ้งเตือน \"พร้อมสอบ\" อยู่ในรายการพร้อมสอบ",
+      nextClass: "คลาสถัดไป",
+      noneReady: "ยังไม่มีใครพร้อมสอบ",
       studentsCount: {
         other: "นักเรียน {count} คน",
       },

@@ -2474,6 +2474,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleFallback: "项目",
       toNextRank: "距下一级腰带 {percent}%",
       readyToGrade: "可晋级",
+      readyNote: "“可晋级”提醒在“可晋级”列表中。",
+      nextClass: "下一节课",
+      noneReady: "暂无可晋级的学员。",
       studentsCount: {
         other: "{count} 名学员",
       },

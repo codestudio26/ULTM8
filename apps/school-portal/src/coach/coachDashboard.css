@@ -1,0 +1,293 @@
+/* The coach's dashboard in the new look (Decision 453; CoachDashboardPage.tsx).
+ * Design: the New Portal vision's Coach dashboard; DESIGN.md → "Coach view:
+ * nothing shown twice, cards first on a phone", "Avatars", "One accent:
+ * mint", "Side panel buttons sit under the content", "Button pairs". The
+ * cards, rows and notification lines are the owner's Dashboard's own
+ * (dashboardPage.css), so the two dashboards look like one family. */
+
+[data-look='redesign'] {
+  --u8n-coach-av-bg: #d3d9df;
+  --u8n-coach-av-text: #2f3941;
+  --u8n-coach-ok-bg: #e3f1ea;
+  --u8n-coach-ok-text: #3a7556;
+  --u8n-coach-ok-line: #b7dcc6;
+  --u8n-coach-mute-bg: #edf0f2;
+  --u8n-coach-mute-text: #50575e;
+  --u8n-coach-mute-line: #d3d9df;
+  --u8n-coach-bad-bg: #fbe9e9;
+  --u8n-coach-bad-text: #9b1c1c;
+  --u8n-coach-bad-line: #efc2c2;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8n-coach-av-bg: #3a434b;
+    --u8n-coach-av-text: #e1e3e5;
+    --u8n-coach-ok-bg: rgba(159, 211, 178, 0.16);
+    --u8n-coach-ok-text: #b9e3c8;
+    --u8n-coach-ok-line: rgba(159, 211, 178, 0.4);
+    --u8n-coach-mute-bg: rgba(255, 255, 255, 0.08);
+    --u8n-coach-mute-text: var(--text-secondary);
+    --u8n-coach-mute-line: var(--border-strong);
+    --u8n-coach-bad-bg: rgba(243, 165, 165, 0.14);
+    --u8n-coach-bad-text: #f3b4b4;
+    --u8n-coach-bad-line: rgba(243, 165, 165, 0.4);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8n-coach-av-bg: #3a434b;
+  --u8n-coach-av-text: #e1e3e5;
+  --u8n-coach-ok-bg: rgba(159, 211, 178, 0.16);
+  --u8n-coach-ok-text: #b9e3c8;
+  --u8n-coach-ok-line: rgba(159, 211, 178, 0.4);
+  --u8n-coach-mute-bg: rgba(255, 255, 255, 0.08);
+  --u8n-coach-mute-text: var(--text-secondary);
+  --u8n-coach-mute-line: var(--border-strong);
+  --u8n-coach-bad-bg: rgba(243, 165, 165, 0.14);
+  --u8n-coach-bad-text: #f3b4b4;
+  --u8n-coach-bad-line: rgba(243, 165, 165, 0.4);
+}
+
+/* -------------------------------------------------------------- Cards */
+
+/* "Open the Grading Board": the mint main button, small, in the card head. */
+[data-look='redesign'] .u8n-coach__go {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--u8-btn-go);
+  color: var(--u8-btn-go-text);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-coach__go:hover {
+  background: var(--u8-btn-go-hover);
+}
+[data-look='redesign'] .u8n-coach__go:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .u8n-coach__empty {
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-coach__empty-title {
+  color: var(--u8n-text);
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+/* A style's row (Grading) and a style of their own (My training). */
+[data-look='redesign'] .u8n-coach__style {
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+[data-look='redesign'] .u8n-coach__style-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-coach__style-name--own {
+  flex-basis: 100%;
+}
+
+/* Status tags: Ready (mint), a quiet count, Cancelled. */
+[data-look='redesign'] .u8n-coach__tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-coach__tag--ok {
+  background: var(--u8n-coach-ok-bg);
+  color: var(--u8n-coach-ok-text);
+  box-shadow: inset 0 0 0 1px var(--u8n-coach-ok-line);
+}
+[data-look='redesign'] .u8n-coach__tag--mute {
+  background: var(--u8n-coach-mute-bg);
+  color: var(--u8n-coach-mute-text);
+  box-shadow: inset 0 0 0 1px var(--u8n-coach-mute-line);
+}
+[data-look='redesign'] .u8n-coach__tag--bad {
+  background: var(--u8n-coach-bad-bg);
+  color: var(--u8n-coach-bad-text);
+  box-shadow: inset 0 0 0 1px var(--u8n-coach-bad-line);
+}
+
+/* My classes: "Every week" and "Coming up", each a small grey heading over
+ * plain lines. */
+[data-look='redesign'] .u8n-coach__classes {
+  border-top: 1px solid var(--u8n-line);
+  padding-bottom: 12px;
+}
+[data-look='redesign'] .u8n-coach__sub {
+  margin: 0;
+  padding: 14px 22px 4px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-coach__lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8n-coach__line {
+  padding: 8px 22px;
+  min-height: 28px;
+  font-size: 14px;
+  color: var(--u8n-text);
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-coach__class {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+}
+[data-look='redesign'] .u8n-coach__class-text {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8n-coach__class-links {
+  display: inline-flex;
+  gap: 14px;
+}
+[data-look='redesign'] .u8n-coach__class-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--u8n-dash-link);
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-coach__class-links a:hover {
+  text-decoration: underline;
+}
+[data-look='redesign'] .u8n-coach__class-links a:focus-visible,
+[data-look='redesign'] .u8n-coach-panel__person:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* Notifications: the owner's "Needs attention" lines, inside a card. */
+[data-look='redesign'] .u8n-coach__note {
+  margin: 0;
+  padding: 10px 22px 10px;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 12px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-coach__note-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 22px;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-coach__note-row[data-read='false'] .u8n-dash-notes__title {
+  font-weight: 500;
+}
+
+/* ------------------------------------------------------- The right panel */
+
+[data-look='redesign'] .u8n-coach-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+[data-look='redesign'] .u8n-dash__av--lg,
+[data-look='redesign'] .u8n-coach-panel__banner {
+  width: 64px;
+  height: 64px;
+  font-size: 20px;
+}
+[data-look='redesign'] .u8n-coach-panel__banner {
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+}
+[data-look='redesign'] .u8n-coach-panel__name {
+  font-size: 19px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-coach-panel__when {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+/* Roll call · Show QR: one button pair, straight under the class. */
+[data-look='redesign'] .u8n-coach-panel__pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+[data-look='redesign'] .u8n-coach-panel__pair .ultm8-btn {
+  padding: 0 12px;
+  white-space: nowrap;
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-coach-panel .u8n-coach-panel__label {
+  margin-top: 26px;
+}
+[data-look='redesign'] .u8n-coach-panel__ready {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8n-coach-panel__person {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--u8n-line);
+  color: var(--u8n-text);
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-coach-panel__person:hover .u8n-coach-panel__person-name {
+  text-decoration: underline;
+}
+[data-look='redesign'] .u8n-coach-panel__person-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+[data-look='redesign'] .u8n-coach-panel__person-name {
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-coach-panel__chev {
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-coach-panel__empty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+
+/* ------------------------------------------------------------ Phone */
+
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8n-coach__empty,
+  [data-look='redesign'] .u8n-coach__sub,
+  [data-look='redesign'] .u8n-coach__line,
+  [data-look='redesign'] .u8n-coach__note,
+  [data-look='redesign'] .u8n-coach__note-row {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
