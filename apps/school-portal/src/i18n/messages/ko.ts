@@ -2802,6 +2802,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    form: {
+      personal: "개인 정보",
+      personalHint: "가입하는 사람.",
+      otherContacts: "기타 연락처",
+      sizes: "사이즈",
+      findAccount: "계정 찾기",
+      newStudent: "새 수련생",
+      previewHint: "입력하면 정보가 표시됩니다",
+      born: "생년월일 {date}",
+      readyToSave: "저장 준비",
+      name: "이름",
+    },
     list: {
       filter: "필터",
       moreActions: "더 보기",

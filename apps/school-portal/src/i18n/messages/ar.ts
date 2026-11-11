@@ -3002,6 +3002,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    form: {
+      personal: "البيانات الشخصية",
+      personalHint: "من سينضم.",
+      otherContacts: "جهات اتصال أخرى",
+      sizes: "المقاسات",
+      findAccount: "ابحث عن حسابه",
+      newStudent: "طالب جديد",
+      previewHint: "تظهر التفاصيل أثناء الكتابة",
+      born: "تاريخ الميلاد {date}",
+      readyToSave: "جاهز للحفظ",
+      name: "الاسم",
+    },
     list: {
       filter: "تصفية",
       moreActions: "إجراءات أخرى",
