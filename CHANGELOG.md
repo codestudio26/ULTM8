@@ -24,6 +24,10 @@ Post-v1.4.0 work on `master`.
   classes, Remove from the team) and a Team member panel. Buttons, tick boxes,
   selects and switches across the portal take the new look (mint main button,
   white outlined secondary, green tick). Same data, API calls and permissions.
+- **New look: Organisation** (Decision 453; visual only). Branches, Franchises,
+  a Franchise's page and its Overview, and the School page have the new page
+  header, white cards, the list card (our own drop-downs, round pills, a "Show
+  closed" chip) and red-outlined cards for closing; same data, figures and actions.
 - **New look: Notifications** (Decision 453; visual only). The page header
   with Mark all read, Clear all read and Send a message to students as pills,
   Total / Unread / Read within 24h as number cards, the inbox as a card of rows

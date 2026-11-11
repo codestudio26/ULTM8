@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, Table, TextField, ViewToggle, formatTimezone, type ViewMode } from '@ultm8/ui';
+import { EmptyState, ErrorBanner, RowActionsMenu, Spinner, ViewToggle, formatTimezone, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { foldForSearch, localizeAddressCountry } from '@ultm8/i18n';
 import { useAuth, useOwnedSchoolId } from '../auth/AuthContext';
@@ -10,6 +10,10 @@ import { BranchFormModal } from './BranchFormModal';
 import { CloseBranchModal } from './CloseBranchModal';
 import { useT } from '../i18n/I18nProvider';
 import { countryDisplayName, formatLocale } from '../i18n/format';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../students/studentsList.css';
+import '../organisation/organisationLook.css';
 
 /** English shows the stored zone as it always has; another language leads with its own name for it. */
 const timezoneLabel = (zone: string) => (formatLocale() ? formatTimezone(zone, formatLocale()) : zone);
@@ -90,123 +94,143 @@ export function BranchesPage() {
   const cities = cityOptions(schoolBranches);
   const countries = countryOptions(schoolBranches);
 
+  const rowActions = (b: BranchListItem) => (
+    <RowActionsMenu
+      label={t('branches.rowActionsAria', { name: b.name })}
+      actions={[
+        b.archivedAt
+          ? { label: t('branches.unarchive'), onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.unarchiveFailed')) }); } }
+          : { label: t('branches.archive'), onClick: () => { setActionError(null); setArchiving(b); } },
+      ]}
+    />
+  );
+  // Decision 231 — a dedicated settings screen replaces the previous
+  // edit-via-modal path.
+  const settingsButton = (b: BranchListItem) => (
+    <button type="button" className="u8n-pill u8o-pill--sm" onClick={() => navigate(`/branches/${b.id}`)}>
+      {t('branches.settings')}
+    </button>
+  );
+  const address = (b: BranchListItem) => localizeAddressCountry(b.address, formatLocale(), b.addressCountry) ?? '—';
+
   return (
-    <>
-      <PageHeader
-        title={t('branches.title')}
-        subtitle={t('branches.subtitle')}
-        actions={<Button onClick={() => setCreating(true)}>{t('branches.addBranch')}</Button>}
-      />
-      <Card>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 220 }}>
-              <Field label={t('branches.searchLabel')} htmlFor="branches-search">
-                <TextField id="branches-search" type="search" placeholder={t('branches.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
-              </Field>
-            </div>
-            <div style={{ minWidth: 180 }}>
-              <Field label={t('branches.cityLabel')} htmlFor="branches-city-filter">
-                <SelectField value={cityFilter} onChange={(e) => setCityFilter(e.target.value)} options={[{ value: '', label: t('branches.cityAll') }, ...cities]} />
-              </Field>
-            </div>
+    <div className="u8o">
+      <NewLookPageHeader title={t('branches.title')} subtitle={t('branches.subtitle')} />
+      {actionError ? <ErrorBanner message={actionError} /> : null}
+      <section className="u8n-list" aria-label={t('branches.title')}>
+        <div className="u8n-list__toolbar u8o-toolbar">
+          <div className="u8n-list__tools">
+            <label className="u8n-list__search" htmlFor="branches-search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+              <span className="u8n-visually-hidden">{t('branches.searchLabel')}</span>
+              <input id="branches-search" type="search" placeholder={t('branches.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
+            </label>
+            <NewLookSelect id="branches-city-filter" label={t('branches.cityLabel')} value={cityFilter} onChange={setCityFilter} options={[{ value: '', label: t('branches.cityAll') }, ...cities]} />
             {countries.length > 1 || countryFilter ? (
-              <div style={{ minWidth: 180 }}>
-                <Field label={t('branches.countryLabel')} htmlFor="branches-country-filter">
-                  <SelectField value={countryFilter} onChange={(e) => setCountryFilter(e.target.value)} options={[{ value: '', label: t('branches.countryAll') }, ...countries]} />
-                </Field>
-              </div>
+              <NewLookSelect
+                id="branches-country-filter"
+                label={t('branches.countryLabel')}
+                value={countryFilter}
+                onChange={setCountryFilter}
+                options={[{ value: '', label: t('branches.countryAll') }, ...countries]}
+              />
             ) : null}
           </div>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            {/* Decision 226 — archived Branches are hidden by default. */}
-            <Checkbox label={archivedCount ? t('branches.showArchivedCount', { count: archivedCount }) : t('branches.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+          <div className="u8n-list__tools">
             <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('branches.viewAria')} />
+            <button type="button" className="u8n-pill u8n-pill--primary" onClick={() => setCreating(true)}>
+              {t('branches.addBranch')}
+            </button>
           </div>
         </div>
-      </Card>
-      {actionError ? <ErrorBanner message={actionError} /> : null}
-      {isLoading ? (
-        <Spinner />
-      ) : error ? (
-        <ErrorBanner message={error instanceof ApiError ? error.message : t('branches.loadFailed')} />
-      ) : (
-        <Card>
-          {branches.length === 0 ? (
+        <div className="u8n-list__chips">
+          {/* Decision 226 — archived Branches are hidden by default. */}
+          <button type="button" className="u8n-chip" aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}>
+            {archivedCount ? t('branches.showArchivedCount', { count: archivedCount }) : t('branches.showArchived')}
+          </button>
+        </div>
+        {isLoading ? (
+          <div className="u8n-list__state">
+            <Spinner />
+          </div>
+        ) : error ? (
+          <div className="u8n-list__state">
+            <ErrorBanner message={error instanceof ApiError ? error.message : t('branches.loadFailed')} />
+          </div>
+        ) : branches.length === 0 ? (
+          <div className="u8n-list__state">
             <EmptyState
               title={filtering ? t('branches.noMatchTitle') : t('branches.emptyTitle')}
               description={filtering ? t('branches.noMatchDescription') : t('branches.emptyDescription')}
             />
-          ) : viewMode === 'grid' ? (
-            <CardGrid>
-              {branches.map((b) => (
-                <Card key={b.id}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                    <strong>{b.name}</strong>
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                      {b.archivedAt ? <Badge variant="default">{t('branches.archivedBadge')}</Badge> : null}
-                      {b.timezone ? <Badge>{timezoneLabel(b.timezone)}</Badge> : null}
-                    </div>
-                  </div>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{localizeAddressCountry(b.address, formatLocale(), b.addressCountry) ?? '—'}</p>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{b.contactPhone ?? '—'}</p>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
-                    {t('branches.cardCounts', { students: b.studentCount, classes: b.upcomingClassCount })}
-                  </p>
-                  <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-                    {/* Decision 231 — a dedicated settings screen replaces the
-                        previous edit-via-modal path. */}
-                    <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
-                      {t('branches.settings')}
-                    </Button>
-                    <RowActionsMenu
-                      label={t('branches.rowActionsAria', { name: b.name })}
-                      actions={[
-                        b.archivedAt
-                          ? { label: t('branches.unarchive'), onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.unarchiveFailed')) }); } }
-                          : { label: t('branches.archive'), onClick: () => { setActionError(null); setArchiving(b); } },
-                      ]}
-                    />
-                  </div>
-                </Card>
-              ))}
-            </CardGrid>
-          ) : (
-            <Table<BranchListItem>
-              rows={branches}
-              columns={[
-                { key: 'name', header: t('branches.columnName'), render: (b) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{b.name}{b.archivedAt ? <Badge variant="default">{t('branches.archivedBadge')}</Badge> : null}</div>) },
-                { key: 'address', header: t('branches.columnAddress'), render: (b) => localizeAddressCountry(b.address, formatLocale(), b.addressCountry) ?? '—' },
-                { key: 'phone', header: t('branches.columnContactPhone'), render: (b) => b.contactPhone ?? '—' },
-                { key: 'timezone', header: t('branches.columnTimezone'), render: (b) => (b.timezone ? <Badge>{timezoneLabel(b.timezone)}</Badge> : '—') },
-                { key: 'students', header: t('branches.columnStudents'), render: (b) => b.studentCount },
-                { key: 'upcomingClasses', header: t('branches.columnUpcomingClasses'), render: (b) => b.upcomingClassCount },
-                {
-                  key: 'actions',
-                  header: '',
-                  render: (b) => (
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      {/* Decision 231 — a dedicated settings screen replaces the
-                          previous edit-via-modal path. */}
-                      <Button variant="secondary" onClick={() => navigate(`/branches/${b.id}`)}>
-                        {t('branches.settings')}
-                      </Button>
-                      <RowActionsMenu
-                        label={t('branches.rowActionsAria', { name: b.name })}
-                        actions={[
-                          b.archivedAt
-                            ? { label: t('branches.unarchive'), onClick: () => { setActionError(null); unarchiveBranch.mutate(b.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('branches.unarchiveFailed')) }); } }
-                            : { label: t('branches.archive'), onClick: () => { setActionError(null); setArchiving(b); } },
-                        ]}
-                      />
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          )}
-        </Card>
-      )}
+          </div>
+        ) : viewMode === 'grid' ? (
+          <ul className="u8n-grid">
+            {branches.map((b) => (
+              <li key={b.id} className="u8n-grid__card">
+                <div className="u8o-row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <strong className="u8n-grid__name">{b.name}</strong>
+                  <span className="u8o-tags">
+                    {b.archivedAt ? <span className="u8n-tag u8n-tag--inactive">{t('branches.archivedBadge')}</span> : null}
+                    {b.timezone ? <span className="u8n-tag u8n-tag--inactive">{timezoneLabel(b.timezone)}</span> : null}
+                  </span>
+                </div>
+                <p>{address(b)}</p>
+                <p>{b.contactPhone ?? '—'}</p>
+                <p>{t('branches.cardCounts', { students: b.studentCount, classes: b.upcomingClassCount })}</p>
+                <div className="u8o-grid-actions">
+                  {settingsButton(b)}
+                  {rowActions(b)}
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="u8n-list__scroll">
+            <table className="u8n-table">
+              <thead>
+                <tr>
+                  <th scope="col">{t('branches.columnName')}</th>
+                  <th scope="col">{t('branches.columnAddress')}</th>
+                  <th scope="col">{t('branches.columnContactPhone')}</th>
+                  <th scope="col">{t('branches.columnTimezone')}</th>
+                  <th scope="col" className="u8o-num">{t('branches.columnStudents')}</th>
+                  <th scope="col" className="u8o-num">{t('branches.columnUpcomingClasses')}</th>
+                  <th scope="col">
+                    <span className="u8n-visually-hidden">{t('branches.settings')}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {branches.map((b) => (
+                  <tr key={b.id}>
+                    <td>
+                      <div className="u8o-row u8o-rowname" style={{ gap: 8 }}>
+                        {b.name}
+                        {b.archivedAt ? <span className="u8n-tag u8n-tag--inactive">{t('branches.archivedBadge')}</span> : null}
+                      </div>
+                    </td>
+                    <td>{address(b)}</td>
+                    <td>{b.contactPhone ?? '—'}</td>
+                    <td>{b.timezone ? <span className="u8n-tag u8n-tag--inactive">{timezoneLabel(b.timezone)}</span> : '—'}</td>
+                    <td className="u8o-num">{b.studentCount}</td>
+                    <td className="u8o-num">{b.upcomingClassCount}</td>
+                    <td>
+                      <div className="u8o-actions">
+                        {settingsButton(b)}
+                        {rowActions(b)}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {archiving && schoolId ? (
         <CloseBranchModal branch={archiving} schoolBranches={allBranchesQuery.data?.items ?? []} schoolId={schoolId} onClose={() => setArchiving(null)} />
@@ -226,6 +250,6 @@ export function BranchesPage() {
           onClose={() => setCreating(false)}
         />
       ) : null}
-    </>
+    </div>
   );
 }
