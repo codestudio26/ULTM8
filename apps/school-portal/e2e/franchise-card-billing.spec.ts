@@ -87,7 +87,9 @@ test('the Franchise Owner sees Not connected and connects Stripe, choosing the c
   const card = page.getByTestId('stripe-connect');
   await expect(card.getByTestId('stripe-connect-status')).toHaveText('Not connected');
   await card.getByRole('button', { name: 'Connect Stripe' }).click();
-  await page.getByLabel("Country of the business's bank account").selectOption('GB');
+  // Our own drop-down (DESIGN.md → "Drop-downs"), not the browser's.
+  await page.getByRole('combobox', { name: "Country of the business's bank account" }).click();
+  await page.getByRole('listbox', { name: "Country of the business's bank account" }).getByRole('option', { name: 'United Kingdom' }).click();
   await page.getByRole('button', { name: 'Continue to Stripe' }).click();
 
   await page.waitForURL('https://connect.stripe.test/onboarding');

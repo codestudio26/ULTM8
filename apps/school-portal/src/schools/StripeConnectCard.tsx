@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Field, Modal, SelectField, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { localCountryNames } from '../lib/countryNames';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { STRIPE_CONNECT_RETURN_KEY } from '../franchises/franchiseQueries';
@@ -139,16 +140,19 @@ export function StripeConnectCard({
               void start(country);
             }}
           >
-            <Field label={t('schools.stripeConnect.countryLabel')} htmlFor="school-stripe-connect-country" hint={t('schools.stripeConnect.countryHint')}>
-              <SelectField
+            <div className="u8o-modal-field">
+              <NewLookSelect
                 id="school-stripe-connect-country"
-                required
+                label={t('schools.stripeConnect.countryLabel')}
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                onChange={setCountry}
                 options={[{ value: '', label: t('schools.stripeConnect.chooseCountry') }, ...countries]}
               />
-            </Field>
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <p className="u8o-quiet" style={{ marginTop: 6 }}>
+                {t('schools.stripeConnect.countryHint')}
+              </p>
+            </div>
+            <div className="u8o-pair">
               <Button type="submit" loading={connect.isPending} disabled={!country}>
                 {t('schools.stripeConnect.goToStripe')}
               </Button>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, Spinner } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { useBranchClosePreview, useCloseBranch, type BranchListItem, type CloseBranchInput } from './branchQueries';
 
 /** The API's "no Branch: the whole School" target (CloseBranchDto). */
@@ -82,9 +83,15 @@ export function CloseBranchModal({
                 <strong>{g.label}</strong> — {t('branches.close.staffNoBranch')}
               </p>
             ) : (
-              <Field key={g.key} label={g.label} htmlFor={`close-branch-${g.key}`}>
-                <SelectField value={targets[g.key] ?? ''} onChange={(e) => setTargets((cur) => ({ ...cur, [g.key]: e.target.value || undefined }))} options={g.options} />
-              </Field>
+              <div key={g.key} className="u8o-modal-field">
+                <NewLookSelect
+                  id={`close-branch-${g.key}`}
+                  label={g.label}
+                  value={targets[g.key] ?? ''}
+                  onChange={(value) => setTargets((cur) => ({ ...cur, [g.key]: value || undefined }))}
+                  options={g.options}
+                />
+              </div>
             ),
           )}
           {p.pendingCoachInvites > 0 ? <p>{t('branches.close.invites', { count: p.pendingCoachInvites })}</p> : null}
@@ -92,7 +99,7 @@ export function CloseBranchModal({
           <p style={{ color: 'var(--ultm8-text-muted, inherit)' }}>{t('branches.close.noChargesNoEmails')}</p>
         </>
       ) : null}
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="u8o-pair">
         <Button variant="danger" onClick={confirm} loading={closeBranch.isPending} disabled={!ready}>
           {t('branches.archive')}
         </Button>
