@@ -2,6 +2,10 @@ import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
+/** The calendar itself, without the right-hand panel, which repeats the
+ * selected class (Decision 455). */
+const calendar = (page: import('@playwright/test').Page) => page.locator('.u8n-page__body');
+
 /**
  * Decision 332 in the portal (Timetable review, 26 Oct 2026): Archive asks
  * first (T10), a break can be cleared (T9), a booking-rule change asks Apply or
@@ -266,7 +270,7 @@ test('a cancelled class stays on the calendar, marked Cancelled, with no Book', 
   });
   await signIn(page, s.ownerToken);
   await page.goto('/timetable');
-  await expect(page.getByText('Cancelled', { exact: true })).toBeVisible();
+  await expect(calendar(page).getByText('Cancelled', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: `Actions for ${slotTitle} on ${todayKey}` }).click();
   await expect(page.getByRole('menuitem', { name: 'Open class' })).toBeVisible();
   await expect(page.getByRole('menuitem', { name: 'Book' })).toHaveCount(0);
@@ -292,13 +296,13 @@ test('the calendar shows a one-off class with its seats, and booking it from the
   const key = dateKey(start);
   await signIn(page, s.ownerToken);
   await page.goto('/timetable');
-  await expect(page.getByText('1 of 4 booked')).toBeVisible();
+  await expect(calendar(page).getByText('1 of 4 booked')).toBeVisible();
   await page.getByRole('button', { name: `Actions for One-off Seminar on ${key}` }).click();
   await page.getByRole('menuitem', { name: 'Book' }).click();
   const dialog = page.getByRole('dialog', { name: 'Book — One-off Seminar' });
   await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
   await dialog.getByRole('button', { name: 'Confirm' }).click();
-  await expect(page.getByText('2 of 4 booked')).toBeVisible();
+  await expect(calendar(page).getByText('2 of 4 booked')).toBeVisible();
 });
 
 test('the class details show its break (Decision 353, Q6)', async ({ page }) => {
@@ -346,8 +350,8 @@ test('Branch Staff see their own branch on a read-only timetable and book walk-i
   await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Schedule' }).click();
   await page.getByRole('navigation', { name: 'Schedule pages' }).getByRole('link', { name: 'Timetable' }).click();
   await expect(page.getByRole('heading', { name: 'Timetable' })).toBeVisible();
-  await expect(page.getByText('North Fundamentals')).toBeVisible();
-  await expect(page.getByText('Open Mat')).toBeVisible();
+  await expect(calendar(page).getByText('North Fundamentals')).toBeVisible();
+  await expect(calendar(page).getByText('Open Mat')).toBeVisible();
   await expect(page.getByText('South Fundamentals')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add slot' })).toHaveCount(0);
   await expect(page.getByText('Show archived')).toHaveCount(0);
@@ -360,7 +364,7 @@ test('Branch Staff see their own branch on a read-only timetable and book walk-i
   await expect(dialog.getByLabel('Student').locator('option')).toHaveText(['Select a Student…', 'Sam Lee']);
   await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
   await dialog.getByRole('button', { name: 'Confirm' }).click();
-  await expect(page.getByText('1 of 4 booked')).toBeVisible();
+  await expect(calendar(page).getByText('1 of 4 booked')).toBeVisible();
 });
 
 test('an Instructor still has no Timetable screen', async ({ page }) => {
@@ -411,7 +415,7 @@ test('the owner closes the School for a day: its classes are cancelled and the c
   const monday = (d: Date) => dateKey(new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)));
   if (monday(start) !== monday(new Date())) await page.getByRole('button', { name: 'Next →' }).click();
   await expect(page.getByText('Closed — Holiday')).toBeVisible();
-  await expect(page.getByText('Cancelled', { exact: true })).toBeVisible();
+  await expect(calendar(page).getByText('Cancelled', { exact: true })).toBeVisible();
   expect((await db.booking.findFirstOrThrow({ where: { classId: cls.id } })).status).toBe('CANCELLED');
 
   await page.getByRole('button', { name: 'Closures' }).click();
@@ -456,7 +460,7 @@ test('the School sets its week start and layout, and the calendar filters by bra
     await page.getByRole('button', { name: 'Next →' }).click();
   }
 
-  for (const title of ['BJJ Open', 'Judo Kids', 'Judo Adults North']) await expect(page.getByText(title)).toBeVisible();
+  for (const title of ['BJJ Open', 'Judo Kids', 'Judo Adults North']) await expect(calendar(page).getByText(title)).toBeVisible();
   // The new look's own drop-downs (DESIGN.md → "Drop-downs").
   const pick = async (label: string, option: string) => {
     await page.getByRole('combobox', { name: label }).click();
@@ -465,11 +469,11 @@ test('the School sets its week start and layout, and the calendar filters by bra
   await pick('Style', 'Judo');
   await expect(page.getByText('BJJ Open')).toHaveCount(0);
   await pick('Class type', 'Kids');
-  await expect(page.getByText('Judo Kids')).toBeVisible();
+  await expect(calendar(page).getByText('Judo Kids')).toBeVisible();
   await expect(page.getByText('Judo Adults North')).toHaveCount(0);
   await pick('Class type', 'All class types');
   await pick('Branch', 'South');
   // School-wide classes show on every Branch's timetable.
-  await expect(page.getByText('Judo Kids')).toBeVisible();
+  await expect(calendar(page).getByText('Judo Kids')).toBeVisible();
   await expect(page.getByText('Judo Adults North')).toHaveCount(0);
 });

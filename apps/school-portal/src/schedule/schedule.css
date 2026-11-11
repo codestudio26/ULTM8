@@ -28,6 +28,8 @@
   --u8s-tag-danger-line: #efc4c4;
   --u8s-danger-text: #a12a2a;
   --u8s-today-ring: #9fd3b2;
+  --u8s-row-sel: #edf0f2;
+  --u8s-row-mark: #5d7081;
   /* Soft class-avatar colours (with their initials' colour). */
   --u8s-av0-bg: #d8e6f5;
   --u8s-av0-text: #2b4f80;
@@ -64,6 +66,10 @@
     --u8s-tag-danger-text: #f3b9b9;
     --u8s-tag-danger-line: rgba(239, 140, 140, 0.4);
     --u8s-danger-text: #f3b9b9;
+  --u8s-row-sel: rgba(255, 255, 255, 0.06);
+  --u8s-row-mark: #9fd3b2;
+    --u8s-row-sel: rgba(255, 255, 255, 0.06);
+    --u8s-row-mark: #9fd3b2;
     --u8s-av0-bg: #2e3f55;
     --u8s-av0-text: #c4d6ef;
     --u8s-av1-bg: #2c4a3a;
@@ -421,6 +427,12 @@
   font-weight: 500;
   letter-spacing: 0.02em;
 }
+/* 64px in the panel, on a phone as well (DESIGN.md → avatar sizes). */
+[data-look='redesign'] .u8s-panel .u8s-avatar--lg {
+  width: 64px;
+  height: 64px;
+  font-size: 20px;
+}
 [data-look='redesign'] .u8s-avatar--c0 { background: var(--u8s-av0-bg); color: var(--u8s-av0-text); }
 [data-look='redesign'] .u8s-avatar--c1 { background: var(--u8s-av1-bg); color: var(--u8s-av1-text); }
 [data-look='redesign'] .u8s-avatar--c2 { background: var(--u8s-av2-bg); color: var(--u8s-av2-text); }
@@ -499,7 +511,7 @@
   font-size: 14px;
 }
 [data-look='redesign'] .u8s-table th {
-  padding: 12px 20px;
+  padding: 12px 14px;
   background: var(--u8s-head-bg);
   border-top: 1px solid var(--u8n-line);
   border-bottom: 1px solid var(--u8n-line);
@@ -512,12 +524,20 @@
   white-space: nowrap;
 }
 [data-look='redesign'] .u8s-table td {
-  padding: 14px 20px;
+  padding: 14px 14px;
   border-bottom: 1px solid var(--u8n-line);
   vertical-align: middle;
 }
 [data-look='redesign'] .u8s-table tbody tr:hover {
   background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8s-table th:first-child,
+[data-look='redesign'] .u8s-table td:first-child {
+  padding-inline-start: 20px;
+}
+[data-look='redesign'] .u8s-table th:last-child,
+[data-look='redesign'] .u8s-table td:last-child {
+  padding-inline-end: 20px;
 }
 [data-look='redesign'] .u8s-table tbody tr:last-child td {
   border-bottom: 0;
@@ -525,11 +545,12 @@
 /* Capped columns, so spare width goes to the end of the row (Avatars →
  * "Order in every class row"). */
 [data-look='redesign'] .u8s-table .u8s-col-class {
-  width: 32%;
-  min-width: 240px;
+  width: 30%;
+  min-width: 200px;
 }
+/* Times may wrap after the date, so the table still fits beside the panel. */
 [data-look='redesign'] .u8s-table .u8s-col-time {
-  white-space: nowrap;
+  min-width: 110px;
   color: var(--u8n-text);
 }
 [data-look='redesign'] .u8s-table .u8s-col-actions {
@@ -657,7 +678,7 @@
  * tags → ⋮. The columns have capped widths; spare width sits at the end. */
 [data-look='redesign'] .u8s-entry {
   display: grid;
-  grid-template-columns: 40px minmax(160px, 280px) 150px 150px minmax(0, 1fr) 44px;
+  grid-template-columns: 40px minmax(140px, 260px) 110px 130px minmax(96px, 1fr) 44px;
   align-items: center;
   gap: 14px;
   padding: 12px 20px;
@@ -803,24 +824,132 @@
   background: transparent;
   cursor: pointer;
 }
+/* The soft avatar colour of the slot, ringed in its own darker shade so the
+ * dot stays clearly visible on white and in dark mode (Decision 455, Q6). */
 [data-look='redesign'] .u8s-dot::after {
   content: '';
   position: absolute;
-  inset: 7px;
+  inset: 6px;
   border-radius: 50%;
-  background: var(--u8s-dot, var(--u8s-green-text));
+  background: var(--u8s-dot-bg);
+  box-shadow: inset 0 0 0 2px var(--u8s-dot-ring);
 }
+[data-look='redesign'] .u8s-dot--c0 { --u8s-dot-bg: var(--u8s-av0-bg); --u8s-dot-ring: var(--u8s-av0-text); }
+[data-look='redesign'] .u8s-dot--c1 { --u8s-dot-bg: var(--u8s-av1-bg); --u8s-dot-ring: var(--u8s-av1-text); }
+[data-look='redesign'] .u8s-dot--c2 { --u8s-dot-bg: var(--u8s-av2-bg); --u8s-dot-ring: var(--u8s-av2-text); }
+[data-look='redesign'] .u8s-dot--c3 { --u8s-dot-bg: var(--u8s-av3-bg); --u8s-dot-ring: var(--u8s-av3-text); }
+[data-look='redesign'] .u8s-dot--c4 { --u8s-dot-bg: var(--u8s-av4-bg); --u8s-dot-ring: var(--u8s-av4-text); }
+[data-look='redesign'] .u8s-dot--c5 { --u8s-dot-bg: var(--u8s-av5-bg); --u8s-dot-ring: var(--u8s-av5-text); }
 [data-look='redesign'] .u8s-dot:hover {
   background: var(--u8n-hover);
 }
 
-/* ------------------- Under 1024px: the Classes table as one card per class */
+/* ------------------------------------------- The selected class (panel) */
 
-/* With the menu and the page side by side there is no room for six columns,
- * so each row becomes a card: the class (avatar, name, coach · branch) with
- * its ⋮ on the right, then Starts, Ends and Capacity, each with its column
- * name, then the tags. The same data and actions, nothing clipped. */
-@media (max-width: 1023px) {
+/* The class name is the button that picks a row; the whole row is clickable
+ * too. The selected row is grey with a slate mark on its left edge. */
+[data-look='redesign'] .u8s-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8s-pick:hover .u8s-class__title {
+  text-decoration: underline;
+}
+[data-look='redesign'] .u8s-pick:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+[data-look='redesign'] .u8s-table tbody tr,
+[data-look='redesign'] .u8s-entry,
+[data-look='redesign'] .u8s-tile {
+  cursor: pointer;
+}
+[data-look='redesign'] .u8s-table tbody tr[data-sel='true'],
+[data-look='redesign'] .u8s-entry[data-sel='true'],
+[data-look='redesign'] .u8s-tile[data-sel='true'] {
+  background: var(--u8s-row-sel);
+  box-shadow: inset 4px 0 0 var(--u8s-row-mark);
+}
+/* Never the same colour twice: the ⋮ button turns white on a grey row. */
+[data-look='redesign'] .u8s-card [data-sel='true'] .ultm8-row-actions__trigger {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-field-line);
+}
+
+[data-look='redesign'] .u8s-panel__who {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+[data-look='redesign'] .u8s-panel__name-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+[data-look='redesign'] .u8s-panel__name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-panel__name--cancelled {
+  text-decoration: line-through;
+}
+[data-look='redesign'] .u8s-panel__facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+[data-look='redesign'] .u8s-panel__fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--u8n-line);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8s-panel__fact dt {
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-panel__fact dd {
+  margin: 0;
+  text-align: end;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-panel__tags {
+  padding-top: 14px;
+}
+/* The row's actions, 16px under the content, two to a row, equal widths. */
+[data-look='redesign'] .u8s-panel__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+[data-look='redesign'] .u8s-panel__actions .u8s-pill {
+  padding: 0 12px;
+}
+
+/* ------------- A narrow Classes card: the table as one card per class */
+
+/* When the card is too narrow for six columns (a tablet, or a computer with
+ * the class panel beside the list), each row becomes a card: the class
+ * (avatar, name, coach · branch) with its ⋮ on the right, then Starts, Ends
+ * and Capacity, each with its column name, then the tags. The same data and
+ * actions, nothing clipped. A container query, so it follows the card's own
+ * width rather than the screen's. */
+[data-look='redesign'] .u8s-card--table {
+  container-type: inline-size;
+}
+@container (max-width: 719px) {
   [data-look='redesign'] .u8s-table thead {
     position: absolute;
     width: 1px;
@@ -843,7 +972,9 @@
     padding: 14px 20px;
     border-top: 1px solid var(--u8n-line);
   }
-  [data-look='redesign'] .u8s-table td {
+  [data-look='redesign'] .u8s-table td,
+  [data-look='redesign'] .u8s-table td:first-child,
+  [data-look='redesign'] .u8s-table td:last-child {
     display: block;
     padding: 0;
     border: 0;
@@ -876,6 +1007,22 @@
   }
 }
 
+/* A phone-narrow card: Starts and Ends side by side, Capacity under them. */
+@container (max-width: 559px) {
+  [data-look='redesign'] .u8s-table tbody tr {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+    grid-template-areas:
+      'class class actions'
+      'starts ends ends'
+      'cap cap cap'
+      'tags tags tags';
+    padding: 14px 16px;
+  }
+  [data-look='redesign'] .u8s-table .u8s-col-time {
+    white-space: normal;
+  }
+}
+
 /* ----------------------------------------------- Phone: under 768px */
 
 @media (max-width: 767px) {
@@ -905,18 +1052,6 @@
   [data-look='redesign'] .u8s-toolbar__row,
   [data-look='redesign'] .u8s-toolbar__group {
     width: 100%;
-  }
-  [data-look='redesign'] .u8s-table tbody tr {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
-    grid-template-areas:
-      'class class actions'
-      'starts ends ends'
-      'cap cap cap'
-      'tags tags tags';
-    padding: 14px 16px;
-  }
-  [data-look='redesign'] .u8s-table .u8s-col-time {
-    white-space: normal;
   }
   [data-look='redesign'] .u8s-grid {
     grid-template-columns: 1fr;

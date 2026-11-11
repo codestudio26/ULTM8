@@ -32,7 +32,6 @@ import { ClosuresDialog } from './ClosuresDialog';
 import { slotEndsNextDay } from './slotTimes';
 import {
   addDays,
-  colorForSlot,
   endOfMonth,
   occurrencesForRange,
   startOfMonth,
@@ -47,7 +46,8 @@ import {
 import { formatLocale } from '../i18n/format';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
-import { ClassAvatar } from '../schedule/ClassAvatar';
+import { ClassAvatar, classColourIndex } from '../schedule/ClassAvatar';
+import { ClassPanel } from '../schedule/ClassPanel';
 import { ScheduleSelect } from '../schedule/ScheduleSelect';
 import '../schedule/schedule.css';
 
@@ -145,6 +145,9 @@ export function TimetablePage() {
   const viewMode: ViewMode = chosenViewMode ?? (school?.timetableDefaultLayout === 'GRID' ? 'grid' : 'rows');
   const [anchor, setAnchor] = useState(() => new Date());
   const [booking, setBooking] = useState<BookingTarget | null>(null);
+  // The entry in the right-hand panel (Decision 455, Q2): the first one shown
+  // until another is picked.
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [closuresOpen, setClosuresOpen] = useState(false);
   const [bookedMessage, setBookedMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -223,6 +226,13 @@ export function TimetablePage() {
     else setAnchor((a) => new Date(a.getFullYear(), a.getMonth() + direction, 1));
   }
 
+  // The panel goes with Day and Week (Rows or Grid), where an entry is picked;
+  // Month books straight from its dots.
+  const shown = rangeMode === 'month' ? [] : days.flatMap((day) => day.entries.map((entry) => ({ day, entry, key: selectionKey(day.date, entry) })));
+  const selected = shown.find((x) => x.key === selectedKey) ?? shown[0] ?? null;
+  const entryCtx: EntryContext = { branches, instructors, onBook: setBooking, slotActions, selectedKey: selected?.key ?? null, onSelect: setSelectedKey };
+  const inspector = hasAnything && selected ? <SelectedEntry entry={selected.entry} day={selected.day} ctx={entryCtx} /> : undefined;
+
   const rangeLabel =
     rangeMode === 'day'
       ? rangeStart.toLocaleDateString(formatLocale(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
@@ -250,7 +260,7 @@ export function TimetablePage() {
           ) : undefined
         }
       />
-      <NewLookPage>
+      <NewLookPage inspector={inspector} inspectorLabel={t('timetable.panelLabel')}>
         {bookedMessage ? <SuccessBanner message={bookedMessage} /> : null}
 
         <section className="u8s-card">
@@ -343,14 +353,14 @@ export function TimetablePage() {
           <div className="u8s-week">
             {days.map((day) => (
               <section key={day.date} className="u8s-card u8s-week__col">
-                <DaySection day={day} branches={branches} onBook={setBooking} slotActions={slotActions} compact />
+                <DaySection day={day} ctx={entryCtx} compact />
               </section>
             ))}
           </div>
         ) : (
           <section className="u8s-card">
             {days.map((day) => (
-              <DaySection key={day.date} day={day} branches={branches} onBook={setBooking} slotActions={slotActions} />
+              <DaySection key={day.date} day={day} ctx={entryCtx} />
             ))}
           </section>
         )}
@@ -438,26 +448,27 @@ type SlotActions = {
   mayChange: (slot: TimetableSlotResponse) => boolean;
 };
 
-/** One calendar entry's agenda card — shared by the Rows day-sections and the
- * Grid day columns, so "Book"/"Edit slot" behave identically regardless of
- * layout. A real Class shows its seats; a cancelled or ended one stays visible
- * without Book; an Off or archived slot still renders (dimmed) so Staff can find
- * and re-enable it (Decision 353, T7). */
-function OccurrenceCard({
-  entry,
-  date,
-  branches,
-  onBook,
-  slotActions,
-}: {
-  entry: CalendarEntry;
-  date: string;
+/** What every view needs to draw and act on a calendar entry. */
+interface EntryContext {
   branches: BranchResponse[];
+  instructors: InstructorResponse[];
   onBook: (target: BookingTarget) => void;
   slotActions: SlotActions | null;
-}) {
-  const t = useT();
-  const navigate = useNavigate();
+  /** The entry in the right-hand panel (Decision 455, Q2). */
+  selectedKey: string | null;
+  onSelect: (key: string) => void;
+}
+
+/** One entry's key in the panel selection: its date and its calendar key. */
+function selectionKey(date: string, entry: CalendarEntry): string {
+  return `${date}|${entryKey(entry)}`;
+}
+
+/** Everything the row and the panel show for one entry, worked out once so
+ * the two always agree. A real Class shows its seats; a cancelled or ended one
+ * has no Book; an Off or archived slot still shows (dimmed) so Staff can find
+ * and re-enable it (Decision 353, T7). The actions are the row's ⋮ actions. */
+function describeEntry(entry: CalendarEntry, date: string, ctx: EntryContext, t: TranslateFn, navigate: (to: string) => void) {
   const slot = entry.slot;
   const cls = entry.kind === 'class' ? entry.cls : null;
   const title = cls?.title ?? slot!.title;
@@ -466,64 +477,111 @@ function OccurrenceCard({
   const bookable = !!cls && !cancelled && !ended;
   const full = !!cls && cls.capacity !== null && cls.seatsTaken >= cls.capacity;
   const isArchived = !!slot?.archivedAt;
-  const dimmed = !bookable;
   const startTime = cls ? cls.startTime : slot!.startTime;
   const endTime = cls ? cls.endTime : slot!.endTime;
+  // Decision 432 item 3: a class past midnight says so.
+  const time = `${startTime} – ${endTime}${slotEndsNextDay(startTime, endTime) ? ` (${t('timetable.endsNextDayShort')})` : ''}`;
+  const branch = branchLabel(ctx.branches, cls ? cls.branchId : slot!.branchId, t);
+  // instructorId is a User id (as on Classes): matched on instructor.userId.
+  const instructorId = cls ? cls.instructorId : slot!.instructorId;
+  const instructor = instructorId ? ctx.instructors.find((i) => i.userId === instructorId) : undefined;
+  const coach = instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : null;
+  const seats = cls
+    ? (cls.capacity !== null ? t('timetable.occurrence.seatsOf', { taken: cls.seatsTaken, capacity: cls.capacity }) : t('timetable.occurrence.seats', { taken: cls.seatsTaken })) +
+      (cls.waiting > 0 ? ` · ${t('timetable.occurrence.waiting', { count: cls.waiting })}` : '')
+    : null;
+  const status = (
+    <>
+      {cancelled ? <span className="u8s-tag u8s-tag--danger">{t('timetable.occurrence.cancelled')}</span> : null}
+      {!cancelled && ended ? <span className="u8s-tag">{t('timetable.occurrence.ended')}</span> : null}
+      {bookable && full ? <span className="u8s-tag">{t('timetable.occurrence.full')}</span> : null}
+      {entry.kind === 'later' ? <span className="u8s-tag">{t('timetable.occurrence.later')}</span> : null}
+      {entry.kind === 'template' && slot!.status !== 'ON' ? <span className="u8s-tag">{t('timetable.occurrence.off')}</span> : null}
+      {entry.kind === 'template' && isArchived ? <span className="u8s-tag">{t('timetable.occurrence.archived')}</span> : null}
+    </>
+  );
+  const activities = (cls?.activities ?? slot!.activities).map((a, i) => (
+    <span key={`${a}-${i}`} className="u8s-tag">
+      {a}
+    </span>
+  ));
+  const { slotActions, onBook } = ctx;
+  const actions = [
+    ...(bookable ? [{ label: t('timetable.occurrence.book'), onClick: () => onBook({ classId: cls!.id, title, date }) }] : []),
+    ...(cls ? [{ label: t('timetable.occurrence.openClass'), onClick: () => navigate(`/classes/${cls.id}`) }] : []),
+    ...(slot && slotActions && slotActions.mayChange(slot)
+      ? [
+          { label: t('timetable.occurrence.editSlot'), onClick: () => slotActions.onEdit(slot) },
+          // Decision 226 — School Owner/Manager only, idempotent, blocked
+          // (409) by an upcoming Booking against a generated Class.
+          isArchived
+            ? { label: t('timetable.occurrence.unarchive'), onClick: () => { slotActions.setActionError(null); slotActions.unarchiveSlot.mutate(slot.id, { onError: (err: unknown) => slotActions.setActionError(err instanceof ApiError ? err.message : t('timetable.occurrence.unarchiveFailed')) }); } }
+            : { label: t('timetable.occurrence.archive'), onClick: () => { slotActions.setActionError(null); slotActions.onArchive(slot); } },
+        ]
+      : []),
+  ];
+  return { slot, cls, title, cancelled, dimmed: !bookable, time, branch, coach, seats, status, activities, actions, colourKey: slot?.id ?? cls!.id, bannerUrl: slot?.bannerUrl };
+}
+
+/** One calendar entry's row — shared by the Rows day-sections and the Grid
+ * day columns, so "Book"/"Edit slot" behave identically regardless of layout.
+ * Clicking it (or its name) shows it in the right-hand panel. */
+function OccurrenceCard({ entry, date, ctx }: { entry: CalendarEntry; date: string; ctx: EntryContext }) {
+  const t = useT();
+  const navigate = useNavigate();
+  const d = describeEntry(entry, date, ctx, t, navigate);
+  const key = selectionKey(date, entry);
+  const on = ctx.selectedKey === key;
   return (
-    <div className={'u8s-entry' + (dimmed ? ' u8s-entry--dim' : '')}>
-      <ClassAvatar title={title} bannerUrl={slot?.bannerUrl} colourKey={slot?.id ?? cls!.id} />
+    <div className={'u8s-entry' + (d.dimmed ? ' u8s-entry--dim' : '')} data-sel={on ? 'true' : 'false'} onClick={() => ctx.onSelect(key)}>
+      <ClassAvatar title={d.title} bannerUrl={d.bannerUrl} colourKey={d.colourKey} />
       <div className="u8s-entry__class u8s-class__text">
-        <span className={'u8s-class__name' + (cancelled ? ' u8s-class__name--cancelled' : '')}>
-          <span className="u8s-class__title">{title}</span>
+        <span className={'u8s-class__name' + (d.cancelled ? ' u8s-class__name--cancelled' : '')}>
+          <button type="button" className="u8s-pick" aria-pressed={on} onClick={(e) => (e.stopPropagation(), ctx.onSelect(key))}>
+            <span className="u8s-class__title">{d.title}</span>
+          </button>
         </span>
-        <span className="u8s-class__sub">{branchLabel(branches, cls ? cls.branchId : slot!.branchId, t)}</span>
+        {/* Coach · branch, as on Classes (Decision 455, Q4). */}
+        <span className="u8s-class__sub">{[d.coach, d.branch].filter(Boolean).join(' · ')}</span>
       </div>
       <div className="u8s-entry__when">
-        <span className="u8s-entry__time">
-          {startTime} – {endTime}
-          {/* Decision 432 item 3: a class past midnight says so. */}
-          {slotEndsNextDay(startTime, endTime) ? ` (${t('timetable.endsNextDayShort')})` : ''}
-        </span>
-        <span className="u8s-entry__seats">
-          {cls
-            ? (cls.capacity !== null ? t('timetable.occurrence.seatsOf', { taken: cls.seatsTaken, capacity: cls.capacity }) : t('timetable.occurrence.seats', { taken: cls.seatsTaken })) +
-              (cls.waiting > 0 ? ` · ${t('timetable.occurrence.waiting', { count: cls.waiting })}` : '')
-            : null}
-        </span>
+        <span className="u8s-entry__time">{d.time}</span>
+        <span className="u8s-entry__seats">{d.seats}</span>
       </div>
       <div className="u8s-entry__tags u8s-tags">
-        {(cls?.activities ?? slot!.activities).map((a, i) => (
-          <span key={`${a}-${i}`} className="u8s-tag">
-            {a}
-          </span>
-        ))}
-        {cancelled ? <span className="u8s-tag u8s-tag--danger">{t('timetable.occurrence.cancelled')}</span> : null}
-        {!cancelled && ended ? <span className="u8s-tag">{t('timetable.occurrence.ended')}</span> : null}
-        {bookable && full ? <span className="u8s-tag">{t('timetable.occurrence.full')}</span> : null}
-        {entry.kind === 'later' ? <span className="u8s-tag">{t('timetable.occurrence.later')}</span> : null}
-        {entry.kind === 'template' && slot!.status !== 'ON' ? <span className="u8s-tag">{t('timetable.occurrence.off')}</span> : null}
-        {entry.kind === 'template' && isArchived ? <span className="u8s-tag">{t('timetable.occurrence.archived')}</span> : null}
+        {d.activities}
+        {d.status}
       </div>
       <div className="u8s-entry__actions">
-        <RowActionsMenu
-          label={t('timetable.occurrence.actionsAria', { title, date })}
-          actions={[
-            ...(bookable ? [{ label: t('timetable.occurrence.book'), onClick: () => onBook({ classId: cls!.id, title, date }) }] : []),
-            ...(cls ? [{ label: t('timetable.occurrence.openClass'), onClick: () => navigate(`/classes/${cls.id}`) }] : []),
-            ...(slot && slotActions && slotActions.mayChange(slot)
-              ? [
-                  { label: t('timetable.occurrence.editSlot'), onClick: () => slotActions.onEdit(slot) },
-                  // Decision 226 — School Owner/Manager only, idempotent, blocked
-                  // (409) by an upcoming Booking against a generated Class.
-                  isArchived
-                    ? { label: t('timetable.occurrence.unarchive'), onClick: () => { slotActions.setActionError(null); slotActions.unarchiveSlot.mutate(slot.id, { onError: (err: unknown) => slotActions.setActionError(err instanceof ApiError ? err.message : t('timetable.occurrence.unarchiveFailed')) }); } }
-                    : { label: t('timetable.occurrence.archive'), onClick: () => { slotActions.setActionError(null); slotActions.onArchive(slot); } },
-                ]
-              : []),
-          ]}
-        />
+        <RowActionsMenu label={t('timetable.occurrence.actionsAria', { title: d.title, date })} actions={d.actions} />
       </div>
     </div>
+  );
+}
+
+/** The right-hand panel for the selected entry (Decision 455, Q2). */
+function SelectedEntry({ entry, day, ctx }: { entry: CalendarEntry; day: DayOccurrences; ctx: EntryContext }) {
+  const t = useT();
+  const navigate = useNavigate();
+  const d = describeEntry(entry, day.date, ctx, t, navigate);
+  const capacity = d.cls ? d.cls.capacity : d.slot?.capacity;
+  return (
+    <ClassPanel
+      title={d.title}
+      bannerUrl={d.bannerUrl}
+      colourKey={d.colourKey}
+      cancelled={d.cancelled}
+      status={d.status}
+      facts={[
+        { label: t('timetable.booking.dateLabel'), value: dayHeading(day) },
+        { label: t('timetable.booking.timingsLabel'), value: d.time },
+        { label: t('timetable.form.branchLabel'), value: d.branch },
+        { label: t('timetable.form.instructorLabel'), value: d.coach ?? '—' },
+        { label: t('timetable.form.capacityLabel'), value: d.seats ?? (capacity ?? '—') },
+      ]}
+      tags={<span className="u8s-tags">{d.activities}</span>}
+      actions={d.actions}
+    />
   );
 }
 
@@ -556,30 +614,18 @@ function dayHeading(day: DayOccurrences): string {
 
 /** One day: its heading, any closure, then a row per class. On Rows the
  * days stack in one card; on Grid each day is a narrow column (`compact`). */
-function DaySection({
-  day,
-  branches,
-  onBook,
-  slotActions,
-  compact = false,
-}: {
-  day: DayOccurrences;
-  branches: BranchResponse[];
-  onBook: (target: BookingTarget) => void;
-  slotActions: SlotActions | null;
-  compact?: boolean;
-}) {
+function DaySection({ day, ctx, compact = false }: { day: DayOccurrences; ctx: EntryContext; compact?: boolean }) {
   const t = useT();
   return (
     <div className="u8s-day">
       <h2 className="u8s-day__head">{dayHeading(day)}</h2>
-      <ClosedBanner day={day} branches={branches} />
+      <ClosedBanner day={day} branches={ctx.branches} />
       {day.entries.length === 0 ? (
         <p className="u8s-day__empty">{compact ? '—' : t('timetable.nothingScheduled')}</p>
       ) : (
         <div className="u8s-entries">
           {day.entries.map((entry) => (
-            <OccurrenceCard key={entryKey(entry)} entry={entry} date={day.date} branches={branches} onBook={onBook} slotActions={slotActions} />
+            <OccurrenceCard key={entryKey(entry)} entry={entry} date={day.date} ctx={ctx} />
           ))}
         </div>
       )}
@@ -624,11 +670,10 @@ function MonthGrid({ days, weekStartsOn, onBook }: { days: DayOccurrences[]; wee
                     <button
                       key={cls.id}
                       type="button"
-                      className="u8s-dot"
+                      className={`u8s-dot u8s-dot--c${classColourIndex(cls.timetableSlotId ?? cls.id)}`}
                       title={t('timetable.month.bookDotTitle', { title: cls.title, date: day.date })}
                       aria-label={t('timetable.month.bookDotAria', { title: cls.title, date: day.date })}
                       onClick={() => onBook({ classId: cls.id, title: cls.title, date: day.date })}
-                      style={{ '--u8s-dot': colorForSlot({ id: cls.timetableSlotId ?? cls.id }) } as React.CSSProperties}
                     />
                   ))}
                 </div>

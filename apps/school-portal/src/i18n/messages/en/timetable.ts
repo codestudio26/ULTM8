@@ -3,6 +3,8 @@ export const timetable = {
   subtitle: 'The recurring weekly slot template — click any occurrence to book a Student into it.',
   /** Decision 353 (Q4) — Branch Staff see the calendar read-only. */
   staffSubtitle: 'The classes at your branch. Click a class to book a Student in at the desk.',
+  /** The right-hand panel's label: the selected class. */
+  panelLabel: 'Class',
   addSlot: 'Add slot',
   loadFailed: 'Could not load the Timetable.',
   rangeAria: 'Date range',

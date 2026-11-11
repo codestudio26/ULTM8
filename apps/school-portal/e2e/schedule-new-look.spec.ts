@@ -1,13 +1,15 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
-import { addBranch, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { addBranch, addCoach, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
  * The Schedule pages in the new look (Decision 453): Classes and the
  * Timetable keep every view, filter and action, laid out as DESIGN.md asks —
  * class avatars (a circle with the initials when there is no banner), the
  * class name with its branch under it, the new look's own drop-downs (never a
- * browser <select>), and no sideways page scroll on a phone.
+ * browser <select>), and no sideways page scroll on a phone. Decision 455:
+ * the right-hand panel shows the selected class with the row's own actions,
+ * Timetable rows name the coach, and the Month dots use the soft colours.
  */
 let s: GradingSchool;
 
@@ -41,10 +43,29 @@ test.beforeEach(async () => {
       capacity: 12,
     },
   });
+  // A second class with a coach (an Instructor with a profile, so the
+  // Instructors list the pages already load names them).
+  const coach = await addCoach(s, 'Cody', 'Coach');
+  await db.instructor.create({ data: { id: randomUUID(), userId: coach.id, schoolId: s.schoolId } });
+  await db.class.create({
+    data: {
+      id: randomUUID(),
+      schoolId: s.schoolId,
+      branchId: north.id,
+      instructorId: coach.id,
+      title: 'Kids BJJ',
+      activities: ['BJJ'],
+      styles: [{ disciplineId: s.disciplineId, classType: null }],
+      startDate: start,
+      endDate: end,
+      capacity: 20,
+    },
+  });
 });
 
 test.afterEach(async () => {
   await db.class.deleteMany({ where: { schoolId: s.schoolId } });
+  await db.instructor.deleteMany({ where: { schoolId: s.schoolId } });
 });
 
 test.afterAll(async () => {
@@ -74,7 +95,7 @@ test('Classes: a row shows the class avatar, its branch under the name, and the 
   // Rows/Grid and Show archived are still there.
   await page.getByRole('button', { name: 'Grid', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Grid', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByText('Advanced (Gi)')).toBeVisible();
+  await expect(page.locator('.u8n-page__body').getByText('Advanced (Gi)')).toBeVisible();
   await expect(page.getByLabel('Show archived')).toBeVisible();
 });
 
@@ -105,4 +126,64 @@ test('on a phone neither page scrolls sideways', async ({ page }) => {
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);
   }
+});
+
+test('Classes: the panel shows the picked class and its row actions under it (Decision 455)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/classes');
+
+  const panel = page.getByRole('complementary', { name: 'Class' });
+  await expect(panel).toBeVisible();
+  const pick = page.getByRole('button', { name: 'Kids BJJ', exact: true });
+  await pick.click();
+  await expect(pick).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Advanced (Gi)', exact: true })).toHaveAttribute('aria-pressed', 'false');
+
+  await expect(panel.getByText('Kids BJJ', { exact: true })).toBeVisible();
+  await expect(panel.getByText('Cody Coach', { exact: true })).toBeVisible();
+  await expect(panel.getByText('North', { exact: true })).toBeVisible();
+  await expect(panel.getByText('20', { exact: true })).toBeVisible();
+  // The row's ⋮ actions, as buttons under the content.
+  for (const name of ['View bookings', 'Show QR', 'Roll call', 'Edit', 'Archive']) {
+    await expect(panel.getByRole('button', { name, exact: true })).toBeVisible();
+  }
+  // The row names the coach too.
+  await expect(page.getByRole('row', { name: /Kids BJJ/ }).getByText('Cody Coach · North')).toBeVisible();
+
+  await panel.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Edit class' })).toBeVisible();
+  await page.getByRole('dialog', { name: 'Edit class' }).getByRole('button', { name: 'Cancel' }).click();
+
+  await panel.getByRole('button', { name: 'Roll call', exact: true }).click();
+  await expect(page).toHaveURL(/\/classes\/[^/]+\/roll-call$/);
+});
+
+test('Timetable: rows name the coach, the panel shows the picked class, and Month uses the soft dot colours (Decision 455)', async ({ page }) => {
+  await signIn(page, s.ownerToken);
+  await page.goto('/timetable');
+  const key = dateKey(new Date());
+
+  const entry = page.locator('.u8s-entry').filter({ has: page.getByRole('button', { name: `Actions for Kids BJJ on ${key}` }) });
+  await expect(entry.getByText('Cody Coach · North')).toBeVisible();
+
+  await entry.getByRole('button', { name: 'Kids BJJ', exact: true }).click();
+  const panel = page.getByRole('complementary', { name: 'Class' });
+  await expect(panel.getByText('Kids BJJ', { exact: true })).toBeVisible();
+  await expect(panel.getByText('Cody Coach', { exact: true })).toBeVisible();
+  await expect(panel.getByText('0 of 20 booked')).toBeVisible();
+  await expect(panel.getByRole('button', { name: 'Open class', exact: true })).toBeVisible();
+  // A one-off class has no slot to edit.
+  await expect(panel.getByRole('button', { name: 'Edit slot' })).toHaveCount(0);
+
+  await panel.getByRole('button', { name: 'Book', exact: true }).click();
+  const booking = page.getByRole('dialog', { name: 'Book — Kids BJJ' });
+  await expect(booking).toBeVisible();
+  await booking.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(booking).toHaveCount(0);
+
+  // Month books from its dots and has no panel; each dot uses a soft colour.
+  await page.getByRole('button', { name: 'Month', exact: true }).click();
+  await expect(page.getByRole('complementary', { name: 'Class' })).toHaveCount(0);
+  const dot = page.getByRole('button', { name: `Book Kids BJJ on ${key}` });
+  await expect(dot).toHaveClass(/u8s-dot--c[0-5]/);
 });

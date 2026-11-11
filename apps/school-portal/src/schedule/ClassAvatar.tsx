@@ -13,7 +13,8 @@ export function classInitials(title: string): string {
   return letters.join('').toUpperCase() || '?';
 }
 
-function colourIndex(key: string): number {
+/** Which of the soft colours a class (or a slot's every date) gets. */
+export function classColourIndex(key: string): number {
   let hash = 0;
   for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
   return hash % COLOURS;
@@ -23,12 +24,14 @@ function colourIndex(key: string): number {
  * A class's avatar (DESIGN.md → "Avatars: one shape, the circle"): the class's
  * own banner cropped to a circle, or its initials on a soft colour. `colourKey`
  * keeps one class (or one timetable slot's every date) the same colour.
- * 40px in a list row on a computer, 44px on a phone (schedule.css).
+ * 40px in a list row on a computer, 44px on a phone, 64px (`large`) in the
+ * right-hand panel (schedule.css).
  */
-export function ClassAvatar({ title, bannerUrl, colourKey }: { title: string; bannerUrl?: string | null; colourKey: string }) {
-  if (bannerUrl) return <img className="u8s-avatar" src={bannerUrl} alt="" />;
+export function ClassAvatar({ title, bannerUrl, colourKey, large = false }: { title: string; bannerUrl?: string | null; colourKey: string; large?: boolean }) {
+  const size = large ? ' u8s-avatar--lg' : '';
+  if (bannerUrl) return <img className={'u8s-avatar' + size} src={bannerUrl} alt="" />;
   return (
-    <span className={`u8s-avatar u8s-avatar--c${colourIndex(colourKey)}`} aria-hidden="true">
+    <span className={`u8s-avatar u8s-avatar--c${classColourIndex(colourKey)}${size}`} aria-hidden="true">
       {classInitials(title)}
     </span>
   );

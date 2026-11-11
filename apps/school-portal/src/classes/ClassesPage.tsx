@@ -17,6 +17,7 @@ import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
 import { ClassAvatar } from '../schedule/ClassAvatar';
+import { ClassPanel } from '../schedule/ClassPanel';
 import { ScheduleSelect } from '../schedule/ScheduleSelect';
 import '../schedule/schedule.css';
 
@@ -100,6 +101,9 @@ export function ClassesPage() {
   const [editing, setEditing] = useState<ClassResponse | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [archiving, setArchiving] = useState<ClassResponse | null>(null);
+  // The class in the right-hand panel (Decision 455, Q2): the first row until
+  // another is picked.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (!schoolId) return null;
 
@@ -153,16 +157,29 @@ export function ClassesPage() {
   }
   const branchName = (c: ClassResponse) => branches.find((b) => b.id === c.branchId)?.name ?? (c.branchId ? c.branchId : t('classes.wholeSchool'));
 
-  /** Avatar → class name (coach · branch under it), DESIGN.md → "Avatars". */
+  function statusTags(c: ClassResponse) {
+    return (
+      <>
+        {c.archivedAt ? <span className="u8s-tag">{t('classes.archived')}</span> : null}
+        {c.cancelledAt ? <span className="u8s-tag u8s-tag--danger">{t('classes.cancelled')}</span> : null}
+      </>
+    );
+  }
+
+  const selected = classes.find((c) => c.id === selectedId) ?? classes[0] ?? null;
+
+  /** Avatar → class name (coach · branch under it), DESIGN.md → "Avatars".
+   * The name is the button that shows the class in the panel. */
   function classCell(c: ClassResponse) {
     return (
       <span className="u8s-class">
         <ClassAvatar title={c.title} bannerUrl={c.bannerUrl} colourKey={c.timetableSlotId ?? c.id} />
         <span className="u8s-class__text">
           <span className={'u8s-class__name' + (c.cancelledAt ? ' u8s-class__name--cancelled' : '')}>
-            <span className="u8s-class__title">{c.title}</span>
-            {c.archivedAt ? <span className="u8s-tag">{t('classes.archived')}</span> : null}
-            {c.cancelledAt ? <span className="u8s-tag u8s-tag--danger">{t('classes.cancelled')}</span> : null}
+            <button type="button" className="u8s-pick" aria-pressed={selected?.id === c.id} onClick={(e) => (e.stopPropagation(), setSelectedId(c.id))}>
+              <span className="u8s-class__title">{c.title}</span>
+            </button>
+            {statusTags(c)}
           </span>
           <span className="u8s-class__sub">
             {[instructorName(c), branchName(c)].filter(Boolean).join(' · ')}
@@ -174,6 +191,28 @@ export function ClassesPage() {
 
   const actionsMenu = (c: ClassResponse) => <RowActionsMenu label={t('classes.actionsAria', { title: c.title })} actions={actionsFor(c)} />;
   const showPager = !isLoading && !error && (classes.length > 0 || pageIndex > 0);
+
+  // The selected class: only what this page already loads, and the row's own
+  // ⋮ actions under it (Decision 455, Q2).
+  const inspector =
+    !isLoading && !error && selected ? (
+      <ClassPanel
+        title={selected.title}
+        bannerUrl={selected.bannerUrl}
+        colourKey={selected.timetableSlotId ?? selected.id}
+        cancelled={!!selected.cancelledAt}
+        status={selected.archivedAt || selected.cancelledAt ? statusTags(selected) : null}
+        facts={[
+          { label: t('classes.columns.starts'), value: zonedTime(selected.startDate, selected) },
+          { label: t('classes.columns.ends'), value: zonedTime(selected.endDate, selected) },
+          { label: t('classes.columns.branch'), value: branchName(selected) },
+          { label: t('classes.columns.instructor'), value: instructorName(selected) ?? '—' },
+          { label: t('classes.columns.capacity'), value: selected.capacity ?? t('classes.unlimited') },
+        ]}
+        tags={tags(selected)}
+        actions={actionsFor(selected)}
+      />
+    ) : undefined;
 
   return (
     <>
@@ -188,8 +227,8 @@ export function ClassesPage() {
           )
         }
       />
-      <NewLookPage>
-        <section className="u8s-card">
+      <NewLookPage inspector={inspector} inspectorLabel={t('classes.panelLabel')}>
+        <section className="u8s-card u8s-card--table">
           <div className="u8s-toolbar">
             <div className="u8s-toolbar__row">
               <label className="u8s-search">
@@ -299,7 +338,7 @@ export function ClassesPage() {
             ) : viewMode === 'grid' ? (
               <div className="u8s-grid">
                 {classes.map((c) => (
-                  <article key={c.id} className="u8s-tile">
+                  <article key={c.id} className="u8s-tile" data-sel={selected?.id === c.id ? 'true' : 'false'} onClick={() => setSelectedId(c.id)}>
                     <div className="u8s-tile__head">
                       {classCell(c)}
                       {actionsMenu(c)}
@@ -330,7 +369,7 @@ export function ClassesPage() {
                   </thead>
                   <tbody>
                     {classes.map((c) => (
-                      <tr key={c.id}>
+                      <tr key={c.id} data-sel={selected?.id === c.id ? 'true' : 'false'} onClick={() => setSelectedId(c.id)}>
                         <td className="u8s-col-class">{classCell(c)}</td>
                         <td className="u8s-col-time" data-cell="starts" data-label={t('classes.columns.starts')}>
                           {zonedTime(c.startDate, c)}
