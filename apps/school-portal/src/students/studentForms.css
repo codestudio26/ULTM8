@@ -226,3 +226,8 @@
     flex: 1;
   }
 }
+
+/* Pills keep their own width, not the row's. */
+[data-look='redesign'] .u8f-sheet .ultm8-field > .ultm8-pills {
+  align-self: flex-start;
+}
