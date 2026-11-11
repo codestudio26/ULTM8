@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
-import { Button, Card, ErrorBanner, PageHeader, Spinner, SuccessBanner, Switch, TextField } from '@ultm8/ui';
+import { Navigate } from 'react-router-dom';
+import { Spinner, Switch, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useUpdateWaiverSettings, useWaiverSettings, type WaiverSettings } from './waiverQueries';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { Note, Pill } from './WaiversLook';
+import './waivers.css';
 
 type Toggle = 'archivedCount' | 'adult' | 'paper' | 'joinNotice';
 
@@ -57,6 +60,13 @@ const wholeIn = (value: string, min: number, max: number) => /^\d+$/.test(value)
  * Waivers → Settings (Decision 354): how waivers work at this School. The
  * Owner and Managers choose; each setting explains both choices and what most
  * schools pick, since there is no single right answer.
+ *
+ * In the new look (Decision 453). The approved design draws no waiver
+ * settings screen, so this keeps the page's layout and only restyles it, in
+ * the Waivers page's pieces (WaiversLook.tsx, waivers.css): the white page
+ * header with "‹ Back to waivers", the settings in one white card with
+ * Save changes / Discard as a button pair under them, and the retention rule
+ * in a second card.
  */
 export function WaiverSettingsPage() {
   const t = useT();
@@ -72,9 +82,26 @@ export function WaiverSettingsPage() {
   }, [settings.data]);
 
   if (!schoolId) return <Navigate to="/" replace />;
-  if (settings.isLoading || (!form && !settings.error)) return <Spinner />;
+
+  const header = (
+    <NewLookPageHeader
+      title={t('waivers.settings.title')}
+      subtitle={t('waivers.settings.subtitle')}
+      parent={{ to: '/waivers', label: t('waivers.settings.back') }}
+    />
+  );
+  const frame = (content: React.ReactNode) => (
+    <div className="u8w">
+      {header}
+      <NewLookPage>
+        <div className="u8ws">{content}</div>
+      </NewLookPage>
+    </div>
+  );
+
+  if (settings.isLoading || (!form && !settings.error)) return frame(<Spinner />);
   if (settings.error || !form || !settings.data) {
-    return <ErrorBanner message={settings.error instanceof ApiError ? settings.error.message : t('waivers.settings.loadFailed')} />;
+    return frame(<Note kind="error" message={settings.error instanceof ApiError ? settings.error.message : t('waivers.settings.loadFailed')} />);
   }
 
   const current = toForm(settings.data);
@@ -104,7 +131,7 @@ export function WaiverSettingsPage() {
   }
 
   const advice = (key: string) => (
-    <p className="ultm8-field__hint" style={{ margin: '4px 0 0' }}>
+    <p className="u8ws-advice">
       {t(`waivers.settings.${key}.advice` as TranslationKey)}
     </p>
   );
@@ -112,7 +139,7 @@ export function WaiverSettingsPage() {
   const toggle = (key: Toggle) => {
     const field = TOGGLE_FIELD[key];
     return (
-      <div>
+      <div className="u8ws-setting">
         <Switch
           id={`waiver-setting-${key}`}
           label={t(`waivers.settings.${key}.label` as TranslationKey)}
@@ -132,7 +159,7 @@ export function WaiverSettingsPage() {
     unit: 'months' | 'days' | 'age',
     bad: boolean,
   ) => (
-    <div>
+    <div className="u8ws-setting">
       <Switch
         id={`waiver-setting-${key}`}
         label={t(`waivers.settings.${key}.label` as TranslationKey)}
@@ -141,20 +168,21 @@ export function WaiverSettingsPage() {
         onChange={(v) => setForm((f) => (f ? { ...f, [onField]: v } : f))}
       />
       {form[onField] ? (
-        <label className="ultm8-settings-inline" style={{ marginTop: 8 }}>
+        <label className="u8ws-number">
           {t(`waivers.settings.${key}.${unit}` as TranslationKey)}
           <TextField
             type="number"
             min={1}
             max={NUMBER_MAX[unit]}
             value={form[numberField]}
+            aria-invalid={bad || undefined}
             aria-label={t(`waivers.settings.${key}.${unit}` as TranslationKey)}
             onChange={(e) => setForm((f) => (f ? { ...f, [numberField]: e.target.value } : f))}
           />
         </label>
       ) : null}
       {bad ? (
-        <p role="alert" className="ultm8-field__error" style={{ margin: '4px 0 0' }}>
+        <p role="alert" className="u8ws-invalid">
           {t(`waivers.settings.${key}.invalid` as TranslationKey)}
         </p>
       ) : null}
@@ -162,17 +190,12 @@ export function WaiverSettingsPage() {
     </div>
   );
 
-  return (
+  return frame(
     <>
-      <PageHeader
-        title={t('waivers.settings.title')}
-        subtitle={t('waivers.settings.subtitle')}
-        actions={<Link to="/waivers">{t('waivers.settings.back')}</Link>}
-      />
-      {error ? <ErrorBanner message={error} /> : null}
-      {saved && !dirty ? <SuccessBanner message={t('waivers.settings.saved')} /> : null}
-      <Card>
-        <div style={{ display: 'grid', gap: 20, maxWidth: '70ch' }}>
+      {error ? <Note kind="error" message={error} /> : null}
+      {saved && !dirty ? <Note kind="success" message={t('waivers.settings.saved')} /> : null}
+      <section className="u8w-card u8ws-card" aria-label={t('waivers.settings.title')}>
+        <div className="u8ws-list">
           {toggle('archivedCount')}
           {timed('renewal', 'renewalOn', 'renewalMonths', 'months', monthsBad)}
           {toggle('adult')}
@@ -181,22 +204,20 @@ export function WaiverSettingsPage() {
           {toggle('joinNotice')}
           {timed('reminders', 'remindersOn', 'reminderDays', 'days', daysBad)}
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-          <Button onClick={save} loading={update.isPending} disabled={!dirty || monthsBad || daysBad || ageBad}>
+        <div className="u8w-pair u8ws-actions">
+          <Pill primary onClick={save} loading={update.isPending} disabled={!dirty || monthsBad || daysBad || ageBad}>
             {t('waivers.settings.saveChanges')}
-          </Button>
-          <Button variant="secondary" disabled={!dirty} onClick={() => setForm(current)}>
+          </Pill>
+          <Pill disabled={!dirty} onClick={() => setForm(current)}>
             {t('waivers.settings.discard')}
-          </Button>
+          </Pill>
         </div>
-      </Card>
+      </section>
       {/* Decision 426: one platform-wide rule, not a School setting. */}
-      <div style={{ marginTop: 16 }}>
-        <Card>
-          <h3 style={{ fontSize: 15, margin: '0 0 4px', color: 'var(--text-primary)' }}>{t('waivers.retention.heading')}</h3>
-          <p style={{ fontSize: 14, margin: 0, color: 'var(--text-secondary)', maxWidth: '70ch' }}>{t('waivers.retention.note')}</p>
-        </Card>
-      </div>
-    </>
+      <section className="u8w-card u8ws-card u8ws-retention">
+        <h2 className="u8ws-heading">{t('waivers.retention.heading')}</h2>
+        <p>{t('waivers.retention.note')}</p>
+      </section>
+    </>,
   );
 }
