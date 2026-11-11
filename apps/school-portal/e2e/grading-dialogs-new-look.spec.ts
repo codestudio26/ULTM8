@@ -87,7 +87,7 @@ test('the Ranks tab dialogs: the button band, Cancel first, and no browser drop-
   await card.getByRole('button', { name: /^Note changes: / }).first().click();
   const changes = page.getByRole('dialog', { name: 'Note changes' });
   await expectNewLook(changes, ['Close']);
-  await changes.getByRole('button', { name: 'Close' }).click();
+  await changes.getByRole('button', { name: 'Close', exact: true }).click();
 
   await card.getByRole('button', { name: /^Void entry: / }).first().click();
   const voidIt = page.getByRole('dialog', { name: 'Void history entry' });
