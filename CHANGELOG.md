@@ -10,6 +10,9 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **Fix: the Students list no longer scrolls sideways on a phone** (layout
+  only). The whole page measured ~594px on a 390px phone in Rows view; now
+  only the table scrolls, inside its card, as DESIGN.md → "Phone layout" says.
 - **New look: Waivers** (Decision 453; visual only). The waivers list beside
   the reader, with the selected waiver's Signatures and Guest signatures in
   the right-hand panel; new-look buttons, chip, search and tags; on a phone

@@ -270,6 +270,11 @@
 
 /* The table */
 [data-look='redesign'] .u8n-list__scroll {
+  /* The positioning box for the table's hidden heading text (.u8n-visually-
+     hidden is absolute). Without it that 1px span sits at its spot in the
+     640px table but is placed against the page, so it escapes this scroller
+     and makes the whole page scroll sideways on a phone. */
+  position: relative;
   overflow-x: auto;
 }
 [data-look='redesign'] .u8n-table {
