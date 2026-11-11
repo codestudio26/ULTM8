@@ -28,7 +28,7 @@ test('with the setting on, "Give role" sends a Branch Staff invite instead', asy
   await expect(setting).toHaveAttribute('aria-checked', 'true');
   await expect.poll(async () => (await db.school.findUniqueOrThrow({ where: { id: s.schoolId } })).staffMustAcceptFirst).toBe(true);
 
-  const card = page.locator('.ultm8-card').filter({ hasText: 'Give a role' });
+  const card = page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Give a role' }) });
   await card.getByLabel('Email').fill(bea.email);
   await card.getByRole('button', { name: 'Find' }).click();
   await expect(card.getByText('Found Bea Hire.')).toBeVisible();
@@ -41,8 +41,11 @@ test('with the setting on, "Give role" sends a Branch Staff invite instead', asy
   const invite = await db.coachInvite.findFirstOrThrow({ where: { schoolId: s.schoolId } });
   expect(invite).toMatchObject({ role: 'BRANCH_STAFF', branchId: north.id, email: bea.email.toLowerCase() });
   expect(await db.roleGrant.count({ where: { userId: bea.id, schoolId: s.schoolId } })).toBe(0);
+  // The invite waits under Team → Invite coaches (Decision 456).
+  await page.goto('/team/invite-coaches');
   const row = page.getByRole('row', { name: new RegExp(bea.email.toLowerCase().replace(/[.+]/g, '\\$&')) });
   await expect(row.getByText('Branch Staff')).toBeVisible();
+  await page.goto('/staff');
 
   // A co-owner still gets the role at once.
   const cara = await addPerson('Cara', 'Partner');

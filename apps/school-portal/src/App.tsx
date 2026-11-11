@@ -24,6 +24,7 @@ import { DashboardPage } from './dashboard/DashboardPage';
 import { BookingsDrilldownPage } from './dashboard/BookingsDrilldownPage';
 import { BranchesPage } from './branches/BranchesPage';
 import { BranchSettingsPage } from './branches/BranchSettingsPage';
+import { InviteCoachesPage } from './roleGrants/InviteCoachesPage';
 import { StaffPage } from './roleGrants/StaffPage';
 import { DisciplinesPage } from './disciplines/DisciplinesPage';
 import { DisciplineDetailPage } from './disciplines/DisciplineDetailPage';
@@ -219,6 +220,16 @@ export function App() {
           <RequireAuth>
             <Shell>
               <StaffPage />
+            </Shell>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/team/invite-coaches"
+        element={
+          <RequireAuth>
+            <Shell>
+              <InviteCoachesPage />
             </Shell>
           </RequireAuth>
         }

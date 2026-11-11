@@ -19,7 +19,8 @@ test.afterAll(async () => {
 
 test('the owner sends an invite, sees it waiting, and cancels it', async ({ page }) => {
   await signIn(page, s.ownerToken);
-  await page.goto('/staff');
+  // Team → Invite coaches (Decision 456).
+  await page.goto('/team/invite-coaches');
   await page.getByLabel("Coach's email").fill('new.coach@example.test');
   await page.getByRole('button', { name: 'Send invite' }).last().click();
   // No email provider in the test environment: the invite is kept, with a warning.
@@ -56,10 +57,13 @@ test('only the main owner adds or removes people: a co-owner sees a note instead
   await expect(page.getByText("Only the account's main owner can add or remove people.").first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add staff manually' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Find' })).toHaveCount(0);
+  await page.goto('/team/invite-coaches');
+  await expect(page.getByText("Only the account's main owner can add or remove people.").first()).toBeVisible();
   await expect(page.getByLabel("Coach's email")).toHaveCount(0);
   const row = page.getByRole('row', { name: /waiting\.coach@example\.test/ });
   await expect(row.getByText('Waiting', { exact: true })).toBeVisible();
   await expect(row.getByRole('button', { name: /Cancel invite/ })).toHaveCount(0);
+  await page.goto('/staff');
   // Edit details stays; Access (Decision 448 item 6), removing and pausing don't show.
   await page.getByRole('button', { name: 'Actions for Bea Desk' }).click();
   await expect(page.getByRole('menuitem', { name: 'Edit details' })).toBeVisible();

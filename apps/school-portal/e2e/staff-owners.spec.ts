@@ -24,8 +24,8 @@ test.afterAll(async () => {
 });
 
 type Page = import('@playwright/test').Page;
-const giveCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Give a role' });
-const listCard = (page: Page) => page.locator('.ultm8-card').filter({ hasText: 'Your staff' });
+const giveCard = (page: Page) => page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Give a role' }) });
+const listCard = (page: Page) => page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) });
 const listRow = (page: Page, name: string) => listCard(page).getByRole('row').filter({ hasText: name });
 
 test('the owner makes someone a co-owner, then hands them the main owner role after their passcode', async ({ page }) => {

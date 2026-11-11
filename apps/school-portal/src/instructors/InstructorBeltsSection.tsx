@@ -1,19 +1,35 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, Table } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useRanks } from '../ranks/rankQueries';
 import { flattenLadder } from '../grading/ladder';
 import { useSchoolInstructorBelts, useVerifyInstructorBelt, type InstructorBelt } from './instructorBeltQueries';
 import { useT } from '../i18n/I18nProvider';
+import { BeltPicture, BeltStatus, OpenFullPageLink, TeamAvatar, TeamCard, pickRow, showPanel } from '../team/TeamParts';
 
 const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ? err.message : fallback);
 
 /**
  * Instructors' belts (Decisions 108, 188): each instructor chooses their own
  * belt per style on their "My belts" page; the owner verifies it here, or
- * corrects it to the right belt.
+ * corrects it to the right belt. In the new look (Decision 453) each row has
+ * the belt picture and "Open full page ›", and picking a row shows that
+ * person in the Instructors page's right-hand panel.
  */
-export function InstructorBeltsSection({ schoolId }: { schoolId: string }) {
+export function InstructorBeltsSection({
+  schoolId,
+  selectedUserId = null,
+  onPick,
+  profileOf,
+}: {
+  schoolId: string;
+  /** The person in the page's right-hand panel; their rows are marked. */
+  selectedUserId?: string | null;
+  /** Clicking a row shows that person in the panel. */
+  onPick?: (userId: string) => void;
+  /** Their Instructor profile, for the photo and "Open full page ›". */
+  profileOf?: (userId: string) => { id: string; photoUrl?: string | null } | null;
+}) {
   const t = useT();
   const data = useSchoolInstructorBelts(schoolId);
   const verify = useVerifyInstructorBelt(schoolId);
@@ -33,54 +49,95 @@ export function InstructorBeltsSection({ schoolId }: { schoolId: string }) {
   }
 
   return (
-    <Card className="ultm8-field">
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-        {t('instructors.belts.heading')}
-      </h2>
-      <p style={{ marginTop: 0 }}>{t('instructors.belts.intro')}</p>
-      {error ? <ErrorBanner message={error} /> : null}
-      {data.isLoading ? (
-        <Spinner />
-      ) : data.error ? (
-        <ErrorBanner message={errorText(data.error, t('instructors.belts.loadFailed'))} />
-      ) : belts.length === 0 ? (
-        <EmptyState title={t('instructors.belts.emptyTitle')} description={t('instructors.belts.emptyDescription')} />
-      ) : (
-        <Table<InstructorBelt>
-          rows={belts}
-          columns={[
-            { key: 'name', header: t('instructors.belts.columnInstructor'), render: (b) => `${b.firstName} ${b.surname}` },
-            { key: 'style', header: t('instructors.belts.columnStyle'), render: (b) => b.disciplineName },
-            { key: 'belt', header: t('instructors.belts.columnBelt'), render: (b) => b.beltName },
-            {
-              key: 'status',
-              header: t('instructors.belts.columnStatus'),
-              render: (b) => (b.verificationStatus === 'VERIFIED' ? <Badge variant="success">{t('instructors.belts.verified')}</Badge> : <Badge variant="danger">{t('instructors.belts.notVerified')}</Badge>),
-            },
-            {
-              key: 'actions',
-              header: '',
-              render: (b) => (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {b.verificationStatus === 'UNVERIFIED' ? (
-                    <Button variant="secondary" onClick={() => verifyAsChosen(b)} aria-label={t('instructors.belts.verifyAria', { name: `${b.firstName} ${b.surname}`, style: b.disciplineName })}>
-                      {t('instructors.belts.verify')}
-                    </Button>
-                  ) : null}
-                  <Button variant="secondary" onClick={() => setCorrecting(b)} aria-label={t('instructors.belts.correctAria', { name: `${b.firstName} ${b.surname}`, style: b.disciplineName })}>
-                    {t('instructors.belts.correct')}
-                  </Button>
-                </div>
-              ),
-            },
-          ]}
-        />
-      )}
-      {waiting.length > 0 ? (
-        <p className="ultm8-field__hint">{t('instructors.belts.notChosenYet', { names: waiting.map((i) => `${i.firstName} ${i.surname}`).join(', ') })}</p>
+    <TeamCard title={t('instructors.team.belts')} intro={t('instructors.belts.intro')}>
+      {error ? (
+        <div className="u8t-banners">
+          <ErrorBanner message={error} />
+        </div>
       ) : null}
+      {data.isLoading ? (
+        <div className="u8t-state">
+          <Spinner />
+        </div>
+      ) : data.error ? (
+        <div className="u8t-state">
+          <ErrorBanner message={errorText(data.error, t('instructors.belts.loadFailed'))} />
+        </div>
+      ) : belts.length === 0 ? (
+        <div className="u8t-state">
+          <EmptyState title={t('instructors.belts.emptyTitle')} description={t('instructors.belts.emptyDescription')} />
+        </div>
+      ) : (
+        <table className="u8t-table">
+          <thead>
+            <tr>
+              <th scope="col">{t('instructors.belts.columnInstructor')}</th>
+              <th scope="col">{t('instructors.belts.columnStyle')}</th>
+              <th scope="col">{t('instructors.belts.columnBelt')}</th>
+              <th scope="col">{t('instructors.belts.columnStatus')}</th>
+              <th scope="col" />
+            </tr>
+          </thead>
+          <tbody>
+            {belts.map((b) => {
+              const name = `${b.firstName} ${b.surname}`;
+              const profile = profileOf?.(b.userId) ?? null;
+              const row = onPick ? pickRow(selectedUserId === b.userId, () => onPick(b.userId)) : {};
+              return (
+                <tr key={b.id} {...row}>
+                  <td className="u8t-c-main">
+                    <div className="u8t-who">
+                      <TeamAvatar firstName={b.firstName} surname={b.surname} photoUrl={profile?.photoUrl ?? null} />
+                      <div className="u8t-who__text">
+                        {onPick ? (
+                          <button type="button" className="u8t-name" onClick={() => { onPick(b.userId); showPanel(); }}>
+                            {name}
+                          </button>
+                        ) : (
+                          <span>{name}</span>
+                        )}
+                        {profile ? (
+                          <div>
+                            <OpenFullPageLink to={`/instructors/${profile.id}`} name={name} />
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="u8t-k">{t('instructors.belts.columnStyle')}: </span>
+                    {b.disciplineName}
+                  </td>
+                  <td>
+                    <span className="u8t-belt">
+                      <BeltPicture disciplineId={b.disciplineId} stripeTierId={b.stripeTierId} />
+                      <span>{b.beltName}</span>
+                    </span>
+                  </td>
+                  <td className="u8t-c-end">
+                    <BeltStatus verified={b.verificationStatus === 'VERIFIED'} />
+                  </td>
+                  <td className="u8t-c-act">
+                    <div className="u8t-actions">
+                      {b.verificationStatus === 'UNVERIFIED' ? (
+                        <button type="button" className="u8t-pill u8t-pill--go u8t-pill--sm" onClick={() => verifyAsChosen(b)} aria-label={t('instructors.belts.verifyAria', { name, style: b.disciplineName })}>
+                          {t('instructors.belts.verify')}
+                        </button>
+                      ) : null}
+                      <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setCorrecting(b)} aria-label={t('instructors.belts.correctAria', { name, style: b.disciplineName })}>
+                        {t('instructors.belts.correct')}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      {waiting.length > 0 ? <p className="u8t-note">{t('instructors.belts.notChosenYet', { names: waiting.map((i) => `${i.firstName} ${i.surname}`).join(', ') })}</p> : null}
       {correcting ? <CorrectBeltModal schoolId={schoolId} belt={correcting} onClose={() => setCorrecting(null)} /> : null}
-    </Card>
+    </TeamCard>
   );
 }
 

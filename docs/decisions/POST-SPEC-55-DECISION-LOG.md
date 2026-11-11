@@ -8260,3 +8260,27 @@ User (Code), 11 Nov 2026, on the first draft of #541, which had put the new shel
 ### Recorded by
 
 User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #541, #542 and #543.
+
+---
+
+## Decision 456 — New look: the owner's answers on the Team pages
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 453, 454 · **Raised in:** #547 (Team)
+
+### Decision
+
+1. **"Instructors' belts" is renamed "Coaches Info".** It is the Team tab that holds the Instructors list and their belts; the belts card on it is headed "Belts", as DESIGN.md → "Team member full page" has it.
+2. **The everyone-at-once switch tables stay.** The Open mat and Charges permission tables stay on the Staff page as new-look cards. Each person's switches also show in the Team member panel, as the design draws them.
+3. **Nothing from the old look is kept.** Every control on the Team pages, the team member's full page and the forms opened from them (buttons, tick boxes, inputs, selects, switches) takes the new look. Where the control is shared across the portal, the shared one is restyled, so every page gets it. Only the look changes: fields and behaviour stay as they are.
+4. **Team is one page with three tabs: Staff · Coaches Info · Invite coaches.** They are the Team group's tabs in the shell. Staff keeps `/staff`, Coaches Info keeps `/instructors`, and Invite coaches gets `/team/invite-coaches`, holding the Invite a coach form and the Invites list moved out of the Staff page. Each tab shows only to the people who could use its content before. Old links keep working.
+5. **Where the features the design doesn't draw sit.** Filters, columns and Show archived go in the list's toolbar. Row actions go in each row's ⋮ menu. Hand over classes and Resend passcode are buttons on the person's full page, under their details.
+
+This is a layout and naming change only. Business rules, the data model, API contracts, tenancy/RLS and permissions are unchanged.
+
+### Recorded by
+
+User (Code), 11 Nov 2026, answering the questions on #547:
+- On the belts card: "Coaches Info".
+- On the switch tables: "keep it".
+- On the old look: "everything should look like the new design and nothing from the old should be kept".
+- On one Team page with three tabs, and where the extra features sit: "ok".

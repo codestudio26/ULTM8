@@ -52,7 +52,7 @@ export const instructors = {
   roleInviteSent:
     'This School asks new staff to accept first, so we emailed them an invite. Once they accept, use "Add instructor" to add their profile.',
   roleInviteEmailFailed:
-    "This School asks new staff to accept first. The invite was made, but its email couldn't be sent. Cancel it on the Staff page and send it again.",
+    "This School asks new staff to accept first. The invite was made, but its email couldn't be sent. Cancel it under Team → Invite coaches and send it again.",
   detail: {
     back: '← Instructors',
     loadFailed: 'Could not load this Instructor.',
@@ -118,7 +118,6 @@ export const instructors = {
     resendFailed: 'Could not send a new passcode. Please try again.',
   },
   belts: {
-    heading: "Instructors' belts",
     intro: 'Instructors choose their own belt in each style. Verify it, or correct it to the right belt.',
     loadFailed: "Could not load instructors' belts.",
     verifyFailed: 'Could not verify this belt.',
@@ -200,5 +199,21 @@ export const instructors = {
     phone: 'Phone',
     yearsOfExperience: 'Years of experience',
     bio: 'Bio',
+  },
+  team: {
+    panelLabel: 'Team member',
+    openFullPage: 'Open full page',
+    openFullPageAria: 'Open full page: {name}',
+    frontDesk: 'Front desk and money',
+    refundsNote: 'Refunds and credit stay with you, the owner.',
+    belts: 'Belts',
+    profileTab: 'Profile',
+    sectionsAria: 'Team member sections',
+    about: 'About',
+    roles: 'Roles',
+    nextClasses: 'Next classes',
+    allClasses: 'All classes',
+    removeHeading: 'Remove from the team',
+    contact: 'Contact',
   },
 };

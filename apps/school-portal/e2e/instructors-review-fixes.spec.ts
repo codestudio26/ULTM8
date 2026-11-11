@@ -109,15 +109,18 @@ test('the detail page splits upcoming and past classes, and Revoke warns about u
 
   await signIn(page, s.ownerToken);
   await page.goto(`/instructors/${coach.profileId}`);
+  // The full page's Classes tab (DESIGN.md → "Team member full page").
+  await page.getByRole('link', { name: 'Classes', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Upcoming classes' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Past classes' })).toBeVisible();
-  const upcomingText = await page.getByRole('heading', { name: 'Upcoming classes' }).locator('xpath=following-sibling::*[1]').innerText();
+  const upcomingText = await page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Upcoming classes' }) }).innerText();
   expect(upcomingText.indexOf('Soon')).toBeLessThan(upcomingText.indexOf('Later'));
   expect(upcomingText).not.toContain('Last week');
   await expect(page.getByText('Archived one')).toHaveCount(0);
 
   // Decision 331: revoking is refused while they still teach; the owner is
-  // sent to "Hand over classes" instead.
+  // sent to "Hand over classes" instead. Revoking is on the Profile tab.
+  await page.getByRole('link', { name: 'Profile', exact: true }).click();
   await page.getByRole('button', { name: 'Revoke enrollment' }).click();
   const dialog = page.getByRole('dialog', { name: 'Dee Detail still teaches classes' });
   await expect(dialog.getByText(/Hand them over to another instructor first/)).toBeVisible();
