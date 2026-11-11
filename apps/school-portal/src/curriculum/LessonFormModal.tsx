@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button, Checkbox, ErrorBanner, Field, Modal, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
@@ -64,6 +64,16 @@ export function LessonFormModal({
   });
   const [error, setError] = useState<string | null>(null);
   const t = useT();
+  const formRef = useRef<HTMLFormElement>(null);
+
+  /** A drop-down change counts as an edit, as it did with the browser
+   * <select> (whose change fired an `input` event): the dialog's guard then
+   * keeps it open on an outside click or Escape. NewLookSelect is a button,
+   * so the form sends that same `input` event itself. */
+  function picked(update: (f: typeof form) => typeof form) {
+    setForm(update);
+    formRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+  }
 
   function toggleSkill(skillId: string, checked: boolean) {
     setForm((f) => ({
@@ -108,7 +118,7 @@ export function LessonFormModal({
 
   return (
     <Modal title={title} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('curriculum.form.titleLabel')} htmlFor="lesson-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
@@ -120,7 +130,7 @@ export function LessonFormModal({
             id="lesson-category"
             label={t('curriculum.form.categoryLabel')}
             value={form.categoryId}
-            onChange={(v) => setForm((f) => ({ ...f, categoryId: v }))}
+            onChange={(v) => picked((f) => ({ ...f, categoryId: v }))}
             options={[{ value: '', label: t('curriculum.noCategory') }, ...categories.map((c) => ({ value: c.id, label: c.name }))]}
           />
           <p className="ultm8-field__hint">{t('curriculum.form.categoryHint')}</p>
@@ -149,7 +159,7 @@ export function LessonFormModal({
             id="lesson-format"
             label={t('curriculum.form.format')}
             value={form.format}
-            onChange={(v) => setForm((f) => ({ ...f, format: v as 'PRERECORDED' | 'LIVE' }))}
+            onChange={(v) => picked((f) => ({ ...f, format: v as 'PRERECORDED' | 'LIVE' }))}
             options={[
               { value: 'PRERECORDED', label: t('curriculum.formatPrerecorded') },
               { value: 'LIVE', label: t('curriculum.formatLive') },
@@ -161,7 +171,7 @@ export function LessonFormModal({
             id="lesson-instructor"
             label={t('curriculum.form.instructor')}
             value={form.instructorId}
-            onChange={(v) => setForm((f) => ({ ...f, instructorId: v }))}
+            onChange={(v) => picked((f) => ({ ...f, instructorId: v }))}
             options={[
               { value: '', label: t('curriculum.form.none') },
               ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),

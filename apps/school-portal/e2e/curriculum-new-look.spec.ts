@@ -76,6 +76,34 @@ test('the lesson form uses the new look\'s own drop-downs and still saves', asyn
   expect(saved.format).toBe('LIVE');
 });
 
+test('changing only a drop-down counts as an edit: the dialog stays open on an outside click and Escape', async ({ page }) => {
+  await db.lessonCategory.create({ data: { id: randomUUID(), schoolId: s.schoolId, name: 'Submissions', order: 0 } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/curriculum');
+  const edit = card(page, 'No category').getByRole('button', { name: 'Edit Armbar from guard' });
+  const dialog = page.getByRole('dialog', { name: 'Edit lesson' });
+
+  // Untouched, the dialog closes on Escape as before.
+  await edit.click();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+
+  // Change only the Category drop-down.
+  await edit.click();
+  const category = dialog.getByRole('combobox', { name: 'Category' });
+  await category.click();
+  await dialog.getByRole('option', { name: 'Submissions' }).click();
+  await expect(category.locator('[data-shown="true"]')).toHaveText('Submissions');
+
+  // A click on the dimmed page outside the dialog keeps it open.
+  await page.mouse.click(5, 5);
+  await expect(dialog).toBeVisible();
+  // So does Escape.
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeVisible();
+  await expect(category.locator('[data-shown="true"]')).toHaveText('Submissions');
+});
+
 test('a coach gets the page read-only in the new look', async ({ page }) => {
   const coach = await addPerson('Cara', 'Coach', [{ role: 'INSTRUCTOR', schoolId: s.schoolId }]);
   await signIn(page, coach.token);
