@@ -26,6 +26,12 @@ Post-v1.4.0 work on `master`.
   video, Archive/Unarchive and Delete move into its ⋮ menu (a greyed-out item
   shows why under it). Same data, API calls and permissions.
 - **From grading, a student's page opens on Ranks** (Decision 457). Links from the Grading Board and from the "Belts waiting to be verified" notice open the student page on its Ranks tab, so coaches can grade without an extra click.
+- **New look: Cancellations to resolve** (Decision 453; visual only). The
+  approved design has no Cancellations screen, so the page keeps its columns
+  and actions and takes the new header, a white card with the table, soft
+  status tags and pill buttons (Refund and Mark refund paid in mint). When the
+  table doesn't fit (phone, tablet, narrow window) each row becomes a card with
+  the buttons stacked, so nothing scrolls sideways (Decision 458).
 - **New look: the student's full page** (Decision 453; visual only). Two tabs,
   Profile and Ranks; white cards with light header bars; the summary panel on
   the right (status, Edit, check-in code, contact, personal details, home
