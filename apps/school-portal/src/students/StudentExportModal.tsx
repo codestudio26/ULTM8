@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { downloadCsv } from '../transactions/transactionsCsv';
 import { studentExportCsv, studentExportHtml, studentExportTable, type StudentExportFilter } from './studentExport';
 
@@ -45,11 +46,12 @@ export function StudentExportModal({ schoolId, schoolName, withBranch, onClose }
   return (
     <Modal title={t('students.export.title')} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <Field label={t('students.export.filterLabel')} htmlFor="student-export-filter" hint={t('students.export.childrenNote')}>
-        <SelectField
+      <div className="u8n-dd-field">
+        <NewLookSelect
           id="student-export-filter"
+          label={t('students.export.filterLabel')}
           value={filter}
-          onChange={(e) => setFilter(e.target.value as StudentExportFilter)}
+          onChange={(v) => setFilter(v as StudentExportFilter)}
           options={[
             { value: 'ACTIVE', label: t('students.export.filterActive') },
             { value: 'ALL', label: t('students.export.filterAll') },
@@ -57,8 +59,9 @@ export function StudentExportModal({ schoolId, schoolName, withBranch, onClose }
             { value: 'VISITORS', label: t('students.export.filterVisitors') },
           ]}
         />
-      </Field>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', flexWrap: 'wrap', marginTop: 16 }}>
+        <span className="ultm8-field__hint u8n-dd-field__hint">{t('students.export.childrenNote')}</span>
+      </div>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose} disabled={busy !== null}>
           {t('common.cancel')}
         </Button>
@@ -68,7 +71,7 @@ export function StudentExportModal({ schoolId, schoolName, withBranch, onClose }
         <Button onClick={() => run('csv')} loading={busy === 'csv'} disabled={busy !== null}>
           {t('students.export.download')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

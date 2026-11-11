@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Button, Card, ErrorBanner, Field, PageHeader, PhoneField, SelectField, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, PhoneField, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useOwnedSchoolId } from '../auth/AuthContext';
@@ -9,6 +9,10 @@ import { fetchInviteCandidate, type InviteCandidateResponse } from '../roleGrant
 import { useInviteStudent } from './studentQueries';
 import { Trans } from '../i18n/Trans';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { Chapter } from './StudentFormParts';
+import './studentForms.css';
 
 /**
  * Invite a Student (v1.2 backend backlog) — a Staff member enrolling an
@@ -102,72 +106,81 @@ export function InviteStudentPage() {
     }
   }
 
+  // Form pattern "F" (DESIGN.md): one chapter, find the account, then
+  // enrol them.
   return (
     <>
-      <PageHeader title={t('students.invite.title')} subtitle={t('students.invite.subtitle')} />
-      <Card className="ultm8-field">
+      <NewLookPageHeader parent={{ to: '/students', label: t('layout.nav.students') }} title={t('students.invite.title')} subtitle={t('students.invite.subtitle')} />
+      <NewLookPage>
         {inviteSuccess ? (
-          <>
+          <section className="u8f-sheet u8f-result">
             <SuccessBanner message={t('students.invite.enrolled')} />
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div className="u8f-pair">
               <Button onClick={() => navigate('/students')}>{t('students.invite.backToStudents')}</Button>
               <Button variant="secondary" onClick={() => setInviteSuccess(false)}>
                 {t('students.invite.inviteAnother')}
               </Button>
             </div>
-          </>
+          </section>
         ) : !candidate ? (
-          <form onSubmit={handleFind}>
+          <form className="u8f-sheet" onSubmit={handleFind}>
             {findError ? <ErrorBanner message={findError} /> : null}
-            <Field label={t('students.invite.email')} htmlFor="invite-student-email" hint={t('students.invite.emailHint')}>
-              <TextField type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </Field>
-            <Field label={t('students.invite.phone')} htmlFor="invite-student-phone" hint={t('students.invite.phoneHint')}>
-              <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
-            </Field>
-            <Button type="submit" loading={findLoading}>
-              {t('students.invite.find')}
-            </Button>
+            <Chapter number={1} title={t('students.form.findAccount')}>
+              <Field label={t('students.invite.email')} htmlFor="invite-student-email" hint={t('students.invite.emailHint')}>
+                <TextField type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Field>
+              <Field label={t('students.invite.phone')} htmlFor="invite-student-phone" hint={t('students.invite.phoneHint')}>
+                <PhoneField value={phone} onChange={setPhone} defaultCountry={guessDefaultCountry()} />
+              </Field>
+              <div className="u8f-wide u8f-row-actions">
+                <Button type="submit" loading={findLoading}>
+                  {t('students.invite.find')}
+                </Button>
+              </div>
+            </Chapter>
           </form>
         ) : (
-          <form onSubmit={handleInvite}>
+          <form className="u8f-sheet" onSubmit={handleInvite}>
             {inviteError ? <ErrorBanner message={inviteError} /> : null}
-            <p className="ultm8-field">
-              <Trans
-                k="students.invite.found"
-                vars={{ email: candidate.email ?? '' }}
-                nodes={{
-                  name: (
-                    <strong>
-                      {candidate.firstName} {candidate.surname}
-                    </strong>
-                  ),
-                }}
-              />
-            </p>
-            {needsBranch ? (
-              <Field label={t('students.invite.homeBranch')} htmlFor="invite-student-branch">
-                {/* Not `required` — the browser's own HTML5 constraint validation would
-                    silently swallow the submit before handleInvite's own branch check
-                    (and its friendlier error message) ever ran. */}
-                <SelectField
-                  value={branchId}
-                  onChange={(e) => setBranchId(e.target.value)}
-                  options={[{ value: '', label: t('students.invite.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
+            <Chapter number={1} title={t('students.form.findAccount')} done doneLabel={t('common.done')}>
+              <p className="u8f-wide u8f-found">
+                <Trans
+                  k="students.invite.found"
+                  vars={{ email: candidate.email ?? '' }}
+                  nodes={{
+                    name: (
+                      <strong>
+                        {candidate.firstName} {candidate.surname}
+                      </strong>
+                    ),
+                  }}
                 />
-              </Field>
-            ) : null}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Button type="submit" loading={inviteStudent.isPending}>
-                {t('students.invite.enroll')}
-              </Button>
-              <Button type="button" variant="secondary" onClick={resetSearch}>
-                {t('students.invite.searchAgain')}
-              </Button>
-            </div>
+              </p>
+              {needsBranch ? (
+                <div className="u8n-dd-field u8f-wide">
+                  {/* No browser `required` check: handleInvite's own branch
+                      check (and its friendlier message) decides. */}
+                  <NewLookSelect
+                    id="invite-student-branch"
+                    label={t('students.invite.homeBranch')}
+                    value={branchId}
+                    onChange={setBranchId}
+                    options={[{ value: '', label: t('students.invite.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
+                  />
+                </div>
+              ) : null}
+              <div className="u8f-wide u8f-pair">
+                <Button type="submit" loading={inviteStudent.isPending}>
+                  {t('students.invite.enroll')}
+                </Button>
+                <Button type="button" variant="secondary" onClick={resetSearch}>
+                  {t('students.invite.searchAgain')}
+                </Button>
+              </div>
+            </Chapter>
           </form>
         )}
-      </Card>
+      </NewLookPage>
     </>
   );
 }

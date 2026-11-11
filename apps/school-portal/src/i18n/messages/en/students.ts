@@ -1,4 +1,17 @@
 export const students = {
+  // The Students forms in the new look (form pattern F, Decision 453).
+  form: {
+    personal: "Personal details",
+    personalHint: "Who is joining.",
+    otherContacts: "Other contacts",
+    sizes: "Sizes",
+    findAccount: "Find their account",
+    newStudent: "New student",
+    previewHint: "Details appear as you type",
+    born: "Born {date}",
+    readyToSave: "Ready to save",
+    name: "Name",
+  },
   // The Students list in the new look (Decision 453).
   list: {
     filter: 'Filter',

@@ -1912,9 +1912,22 @@ export function Modal({ title, onClose, children, wide = false }: { title: strin
         onInput={markEdited}
         onChange={markEdited}
       >
-        <h2 className="ultm8-page-header__title">{title}</h2>
-        {children}
+        {/* Header, then the content: in the new look the header is a band
+            with a line under it, and the content is padded below it
+            (DESIGN.md → dialogs; redesign-fixes.css §6). */}
+        <div className="ultm8-modal__head">
+          <h2 className="ultm8-page-header__title">{title}</h2>
+        </div>
+        <div className="ultm8-modal__body">{children}</div>
       </div>
     </div>
   );
+}
+
+/** A dialog's buttons, as its last row: in the new look a grey band at the
+ * foot of the dialog, buttons on the right, sharing the row equally
+ * (DESIGN.md → "Button pairs"); full width on a phone. Put Cancel first and
+ * the main action last. Inside a `<form>`, place it as the form's last child. */
+export function ModalActions({ children }: { children: ReactNode }) {
+  return <div className="ultm8-modal__actions">{children}</div>;
 }

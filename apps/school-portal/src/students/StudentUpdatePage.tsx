@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AddressFields, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, PageHeader, PhotoUploadField, SelectField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Button, Checkbox, CurrencyField, ErrorBanner, Field, PhotoUploadField, Spinner, SuccessBanner, TextField, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId, useOwnedSchoolIds } from '../auth/AuthContext';
 import { guessDefaultCountry } from '../lib/phoneCountry';
@@ -11,6 +11,10 @@ import { useT } from '../i18n/I18nProvider';
 import { languageName } from '../i18n/format';
 import { dayFromToday } from '../membershipPlans/freezeQueries';
 import { MemberContactFields } from './MemberDetails';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import { Chapter } from './StudentFormParts';
+import './studentForms.css';
 
 type Form = {
   firstName: string;
@@ -177,9 +181,17 @@ export function StudentUpdatePage() {
     }
   }
 
+  // Gender: three short choices, so pills (DESIGN.md → form pattern "F").
+  const genders = [
+    { value: '', label: t('schools.form.notSet') },
+    { value: 'FEMALE', label: t('frontDesk.signUp.female') },
+    { value: 'MALE', label: t('frontDesk.signUp.male') },
+  ];
+
+  // Form pattern "F" (DESIGN.md): the same fields, as numbered chapters.
   return (
     <>
-      <PageHeader
+      <NewLookPageHeader
         title={t('students.update.title', { name: studentName })}
         subtitle={t('students.update.subtitle')}
         actions={
@@ -188,111 +200,121 @@ export function StudentUpdatePage() {
           </Button>
         }
       />
-      {saved ? <SuccessBanner message={t('students.update.saved')} /> : null}
-      {saveError ? <ErrorBanner message={saveError} /> : null}
-      <Card>
-        <form onSubmit={handleSubmit}>
-          <Field label={t('students.update.firstName')} htmlFor="student-update-firstName">
-            <TextField
-              required
-              value={form.firstName}
-              onChange={(e) => set('firstName', e.target.value)}
-            />
-          </Field>
-          <Field label={t('students.update.surname')} htmlFor="student-update-surname">
-            <TextField
-              required={!form.oneName}
-              disabled={form.oneName}
-              value={form.oneName ? '' : form.surname}
-              onChange={(e) => set('surname', e.target.value)}
-            />
-          </Field>
-          <Checkbox label={t('students.update.hasOnlyOneName')} checked={form.oneName} onChange={(e) => set('oneName', e.target.checked)} />
-          <Field label={t('students.update.username')} htmlFor="student-update-username" hint={t('auth.register.usernameHint')}>
-            <TextField value={form.username} onChange={(e) => set('username', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.dateOfBirth')} htmlFor="student-update-dob" hint={ownsSchool ? undefined : t('students.update.dateOfBirthOwnerOnly')}>
-            <TextField type="date" disabled={!ownsSchool} value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.joinedOn')} htmlFor="student-update-joined-on" hint={t('students.update.joinedOnHint')}>
-            <TextField id="student-update-joined-on" type="date" max={dayFromToday(0)} value={form.joinedOn} onChange={(e) => set('joinedOn', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.gender')} htmlFor="student-update-gender">
+      <NewLookPage>
+        {saved ? <SuccessBanner message={t('students.update.saved')} /> : null}
+        {saveError ? <ErrorBanner message={saveError} /> : null}
+        <form className="u8f-sheet" onSubmit={handleSubmit}>
+          <Chapter number={1} title={t('students.form.personal')}>
+            <Field label={t('students.update.firstName')} htmlFor="student-update-firstName">
+              <TextField required value={form.firstName} onChange={(e) => set('firstName', e.target.value)} />
+            </Field>
+            <Field label={t('students.update.surname')} htmlFor="student-update-surname">
+              <TextField required={!form.oneName} disabled={form.oneName} value={form.oneName ? '' : form.surname} onChange={(e) => set('surname', e.target.value)} />
+            </Field>
+            <div className="u8f-wide">
+              <Checkbox label={t('students.update.hasOnlyOneName')} checked={form.oneName} onChange={(e) => set('oneName', e.target.checked)} />
+            </div>
+            <Field label={t('students.update.username')} htmlFor="student-update-username" hint={t('auth.register.usernameHint')}>
+              <TextField value={form.username} onChange={(e) => set('username', e.target.value)} />
+            </Field>
+            <Field label={t('students.update.nationality')} htmlFor="student-update-nationality">
+              <TextField value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
+            </Field>
+            <Field label={t('students.update.dateOfBirth')} htmlFor="student-update-dob" hint={ownsSchool ? undefined : t('students.update.dateOfBirthOwnerOnly')}>
+              <TextField type="date" disabled={!ownsSchool} value={form.dateOfBirth} onChange={(e) => set('dateOfBirth', e.target.value)} />
+            </Field>
+            <Field label={t('students.update.joinedOn')} htmlFor="student-update-joined-on" hint={t('students.update.joinedOnHint')}>
+              <TextField id="student-update-joined-on" type="date" max={dayFromToday(0)} value={form.joinedOn} onChange={(e) => set('joinedOn', e.target.value)} />
+            </Field>
             {/* Decision 315 item 15: Female, Male or not given. */}
-            <SelectField
-              id="student-update-gender"
-              value={form.gender}
-              onChange={(e) => set('gender', e.target.value)}
-              options={[
-                { value: '', label: t('schools.form.notSet') },
-                { value: 'FEMALE', label: t('frontDesk.signUp.female') },
-                { value: 'MALE', label: t('frontDesk.signUp.male') },
-              ]}
-            />
-          </Field>
-          <Field label={t('students.update.nationality')} htmlFor="student-update-nationality">
-            <TextField value={form.nationality} onChange={(e) => set('nationality', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.language')} htmlFor="student-update-language">
-            <SelectField
-              value={form.language}
-              onChange={(e) => set('language', e.target.value)}
-              options={[
-                { value: '', label: t('schools.form.notSet') },
-                // A value saved before the list existed stays shown until it's changed.
-                ...(initial.language && !(languages ?? []).some((l) => l.code === initial.language) ? [{ value: initial.language, label: initial.language }] : []),
-                ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) })),
-              ]}
-            />
-          </Field>
-          <Field label={t('students.update.currency')} htmlFor="student-update-currency">
-            <CurrencyField
-              id="student-update-currency"
-              value={form.currency}
-              onChange={(code) => set('currency', code)}
-              options={[
-                { code: '', name: t('schools.form.notSet') },
-                ...(initial.currency && !(currencies ?? []).some((c) => c.code === initial.currency) ? [{ code: initial.currency, name: initial.currency }] : []),
-                ...(currencies ?? []),
-              ]}
-              placeholder={t('schools.form.notSet')}
-            />
-          </Field>
-          <AddressFields
-            idPrefix="student-update-address"
-            value={form.address}
-            onChange={(address) => set('address', address)}
-            errors={addressErrors}
-          />
-          <MemberContactFields idPrefix="student-update" value={form} onChange={(key, value) => set(key, value)} />
-          <Field label={t('students.update.weightCategory')} htmlFor="student-update-weight-category" hint={t('students.update.freeTextHint')}>
-            <TextField value={form.weightCategory} onChange={(e) => set('weightCategory', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.kimonoSize')} htmlFor="student-update-kimono-size" hint={t('students.update.freeTextHint')}>
-            <TextField value={form.kimonoSize} onChange={(e) => set('kimonoSize', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.beltSize')} htmlFor="student-update-belt-size" hint={t('students.update.freeTextHint')}>
-            <TextField value={form.beltSize} onChange={(e) => set('beltSize', e.target.value)} />
-          </Field>
-          <Field label={t('students.update.photo')} htmlFor="student-update-photo" hint={t('students.update.photoHint')}>
-            <PhotoUploadField
-              value={form.profilePhotoUrl}
-              onChange={(profilePhotoUrl) => set('profilePhotoUrl', profilePhotoUrl)}
-              requestUpload={(file) =>
-                requestPhotoUpload.mutateAsync({
-                  entityType: 'USER',
-                  schoolId,
-                  entityId: safeStudentId,
-                  contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
-                })
-              }
-            />
-          </Field>
-          <Button type="submit" loading={updateProfile.isPending}>
-            {t('common.save')}
-          </Button>
+            <div className="ultm8-field u8f-wide">
+              <span className="ultm8-field__label" id="student-update-gender-label">
+                {t('students.update.gender')}
+              </span>
+              <div className="ultm8-pills" role="group" aria-labelledby="student-update-gender-label">
+                {genders.map((g) => (
+                  <button key={g.value || 'none'} type="button" className="ultm8-pills__option" aria-pressed={form.gender === g.value} onClick={() => set('gender', g.value)}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="u8n-dd-field">
+              <NewLookSelect
+                id="student-update-language"
+                label={t('students.update.language')}
+                value={form.language}
+                onChange={(v) => set('language', v)}
+                options={[
+                  { value: '', label: t('schools.form.notSet') },
+                  // A value saved before the list existed stays shown until it's changed.
+                  ...(initial.language && !(languages ?? []).some((l) => l.code === initial.language) ? [{ value: initial.language, label: initial.language }] : []),
+                  ...(languages ?? []).map((l) => ({ value: l.code, label: languageName(l.code, l.name) })),
+                ]}
+              />
+            </div>
+            <Field label={t('students.update.currency')} htmlFor="student-update-currency">
+              <CurrencyField
+                id="student-update-currency"
+                value={form.currency}
+                onChange={(code) => set('currency', code)}
+                options={[
+                  { code: '', name: t('schools.form.notSet') },
+                  ...(initial.currency && !(currencies ?? []).some((c) => c.code === initial.currency) ? [{ code: initial.currency, name: initial.currency }] : []),
+                  ...(currencies ?? []),
+                ]}
+                placeholder={t('schools.form.notSet')}
+              />
+            </Field>
+            <div className="u8f-wide">
+              <Field label={t('students.update.photo')} htmlFor="student-update-photo" hint={t('students.update.photoHint')}>
+                <PhotoUploadField
+                  value={form.profilePhotoUrl}
+                  onChange={(profilePhotoUrl) => set('profilePhotoUrl', profilePhotoUrl)}
+                  requestUpload={(file) =>
+                    requestPhotoUpload.mutateAsync({
+                      entityType: 'USER',
+                      schoolId,
+                      entityId: safeStudentId,
+                      contentType: file.type as 'image/png' | 'image/jpeg' | 'image/webp',
+                    })
+                  }
+                />
+              </Field>
+            </div>
+          </Chapter>
+          <Chapter number={2} title={t('students.update.address')}>
+            <div className="u8f-wide u8f-address">
+              <AddressFields
+                idPrefix="student-update-address"
+                value={form.address}
+                onChange={(address) => set('address', address)}
+                errors={addressErrors}
+              />
+            </div>
+          </Chapter>
+          <Chapter number={3} title={t('students.form.otherContacts')}>
+            <MemberContactFields idPrefix="student-update" value={form} onChange={(key, value) => set(key, value)} />
+          </Chapter>
+          {/* One line for the three, instead of the same hint under each. */}
+          <Chapter number={4} title={t('students.form.sizes')} description={t('students.update.freeTextHint')}>
+            <Field label={t('students.update.weightCategory')} htmlFor="student-update-weight-category">
+              <TextField value={form.weightCategory} onChange={(e) => set('weightCategory', e.target.value)} />
+            </Field>
+            <Field label={t('students.update.kimonoSize')} htmlFor="student-update-kimono-size">
+              <TextField value={form.kimonoSize} onChange={(e) => set('kimonoSize', e.target.value)} />
+            </Field>
+            <Field label={t('students.update.beltSize')} htmlFor="student-update-belt-size">
+              <TextField value={form.beltSize} onChange={(e) => set('beltSize', e.target.value)} />
+            </Field>
+          </Chapter>
+          <div className="u8f-actions">
+            <Button type="submit" loading={updateProfile.isPending}>
+              {t('common.save')}
+            </Button>
+          </div>
         </form>
-      </Card>
+      </NewLookPage>
     </>
   );
 }

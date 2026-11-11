@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, Spinner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, ModalActions, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { useStudents } from './studentQueries';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { matchesSearch } from './studentSearch';
 import { beltKeptLine } from './mergeBelts';
 import {
@@ -108,19 +109,20 @@ export function MergeDuplicateModal({
   return (
     <Modal title={t('students.merge.title', { name: keptName })} onClose={onClose} wide>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ marginTop: 0 }}>{t('students.merge.intro', { name: keptName })}</p>
+      <p>{t('students.merge.intro', { name: keptName })}</p>
       <Field label={t('students.merge.searchLabel')} htmlFor="merge-search">
         <TextField id="merge-search" type="search" value={query} onChange={(e) => setQuery(e.target.value)} />
       </Field>
       {students.isLoading ? (
         <Spinner />
       ) : (
-        <Field label={t('students.merge.duplicateLabel')} htmlFor="merge-duplicate" hint={t('students.merge.duplicateHint')}>
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="merge-duplicate"
+            label={t('students.merge.duplicateLabel')}
             value={duplicateId}
-            onChange={(e) => {
-              setDuplicateId(e.target.value);
+            onChange={(v) => {
+              setDuplicateId(v);
               setError(null);
             }}
             options={[
@@ -131,7 +133,8 @@ export function MergeDuplicateModal({
               })),
             ]}
           />
-        </Field>
+          <span className="ultm8-field__hint u8n-dd-field__hint">{t('students.merge.duplicateHint')}</span>
+        </div>
       )}
 
       {duplicateId ? (
@@ -187,14 +190,14 @@ export function MergeDuplicateModal({
         ) : null
       ) : null}
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button variant="danger" onClick={confirm} loading={merge.isPending} disabled={!preview.data || blockers.length > 0}>
-          {t('students.merge.confirm')}
-        </Button>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('students.merge.cancel')}
         </Button>
-      </div>
+        <Button variant="danger" onClick={confirm} loading={merge.isPending} disabled={!preview.data || blockers.length > 0}>
+          {t('students.merge.confirm')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }

@@ -2922,6 +2922,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    form: {
+      personal: "Личные данные",
+      personalHint: "Кто присоединяется.",
+      otherContacts: "Другие контакты",
+      sizes: "Размеры",
+      findAccount: "Найти аккаунт",
+      newStudent: "Новый ученик",
+      previewHint: "Данные появляются по мере ввода",
+      born: "Дата рождения: {date}",
+      readyToSave: "Готово к сохранению",
+      name: "Имя",
+    },
     list: {
       filter: "Фильтр",
       moreActions: "Другие действия",

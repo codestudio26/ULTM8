@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, Spinner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, ModalActions, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { useStudents } from './studentQueries';
 import { useLogAttendance, useLogClasses, type LogClassItem } from './attendanceQueries';
 import { useRosterStudents, useRosters } from './rosterQueries';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /** A class's start time, in the School's time zone the API names. */
 function timeOf(iso: string, timeZone: string): string {
@@ -77,29 +78,31 @@ export function LogAttendanceModal({
 
   return (
     <Modal title={student ? t('students.attendance.log.titleFor', { name: student.name }) : t('students.attendance.log.title')} onClose={onClose}>
-      <p className="ultm8-field__hint" style={{ marginTop: 0 }}>{t('students.attendance.log.intro')}</p>
+      <p className="ultm8-field__hint">{t('students.attendance.log.intro')}</p>
       {error ? <ErrorBanner message={error} /> : null}
       {!student && (rosters.data?.items ?? []).length > 0 ? (
-        <Field label={t('students.rosters.filterLabel')} htmlFor="log-attendance-roster">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="log-attendance-roster"
+            label={t('students.rosters.filterLabel')}
             value={rosterId}
-            onChange={(e) => {
-              setRosterId(e.target.value);
+            onChange={(v) => {
+              setRosterId(v);
               setStudentId('');
               setClassId('');
             }}
             options={[{ value: '', label: t('students.rosters.filterAll') }, ...(rosters.data?.items ?? []).map((r) => ({ value: r.id, label: r.name }))]}
           />
-        </Field>
+        </div>
       ) : null}
       {!student ? (
-        <Field label={t('students.attendance.log.student')} htmlFor="log-attendance-student">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="log-attendance-student"
+            label={t('students.attendance.log.student')}
             value={studentId}
-            onChange={(e) => {
-              setStudentId(e.target.value);
+            onChange={(v) => {
+              setStudentId(v);
               setClassId('');
             }}
             options={[
@@ -109,7 +112,7 @@ export function LogAttendanceModal({
                 .map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
             ]}
           />
-        </Field>
+        </div>
       ) : null}
       {range ? (
         <Field
@@ -140,11 +143,12 @@ export function LogAttendanceModal({
       ) : items.length === 0 ? (
           <p data-testid="log-attendance-no-classes">{t('students.attendance.log.noClasses')}</p>
         ) : (
-          <Field label={t('students.attendance.log.class')} htmlFor="log-attendance-class">
-            <SelectField
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="log-attendance-class"
+              label={t('students.attendance.log.class')}
               value={classId}
-              onChange={(e) => setClassId(e.target.value)}
+              onChange={setClassId}
               options={[
                 { value: '', label: t('students.attendance.log.classPlaceholder') },
                 ...items.map((c) => {
@@ -156,16 +160,16 @@ export function LogAttendanceModal({
                 }),
               ]}
             />
-          </Field>
+          </div>
         )}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
         <Button onClick={submit} disabled={!studentId || !picked || picked.attended} loading={logAttendance.isPending}>
           {t('students.attendance.log.submit')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
