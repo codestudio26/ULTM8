@@ -2674,7 +2674,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Função de instrutor concedida — a pessoa foi avisada por e-mail. Use «Adicionar instrutor» para adicionar o perfil.",
     roleGrantedEmailFailed: "Função de instrutor concedida, mas não foi possível enviar o e-mail de aviso. Use «Adicionar instrutor» para adicionar o perfil.",
     roleInviteSent: "Esta escola pede que a nova equipe aceite primeiro, então enviamos um convite por e-mail. Depois que aceitarem, use \"Adicionar instrutor\" para criar o perfil.",
-    roleInviteEmailFailed: "Esta escola pede que a nova equipe aceite primeiro. O convite foi criado, mas o e-mail não pôde ser enviado. Cancele-o na página Equipe e envie de novo.",
+    roleInviteEmailFailed: "Esta escola pede que a nova equipe aceite primeiro. O convite foi criado, mas o e-mail não pôde ser enviado. Cancele-o em Equipe → Convidar professores e envie de novo.",
     detail: {
       back: "← Instrutores",
       loadFailed: "Não foi possível carregar este instrutor.",

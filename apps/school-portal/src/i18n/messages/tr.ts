@@ -2674,7 +2674,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Eğitmen rolü verildi — kişiye e-postayla bilgi verildi. Profilini eklemek için “Eğitmen ekle”yi kullanın.",
     roleGrantedEmailFailed: "Eğitmen rolü verildi ancak bildirim e-postası gönderilemedi. Profilini eklemek için “Eğitmen ekle”yi kullanın.",
     roleInviteSent: "Bu okul yeni personelin önce kabul etmesini istiyor, bu yüzden bir davet e-postası gönderdik. Kabul ettikten sonra profillerini eklemek için \"Eğitmen ekle\"yi kullanın.",
-    roleInviteEmailFailed: "Bu okul yeni personelin önce kabul etmesini istiyor. Davet oluşturuldu ama e-posta gönderilemedi. Personel sayfasından iptal edip yeniden gönderin.",
+    roleInviteEmailFailed: "Bu okul yeni personelin önce kabul etmesini istiyor. Davet oluşturuldu ama e-posta gönderilemedi. Ekip → Antrenör davet et bölümünden iptal edip yeniden gönderin.",
     detail: {
       back: "← Eğitmenler",
       loadFailed: "Bu eğitmen yüklenemedi.",

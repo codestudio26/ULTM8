@@ -2634,7 +2634,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "已授予教练员角色——已通过邮件通知对方。请使用“添加教练员”添加其档案。",
     roleGrantedEmailFailed: "已授予教练员角色，但通知邮件发送失败。请使用“添加教练员”添加其档案。",
     roleInviteSent: "本学校要求新员工先接受，因此我们已通过邮件发送邀请。对方接受后，请使用“添加教练”来添加其资料。",
-    roleInviteEmailFailed: "本学校要求新员工先接受。邀请已创建，但邮件发送失败。请在员工页面取消后重新发送。",
+    roleInviteEmailFailed: "本学校要求新员工先接受。邀请已创建，但邮件发送失败。请在“团队 → 邀请教练”中取消后重新发送。",
     detail: {
       back: "← 教练员",
       loadFailed: "无法加载此教练员。",

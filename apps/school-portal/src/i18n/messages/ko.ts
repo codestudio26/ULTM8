@@ -2634,7 +2634,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "사범 역할을 부여했습니다. 본인에게 이메일로 알렸습니다. '사범 추가'로 프로필을 추가하세요.",
     roleGrantedEmailFailed: "사범 역할을 부여했지만 알림 이메일을 보내지 못했습니다. '사범 추가'로 프로필을 추가하세요.",
     roleInviteSent: "이 도장은 새 직원이 먼저 수락하도록 하고 있어 초대 이메일을 보냈습니다. 수락하면 \"강사 추가\"로 프로필을 추가하세요.",
-    roleInviteEmailFailed: "이 도장은 새 직원이 먼저 수락하도록 하고 있습니다. 초대는 만들어졌지만 이메일을 보내지 못했습니다. 직원 페이지에서 취소하고 다시 보내세요.",
+    roleInviteEmailFailed: "이 도장은 새 직원이 먼저 수락하도록 하고 있습니다. 초대는 만들어졌지만 이메일을 보내지 못했습니다. 팀 → 코치 초대에서 취소하고 다시 보내세요.",
     detail: {
       back: "← 사범",
       loadFailed: "이 사범 정보를 불러올 수 없습니다.",

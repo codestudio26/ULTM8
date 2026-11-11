@@ -2674,7 +2674,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Ruolo di istruttore assegnato: la persona è stata avvisata via email. Usa «Aggiungi istruttore» per aggiungere il suo profilo.",
     roleGrantedEmailFailed: "Ruolo di istruttore assegnato, ma non è stato possibile inviare l’email di notifica. Usa «Aggiungi istruttore» per aggiungere il suo profilo.",
     roleInviteSent: "Questa scuola chiede al nuovo staff di accettare prima, quindi abbiamo inviato un invito via email. Dopo l'accettazione, usa \"Aggiungi istruttore\" per creare il profilo.",
-    roleInviteEmailFailed: "Questa scuola chiede al nuovo staff di accettare prima. L'invito è stato creato, ma non è stato possibile inviare l'email. Annullalo nella pagina Staff e invialo di nuovo.",
+    roleInviteEmailFailed: "Questa scuola chiede al nuovo staff di accettare prima. L'invito è stato creato, ma non è stato possibile inviare l'email. Annullalo in Team → Invita allenatori e invialo di nuovo.",
     detail: {
       back: "← Istruttori",
       loadFailed: "Impossibile caricare questo istruttore.",

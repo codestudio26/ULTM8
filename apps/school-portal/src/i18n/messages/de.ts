@@ -2674,7 +2674,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Ausbilderrolle vergeben – die Person wurde per E-Mail informiert. Nutze „Ausbilder hinzufügen“, um das Profil anzulegen.",
     roleGrantedEmailFailed: "Ausbilderrolle vergeben, aber die Benachrichtigungs-E-Mail konnte nicht gesendet werden. Nutze „Ausbilder hinzufügen“, um das Profil anzulegen.",
     roleInviteSent: "Diese Schule verlangt, dass neue Mitarbeitende zuerst annehmen. Wir haben ihnen deshalb eine Einladung gemailt. Nach der Annahme kannst du mit „Ausbilder hinzufügen“ das Profil anlegen.",
-    roleInviteEmailFailed: "Diese Schule verlangt, dass neue Mitarbeitende zuerst annehmen. Die Einladung wurde erstellt, aber die E-Mail konnte nicht gesendet werden. Storniere sie auf der Mitarbeiterseite und sende sie erneut.",
+    roleInviteEmailFailed: "Diese Schule verlangt, dass neue Mitarbeitende zuerst annehmen. Die Einladung wurde erstellt, aber die E-Mail konnte nicht gesendet werden. Storniere sie unter Team → Trainer einladen und sende sie erneut.",
     detail: {
       back: "← Ausbilder",
       loadFailed: "Dieser Ausbilder konnte nicht geladen werden.",

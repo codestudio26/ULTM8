@@ -2754,7 +2754,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Nadano rolę instruktora — osoba została powiadomiona e-mailem. Użyj „Dodaj instruktora”, aby dodać jej profil.",
     roleGrantedEmailFailed: "Nadano rolę instruktora, ale nie udało się wysłać e-maila z powiadomieniem. Użyj „Dodaj instruktora”, aby dodać jej profil.",
     roleInviteSent: "Ta szkoła wymaga, by nowy personel najpierw zaakceptował, więc wysłaliśmy zaproszenie e-mailem. Po akceptacji użyj „Dodaj instruktora”, aby dodać profil.",
-    roleInviteEmailFailed: "Ta szkoła wymaga, by nowy personel najpierw zaakceptował. Zaproszenie zostało utworzone, ale nie udało się wysłać e-maila. Anuluj je na stronie Personel i wyślij ponownie.",
+    roleInviteEmailFailed: "Ta szkoła wymaga, by nowy personel najpierw zaakceptował. Zaproszenie zostało utworzone, ale nie udało się wysłać e-maila. Anuluj je w sekcji Zespół → Zaproś trenerów i wyślij ponownie.",
     detail: {
       back: "← Instruktorzy",
       loadFailed: "Nie udało się wczytać tego instruktora.",

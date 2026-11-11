@@ -52,7 +52,7 @@ export const instructors = {
   roleInviteSent:
     'This School asks new staff to accept first, so we emailed them an invite. Once they accept, use "Add instructor" to add their profile.',
   roleInviteEmailFailed:
-    "This School asks new staff to accept first. The invite was made, but its email couldn't be sent. Cancel it on the Staff page and send it again.",
+    "This School asks new staff to accept first. The invite was made, but its email couldn't be sent. Cancel it under Team → Invite coaches and send it again.",
   detail: {
     back: '← Instructors',
     loadFailed: 'Could not load this Instructor.',

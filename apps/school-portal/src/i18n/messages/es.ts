@@ -2674,7 +2674,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Rol de instructor asignado: se le avisó por correo. Usa \"Agregar instructor\" para agregar su perfil.",
     roleGrantedEmailFailed: "Rol de instructor asignado, pero no se pudo enviar el correo de aviso. Usa \"Agregar instructor\" para agregar su perfil.",
     roleInviteSent: "Esta escuela pide que el nuevo personal acepte primero, así que le enviamos una invitación por correo. Cuando acepte, usa \"Agregar instructor\" para crear su perfil.",
-    roleInviteEmailFailed: "Esta escuela pide que el nuevo personal acepte primero. Se creó la invitación, pero no se pudo enviar el correo. Cancélala en la página de Personal y envíala de nuevo.",
+    roleInviteEmailFailed: "Esta escuela pide que el nuevo personal acepte primero. Se creó la invitación, pero no se pudo enviar el correo. Cancélala en Equipo → Invitar entrenadores y envíala de nuevo.",
     detail: {
       back: "← Instructores",
       loadFailed: "No se pudo cargar este instructor.",
