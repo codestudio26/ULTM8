@@ -713,6 +713,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Diğer işlemler",
     columnSurcharge: "Kart ek ücreti",
     surchargeLine: "+ {amount} kart ek ücreti",
     title: "İşlemler",
@@ -3932,6 +3933,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Diğer işlemler",
+      showAll: "Tüm feragatnameleri göster ({count})",
+    },
     exportAll: {
       button: "İmzalı belgeleri dışa aktar",
       title: "Tüm imzalı belgeleri dışa aktar",

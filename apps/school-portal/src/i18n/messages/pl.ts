@@ -719,6 +719,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Więcej działań",
     columnSurcharge: "Dopłata za kartę",
     surchargeLine: "+ {amount} dopłaty za kartę",
     title: "Transakcje",
@@ -4020,6 +4021,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Więcej działań",
+      showAll: "Pokaż wszystkie oświadczenia ({count})",
+    },
     exportAll: {
       button: "Eksportuj podpisane dokumenty",
       title: "Eksportuj wszystkie podpisane dokumenty",

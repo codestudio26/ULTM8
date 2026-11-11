@@ -719,6 +719,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Другие действия",
     columnSurcharge: "Надбавка за карту",
     surchargeLine: "+ {amount} надбавка за оплату картой",
     title: "Транзакции",
@@ -4020,6 +4021,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Другие действия",
+      showAll: "Показать все отказы от ответственности ({count})",
+    },
     exportAll: {
       button: "Экспорт подписанных документов",
       title: "Экспорт всех подписанных документов",

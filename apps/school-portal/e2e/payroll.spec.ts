@@ -4,6 +4,15 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import { addBranch, addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
+/** Picks an option in one of the new look's own drop-downs (DESIGN.md →
+ * "Drop-downs"): a combobox named by its label, then the option by its text. */
+async function choose(scope: Page | Locator, label: string, option: string) {
+  const field = scope.getByRole('combobox', { name: label, exact: true });
+  await field.click();
+  await scope.getByRole('option', { name: option, exact: true }).click();
+  await expect(field.locator('[data-shown="true"]')).toHaveText(option);
+}
+
 /**
  * The payroll report (Decision 320 item 4), the owner's side: setting a
  * coach's hourly and per-class rates, then reading the report over custom
@@ -83,7 +92,7 @@ test('the owner sets a coach’s rates and reads what they earned', async ({ pag
 
   await page.getByRole('tab', { name: 'Report' }).click();
   const report = page.getByTestId('payroll-report');
-  await report.getByLabel('Dates').selectOption('CUSTOM');
+  await choose(report, 'Dates', 'Custom dates');
   await report.getByLabel('From').fill('2026-03-01');
   await report.getByLabel('To').fill('2026-03-31');
   // 2.5 hours × 20.00 + 2 classes × 5.50 = 61.00
@@ -130,7 +139,7 @@ test('Decision 435 item 22: Branch Staff see the payroll report only once the ow
   await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Billing' }).click();
   await expect(page).toHaveURL(/\/payroll$/);
   const report = page.getByTestId('payroll-report');
-  await report.getByLabel('Dates').selectOption('CUSTOM');
+  await choose(report, 'Dates', 'Custom dates');
   await report.getByLabel('From').fill('2026-03-01');
   await report.getByLabel('To').fill('2026-03-31');
   await expect(report.getByRole('row', { name: /Cora Coach/ })).toContainText('61.00 GBP');
@@ -166,7 +175,7 @@ test('Decision 435 item 22: Branch Staff see the payroll report only once the ow
   // Now she sees them, read only, on the page and in the CSV.
   await signIn(page, bea.token);
   await page.goto('/payroll');
-  await report.getByLabel('Dates').selectOption('CUSTOM');
+  await choose(report, 'Dates', 'Custom dates');
   await report.getByLabel('From').fill('2026-03-01');
   await report.getByLabel('To').fill('2026-03-31');
   const cora = report.getByRole('row', { name: /Cora Coach/ });

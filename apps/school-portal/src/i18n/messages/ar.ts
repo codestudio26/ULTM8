@@ -725,6 +725,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "إجراءات أخرى",
     columnSurcharge: "رسوم البطاقة الإضافية",
     surchargeLine: "+ {amount} رسوم بطاقة إضافية",
     title: "المعاملات",
@@ -4108,6 +4109,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "مزيد من الإجراءات",
+      showAll: "عرض كل إقرارات إخلاء المسؤولية ({count})",
+    },
     exportAll: {
       button: "تصدير المستندات الموقّعة",
       title: "تصدير كل المستندات الموقّعة",
