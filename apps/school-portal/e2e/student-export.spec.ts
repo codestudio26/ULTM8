@@ -53,7 +53,7 @@ test('Branch Staff see Export only after the owner turns it on in their Access',
 
   await signIn(page, bea.token);
   await page.goto('/students');
-  await expect(page.getByRole('link', { name: s.student.name })).toBeVisible();
+  await expect(page.getByRole('link', { name: `Open full page: ${s.student.name}` })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Export', exact: true })).toHaveCount(0);
 
   await signIn(page, s.ownerToken);

@@ -8229,3 +8229,34 @@ User (Code), 11 Nov 2026: "ok to all", answering the choices to confirm on #539 
 ### Recorded by
 
 User (Code), 11 Nov 2026, on the first draft of #541, which had put the new shell behind a switch: "NO the new look is what we are going for. Stop creating thing I have not ask for".
+
+---
+
+## Decision 454 — New look: the owner's answers on the app shell, Dashboard and Students list
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decision 453 · **Raised in:** #541 (app shell), #542 (Dashboard), #543 (Students list)
+
+### Decision
+
+**App shell (#541), as built**
+1. Payroll sits under **Billing** and Cancellations under **Schedule** in the side menu.
+2. **Settings** opens the School page until a Settings page of its own exists.
+3. Side-menu rows are 44px tall (the 44px touch-target rule), not 40px.
+4. Branch Staff who can't see Students still get a **Students** group holding only Check-in.
+
+**Dashboard (#542), as built**
+5. Upcoming, Attendance, Birthdays, the "Get your School ready" checklist and the cancellation-policy banner stay on the Dashboard in the new style (they come from Decisions 292, 367 and 374), although the design doesn't draw them.
+6. Birthdays sits where the design has "Ready to grade".
+7. The Branch filter sits under the "Dashboard" title, in place of the "All Branches" line, for Schools with two or more Branches.
+8. **"Ready to grade" and "Check-ins today" are to be added later.** Each needs a small API addition (a School-wide ready-to-grade list and a School-wide check-in count for today). Not built yet.
+
+**Students list (#543), as built**
+9. The line under the "Students" title shows the School's name, as in the design.
+10. The buttons keep their current names, "Add manually" and "Invite a Student".
+11. The Rows / Grid switch is kept (no existing feature is removed because a design doesn't draw it); the student panel shows in the Rows view.
+
+**Still open:** for coaches and Branch Staff, "Check-in" appears both in the top tabs and in the Students page's own tabs. Which one drops it was asked without a suggested answer, so it is left as built until the owner chooses.
+
+### Recorded by
+
+User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #541, #542 and #543.

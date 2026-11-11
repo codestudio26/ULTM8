@@ -123,7 +123,7 @@ test('a member\'s request shows on the Students page; approving it marks them Fr
 
   const frozenRow = page.getByRole('row', { name: /Sam Lee/ });
   await expect(frozenRow.getByText('Frozen', { exact: true })).toBeVisible();
-  await page.getByLabel('Frozen only').check();
+  await page.getByRole('button', { name: 'Frozen only' }).click();
   await expect(page.getByRole('row', { name: /Sam Lee/ })).toBeVisible();
   await expect(page.getByRole('row', { name: /Nia Park/ })).toHaveCount(0);
 });
