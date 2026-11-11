@@ -2577,6 +2577,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleFallback: "Дисциплина",
       toNextRank: "{percent}% до следующего пояса",
       readyToGrade: "Готов к аттестации",
+      readyNote: "Уведомления «Готов к аттестации» — в списке «Готов к аттестации».",
+      nextClass: "Следующее занятие",
+      noneReady: "Никто не готов к аттестации.",
       studentsCount: {
         one: "{count} ученик",
         few: "{count} ученика",

@@ -45,6 +45,9 @@ export const coach = {
     styleFallback: 'Style',
     toNextRank: '{percent}% to next rank',
     readyToGrade: 'Ready to grade',
+    readyNote: '"Ready to grade" alerts are in the Ready to grade list.',
+    nextClass: 'Next class',
+    noneReady: 'No one is ready to grade.',
   },
   invites: {
     loadFailed: 'Could not load your invite rights.',

@@ -2645,6 +2645,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleFallback: "الرياضة",
       toNextRank: "{percent}% نحو الحزام التالي",
       readyToGrade: "جاهز للترقية",
+      readyNote: "«جاهز للترقية»: هذه التنبيهات في قائمة «جاهز للترقية».",
+      nextClass: "الحصة التالية",
+      noneReady: "لا أحد جاهز للترقية.",
       studentsCount: {
         zero: "لا يوجد طلاب",
         one: "طالب واحد",

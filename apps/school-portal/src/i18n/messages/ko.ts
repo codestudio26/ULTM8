@@ -2475,6 +2475,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleFallback: "종목",
       toNextRank: "다음 띠까지 {percent}%",
       readyToGrade: "심사 준비 완료",
+      readyNote: "\"심사 준비 완료\" 알림은 심사 준비 완료 목록에 있습니다.",
+      nextClass: "다음 수업",
+      noneReady: "심사 준비가 된 수련생이 없습니다.",
       studentsCount: {
         other: "수련생 {count}명",
       },

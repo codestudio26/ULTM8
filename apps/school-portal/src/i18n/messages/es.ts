@@ -2509,6 +2509,9 @@ export const messages: PartialMessages<EnglishMessages> = {
       styleFallback: "Disciplina",
       toNextRank: "{percent}% para el siguiente grado",
       readyToGrade: "Listo para examen",
+      readyNote: "Los avisos de «Listo para examen» están en la lista «Listo para examen».",
+      nextClass: "Próxima clase",
+      noneReady: "Nadie está listo para examen.",
       studentsCount: {
         one: "{count} alumno",
         other: "{count} alumnos",
