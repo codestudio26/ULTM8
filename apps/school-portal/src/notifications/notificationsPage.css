@@ -1,0 +1,556 @@
+/* The Notifications page in the new look (Decision 453; NotificationsPage.tsx,
+ * SentBroadcastsSection.tsx). DESIGN-BRIEF §8 "Template rules"; DESIGN.md →
+ * "Stat rows", "One accent: mint", "Greens: mint", "Never the same colour
+ * twice", "Phone layout". The inbox rows follow the Dashboard's "Needs
+ * attention" list (the New Portal vision's Dashboard). Colours come from the
+ * shell's --u8n-* settings (newLookShell.css), so dark mode follows them. */
+
+[data-look='redesign'] {
+  --u8n-notes-go: #def2e2;
+  --u8n-notes-go-text: #50575e;
+  --u8n-notes-link: #3a7556;
+  --u8n-notes-dot: #3a7556;
+  --u8n-notes-new-bg: #e3f1ea;
+  --u8n-notes-new-text: #3a7556;
+  --u8n-notes-new-line: #b7dcc6;
+  --u8n-notes-snoozed-bg: #e5ecf6;
+  --u8n-notes-snoozed-text: #2b4f80;
+  --u8n-notes-snoozed-line: #bccbe2;
+  --u8n-notes-read-bg: #edf0f2;
+  --u8n-notes-read-text: #50575e;
+  --u8n-notes-read-line: #c2c7cb;
+  --u8n-notes-head-bg: #f9fafa;
+  --u8n-notes-danger: #b91c1c;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8n-notes-go: var(--nav-active-bg);
+    --u8n-notes-go-text: var(--nav-active-text);
+    --u8n-notes-link: #9fd3b2;
+    --u8n-notes-dot: #9fd3b2;
+    --u8n-notes-new-bg: rgba(159, 211, 178, 0.16);
+    --u8n-notes-new-text: #b9e3c8;
+    --u8n-notes-new-line: rgba(159, 211, 178, 0.4);
+    --u8n-notes-snoozed-bg: rgba(168, 197, 234, 0.16);
+    --u8n-notes-snoozed-text: #c4d6ef;
+    --u8n-notes-snoozed-line: rgba(168, 197, 234, 0.4);
+    --u8n-notes-read-bg: rgba(255, 255, 255, 0.08);
+    --u8n-notes-read-text: var(--text-secondary);
+    --u8n-notes-read-line: var(--border-strong);
+    --u8n-notes-head-bg: rgba(255, 255, 255, 0.03);
+    --u8n-notes-danger: #f3a5a5;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8n-notes-go: var(--nav-active-bg);
+  --u8n-notes-go-text: var(--nav-active-text);
+  --u8n-notes-link: #9fd3b2;
+  --u8n-notes-dot: #9fd3b2;
+  --u8n-notes-new-bg: rgba(159, 211, 178, 0.16);
+  --u8n-notes-new-text: #b9e3c8;
+  --u8n-notes-new-line: rgba(159, 211, 178, 0.4);
+  --u8n-notes-snoozed-bg: rgba(168, 197, 234, 0.16);
+  --u8n-notes-snoozed-text: #c4d6ef;
+  --u8n-notes-snoozed-line: rgba(168, 197, 234, 0.4);
+  --u8n-notes-read-bg: rgba(255, 255, 255, 0.08);
+  --u8n-notes-read-text: var(--text-secondary);
+  --u8n-notes-read-line: var(--border-strong);
+  --u8n-notes-head-bg: rgba(255, 255, 255, 0.03);
+  --u8n-notes-danger: #f3a5a5;
+}
+
+[data-look='redesign'] .u8n-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+[data-look='redesign'] .u8n-notes > .ultm8-banner {
+  margin: 0;
+}
+
+/* ------------------------------------------------------------ Buttons */
+/* Pills: white with a grey outline; the main action is mint. */
+
+[data-look='redesign'] .u8n-notes__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  box-sizing: border-box;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8n-notes__btn:hover:not(:disabled) {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8n-notes__btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+[data-look='redesign'] .u8n-notes__btn:disabled {
+  cursor: default;
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8n-notes__btn--primary {
+  border-color: transparent;
+  background: var(--u8n-notes-go);
+  color: var(--u8n-notes-go-text);
+}
+[data-look='redesign'] .u8n-notes__btn--primary:hover:not(:disabled) {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .u8n-notes__btn:focus-visible,
+[data-look='redesign'] .u8n-notes a:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .u8n-notes__spin {
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: u8n-notes-spin 0.8s linear infinite;
+}
+@keyframes u8n-notes-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-look='redesign'] .u8n-notes__spin {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------- Number cards (stat row) */
+
+[data-look='redesign'] .u8n-notes__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+[data-look='redesign'] .u8n-notes__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 20px 22px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  border: 1px solid transparent;
+}
+/* A 12px grey uppercase label in a two-line slot, so a label that wraps
+ * never pushes its number down. */
+[data-look='redesign'] .u8n-notes__stat-label {
+  display: flex;
+  align-items: flex-end;
+  min-height: calc(2 * 1.35em);
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-notes__stat-value {
+  display: block;
+  min-height: 1.1em;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------ Cards */
+/* No overflow clipping: a row's ⋯ menu opens below it, past the card. */
+
+[data-look='redesign'] .u8n-notes__card {
+  min-width: 0;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  border: 1px solid transparent;
+}
+[data-look='redesign'] .u8n-notes__card-head {
+  padding: 16px 22px 12px;
+}
+[data-look='redesign'] .u8n-notes__card-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-notes__card-title svg {
+  flex: none;
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8n-notes__card-sub {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-notes__state {
+  padding: 12px 22px 18px;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-notes__empty {
+  padding: 28px 22px;
+  text-align: center;
+}
+[data-look='redesign'] .u8n-notes__card-head + .u8n-notes__empty {
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-notes__empty-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+[data-look='redesign'] .u8n-notes__empty-text {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-notes__more {
+  display: flex;
+  justify-content: center;
+  padding: 14px 22px 18px;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-notes__sub {
+  display: block;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+
+/* ------------------------------------------------------------ Inbox rows */
+/* Unread dot · title, School and message · status and time · ⋯ menu. */
+
+[data-look='redesign'] .u8n-notes__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8n-notes__item {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto 44px;
+  align-items: start;
+  gap: 4px 14px;
+  padding-block: 14px;
+  padding-inline: 22px 12px;
+}
+[data-look='redesign'] .u8n-notes__item + .u8n-notes__item {
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-notes__dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 50%;
+}
+[data-look='redesign'] .u8n-notes__item[data-state='new'] .u8n-notes__dot {
+  background: var(--u8n-notes-dot);
+}
+[data-look='redesign'] .u8n-notes__main {
+  min-width: 0;
+}
+[data-look='redesign'] .u8n-notes__title {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-notes__item[data-state='new'] .u8n-notes__title {
+  font-weight: 500;
+}
+[data-look='redesign'] .u8n-notes__title a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--u8n-field-line);
+  text-underline-offset: 3px;
+}
+[data-look='redesign'] .u8n-notes__title a:hover {
+  color: var(--u8n-notes-link);
+  text-decoration-color: currentColor;
+}
+[data-look='redesign'] .u8n-notes__school {
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-notes__body {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-notes__end {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  padding-top: 1px;
+}
+[data-look='redesign'] .u8n-notes__when {
+  font-size: 12px;
+  color: var(--u8n-quiet);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+[data-look='redesign'] .u8n-notes__tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-notes__tag--new {
+  background: var(--u8n-notes-new-bg);
+  color: var(--u8n-notes-new-text);
+  border-color: var(--u8n-notes-new-line);
+}
+[data-look='redesign'] .u8n-notes__tag--snoozed {
+  background: var(--u8n-notes-snoozed-bg);
+  color: var(--u8n-notes-snoozed-text);
+  border-color: var(--u8n-notes-snoozed-line);
+}
+[data-look='redesign'] .u8n-notes__tag--read {
+  background: var(--u8n-notes-read-bg);
+  color: var(--u8n-notes-read-text);
+  border-color: var(--u8n-notes-read-line);
+}
+[data-look='redesign'] .u8n-notes__menu {
+  margin-top: -9px;
+}
+
+/* The row's ⋯ menu in the new look: a round grey button; the list is a white
+ * card with 12px corners, like the drop-downs. Page-scoped, so the shared
+ * menu looks the same everywhere else. */
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__trigger {
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__trigger:hover,
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__trigger[aria-expanded='true'] {
+  background: var(--u8n-tile);
+  border-color: transparent;
+}
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__trigger:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__menu {
+  min-width: 200px;
+  padding: 6px;
+  background: var(--u8n-surface);
+  border: 1px solid var(--u8n-line);
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(21, 23, 25, 0.08);
+}
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__item {
+  min-height: 40px;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 14px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__item:hover:not(:disabled) {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__item:disabled {
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8n-notes .ultm8-row-actions__item--danger {
+  color: var(--u8n-notes-danger);
+}
+
+/* ------------------------------------------------- Sent broadcasts table */
+
+[data-look='redesign'] .u8n-notes__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+[data-look='redesign'] .u8n-notes__table th {
+  padding: 10px 14px;
+  background: var(--u8n-notes-head-bg);
+  border-top: 1px solid var(--u8n-line);
+  border-bottom: 1px solid var(--u8n-line);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: start;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-notes__table td {
+  padding: 14px;
+  vertical-align: top;
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8n-notes__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+[data-look='redesign'] .u8n-notes__table th:first-child,
+[data-look='redesign'] .u8n-notes__table td:first-child {
+  padding-inline-start: 22px;
+}
+[data-look='redesign'] .u8n-notes__table th:last-child,
+[data-look='redesign'] .u8n-notes__table td:last-child {
+  padding-inline-end: 22px;
+}
+[data-look='redesign'] .u8n-notes__table .u8n-notes__num {
+  text-align: end;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-notes__cell-sent {
+  width: 1%;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-notes__when-main {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+[data-look='redesign'] .u8n-notes__message-title {
+  display: block;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-notes__message-body {
+  display: block;
+  margin-top: 2px;
+  color: var(--u8n-quiet);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-notes__cell-audience a {
+  color: var(--u8n-notes-link);
+}
+
+/* ------------------------------------------------------------ Phone */
+
+@media (max-width: 767px) {
+  /* Stat rows stay side by side on a phone. */
+  [data-look='redesign'] .u8n-notes__stats {
+    gap: 10px;
+  }
+  [data-look='redesign'] .u8n-notes__stat {
+    padding: 14px 12px;
+  }
+  [data-look='redesign'] .u8n-notes__stat-label {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  [data-look='redesign'] .u8n-notes__stat-value {
+    font-size: 26px;
+  }
+  [data-look='redesign'] .u8n-notes__card-head,
+  [data-look='redesign'] .u8n-notes__empty,
+  [data-look='redesign'] .u8n-notes__state,
+  [data-look='redesign'] .u8n-notes__more {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  /* A row: dot · title, School, message · ⋯; then the status and time
+   * under the message. */
+  [data-look='redesign'] .u8n-notes__item {
+    grid-template-columns: 8px minmax(0, 1fr) 44px;
+    padding-block: 14px;
+    padding-inline: 16px 6px;
+  }
+  [data-look='redesign'] .u8n-notes__end {
+    grid-column: 2;
+    grid-row: 2;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 4px;
+  }
+  [data-look='redesign'] .u8n-notes__menu {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  /* Short history lists become cards on a phone (DESIGN.md → "Phone
+   * layout"): line 1 the message, then the date and sender, then who it
+   * went to on the left and how many it reached on the right. */
+  [data-look='redesign'] .u8n-notes__table,
+  [data-look='redesign'] .u8n-notes__table tbody,
+  [data-look='redesign'] .u8n-notes__table tr,
+  [data-look='redesign'] .u8n-notes__table td {
+    display: block;
+  }
+  [data-look='redesign'] .u8n-notes__table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  [data-look='redesign'] .u8n-notes__table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--u8n-line);
+  }
+  [data-look='redesign'] .u8n-notes__table td,
+  [data-look='redesign'] .u8n-notes__table td:first-child,
+  [data-look='redesign'] .u8n-notes__table td:last-child {
+    padding: 0;
+    border: 0;
+  }
+  [data-look='redesign'] .u8n-notes__cell-message {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+  [data-look='redesign'] .u8n-notes__cell-sent {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: auto;
+    white-space: normal;
+  }
+  [data-look='redesign'] .u8n-notes__cell-sent .u8n-notes__when-main,
+  [data-look='redesign'] .u8n-notes__cell-sent .u8n-notes__sub {
+    display: inline;
+    font-size: 13px;
+    color: var(--u8n-quiet);
+  }
+  [data-look='redesign'] .u8n-notes__cell-sent .u8n-notes__sub::before {
+    content: ' · ';
+  }
+  [data-look='redesign'] .u8n-notes__cell-audience {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  [data-look='redesign'] .u8n-notes__cell-reached {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}

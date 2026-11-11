@@ -54,7 +54,7 @@ async function newLookPages(page: Page): Promise<{ rows: string[]; pages: string
 /** The pages each person's menu offers (Shell.tsx's lists for these roles). */
 const OWNER_PAGES = [
   '/billing-reports', '/branches', '/cancellations', '/classes', '/curriculum', '/dashboard', '/disciplines', '/franchises', '/grading',
-  '/instructors', '/membership-plans', '/notifications', '/payroll', '/school', '/staff', '/students', '/timetable', '/transactions', '/waivers',
+  '/instructors', '/membership-plans', '/notifications', '/payroll', '/school', '/staff', '/students', '/team/invite-coaches', '/timetable', '/transactions', '/waivers',
 ];
 const COACH_PAGES = [
   '/check-in', '/classes', '/coach', '/complete-instructor-profile', '/curriculum', '/disciplines', '/grading', '/my-belts', '/notifications', '/students',
@@ -85,12 +85,18 @@ test("owner: the nine groups and Settings, reaching exactly the owner's pages", 
   expect(pages).toEqual(OWNER_PAGES);
   await expect(newMenu(page).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/school');
 
-  // A group's other pages are tabs at the top of the page.
+  // A group's other pages are tabs at the top of the page. Team's are
+  // Staff · Coaches Info · Invite coaches (Decision 456).
   await newMenu(page).getByRole('link', { name: 'Team' }).click();
-  const tabs = page.getByRole('navigation', { name: 'Team pages' });
-  await expect(tabs.getByRole('link', { name: 'Instructors' })).toHaveAttribute('aria-current', 'page');
-  await tabs.getByRole('link', { name: 'Staff' }).click();
   await expect(page).toHaveURL(/\/staff$/);
+  const tabs = page.getByRole('navigation', { name: 'Team pages' });
+  // Waits for the tabs to render, then checks all three, in order.
+  await expect(tabs.getByRole('link')).toHaveText(['Staff', 'Coaches Info', 'Invite coaches']);
+  await expect(tabs.getByRole('link', { name: 'Staff' })).toHaveAttribute('aria-current', 'page');
+  await tabs.getByRole('link', { name: 'Coaches Info' }).click();
+  await expect(page).toHaveURL(/\/instructors$/);
+  await tabs.getByRole('link', { name: 'Invite coaches' }).click();
+  await expect(page).toHaveURL(/\/team\/invite-coaches$/);
   await expect(newMenu(page).getByRole('link', { name: 'Team' })).toHaveAttribute('aria-current', 'page');
 });
 

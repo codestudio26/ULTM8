@@ -128,7 +128,7 @@ test('a coach sees the Disciplines page read-only', async ({ page }) => {
 
 test('a student\'s rank in an archived style stays visible, read-only (Decision 310)', async ({ page }) => {
   await db.discipline.update({ where: { id: s.disciplineId }, data: { archivedAt: new Date() } });
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const card = page.getByRole('region', { name: 'BJJ' });
   await expect(card.getByText('White 1', { exact: true })).toBeVisible();
   await expect(card.getByText('Archived', { exact: true })).toBeVisible();

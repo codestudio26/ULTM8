@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franchises",
       notifications: "Meldingen",
       inviteCoaches: "Coaches uitnodigen",
+      coachesInfo: "Coachinfo",
       myBelts: "Mijn banden",
       completeProfile: "Mijn coachprofiel",
     },
@@ -713,6 +714,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Meer acties",
     columnSurcharge: "Kaarttoeslag",
     surchargeLine: "+ {amount} kaarttoeslag",
     title: "Transacties",
@@ -2674,7 +2676,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Instructeursrol toegekend — de persoon is per e-mail op de hoogte gebracht. Gebruik ‘Instructeur toevoegen’ om het profiel toe te voegen.",
     roleGrantedEmailFailed: "Instructeursrol toegekend, maar de meldingsmail kon niet worden verzonden. Gebruik ‘Instructeur toevoegen’ om het profiel toe te voegen.",
     roleInviteSent: "Deze school vraagt nieuw personeel eerst te accepteren, dus we hebben een uitnodiging gemaild. Gebruik na het accepteren \"Instructeur toevoegen\" om het profiel aan te maken.",
-    roleInviteEmailFailed: "Deze school vraagt nieuw personeel eerst te accepteren. De uitnodiging is gemaakt, maar de e-mail kon niet worden verstuurd. Annuleer hem op de pagina Personeel en stuur hem opnieuw.",
+    roleInviteEmailFailed: "Deze school vraagt nieuw personeel eerst te accepteren. De uitnodiging is gemaakt, maar de e-mail kon niet worden verstuurd. Annuleer hem onder Team → Coaches uitnodigen en stuur hem opnieuw.",
     detail: {
       back: "← Instructeurs",
       loadFailed: "Deze instructeur kon niet worden geladen.",
@@ -2737,7 +2739,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Deze inschrijving kon niet worden ingetrokken. Probeer het opnieuw.",
     },
     belts: {
-      heading: "Banden van instructeurs",
       intro: "Instructeurs kiezen zelf hun band in elke discipline. Verifieer deze, of corrigeer naar de juiste band.",
       loadFailed: "De banden van instructeurs konden niet worden geladen.",
       verifyFailed: "Deze band kon niet worden geverifieerd.",
@@ -2820,6 +2821,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Jaren ervaring",
       bio: "Bio",
     },
+    team: {
+      panelLabel: "Teamlid",
+      openFullPage: "Volledige pagina openen",
+      openFullPageAria: "Volledige pagina openen: {name}",
+      frontDesk: "Balie en geld",
+      refundsNote: "Terugbetalingen en tegoed blijven bij jou, de eigenaar.",
+      belts: "Banden",
+      profileTab: "Profiel",
+      sectionsAria: "Onderdelen van het teamlid",
+      about: "Over",
+      roles: "Rollen",
+      nextClasses: "Volgende lessen",
+      allClasses: "Alle lessen",
+      removeHeading: "Uit het team verwijderen",
+      contact: "Contact",
+    },
   },
   students: {
     list: {
@@ -2836,6 +2853,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "{name} bewerken",
       training: "Training",
       homeBranch: "Thuisvestiging",
+    },
+    page: {
+      tabsAria: "Onderdelen van de leerling",
+      profile: "Profiel",
+      ranks: "Graden",
+      contact: "Contact",
+      personal: "Persoonlijk",
+      account: "Account",
+      birthday: "Verjaardag",
+      balance: "Saldo",
     },
     growth: {
       subtitle: "Actieve leerlingen, bezoekers en bevroren lidmaatschappen nu, en hoe je school de afgelopen 12 maanden is gegroeid.",
@@ -3934,6 +3961,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Meer acties",
+      showAll: "Alle vrijwaringen tonen ({count})",
+    },
     exportAll: {
       button: "Ondertekende documenten exporteren",
       title: "Alle ondertekende documenten exporteren",

@@ -87,6 +87,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Франшизы",
       notifications: "Уведомления",
       inviteCoaches: "Пригласить тренеров",
+      coachesInfo: "О тренерах",
       myBelts: "Мои пояса",
       completeProfile: "Мой профиль тренера",
     },
@@ -719,6 +720,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Другие действия",
     columnSurcharge: "Надбавка за карту",
     surchargeLine: "+ {amount} надбавка за оплату картой",
     title: "Транзакции",
@@ -2754,7 +2756,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Роль инструктора назначена — человек уведомлён по эл. почте. Нажмите «Добавить инструктора», чтобы добавить профиль.",
     roleGrantedEmailFailed: "Роль инструктора назначена, но письмо-уведомление отправить не удалось. Нажмите «Добавить инструктора», чтобы добавить профиль.",
     roleInviteSent: "Эта школа просит новых сотрудников сначала принять приглашение, поэтому мы отправили его по почте. После принятия нажмите «Добавить инструктора», чтобы создать профиль.",
-    roleInviteEmailFailed: "Эта школа просит новых сотрудников сначала принять приглашение. Приглашение создано, но письмо отправить не удалось. Отмените его на странице «Сотрудники» и отправьте снова.",
+    roleInviteEmailFailed: "Эта школа просит новых сотрудников сначала принять приглашение. Приглашение создано, но письмо отправить не удалось. Отмените его в разделе «Команда → Пригласить тренеров» и отправьте снова.",
     detail: {
       back: "← Инструкторы",
       loadFailed: "Не удалось загрузить этого инструктора.",
@@ -2817,7 +2819,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Не удалось отозвать роль. Попробуйте ещё раз.",
     },
     belts: {
-      heading: "Пояса инструкторов",
       intro: "Инструкторы сами выбирают свой пояс в каждой дисциплине. Подтвердите его или исправьте на верный.",
       loadFailed: "Не удалось загрузить пояса инструкторов.",
       verifyFailed: "Не удалось подтвердить этот пояс.",
@@ -2900,6 +2901,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Опыт (лет)",
       bio: "О себе",
     },
+    team: {
+      panelLabel: "Участник команды",
+      openFullPage: "Открыть всю страницу",
+      openFullPageAria: "Открыть всю страницу: {name}",
+      frontDesk: "Ресепшен и деньги",
+      refundsNote: "Возвраты и кредит остаются за вами, владельцем.",
+      belts: "Пояса",
+      profileTab: "Профиль",
+      sectionsAria: "Разделы участника команды",
+      about: "О себе",
+      roles: "Роли",
+      nextClasses: "Ближайшие занятия",
+      allClasses: "Все занятия",
+      removeHeading: "Убрать из команды",
+      contact: "Контакты",
+    },
   },
   students: {
     list: {
@@ -2916,6 +2933,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "Изменить: {name}",
       training: "Тренировки",
       homeBranch: "Основной филиал",
+    },
+    page: {
+      tabsAria: "Разделы ученика",
+      profile: "Профиль",
+      ranks: "Ранги",
+      contact: "Контакты",
+      personal: "Личные данные",
+      account: "Аккаунт",
+      birthday: "День рождения",
+      balance: "Баланс",
     },
     growth: {
       subtitle: "Активные ученики, гости и замороженные абонементы сейчас, а также рост вашей школы за последние 12 месяцев.",
@@ -4022,6 +4049,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Другие действия",
+      showAll: "Показать все отказы от ответственности ({count})",
+    },
     exportAll: {
       button: "Экспорт подписанных документов",
       title: "Экспорт всех подписанных документов",

@@ -18,7 +18,7 @@ test.afterAll(async () => {
 });
 
 type Page = import('@playwright/test').Page;
-const listRow = (page: Page, name: string) => page.locator('.ultm8-card').filter({ hasText: 'Your staff' }).getByRole('row').filter({ hasText: name });
+const listRow = (page: Page, name: string) => page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) }).getByRole('row').filter({ hasText: name });
 
 test('the owner picks a preset, changes one switch, and saves', async ({ page }) => {
   const north = await addBranch(s, 'North');

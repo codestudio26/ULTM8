@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franchise’lar",
       notifications: "Bildirimler",
       inviteCoaches: "Antrenör davet et",
+      coachesInfo: "Antrenör bilgileri",
       myBelts: "Kuşaklarım",
       completeProfile: "Koç profilim",
     },
@@ -713,6 +714,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Diğer işlemler",
     columnSurcharge: "Kart ek ücreti",
     surchargeLine: "+ {amount} kart ek ücreti",
     title: "İşlemler",
@@ -2674,7 +2676,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Eğitmen rolü verildi — kişiye e-postayla bilgi verildi. Profilini eklemek için “Eğitmen ekle”yi kullanın.",
     roleGrantedEmailFailed: "Eğitmen rolü verildi ancak bildirim e-postası gönderilemedi. Profilini eklemek için “Eğitmen ekle”yi kullanın.",
     roleInviteSent: "Bu okul yeni personelin önce kabul etmesini istiyor, bu yüzden bir davet e-postası gönderdik. Kabul ettikten sonra profillerini eklemek için \"Eğitmen ekle\"yi kullanın.",
-    roleInviteEmailFailed: "Bu okul yeni personelin önce kabul etmesini istiyor. Davet oluşturuldu ama e-posta gönderilemedi. Personel sayfasından iptal edip yeniden gönderin.",
+    roleInviteEmailFailed: "Bu okul yeni personelin önce kabul etmesini istiyor. Davet oluşturuldu ama e-posta gönderilemedi. Ekip → Antrenör davet et bölümünden iptal edip yeniden gönderin.",
     detail: {
       back: "← Eğitmenler",
       loadFailed: "Bu eğitmen yüklenemedi.",
@@ -2737,7 +2739,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Bu kayıt iptal edilemedi. Lütfen tekrar deneyin.",
     },
     belts: {
-      heading: "Eğitmen kuşakları",
       intro: "Eğitmenler her branşta kendi kuşaklarını seçer. Doğrulayın veya doğru kuşakla düzeltin.",
       loadFailed: "Eğitmen kuşakları yüklenemedi.",
       verifyFailed: "Bu kuşak doğrulanamadı.",
@@ -2820,6 +2821,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Deneyim yılı",
       bio: "Biyografi",
     },
+    team: {
+      panelLabel: "Ekip üyesi",
+      openFullPage: "Tam sayfayı aç",
+      openFullPageAria: "Tam sayfayı aç: {name}",
+      frontDesk: "Resepsiyon ve para",
+      refundsNote: "İadeler ve kredi sende, sahipte kalır.",
+      belts: "Kuşaklar",
+      profileTab: "Profil",
+      sectionsAria: "Ekip üyesi bölümleri",
+      about: "Hakkında",
+      roles: "Roller",
+      nextClasses: "Sonraki dersler",
+      allClasses: "Tüm dersler",
+      removeHeading: "Ekipten çıkar",
+      contact: "İletişim",
+    },
   },
   students: {
     list: {
@@ -2836,6 +2853,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "{name} düzenle",
       training: "Antrenman",
       homeBranch: "Ana şube",
+    },
+    page: {
+      tabsAria: "Öğrenci bölümleri",
+      profile: "Profil",
+      ranks: "Dereceler",
+      contact: "İletişim",
+      personal: "Kişisel bilgiler",
+      account: "Hesap",
+      birthday: "Doğum günü",
+      balance: "Bakiye",
     },
     growth: {
       subtitle: "Şu anki aktif öğrenciler, ziyaretçiler ve dondurulmuş üyelikler ile okulunun son 12 ayda nasıl büyüdüğü.",
@@ -3934,6 +3961,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Diğer işlemler",
+      showAll: "Tüm feragatnameleri göster ({count})",
+    },
     exportAll: {
       button: "İmzalı belgeleri dışa aktar",
       title: "Tüm imzalı belgeleri dışa aktar",

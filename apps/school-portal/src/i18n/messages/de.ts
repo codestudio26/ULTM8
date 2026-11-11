@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franchises",
       notifications: "Benachrichtigungen",
       inviteCoaches: "Trainer einladen",
+      coachesInfo: "Trainer-Infos",
       myBelts: "Meine Gürtel",
       completeProfile: "Mein Trainerprofil",
     },
@@ -713,6 +714,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Weitere Aktionen",
     columnSurcharge: "Kartenzuschlag",
     surchargeLine: "+ {amount} Kartenzuschlag",
     title: "Transaktionen",
@@ -2674,7 +2676,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Ausbilderrolle vergeben – die Person wurde per E-Mail informiert. Nutze „Ausbilder hinzufügen“, um das Profil anzulegen.",
     roleGrantedEmailFailed: "Ausbilderrolle vergeben, aber die Benachrichtigungs-E-Mail konnte nicht gesendet werden. Nutze „Ausbilder hinzufügen“, um das Profil anzulegen.",
     roleInviteSent: "Diese Schule verlangt, dass neue Mitarbeitende zuerst annehmen. Wir haben ihnen deshalb eine Einladung gemailt. Nach der Annahme kannst du mit „Ausbilder hinzufügen“ das Profil anlegen.",
-    roleInviteEmailFailed: "Diese Schule verlangt, dass neue Mitarbeitende zuerst annehmen. Die Einladung wurde erstellt, aber die E-Mail konnte nicht gesendet werden. Storniere sie auf der Mitarbeiterseite und sende sie erneut.",
+    roleInviteEmailFailed: "Diese Schule verlangt, dass neue Mitarbeitende zuerst annehmen. Die Einladung wurde erstellt, aber die E-Mail konnte nicht gesendet werden. Storniere sie unter Team → Trainer einladen und sende sie erneut.",
     detail: {
       back: "← Ausbilder",
       loadFailed: "Dieser Ausbilder konnte nicht geladen werden.",
@@ -2737,7 +2739,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Die Zugehörigkeit konnte nicht widerrufen werden. Bitte versuche es erneut.",
     },
     belts: {
-      heading: "Gürtel der Ausbilder",
       intro: "Ausbilder wählen ihren Gürtel in jeder Disziplin selbst. Bestätige ihn oder korrigiere ihn auf den richtigen Gürtel.",
       loadFailed: "Die Gürtel der Ausbilder konnten nicht geladen werden.",
       verifyFailed: "Dieser Gürtel konnte nicht bestätigt werden.",
@@ -2820,6 +2821,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Jahre Erfahrung",
       bio: "Über mich",
     },
+    team: {
+      panelLabel: "Teammitglied",
+      openFullPage: "Ganze Seite öffnen",
+      openFullPageAria: "Ganze Seite öffnen: {name}",
+      frontDesk: "Empfang und Geld",
+      refundsNote: "Erstattungen und Guthaben bleiben bei dir, dem Inhaber.",
+      belts: "Gürtel",
+      profileTab: "Profil",
+      sectionsAria: "Bereiche des Teammitglieds",
+      about: "Über",
+      roles: "Rollen",
+      nextClasses: "Nächste Kurse",
+      allClasses: "Alle Kurse",
+      removeHeading: "Aus dem Team entfernen",
+      contact: "Kontakt",
+    },
   },
   students: {
     list: {
@@ -2836,6 +2853,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "{name} bearbeiten",
       training: "Training",
       homeBranch: "Heimatstandort",
+    },
+    page: {
+      tabsAria: "Bereiche des Schülers",
+      profile: "Profil",
+      ranks: "Grade",
+      contact: "Kontakt",
+      personal: "Persönliches",
+      account: "Konto",
+      birthday: "Geburtstag",
+      balance: "Saldo",
     },
     growth: {
       subtitle: "Aktive Schüler, Besucher und eingefrorene Mitgliedschaften heute, und wie deine Schule in den letzten 12 Monaten gewachsen ist.",
@@ -3934,6 +3961,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Weitere Aktionen",
+      showAll: "Alle Haftungsausschlüsse anzeigen ({count})",
+    },
     exportAll: {
       button: "Unterschriebene Dokumente exportieren",
       title: "Alle unterschriebenen Dokumente exportieren",

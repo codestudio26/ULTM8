@@ -84,6 +84,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "加盟",
       notifications: "通知",
       inviteCoaches: "邀请教练",
+      coachesInfo: "教练信息",
       myBelts: "我的腰带",
       completeProfile: "我的教练资料",
     },
@@ -710,6 +711,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "更多操作",
     columnSurcharge: "刷卡附加费",
     surchargeLine: "+ {amount} 刷卡附加费",
     title: "交易",
@@ -2634,7 +2636,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "已授予教练员角色——已通过邮件通知对方。请使用“添加教练员”添加其档案。",
     roleGrantedEmailFailed: "已授予教练员角色，但通知邮件发送失败。请使用“添加教练员”添加其档案。",
     roleInviteSent: "本学校要求新员工先接受，因此我们已通过邮件发送邀请。对方接受后，请使用“添加教练”来添加其资料。",
-    roleInviteEmailFailed: "本学校要求新员工先接受。邀请已创建，但邮件发送失败。请在员工页面取消后重新发送。",
+    roleInviteEmailFailed: "本学校要求新员工先接受。邀请已创建，但邮件发送失败。请在“团队 → 邀请教练”中取消后重新发送。",
     detail: {
       back: "← 教练员",
       loadFailed: "无法加载此教练员。",
@@ -2697,7 +2699,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "无法撤销此任职，请重试。",
     },
     belts: {
-      heading: "教练员腰带",
       intro: "教练员会自行选择各项目的腰带。请确认，或更正为正确的腰带。",
       loadFailed: "无法加载教练员腰带。",
       verifyFailed: "无法确认此腰带。",
@@ -2780,6 +2781,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "从业年限",
       bio: "简介",
     },
+    team: {
+      panelLabel: "团队成员",
+      openFullPage: "打开完整页面",
+      openFullPageAria: "打开完整页面：{name}",
+      frontDesk: "前台与收款",
+      refundsNote: "退款和余额仍由你（所有者）处理。",
+      belts: "腰带",
+      profileTab: "资料",
+      sectionsAria: "团队成员分区",
+      about: "简介",
+      roles: "角色",
+      nextClasses: "接下来的课程",
+      allClasses: "所有课程",
+      removeHeading: "从团队中移除",
+      contact: "联系方式",
+    },
   },
   students: {
     list: {
@@ -2796,6 +2813,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "编辑 {name}",
       training: "训练",
       homeBranch: "所属分馆",
+    },
+    page: {
+      tabsAria: "学员栏目",
+      profile: "资料",
+      ranks: "级别",
+      contact: "联系方式",
+      personal: "个人信息",
+      account: "账户",
+      birthday: "生日",
+      balance: "余额",
     },
     growth: {
       subtitle: "当前的活跃学员、访客和已冻结会籍，以及你的学校过去 12 个月的增长。",
@@ -3890,6 +3917,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "更多操作",
+      showAll: "显示全部免责声明 ({count})",
+    },
     exportAll: {
       button: "导出已签署文件",
       title: "导出所有已签署文件",

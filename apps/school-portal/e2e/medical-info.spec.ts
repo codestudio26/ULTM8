@@ -53,7 +53,7 @@ test("the owner sees a student's medical information; Branch Staff only after th
 
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
-  const row = page.locator('.ultm8-card').filter({ hasText: 'Your staff' }).getByRole('row').filter({ hasText: 'Bea Desk' });
+  const row = page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) }).getByRole('row').filter({ hasText: 'Bea Desk' });
   await row.getByRole('button', { name: 'Actions for Bea Desk' }).click();
   await page.getByRole('menuitem', { name: 'Access' }).click();
   const dialog = page.getByRole('dialog', { name: 'Access for Bea Desk' });

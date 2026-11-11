@@ -84,6 +84,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "프랜차이즈",
       notifications: "알림",
       inviteCoaches: "코치 초대",
+      coachesInfo: "코치 정보",
       myBelts: "내 띠",
       completeProfile: "내 코치 프로필",
     },
@@ -710,6 +711,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "추가 작업",
     columnSurcharge: "카드 수수료",
     surchargeLine: "+ 카드 수수료 {amount}",
     title: "거래 내역",
@@ -2634,7 +2636,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "사범 역할을 부여했습니다. 본인에게 이메일로 알렸습니다. '사범 추가'로 프로필을 추가하세요.",
     roleGrantedEmailFailed: "사범 역할을 부여했지만 알림 이메일을 보내지 못했습니다. '사범 추가'로 프로필을 추가하세요.",
     roleInviteSent: "이 도장은 새 직원이 먼저 수락하도록 하고 있어 초대 이메일을 보냈습니다. 수락하면 \"강사 추가\"로 프로필을 추가하세요.",
-    roleInviteEmailFailed: "이 도장은 새 직원이 먼저 수락하도록 하고 있습니다. 초대는 만들어졌지만 이메일을 보내지 못했습니다. 직원 페이지에서 취소하고 다시 보내세요.",
+    roleInviteEmailFailed: "이 도장은 새 직원이 먼저 수락하도록 하고 있습니다. 초대는 만들어졌지만 이메일을 보내지 못했습니다. 팀 → 코치 초대에서 취소하고 다시 보내세요.",
     detail: {
       back: "← 사범",
       loadFailed: "이 사범 정보를 불러올 수 없습니다.",
@@ -2697,7 +2699,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "소속을 해제할 수 없습니다. 다시 시도해 주세요.",
     },
     belts: {
-      heading: "사범 띠",
       intro: "사범은 각 종목에서 자신의 띠를 직접 선택합니다. 확인하거나 올바른 띠로 수정하세요.",
       loadFailed: "사범 띠 정보를 불러올 수 없습니다.",
       verifyFailed: "이 띠를 확인할 수 없습니다.",
@@ -2780,6 +2781,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "경력(년)",
       bio: "소개",
     },
+    team: {
+      panelLabel: "팀원",
+      openFullPage: "전체 페이지 열기",
+      openFullPageAria: "전체 페이지 열기: {name}",
+      frontDesk: "프런트 데스크와 결제",
+      refundsNote: "환불과 크레딧은 소유자인 당신만 처리합니다.",
+      belts: "벨트",
+      profileTab: "프로필",
+      sectionsAria: "팀원 섹션",
+      about: "소개",
+      roles: "역할",
+      nextClasses: "다음 수업",
+      allClasses: "모든 수업",
+      removeHeading: "팀에서 제외",
+      contact: "연락처",
+    },
   },
   students: {
     list: {
@@ -2796,6 +2813,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "{name} 편집",
       training: "훈련",
       homeBranch: "소속 지점",
+    },
+    page: {
+      tabsAria: "학생 섹션",
+      profile: "프로필",
+      ranks: "등급",
+      contact: "연락처",
+      personal: "개인 정보",
+      account: "계정",
+      birthday: "생일",
+      balance: "잔액",
     },
     growth: {
       subtitle: "현재 활동 중인 수련생, 방문자, 일시정지된 멤버십과 최근 12개월 동안 도장이 얼마나 성장했는지 보여 줍니다.",
@@ -3890,6 +3917,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "추가 작업",
+      showAll: "모든 면책 동의서 보기 ({count})",
+    },
     exportAll: {
       button: "서명된 문서 내보내기",
       title: "서명된 문서 모두 내보내기",

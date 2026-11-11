@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franchising",
       notifications: "Notifiche",
       inviteCoaches: "Invita allenatori",
+      coachesInfo: "Info allenatori",
       myBelts: "Le mie cinture",
       completeProfile: "Il mio profilo da istruttore",
     },
@@ -713,6 +714,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Altre azioni",
     columnSurcharge: "Sovrapprezzo carta",
     surchargeLine: "+ {amount} di sovrapprezzo carta",
     title: "Transazioni",
@@ -2674,7 +2676,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Ruolo di istruttore assegnato: la persona è stata avvisata via email. Usa «Aggiungi istruttore» per aggiungere il suo profilo.",
     roleGrantedEmailFailed: "Ruolo di istruttore assegnato, ma non è stato possibile inviare l’email di notifica. Usa «Aggiungi istruttore» per aggiungere il suo profilo.",
     roleInviteSent: "Questa scuola chiede al nuovo staff di accettare prima, quindi abbiamo inviato un invito via email. Dopo l'accettazione, usa \"Aggiungi istruttore\" per creare il profilo.",
-    roleInviteEmailFailed: "Questa scuola chiede al nuovo staff di accettare prima. L'invito è stato creato, ma non è stato possibile inviare l'email. Annullalo nella pagina Staff e invialo di nuovo.",
+    roleInviteEmailFailed: "Questa scuola chiede al nuovo staff di accettare prima. L'invito è stato creato, ma non è stato possibile inviare l'email. Annullalo in Team → Invita allenatori e invialo di nuovo.",
     detail: {
       back: "← Istruttori",
       loadFailed: "Impossibile caricare questo istruttore.",
@@ -2737,7 +2739,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Impossibile revocare questa iscrizione. Riprova.",
     },
     belts: {
-      heading: "Cinture degli istruttori",
       intro: "Gli istruttori scelgono la propria cintura in ogni disciplina. Verificala o correggila con quella giusta.",
       loadFailed: "Impossibile caricare le cinture degli istruttori.",
       verifyFailed: "Impossibile verificare questa cintura.",
@@ -2820,6 +2821,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Anni di esperienza",
       bio: "Biografia",
     },
+    team: {
+      panelLabel: "Membro del team",
+      openFullPage: "Apri pagina completa",
+      openFullPageAria: "Apri pagina completa: {name}",
+      frontDesk: "Reception e denaro",
+      refundsNote: "Rimborsi e credito restano a te, il proprietario.",
+      belts: "Cinture",
+      profileTab: "Profilo",
+      sectionsAria: "Sezioni del membro del team",
+      about: "Informazioni",
+      roles: "Ruoli",
+      nextClasses: "Prossime lezioni",
+      allClasses: "Tutte le lezioni",
+      removeHeading: "Rimuovi dal team",
+      contact: "Contatti",
+    },
   },
   students: {
     list: {
@@ -2836,6 +2853,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "Modifica {name}",
       training: "Allenamento",
       homeBranch: "Sede principale",
+    },
+    page: {
+      tabsAria: "Sezioni dell’allievo",
+      profile: "Profilo",
+      ranks: "Gradi",
+      contact: "Contatti",
+      personal: "Dati personali",
+      account: "Account",
+      birthday: "Compleanno",
+      balance: "Saldo",
     },
     growth: {
       subtitle: "Allievi attivi, visitatori e abbonamenti sospesi oggi, e quanto è cresciuta la tua scuola negli ultimi 12 mesi.",
@@ -3934,6 +3961,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Altre azioni",
+      showAll: "Mostra tutte le liberatorie ({count})",
+    },
     exportAll: {
       button: "Esporta documenti firmati",
       title: "Esporta tutti i documenti firmati",

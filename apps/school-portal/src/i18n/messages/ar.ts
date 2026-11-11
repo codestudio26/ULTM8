@@ -89,6 +89,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "الامتيازات",
       notifications: "الإشعارات",
       inviteCoaches: "دعوة مدرّبين",
+      coachesInfo: "معلومات المدرّبين",
       myBelts: "أحزمتي",
       completeProfile: "ملفي كمدرب",
     },
@@ -725,6 +726,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "إجراءات أخرى",
     columnSurcharge: "رسوم البطاقة الإضافية",
     surchargeLine: "+ {amount} رسوم بطاقة إضافية",
     title: "المعاملات",
@@ -2834,7 +2836,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "تم منح دور المدرّب — وأُبلغ بذلك عبر البريد الإلكتروني. استخدم «إضافة مدرّب» لإضافة ملفه.",
     roleGrantedEmailFailed: "تم منح دور المدرّب، لكن تعذّر إرسال بريد الإشعار. استخدم «إضافة مدرّب» لإضافة ملفه.",
     roleInviteSent: "تطلب هذه المدرسة من الموظفين الجدد القبول أولاً، لذا أرسلنا إليهم دعوة بالبريد الإلكتروني. بعد القبول، استخدم \"إضافة مدرب\" لإضافة ملفه.",
-    roleInviteEmailFailed: "تطلب هذه المدرسة من الموظفين الجدد القبول أولاً. أُنشئت الدعوة، لكن تعذّر إرسال البريد الإلكتروني. ألغِها في صفحة الموظفين وأرسلها مرة أخرى.",
+    roleInviteEmailFailed: "تطلب هذه المدرسة من الموظفين الجدد القبول أولاً. أُنشئت الدعوة، لكن تعذّر إرسال البريد الإلكتروني. ألغِها في الفريق ← دعوة مدرّبين وأرسلها مرة أخرى.",
     detail: {
       back: "→ المدرّبون",
       loadFailed: "تعذّر تحميل هذا المدرّب.",
@@ -2897,7 +2899,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "تعذّر إلغاء هذا الانتساب. يُرجى المحاولة مرة أخرى.",
     },
     belts: {
-      heading: "أحزمة المدرّبين",
       intro: "يختار المدرّبون حزامهم في كل رياضة. تحقّق منه أو صحّحه إلى الحزام الصحيح.",
       loadFailed: "تعذّر تحميل أحزمة المدرّبين.",
       verifyFailed: "تعذّر التحقق من هذا الحزام.",
@@ -2980,6 +2981,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "سنوات الخبرة",
       bio: "نبذة",
     },
+    team: {
+      panelLabel: "عضو الفريق",
+      openFullPage: "فتح الصفحة الكاملة",
+      openFullPageAria: "فتح الصفحة الكاملة: {name}",
+      frontDesk: "مكتب الاستقبال والمال",
+      refundsNote: "تبقى المبالغ المستردة والرصيد بيدك أنت، المالك.",
+      belts: "الأحزمة",
+      profileTab: "الملف الشخصي",
+      sectionsAria: "أقسام عضو الفريق",
+      about: "نبذة",
+      roles: "الأدوار",
+      nextClasses: "الحصص القادمة",
+      allClasses: "كل الحصص",
+      removeHeading: "الإزالة من الفريق",
+      contact: "التواصل",
+    },
   },
   students: {
     list: {
@@ -2996,6 +3013,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "تعديل {name}",
       training: "التدريب",
       homeBranch: "الفرع الرئيسي",
+    },
+    page: {
+      tabsAria: "أقسام الطالب",
+      profile: "الملف الشخصي",
+      ranks: "الرتب",
+      contact: "التواصل",
+      personal: "معلومات شخصية",
+      account: "الحساب",
+      birthday: "تاريخ الميلاد",
+      balance: "الرصيد",
     },
     growth: {
       subtitle: "الطلاب النشطون والزوار والعضويات المجمّدة الآن، ومدى نمو مدرستك خلال آخر 12 شهرًا.",
@@ -4110,6 +4137,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "مزيد من الإجراءات",
+      showAll: "عرض كل إقرارات إخلاء المسؤولية ({count})",
+    },
     exportAll: {
       button: "تصدير المستندات الموقّعة",
       title: "تصدير كل المستندات الموقّعة",

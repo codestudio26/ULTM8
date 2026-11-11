@@ -1,10 +1,10 @@
 import React from 'react';
-import { Card } from '@ultm8/ui';
 import { useQuery } from '@tanstack/react-query';
 import { unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { StudentCard } from './StudentPageLook';
 
 /** Decision 315 item 10: the student's medical information, for the owner
  * and staff the owner let see it. Never cached beyond this page. */
@@ -34,11 +34,7 @@ export function StudentMedicalInfoCard({ schoolId, studentId }: { schoolId: stri
   const date = info ? new Date(info.consentedAt).toLocaleDateString(formatLocale(), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   const name = info?.consentedByName ?? t('students.medical.formerAccount');
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
-          {t('students.medical.title')}
-        </h2>
+    <StudentCard title={t('students.medical.title')}>
         {info ? (
           <>
             <p data-testid="student-medical-info" style={{ whiteSpace: 'pre-wrap', margin: '0 0 8px' }}>
@@ -56,7 +52,6 @@ export function StudentMedicalInfoCard({ schoolId, studentId }: { schoolId: stri
         <p className="ultm8-field__hint" style={{ margin: '8px 0 0' }}>
           {t('students.medical.privacy')}
         </p>
-      </Card>
-    </div>
+    </StudentCard>
   );
 }

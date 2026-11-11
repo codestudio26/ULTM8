@@ -47,9 +47,14 @@ test('the owner connects Stripe from the School page, choosing the country, and 
     "Connect your School's Stripe account so members can pay by card in the app. Stripe asks for your business and bank details.",
   );
   await card.getByRole('button', { name: 'Connect Stripe' }).click();
-  const picker = page.getByLabel("Country of the business's bank account");
-  await expect(picker).toHaveValue('GB');
-  await expect(picker.locator('option[value="BR"]')).toHaveCount(0);
+  // Our own drop-down (DESIGN.md → "Drop-downs"), not the browser's.
+  const picker = page.getByRole('combobox', { name: "Country of the business's bank account" });
+  await expect(picker.locator('[data-shown="true"]')).toHaveText('United Kingdom');
+  await picker.click();
+  const countries = page.getByRole('listbox', { name: "Country of the business's bank account" });
+  await expect(countries.getByRole('option', { name: 'United Kingdom' })).toHaveAttribute('aria-selected', 'true');
+  await expect(countries.getByRole('option', { name: 'Brazil' })).toHaveCount(0);
+  await picker.press('Escape');
   await page.getByRole('button', { name: 'Continue to Stripe' }).click();
 
   await page.waitForURL('https://connect.stripe.test/onboarding');
@@ -140,7 +145,7 @@ test('Decision 442 item 3: Branch Staff connect Stripe only once an owner switch
   // An owner switches it on in the Access window; it is in neither preset.
   await signIn(page, s.ownerToken);
   await page.goto('/staff');
-  const row = page.locator('.ultm8-card').filter({ hasText: 'Your staff' }).getByRole('row').filter({ hasText: 'Dee Desk' });
+  const row = page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) }).getByRole('row').filter({ hasText: 'Dee Desk' });
   await row.getByRole('button', { name: 'Actions for Dee Desk' }).click();
   await page.getByRole('menuitem', { name: 'Access' }).click();
   const dialog = page.getByRole('dialog', { name: 'Access for Dee Desk' });

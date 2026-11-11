@@ -1,0 +1,665 @@
+/* The Waivers page in the new look (WaiversPage.tsx, GuestSignaturesPanel.tsx,
+ * WaiversLook.tsx). DESIGN-BRIEF §8 "Template rules"; DESIGN.md → "Phone
+ * layout", "Side panel buttons sit under the content", "nothing shown twice",
+ * "One accent: mint", "Style switch", "Button pairs", "Never the same colour
+ * twice". Built on the shell's --u8n-* colours (layout/newLookShell.css), so
+ * dark mode follows. Scoped to [data-look='redesign'], which the portal
+ * always sets (Decision 453).
+ *
+ * The pills, chip and tags are styled here, not shared, because the Team PR
+ * (redesign/team) is restyling the shared buttons and checkbox; join them
+ * once both are on master. */
+
+[data-look='redesign'] {
+  --u8w-primary: #def2e2;
+  --u8w-primary-text: #50575e;
+  --u8w-row-sel: #edf0f2;
+  --u8w-row-mark: #5d7081;
+  --u8w-ring: #3a7556;
+  --u8w-field-bg: #edf0f2;
+  --u8w-soft-bg: #f9fafa;
+  --u8w-ok-bg: #e3f1ea;
+  --u8w-ok-text: #3a7556;
+  --u8w-ok-line: #b7dcc6;
+  --u8w-bad-bg: #fbe9e9;
+  --u8w-bad-text: #a12a2a;
+  --u8w-bad-line: #efc4c4;
+  --u8w-warn-bg: #f6ecdc;
+  --u8w-warn-text: #7a4f12;
+  --u8w-warn-line: #e6cfa5;
+  --u8w-plain-bg: #edf0f2;
+  --u8w-plain-text: #50575e;
+  --u8w-plain-line: #c2c7cb;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8w-primary: var(--nav-active-bg);
+    --u8w-primary-text: var(--nav-active-text);
+    --u8w-row-sel: rgba(255, 255, 255, 0.06);
+    --u8w-row-mark: #9fd3b2;
+    --u8w-ring: #9fd3b2;
+    --u8w-field-bg: var(--surface-2);
+    --u8w-soft-bg: rgba(255, 255, 255, 0.03);
+    --u8w-ok-bg: rgba(159, 211, 178, 0.16);
+    --u8w-ok-text: #b9e3c8;
+    --u8w-ok-line: rgba(159, 211, 178, 0.4);
+    --u8w-bad-bg: rgba(241, 153, 153, 0.14);
+    --u8w-bad-text: #f5b8b8;
+    --u8w-bad-line: rgba(241, 153, 153, 0.4);
+    --u8w-warn-bg: rgba(244, 199, 161, 0.16);
+    --u8w-warn-text: #f1cfae;
+    --u8w-warn-line: rgba(244, 199, 161, 0.4);
+    --u8w-plain-bg: rgba(255, 255, 255, 0.08);
+    --u8w-plain-text: var(--text-secondary);
+    --u8w-plain-line: var(--border-strong);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8w-primary: var(--nav-active-bg);
+  --u8w-primary-text: var(--nav-active-text);
+  --u8w-row-sel: rgba(255, 255, 255, 0.06);
+  --u8w-row-mark: #9fd3b2;
+  --u8w-ring: #9fd3b2;
+  --u8w-field-bg: var(--surface-2);
+  --u8w-soft-bg: rgba(255, 255, 255, 0.03);
+  --u8w-ok-bg: rgba(159, 211, 178, 0.16);
+  --u8w-ok-text: #b9e3c8;
+  --u8w-ok-line: rgba(159, 211, 178, 0.4);
+  --u8w-bad-bg: rgba(241, 153, 153, 0.14);
+  --u8w-bad-text: #f5b8b8;
+  --u8w-bad-line: rgba(241, 153, 153, 0.4);
+  --u8w-warn-bg: rgba(244, 199, 161, 0.16);
+  --u8w-warn-text: #f1cfae;
+  --u8w-warn-line: rgba(244, 199, 161, 0.4);
+  --u8w-plain-bg: rgba(255, 255, 255, 0.08);
+  --u8w-plain-text: var(--text-secondary);
+  --u8w-plain-line: var(--border-strong);
+}
+
+[data-look='redesign'] .u8w {
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8w strong {
+  font-weight: 500;
+}
+
+/* ------------------------------------------------------------ Pills */
+[data-look='redesign'] .u8w-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8w-pill:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8w-pill:active {
+  transform: translateY(1px);
+}
+[data-look='redesign'] .u8w-pill:disabled {
+  cursor: default;
+  color: var(--u8n-subtle);
+  background: var(--u8n-surface);
+  transform: none;
+}
+[data-look='redesign'] .u8w-pill--primary {
+  background: var(--u8w-primary);
+  color: var(--u8w-primary-text);
+  border-color: transparent;
+}
+[data-look='redesign'] .u8w-pill--primary:hover {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .u8w-pill--small {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+  position: relative;
+}
+/* 44px touch target around a 36px pill */
+[data-look='redesign'] .u8w-pill--small::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+[data-look='redesign'] .u8w-pill .ultm8-spinner {
+  width: 14px;
+  height: 14px;
+}
+[data-look='redesign'] .u8w-pill[aria-expanded='true'] {
+  border-color: var(--u8n-text);
+}
+[data-look='redesign'] .u8w-pill:focus-visible,
+[data-look='redesign'] .u8w-chip:focus-visible,
+[data-look='redesign'] .u8w-row:focus-visible,
+[data-look='redesign'] .u8w-switch__btn:focus-visible,
+[data-look='redesign'] .u8w-sig__open:focus-visible,
+[data-look='redesign'] .u8w-list__show-all:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* Two buttons side by side share the row equally (DESIGN.md → "Button pairs"). */
+[data-look='redesign'] .u8w-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* ⋯ More: on a computer every action shows; on a phone Export moves under it. */
+[data-look='redesign'] .u8w-more {
+  display: contents;
+}
+[data-look='redesign'] .u8w-pill.u8w-more__button {
+  display: none;
+}
+[data-look='redesign'] .u8w-more__items {
+  display: contents;
+}
+
+/* ------------------------------------------------------- Chip and tags */
+/* A chosen chip is white with a thin green ring (DESIGN.md → "One accent"). */
+[data-look='redesign'] .u8w-chip {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+[data-look='redesign'] .u8w-chip::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+[data-look='redesign'] .u8w-chip:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8w-chip[aria-pressed='true'] {
+  border-color: var(--u8w-ring);
+  box-shadow: 0 0 0 1px var(--u8w-ring);
+}
+
+[data-look='redesign'] .u8w-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.5;
+  border-radius: 4px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8w-tag--ok {
+  background: var(--u8w-ok-bg);
+  color: var(--u8w-ok-text);
+  box-shadow: inset 0 0 0 1px var(--u8w-ok-line);
+}
+[data-look='redesign'] .u8w-tag--bad {
+  background: var(--u8w-bad-bg);
+  color: var(--u8w-bad-text);
+  box-shadow: inset 0 0 0 1px var(--u8w-bad-line);
+}
+[data-look='redesign'] .u8w-tag--warn {
+  background: var(--u8w-warn-bg);
+  color: var(--u8w-warn-text);
+  box-shadow: inset 0 0 0 1px var(--u8w-warn-line);
+}
+[data-look='redesign'] .u8w-tag--plain {
+  background: var(--u8w-plain-bg);
+  color: var(--u8w-plain-text);
+  box-shadow: inset 0 0 0 1px var(--u8w-plain-line);
+}
+
+/* --------------------------------------------------------------- Notes */
+[data-look='redesign'] .u8w-note {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+[data-look='redesign'] .u8w-note--error {
+  background: var(--u8w-bad-bg);
+  color: var(--u8w-bad-text);
+  box-shadow: inset 0 0 0 1px var(--u8w-bad-line);
+}
+[data-look='redesign'] .u8w-note--success {
+  background: var(--u8w-ok-bg);
+  color: var(--u8w-ok-text);
+  box-shadow: inset 0 0 0 1px var(--u8w-ok-line);
+}
+
+/* --------------------------------------------- The Split-Pane Reader */
+/* The list beside the reader, both white cards; when the page body is
+ * narrow (the 340px panel takes room on a small computer) they stack. */
+[data-look='redesign'] .u8w-split {
+  container-type: inline-size;
+}
+[data-look='redesign'] .u8w-card {
+  background: var(--u8n-surface);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  overflow: hidden;
+  min-width: 0;
+}
+[data-look='redesign'] .u8w-split__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+@container (min-width: 640px) {
+  [data-look='redesign'] .u8w-split__grid {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+}
+
+[data-look='redesign'] .u8w-list__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px 16px 12px;
+}
+[data-look='redesign'] .u8w-list__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8w-list__rows > li {
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8w-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  padding: 14px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--u8n-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+[data-look='redesign'] .u8w-row:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8w-row[aria-pressed='true'] {
+  background: var(--u8w-row-sel);
+  box-shadow: inset 4px 0 0 var(--u8w-row-mark);
+}
+/* A tag on the selected row gets a darker outline of its own colour
+ * (DESIGN.md → "Never the same colour twice"): the plain tag shares the grey. */
+[data-look='redesign'] .u8w-row[aria-pressed='true'] .u8w-tag--plain {
+  background: var(--u8n-surface);
+}
+[data-look='redesign'] .u8w-row__title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--u8n-tile-icon);
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8w-row__preview {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8w-row__meta {
+  font-size: 12px;
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8w-list__show-all {
+  display: none;
+}
+[data-look='redesign'] .u8w-empty {
+  padding: 8px 20px 24px;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8w-empty p {
+  margin: 0;
+}
+[data-look='redesign'] .u8w-empty__title {
+  margin-bottom: 4px !important;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--u8n-text);
+}
+
+[data-look='redesign'] .u8w-reader {
+  padding: 20px 24px 24px;
+}
+[data-look='redesign'] .u8w-reader__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8w-reader__updated {
+  margin: 0;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8w-reader__head .u8w-pair {
+  min-width: 220px;
+}
+[data-look='redesign'] .u8w-reader__text {
+  max-width: 70ch;
+  white-space: pre-line;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--u8n-text);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------ Right panel: Signatures, guests */
+[data-look='redesign'] .u8w-signatures,
+[data-look='redesign'] .u8w-guests {
+  color: var(--u8n-text);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8w-guests {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8w-signatures__summary {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+}
+[data-look='redesign'] .u8w-signatures__note,
+[data-look='redesign'] .u8w-guests__intro {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8w-signatures__empty,
+[data-look='redesign'] .u8w-guests__empty {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8w-signatures__tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+[data-look='redesign'] .u8w-signatures__sub {
+  margin: 18px 0 2px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8w-signatures__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 16px;
+}
+[data-look='redesign'] .u8w-signatures__actions .u8w-note {
+  margin: 0;
+}
+
+/* The All · Signed · Not signed switch looks like the style switch: a grey
+ * track, the chosen one white with a soft shadow. */
+[data-look='redesign'] .u8w-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--u8n-tile);
+}
+[data-look='redesign'] .u8w-switch__btn {
+  flex: 1 1 0;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8w-switch__btn[aria-pressed='true'] {
+  background: var(--u8n-surface);
+  box-shadow: 0 1px 3px rgba(21, 23, 25, 0.12);
+}
+
+[data-look='redesign'] .u8w-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  color: var(--u8n-subtle);
+  box-sizing: border-box;
+}
+[data-look='redesign'] .u8w-search:focus-within {
+  border-color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8w-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--u8n-text);
+}
+
+[data-look='redesign'] .u8w-sigs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+[data-look='redesign'] .u8w-sig,
+[data-look='redesign'] .u8w-guest {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8w-sig__open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px 8px;
+  margin: 0 -8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--u8n-text);
+  font: inherit;
+  text-align: start;
+  box-sizing: content-box;
+  cursor: default;
+}
+[data-look='redesign'] .u8w-sig__open[data-opens='true'] {
+  cursor: pointer;
+}
+[data-look='redesign'] .u8w-sig__open[data-opens='true']:hover {
+  background: var(--u8n-hover);
+}
+/* A signature you can't open is just a line, never greyed out. */
+[data-look='redesign'] .u8w-sig__open:disabled {
+  opacity: 1;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8w-sig__name {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8w-sig__open[data-opens='true'] .u8w-sig__name {
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8w-sig__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+[data-look='redesign'] .u8w-sig__date,
+[data-look='redesign'] .u8w-guest__line {
+  font-size: 12px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8w-guest__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+[data-look='redesign'] .u8w-guest__line {
+  display: block;
+}
+[data-look='redesign'] .u8w-guest__facts {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 13px;
+}
+[data-look='redesign'] .u8w-guest__facts > div {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 8px;
+}
+[data-look='redesign'] .u8w-guest__facts dt {
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8w-guest__facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8w-guest__text {
+  width: 100%;
+  box-sizing: border-box;
+  white-space: pre-line;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--u8w-soft-bg);
+  box-shadow: inset 0 0 0 1px var(--u8n-line);
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------- Phone: under 768px */
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8w .u8n-page-header__actions {
+    width: 100%;
+    gap: 6px;
+  }
+  [data-look='redesign'] .u8w .u8n-page-header__actions .u8w-pill {
+    padding: 0 14px;
+    font-size: 13px;
+  }
+  [data-look='redesign'] .u8w-more {
+    display: flex;
+    flex-wrap: wrap;
+    order: 3;
+    margin-inline-start: auto;
+    justify-content: flex-end;
+  }
+  [data-look='redesign'] .u8w .u8n-page-header__actions .u8w-pill.u8w-more__button {
+    display: inline-flex;
+    width: 44px;
+    padding: 0;
+    font-size: 18px;
+  }
+  [data-look='redesign'] .u8w-more__items {
+    display: none;
+  }
+  [data-look='redesign'] .u8w-more__items[data-open='true'] {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-basis: 100%;
+    gap: 8px;
+    margin-top: 6px;
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--u8w-soft-bg);
+    border: 1px solid var(--u8n-line);
+  }
+  /* Tapping a waiver shrinks the list to it (DESIGN.md → "Lists with a details panel"). */
+  [data-look='redesign'] .u8w-split[data-collapsed='true'] .u8w-list__rows > li[data-sel='false'],
+  [data-look='redesign'] .u8w-split[data-collapsed='true'] .u8w-list__toolbar {
+    display: none;
+  }
+  [data-look='redesign'] .u8w-split[data-collapsed='true'] .u8w-list__rows > li:first-child,
+  [data-look='redesign'] .u8w-split[data-collapsed='true'] .u8w-list__rows > li[data-sel='true'] {
+    border-top: 0;
+  }
+  [data-look='redesign'] .u8w-split[data-collapsed='true'] .u8w-list__show-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    border: 0;
+    border-top: 1px solid var(--u8n-line);
+    background: var(--u8w-soft-bg);
+    color: var(--u8n-tile-icon);
+    font: inherit;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  [data-look='redesign'] .u8w-reader {
+    padding: 16px;
+  }
+  [data-look='redesign'] .u8w-reader__head .u8w-pair {
+    width: 100%;
+    min-width: 0;
+  }
+  [data-look='redesign'] .u8w-search input {
+    font-size: 16px;
+  }
+}

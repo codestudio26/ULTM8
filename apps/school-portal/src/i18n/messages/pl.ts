@@ -87,6 +87,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franczyzy",
       notifications: "Powiadomienia",
       inviteCoaches: "Zaproś trenerów",
+      coachesInfo: "Informacje o trenerach",
       myBelts: "Moje pasy",
       completeProfile: "Mój profil trenera",
     },
@@ -719,6 +720,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Więcej działań",
     columnSurcharge: "Dopłata za kartę",
     surchargeLine: "+ {amount} dopłaty za kartę",
     title: "Transakcje",
@@ -2754,7 +2756,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Nadano rolę instruktora — osoba została powiadomiona e-mailem. Użyj „Dodaj instruktora”, aby dodać jej profil.",
     roleGrantedEmailFailed: "Nadano rolę instruktora, ale nie udało się wysłać e-maila z powiadomieniem. Użyj „Dodaj instruktora”, aby dodać jej profil.",
     roleInviteSent: "Ta szkoła wymaga, by nowy personel najpierw zaakceptował, więc wysłaliśmy zaproszenie e-mailem. Po akceptacji użyj „Dodaj instruktora”, aby dodać profil.",
-    roleInviteEmailFailed: "Ta szkoła wymaga, by nowy personel najpierw zaakceptował. Zaproszenie zostało utworzone, ale nie udało się wysłać e-maila. Anuluj je na stronie Personel i wyślij ponownie.",
+    roleInviteEmailFailed: "Ta szkoła wymaga, by nowy personel najpierw zaakceptował. Zaproszenie zostało utworzone, ale nie udało się wysłać e-maila. Anuluj je w sekcji Zespół → Zaproś trenerów i wyślij ponownie.",
     detail: {
       back: "← Instruktorzy",
       loadFailed: "Nie udało się wczytać tego instruktora.",
@@ -2817,7 +2819,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Nie udało się cofnąć przypisania. Spróbuj ponownie.",
     },
     belts: {
-      heading: "Pasy instruktorów",
       intro: "Instruktorzy sami wybierają swój pas w każdej dyscyplinie. Zweryfikuj go lub popraw na właściwy.",
       loadFailed: "Nie udało się wczytać pasów instruktorów.",
       verifyFailed: "Nie udało się zweryfikować tego pasa.",
@@ -2900,6 +2901,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Lata doświadczenia",
       bio: "Bio",
     },
+    team: {
+      panelLabel: "Członek zespołu",
+      openFullPage: "Otwórz pełną stronę",
+      openFullPageAria: "Otwórz pełną stronę: {name}",
+      frontDesk: "Recepcja i pieniądze",
+      refundsNote: "Zwroty i środki na koncie pozostają w Twoich rękach, właściciela.",
+      belts: "Pasy",
+      profileTab: "Profil",
+      sectionsAria: "Sekcje członka zespołu",
+      about: "O mnie",
+      roles: "Role",
+      nextClasses: "Najbliższe zajęcia",
+      allClasses: "Wszystkie zajęcia",
+      removeHeading: "Usuń z zespołu",
+      contact: "Kontakt",
+    },
   },
   students: {
     list: {
@@ -2916,6 +2933,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "Edytuj: {name}",
       training: "Trening",
       homeBranch: "Oddział macierzysty",
+    },
+    page: {
+      tabsAria: "Sekcje ucznia",
+      profile: "Profil",
+      ranks: "Stopnie",
+      contact: "Kontakt",
+      personal: "Dane osobowe",
+      account: "Konto",
+      birthday: "Urodziny",
+      balance: "Saldo",
     },
     growth: {
       subtitle: "Aktywni uczniowie, goście i zamrożone członkostwa dziś oraz jak rosła twoja szkoła w ostatnich 12 miesiącach.",
@@ -4022,6 +4049,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Więcej działań",
+      showAll: "Pokaż wszystkie oświadczenia ({count})",
+    },
     exportAll: {
       button: "Eksportuj podpisane dokumenty",
       title: "Eksportuj wszystkie podpisane dokumenty",

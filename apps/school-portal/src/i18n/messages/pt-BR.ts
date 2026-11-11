@@ -85,6 +85,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "Franquias",
       notifications: "Notificações",
       inviteCoaches: "Convidar professores",
+      coachesInfo: "Info dos professores",
       myBelts: "Minhas faixas",
       completeProfile: "Meu perfil de instrutor",
     },
@@ -713,6 +714,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Mais ações",
     columnSurcharge: "Acréscimo no cartão",
     surchargeLine: "+ {amount} de acréscimo no cartão",
     title: "Transações",
@@ -2674,7 +2676,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "Função de instrutor concedida — a pessoa foi avisada por e-mail. Use «Adicionar instrutor» para adicionar o perfil.",
     roleGrantedEmailFailed: "Função de instrutor concedida, mas não foi possível enviar o e-mail de aviso. Use «Adicionar instrutor» para adicionar o perfil.",
     roleInviteSent: "Esta escola pede que a nova equipe aceite primeiro, então enviamos um convite por e-mail. Depois que aceitarem, use \"Adicionar instrutor\" para criar o perfil.",
-    roleInviteEmailFailed: "Esta escola pede que a nova equipe aceite primeiro. O convite foi criado, mas o e-mail não pôde ser enviado. Cancele-o na página Equipe e envie de novo.",
+    roleInviteEmailFailed: "Esta escola pede que a nova equipe aceite primeiro. O convite foi criado, mas o e-mail não pôde ser enviado. Cancele-o em Equipe → Convidar professores e envie de novo.",
     detail: {
       back: "← Instrutores",
       loadFailed: "Não foi possível carregar este instrutor.",
@@ -2737,7 +2739,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "Não foi possível revogar este vínculo. Tente novamente.",
     },
     belts: {
-      heading: "Faixas dos instrutores",
       intro: "Os instrutores escolhem a própria faixa em cada modalidade. Verifique-a ou corrija para a faixa certa.",
       loadFailed: "Não foi possível carregar as faixas dos instrutores.",
       verifyFailed: "Não foi possível verificar esta faixa.",
@@ -2820,6 +2821,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "Anos de experiência",
       bio: "Biografia",
     },
+    team: {
+      panelLabel: "Membro da equipe",
+      openFullPage: "Abrir página completa",
+      openFullPageAria: "Abrir página completa: {name}",
+      frontDesk: "Recepção e dinheiro",
+      refundsNote: "Reembolsos e crédito ficam com você, o proprietário.",
+      belts: "Faixas",
+      profileTab: "Perfil",
+      sectionsAria: "Seções do membro da equipe",
+      about: "Sobre",
+      roles: "Funções",
+      nextClasses: "Próximas aulas",
+      allClasses: "Todas as aulas",
+      removeHeading: "Remover da equipe",
+      contact: "Contato",
+    },
   },
   students: {
     list: {
@@ -2836,6 +2853,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "Editar {name}",
       training: "Treino",
       homeBranch: "Filial principal",
+    },
+    page: {
+      tabsAria: "Seções do aluno",
+      profile: "Perfil",
+      ranks: "Graduações",
+      contact: "Contato",
+      personal: "Dados pessoais",
+      account: "Conta",
+      birthday: "Aniversário",
+      balance: "Saldo",
     },
     growth: {
       subtitle: "Alunos ativos, visitantes e planos congelados hoje, e quanto sua escola cresceu nos últimos 12 meses.",
@@ -3934,6 +3961,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Mais ações",
+      showAll: "Mostrar todos os termos ({count})",
+    },
     exportAll: {
       button: "Exportar documentos assinados",
       title: "Exportar todos os documentos assinados",

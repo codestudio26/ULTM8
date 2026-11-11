@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, SuccessBanner } from '@ultm8/ui';
+import { EmptyState, ErrorBanner, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
-import { Avatar } from '../lib/Avatar';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { useIsMainOwner, useRevokeRoleGrant, useUserRoleGrants } from '../roleGrants/roleGrantQueries';
 import { useBranches } from '../branches/branchQueries';
@@ -20,6 +19,12 @@ import { GiveRoleBackModal, HandOverClassesModal, ResendPasscodeModal, RevokeBlo
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { localizeAddressCountry } from '@ultm8/i18n';
+import { ROLE_LABELS } from '../lib/enumLabels';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { useDisciplines } from '../disciplines/disciplineQueries';
+import { useSchoolInstructorBelts, useVerifyInstructorBelt } from './instructorBeltQueries';
+import { EditInstructorModal } from './InstructorsPage';
+import { BeltPicture, BeltStatus, FrontDeskSwitches, TeamCard, TeamPanelWho } from '../team/TeamParts';
 
 const PAST_SHOWN = 10;
 
@@ -45,6 +50,13 @@ function formatDate(iso: string): string {
  * hasn't signed in yet; revoking is refused while they still teach upcoming
  * classes or weekly slots (hand them over first); and address and
  * certification come back from the API only for the owner or the instructor.
+ *
+ * The new look (Decision 453; DESIGN.md → "Team member full page"): "‹ Team"
+ * and the name, Profile and Classes tabs, white cards, and the Team member
+ * panel on the right (who they are and how to reach them, with Edit). The
+ * Profile tab has About, their Belts (with Verify), Front desk and money,
+ * Roles, the next two classes and "Remove from the team"; the Classes tab has
+ * the upcoming classes, weekly timetable and past classes.
  */
 export function InstructorDetailPage() {
   const t = useT();
@@ -68,6 +80,14 @@ export function InstructorDetailPage() {
   const [resending, setResending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [certError, setCertError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const [editing, setEditing] = useState(false);
+  // Archived styles too: the form shows one a record already has (Decision 310).
+  const { data: disciplineData } = useDisciplines(schoolId, { includeArchived: true });
+  // Their belts, verified here as on the Instructors page (Decisions 108, 188).
+  const belts = useSchoolInstructorBelts(schoolId);
+  const verify = useVerifyInstructorBelt(schoolId ?? '');
+  const [beltError, setBeltError] = useState<string | null>(null);
 
   if (!instructorId) return null;
   if (isLoading) return <Spinner />;
@@ -98,6 +118,15 @@ export function InstructorDetailPage() {
   // than one role, the API decides branch by branch.
   const revokeBlocked = activeGrants.length === 1 && (upcoming.length > 0 || mySlots.length > 0);
 
+  async function verifyBelt(disciplineId: string) {
+    setBeltError(null);
+    try {
+      await verify.mutateAsync({ userId: instructor!.userId, disciplineId });
+    } catch (err) {
+      setBeltError(err instanceof ApiError ? err.message : t('instructors.belts.verifyFailed'));
+    }
+  }
+
   async function openCertification() {
     setCertError(null);
     // Opened before the request so the browser doesn't treat it as a pop-up.
@@ -112,164 +141,322 @@ export function InstructorDetailPage() {
     }
   }
 
-  return (
+  const myBelts = (belts.data?.items ?? []).filter((b) => b.userId === instructor.userId);
+  const beltsWaiting = (belts.data?.instructors ?? []).some((i) => i.userId === instructor.userId);
+  // Their staff roles here: each with its branch; a revoked profile with
+  // none left shows as a revoked Instructor.
+  const branchOf = (branchId: string | null | undefined) =>
+    branchId ? branchData?.items.find((b) => b.id === branchId)?.name ?? branchId : t('roleGrants.coachInvites.wholeSchool');
+  const myRoles = (roleGrants.data?.items ?? []).filter(
+    (g) => g.schoolId === schoolId && !g.revokedAt && (g.role === 'INSTRUCTOR' || g.role === 'BRANCH_STAFF' || g.role === 'SCHOOL_OWNER_MANAGER'),
+  );
+  const tab = searchParams.get('tab') === 'classes' ? 'classes' : 'profile';
+  const here = `/instructors/${instructor.id}`;
+  const statusTags = (
     <>
-      <p style={{ margin: '0 0 8px' }}>
-        <Link to="/instructors">{t('instructors.detail.back')}</Link>
-      </p>
-      <PageHeader
-        title={name}
-        subtitle={instructor.bio ?? undefined}
-        actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {schoolId && (upcoming.length > 0 || mySlots.length > 0) ? (
-              <Button variant="secondary" onClick={() => setHandingOver(true)}>
-                {t('instructors.detail.handOver')}
-              </Button>
-            ) : null}
-            {schoolId && instructor.awaitingFirstLogin && instructor.status === 'ACTIVE' ? (
-              <Button variant="secondary" onClick={() => setResending(true)}>
-                {t('instructors.detail.resendPasscode')}
-              </Button>
-            ) : null}
-            {!isMainOwner ? null : activeGrant ? (
-              <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
-                {t('instructors.detail.revokeEnrollment')}
-              </Button>
-            ) : schoolId && instructor.status === 'REVOKED' ? (
-              <Button variant="secondary" onClick={() => setGivingRoleBack(true)}>
-                {t('instructors.detail.giveRoleBack')}
-              </Button>
-            ) : null}
-          </div>
-        }
-      />
-      {notice ? <SuccessBanner message={notice} /> : null}
-      {isMainOwner === false ? <p className="ultm8-field">{t('roleGrants.staff.mainOwnerOnly')}</p> : null}
-      {certError ? <ErrorBanner message={certError} /> : null}
+      {instructor.awaitingFirstLogin ? <span className="u8t-tag u8t-tag--warn">{t('instructors.awaitingFirstLogin')}</span> : null}
+      {instructor.archivedAt ? <span className="u8t-tag">{t('instructors.archived')}</span> : null}
+    </>
+  );
+  const label = (key: Parameters<typeof t>[0]) => t(key);
 
-      <div style={{ marginBottom: 24 }}>
-        <Card>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-            <Avatar firstName={instructor.firstName} surname={instructor.surname} photoUrl={instructor.photoUrl} size={64} />
-            <div style={{ display: 'grid', gap: 6 }}>
-              <span>
-                <strong>{t('instructors.detail.email')}</strong> {instructor.email}
-              </span>
-              <span>
-                <strong>{t('instructors.detail.status')}</strong>{' '}
-                <Badge variant={instructor.status === 'ACTIVE' ? 'success' : undefined}>
-                  {instructor.status === 'ACTIVE' ? t('lib.instructorStatus.active') : t('lib.instructorStatus.revoked')}
-                </Badge>{' '}
-                {instructor.awaitingFirstLogin ? <Badge>{t('instructors.awaitingFirstLogin')}</Badge> : null}{' '}
-                {instructor.archivedAt ? <Badge>{t('instructors.archived')}</Badge> : null}
-              </span>
-              <span>
-                <strong>{t('instructors.detail.branch')}</strong> {branchName}
-              </span>
-              {instructor.phone ? (
-                <span>
-                  <strong>{t('instructors.detail.phone')}</strong> {instructor.phone}
-                </span>
-              ) : null}
-              {instructor.yearsOfExperience != null ? (
-                <span>
-                  <strong>{t('instructors.detail.yearsOfExperience')}</strong> {instructor.yearsOfExperience}
-                </span>
-              ) : null}
-              {instructor.specializations.length > 0 ? (
-                <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <strong>{t('instructors.detail.specializations')}</strong>
-                  {instructor.specializations.map((s, i) => (
-                    <Badge key={`${s}-${i}`}>{s}</Badge>
-                  ))}
-                </span>
-              ) : null}
-              {/* Filled in by the instructor on their Complete Profile page. */}
-              {instructor.activities.length > 0 ? (
-                <span style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <strong>{t('instructors.detail.activities')}</strong>
-                  {instructor.activities.map((a, i) => (
-                    <Badge key={`${a}-${i}`}>{a}</Badge>
-                  ))}
-                </span>
-              ) : null}
-              {instructor.address ? (
-                <span>
-                  <strong>{t('instructors.detail.address')}</strong> {localizeAddressCountry(instructor.address, formatLocale(), instructor.addressCountry)}
-                </span>
-              ) : null}
-              {instructor.certificationKey ? (
-                <span style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <strong>{t('instructors.detail.certification')}</strong>
-                  {instructor.certificationConsentedAt
-                    ? t('instructors.detail.certificationConsented', { date: formatDate(instructor.certificationConsentedAt) })
-                    : t('instructors.detail.certificationOnFile')}
-                  <Button variant="secondary" onClick={openCertification}>
-                    {t('instructors.detail.viewCertification')}
-                  </Button>
-                </span>
-              ) : null}
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <div>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
-          {t('instructors.detail.upcomingHeading')}
-        </h2>
-        <Card>
-          {classesLoading ? (
-            <Spinner />
-          ) : classesError ? (
-            <ErrorBanner message={classesError instanceof ApiError ? classesError.message : t('instructors.detail.classesLoadFailed')} />
-          ) : upcoming.length === 0 && past.length === 0 ? (
-            <EmptyState title={t('instructors.detail.classesEmptyTitle')} description={t('instructors.detail.classesEmptyDescription')} />
-          ) : upcoming.length === 0 ? (
-            <EmptyState title={t('instructors.detail.upcomingEmptyTitle')} description={t('instructors.detail.upcomingEmptyDescription')} />
-          ) : (
-            <ClassList classes={upcoming} showBooked />
-          )}
-        </Card>
-      </div>
-
-      {mySlots.length > 0 ? (
-        <div style={{ marginTop: 24 }}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
-            {t('instructors.detail.timetableHeading')}
-          </h2>
-          <Card>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
-              {mySlots.map((s) => (
-                <li key={s.id} style={{ padding: '10px 14px', borderRadius: 'var(--radius-md)', background: 'var(--surface-1)' }}>
-                  <div style={{ fontWeight: 600 }}>{s.title}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    {weekdayName(s.weekday, formatLocale() ?? 'en', 'long')} {s.startTime}–{s.endTime}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Card>
+  // DESIGN.md → "Team member full page": the right panel says who the person
+  // is and how to reach them; everything else is on the page only.
+  const inspector = (
+    <>
+      <TeamPanelWho firstName={instructor.firstName} surname={instructor.surname} photoUrl={instructor.photoUrl} name={name} />
+      {schoolId ? (
+        <div className="u8t-tiles">
+          <button type="button" className="u8t-tile" onClick={() => setEditing(true)}>
+            <span className="u8t-tile__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4" />
+              </svg>
+            </span>
+            {t('instructors.edit')}
+          </button>
         </div>
       ) : null}
-
-      {past.length > 0 ? (
-        <div style={{ marginTop: 24 }}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
-            {t('instructors.detail.pastHeading')}
-          </h2>
-          <Card>
-            <ClassList classes={showAllPast ? past : past.slice(0, PAST_SHOWN)} showBooked={false} />
-            {past.length > PAST_SHOWN ? (
-              <div style={{ marginTop: 12 }}>
-                <Button variant="secondary" onClick={() => setShowAllPast((v) => !v)}>
-                  {showAllPast ? t('instructors.detail.showFewerPast') : t('instructors.detail.showAllPast', { count: past.length })}
-                </Button>
-              </div>
-            ) : null}
-          </Card>
+      <p className="u8t-sec">{t('instructors.team.contact')}</p>
+      <div className="u8t-line">
+        <span>{t('instructors.inviteModal.email')}</span>
+        <span>{instructor.email}</span>
+      </div>
+      {instructor.phone ? (
+        <div className="u8t-line">
+          <span>{t('instructors.inviteModal.phone')}</span>
+          <span>{instructor.phone}</span>
         </div>
+      ) : null}
+    </>
+  );
+
+  return (
+    <>
+      <NewLookPageHeader
+        parent={{ to: '/instructors', label: t('layout.newLook.groups.team') }}
+        title={name}
+        subtitle={instructor.bio ?? undefined}
+        tabs={[
+          { to: here, label: t('instructors.team.profileTab'), current: tab === 'profile' },
+          { to: `${here}?tab=classes`, label: t('instructors.detail.classesHeading'), current: tab === 'classes' },
+        ]}
+        tabsLabel={t('instructors.team.sectionsAria')}
+      />
+      {notice ? <SuccessBanner message={notice} /> : null}
+      {certError ? <ErrorBanner message={certError} /> : null}
+
+      <NewLookPage inspector={inspector} inspectorLabel={t('instructors.team.panelLabel')}>
+        <div className="u8t-stack u8t-profile">
+          {tab === 'profile' ? (
+            <>
+              <TeamCard title={t('instructors.team.about')}>
+                <div className="u8t-rows">
+                  {/* Their profile's branch, when Roles doesn't already show it. */}
+                  {myRoles.length > 0 && !myRoles.some((g) => branchOf(g.branchId) === branchName) ? (
+                    <div className="u8t-line">
+                      <span>{label('instructors.form.branch')}</span>
+                      <span>{branchName}</span>
+                    </div>
+                  ) : null}
+                  {instructor.yearsOfExperience != null ? (
+                    <div className="u8t-line">
+                      <span>{label('instructors.form.yearsOfExperience')}</span>
+                      <span>{instructor.yearsOfExperience}</span>
+                    </div>
+                  ) : null}
+                  {instructor.specializations.length > 0 ? (
+                    <div className="u8t-line">
+                      <span>{label('instructors.form.specializations')}</span>
+                      <span className="u8t-tags" style={{ justifyContent: 'flex-end' }}>
+                        {instructor.specializations.map((sp, i) => (
+                          <span key={`${sp}-${i}`} className="u8t-tag u8t-tag--info">
+                            {sp}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                  ) : null}
+                  {/* Filled in by the instructor on their Complete Profile page. */}
+                  {instructor.activities.length > 0 ? (
+                    <div className="u8t-line">
+                      <span>{label('instructors.completeProfile.activities')}</span>
+                      <span className="u8t-tags" style={{ justifyContent: 'flex-end' }}>
+                        {instructor.activities.map((a, i) => (
+                          <span key={`${a}-${i}`} className="u8t-tag">
+                            {a}
+                          </span>
+                        ))}
+                      </span>
+                    </div>
+                  ) : null}
+                  {instructor.address ? (
+                    <div className="u8t-line">
+                      <span>{label('instructors.completeProfile.address')}</span>
+                      <span>{localizeAddressCountry(instructor.address, formatLocale(), instructor.addressCountry)}</span>
+                    </div>
+                  ) : null}
+                  {instructor.certificationKey ? (
+                    <div className="u8t-line">
+                      <span>{label('instructors.completeProfile.certification')}</span>
+                      <span>
+                        {instructor.certificationConsentedAt
+                          ? t('instructors.detail.certificationConsented', { date: formatDate(instructor.certificationConsentedAt) })
+                          : t('instructors.detail.certificationOnFile')}
+                        <br />
+                        <button type="button" className="u8t-pill u8t-pill--sm" style={{ marginTop: 8 }} onClick={openCertification}>
+                          {t('instructors.detail.viewCertification')}
+                        </button>
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+                {/* Decision 456: these sit under their details. */}
+                {schoolId && (upcoming.length > 0 || mySlots.length > 0 || (instructor.awaitingFirstLogin && instructor.status === 'ACTIVE')) ? (
+                  <div className="u8t-state u8t-actions" style={{ justifyContent: 'flex-start', flexWrap: 'wrap', paddingTop: 4 }}>
+                    {upcoming.length > 0 || mySlots.length > 0 ? (
+                      <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setHandingOver(true)}>
+                        {t('instructors.detail.handOver')}
+                      </button>
+                    ) : null}
+                    {instructor.awaitingFirstLogin && instructor.status === 'ACTIVE' ? (
+                      <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setResending(true)}>
+                        {t('instructors.detail.resendPasscode')}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </TeamCard>
+
+              {schoolId && (myBelts.length > 0 || beltsWaiting) ? (
+                <TeamCard title={t('instructors.team.belts')}>
+                  {beltError ? (
+                    <div className="u8t-banners">
+                      <ErrorBanner message={beltError} />
+                    </div>
+                  ) : null}
+                  {myBelts.length === 0 ? <p className="u8t-note">{t('instructors.belts.emptyTitle')}</p> : null}
+                  {myBelts.map((b) => (
+                    <div key={b.id} className="u8t-li">
+                      <span className="u8t-li__main">
+                        <span className="u8t-sub" style={{ display: 'block' }}>
+                          {b.disciplineName}
+                        </span>
+                        <span className="u8t-belt" style={{ marginTop: 6 }}>
+                          <BeltPicture disciplineId={b.disciplineId} stripeTierId={b.stripeTierId} />
+                          <span>{b.beltName}</span>
+                        </span>
+                      </span>
+                      <BeltStatus verified={b.verificationStatus === 'VERIFIED'} />
+                      {b.verificationStatus === 'UNVERIFIED' ? (
+                        <button
+                          type="button"
+                          className="u8t-pill u8t-pill--go u8t-pill--sm"
+                          onClick={() => void verifyBelt(b.disciplineId)}
+                          aria-label={t('instructors.belts.verifyAria', { name, style: b.disciplineName })}
+                        >
+                          {t('instructors.belts.verify')}
+                        </button>
+                      ) : null}
+                    </div>
+                  ))}
+                </TeamCard>
+              ) : null}
+
+              {schoolId ? <FrontDeskSwitches schoolId={schoolId} userId={instructor.userId} variant="card" /> : null}
+
+              <TeamCard title={t('instructors.team.roles')}>
+                {myRoles.length > 0 ? (
+                  myRoles.map((g) => (
+                    <div key={g.id} className="u8t-li">
+                      <span className="u8t-li__main">
+                        <span className="u8t-li__title">{ROLE_LABELS[g.role] ? t(ROLE_LABELS[g.role]!) : g.role}</span>
+                        <span className="u8t-sub" style={{ display: 'block' }}>
+                          {branchOf(g.branchId)}
+                        </span>
+                      </span>
+                      <span className="u8t-tags">
+                        <span className="u8t-tag u8t-tag--ok">{t('lib.instructorStatus.active')}</span>
+                        {g.role === 'INSTRUCTOR' ? statusTags : null}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="u8t-li">
+                    <span className="u8t-li__main">
+                      <span className="u8t-li__title">{t('lib.roles.instructor')}</span>
+                      <span className="u8t-sub" style={{ display: 'block' }}>
+                        {branchName}
+                      </span>
+                    </span>
+                    <span className="u8t-tags">
+                      <span className={'u8t-tag' + (instructor.status === 'ACTIVE' ? ' u8t-tag--ok' : '')}>
+                        {instructor.status === 'ACTIVE' ? t('lib.instructorStatus.active') : t('lib.instructorStatus.revoked')}
+                      </span>
+                      {statusTags}
+                    </span>
+                  </div>
+                )}
+              </TeamCard>
+
+              {upcoming.length > 0 ? (
+                <TeamCard
+                  title={t('instructors.team.nextClasses')}
+                  action={
+                    <Link className="u8t-pill u8t-pill--sm" to={`${here}?tab=classes`}>
+                      {t('instructors.team.allClasses')}
+                      <span aria-hidden="true"> ›</span>
+                    </Link>
+                  }
+                >
+                  <ClassList classes={upcoming.slice(0, 2)} showBooked branchOf={branchOf} />
+                </TeamCard>
+              ) : null}
+
+              {isMainOwner && (activeGrant || (schoolId && instructor.status === 'REVOKED')) ? (
+                <TeamCard title={t('instructors.team.removeHeading')} danger>
+                  <div className="u8t-danger-body">
+                    {activeGrant ? (
+                      <>
+                        <p>{t('instructors.detail.revokeDescription')}</p>
+                        <button type="button" className="u8t-pill u8t-pill--red u8t-pill--sm" onClick={() => setConfirmingRevoke(true)}>
+                          {t('instructors.detail.revokeEnrollment')}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <p>{t('instructors.detail.giveRoleBackDescription')}</p>
+                        <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setGivingRoleBack(true)}>
+                          {t('instructors.detail.giveRoleBack')}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </TeamCard>
+              ) : isMainOwner === false ? (
+                <p className="u8t-hint">{t('roleGrants.staff.mainOwnerOnly')}</p>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <TeamCard title={t('instructors.detail.upcomingHeading')}>
+                {classesLoading ? (
+                  <div className="u8t-state">
+                    <Spinner />
+                  </div>
+                ) : classesError ? (
+                  <div className="u8t-state">
+                    <ErrorBanner message={classesError instanceof ApiError ? classesError.message : t('instructors.detail.classesLoadFailed')} />
+                  </div>
+                ) : upcoming.length === 0 && past.length === 0 ? (
+                  <div className="u8t-state">
+                    <EmptyState title={t('instructors.detail.classesEmptyTitle')} description={t('instructors.detail.classesEmptyDescription')} />
+                  </div>
+                ) : upcoming.length === 0 ? (
+                  <div className="u8t-state">
+                    <EmptyState title={t('instructors.detail.upcomingEmptyTitle')} description={t('instructors.detail.upcomingEmptyDescription')} />
+                  </div>
+                ) : (
+                  <ClassList classes={upcoming} showBooked branchOf={branchOf} />
+                )}
+              </TeamCard>
+
+              {mySlots.length > 0 ? (
+                <TeamCard title={t('instructors.detail.timetableHeading')}>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {mySlots.map((sl) => (
+                      <li key={sl.id} className="u8t-li">
+                        <span className="u8t-li__main">
+                          <span className="u8t-li__title">{sl.title}</span>
+                          <span className="u8t-sub" style={{ display: 'block' }}>
+                            {weekdayName(sl.weekday, formatLocale() ?? 'en', 'long')} {sl.startTime}–{sl.endTime}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </TeamCard>
+              ) : null}
+
+              {past.length > 0 ? (
+                <TeamCard title={t('instructors.detail.pastHeading')}>
+                  <ClassList classes={showAllPast ? past : past.slice(0, PAST_SHOWN)} showBooked={false} branchOf={branchOf} />
+                  {past.length > PAST_SHOWN ? (
+                    <div className="u8t-state">
+                      <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setShowAllPast((v) => !v)}>
+                        {showAllPast ? t('instructors.detail.showFewerPast') : t('instructors.detail.showAllPast', { count: past.length })}
+                      </button>
+                    </div>
+                  ) : null}
+                </TeamCard>
+              ) : null}
+            </>
+          )}
+        </div>
+      </NewLookPage>
+
+      {editing && schoolId ? (
+        <EditInstructorModal schoolId={schoolId} branches={branchData?.items ?? []} disciplines={disciplineData?.items ?? []} instructor={instructor} onClose={() => setEditing(false)} />
       ) : null}
 
       {confirmingRevoke && activeGrant && revokeBlocked ? (
@@ -340,34 +527,27 @@ export function InstructorDetailPage() {
   );
 }
 
-function ClassList({ classes, showBooked }: { classes: InstructorClassResponse[]; showBooked: boolean }) {
+/** Each class: its title, then the date and its branch, and for upcoming
+ * ones how many are booked. */
+function ClassList({ classes, showBooked, branchOf }: { classes: InstructorClassResponse[]; showBooked: boolean; branchOf: (id: string) => string }) {
   const t = useT();
   return (
-    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
       {classes.map((c) => (
-        <li
-          key={c.id}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 12,
-            padding: '10px 14px',
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--surface-1)',
-          }}
-        >
-          <div>
-            <div style={{ fontWeight: 600 }}>{c.title}</div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{formatDate(c.startDate)}</div>
-          </div>
+        <li key={c.id} className="u8t-li">
+          <span className="u8t-li__main">
+            <span className="u8t-li__title">{c.title}</span>
+            <span className="u8t-sub" style={{ display: 'block' }}>
+              {c.branchId ? `${formatDate(c.startDate)} · ${branchOf(c.branchId)}` : formatDate(c.startDate)}
+            </span>
+          </span>
           {/* The count is of upcoming bookings, so it means nothing once a class is over. */}
           {showBooked ? (
-            <Badge variant="accent">
+            <span className="u8t-tag u8t-tag--info">
               {c.capacity != null
                 ? t('instructors.detail.booked', { enrolled: c.enrolledCount, capacity: c.capacity })
                 : t('instructors.detail.bookedNoCapacity', { enrolled: c.enrolledCount })}
-            </Badge>
+            </span>
           ) : null}
         </li>
       ))}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner } from '@ultm8/ui';
+import { Button, ErrorBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { useMembershipCard, useNewStudentCheckInCode, useStudentCheckInCode } from './frontDeskQueries';
@@ -10,6 +10,8 @@ import { membershipCardHtml } from './membershipCardHtml';
  * F3): typed at the front desk when the app QR can't be shown. Staff who
  * cover the student see it and can give a new one (the old one stops
  * working); the student can't change it. Hidden when the caller can't see it.
+ * In the new look it sits in the student page's summary panel as a dashed
+ * ticket (DESIGN-BRIEF §8, design A), with its two buttons under it.
  */
 export function StudentCheckInCodeCard({ schoolId, studentId }: { schoolId: string; studentId: string }) {
   const t = useT();
@@ -26,19 +28,27 @@ export function StudentCheckInCodeCard({ schoolId, studentId }: { schoolId: stri
     window.open(url, '_blank');
   }
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
-          {t('frontDesk.studentCode.title')}
-        </h2>
-        <p style={{ margin: '0 0 8px', fontSize: 28, letterSpacing: '0.2em', fontVariantNumeric: 'tabular-nums' }} data-testid="student-check-in-code">
-          {code.data.code}
-        </p>
-        <p style={{ margin: '0 0 12px', color: 'var(--color-neutral-600)' }}>{t('frontDesk.studentCode.hint')}</p>
-        {renew.error ? <ErrorBanner message={renew.error instanceof ApiError ? renew.error.message : t('frontDesk.studentCode.failed')} /> : null}
-        {confirming ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <span>{t('frontDesk.studentCode.confirm')}</span>
+    <section aria-label={t('frontDesk.studentCode.title')}>
+      <div className="u8sp-ticket">
+        <div>
+          <p className="u8sp-ticket__label">{t('frontDesk.studentCode.title')}</p>
+          <p className="u8sp-ticket__code" data-testid="student-check-in-code">
+            {code.data.code}
+          </p>
+        </div>
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.6">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <path d="M14 14h3v3h-3zM18 18h3v3h-3z" />
+        </svg>
+      </div>
+      <p className="u8sp-panel__note">{t('frontDesk.studentCode.hint')}</p>
+      {renew.error ? <ErrorBanner message={renew.error instanceof ApiError ? renew.error.message : t('frontDesk.studentCode.failed')} /> : null}
+      {confirming ? (
+        <>
+          <p className="u8sp-panel__text">{t('frontDesk.studentCode.confirm')}</p>
+          <div className="u8sp-panel__buttons u8sp-panel__buttons--pair">
             <Button
               variant="secondary"
               disabled={renew.isPending}
@@ -50,18 +60,18 @@ export function StudentCheckInCodeCard({ schoolId, studentId }: { schoolId: stri
               {t('common.cancel')}
             </Button>
           </div>
-        ) : (
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <Button variant="secondary" onClick={() => setConfirming(true)}>
-              {t('frontDesk.studentCode.renew')}
-            </Button>
-            <Button variant="secondary" onClick={printCard} disabled={!card.data}>
-              {t('frontDesk.card.print')}
-            </Button>
-          </div>
-        )}
-        {card.isError ? <p className="ultm8-field__hint">{t('frontDesk.card.failed')}</p> : null}
-      </Card>
-    </div>
+        </>
+      ) : (
+        <div className="u8sp-panel__buttons u8sp-panel__buttons--pair">
+          <Button variant="secondary" onClick={() => setConfirming(true)}>
+            {t('frontDesk.studentCode.renew')}
+          </Button>
+          <Button variant="secondary" onClick={printCard} disabled={!card.data}>
+            {t('frontDesk.card.print')}
+          </Button>
+        </div>
+      )}
+      {card.isError ? <p className="u8sp-panel__note">{t('frontDesk.card.failed')}</p> : null}
+    </section>
   );
 }

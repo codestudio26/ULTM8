@@ -84,6 +84,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "แฟรนไชส์",
       notifications: "การแจ้งเตือน",
       inviteCoaches: "เชิญโค้ช",
+      coachesInfo: "ข้อมูลโค้ช",
       myBelts: "สายคาดของฉัน",
       completeProfile: "โปรไฟล์โค้ชของฉัน",
     },
@@ -710,6 +711,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "การดำเนินการเพิ่มเติม",
     columnSurcharge: "ค่าธรรมเนียมบัตร",
     surchargeLine: "+ ค่าธรรมเนียมบัตร {amount}",
     title: "ธุรกรรม",
@@ -2634,7 +2636,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "มอบบทบาทผู้ฝึกสอนแล้ว — แจ้งทางอีเมลแล้ว ใช้ “เพิ่มผู้ฝึกสอน” เพื่อเพิ่มโปรไฟล์",
     roleGrantedEmailFailed: "มอบบทบาทผู้ฝึกสอนแล้ว แต่ส่งอีเมลแจ้งเตือนไม่สำเร็จ ใช้ “เพิ่มผู้ฝึกสอน” เพื่อเพิ่มโปรไฟล์",
     roleInviteSent: "โรงเรียนนี้ให้พนักงานใหม่ตอบรับก่อน เราจึงส่งคำเชิญทางอีเมลแล้ว เมื่อตอบรับแล้ว ใช้ \"เพิ่มผู้สอน\" เพื่อเพิ่มโปรไฟล์",
-    roleInviteEmailFailed: "โรงเรียนนี้ให้พนักงานใหม่ตอบรับก่อน สร้างคำเชิญแล้วแต่ส่งอีเมลไม่สำเร็จ ยกเลิกที่หน้าพนักงานแล้วส่งใหม่",
+    roleInviteEmailFailed: "โรงเรียนนี้ให้พนักงานใหม่ตอบรับก่อน สร้างคำเชิญแล้วแต่ส่งอีเมลไม่สำเร็จ ยกเลิกที่ ทีม → เชิญโค้ชแล้วส่งใหม่",
     detail: {
       back: "← ผู้ฝึกสอน",
       loadFailed: "ไม่สามารถโหลดผู้ฝึกสอนคนนี้ได้",
@@ -2697,7 +2699,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "ไม่สามารถเพิกถอนการสังกัดนี้ได้ โปรดลองอีกครั้ง",
     },
     belts: {
-      heading: "สายคาดของผู้ฝึกสอน",
       intro: "ผู้ฝึกสอนเลือกสายคาดของตนเองในแต่ละประเภทกีฬา ยืนยัน หรือแก้ไขให้ถูกต้อง",
       loadFailed: "ไม่สามารถโหลดสายคาดของผู้ฝึกสอนได้",
       verifyFailed: "ไม่สามารถยืนยันสายคาดนี้ได้",
@@ -2780,6 +2781,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "ประสบการณ์ (ปี)",
       bio: "ประวัติโดยย่อ",
     },
+    team: {
+      panelLabel: "สมาชิกทีม",
+      openFullPage: "เปิดหน้าเต็ม",
+      openFullPageAria: "เปิดหน้าเต็ม: {name}",
+      frontDesk: "เคาน์เตอร์และการเงิน",
+      refundsNote: "การคืนเงินและเครดิตยังเป็นหน้าที่ของคุณ เจ้าของ",
+      belts: "สายคาด",
+      profileTab: "โปรไฟล์",
+      sectionsAria: "ส่วนของสมาชิกทีม",
+      about: "เกี่ยวกับ",
+      roles: "บทบาท",
+      nextClasses: "คลาสถัดไป",
+      allClasses: "คลาสทั้งหมด",
+      removeHeading: "นำออกจากทีม",
+      contact: "ติดต่อ",
+    },
   },
   students: {
     list: {
@@ -2796,6 +2813,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "แก้ไข {name}",
       training: "การฝึก",
       homeBranch: "สาขาหลัก",
+    },
+    page: {
+      tabsAria: "ส่วนของนักเรียน",
+      profile: "โปรไฟล์",
+      ranks: "ระดับ",
+      contact: "การติดต่อ",
+      personal: "ข้อมูลส่วนตัว",
+      account: "บัญชี",
+      birthday: "วันเกิด",
+      balance: "ยอดคงเหลือ",
     },
     growth: {
       subtitle: "นักเรียนที่ยังใช้งาน ผู้เยี่ยมชม และสมาชิกภาพที่พักอยู่ในตอนนี้ และการเติบโตของโรงเรียนใน 12 เดือนที่ผ่านมา",
@@ -3890,6 +3917,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "การดำเนินการเพิ่มเติม",
+      showAll: "แสดงเอกสารสละสิทธิ์ทั้งหมด ({count})",
+    },
     exportAll: {
       button: "ส่งออกเอกสารที่ลงนาม",
       title: "ส่งออกเอกสารที่ลงนามทั้งหมด",

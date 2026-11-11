@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner } from '@ultm8/ui';
+import { Button, ErrorBanner } from '@ultm8/ui';
 import { formatMoney } from '../lib/money';
 import { formatLocale } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
+import { StudentCard } from '../students/StudentPageLook';
 import { useStudentPlanContracts, type PlanContractSignature } from './membershipPlanQueries';
 
 function formatDay(iso: string): string {
@@ -18,17 +19,14 @@ export function StudentPlanContractsCard({ schoolId, studentId }: { schoolId: st
   if (contracts.isLoading) return null;
   if (!contracts.isError && rows.length === 0) return null;
   return (
-    <Card>
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-        {t('membershipPlans.contract.studentCardTitle')}
-      </h2>
+    <StudentCard title={t('membershipPlans.contract.studentCardTitle')}>
       {contracts.isError ? <ErrorBanner message={t('membershipPlans.contract.loadFailed')} /> : null}
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+      <ul className="u8sp-rows" style={{ marginTop: -16, marginBottom: -18 }}>
         {rows.map((c) => (
           <SignedContractRow key={c.id} contract={c} studentId={studentId} />
         ))}
       </ul>
-    </Card>
+    </StudentCard>
   );
 }
 
@@ -36,7 +34,7 @@ function SignedContractRow({ contract: c, studentId }: { contract: PlanContractS
   const t = useT();
   const [open, setOpen] = useState(false);
   return (
-    <li style={{ padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+    <li>
       <strong>{c.planTitle}</strong>
       <div className="ultm8-field__hint">
         {t('membershipPlans.contract.signedOn', { date: formatDay(c.signedAt), name: c.signerFullName })}
@@ -52,9 +50,11 @@ function SignedContractRow({ contract: c, studentId }: { contract: PlanContractS
           {c.endsAfterMinimumTerm ? ` · ${t('membershipPlans.contract.endsAfterTermLine')}` : ''}
         </div>
       ) : null}
-      <Button variant="secondary" onClick={() => setOpen((o) => !o)}>
-        {open ? t('membershipPlans.contract.hideText') : t('membershipPlans.contract.viewText')}
-      </Button>
+      <div style={{ marginTop: 8 }}>
+        <Button variant="secondary" onClick={() => setOpen((o) => !o)}>
+          {open ? t('membershipPlans.contract.hideText') : t('membershipPlans.contract.viewText')}
+        </Button>
+      </div>
       {open ? (
         <div style={{ marginTop: 8 }}>
           <p style={{ whiteSpace: 'pre-wrap' }}>{c.contractBody}</p>

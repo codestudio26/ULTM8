@@ -48,7 +48,7 @@ test('the owner gives back part of a cash payment, then sees it in the billing r
   const pay = page.getByTestId('record-charge-payment-form');
   await pay.getByLabel('Amount received').fill('60');
   await pay.getByRole('button', { name: 'Record payment' }).click();
-  await expect(card.getByText('Nothing owed')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Nothing owed');
 
   // The payments table sits below the card's header (`student-charges`).
   await page.getByRole('row', { name: /Cash/ }).getByRole('button', { name: 'Refund' }).click();
@@ -61,7 +61,7 @@ test('the owner gives back part of a cash payment, then sees it in the billing r
   await refund.getByRole('button', { name: 'Refund' }).click();
   await expect(page.getByTestId('charge-refund-line')).toContainText('given back');
   await expect(page.getByText('Part refunded').first()).toBeVisible();
-  await expect(card.getByText('Nothing owed')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Nothing owed');
 
   // Membership payments (Decision 414 item 3): a plan sold at the desk, and a
   // renewal with 25.00 of its 50.00 refunded. The desk payment toward the

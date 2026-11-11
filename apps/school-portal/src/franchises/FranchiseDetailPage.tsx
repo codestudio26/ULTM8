@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Field, Modal, Spinner, TextField } from '@ultm8/ui';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { localCountryNames } from '../lib/countryNames';
 import { ApiError } from '@ultm8/api-client';
@@ -26,6 +26,10 @@ import {
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
 import { formatLocale } from '../i18n/format';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../students/studentsList.css';
+import '../organisation/organisationLook.css';
 
 // FOUND ON REVIEW: an earlier version of this file hand-rolled a local
 // `FranchiseSchool` type here instead of reusing the generated
@@ -59,26 +63,40 @@ function FranchiseIdLine({ id }: { id: string }) {
     }
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        <strong>{t('franchises.detail.franchiseId')}</strong>
-        <code ref={codeRef} data-testid="franchise-id" style={{ overflowWrap: 'anywhere' }}>
-          {id}
-        </code>
-        <Button variant="secondary" onClick={copy}>
-          {copied ? t('franchises.detail.copied') : t('franchises.detail.copyId')}
-        </Button>
-      </div>
-      <span style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('franchises.detail.franchiseIdHint')}</span>
+    <div className="u8o-row">
+      <strong className="u8o-rowname" style={{ fontSize: 14 }}>
+        {t('franchises.detail.franchiseId')}
+      </strong>
+      <code ref={codeRef} data-testid="franchise-id" className="u8o-code">
+        {id}
+      </code>
+      <button type="button" className="u8n-pill u8o-pill--sm" onClick={copy}>
+        {copied ? t('franchises.detail.copied') : t('franchises.detail.copyId')}
+      </button>
+      <p className="u8o-quiet" style={{ flex: '1 1 100%' }}>
+        {t('franchises.detail.franchiseIdHint')}
+      </p>
     </div>
   );
 }
 
 function subscriptionStatusBadge(status: FranchiseSchool['franchiseFeeSubscriptionStatus'], t: TranslateFn) {
-  if (status === 'ACTIVE') return <Badge variant="success">{t('franchises.detail.subscriptionActive')}</Badge>;
-  if (status === 'PAST_DUE') return <Badge variant="danger">{t('franchises.detail.subscriptionPastDue')}</Badge>;
-  if (status === 'CANCELED') return <Badge>{t('franchises.detail.subscriptionCanceled')}</Badge>;
-  return <Badge>{t('franchises.detail.subscriptionNotBilling')}</Badge>;
+  if (status === 'ACTIVE') return <span className="u8n-tag u8n-tag--active">{t('franchises.detail.subscriptionActive')}</span>;
+  if (status === 'PAST_DUE') return <span className="u8n-tag u8o-tag--closed">{t('franchises.detail.subscriptionPastDue')}</span>;
+  if (status === 'CANCELED') return <span className="u8n-tag u8n-tag--inactive">{t('franchises.detail.subscriptionCanceled')}</span>;
+  return <span className="u8n-tag u8n-tag--inactive">{t('franchises.detail.subscriptionNotBilling')}</span>;
+}
+
+/** A new-look card: a light header with the title, then the body. */
+function OrgCard({ title, children, testId, danger, flush }: { title: string; children: React.ReactNode; testId?: string; danger?: boolean; flush?: boolean }) {
+  return (
+    <section className={'u8o-card' + (danger ? ' u8o-card--danger' : '')} data-testid={testId} aria-label={title}>
+      <header className="u8o-card__head">
+        <h2 className="u8o-card__title">{title}</h2>
+      </header>
+      <div className={'u8o-card__body' + (flush ? ' u8o-card__body--flush' : '')}>{children}</div>
+    </section>
+  );
 }
 
 /** A Franchise's own member-School roster + franchise-fee charge history and
@@ -146,49 +164,44 @@ export function FranchiseDetailPage() {
   }
 
   return (
-    <>
-      <PageHeader
+    <div className="u8o">
+      <NewLookPageHeader
+        parent={{ to: '/franchises', label: t('franchises.list.title') }}
         title={franchise?.name ?? t('franchises.detail.fallbackTitle')}
         subtitle={t('franchises.detail.subtitle', {
           feeModel: franchise?.feeModel === 'PER_HEADCOUNT' ? t('franchises.feeModels.perHeadcount') : t('franchises.feeModels.flat'),
         })}
         actions={
           // Decision 450 item 1 — the member Schools' totals.
-          <Button variant="secondary" data-testid="franchise-overview-link" onClick={() => navigate(`/franchises/${franchiseId}/overview`)}>
+          <button type="button" className="u8n-pill" data-testid="franchise-overview-link" onClick={() => navigate(`/franchises/${franchiseId}/overview`)}>
             {t('franchises.overview.open')}
-          </Button>
+          </button>
         }
       />
 
-      <div style={{ marginBottom: 24 }}>
-        <Card>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {franchise?.archivedAt ? (
-              <div>
-                <Badge variant="danger">{t('franchises.list.closed')}</Badge>
-              </div>
-            ) : null}
-            <FranchiseIdLine id={franchiseId} />
-            {showBillingNotice ? (
-              <div role="status" data-testid="billing-notice">
-                <strong>{t('franchises.detail.billingNoticeTitle')}</strong>
-                <ul style={{ margin: '4px 0 0', paddingLeft: 20 }}>
-                  {feeMissing ? (
-                    <li>{franchise?.feeModel === 'PER_HEADCOUNT' ? t('franchises.detail.billingNoticeNoRate') : t('franchises.detail.billingNoticeNoFlatFee')}</li>
-                  ) : null}
-                  {stripeMissing ? (
-                    <li>
-                      {connectStatus?.connectAvailable === false
-                        ? t('franchises.detail.billingNoticeStripeUnavailable')
-                        : t('franchises.detail.billingNoticeNoStripe')}
-                    </li>
-                  ) : null}
-                </ul>
-              </div>
-            ) : null}
-          </div>
-        </Card>
-      </div>
+      <section className="u8o-card" aria-label={t('franchises.detail.franchiseId')}>
+        <div className="u8o-card__body">
+          {franchise?.archivedAt ? <span className="u8n-tag u8o-tag--closed">{t('franchises.list.closed')}</span> : null}
+          <FranchiseIdLine id={franchiseId} />
+          {showBillingNotice ? (
+            <div role="status" data-testid="billing-notice" className="u8o-note">
+              <strong>{t('franchises.detail.billingNoticeTitle')}</strong>
+              <ul>
+                {feeMissing ? (
+                  <li>{franchise?.feeModel === 'PER_HEADCOUNT' ? t('franchises.detail.billingNoticeNoRate') : t('franchises.detail.billingNoticeNoFlatFee')}</li>
+                ) : null}
+                {stripeMissing ? (
+                  <li>
+                    {connectStatus?.connectAvailable === false
+                      ? t('franchises.detail.billingNoticeStripeUnavailable')
+                      : t('franchises.detail.billingNoticeNoStripe')}
+                  </li>
+                ) : null}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      </section>
 
       {isOpen && franchise ? (
         <StripeConnectCard
@@ -201,118 +214,113 @@ export function FranchiseDetailPage() {
 
       {isOpen ? <JoinRequestsCard franchiseId={franchiseId} /> : null}
 
-      <div style={{ marginBottom: 24 }}>
-        <Card>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-            {t('franchises.detail.memberSchools')}
-          </h2>
-          {removeError ? <ErrorBanner message={removeError} /> : null}
-          {schools.length === 0 ? (
-            <EmptyState
-              title={t('franchises.detail.noSchoolsTitle')}
-              description={t('franchises.detail.noSchoolsDescription')}
-            />
-          ) : (
-            <Table<FranchiseSchool>
-              rows={schools}
-              columns={[
-                {
-                  key: 'name',
-                  header: t('franchises.detail.columnName'),
-                  // Decision 337 (F9) — a closed member School says so.
-                  render: (s) => (
-                    <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      {s.name}
-                      {s.archivedAt ? <Badge variant="danger">{t('franchises.list.closed')}</Badge> : null}
-                    </span>
-                  ),
-                },
-                { key: 'type', header: t('franchises.detail.columnType'), render: (s) => s.businessType ?? '—' },
-                { key: 'billing', header: t('franchises.detail.columnFeeBilling'), render: (s) => subscriptionStatusBadge(s.franchiseFeeSubscriptionStatus, t) },
-                ...(isOpen
-                  ? [
-                      {
-                        key: 'actions',
-                        header: '',
-                        render: (s: FranchiseSchool) => (
-                          <Button variant="secondary" onClick={() => setRemoving(s)} aria-label={t('franchises.detail.removeSchoolAria', { name: s.name })}>
-                            {t('franchises.detail.removeSchool')}
-                          </Button>
-                        ),
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          )}
-        </Card>
-      </div>
-
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-          {t('franchises.detail.feeCharges')}
-        </h2>
-        {charges.length === 0 ? (
-          <EmptyState
-            title={t('franchises.detail.noChargesTitle')}
-            description={t('franchises.detail.noChargesDescription')}
-          />
+      <OrgCard title={t('franchises.detail.memberSchools')} flush>
+        {removeError ? <ErrorBanner message={removeError} /> : null}
+        {schools.length === 0 ? (
+          <EmptyState title={t('franchises.detail.noSchoolsTitle')} description={t('franchises.detail.noSchoolsDescription')} />
         ) : (
-          <Table<FranchiseFeeChargeResponse>
-            rows={charges}
-            columns={[
-              {
-                key: 'period',
-                header: t('franchises.detail.columnBillingPeriod'),
-                render: (c) => `${new Date(c.billingPeriodStart).toLocaleDateString(formatLocale())} – ${new Date(c.billingPeriodEnd).toLocaleDateString(formatLocale())}`,
-              },
-              {
-                key: 'school',
-                header: t('franchises.detail.columnSchool'),
-                // Decision 337 (F14) — a School that has since left isn't in the roster.
-                render: (c) => schools.find((s) => s.id === c.schoolId)?.name ?? t('franchises.detail.formerMember'),
-              },
-              {
-                key: 'basis',
-                header: t('franchises.detail.columnBasis'),
-                render: (c) => (c.feeBasisSnapshot === 'PER_HEADCOUNT' ? t('franchises.feeModels.perHeadcount') : t('franchises.feeModels.flat')),
-              },
-              { key: 'amount', header: t('franchises.detail.columnAmount'), render: (c) => formatMoney(c.amount, c.currency) },
-              { key: 'status', header: t('franchises.detail.columnStatus'), render: (c) => paymentStatusBadge(c.status) },
-              { key: 'refunded', header: t('franchises.detail.columnRefunded'), render: (c) => (c.refundedAmount ? formatMoney(c.refundedAmount, c.currency) : '—') },
-              {
-                key: 'actions',
-                header: '',
-                render: (c) =>
-                  c.status === 'SUCCESSFUL' && (c.refundedAmount ?? 0) < c.amount ? (
-                    <Button variant="danger" onClick={() => setRefunding(c)}>
-                      {t('franchises.detail.refund')}
-                    </Button>
-                  ) : null,
-              },
-            ]}
-          />
+          <div className="u8n-list__scroll">
+            <table className="u8n-table">
+              <thead>
+                <tr>
+                  <th scope="col">{t('franchises.detail.columnName')}</th>
+                  <th scope="col">{t('franchises.detail.columnType')}</th>
+                  <th scope="col">{t('franchises.detail.columnFeeBilling')}</th>
+                  {isOpen ? (
+                    <th scope="col">
+                      <span className="u8n-visually-hidden">{t('franchises.detail.removeSchool')}</span>
+                    </th>
+                  ) : null}
+                </tr>
+              </thead>
+              <tbody>
+                {schools.map((s) => (
+                  <tr key={s.id}>
+                    {/* Decision 337 (F9) — a closed member School says so. */}
+                    <td>
+                      <span className="u8o-row u8o-rowname" style={{ gap: 8 }}>
+                        {s.name}
+                        {s.archivedAt ? <span className="u8n-tag u8o-tag--closed">{t('franchises.list.closed')}</span> : null}
+                      </span>
+                    </td>
+                    <td>{s.businessType ?? '—'}</td>
+                    <td>{subscriptionStatusBadge(s.franchiseFeeSubscriptionStatus, t)}</td>
+                    {isOpen ? (
+                      <td>
+                        <div className="u8o-actions">
+                          <button type="button" className="u8n-pill u8o-pill--sm u8o-pill--red" onClick={() => setRemoving(s)} aria-label={t('franchises.detail.removeSchoolAria', { name: s.name })}>
+                            {t('franchises.detail.removeSchool')}
+                          </button>
+                        </div>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </Card>
+      </OrgCard>
+
+      <OrgCard title={t('franchises.detail.feeCharges')} flush>
+        {charges.length === 0 ? (
+          <EmptyState title={t('franchises.detail.noChargesTitle')} description={t('franchises.detail.noChargesDescription')} />
+        ) : (
+          <div className="u8n-list__scroll">
+            <table className="u8n-table">
+              <thead>
+                <tr>
+                  <th scope="col">{t('franchises.detail.columnBillingPeriod')}</th>
+                  <th scope="col">{t('franchises.detail.columnSchool')}</th>
+                  <th scope="col">{t('franchises.detail.columnBasis')}</th>
+                  <th scope="col" className="u8o-num">{t('franchises.detail.columnAmount')}</th>
+                  <th scope="col">{t('franchises.detail.columnStatus')}</th>
+                  <th scope="col" className="u8o-num">{t('franchises.detail.columnRefunded')}</th>
+                  <th scope="col">
+                    <span className="u8n-visually-hidden">{t('franchises.detail.refund')}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {charges.map((c) => (
+                  <tr key={c.id}>
+                    <td>{`${new Date(c.billingPeriodStart).toLocaleDateString(formatLocale())} – ${new Date(c.billingPeriodEnd).toLocaleDateString(formatLocale())}`}</td>
+                    {/* Decision 337 (F14) — a School that has since left isn't in the roster. */}
+                    <td>{schools.find((s) => s.id === c.schoolId)?.name ?? t('franchises.detail.formerMember')}</td>
+                    <td>{c.feeBasisSnapshot === 'PER_HEADCOUNT' ? t('franchises.feeModels.perHeadcount') : t('franchises.feeModels.flat')}</td>
+                    <td className="u8o-num">{formatMoney(c.amount, c.currency)}</td>
+                    <td>{paymentStatusBadge(c.status)}</td>
+                    <td className="u8o-num">{c.refundedAmount ? formatMoney(c.refundedAmount, c.currency) : '—'}</td>
+                    <td>
+                      {c.status === 'SUCCESSFUL' && (c.refundedAmount ?? 0) < c.amount ? (
+                        <div className="u8o-actions">
+                          <button type="button" className="u8n-pill u8o-pill--sm u8o-pill--red" onClick={() => setRefunding(c)}>
+                            {t('franchises.detail.refund')}
+                          </button>
+                        </div>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </OrgCard>
 
       {isOpen && franchise ? (
-        <div style={{ marginTop: 24 }}>
-          <Card>
-            <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-              {t('franchises.detail.closeTitle')}
-            </h2>
-            <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('franchises.detail.closeExplanation')}</p>
-            <Button variant="danger" onClick={() => setClosing(true)}>
-              {t('franchises.detail.closeButton')}
-            </Button>
-          </Card>
-        </div>
+        <OrgCard title={t('franchises.detail.closeTitle')} danger>
+          <p className="u8o-quiet">{t('franchises.detail.closeExplanation')}</p>
+          <button type="button" className="u8n-pill u8o-pill--red" onClick={() => setClosing(true)}>
+            {t('franchises.detail.closeButton')}
+          </button>
+        </OrgCard>
       ) : null}
 
       {removing ? (
         <Modal title={t('franchises.detail.removeConfirmTitle', { name: removing.name })} onClose={() => setRemoving(null)}>
           <p>{t('franchises.detail.removeConfirmBody')}</p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <div className="u8o-pair">
             <Button variant="danger" onClick={handleRemove} loading={removeSchool.isPending}>
               {t('franchises.detail.removeSchool')}
             </Button>
@@ -336,7 +344,7 @@ export function FranchiseDetailPage() {
           onClose={() => setRefunding(null)}
         />
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -413,7 +421,7 @@ function RefundModal({
             onChange={(e) => setAmount(e.target.value)}
           />
         </Field>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <div className="u8o-pair">
           <Button type="submit" variant="danger" loading={submitting}>
             {t('franchises.refundModal.confirm')}
           </Button>
@@ -445,37 +453,31 @@ function JoinRequestsCard({ franchiseId }: { franchiseId: string }) {
   }
 
   return (
-    <div style={{ marginBottom: 24 }} data-testid="join-requests">
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-          {t('franchises.detail.joinRequests')}
-        </h2>
-        {error ? <ErrorBanner message={error} /> : null}
-        {data.items.length === 0 ? (
-          <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('franchises.detail.noJoinRequests')}</p>
-        ) : (
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {data.items.map((r) => (
-              <li key={r.id} style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                <span style={{ flex: '1 1 200px' }}>
-                  <strong>{r.schoolName}</strong>
-                  <br />
-                  <span style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>
-                    {t('franchises.detail.askedOn', { date: new Date(r.createdAt).toLocaleDateString(formatLocale()) })}
-                  </span>
-                </span>
-                <Button onClick={() => handleDecide(r.id, true)} disabled={decide.isPending} aria-label={t('franchises.detail.acceptAria', { name: r.schoolName })}>
+    <OrgCard title={t('franchises.detail.joinRequests')} testId="join-requests">
+      {error ? <ErrorBanner message={error} /> : null}
+      {data.items.length === 0 ? (
+        <p className="u8o-quiet">{t('franchises.detail.noJoinRequests')}</p>
+      ) : (
+        <ul className="u8o-requests">
+          {data.items.map((r) => (
+            <li key={r.id} className="u8o-request">
+              <span className="u8o-request__who">
+                <span className="u8o-rowname">{r.schoolName}</span>
+                <span className="u8o-quiet">{t('franchises.detail.askedOn', { date: new Date(r.createdAt).toLocaleDateString(formatLocale()) })}</span>
+              </span>
+              <span className="u8o-request__buttons">
+                <button type="button" className="u8n-pill u8n-pill--primary" onClick={() => handleDecide(r.id, true)} disabled={decide.isPending} aria-label={t('franchises.detail.acceptAria', { name: r.schoolName })}>
                   {t('franchises.detail.accept')}
-                </Button>
-                <Button variant="secondary" onClick={() => handleDecide(r.id, false)} disabled={decide.isPending} aria-label={t('franchises.detail.declineAria', { name: r.schoolName })}>
+                </button>
+                <button type="button" className="u8n-pill" onClick={() => handleDecide(r.id, false)} disabled={decide.isPending} aria-label={t('franchises.detail.declineAria', { name: r.schoolName })}>
                   {t('franchises.detail.decline')}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-    </div>
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </OrgCard>
   );
 }
 
@@ -520,7 +522,7 @@ function CloseFranchiseModal({ franchiseId, franchiseName, onClose }: { franchis
             autoComplete="current-password"
           />
         </Field>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+        <div className="u8o-pair">
           <Button type="submit" variant="danger" loading={close.isPending} disabled={confirmName !== franchiseName}>
             {t('franchises.detail.closeButton')}
           </Button>
@@ -534,9 +536,9 @@ function CloseFranchiseModal({ franchiseId, franchiseName, onClose }: { franchis
 }
 
 function connectStatusBadge(status: ConnectStatus, t: TranslateFn) {
-  if (status === 'CONNECTED') return <Badge variant="success">{t('franchises.stripe.connected')}</Badge>;
-  if (status === 'ACTION_NEEDED') return <Badge variant="warning">{t('franchises.stripe.actionNeeded')}</Badge>;
-  return <Badge>{t('franchises.stripe.notConnected')}</Badge>;
+  if (status === 'CONNECTED') return <span className="u8n-tag u8n-tag--active">{t('franchises.stripe.connected')}</span>;
+  if (status === 'ACTION_NEEDED') return <span className="u8n-tag u8o-tag--warn">{t('franchises.stripe.actionNeeded')}</span>;
+  return <span className="u8n-tag u8n-tag--inactive">{t('franchises.stripe.notConnected')}</span>;
 }
 
 /**
@@ -595,47 +597,42 @@ function StripeConnectCard({
 
   const status = data?.status;
   return (
-    <div style={{ marginBottom: 24 }} data-testid="stripe-connect">
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-          {t('franchises.stripe.title')}
-        </h2>
-        {error ? <ErrorBanner message={error} /> : null}
-        {isLoading ? (
-          <Spinner />
-        ) : statusError ? (
-          <ErrorBanner message={statusError instanceof ApiError ? statusError.message : t('franchises.stripe.statusLoadFailed')} />
-        ) : status ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
-            <span data-testid="stripe-connect-status">{connectStatusBadge(status, t)}</span>
-            <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13, margin: 0 }} data-testid="stripe-connect-hint">
-              {status === 'CONNECTED'
-                ? t('franchises.stripe.connectedHint')
-                : !connectAvailable
-                  ? // Decision 448 item 5: Pix is named only in Brazil.
-                    t(defaultCountry?.toUpperCase() === 'BR' ? 'franchises.stripe.unavailableHintPix' : 'franchises.stripe.unavailableHint')
-                  : status === 'ACTION_NEEDED'
-                    ? t('franchises.stripe.actionNeededHint')
-                    : t('franchises.stripe.notConnectedHint')}
-            </p>
-            {status !== 'CONNECTED' && canConnect ? (
-              <Button
-                onClick={() => {
-                  if (stripeAccountId) {
-                    void start('');
-                    return;
-                  }
-                  if (allowed && !allowed.includes(country)) setCountry('');
-                  setAskingCountry(true);
-                }}
-                loading={connect.isPending}
-              >
-                {status === 'ACTION_NEEDED' ? t('franchises.stripe.continue') : t('franchises.stripe.connect')}
-              </Button>
-            ) : null}
-          </div>
-        ) : null}
-      </Card>
+    <OrgCard title={t('franchises.stripe.title')} testId="stripe-connect">
+      {error ? <ErrorBanner message={error} /> : null}
+      {isLoading ? (
+        <Spinner />
+      ) : statusError ? (
+        <ErrorBanner message={statusError instanceof ApiError ? statusError.message : t('franchises.stripe.statusLoadFailed')} />
+      ) : status ? (
+        <>
+          <span data-testid="stripe-connect-status">{connectStatusBadge(status, t)}</span>
+          <p className="u8o-quiet" data-testid="stripe-connect-hint">
+            {status === 'CONNECTED'
+              ? t('franchises.stripe.connectedHint')
+              : !connectAvailable
+                ? // Decision 448 item 5: Pix is named only in Brazil.
+                  t(defaultCountry?.toUpperCase() === 'BR' ? 'franchises.stripe.unavailableHintPix' : 'franchises.stripe.unavailableHint')
+                : status === 'ACTION_NEEDED'
+                  ? t('franchises.stripe.actionNeededHint')
+                  : t('franchises.stripe.notConnectedHint')}
+          </p>
+          {status !== 'CONNECTED' && canConnect ? (
+            <Button
+              onClick={() => {
+                if (stripeAccountId) {
+                  void start('');
+                  return;
+                }
+                if (allowed && !allowed.includes(country)) setCountry('');
+                setAskingCountry(true);
+              }}
+              loading={connect.isPending}
+            >
+              {status === 'ACTION_NEEDED' ? t('franchises.stripe.continue') : t('franchises.stripe.connect')}
+            </Button>
+          ) : null}
+        </>
+      ) : null}
       {askingCountry ? (
         <Modal title={t('franchises.stripe.countryTitle')} onClose={() => setAskingCountry(false)}>
           <form
@@ -644,16 +641,19 @@ function StripeConnectCard({
               void start(country);
             }}
           >
-            <Field label={t('franchises.stripe.countryLabel')} htmlFor="stripe-connect-country" hint={t('franchises.stripe.countryHint')}>
-              <SelectField
+            <div className="u8o-modal-field">
+              <NewLookSelect
                 id="stripe-connect-country"
-                required
+                label={t('franchises.stripe.countryLabel')}
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
+                onChange={setCountry}
                 options={[{ value: '', label: t('franchises.stripe.chooseCountry') }, ...countries]}
               />
-            </Field>
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <p className="u8o-quiet" style={{ marginTop: 6 }}>
+                {t('franchises.stripe.countryHint')}
+              </p>
+            </div>
+            <div className="u8o-pair">
               <Button type="submit" loading={connect.isPending} disabled={!country}>
                 {t('franchises.stripe.goToStripe')}
               </Button>
@@ -664,6 +664,6 @@ function StripeConnectCard({
           </form>
         </Modal>
       ) : null}
-    </div>
+    </OrgCard>
   );
 }

@@ -84,6 +84,7 @@ export const messages: PartialMessages<EnglishMessages> = {
       franchises: "フランチャイズ",
       notifications: "通知",
       inviteCoaches: "コーチを招待",
+      coachesInfo: "コーチ情報",
       myBelts: "自分の帯",
       completeProfile: "コーチプロフィール",
     },
@@ -710,6 +711,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "その他の操作",
     columnSurcharge: "カード手数料",
     surchargeLine: "+ カード手数料 {amount}",
     title: "取引",
@@ -2634,7 +2636,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     roleGrantedEmailSent: "インストラクターのロールを付与しました。本人にはメールで通知済みです。「インストラクターを追加」からプロフィールを追加してください。",
     roleGrantedEmailFailed: "インストラクターのロールを付与しましたが、通知メールを送信できませんでした。「インストラクターを追加」からプロフィールを追加してください。",
     roleInviteSent: "このスクールでは新しいスタッフに先に承諾してもらうため、招待メールを送りました。承諾後に「インストラクターを追加」でプロフィールを追加してください。",
-    roleInviteEmailFailed: "このスクールでは新しいスタッフに先に承諾してもらいます。招待は作成されましたが、メールを送れませんでした。スタッフページで取り消して、もう一度送ってください。",
+    roleInviteEmailFailed: "このスクールでは新しいスタッフに先に承諾してもらいます。招待は作成されましたが、メールを送れませんでした。チーム → コーチを招待 で取り消して、もう一度送ってください。",
     detail: {
       back: "← インストラクター",
       loadFailed: "このインストラクターを読み込めませんでした。",
@@ -2697,7 +2699,6 @@ export const messages: PartialMessages<EnglishMessages> = {
       revokeFailed: "所属を取り消せませんでした。もう一度お試しください。",
     },
     belts: {
-      heading: "インストラクターの帯",
       intro: "インストラクターは各種目で自分の帯を選びます。確認するか、正しい帯に修正してください。",
       loadFailed: "インストラクターの帯を読み込めませんでした。",
       verifyFailed: "この帯を確認できませんでした。",
@@ -2780,6 +2781,22 @@ export const messages: PartialMessages<EnglishMessages> = {
       yearsOfExperience: "経験年数",
       bio: "自己紹介",
     },
+    team: {
+      panelLabel: "チームメンバー",
+      openFullPage: "ページ全体を開く",
+      openFullPageAria: "ページ全体を開く: {name}",
+      frontDesk: "受付とお金",
+      refundsNote: "返金とクレジットはオーナーであるあなたが行います。",
+      belts: "帯",
+      profileTab: "プロフィール",
+      sectionsAria: "チームメンバーのセクション",
+      about: "概要",
+      roles: "役割",
+      nextClasses: "次のクラス",
+      allClasses: "すべてのクラス",
+      removeHeading: "チームから外す",
+      contact: "連絡先",
+    },
   },
   students: {
     list: {
@@ -2796,6 +2813,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       editAria: "{name}を編集",
       training: "トレーニング",
       homeBranch: "所属拠点",
+    },
+    page: {
+      tabsAria: "生徒のセクション",
+      profile: "プロフィール",
+      ranks: "段位",
+      contact: "連絡先",
+      personal: "個人情報",
+      account: "アカウント",
+      birthday: "誕生日",
+      balance: "残高",
     },
     growth: {
       subtitle: "現在のアクティブな生徒、ビジター、休会中の会員資格と、過去12か月のスクールの成長。",
@@ -3890,6 +3917,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "その他の操作",
+      showAll: "すべての同意書を表示 ({count})",
+    },
     exportAll: {
       button: "署名済み書類をエクスポート",
       title: "署名済みの書類をすべてエクスポート",
