@@ -15,6 +15,10 @@ Post-v1.4.0 work on `master`.
   drop-down), number cards, Today's classes (from this week's Bookings
   summary) and Birthdays as cards, and a "Needs attention" panel with the
   owner's notifications; on a phone the cards come first and the panel below.
+- **New look: the Students list** (Decision 453; visual only). One list card
+  with search, Filter (our own drop-downs), status chips and "Open full page ›"
+  under each name; the selected student sits in the right-hand panel, which
+  never repeats the row. On a phone, tapping a student shrinks the list to them.
 - **The new look is the School Portal's look, starting with the app shell**
   (Decision 453; visual only). There is no switch and no classic look: the
   portal always sets `data-look="redesign"`, so the new shell and the held-back

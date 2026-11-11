@@ -22,7 +22,7 @@ const bjj = (page: Page) => page.getByRole('region', { name: 'BJJ' });
 
 test('the Students list opens a student\'s grading panel', async ({ page }) => {
   await page.goto('/students');
-  await page.getByRole('link', { name: s.student.name }).click();
+  await page.getByRole('link', { name: `Open full page: ${s.student.name}` }).click();
   await expect(page).toHaveURL(new RegExp(`/students/${s.student.id}$`));
   await expect(page.getByRole('heading', { level: 1, name: s.student.name })).toBeVisible();
 });

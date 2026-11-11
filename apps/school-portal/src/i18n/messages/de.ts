@@ -2821,6 +2821,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "Filter",
+      moreActions: "Weitere Aktionen",
+      openFullPage: "Ganze Seite öffnen",
+      openFullPageAria: "Ganze Seite öffnen: {name}",
+      show: "{name} anzeigen",
+      showAll: "Alle Schüler anzeigen ({count})",
+      showing: "{shown} von {total} angezeigt",
+      panelLabel: "Schüler",
+      since: "Schüler seit {date}",
+      edit: "Bearbeiten",
+      editAria: "{name} bearbeiten",
+      training: "Training",
+      homeBranch: "Heimatstandort",
+    },
     growth: {
       subtitle: "Aktive Schüler, Besucher und eingefrorene Mitgliedschaften heute, und wie deine Schule in den letzten 12 Monaten gewachsen ist.",
       period: "Letzte 12 Monate, nach Monat in der Zeitzone der Schule ({zone}).",

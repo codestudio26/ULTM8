@@ -148,7 +148,7 @@ test('a coach sees the student list, read only, and "Coming up" shows the time a
   await page.goto('/coach');
   await page.getByRole('navigation', { name: 'Main menu' }).getByRole('link', { name: 'Students', exact: true }).click();
   await expect(page).toHaveURL(/\/students$/);
-  await expect(page.getByText(s.student.name)).toBeVisible();
+  await expect(page.getByRole('button', { name: s.student.name, exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Invite a Student' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Add manually' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Manage rosters' })).toHaveCount(0);

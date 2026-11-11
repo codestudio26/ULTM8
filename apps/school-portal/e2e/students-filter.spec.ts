@@ -51,19 +51,20 @@ test('Active (default) hides a revoked enrollment; Inactive and All surface it',
   await page.goto('/students');
 
   // Default view is Active — matches the pre-existing behavior exactly.
-  await expect(page.getByLabel('Status')).toHaveValue('ACTIVE');
-  await expect(page.getByRole('cell', { name: 'Sam Lee' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Riley Revoked' })).toHaveCount(0);
+  const status = page.getByRole('group', { name: 'Status' });
+  await expect(status.getByRole('button', { name: 'Active', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Sam Lee', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Riley Revoked', exact: true })).toHaveCount(0);
 
-  // Avatar column (profilePhotoUrl, StudentSummaryResponseDto) — Sam Lee has no
+  // Avatar beside the name (profilePhotoUrl, StudentSummaryResponseDto) — Sam Lee has no
   // photo set, so its cell falls back to an initials monogram, not an <img>.
   const samRow = page.getByRole('row', { name: /Sam Lee/ });
   await expect(samRow.getByText('SL', { exact: true })).toBeVisible();
   await expect(samRow.locator('img')).toHaveCount(0);
 
-  await page.getByLabel('Status').selectOption('INACTIVE');
-  await expect(page.getByRole('cell', { name: 'Riley Revoked' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Sam Lee' })).toHaveCount(0);
+  await status.getByRole('button', { name: 'Inactive', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Riley Revoked', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sam Lee', exact: true })).toHaveCount(0);
   await expect(page.getByRole('row', { name: /Riley Revoked/ }).getByText('Inactive', { exact: true })).toBeVisible();
 
   // Riley DOES have a photo set — renders a real <img>, not initials. Attached,
@@ -72,23 +73,23 @@ test('Active (default) hides a revoked enrollment; Inactive and All surface it',
   await expect(rileyRow.locator('img[src="https://example.test/riley-revoked-photo.jpg"]')).toBeAttached();
   await expect(rileyRow.getByText('RR', { exact: true })).toHaveCount(0);
 
-  await page.getByLabel('Status').selectOption('ALL');
-  await expect(page.getByRole('cell', { name: 'Riley Revoked' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Sam Lee' })).toBeVisible();
+  await status.getByRole('button', { name: 'All', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Riley Revoked', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sam Lee', exact: true })).toBeVisible();
 });
 
 test('Decision 448 item 13: a search of only symbols finds nobody and explains why', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/students');
-  await expect(page.getByRole('cell', { name: 'Sam Lee' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sam Lee', exact: true })).toBeVisible();
   const hint = page.getByText("Symbols such as % or _ can't be used to search. Type a name instead.");
 
   for (const q of ['%', '_']) {
     await page.locator('#students-search').fill(q);
     await expect(hint).toBeVisible();
-    await expect(page.getByRole('cell', { name: 'Sam Lee' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Sam Lee', exact: true })).toHaveCount(0);
   }
   await page.locator('#students-search').fill('sam');
   await expect(hint).toHaveCount(0);
-  await expect(page.getByRole('cell', { name: 'Sam Lee' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sam Lee', exact: true })).toBeVisible();
 });

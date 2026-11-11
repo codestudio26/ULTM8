@@ -2781,6 +2781,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "ตัวกรอง",
+      moreActions: "การทำงานเพิ่มเติม",
+      openFullPage: "เปิดหน้าเต็ม",
+      openFullPageAria: "เปิดหน้าเต็ม: {name}",
+      show: "แสดง {name}",
+      showAll: "แสดงนักเรียนทั้งหมด ({count})",
+      showing: "แสดง {shown} จาก {total}",
+      panelLabel: "นักเรียน",
+      since: "เป็นนักเรียนตั้งแต่ {date}",
+      edit: "แก้ไข",
+      editAria: "แก้ไข {name}",
+      training: "การฝึก",
+      homeBranch: "สาขาหลัก",
+    },
     growth: {
       subtitle: "นักเรียนที่ยังใช้งาน ผู้เยี่ยมชม และสมาชิกภาพที่พักอยู่ในตอนนี้ และการเติบโตของโรงเรียนใน 12 เดือนที่ผ่านมา",
       period: "12 เดือนที่ผ่านมา รายเดือนตามเขตเวลาของโรงเรียน ({zone})",
