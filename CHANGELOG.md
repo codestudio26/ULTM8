@@ -10,6 +10,10 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Cancellations to resolve** (Decision 453; visual only). The
+  approved design has no Cancellations screen, so the page keeps its columns
+  and actions and takes the new header, a white card with the table, soft
+  status tags and pill buttons (Refund and Mark refund paid in mint).
 - **New look: the student's full page** (Decision 453; visual only). Two tabs,
   Profile and Ranks; white cards with light header bars; the summary panel on
   the right (status, Edit, check-in code, contact, personal details, home

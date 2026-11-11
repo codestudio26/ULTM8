@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, Spinner, Table } from '@ultm8/ui';
+import { Badge, Button, EmptyState, ErrorBanner, Spinner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { formatMoney } from '../lib/money';
 import { formatLocale } from '../i18n/format';
 import { useT } from '../i18n/I18nProvider';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
+import { BillingCard, BillingPage } from '../billing/BillingLook';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 import { useOpenCancellations, useResolveCancellation, type OpenCancellation, type ResolveAction } from './cancellationQueries';
 
 type Row = OpenCancellation & { id: string };
@@ -17,6 +19,11 @@ type Row = OpenCancellation & { id: string };
  * be paid back. The Owner/Manager may refund, give the credit back, keep it, or
  * mark a cash refund paid; Branch Staff may only give the credit back or keep
  * it (Spec §8.2) — the API enforces both, this only hides what would 403.
+ *
+ * New look (Decision 453): the approved design draws no Cancellations screen,
+ * so the page keeps its layout, columns and actions and takes the new header,
+ * card, table, tags and pill buttons. It is a refund list, so it reuses the
+ * Billing pages' pieces (`billing/BillingLook`) rather than a second copy.
  */
 export function CancellationsPage() {
   const t = useT();
@@ -30,8 +37,24 @@ export function CancellationsPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   if (!schoolId) return null;
-  if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('cancellations.loadFailed')} />;
+
+  const header = <NewLookPageHeader title={t('cancellations.title')} subtitle={t('cancellations.subtitle')} />;
+  if (isLoading)
+    return (
+      <BillingPage>
+        {header}
+        <BillingCard>
+          <Spinner />
+        </BillingCard>
+      </BillingPage>
+    );
+  if (error)
+    return (
+      <BillingPage>
+        {header}
+        <ErrorBanner message={error instanceof ApiError ? error.message : t('cancellations.loadFailed')} />
+      </BillingPage>
+    );
 
   const rows: Row[] = (data ?? []).map((r) => ({ ...r, id: r.attendeeId ?? r.bookingId }));
 
@@ -51,24 +74,24 @@ export function CancellationsPage() {
     const busy = busyId === row.id;
     if (row.resolution === 'REFUND_OWED') {
       return isOwner ? (
-        <Button loading={busy} onClick={() => act(row, 'MARK_PAID')}>
+        <Button className="u8b-pill u8b-pill--row u8b-pill--primary" loading={busy} onClick={() => act(row, 'MARK_PAID')}>
           {t('cancellations.markPaid')}
         </Button>
       ) : (
-        <span style={{ color: 'var(--text-muted)' }}>{t('cancellations.ownerPays')}</span>
+        <span className="ultm8-field__hint">{t('cancellations.ownerPays')}</span>
       );
     }
     return (
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="u8b-row-actions">
         {isOwner ? (
-          <Button loading={busy} onClick={() => act(row, 'REFUND')}>
+          <Button className="u8b-pill u8b-pill--row u8b-pill--primary" loading={busy} onClick={() => act(row, 'REFUND')}>
             {t('cancellations.refund')}
           </Button>
         ) : null}
-        <Button variant="secondary" disabled={busy} onClick={() => act(row, 'CREDIT')}>
+        <Button variant="secondary" className="u8b-pill u8b-pill--row" disabled={busy} onClick={() => act(row, 'CREDIT')}>
           {t('cancellations.credit')}
         </Button>
-        <Button variant="secondary" disabled={busy} onClick={() => act(row, 'KEEP')}>
+        <Button variant="secondary" className="u8b-pill u8b-pill--row" disabled={busy} onClick={() => act(row, 'KEEP')}>
           {t('cancellations.keep')}
         </Button>
       </div>
@@ -76,24 +99,24 @@ export function CancellationsPage() {
   }
 
   return (
-    <>
-      <PageHeader title={t('cancellations.title')} subtitle={t('cancellations.subtitle')} />
+    <BillingPage>
+      {header}
       {actionError ? <ErrorBanner message={actionError} /> : null}
-      <Card>
+      <BillingCard flush testId="cancellations-card">
         {rows.length === 0 ? (
           <EmptyState title={t('cancellations.emptyTitle')} description={t('cancellations.emptyDescription')} />
         ) : (
           <Table<Row>
             rows={rows}
             columns={[
-              { key: 'student', header: t('cancellations.columnStudent'), render: (r) => `${r.studentName ?? r.studentId.slice(0, 8)}${r.attendeeId ? ` ${t('cancellations.guestSuffix')}` : ''}` },
+              { key: 'student', header: t('cancellations.columnStudent'), render: (r) => <span className="u8b-name">{`${r.studentName ?? r.studentId.slice(0, 8)}${r.attendeeId ? ` ${t('cancellations.guestSuffix')}` : ''}`}</span> },
               {
                 key: 'class',
                 header: t('cancellations.columnClass'),
                 render: (r) => (
                   <div>
                     <div>{r.classTitle ?? '—'}</div>
-                    <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+                    <div className="ultm8-field__hint">
                       {r.classStartDate ? new Date(r.classStartDate).toLocaleString(formatLocale()) : ''}
                       {r.classCancelledBySchool ? ` · ${t('cancellations.cancelledBySchool')}` : ''}
                     </div>
@@ -116,7 +139,7 @@ export function CancellationsPage() {
             ]}
           />
         )}
-      </Card>
-    </>
+      </BillingCard>
+    </BillingPage>
   );
 }
