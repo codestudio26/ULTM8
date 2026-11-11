@@ -24,6 +24,16 @@ Post-v1.4.0 work on `master`.
   classes, Remove from the team) and a Team member panel. Buttons, tick boxes,
   selects and switches across the portal take the new look (mint main button,
   white outlined secondary, green tick). Same data, API calls and permissions.
+- **New look: Waivers** (Decision 453; visual only). The waivers list beside
+  the reader, with the selected waiver's Signatures and Guest signatures in
+  the right-hand panel; new-look buttons, chip, search and tags; on a phone
+  the list shrinks to the waiver you tap and Export sits under ⋯ More.
+- **New look: the Billing pages** (Decision 453; visual only). Membership
+  plans, Transactions, Billing reports and Payroll get the new page header,
+  white list cards, stat rows, our own drop-downs for every filter, the page
+  tabs (Overview / Member balances, Report / Rates) in the header, and on a
+  phone Export CSV / Download CSV under ⋯ More. Same numbers, filters,
+  exports, actions and permissions as before.
 - **New look: Dashboard** (Decision 453; visual only). The owner's Dashboard
   has the new page header (the Branch scope under the title, our own Branch
   drop-down), number cards, Today's classes (from this week's Bookings

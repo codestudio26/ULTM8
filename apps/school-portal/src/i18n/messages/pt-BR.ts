@@ -714,6 +714,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Mais ações",
     columnSurcharge: "Acréscimo no cartão",
     surchargeLine: "+ {amount} de acréscimo no cartão",
     title: "Transações",
@@ -3948,6 +3949,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Mais ações",
+      showAll: "Mostrar todos os termos ({count})",
+    },
     exportAll: {
       button: "Exportar documentos assinados",
       title: "Exportar todos os documentos assinados",

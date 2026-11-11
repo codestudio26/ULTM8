@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { randomUUID } from 'crypto';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
@@ -8,6 +8,15 @@ import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool }
  * paid / Cancel on Pending cash rows, Receipt on card rows only, and a message
  * (not a blank page) for someone with no School of their own.
  */
+/** Picks an option in one of the new look's own drop-downs (DESIGN.md →
+ * "Drop-downs"): a combobox named by its label, then the option by its text. */
+async function choose(scope: Page | Locator, label: string, option: string) {
+  const field = scope.getByRole('combobox', { name: label, exact: true });
+  await field.click();
+  await scope.getByRole('option', { name: option, exact: true }).click();
+  await expect(field.locator('[data-shown="true"]')).toHaveText(option);
+}
+
 let s: GradingSchool;
 let planId: string;
 let accountId: string;
@@ -158,9 +167,9 @@ test('Cancel payment asks for a reason and shows the payment as Cancelled', asyn
   expect(cancelled).toMatchObject({ status: 'FAILED', membershipId: null, cancelledById: s.ownerId, cancelReason: 'Never came in to pay' });
 
   // The Status filter tells Cancelled and Failed apart.
-  await page.getByLabel('Status').selectOption('FAILED');
+  await choose(page, 'Status', 'Failed');
   await expect(page.getByText('No Transactions match these filters')).toBeVisible();
-  await page.getByLabel('Status').selectOption('CANCELLED');
+  await choose(page, 'Status', 'Cancelled');
   await expect(page.locator('tbody tr')).toHaveCount(1);
 });
 
@@ -262,7 +271,7 @@ test('renewal and late-cancel fee rows are labelled, and the filters narrow rows
   await expect(rows.nth(0)).toContainText('Renewal: 10-Class Pack');
   await expect(rows.nth(1)).toContainText('Late-cancellation fee');
 
-  await page.getByLabel('Type').selectOption('LATE_CANCEL_FEE');
+  await choose(page, 'Type', 'Late-cancellation fee');
   await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('5.00');
   await expect(page.getByText(/^Total transactions\s*1$/)).toBeVisible();
@@ -276,7 +285,7 @@ test('renewal and late-cancel fee rows are labelled, and the filters narrow rows
   await expect(rows).toHaveCount(2);
   await expect(page.getByText(/^Total transactions\s*2$/)).toBeVisible();
 
-  await page.getByLabel('Status').selectOption('PENDING');
+  await choose(page, 'Status', 'Pending');
   await expect(page.getByText('No Transactions match these filters')).toBeVisible();
 });
 

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, RowActionsMenu, Spinner, Table } from '@ultm8/ui';
+import { BillingCard, BillingPage, BillingStat, BillingStats } from '../billing/BillingLook';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useClasses } from '../classes/classQueries';
@@ -25,53 +27,6 @@ const TYPE_LABELS: Record<string, TranslationKey> = {
   TRIAL_MEMBERSHIP: 'membershipPlans.types.trialMembership',
 };
 
-/** Small, page-local summary tile — not promoted to @ultm8/ui since nothing else
- * uses this shape yet. `proposed` renders it visibly inert (dashed border, muted
- * value, an aria-label saying why) rather than omitted, so it reads as "not
- * built yet," not broken. */
-function StatTile({
-  testId,
-  label,
-  value,
-  proposed,
-  note,
-}: {
-  /** The tile's English label — the test id stays fixed whatever the language. */
-  testId: string;
-  label: string;
-  value: React.ReactNode;
-  proposed?: boolean;
-  note?: string;
-}) {
-  return (
-    <div
-      // Stable Playwright hook — "Archived"/"Visible" etc. as plain text
-      // aren't unique on this page by themselves (a Badge reading "Archived"
-      // also renders in an archived row, same <span> shape) — a `data-testid`
-      // keyed on the label is the robust way to locate one specific tile.
-      data-testid={`stat-tile-${testId}`}
-      aria-label={proposed ? `${label} — ${note}` : undefined}
-      title={proposed ? note : undefined}
-      style={{
-        flex: 1,
-        minWidth: 140,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        padding: '14px 18px',
-        background: 'var(--surface-0)',
-        border: `1px ${proposed ? 'dashed' : 'solid'} var(--border-strong)`,
-        borderRadius: 'var(--radius-md)',
-      }}
-    >
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-        {label}
-      </span>
-      <span style={{ fontSize: 24, fontWeight: 700, color: proposed ? 'var(--text-muted)' : 'var(--text-primary)' }}>{value}</span>
-    </div>
-  );
-}
-
 /** Shown instead of the page to anyone who doesn't own a School: the API
  * only lets the owner manage plans. */
 export function OwnerOnly() {
@@ -83,6 +38,20 @@ export function OwnerOnly() {
         <EmptyState title={t('membershipPlans.list.ownerOnlyTitle')} description={t('membershipPlans.list.ownerOnlyDescription')} />
       </Card>
     </>
+  );
+}
+
+/** The same message on the list page, in the new look (Decision 453). The
+ * plan form keeps `OwnerOnly` above until its own page is rebuilt. */
+function OwnerOnlyNewLook() {
+  const t = useT();
+  return (
+    <BillingPage>
+      <NewLookPageHeader title={t('membershipPlans.list.title')} />
+      <BillingCard>
+        <EmptyState title={t('membershipPlans.list.ownerOnlyTitle')} description={t('membershipPlans.list.ownerOnlyDescription')} />
+      </BillingCard>
+    </BillingPage>
   );
 }
 
@@ -103,7 +72,7 @@ export function MembershipPlansPage() {
 
   // Memberships review M10 (Decision 334): Branch Staff and coaches reach
   // this page from the menu too; they used to get a blank page.
-  if (!schoolId) return <OwnerOnly />;
+  if (!schoolId) return <OwnerOnlyNewLook />;
   if (isLoading) return <Spinner />;
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('membershipPlans.list.loadFailed')} />;
 
@@ -121,11 +90,15 @@ export function MembershipPlansPage() {
   const visibleCount = activePlans.filter((p) => p.visible).length;
 
   return (
-    <>
-      <PageHeader
+    <BillingPage>
+      <NewLookPageHeader
         title={t('membershipPlans.list.title')}
         subtitle={t('membershipPlans.list.subtitle')}
-        actions={<Button onClick={() => navigate('/membership-plans/new')}>{t('membershipPlans.list.addPlan')}</Button>}
+        actions={
+          <Button className="u8b-pill u8b-pill--primary" onClick={() => navigate('/membership-plans/new')}>
+            {t('membershipPlans.list.addPlan')}
+          </Button>
+        }
       />
 
       {/* Stats ribbon (Decision — see POST-SPEC-55-DECISION-LOG.md): Total/Visible/
@@ -135,22 +108,26 @@ export function MembershipPlansPage() {
           useActiveMemberTotal's own header comment for why it's a fan-out sum, not a
           single bulk endpoint). Archived (v1.2 backend backlog "Archive action") is
           the 4th tile — see activePlans/archivedCount above for why Visible/Hidden
-          exclude archived plans rather than double-counting them. */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-        <StatTile testId="Total plans" label={t('membershipPlans.list.statTotal')} value={plans.length} />
-        <StatTile testId="Visible" label={t('membershipPlans.list.statVisible')} value={visibleCount} />
-        <StatTile testId="Hidden" label={t('membershipPlans.list.statHidden')} value={activePlans.length - visibleCount} />
-        <StatTile testId="Archived" label={t('membershipPlans.list.statArchived')} value={archivedCount} />
-        <StatTile
-          testId="Active members"
-          label={t('membershipPlans.list.statActiveMembers')}
-          value={activeMembers.isLoading ? <Spinner /> : activeMembers.error ? t('common.none') : activeMembers.total}
-        />
-      </div>
+          exclude archived plans rather than double-counting them. A stat row in
+          the new look (DESIGN.md → "Stat rows"). The test ids stay keyed on the
+          English label, whatever the language. */}
+      <BillingCard>
+        <BillingStats>
+          <BillingStat testId="stat-tile-Total plans" label={t('membershipPlans.list.statTotal')} value={plans.length} />
+          <BillingStat testId="stat-tile-Visible" label={t('membershipPlans.list.statVisible')} value={visibleCount} />
+          <BillingStat testId="stat-tile-Hidden" label={t('membershipPlans.list.statHidden')} value={activePlans.length - visibleCount} />
+          <BillingStat testId="stat-tile-Archived" label={t('membershipPlans.list.statArchived')} value={archivedCount} />
+          <BillingStat
+            testId="stat-tile-Active members"
+            label={t('membershipPlans.list.statActiveMembers')}
+            value={activeMembers.isLoading ? <Spinner /> : activeMembers.error ? t('common.none') : activeMembers.total}
+          />
+        </BillingStats>
+      </BillingCard>
 
       {toggleError ? <ErrorBanner message={toggleError} /> : null}
 
-      <Card>
+      <BillingCard flush>
         {plans.length === 0 ? (
           <EmptyState title={t('membershipPlans.list.emptyTitle')} description={t('membershipPlans.list.emptyDescription')} />
         ) : (
@@ -161,8 +138,8 @@ export function MembershipPlansPage() {
                 key: 'title',
                 header: t('membershipPlans.list.columnTitle'),
                 render: (p) => (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {p.title}
+                  <div className="u8b-cell-line">
+                    <span className="u8b-name">{p.title}</span>
                     {p.archivedAt ? <Badge variant="default">{t('membershipPlans.list.archivedBadge')}</Badge> : null}
                   </div>
                 ),
@@ -209,8 +186,8 @@ export function MembershipPlansPage() {
                 key: 'actions',
                 header: '',
                 render: (p) => (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <Button variant="secondary" onClick={() => navigate(`/membership-plans/${p.id}/edit`)}>
+                  <div className="u8b-row-actions" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+                    <Button variant="secondary" className="u8b-pill u8b-pill--row" onClick={() => navigate(`/membership-plans/${p.id}/edit`)}>
                       {t('membershipPlans.list.edit')}
                     </Button>
                     {/* v1.2 backend backlog "Archive action" — Archive/Unarchive
@@ -265,7 +242,7 @@ export function MembershipPlansPage() {
             ]}
           />
         )}
-      </Card>
-    </>
+      </BillingCard>
+    </BillingPage>
   );
 }

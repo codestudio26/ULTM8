@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import {
@@ -23,8 +23,11 @@ import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { WaiverFormModal } from './WaiverFormModal';
 import { GuestSignaturesPanel } from './GuestSignaturesPanel';
 import { SignedDocumentsExportModal } from './SignedDocumentsExportModal';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { Note, Pill, Tag, type TagKind } from './WaiversLook';
 import { useT, type TranslateFn, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import './waivers.css';
 
 /** Short list-row preview — Waiver.body can run up to 20,000 characters
  * (CreateWaiverDto's own MaxLength), far too long even for a list row. The
@@ -47,6 +50,15 @@ function formatUpdatedLabel(iso: string): string {
   return new Date(iso).toLocaleDateString(formatLocale() ?? 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/**
+ * Waivers in the new look (Decision 453): the white page header, then the
+ * Split-Pane Reader (the waivers list beside the selected waiver's text), and
+ * the selected waiver's Signatures and Guest signatures in the right-hand
+ * panel. Nothing is shown twice: the title, the Archived tag and the reading
+ * time are on the list row, so the reader leaves them out (DESIGN.md →
+ * "nothing shown twice"). On a phone the panel moves below, tapping a waiver
+ * shrinks the list to it, and Export moves under ⋯ More.
+ */
 export function WaiversPage() {
   const t = useT();
   const navigate = useNavigate();
@@ -68,12 +80,14 @@ export function WaiversPage() {
   const [confirmingArchive, setConfirmingArchive] = useState<WaiverResponse | null>(null);
   // Decision 315 item 13: a ZIP of every signed document at the School.
   const [exportingAll, setExportingAll] = useState(false);
+  // Phone only (DESIGN.md → "Phone layout"): tapping a waiver shrinks the
+  // list to it; "Show all waivers (N)" brings the list back.
+  const [collapsed, setCollapsed] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // Only the owner has this page; anyone else goes to their own home screen
   // (Waivers review W12, same as Staff/Instructors/Timetable).
   if (!schoolId) return <Navigate to="/" replace />;
-  if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('waivers.loadFailed')} />;
 
   // Newest first (Waivers review W14: the API returns them in id order).
   const allWaivers = [...(data?.items ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -81,124 +95,142 @@ export function WaiversPage() {
   const waivers = showArchived ? allWaivers : allWaivers.filter((w) => !w.archivedAt);
   const selected = waivers.find((w) => w.id === selectedId) ?? waivers[0];
 
-  return (
-    <>
-      <PageHeader
-        title={t('waivers.title')}
-        subtitle={t('waivers.subtitle')}
-        actions={
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="secondary" onClick={() => setExportingAll(true)}>
-              {t('waivers.exportAll.button')}
-            </Button>
-            <Button variant="secondary" onClick={() => navigate('/waivers/settings')}>
-              {t('waivers.settings.open')}
-            </Button>
-            <Button onClick={() => setCreating(true)}>{t('waivers.addWaiver')}</Button>
+  const header = (
+    <NewLookPageHeader
+      title={t('waivers.title')}
+      subtitle={t('waivers.subtitle')}
+      actions={
+        <>
+          {/* On a phone Export moves under ⋯ More (DESIGN.md → "Phone layout": toolbars). */}
+          <div className="u8w-more">
+            <button
+              type="button"
+              className="u8w-pill u8w-more__button"
+              aria-label={t('waivers.list.moreActions')}
+              aria-expanded={moreOpen}
+              aria-controls="waivers-more"
+              onClick={() => setMoreOpen((o) => !o)}
+            >
+              <span aria-hidden="true">⋯</span>
+            </button>
+            <div id="waivers-more" className="u8w-more__items" data-open={moreOpen ? 'true' : 'false'}>
+              <Pill onClick={() => setExportingAll(true)}>{t('waivers.exportAll.button')}</Pill>
+            </div>
           </div>
-        }
-      />
-      {exportingAll ? <SignedDocumentsExportModal schoolId={schoolId} onClose={() => setExportingAll(false)} /> : null}
+          <Pill onClick={() => navigate('/waivers/settings')}>{t('waivers.settings.open')}</Pill>
+          <Pill primary onClick={() => setCreating(true)}>
+            {t('waivers.addWaiver')}
+          </Pill>
+        </>
+      }
+    />
+  );
 
-      {actionError ? <ErrorBanner message={actionError} /> : null}
+  const pick = (id: string) => {
+    setSelectedId(id);
+    setCollapsed(true);
+  };
 
-      {/* Decision 226 — archived Waivers are hidden by default. */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-        <Checkbox label={archivedCount ? t('waivers.showArchivedCount', { count: archivedCount }) : t('waivers.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-      </div>
-
-      {waivers.length === 0 ? (
-        <Card>
-          <EmptyState title={t('waivers.emptyTitle')} description={t('waivers.emptyDescription')} />
-        </Card>
-      ) : (
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {waivers.map((w) => {
-              const isActive = w.id === selected?.id;
-              return (
-                <button
-                  key={w.id}
-                  onClick={() => setSelectedId(w.id)}
-                  style={{
-                    textAlign: 'left',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 4,
-                    padding: '12px 14px',
-                    borderRadius: 'var(--radius-md)',
-                    border: 'none',
-                    background: isActive ? 'var(--bg-accent)' : 'var(--surface-1)',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <span style={{ fontSize: 14, fontWeight: 600, color: isActive ? 'var(--text-accent)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {w.title}
-                    {w.archivedAt ? <Badge variant="default">{t('waivers.archived')}</Badge> : null}
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{rowPreview(w.body)}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{estimateReading(w.body, t)}</span>
+  let body: React.ReactNode;
+  if (isLoading) {
+    body = <Spinner />;
+  } else if (error) {
+    body = <Note kind="error" message={error instanceof ApiError ? error.message : t('waivers.loadFailed')} />;
+  } else {
+    body = (
+      <div className="u8w-split" data-collapsed={collapsed && !!selected ? 'true' : 'false'}>
+        <div className="u8w-split__grid">
+          <section className="u8w-card u8w-list" aria-label={t('waivers.title')}>
+            {/* Decision 226 — archived Waivers are hidden by default. */}
+            <div className="u8w-list__toolbar">
+              <button type="button" className="u8w-chip" aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}>
+                {archivedCount ? t('waivers.showArchivedCount', { count: archivedCount }) : t('waivers.showArchived')}
+              </button>
+            </div>
+            {waivers.length === 0 ? (
+              <div className="u8w-empty">
+                <p className="u8w-empty__title">{t('waivers.emptyTitle')}</p>
+                <p>{t('waivers.emptyDescription')}</p>
+              </div>
+            ) : (
+              <>
+                <ul className="u8w-list__rows">
+                  {waivers.map((w) => {
+                    const isActive = w.id === selected?.id;
+                    return (
+                      <li key={w.id} data-sel={isActive ? 'true' : 'false'}>
+                        <button type="button" className="u8w-row" aria-pressed={isActive} onClick={() => pick(w.id)}>
+                          <span className="u8w-row__title">
+                            {w.title}
+                            {w.archivedAt ? <Tag>{t('waivers.archived')}</Tag> : null}
+                          </span>
+                          <span className="u8w-row__preview">{rowPreview(w.body)}</span>
+                          <span className="u8w-row__meta">{estimateReading(w.body, t)}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <button type="button" className="u8w-list__show-all" onClick={() => setCollapsed(false)}>
+                  {t('waivers.list.showAll', { count: waivers.length })}
                 </button>
-              );
-            })}
-          </div>
-
+              </>
+            )}
+          </section>
+  
           {selected ? (
-            <div style={{ flex: 1, minWidth: 0 }}>
-            <Card>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 16 }}>
-                <div>
-                  <h2 style={{ margin: '0 0 4px', fontSize: 20, fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {selected.title}
-                    {selected.archivedAt ? <Badge variant="default">{t('waivers.archived')}</Badge> : null}
-                  </h2>
-                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>
-                    {estimateReading(selected.body, t)} · {t('waivers.lastUpdated', { date: formatUpdatedLabel(selected.updatedAt) })}
-                  </p>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <Button variant="secondary" onClick={() => setEditing(selected)}>
-                    {t('waivers.edit')}
-                  </Button>
+            <section className="u8w-card u8w-reader" aria-label={selected.title}>
+              <div className="u8w-reader__head">
+                <p className="u8w-reader__updated">{t('waivers.lastUpdated', { date: formatUpdatedLabel(selected.updatedAt) })}</p>
+                <div className="u8w-pair">
+                  <Pill onClick={() => setEditing(selected)}>{t('waivers.edit')}</Pill>
                   {/* Decision 226 — School Owner/Manager only, idempotent;
                       always allowed since Decision 354 (signatures stay). */}
                   {selected.archivedAt ? (
-                    <Button
-                      variant="secondary"
-                      onClick={() => { setActionError(null); unarchiveWaiver.mutate(selected.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('waivers.unarchiveFailed')) }); }}
+                    <Pill
+                      onClick={() => {
+                        setActionError(null);
+                        unarchiveWaiver.mutate(selected.id, { onError: (err) => setActionError(err instanceof ApiError ? err.message : t('waivers.unarchiveFailed')) });
+                      }}
                     >
                       {t('waivers.unarchive')}
-                    </Button>
+                    </Pill>
                   ) : (
-                    <Button
-                      variant="secondary"
-                      onClick={() => { setActionError(null); setConfirmingArchive(selected); }}
+                    <Pill
+                      onClick={() => {
+                        setActionError(null);
+                        setConfirmingArchive(selected);
+                      }}
                     >
                       {t('waivers.archive')}
-                    </Button>
+                    </Pill>
                   )}
                 </div>
               </div>
-
-              <div
-                style={{
-                  whiteSpace: 'pre-line',
-                  maxWidth: '70ch',
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                  color: 'var(--text-primary)',
-                }}
-              >
-                {selected.body}
-              </div>
-
-              <SignaturesPanel schoolId={schoolId} waiver={selected} />
-              <GuestSignaturesPanel schoolId={schoolId} waiverId={selected.id} />
-            </Card>
-            </div>
+              <div className="u8w-reader__text">{selected.body}</div>
+            </section>
           ) : null}
         </div>
-      )}
+      </div>
+    );
+  }
+
+  const inspector =
+    !isLoading && !error && selected ? (
+      <>
+        <SignaturesPanel schoolId={schoolId} waiver={selected} />
+        <GuestSignaturesPanel schoolId={schoolId} waiverId={selected.id} />
+      </>
+    ) : undefined;
+
+  return (
+    <div className="u8w">
+      {header}
+      {exportingAll ? <SignedDocumentsExportModal schoolId={schoolId} onClose={() => setExportingAll(false)} /> : null}
+      <NewLookPage inspector={inspector}>
+        {actionError ? <Note kind="error" message={actionError} /> : null}
+        {body}
+      </NewLookPage>
 
       {creating ? (
         <WaiverFormModal
@@ -225,17 +257,11 @@ export function WaiversPage() {
         />
       ) : null}
 
-      {editing ? (
-        <EditWaiverModal schoolId={schoolId} waiver={editing} onClose={() => setEditing(null)} />
-      ) : null}
-    </>
+      {editing ? <EditWaiverModal schoolId={schoolId} waiver={editing} onClose={() => setEditing(null)} /> : null}
+    </div>
   );
 }
 
-/** Badge color per status — SIGNED is the only unambiguously "good" state;
- * EXPIRED is the only unambiguously "bad" one. UNSIGNED/PENDING get the
- * neutral/default badge — an assignment-time row waiting to be signed is
- * not itself a problem, just incomplete. */
 const SIGNATURE_STATUS_LABEL: Record<string, TranslationKey> = {
   SIGNED: 'waivers.signatures.statusSigned',
   UNSIGNED: 'waivers.signatures.statusUnsigned',
@@ -243,10 +269,14 @@ const SIGNATURE_STATUS_LABEL: Record<string, TranslationKey> = {
   PENDING: 'waivers.signatures.statusPending',
 };
 
-function statusBadgeVariant(status: string): 'success' | 'danger' | undefined {
-  if (status === 'SIGNED') return 'success';
-  if (status === 'EXPIRED') return 'danger';
-  return undefined;
+/** Tag colour per status — SIGNED is the only unambiguously "good" state;
+ * EXPIRED is the only unambiguously "bad" one. UNSIGNED/PENDING get the
+ * neutral tag — an assignment-time row waiting to be signed is not itself a
+ * problem, just incomplete. */
+function statusTagKind(status: string): TagKind {
+  if (status === 'SIGNED') return 'ok';
+  if (status === 'EXPIRED') return 'bad';
+  return 'plain';
 }
 
 /**
@@ -302,41 +332,28 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
   const nobody = !narrowed && shown.length === 0;
   const current = shown.filter((s) => !s.formerStudent);
   const former = shown.filter((s) => s.formerStudent);
+  const canRemind = !waiver.archivedAt && !!summary && summary.unsigned + summary.pending > 0;
 
-  const row = (s: WaiverSignatureResponse) => (
-    <li key={s.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-      <button
-        type="button"
-        disabled={s.status !== 'SIGNED' && s.status !== 'EXPIRED'}
-        onClick={() => setOpened(s)}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 12,
-          padding: '8px 12px',
-          border: 'none',
-          borderRadius: 'var(--radius-md)',
-          background: 'var(--surface-1)',
-          textAlign: 'left',
-          cursor: s.status === 'SIGNED' || s.status === 'EXPIRED' ? 'pointer' : 'default',
-        }}
-      >
-        <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{signatureName(s, t)}</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{s.signedDate ? formatUpdatedLabel(s.signedDate) : '—'}</span>
-          {s.needsDateOfBirth ? <Badge variant="warning">{t('waivers.retention.needsDateOfBirth')}</Badge> : null}
-          <Badge variant={statusBadgeVariant(s.status)}>{SIGNATURE_STATUS_LABEL[s.status] ? t(SIGNATURE_STATUS_LABEL[s.status]!) : s.status}</Badge>
-        </span>
-      </button>
-      {canRecordPaper && isOpenEntry(s) ? (
-        <Button variant="secondary" onClick={() => setRecording(s)} aria-label={`${t('waivers.paper.record')}: ${signatureName(s, t)}`}>
-          {t('waivers.paper.record')}
-        </Button>
-      ) : null}
-    </li>
-  );
+  const row = (s: WaiverSignatureResponse) => {
+    const opens = s.status === 'SIGNED' || s.status === 'EXPIRED';
+    return (
+      <li key={s.id} className="u8w-sig">
+        <button type="button" className="u8w-sig__open" disabled={!opens} onClick={() => setOpened(s)} data-opens={opens ? 'true' : 'false'}>
+          <span className="u8w-sig__name">{signatureName(s, t)}</span>
+          <span className="u8w-sig__meta">
+            <span className="u8w-sig__date">{s.signedDate ? formatUpdatedLabel(s.signedDate) : '—'}</span>
+            {s.needsDateOfBirth ? <Tag kind="warn">{t('waivers.retention.needsDateOfBirth')}</Tag> : null}
+            <Tag kind={statusTagKind(s.status)}>{SIGNATURE_STATUS_LABEL[s.status] ? t(SIGNATURE_STATUS_LABEL[s.status]!) : s.status}</Tag>
+          </span>
+        </button>
+        {canRecordPaper && isOpenEntry(s) ? (
+          <Pill small onClick={() => setRecording(s)} aria-label={`${t('waivers.paper.record')}: ${signatureName(s, t)}`}>
+            {t('waivers.paper.record')}
+          </Pill>
+        ) : null}
+      </li>
+    );
+  };
 
   return (
     // `<h3>` stays a direct child of this div (not nested inside its own
@@ -344,44 +361,28 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
     // as `heading.locator('..')`, so wrapping the heading alone in a
     // sub-div would silently exclude everything else (the rollup line, the
     // list/empty-state below) from that locator's scope.
-    <div style={{ marginTop: 24 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 4px', color: 'var(--text-primary)' }}>{t('waivers.signatures.heading')}</h3>
-      {summary && summary.total > 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 8px' }}>
-          {t('waivers.signatures.summary', { signed: summary.signed, total: summary.total })}
-        </p>
-      ) : null}
+    <div className="u8w-signatures">
+      <h3 className="u8n-inspector__label">{t('waivers.signatures.heading')}</h3>
+      {summary && summary.total > 0 ? <p className="u8w-signatures__summary">{t('waivers.signatures.summary', { signed: summary.signed, total: summary.total })}</p> : null}
       {summary?.needsDateOfBirth ? (
         // Decision 426 item 4: kept until the child's date of birth is added.
-        <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 8px' }}>
-          {t('waivers.retention.needsDateOfBirthSummary', { count: summary.needsDateOfBirth })}
-        </p>
+        <p className="u8w-signatures__note">{t('waivers.retention.needsDateOfBirthSummary', { count: summary.needsDateOfBirth })}</p>
       ) : null}
-      {!waiver.archivedAt && summary && summary.unsigned + summary.pending > 0 ? (
-        <div style={{ marginBottom: 8 }}>
-          <Button variant="secondary" onClick={sendReminders} loading={remind.isPending}>
-            {t('waivers.remind.button')}
-          </Button>
-        </div>
-      ) : null}
-      {remindNote ? remindNote.ok ? <SuccessBanner message={remindNote.text} /> : <ErrorBanner message={remindNote.text} /> : null}
       {!isLoading && !error && !nobody ? (
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
-          <div className="ultm8-view-toggle" role="group" aria-label={t('waivers.signatures.filterLabel')}>
+        <div className="u8w-signatures__tools">
+          <div className="u8w-switch" role="group" aria-label={t('waivers.signatures.filterLabel')}>
             {(['all', 'signed', 'unsigned'] as const).map((key) => (
-              <button
-                key={key}
-                type="button"
-                className={['ultm8-view-toggle__btn', tab === key ? 'ultm8-view-toggle__btn--active' : ''].join(' ').trim()}
-                aria-pressed={tab === key}
-                onClick={() => setTab(key)}
-              >
+              <button key={key} type="button" className="u8w-switch__btn" aria-pressed={tab === key} onClick={() => setTab(key)}>
                 {t(`waivers.signatures.tab_${key}` as TranslationKey)}
               </button>
             ))}
           </div>
-          <div style={{ minWidth: 200, flex: '1 1 200px', maxWidth: 320 }}>
-            <TextField
+          <label className="u8w-search" htmlFor="waiver-signatures-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
               id="waiver-signatures-search"
               type="search"
               aria-label={t('waivers.signatures.search')}
@@ -389,36 +390,43 @@ function SignaturesPanel({ schoolId, waiver }: { schoolId: string; waiver: Waive
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-          </div>
+          </label>
         </div>
       ) : null}
       {isLoading ? (
         <Spinner />
       ) : error ? (
-        <ErrorBanner message={error instanceof ApiError ? error.message : t('waivers.signatures.loadFailed')} />
+        <Note kind="error" message={error instanceof ApiError ? error.message : t('waivers.signatures.loadFailed')} />
       ) : nobody ? (
-        <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{t('waivers.signatures.empty')}</p>
+        <p className="u8w-signatures__empty">{t('waivers.signatures.empty')}</p>
       ) : (
         <>
-          {shown.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0 }}>{q ? t('waivers.signatures.noMatch') : t('waivers.signatures.noneInTab')}</p>
-          ) : null}
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>{current.map(row)}</ul>
+          {shown.length === 0 ? <p className="u8w-signatures__empty">{q ? t('waivers.signatures.noMatch') : t('waivers.signatures.noneInTab')}</p> : null}
+          <ul className="u8w-sigs">{current.map(row)}</ul>
           {former.length > 0 ? (
             <>
-              <h4 style={{ fontSize: 13, margin: '16px 0 8px', color: 'var(--text-secondary)' }}>{t('waivers.signatures.formerStudents')}</h4>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>{former.map(row)}</ul>
+              <h4 className="u8w-signatures__sub">{t('waivers.signatures.formerStudents')}</h4>
+              <ul className="u8w-sigs">{former.map(row)}</ul>
             </>
-          ) : null}
-          {list.hasNextPage ? (
-            <div style={{ marginTop: 12 }}>
-              <Button variant="secondary" onClick={() => void list.fetchNextPage()} loading={list.isFetchingNextPage}>
-                {t('waivers.signatures.loadMore')}
-              </Button>
-            </div>
           ) : null}
         </>
       )}
+      {/* The panel's buttons sit under its content (DESIGN.md → "Side panel buttons sit under the content"). */}
+      {list.hasNextPage || canRemind || remindNote ? (
+        <div className="u8w-signatures__actions">
+          {list.hasNextPage ? (
+            <Pill onClick={() => void list.fetchNextPage()} loading={list.isFetchingNextPage}>
+              {t('waivers.signatures.loadMore')}
+            </Pill>
+          ) : null}
+          {canRemind ? (
+            <Pill onClick={sendReminders} loading={remind.isPending}>
+              {t('waivers.remind.button')}
+            </Pill>
+          ) : null}
+          {remindNote ? <Note kind={remindNote.ok ? 'success' : 'error'} message={remindNote.text} /> : null}
+        </div>
+      ) : null}
       {opened ? <SignatureDetailModal schoolId={schoolId} signature={opened} waiver={waiver} onClose={() => setOpened(null)} /> : null}
       {recording ? <PaperSignatureModal schoolId={schoolId} waiver={waiver} signature={recording} onClose={() => setRecording(null)} /> : null}
     </div>

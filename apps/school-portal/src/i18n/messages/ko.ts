@@ -711,6 +711,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "추가 작업",
     columnSurcharge: "카드 수수료",
     surchargeLine: "+ 카드 수수료 {amount}",
     title: "거래 내역",
@@ -3904,6 +3905,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "추가 작업",
+      showAll: "모든 면책 동의서 보기 ({count})",
+    },
     exportAll: {
       button: "서명된 문서 내보내기",
       title: "서명된 문서 모두 내보내기",

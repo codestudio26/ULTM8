@@ -37,11 +37,11 @@ test('the owner adds a Waiver and sees it in the reader pane', async ({ page }) 
   await page.getByLabel('Waiver text').fill('I acknowledge the risks of training.');
   await page.getByRole('button', { name: 'Save' }).click();
 
-  await expect(page.getByRole('heading', { level: 2, name: 'Liability Waiver' })).toBeVisible();
-  // The short body text also appears verbatim in the sidebar row's own
-  // preview — scope to the reader pane (the last match: sidebar first in
-  // DOM order, reader pane second) to avoid a strict-mode ambiguity.
-  await expect(page.getByText('I acknowledge the risks of training.').last()).toBeVisible();
+  // New look: the new waiver is the selected row, and the reader pane (named
+  // by the waiver's title, which it doesn't repeat on screen) shows its text.
+  await expect(page.getByRole('button', { name: /Liability Waiver/, pressed: true })).toBeVisible();
+  const reader = page.getByRole('region', { name: 'Liability Waiver' });
+  await expect(reader.getByText('I acknowledge the risks of training.')).toBeVisible();
 
   const created = await db.waiver.findFirstOrThrow({ where: { schoolId: s.schoolId, title: 'Liability Waiver' } });
   waiverIds.push(created.id);
