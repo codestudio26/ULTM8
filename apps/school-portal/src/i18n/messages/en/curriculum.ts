@@ -32,6 +32,7 @@ export const curriculum = {
   uploadVideoAria: 'Upload video for {title}',
   uploadAgain: 'Upload again',
   uploadAgainAria: 'Upload the video for {title} again',
+  actionsAria: 'Actions for {title}',
   videoUploadsOff: "Video uploads aren't set up yet. Lessons can be made and watched without a video until they are.",
   unarchive: 'Unarchive',
   unarchiveAria: 'Unarchive {title}',

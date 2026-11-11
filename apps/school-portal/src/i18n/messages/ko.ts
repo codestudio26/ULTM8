@@ -3624,6 +3624,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "{title} 동영상 업로드",
     uploadAgain: "다시 업로드",
     uploadAgainAria: "{title} 동영상 다시 업로드",
+    actionsAria: "{title} 작업",
     videoUploadsOff: "동영상 업로드가 아직 설정되지 않았습니다. 그때까지 수업은 동영상 없이 만들고 볼 수 있습니다.",
     unarchive: "보관 해제",
     unarchiveAria: "{title} 보관 해제",

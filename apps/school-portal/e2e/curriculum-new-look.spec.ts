@@ -45,9 +45,27 @@ test('the owner sees the new-look header, cards and lesson row', async ({ page }
   await expect(lesson.getByText('Free', { exact: true })).toBeVisible();
   await expect(lesson.getByText('Prerecorded', { exact: true })).toBeVisible();
   await expect(lesson.getByRole('cell', { name: '4:30' })).toBeVisible();
-  for (const name of ['Comments on Armbar from guard (0)', 'Edit Armbar from guard', 'Archive Armbar from guard', 'Delete Armbar from guard']) {
+  // Comments, ↑, ↓ and Edit stay visible; the rest is in the row's ⋮ menu
+  // (product owner, 11 Nov 2026).
+  for (const name of ['Comments on Armbar from guard (0)', 'Move Armbar from guard up', 'Move Armbar from guard down', 'Edit Armbar from guard']) {
     await expect(lesson.getByRole('button', { name })).toBeVisible();
   }
+  for (const name of ['Archive Armbar from guard', 'Delete Armbar from guard', 'Upload video for Armbar from guard']) {
+    await expect(lesson.getByRole('button', { name })).toHaveCount(0);
+  }
+  await lesson.getByRole('button', { name: 'Actions for Armbar from guard' }).click();
+  const menu = page.getByRole('menu', { name: 'Actions for Armbar from guard' });
+  await expect(menu.getByRole('menuitem')).toHaveText(['Upload video', 'Archive', 'Delete']);
+  await expect(menu.getByRole('menuitem', { name: 'Upload video' })).toBeDisabled();
+  await expect(menu.getByText("Video uploads aren't set up yet.", { exact: false })).toBeVisible();
+
+  // Archive from the menu: the row gets its Archived tag and offers Unarchive.
+  await menu.getByRole('menuitem', { name: 'Archive' }).click();
+  await expect(lesson.getByText('Archived', { exact: true })).toBeVisible();
+  await lesson.getByRole('button', { name: 'Actions for Armbar from guard' }).click();
+  await expect(menu.getByRole('menuitem')).toHaveText(['Upload video', 'Unarchive', 'Delete']);
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
   // Nothing of the old look is left on the page.
   await expect(page.locator('.ultm8-card')).toHaveCount(0);
   await expect(page.locator('.ultm8-page-header')).toHaveCount(0);
@@ -133,5 +151,19 @@ test.describe('on a phone', () => {
     expect(overflow).toBeLessThanOrEqual(0);
     const box = await lessons.boundingBox();
     expect(box!.width).toBeLessThanOrEqual(390);
+  });
+});
+
+test.describe('on a tablet', () => {
+  test.use({ viewport: { width: 820, height: 1180 } });
+
+  test('lessons are cards there too, with the ⋮ menu, and nothing scrolls sideways', async ({ page }) => {
+    await signIn(page, s.ownerToken);
+    await page.goto('/curriculum');
+    const lessons = card(page, 'No category');
+    await expect(lessons.getByRole('button', { name: 'Actions for Armbar from guard' })).toBeVisible();
+    await expect(lessons.locator('thead')).toBeHidden();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
   });
 });

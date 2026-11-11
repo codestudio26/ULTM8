@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, EmptyState, ErrorBanner, Field, Modal, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Badge, Button, EmptyState, ErrorBanner, Field, Modal, RowActionsMenu, Spinner, SuccessBanner, TextField, type RowAction } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
@@ -159,6 +159,44 @@ export function CurriculumPage() {
     return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() || instructor.userId : l.instructorId;
   };
 
+  /** The row's ⋮ menu: Upload video, Archive or Unarchive, and Delete. */
+  const menuActions = (l: LessonResponse): RowAction[] => {
+    const actions: RowAction[] = [];
+    // Offered while there's no video yet or the last one failed, and as
+    // "Upload again" while one is processing, in case its upload never
+    // arrived (C5). Replacing a ready video isn't built. Greyed out, with the
+    // reason under it, until video uploads are set up (C4).
+    if (l.captionStatus !== 'READY') {
+      actions.push({
+        label: t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgain' : 'curriculum.uploadVideo'),
+        disabled: !videoUploadsOn,
+        hint: videoUploadsOn ? undefined : t('curriculum.videoUploadsOff'),
+        onClick: () => setUploadingVideoFor(l),
+      });
+    }
+    // Decision 226 — reversible alternative to Delete below, same
+    // School-Owner gate; no dependents to block it today.
+    if (l.archivedAt) {
+      actions.push({
+        label: t('curriculum.unarchive'),
+        onClick: () => {
+          setActionError(null);
+          unarchiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.unarchiveFailed'))));
+        },
+      });
+    } else {
+      actions.push({
+        label: t('curriculum.archive'),
+        onClick: () => {
+          setActionError(null);
+          archiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.archiveFailed'))));
+        },
+      });
+    }
+    actions.push({ label: t('curriculum.delete'), variant: 'danger', onClick: () => setDeleting(l) });
+    return actions;
+  };
+
   const lessonActions = (l: LessonResponse, category: LessonCategory | null, inCategory: LessonResponse[]) => {
     const i = inCategory.indexOf(l);
     // Comments panel (Decision 326): an archived lesson's comments stay
@@ -197,46 +235,9 @@ export function CurriculumPage() {
         <Button variant="secondary" className="u8c-btn-sm" onClick={() => setEditing(l)} aria-label={t('curriculum.editAria', { name: l.title })}>
           {t('curriculum.edit')}
         </Button>
-        {/* Offered while there's no video yet or the last one failed, and
-            as "Upload again" while one is processing, in case its upload
-            never arrived (C5). Replacing a ready video isn't built. Greyed
-            out until video uploads are set up (C4). */}
-        {l.captionStatus !== 'READY' ? (
-          <Button
-            variant="secondary"
-            className="u8c-btn-sm"
-            disabled={!videoUploadsOn}
-            title={videoUploadsOn ? undefined : t('curriculum.videoUploadsOff')}
-            onClick={() => setUploadingVideoFor(l)}
-            aria-label={t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgainAria' : 'curriculum.uploadVideoAria', { title: l.title })}
-          >
-            {t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgain' : 'curriculum.uploadVideo')}
-          </Button>
-        ) : null}
-        {/* Decision 226 — reversible alternative to Delete below, same
-            School-Owner gate; no dependents to block it today. */}
-        {l.archivedAt ? (
-          <Button
-            variant="secondary"
-            className="u8c-btn-sm"
-            onClick={() => { setActionError(null); unarchiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.unarchiveFailed')))); }}
-            aria-label={t('curriculum.unarchiveAria', { title: l.title })}
-          >
-            {t('curriculum.unarchive')}
-          </Button>
-        ) : (
-          <Button
-            variant="secondary"
-            className="u8c-btn-sm"
-            onClick={() => { setActionError(null); archiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.archiveFailed')))); }}
-            aria-label={t('curriculum.archiveAria', { title: l.title })}
-          >
-            {t('curriculum.archive')}
-          </Button>
-        )}
-        <Button variant="secondary" className="u8c-btn-sm" onClick={() => setDeleting(l)} aria-label={t('curriculum.deleteAria', { title: l.title })}>
-          {t('curriculum.delete')}
-        </Button>
+        {/* The rest sit in the row's ⋮ menu (product owner, 11 Nov 2026),
+            each with the same gate and disabled state as before. */}
+        <RowActionsMenu label={t('curriculum.actionsAria', { title: l.title })} actions={menuActions(l)} />
       </div>
     );
   };

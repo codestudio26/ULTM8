@@ -3668,6 +3668,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "Video uploaden voor {title}",
     uploadAgain: "Opnieuw uploaden",
     uploadAgainAria: "Video voor {title} opnieuw uploaden",
+    actionsAria: "Acties voor {title}",
     videoUploadsOff: "Video-uploads zijn nog niet ingesteld. Tot die tijd kunnen lessen zonder video worden gemaakt en bekeken.",
     unarchive: "Dearchiveren",
     unarchiveAria: "{title} dearchiveren",

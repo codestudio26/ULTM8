@@ -3668,6 +3668,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "Téléverser une vidéo pour {title}",
     uploadAgain: "Téléverser à nouveau",
     uploadAgainAria: "Téléverser à nouveau la vidéo de {title}",
+    actionsAria: "Actions pour {title}",
     videoUploadsOff: "Le téléversement de vidéos n'est pas encore configuré. En attendant, les leçons peuvent être créées et regardées sans vidéo.",
     unarchive: "Désarchiver",
     unarchiveAria: "Désarchiver {title}",

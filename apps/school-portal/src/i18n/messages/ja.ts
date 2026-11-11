@@ -3624,6 +3624,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "{title} の動画をアップロード",
     uploadAgain: "再アップロード",
     uploadAgainAria: "{title} の動画を再アップロード",
+    actionsAria: "{title} の操作",
     videoUploadsOff: "動画のアップロードはまだ設定されていません。それまでの間、レッスンは動画なしで作成・視聴できます。",
     unarchive: "アーカイブを解除",
     unarchiveAria: "{title} のアーカイブを解除",

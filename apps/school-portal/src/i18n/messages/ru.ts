@@ -3756,6 +3756,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "Загрузить видео для {title}",
     uploadAgain: "Загрузить снова",
     uploadAgainAria: "Загрузить видео для {title} снова",
+    actionsAria: "Действия для {title}",
     videoUploadsOff: "Загрузка видео пока не настроена. До этого уроки можно создавать и смотреть без видео.",
     unarchive: "Вернуть из архива",
     unarchiveAria: "Вернуть {title} из архива",

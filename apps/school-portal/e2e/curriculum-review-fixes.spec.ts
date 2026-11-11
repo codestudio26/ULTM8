@@ -54,9 +54,17 @@ test('Upload video is greyed out with a reason while video uploads are off; hint
   await page.goto('/curriculum');
   // The test API runs with no Cloudflare account, like the live site today.
   await expect(page.getByText("Video uploads aren't set up yet.", { exact: false })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Upload video for Armbar from guard' })).toBeDisabled();
+  // Upload video, Archive and Delete sit in the row's ⋮ menu; a greyed-out
+  // item shows its reason under it.
+  await page.getByRole('button', { name: 'Actions for Armbar from guard' }).click();
+  const menu = page.getByRole('menu', { name: 'Actions for Armbar from guard' });
+  const upload = menu.getByRole('menuitem', { name: 'Upload video', exact: true });
+  await expect(upload).toBeDisabled();
+  await expect(upload).toHaveAccessibleDescription("Video uploads aren't set up yet. Lessons can be made and watched without a video until they are.");
+  await page.keyboard.press('Escape');
   await expect(card(page, 'No category').getByText('Put lessons in a category to choose their order.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Delete Armbar from guard' }).click();
+  await page.getByRole('button', { name: 'Actions for Armbar from guard' }).click();
+  await page.getByRole('menu', { name: 'Actions for Armbar from guard' }).getByRole('menuitem', { name: 'Delete', exact: true }).click();
   await expect(page.getByText('To hide it but keep these, use Archive.', { exact: false })).toBeVisible();
 });
