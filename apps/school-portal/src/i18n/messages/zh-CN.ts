@@ -2770,6 +2770,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "筛选",
+      moreActions: "更多操作",
+      openFullPage: "打开完整页面",
+      openFullPageAria: "打开完整页面：{name}",
+      show: "查看 {name}",
+      showAll: "显示全部学员（{count}）",
+      showing: "显示 {shown} / {total}",
+      panelLabel: "学员",
+      since: "学员自 {date}",
+      edit: "编辑",
+      editAria: "编辑 {name}",
+      training: "训练",
+      homeBranch: "所属分馆",
+    },
     growth: {
       subtitle: "当前的活跃学员、访客和已冻结会籍，以及你的学校过去 12 个月的增长。",
       period: "过去 12 个月，按学校时区（{zone}）逐月统计。",

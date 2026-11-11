@@ -202,12 +202,16 @@ test('Add manually makes an adult\'s account and enrols them; the list finds the
     await expect(page.getByTestId('temporary-passcode')).toHaveText(/^\d{6}$/);
 
     await page.getByRole('button', { name: 'Back to Students' }).click();
-    await expect(page.getByRole('row', { name: /Ada Lovelace/ }).getByText('North')).toBeVisible();
+    // The home branch is in the selected student's panel, not the row.
+    await page.getByRole('button', { name: 'Ada Lovelace', exact: true }).click();
+    await expect(page.getByRole('complementary', { name: 'Student' }).getByText('North', { exact: true })).toBeVisible();
     await page.locator('#students-search').fill('lovel');
     await expect(page.getByRole('row', { name: /Ada Lovelace/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Sam Lee/ })).toHaveCount(0);
     await page.locator('#students-search').fill('');
-    await page.locator('#students-branch-filter').selectOption({ label: 'No home branch' });
+    await page.getByRole('button', { name: 'Filter', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Branch' }).click();
+    await page.getByRole('option', { name: 'No home branch' }).click();
     await expect(page.getByRole('row', { name: /Sam Lee/ })).toBeVisible();
     await expect(page.getByRole('row', { name: /Ada Lovelace/ })).toHaveCount(0);
   } finally {
