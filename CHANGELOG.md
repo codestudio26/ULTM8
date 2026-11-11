@@ -10,6 +10,12 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: the Curriculum page** (Decision 453; visual only). The approved
+  design draws no Curriculum screen, so the page keeps its layout and every
+  feature, restyled: the new page header, white cards for Categories and for
+  each category's lessons, tags, notes, round ↑/↓ buttons, our own drop-downs
+  in the lesson form, a pill file button for video upload, and each lesson as
+  a card on a phone. Same data, API calls and permissions.
 - **New look: the Team pages** (Decisions 453, 456; visual only). Team is one
   page with three tabs: Staff (`/staff`), Coaches Info (`/instructors`, renamed
   from "Instructors' belts") and Invite coaches (`/team/invite-coaches`, the
