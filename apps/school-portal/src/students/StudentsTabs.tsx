@@ -11,8 +11,8 @@ import { useMayImport } from './imports/ImportPage';
  * front-desk mode"), with Sign-ups from the tablet for the people who can
  * approve them (Decision 392), Attendance (Decision 317) and Growth
  * (backlog 5.8). Same tab row as Grading's. */
-export function StudentsTabs() {
-  const t = useT();
+/** The Students section's tabs, for the people who may see each one. */
+export function useStudentsTabs(): Array<{ to: string; label: TranslationKey; end?: boolean; count?: number }> {
   const schoolId = useGradingSchoolId();
   const maySeeSignUps = useMaySeeSignUps(schoolId);
   // Decision 317 items 3, 4: statistics, or logging past attendance.
@@ -20,7 +20,7 @@ export function StudentsTabs() {
   // Decision 315 items 12, 13: the owner, or Branch Staff with "Import data".
   const mayImport = useMayImport(schoolId);
   const waiting = (useSignUps(schoolId, 'WAITING', maySeeSignUps).data?.items ?? []).filter((s) => s.status === 'PENDING').length;
-  const tabs: Array<{ to: string; label: TranslationKey; end?: boolean; count?: number }> = [
+  return [
     { to: '/students', label: 'students.tabs.students', end: true },
     { to: '/check-in', label: 'students.tabs.checkIn' },
     ...(maySeeSignUps ? [{ to: '/students/sign-ups', label: 'students.tabs.signUps' as TranslationKey, count: waiting }] : []),
@@ -29,6 +29,11 @@ export function StudentsTabs() {
     ...(attendance.stats ? [{ to: '/students/growth', label: 'students.tabs.growth' as TranslationKey }] : []),
     ...(mayImport ? [{ to: '/students/import', label: 'imports.tab' as TranslationKey }] : []),
   ];
+}
+
+export function StudentsTabs() {
+  const t = useT();
+  const tabs = useStudentsTabs();
   return (
     <nav className="ultm8-tabs" aria-label={t('students.tabs.aria')}>
       {tabs.map((tab) => (

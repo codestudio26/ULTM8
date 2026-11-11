@@ -1,4 +1,20 @@
 export const students = {
+  // The Students list in the new look (Decision 453).
+  list: {
+    filter: 'Filter',
+    moreActions: 'More actions',
+    openFullPage: 'Open full page',
+    openFullPageAria: 'Open full page: {name}',
+    show: 'Show {name}',
+    showAll: 'Show all students ({count})',
+    showing: 'Showing {shown} of {total}',
+    panelLabel: 'Student',
+    since: 'Student since {date}',
+    edit: 'Edit',
+    editAria: 'Edit {name}',
+    training: 'Training',
+    homeBranch: 'Home branch',
+  },
   merge: {
     button: "Merge a duplicate",
     title: "Merge a duplicate into {name}",

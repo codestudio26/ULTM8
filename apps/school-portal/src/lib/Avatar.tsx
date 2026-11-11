@@ -13,12 +13,15 @@ export function Avatar({
   photoUrl,
   size = 40,
   color = 'var(--fill-accent)',
+  textColor = '#ffffff',
 }: {
   firstName: string;
   surname: string;
   photoUrl?: string | null;
   size?: number;
   color?: string;
+  /** The initials' colour: white on the default accent fill. */
+  textColor?: string;
 }) {
   if (photoUrl) {
     return (
@@ -42,7 +45,7 @@ export function Avatar({
         height: size,
         borderRadius: '50%',
         background: color,
-        color: '#ffffff',
+        color: textColor,
         fontSize: Math.round(size * 0.4),
         fontWeight: 500,
         flex: 'none',
