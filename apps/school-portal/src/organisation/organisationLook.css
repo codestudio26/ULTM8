@@ -655,16 +655,6 @@
   padding: 0 var(--space-3);
 }
 
-/* Dialogs on these pages: the light heading and 14px corners. */
-[data-look='redesign'] .u8o .ultm8-modal {
-  border-radius: 14px;
-}
-[data-look='redesign'] .u8o .ultm8-modal > h2.ultm8-page-header__title {
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-}
-
 /* The School page: its setting cards in one column. */
 [data-look='redesign'] .u8o-settings {
   display: flex;

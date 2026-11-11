@@ -246,16 +246,99 @@
   background: var(--u8-switch-on);
 }
 
-/* 6. Dialogs and the phone field's country button in the new look: the
- *    dialog's title is the new look's light heading, its corners 14px; the
- *    country button is a soft field like the number beside it. */
-[data-look='redesign'] .ultm8-modal {
-  border-radius: 14px;
+/* 6. Dialogs and the phone field's country button in the new look.
+ *    A dialog is the approved design's: a white card (14px corners) over a
+ *    dimmed page, near the top; its title in a header band with a line under
+ *    it; its buttons (ModalActions) in a grey band at the foot, on the right,
+ *    sharing the row equally (DESIGN.md → "Button pairs"). On a phone it
+ *    fills the screen and its buttons stay in view at the bottom, full width.
+ *    The country button is a soft field like the number beside it. */
+[data-look='redesign'] {
+  --u8-dlg-line: #e1e3e5;
+  --u8-dlg-foot: #f9fafa;
 }
-[data-look='redesign'] .ultm8-modal > h2.ultm8-page-header__title {
-  font-size: 22px;
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8-dlg-line: var(--border);
+    --u8-dlg-foot: var(--surface-2);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8-dlg-line: var(--border);
+  --u8-dlg-foot: var(--surface-2);
+}
+[data-look='redesign'] .ultm8-modal-overlay {
+  align-items: flex-start;
+  padding: 56px 16px;
+  background: rgba(21, 23, 25, 0.42);
+}
+[data-look='redesign'] .ultm8-modal {
+  max-width: 560px;
+  max-height: calc(100vh - 112px);
+  padding: 0;
+  border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(21, 23, 25, 0.28);
+}
+[data-look='redesign'] .ultm8-modal--wide {
+  max-width: 920px;
+}
+[data-look='redesign'] .ultm8-modal__head {
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--u8-dlg-line);
+}
+[data-look='redesign'] .ultm8-modal__head > h2.ultm8-page-header__title {
+  margin: 0;
+  font-size: 19px;
   font-weight: 400;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+}
+[data-look='redesign'] .ultm8-modal__body {
+  padding: 20px 24px;
+}
+[data-look='redesign'] .ultm8-modal__body > :first-child {
+  margin-top: 0;
+}
+[data-look='redesign'] .ultm8-modal__actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  justify-content: end;
+  gap: 10px;
+  margin: 20px -24px -20px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--u8-dlg-line);
+  background: var(--u8-dlg-foot);
+  border-radius: 0 0 14px 14px;
+}
+[data-look='redesign'] .ultm8-modal__actions > .ultm8-btn {
+  min-width: 120px;
+  white-space: normal;
+}
+@media (max-width: 767px) {
+  /* The dimmed layer scrolls, so the button band can stay in view. */
+  [data-look='redesign'] .ultm8-modal-overlay {
+    padding: 0;
+    align-items: stretch;
+    overflow-y: auto;
+  }
+  [data-look='redesign'] .ultm8-modal,
+  [data-look='redesign'] .ultm8-modal--wide {
+    max-width: none;
+    max-height: none;
+    min-height: 100%;
+    overflow: visible;
+    border-radius: 0;
+  }
+  [data-look='redesign'] .ultm8-modal__actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    justify-content: stretch;
+    border-radius: 0;
+  }
+  [data-look='redesign'] .ultm8-modal__actions > .ultm8-btn {
+    min-width: 0;
+  }
 }
 [data-look='redesign'] .ultm8-phone-field__trigger {
   min-height: var(--form-field-height);
@@ -267,4 +350,48 @@
 }
 [data-look='redesign'] .ultm8-phone-field__trigger:not(:disabled):hover {
   background: var(--form-field-bg-focus);
+}
+
+/* 7. Form pattern "F" (numbered chapters + live preview) in the new look
+ *    (DESIGN.md → "One accent: mint", "Greens: mint"): a chosen pill is white
+ *    with a soft shadow on the grey track, never dark filled; the preview
+ *    card is calm grey with dark text; a done chapter's number and a done
+ *    checklist tick are the new look's greens. */
+[data-look='redesign'] {
+  --form-chapter-number-done: #3a7556;
+  --form-pill-on-bg: #ffffff;
+  --form-pill-on-text: #383d42;
+  --form-preview-bg: #eef1f3;
+  --form-preview-text: #383d42;
+  --form-preview-muted: #6c767f;
+  --u8-check-done: #9fd3b2;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --form-chapter-number-done: #9fd3b2;
+    --form-pill-on-bg: var(--surface-1);
+    --form-pill-on-text: var(--text-primary);
+    --form-preview-bg: var(--surface-2);
+    --form-preview-text: var(--text-primary);
+    --form-preview-muted: var(--text-secondary);
+    --u8-check-done: #4f8a68;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --form-chapter-number-done: #9fd3b2;
+  --form-pill-on-bg: var(--surface-1);
+  --form-pill-on-text: var(--text-primary);
+  --form-preview-bg: var(--surface-2);
+  --form-preview-text: var(--text-primary);
+  --form-preview-muted: var(--text-secondary);
+  --u8-check-done: #4f8a68;
+}
+[data-look='redesign'] .ultm8-pills__option[aria-pressed='true'] {
+  box-shadow: 0 1px 3px rgba(21, 23, 25, 0.18);
+}
+[data-look='redesign'] .ultm8-preview-card {
+  box-shadow: 0 8px 22px rgba(21, 23, 25, 0.08);
+}
+[data-look='redesign'] .ultm8-checklist__item--done::before {
+  background-color: var(--u8-check-done);
 }

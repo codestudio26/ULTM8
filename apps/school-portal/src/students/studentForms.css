@@ -1,0 +1,228 @@
+/* The Students forms in the new look (Decision 453): Add student, Edit a
+ * student and Invite a student, in form pattern "F" (DESIGN.md → "Form
+ * pattern F", the approved "Add student" design). The chapters, soft fields,
+ * pills, preview card and checklist are the shared pattern F classes
+ * (packages/ui components.css, new-look values in redesign-fixes.css §7);
+ * this file only lays them out on these pages. */
+
+/* The form sits on a white sheet, so its grey soft fields never meet the grey
+ * page ("Never the same colour twice"). */
+[data-look='redesign'] .u8f-sheet {
+  background: var(--u8n-surface);
+  border: 1px solid var(--u8n-line);
+  border-radius: 14px;
+  padding: 0 32px 8px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8f-sheet > .ultm8-banner {
+  margin: 20px 0 0;
+}
+[data-look='redesign'] .u8f-sheet .ultm8-chapter:first-of-type {
+  border-top: 0;
+}
+[data-look='redesign'] .u8f-sheet + .u8f-sheet,
+[data-look='redesign'] .u8n-page > .ultm8-banner {
+  margin-bottom: 16px;
+}
+
+/* "Done" after a finished chapter's title (DESIGN.md → "Add student"). */
+[data-look='redesign'] .u8f-done {
+  display: inline-block;
+  margin-inline-start: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--u8n-row-on);
+  color: #3a7556;
+  font-size: 12px;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+:root[data-look='redesign'][data-theme='dark'] .u8f-done {
+  color: #9fd3b2;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) .u8f-done {
+    color: #9fd3b2;
+  }
+}
+[data-look='redesign'] .ultm8-chapter__desc {
+  margin: 0;
+}
+
+/* Fields two to a row; the gap does the spacing, not each field's margin. */
+[data-look='redesign'] .u8f-sheet .ultm8-chapter__fields > .ultm8-field,
+[data-look='redesign'] .u8f-sheet .ultm8-chapter__fields > .u8n-dd-field,
+[data-look='redesign'] .u8f-sheet .u8f-wide > .ultm8-field {
+  margin: 0;
+}
+[data-look='redesign'] .u8f-sheet .ultm8-chapter__fields {
+  align-items: start;
+}
+[data-look='redesign'] .u8f-wide,
+[data-look='redesign'] .u8f-sheet .ultm8-chapter__fields > .u8f-group,
+[data-look='redesign'] .u8f-sheet .ultm8-chapter__fields > .u8f-openers {
+  grid-column: 1 / -1;
+}
+[data-look='redesign'] .u8f-sheet .ultm8-chapter__fields > .u8n-dd-field .u8n-select__field {
+  width: auto;
+}
+
+/* The emergency contact: its own small group, its fields two to a row. */
+[data-look='redesign'] .u8f-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+[data-look='redesign'] .u8f-group > .ultm8-field {
+  margin: 0;
+}
+[data-look='redesign'] .u8f-group__title {
+  float: left;
+  grid-column: 1 / -1;
+  width: 100%;
+  padding: 0;
+  font-size: 15px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8f-group__hint {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+[data-look='redesign'] .u8f-openers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The address's own "Address" heading would repeat the chapter's title, so
+ * only screen readers get it. */
+[data-look='redesign'] .u8f-address .ultm8-address > legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8f-address .ultm8-address {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Buttons: two side by side share the row equally (DESIGN.md → "Button pairs"). */
+[data-look='redesign'] .u8f-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+[data-look='redesign'] .u8f-pair > .ultm8-btn {
+  width: 100%;
+  white-space: normal;
+}
+[data-look='redesign'] .ultm8-chapter__fields > .u8f-pair {
+  margin-top: 0;
+  max-width: 420px;
+}
+[data-look='redesign'] .u8f-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px 0 16px;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8f-actions > .ultm8-btn {
+  min-width: 160px;
+}
+
+/* A result after saving (the temporary passcode, "Enrolled."). */
+[data-look='redesign'] .u8f-result {
+  padding: 24px 32px;
+  max-width: 640px;
+}
+[data-look='redesign'] .u8f-passcode {
+  margin: 8px 0;
+  font-size: 26px;
+  letter-spacing: 0.16em;
+  font-variant-numeric: tabular-nums;
+}
+[data-look='redesign'] .u8f-found {
+  margin: 0;
+}
+
+/* The live preview in the right panel (the "Add student" design). */
+[data-look='redesign'] .u8n-inspector .ultm8-form-preview {
+  width: auto;
+}
+[data-look='redesign'] .u8f-preview__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+[data-look='redesign'] .u8f-preview__who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+}
+[data-look='redesign'] .u8f-preview__avatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--u8n-line);
+  color: var(--u8n-text);
+  font-size: 22px;
+}
+[data-look='redesign'] .u8f-preview__text {
+  min-width: 0;
+}
+[data-look='redesign'] .u8f-preview__name {
+  font-size: 21px;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8f-preview__sub {
+  font-size: 13px;
+}
+[data-look='redesign'] .u8f-ready {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--u8n-line);
+  border-radius: 16px;
+}
+[data-look='redesign'] .u8f-ready__title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--u8n-subtle);
+}
+
+/* Phones: one field per row, 16px sides (DESIGN.md → "Phone layout"). */
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8f-sheet {
+    padding: 0 16px 8px;
+  }
+  [data-look='redesign'] .u8f-result {
+    padding: 20px 16px;
+  }
+  [data-look='redesign'] .u8f-group {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  [data-look='redesign'] .ultm8-chapter__fields > .u8f-pair {
+    max-width: none;
+  }
+  [data-look='redesign'] .u8f-actions > .ultm8-btn {
+    flex: 1;
+  }
+}

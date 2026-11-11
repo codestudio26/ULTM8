@@ -57,7 +57,13 @@ export function NewLookSelect({
   };
   const pick = (i: number) => {
     setOpen(false);
-    if (options[i] && options[i].value !== value) onChange(options[i].value);
+    if (options[i] && options[i].value !== value) {
+      onChange(options[i].value);
+      // A pick counts as an edit, as a browser <select>'s change did (it
+      // fired an `input` event): a dialog's unsaved-changes guard (Modal)
+      // then keeps it open on an outside click or Escape.
+      rootRef.current?.dispatchEvent(new Event('input', { bubbles: true }));
+    }
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
     if (!open) {

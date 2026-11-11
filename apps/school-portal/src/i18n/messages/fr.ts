@@ -2842,6 +2842,18 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    form: {
+      personal: "Informations personnelles",
+      personalHint: "Qui nous rejoint.",
+      otherContacts: "Autres contacts",
+      sizes: "Tailles",
+      findAccount: "Trouver son compte",
+      newStudent: "Nouvel élève",
+      previewHint: "Les informations s'affichent pendant la saisie",
+      born: "Né(e) le {date}",
+      readyToSave: "Prêt à enregistrer",
+      name: "Nom",
+    },
     list: {
       filter: "Filtrer",
       moreActions: "Plus d'actions",

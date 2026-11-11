@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useQueryClient } from '@tanstack/react-query';
 import { branchSelectOptions, useBranches } from '../branches/branchQueries';
 import { useInviteStudent } from './studentQueries';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /** Re-enrol (Decision 371, Students Q3) — the owner enrols a former student
  * again, from their page, with a new home branch when the School has branches
@@ -38,25 +39,26 @@ export function ReEnrolModal({ schoolId, studentId, studentName, onClose }: { sc
   return (
     <Modal title={t('students.reEnrol.title', { name: studentName })} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ marginTop: 0 }}>{t('students.reEnrol.description')}</p>
+      <p>{t('students.reEnrol.description')}</p>
       {needsBranch ? (
-        <Field label={t('students.invite.homeBranch')} htmlFor="re-enrol-branch">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="re-enrol-branch"
+            label={t('students.invite.homeBranch')}
             value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
+            onChange={setBranchId}
             options={[{ value: '', label: t('students.invite.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
           />
-        </Field>
+        </div>
       ) : null}
-      <div style={{ display: 'flex', gap: 8 }}>
-        <Button onClick={confirm} loading={enrol.isPending}>
-          {t('students.reEnrol.confirm')}
-        </Button>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-      </div>
+        <Button onClick={confirm} loading={enrol.isPending}>
+          {t('students.reEnrol.confirm')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }
