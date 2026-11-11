@@ -42,6 +42,8 @@ test('clicking a card opens the student panel; ✕ closes it', async ({ page }) 
   await expect(panel.getByRole('heading', { name: 'Toward White 1' })).toBeVisible();
   await expect(panel.getByText('Classes: 1 of 3')).toBeVisible();
   await expect(panel.getByRole('link', { name: 'Open student page ›' })).toBeVisible();
+  // Decision 457: from the board, the student page opens on its Ranks tab.
+  await expect(panel.getByRole('link', { name: 'Open student page ›' })).toHaveAttribute('href', /\/students\/[^/?]+\?tab=ranks$/);
   await panel.getByRole('button', { name: 'Close' }).click();
   await expect(panel).toHaveCount(0);
 });
