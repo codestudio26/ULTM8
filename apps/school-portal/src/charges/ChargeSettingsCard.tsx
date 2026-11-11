@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, COUNTRY_NAMES, Card, ErrorBanner, Field, SelectField, SuccessBanner, Switch, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
@@ -69,6 +69,19 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
     if (pre) setRate(rateText(pre.rateBasisPoints));
   }, [rates.data, school.taxCountry, school.addressCountry, school.taxRateBasisPoints]);
 
+  // A country picked before the standard rates have loaded: its rate is
+  // filled in when they arrive, unless the owner has typed a rate since.
+  // Declared after the address-country effect above, so the picked country's
+  // rate is the one that stays.
+  const awaitingRateFor = useRef<string | null>(null);
+  useEffect(() => {
+    const code = awaitingRateFor.current;
+    if (!code || !rates.data) return;
+    awaitingRateFor.current = null;
+    const pre = rates.data.items.find((r) => r.country === code);
+    if (pre) setRate(rateText(pre.rateBasisPoints));
+  }, [rates.data]);
+
   function changed() {
     setSaved(false);
   }
@@ -76,6 +89,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
   function chooseCountry(code: string) {
     setCountry(code);
     changed();
+    awaitingRateFor.current = rates.data ? null : code || null;
     const pre = (rates.data?.items ?? []).find((r) => r.country === code);
     if (pre) setRate(rateText(pre.rateBasisPoints));
   }
@@ -159,6 +173,7 @@ export function ChargeSettingsCard({ schoolId, school }: { schoolId: string; sch
             inputMode="decimal"
             value={rate}
             onChange={(e) => {
+              awaitingRateFor.current = null;
               setRate(e.target.value);
               changed();
             }}

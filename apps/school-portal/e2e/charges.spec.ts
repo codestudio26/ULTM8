@@ -43,9 +43,45 @@ test('the owner sets the School\'s tax: picking the country fills in its rate', 
   await card.getByLabel('Your prices').selectOption({ label: 'Have tax added on top' });
   await card.getByLabel('Tax ID').fill('GB123456789');
   await card.getByRole('button', { name: 'Save' }).click();
-  await expect(card.getByText('Saved')).toBeVisible();
+  await expect(card.getByText('Saved.', { exact: true })).toBeVisible();
   const school = await db.school.findUniqueOrThrow({ where: { id: s.schoolId } });
   expect(school).toMatchObject({ taxCountry: 'GB', taxRateBasisPoints: 1250, taxInclusive: false, taxId: 'GB123456789', chargeCancelReasonRequired: true });
+});
+
+test('a country picked before the standard rates load still gets its rate, but never over one the owner typed', async ({ page }) => {
+  // Hold back the standard rates until the country has been picked.
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => (release = resolve));
+  await page.route('**/v1/tax-rates', async (route) => {
+    await held;
+    await route.continue();
+  });
+  await page.goto('/school');
+  const card = page.getByTestId('charge-settings');
+  const rate = card.getByLabel('Tax rate (%)', { exact: true });
+  await card.getByLabel('Country your School is in').selectOption('GB');
+  await expect(rate).toHaveValue('0');
+  release();
+  await expect(rate).toHaveValue('20');
+
+  // Picked again before the rates load, then a rate typed: the typed one stays.
+  let releaseAgain!: () => void;
+  const heldAgain = new Promise<void>((resolve) => (releaseAgain = resolve));
+  await page.unroute('**/v1/tax-rates');
+  await page.route('**/v1/tax-rates', async (route) => {
+    await heldAgain;
+    await route.continue();
+  });
+  await page.reload();
+  await card.getByLabel('Country your School is in').selectOption('GB');
+  await rate.fill('12.5');
+  const loaded = page.waitForResponse('**/v1/tax-rates');
+  releaseAgain();
+  await loaded;
+  // Give the page a moment to take the rates in before checking nothing moved.
+  await page.evaluate(() => new Promise<void>((resolve) => setTimeout(() => requestAnimationFrame(() => resolve()), 200)));
+  await expect(card.getByLabel('Country your School is in')).toHaveValue('GB');
+  await expect(rate).toHaveValue('12.5');
 });
 
 test('a discounted charge, a part cash payment, and cancelling with a reason', async ({ page }) => {
