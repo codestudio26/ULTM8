@@ -291,6 +291,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "La contestation de votre paiement par carte de {amount} a été tranchée en votre faveur. L'argent revient sur votre carte.",
     chargeDisputeWonBody: "La contestation de votre paiement par carte de {amount} a été tranchée en faveur de l'École. Le paiement est maintenu.",
     chargePaymentLabel: "paiement de frais",
+    feePaymentLabel: "paiement de frais supplémentaires",
     chargeDueReminderTitle: "Paiement bientôt dû",
     chargeDueReminderBody: "Facture {invoice} pour {description} : {amount} à payer avant le {due}.",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.

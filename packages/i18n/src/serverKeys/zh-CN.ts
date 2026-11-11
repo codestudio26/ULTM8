@@ -263,6 +263,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "你 {amount} 银行卡付款的争议已判你胜诉。钱款将退回你的银行卡。",
     chargeDisputeWonBody: "你 {amount} 银行卡付款的争议已判学校胜诉。付款依然有效。",
     chargePaymentLabel: "费用付款",
+    feePaymentLabel: "附加费付款",
     chargeDueReminderTitle: "付款即将到期",
     chargeDueReminderBody: "{description} 的发票 {invoice}：{amount} 应于 {due} 付清。",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.

@@ -358,6 +358,7 @@ const CHARGES: Record<string, string> = {
   'Membership payment': 'membershipPayment',
   'franchise fee charge': 'franchiseFeeCharge',
   'charge payment': 'chargePaymentLabel',
+  'fee payment': 'feePaymentLabel',
 };
 const DISPUTE_STATUSES = new Set([
   'warning_needs_response', 'warning_under_review', 'warning_closed', 'needs_response', 'under_review', 'won', 'lost', 'prevented',
@@ -509,15 +510,15 @@ const BODY_RULES: Array<[RegExp, Rule]> = [
   [body(String.raw`^(.+) has been promoted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'childPromoted', { name: m[1], rank: m[2], style: m[3] })],
   [body(String.raw`^(.+)'s rank has been adjusted to (.+)\. \(${STYLE}\)$`), (m, { t }) => n(t, 'childAdjusted', { name: m[1], rank: m[2], style: m[3] })],
   [
-    /^A disputed (Membership payment|franchise fee charge|charge payment) of ([\d.]+) ([A-Z]{3}) was lost — the charge is no longer considered paid\.$/,
+    /^A disputed (Membership payment|franchise fee charge|charge payment|fee payment) of ([\d.]+) ([A-Z]{3}) was lost — the charge is no longer considered paid\.$/,
     (m, { t, locale }) => n(t, 'disputeLostBody', { charge: charge(t, m[1]), amount: formatAmount(m[2], m[3], locale) }),
   ],
   [
-    /^A disputed (Membership payment|franchise fee charge|charge payment) of ([\d.]+) ([A-Z]{3}) was resolved in your favor\.$/,
+    /^A disputed (Membership payment|franchise fee charge|charge payment|fee payment) of ([\d.]+) ([A-Z]{3}) was resolved in your favor\.$/,
     (m, { t, locale }) => n(t, 'disputeResolvedBody', { charge: charge(t, m[1]), amount: formatAmount(m[2], m[3], locale) }),
   ],
   [
-    /^A (Membership payment|franchise fee charge|charge payment) of ([\d.]+) ([A-Z]{3}) has been disputed by the payer \(status: (\w+)\)\.$/,
+    /^A (Membership payment|franchise fee charge|charge payment|fee payment) of ([\d.]+) ([A-Z]{3}) has been disputed by the payer \(status: (\w+)\)\.$/,
     (m, { t, locale }) =>
       n(t, 'disputeOpenedBody', {
         charge: charge(t, m[1]),

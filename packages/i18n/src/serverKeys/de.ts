@@ -277,6 +277,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "Die Anfechtung deiner Kartenzahlung über {amount} wurde zu deinen Gunsten entschieden. Das Geld geht auf deine Karte zurück.",
     chargeDisputeWonBody: "Die Anfechtung deiner Kartenzahlung über {amount} wurde zugunsten der Schule entschieden. Die Zahlung bleibt bestehen.",
     chargePaymentLabel: "Gebührenzahlung",
+    feePaymentLabel: "Zahlung einer Zusatzgebühr",
     chargeDueReminderTitle: "Zahlung bald fällig",
     chargeDueReminderBody: "Rechnung {invoice} für {description}: {amount} ist am {due} fällig.",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.

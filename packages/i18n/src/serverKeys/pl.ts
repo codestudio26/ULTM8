@@ -305,6 +305,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "Spór o Twoją płatność kartą na {amount} rozstrzygnięto na Twoją korzyść. Pieniądze wracają na Twoją kartę.",
     chargeDisputeWonBody: "Spór o Twoją płatność kartą na {amount} rozstrzygnięto na korzyść Szkoły. Płatność pozostaje.",
     chargePaymentLabel: "płatność należności",
+    feePaymentLabel: "płatność opłaty dodatkowej",
     chargeDueReminderTitle: "Płatność wkrótce",
     chargeDueReminderBody: "Faktura {invoice} za {description}: {amount} do zapłaty do {due}.",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.

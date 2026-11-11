@@ -93,6 +93,15 @@ const PAID_STATUSES: Transaction['status'][] = ['SUCCESSFUL', 'REFUNDED', 'DISPU
  * its row carries the Membership's id. */
 const PLAN_PAYMENT_KINDS: Transaction['kind'][] = ['MEMBERSHIP', 'RENEWAL'];
 
+/** Decision 452 item 7: what the owner's dispute notice calls the disputed
+ * payment. A fee (freeze, late-cancel, no-show) is a "fee payment", so the
+ * owner never reads it as the member's plan being disputed. */
+export function disputedPaymentLabel(kind: Transaction['kind']): string {
+  if (kind === 'CHARGE_PAYMENT') return 'charge payment';
+  if (PLAN_PAYMENT_KINDS.includes(kind)) return 'Membership payment';
+  return 'fee payment';
+}
+
 /**
  * Consumes the `stripe-webhook-processing` queue — the dedup+handling half of Spec
  * 55 §10.2's confirmed webhook flow; signature verification and enqueueing happen
@@ -1888,7 +1897,7 @@ export class StripeWebhookProcessingProcessor extends WorkerHost {
     return {
       notifications: [
         ...ownerGrants.map((grant) =>
-          this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, transaction.kind === 'CHARGE_PAYMENT' ? 'charge payment' : 'Membership payment', transaction.schoolId),
+          this.buildDisputeNotification(grant.userId, dispute, outcome, stripeEventId, disputedPaymentLabel(transaction.kind), transaction.schoolId),
         ),
         ...memberNotices,
       ],

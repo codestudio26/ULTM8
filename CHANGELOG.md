@@ -10,6 +10,11 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **The owner's dispute notice calls a fee a "fee payment"** (Decision 452
+  item 7). A dispute on a freeze, late-cancel or no-show fee used to be
+  described as a "Membership payment"; it now reads "fee payment", in all 15
+  languages.
+
 - **Refunding a fee, or losing a dispute on one, no longer ends the member's
   plan** (Decision 451 item 1, stress round 7 D-1). A freeze fee's payment
   carries its plan's id, so refunding it in full in the Stripe dashboard (or a
