@@ -4190,6 +4190,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   ui: {
     loading: "加载中",
     dismiss: "关闭",
+    closeDialog: "关闭对话框",
     showPasscode: "显示密码",
     hidePasscode: "隐藏密码",
     noMatchingTimezone: "没有匹配的时区",

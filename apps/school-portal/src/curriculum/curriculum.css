@@ -428,12 +428,6 @@
   text-transform: none;
   letter-spacing: 0;
 }
-[data-look='redesign'] .u8c-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 20px;
-}
 
 /* The video file picker: its button is a white pill like the others. */
 [data-look='redesign'] .u8c-file {

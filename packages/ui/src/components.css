@@ -1048,6 +1048,33 @@
   max-height: calc(100vh - 2 * var(--space-6));
   overflow-y: auto;
 }
+/* A dialog's header: its title, and the round ✕ that closes it on the right. */
+.ultm8-modal__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ultm8-modal__head > h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ultm8-modal__close {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
 /* A dialog's buttons (ModalActions): one row, on the right. */
 .ultm8-modal__actions {
   display: flex;

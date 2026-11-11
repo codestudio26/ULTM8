@@ -1,6 +1,6 @@
 import React, { useDeferredValue, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, EmptyState, ErrorBanner, Field, Modal, PhoneField, RowActionsMenu, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Field, Modal, ModalActions, PhoneField, RowActionsMenu, Spinner, SuccessBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth } from '../auth/AuthContext';
 import type { BranchResponse } from '../branches/branchQueries';
@@ -436,14 +436,14 @@ function PauseStaffModal({
     <Modal title={t('roleGrants.list.pauseTitle', { name })} onClose={onClose}>
       <p>{t('roleGrants.list.pauseBody', { roles })}</p>
       {error ? <ErrorBanner message={error} /> : null}
-      <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-        <Button type="button" loading={pause.isPending} onClick={() => void handlePause()}>
-          {t('roleGrants.list.pause')}
-        </Button>
+      <ModalActions>
         <Button type="button" variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-      </div>
+        <Button type="button" loading={pause.isPending} onClick={() => void handlePause()}>
+          {t('roleGrants.list.pause')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }
@@ -495,14 +495,14 @@ function HandOverMainOwnerModal({
             autoComplete="current-password"
           />
         </Field>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={handOver.isPending}>
-            {t('roleGrants.list.makeMainOwner')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={handOver.isPending}>
+            {t('roleGrants.list.makeMainOwner')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -550,14 +550,14 @@ function StaffDetailsModal({
         <Field label={t('roleGrants.list.workPhoneLabel')} htmlFor="staff-work-phone" hint={t('roleGrants.list.workPhoneHint')}>
           <PhoneField id="staff-work-phone" value={workPhone} onChange={setWorkPhone} defaultCountry={guessDefaultCountry()} />
         </Field>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={update.isPending}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={update.isPending}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

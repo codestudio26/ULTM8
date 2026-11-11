@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, TextArea, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, ModalActions, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { WaiverResponse } from './waiverQueries';
 import { useT } from '../i18n/I18nProvider';
@@ -57,14 +57,14 @@ export function WaiverFormModal({
             onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
           />
         </Field>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting} disabled={!form.title.trim() || !form.body.trim()}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting} disabled={!form.title.trim() || !form.body.trim()}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

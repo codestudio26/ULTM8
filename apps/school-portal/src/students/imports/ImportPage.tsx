@@ -1,11 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Badge, Button, Card, Checkbox, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, Table } from '@ultm8/ui';
+import { Badge, Button, Checkbox, ErrorBanner, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../../auth/AuthContext';
 import { useI18n, useT, type TranslationKey } from '../../i18n/I18nProvider';
 import { useMyStaffAccess } from '../../roleGrants/roleGrantQueries';
 import { csvCell, downloadCsv } from '../../transactions/transactionsCsv';
-import { StudentsTabs } from '../StudentsTabs';
+import { StudentsHeader } from '../StudentsTabs';
+import { BillingCard, BillingPage } from '../../billing/BillingLook';
+import { Chapter } from '../StudentFormParts';
+import { FitTable } from '../StudentsSectionLook';
+import '../studentForms.css';
 import { batches, markRepeats, readImportFile, templateCsv, type ParsedImport } from './csv';
 import {
   MEMBER_BATCH,
@@ -70,6 +74,12 @@ type Phase = 'idle' | 'checking' | 'checked' | 'importing' | 'stopped' | 'done';
  * then imports it in batches. A batch sent again returns its first results,
  * so an import that stopped carries on with "Try again" and nothing is
  * imported twice.
+ *
+ * New look (Decision 453): the approved design draws no Import screen, so the
+ * page keeps its steps, checks and actions in form pattern "F" (DESIGN.md):
+ * chapter 01 what to import (three short choices, so pills), chapter 02 the
+ * file; then the results in a white card, its table becoming cards when it
+ * doesn't fit.
  */
 export function ImportPage() {
   const t = useT();
@@ -220,72 +230,84 @@ export function ImportPage() {
   };
 
   return (
-    <>
-      <PageHeader title={t('students.title')} subtitle={t('imports.subtitle')} />
-      <StudentsTabs />
+    <BillingPage>
+      <StudentsHeader subtitle={t('imports.subtitle')} />
       {!may ? (
-        <Card>
-          <p style={{ margin: 0 }}>{t('imports.noAccess')}</p>
-        </Card>
+        <BillingCard>
+          <p className="u8st-plain">{t('imports.noAccess')}</p>
+        </BillingCard>
       ) : (
         <>
-          <Card>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <Field label={t('imports.kindLabel')} htmlFor="import-kind">
-                <SelectField
-                  id="import-kind"
-                  value={kind}
-                  disabled={busy}
-                  onChange={(e) => chooseKind(e.target.value as ImportKind)}
-                  options={KINDS.map((k) => ({ value: k, label: t(`imports.kinds.${k}` as TranslationKey) }))}
-                />
-              </Field>
-              <p style={{ margin: 0 }}>{t(`imports.about.${kind}` as TranslationKey, { earliest })}</p>
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--ultm8-color-text-muted, #666)' }}>{t('imports.formatHint', { max: maxRows })}</p>
-              <div>
+          <section className="u8f-sheet u8st-import">
+            <Chapter number={1} title={t('imports.kindLabel')}>
+              <div className="ultm8-pills u8f-wide" role="group" aria-label={t('imports.kindLabel')}>
+                {KINDS.map((k) => (
+                  <button key={k} type="button" className="ultm8-pills__option" aria-pressed={kind === k} disabled={busy} onClick={() => kind !== k && chooseKind(k)}>
+                    {t(`imports.kinds.${k}` as TranslationKey)}
+                  </button>
+                ))}
+              </div>
+              <p className="u8f-wide u8st-import__about">{t(`imports.about.${kind}` as TranslationKey, { earliest })}</p>
+              <p className="u8f-wide u8b-note">{t('imports.formatHint', { max: maxRows })}</p>
+              <div className="u8f-wide">
                 <Button variant="secondary" disabled={!columns.length} onClick={() => downloadCsv(`ultm8-import-${kind.toLowerCase()}.csv`, templateCsv(columns, EXAMPLES[kind]))}>
                   {t('imports.template')}
                 </Button>
               </div>
-              <Field label={t('imports.file')} htmlFor="import-file">
+            </Chapter>
+            <Chapter number={2} title={t('imports.file')}>
+              <div className="u8f-wide">
+                {/* The chapter's title names the file; the label is for screen readers. */}
+                <label htmlFor="import-file" className="u8st-sr">
+                  {t('imports.file')}
+                </label>
                 <input
                   key={kind}
                   id="import-file"
                   data-testid="import-file"
+                  className="u8st-file"
                   type="file"
                   accept=".csv,text/csv"
                   disabled={busy || !columns.length}
                   onChange={(e) => void readFile(e.target.files?.[0] ?? null)}
                 />
-              </Field>
-              {fileError ? <ErrorBanner message={fileError} /> : null}
-              {tooMany ? <ErrorBanner message={t('imports.tooMany', { count: rows.length, max: maxRows })} /> : null}
+              </div>
+              {fileError ? (
+                <div className="u8f-wide">
+                  <ErrorBanner message={fileError} />
+                </div>
+              ) : null}
+              {tooMany ? (
+                <div className="u8f-wide">
+                  <ErrorBanner message={t('imports.tooMany', { count: rows.length, max: maxRows })} />
+                </div>
+              ) : null}
               {parsed?.missingColumns.length ? (
-                <p style={{ margin: 0, fontSize: 13 }}>{t('imports.missingColumns', { columns: parsed.missingColumns.join(', ') })}</p>
+                <p className="u8f-wide u8b-note">{t('imports.missingColumns', { columns: parsed.missingColumns.join(', ') })}</p>
               ) : null}
               {parsed?.unknownColumns.length ? (
-                <p style={{ margin: 0, fontSize: 13 }}>{t('imports.unknownColumns', { columns: parsed.unknownColumns.join(', ') })}</p>
+                <p className="u8f-wide u8b-note">{t('imports.unknownColumns', { columns: parsed.unknownColumns.join(', ') })}</p>
               ) : null}
               {rows.length > 0 && !tooMany && (phase === 'idle' || phase === 'checking') ? (
-                <div>
+                <div className="u8f-wide">
                   <Button onClick={() => void check()} loading={phase === 'checking'} disabled={busy}>
                     {t('imports.previewButton')}
                   </Button>
                 </div>
               ) : null}
-              {phase === 'checking' ? <p style={{ margin: 0 }}>{t('imports.checking', { done: progress, total: rows.length })}</p> : null}
-            </div>
-          </Card>
+              {phase === 'checking' ? <p className="u8f-wide u8st-plain">{t('imports.checking', { done: progress, total: rows.length })}</p> : null}
+            </Chapter>
+          </section>
 
           {error ? <ErrorBanner message={error} /> : null}
 
           {results.length ? (
-            <Card>
-              <div style={{ display: 'grid', gap: 12 }}>
-                {phase === 'checked' ? <p style={{ margin: 0 }}>{t('imports.previewIntro')}</p> : null}
-                {phase === 'done' ? <SuccessBanner message={t('imports.done', counts)} /> : <p style={{ margin: 0, fontWeight: 600 }}>{t('imports.previewCounts', counts)}</p>}
-                {phase === 'importing' ? <p style={{ margin: 0 }}>{t('imports.importing', { done: progress, total: rows.length })}</p> : null}
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <BillingCard>
+              <div className="u8st-results">
+                {phase === 'checked' ? <p className="u8st-plain">{t('imports.previewIntro')}</p> : null}
+                {phase === 'done' ? <SuccessBanner message={t('imports.done', counts)} /> : <p className="u8st-plain u8st-results__counts">{t('imports.previewCounts', counts)}</p>}
+                {phase === 'importing' ? <p className="u8st-plain">{t('imports.importing', { done: progress, total: rows.length })}</p> : null}
+                <div className="u8st-results__actions">
                   {phase === 'checked' ? (
                     <Button onClick={() => void runImport()} disabled={counts.ok === 0}>
                       {t('imports.importButton')}
@@ -304,16 +326,17 @@ export function ImportPage() {
                   ) : null}
                   <Checkbox label={t('imports.onlyProblems')} checked={onlyProblems} onChange={(e) => setOnlyProblems(e.target.checked)} />
                 </div>
-                <Table
+                <FitTable
+                  testId="import-results"
                   columns={[
                     { key: 'row', header: t('imports.columns.row'), render: (r) => r.rowNumber },
-                    { key: 'member', header: t('imports.columns.member'), render: (r) => memberOf(r.rowNumber) },
+                    { key: 'member', header: t('imports.columns.member'), main: true, render: (r) => memberOf(r.rowNumber) },
                     { key: 'result', header: t('imports.columns.result'), render: (r) => badge(r) },
                     {
                       key: 'details',
                       header: t('imports.columns.details'),
                       render: (r) => (
-                        <div>
+                        <div className="u8st-details">
                           {detailsOf(r).map((line, i) => (
                             <div key={i}>{line}</div>
                           ))}
@@ -324,11 +347,10 @@ export function ImportPage() {
                   rows={shown.map((r) => ({ ...r, id: String(r.rowNumber) }))}
                 />
               </div>
-            </Card>
+            </BillingCard>
           ) : null}
         </>
       )}
-    </>
+    </BillingPage>
   );
 }
-

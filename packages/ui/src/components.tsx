@@ -18,6 +18,7 @@ import {
 export const DEFAULT_UI_STRINGS = {
   loading: 'Loading',
   dismiss: 'Dismiss',
+  closeDialog: 'Close dialog',
   showPasscode: 'Show passcode',
   hidePasscode: 'Hide passcode',
   noMatchingTimezone: 'No matching timezone',
@@ -1866,8 +1867,13 @@ const openModals: symbol[] = [];
  * Cancel/Save buttons close it, so a stray click never throws away a
  * half-filled form. A click that starts inside (selecting text, say) and ends
  * on the overlay doesn't count as a click outside.
+ *
+ * The round ✕ in the header (Decision 460) is a deliberate press, like the
+ * dialog's own Cancel: it calls `onClose`, the same handler Cancel, a click
+ * outside and Escape use, whether or not anything was edited.
  */
 export function Modal({ title, onClose, children, wide = false }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+  const { strings } = useUiStrings();
   const [edited, setEdited] = useState(false);
   const editedRef = useRef(false);
   editedRef.current = edited;
@@ -1913,10 +1919,14 @@ export function Modal({ title, onClose, children, wide = false }: { title: strin
         onChange={markEdited}
       >
         {/* Header, then the content: in the new look the header is a band
-            with a line under it, and the content is padded below it
-            (DESIGN.md → dialogs; redesign-fixes.css §6). */}
+            with a line under it, the title on the left and the round ✕ on
+            the right, and the content is padded below it (DESIGN.md →
+            dialogs; redesign-fixes.css §6). */}
         <div className="ultm8-modal__head">
           <h2 className="ultm8-page-header__title">{title}</h2>
+          <button type="button" className="ultm8-modal__close" aria-label={strings.closeDialog} onClick={onClose}>
+            <span aria-hidden="true">✕</span>
+          </button>
         </div>
         <div className="ultm8-modal__body">{children}</div>
       </div>

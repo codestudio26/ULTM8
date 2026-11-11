@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, EmptyState, ErrorBanner, Field, Modal, RowActionsMenu, Spinner, SuccessBanner, TextField, type RowAction } from '@ultm8/ui';
+import { Badge, Button, EmptyState, ErrorBanner, Field, Modal, ModalActions, RowActionsMenu, Spinner, SuccessBanner, TextField, type RowAction } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
@@ -502,14 +502,14 @@ function RenameCategoryModal({ schoolId, category, onClose }: { schoolId: string
         <Field label={t('curriculum.categories.nameLabel')} htmlFor="rename-lesson-category">
           <TextField id="rename-lesson-category" required value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <div className="u8c-buttons">
-          <Button type="submit" loading={rename.isPending}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={rename.isPending}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

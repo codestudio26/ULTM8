@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, SelectField, Spinner, SuccessBanner } from '@ultm8/ui';
+import { Badge, Button, EmptyState, ErrorBanner, Modal, ModalActions, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { useBranches } from '../branches/branchQueries';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
-import { StudentsTabs } from './StudentsTabs';
+import { StudentsHeader } from './StudentsTabs';
+import { BillingCard, BillingPage } from '../billing/BillingLook';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import './studentsSection.css';
 import { useApproveSignUp, useRejectSignUp, useSignUps, type ApproveSignUpResult, type SignUp, type SignUpView } from './signUpQueries';
 
 function day(iso: string | Date): string {
@@ -27,6 +30,11 @@ function ageOf(iso: string | Date): number {
  * staff, rejected in the last 30 days (Decision 362: still approvable, then
  * deleted), and done. The owner sees every Branch's; Branch Staff with the
  * students switch their own Branches'.
+ *
+ * New look (Decision 453): the approved design draws no Sign-ups screen, so
+ * the page keeps its views, cards and actions and takes the new header and
+ * tabs, a pill switch for the three views, white cards with the new tags and
+ * pill buttons, and the shared dialog with its button band.
  */
 export function SignUpsPage() {
   const t = useT();
@@ -47,42 +55,39 @@ export function SignUpsPage() {
 
   return (
     <>
-      <PageHeader title={t('students.title')} subtitle={t('students.signUps.subtitle')} />
-      <StudentsTabs />
-      <div className="ultm8-tabs" role="tablist" aria-label={t('students.signUps.viewsAria')} style={{ marginBottom: 16 }}>
-        {views.map(([v, label]) => (
-          <button
-            key={v}
-            type="button"
-            role="tab"
-            aria-selected={view === v}
-            className={`ultm8-tabs__tab${view === v ? ' ultm8-tabs__tab--active' : ''}`}
-            onClick={() => setView(v)}
-            style={{ background: 'none', border: 0, cursor: 'pointer', font: 'inherit' }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {result ? <ApprovedBanner name={result.name} result={result.result} /> : null}
-      {signUps.isLoading ? (
-        <Spinner />
-      ) : signUps.error ? (
-        <ErrorBanner message={signUps.error instanceof ApiError ? signUps.error.message : t('students.signUps.loadFailed')} />
-      ) : items.length === 0 ? (
-        <Card>
-          <EmptyState
-            title={view === 'WAITING' ? t('students.signUps.emptyWaiting') : view === 'REJECTED' ? t('students.signUps.emptyRejected') : t('students.signUps.emptyDone')}
-            description={view === 'WAITING' ? t('students.signUps.emptyWaitingHint') : undefined}
-          />
-        </Card>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {items.map((s) => (
-            <SignUpCard key={s.id} signUp={s} onApprove={() => setApproving(s)} onReject={() => setRejecting(s)} />
+      <BillingPage>
+        <StudentsHeader subtitle={t('students.signUps.subtitle')} />
+        {/* The three views: one look with the style switch (DESIGN.md →
+            "Style switch"), a grey track with the chosen one white. */}
+        <div className="ultm8-pills u8st-views" role="tablist" aria-label={t('students.signUps.viewsAria')}>
+          {views.map(([v, label]) => (
+            <button key={v} type="button" role="tab" aria-selected={view === v} className="ultm8-pills__option" onClick={() => setView(v)}>
+              {label}
+            </button>
           ))}
         </div>
-      )}
+        {result ? <ApprovedBanner name={result.name} result={result.result} /> : null}
+        {signUps.isLoading ? (
+          <BillingCard>
+            <Spinner />
+          </BillingCard>
+        ) : signUps.error ? (
+          <ErrorBanner message={signUps.error instanceof ApiError ? signUps.error.message : t('students.signUps.loadFailed')} />
+        ) : items.length === 0 ? (
+          <BillingCard>
+            <EmptyState
+              title={view === 'WAITING' ? t('students.signUps.emptyWaiting') : view === 'REJECTED' ? t('students.signUps.emptyRejected') : t('students.signUps.emptyDone')}
+              description={view === 'WAITING' ? t('students.signUps.emptyWaitingHint') : undefined}
+            />
+          </BillingCard>
+        ) : (
+          <div className="u8st-cards">
+            {items.map((s) => (
+              <SignUpCard key={s.id} signUp={s} onApprove={() => setApproving(s)} onReject={() => setRejecting(s)} />
+            ))}
+          </div>
+        )}
+      </BillingPage>
       {approving ? (
         <ApproveModal
           schoolId={schoolId}
@@ -125,39 +130,36 @@ function SignUpCard({ signUp: s, onApprove, onReject }: { signUp: SignUp; onAppr
     [t('students.signUps.branch'), s.branchName],
     [t('students.signUps.sent'), day(s.createdAt)],
   ];
+  const note = [
+    s.status === 'PENDING' && s.hasAccount ? t('students.signUps.hasAccount') : null,
+    s.status === 'INVITED' ? t('students.signUps.invitedNote', { name: s.approvedByName ?? '—' }) : null,
+    s.status === 'REJECTED' && s.deletesAt ? t('students.signUps.rejectedNote', { name: s.rejectedByName ?? '—', date: day(s.deletesAt) }) : null,
+    s.status === 'APPROVED' ? t('students.signUps.approvedNote', { name: s.approvedByName ?? '—', date: s.approvedAt ? day(s.approvedAt) : '' }) : null,
+    s.status === 'APPROVED' && s.rejectedByName ? ` ${t('students.signUps.earlierRejected', { name: s.rejectedByName })}` : null,
+    s.status === 'DECLINED' ? t('students.signUps.declinedNote') : null,
+  ]
+    .filter(Boolean)
+    .join('');
   return (
-    <Card>
-      <div data-testid="sign-up" style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ minWidth: 0, flex: '1 1 320px' }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
-            <h2 className="ultm8-page-header__title" style={{ fontSize: 16, margin: 0 }}>
-              {name}
-            </h2>
-            <Badge variant={s.kind === 'VISITOR' ? 'info' : 'accent'}>{s.kind === 'VISITOR' ? t('frontDesk.signUp.visitor') : t('frontDesk.signUp.member')}</Badge>
-            <Badge variant={status.variant}>{status.label}</Badge>
-          </div>
-          <dl style={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: '4px 12px', margin: 0, fontSize: 14 }}>
-            {rows
-              .filter(([, v]) => !!v)
-              .map(([label, value]) => (
-                <React.Fragment key={label}>
-                  <dt style={{ color: 'var(--color-neutral-600)' }}>{label}</dt>
-                  <dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{value}</dd>
-                </React.Fragment>
-              ))}
-          </dl>
-          <p style={{ margin: '8px 0 0', color: 'var(--color-neutral-600)', fontSize: 13 }}>
-            {s.status === 'PENDING' && s.hasAccount ? t('students.signUps.hasAccount') : null}
-            {s.status === 'INVITED' ? t('students.signUps.invitedNote', { name: s.approvedByName ?? '—' }) : null}
-            {s.status === 'REJECTED' && s.deletesAt
-              ? t('students.signUps.rejectedNote', { name: s.rejectedByName ?? '—', date: day(s.deletesAt) })
-              : null}
-            {s.status === 'APPROVED' ? t('students.signUps.approvedNote', { name: s.approvedByName ?? '—', date: s.approvedAt ? day(s.approvedAt) : '' }) : null}
-            {s.status === 'APPROVED' && s.rejectedByName ? ` ${t('students.signUps.earlierRejected', { name: s.rejectedByName })}` : null}
-            {s.status === 'DECLINED' ? t('students.signUps.declinedNote') : null}
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <section className="u8b-card u8st-signup" data-testid="sign-up">
+      <div className="u8st-signup__head">
+        <h2 className="u8st-signup__name">{name}</h2>
+        <Badge variant={s.kind === 'VISITOR' ? 'info' : 'accent'}>{s.kind === 'VISITOR' ? t('frontDesk.signUp.visitor') : t('frontDesk.signUp.member')}</Badge>
+        <Badge variant={status.variant}>{status.label}</Badge>
+      </div>
+      <dl className="u8st-facts">
+        {rows
+          .filter(([, v]) => !!v)
+          .map(([label, value]) => (
+            <div key={label} className="u8st-facts__row">
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+      </dl>
+      {note ? <p className="u8b-note u8st-signup__note">{note}</p> : null}
+      {s.status === 'PENDING' || s.status === 'REJECTED' || s.status === 'INVITED' ? (
+        <div className="u8st-signup__actions">
           {s.status === 'PENDING' || s.status === 'REJECTED' ? <Button onClick={onApprove}>{t('students.signUps.approve')}</Button> : null}
           {s.status === 'PENDING' ? (
             <Button variant="secondary" onClick={onReject}>
@@ -170,8 +172,8 @@ function SignUpCard({ signUp: s, onApprove, onReject }: { signUp: SignUp; onAppr
             </Button>
           ) : null}
         </div>
-      </div>
-    </Card>
+      ) : null}
+    </section>
   );
 }
 
@@ -183,10 +185,10 @@ function ApprovedBanner({ name, result }: { name: string; result: ApproveSignUpR
     result.emailFailed && !result.temporaryPasscode ? t('students.signUps.emailFailed') : null,
   ].filter(Boolean);
   return (
-    <div style={{ marginBottom: 16 }}>
+    <div className="u8st-approved">
       <SuccessBanner message={parts.join(' ')} />
       {result.temporaryPasscode ? (
-        <p role="status" style={{ margin: '8px 0 0' }}>
+        <p role="status" className="u8st-approved__code">
           {t('students.signUps.passcodeHandOver', { code: result.temporaryPasscode })}
         </p>
       ) : null}
@@ -204,20 +206,21 @@ function ApproveModal({ schoolId, signUp, onClose, onDone }: { schoolId: string;
   const name = `${signUp.firstName} ${signUp.surname}`.trim();
   return (
     <Modal title={t('students.signUps.approveTitle', { name })} onClose={onClose}>
-      <p style={{ marginTop: 0 }}>{signUp.hasAccount ? t('students.signUps.approveInviteBody') : t('students.signUps.approveNewBody')}</p>
+      <p>{signUp.hasAccount ? t('students.signUps.approveInviteBody') : t('students.signUps.approveNewBody')}</p>
       {signUp.kind === 'VISITOR' ? <p>{t('students.signUps.approveVisitorBody')}</p> : null}
       {needsBranch ? (
-        <Field label={t('students.signUps.homeBranch')} htmlFor="sign-up-branch">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="sign-up-branch"
+            label={t('students.signUps.homeBranch')}
             value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
+            onChange={setBranchId}
             options={[{ value: '', label: t('students.signUps.chooseBranch') }, ...branches.map((b) => ({ value: b.id, label: b.name }))]}
           />
-        </Field>
+        </div>
       ) : null}
       {approve.error ? <ErrorBanner message={approve.error instanceof ApiError ? approve.error.message : t('students.signUps.approveFailed')} /> : null}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
@@ -227,7 +230,7 @@ function ApproveModal({ schoolId, signUp, onClose, onDone }: { schoolId: string;
         >
           {t('students.signUps.approveConfirm')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
@@ -239,16 +242,16 @@ function RejectModal({ schoolId, signUp, onClose }: { schoolId: string; signUp: 
   const withdrawing = signUp.status === 'INVITED';
   return (
     <Modal title={withdrawing ? t('students.signUps.withdrawTitle', { name }) : t('students.signUps.rejectTitle', { name })} onClose={onClose}>
-      <p style={{ marginTop: 0 }}>{t('students.signUps.rejectBody')}</p>
+      <p>{t('students.signUps.rejectBody')}</p>
       {reject.error ? <ErrorBanner message={reject.error instanceof ApiError ? reject.error.message : t('students.signUps.rejectFailed')} /> : null}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
         <Button variant="danger" disabled={reject.isPending} onClick={() => reject.mutate(signUp.id, { onSuccess: onClose })}>
           {withdrawing ? t('students.signUps.withdraw') : t('students.signUps.rejectConfirm')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

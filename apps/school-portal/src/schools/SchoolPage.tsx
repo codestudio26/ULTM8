@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, Table, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, ModalActions, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, Table, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { formatMoney } from '../lib/money';
@@ -467,7 +467,10 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
       {currencyConfirm ? (
         <Modal title={t('schools.form.currencyConfirmTitle')} onClose={() => setCurrencyConfirm(null)}>
           <p data-testid="currency-confirm-body">{currencyConfirm}</p>
-          <div className="u8o-pair">
+          <ModalActions>
+            <Button type="button" variant="secondary" onClick={() => setCurrencyConfirm(null)}>
+              {t('common.cancel')}
+            </Button>
             <Button
               loading={updateSchool.isPending}
               onClick={async () => {
@@ -477,10 +480,7 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
             >
               {t('schools.form.currencyConfirmButton')}
             </Button>
-            <Button variant="secondary" onClick={() => setCurrencyConfirm(null)}>
-              {t('common.cancel')}
-            </Button>
-          </div>
+          </ModalActions>
         </Modal>
       ) : null}
     </Card>
@@ -581,14 +581,14 @@ function JoinCodeCard({ schoolId, joinCode }: { schoolId: string; joinCode: stri
       {confirming ? (
         <Modal title={t('schools.joinCode.regenerateConfirmTitle')} onClose={() => setConfirming(false)}>
           <p>{t('schools.joinCode.regenerateConfirmBody')}</p>
-          <div className="u8o-pair">
+          <ModalActions>
+            <Button type="button" variant="secondary" onClick={() => setConfirming(false)}>
+              {t('common.cancel')}
+            </Button>
             <Button onClick={handleRegenerate} loading={regenerate.isPending}>
               {t('schools.joinCode.regenerate')}
             </Button>
-            <Button variant="secondary" onClick={() => setConfirming(false)}>
-              {t('common.cancel')}
-            </Button>
-          </div>
+          </ModalActions>
         </Modal>
       ) : null}
     </Card>
@@ -648,14 +648,14 @@ function CloseSchoolCard({ schoolId, school }: { schoolId: string; school: Schoo
                 autoComplete="current-password"
               />
             </Field>
-            <div className="u8o-pair">
+            <ModalActions>
+              <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+                {t('common.cancel')}
+              </Button>
               <Button type="submit" variant="danger" loading={close.isPending} disabled={confirmName !== school.name}>
                 {t('schools.close.button')}
               </Button>
-              <Button variant="secondary" onClick={() => setOpen(false)}>
-                {t('common.cancel')}
-              </Button>
-            </div>
+            </ModalActions>
           </form>
         </Modal>
       ) : null}
@@ -1082,14 +1082,14 @@ function FranchiseAffiliationCard({ schoolId, franchiseId, closed }: { schoolId:
           {confirmingLeave ? (
             <Modal title={t('schools.franchise.leaveConfirmTitle')} onClose={() => setConfirmingLeave(false)}>
               <p>{t('schools.franchise.leaveConfirmBody')}</p>
-              <div className="u8o-pair">
+              <ModalActions>
+                <Button type="button" variant="secondary" onClick={() => setConfirmingLeave(false)}>
+                  {t('common.cancel')}
+                </Button>
                 <Button variant="danger" onClick={handleLeave}>
                   {t('schools.franchise.leave')}
                 </Button>
-                <Button variant="secondary" onClick={() => setConfirmingLeave(false)}>
-                  {t('common.cancel')}
-                </Button>
-              </div>
+              </ModalActions>
             </Modal>
           ) : null}
         </>
@@ -1126,14 +1126,14 @@ function FranchiseAffiliationCard({ schoolId, franchiseId, closed }: { schoolId:
               {confirmingJoin ? (
                 <Modal title={t('schools.franchise.confirmTitle')} onClose={() => setConfirmingJoin(null)}>
                   <p data-testid="franchise-join-confirm">{t('schools.franchise.confirmBody', { name: confirmingJoin.name })}</p>
-                  <div className="u8o-pair">
+                  <ModalActions>
+                    <Button type="button" variant="secondary" onClick={() => setConfirmingJoin(null)}>
+                      {t('common.cancel')}
+                    </Button>
                     <Button onClick={handleJoin} loading={joinFranchise.isPending}>
                       {t('schools.franchise.sendRequest')}
                     </Button>
-                    <Button variant="secondary" onClick={() => setConfirmingJoin(null)}>
-                      {t('common.cancel')}
-                    </Button>
-                  </div>
+                  </ModalActions>
                 </Modal>
               ) : null}
             </>

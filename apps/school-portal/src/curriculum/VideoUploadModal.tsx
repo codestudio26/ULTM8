@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useRequestVideoUploadUrl, type LessonResponse } from './curriculumQueries';
 import { useT } from '../i18n/I18nProvider';
@@ -92,11 +92,11 @@ export function VideoUploadModal({
         />
         {uploading ? <Spinner /> : null}
       </div>
-      <div className="u8c-buttons">
+      <ModalActions>
         <Button type="button" variant="secondary" onClick={onClose} disabled={uploading}>
           {t('common.cancel')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

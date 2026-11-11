@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -98,9 +98,11 @@ export function BroadcastNotificationModal({
         <p className="ultm8-field">
           {t('notifications.broadcastModal.sentTo', { count: sent.recipientCount })}
         </p>
-        <Button type="button" onClick={onClose}>
-          {t('common.done')}
-        </Button>
+        <ModalActions>
+          <Button type="button" onClick={onClose}>
+            {t('common.done')}
+          </Button>
+        </ModalActions>
       </Modal>
     );
   }
@@ -169,9 +171,11 @@ export function BroadcastNotificationModal({
             ))}
           </fieldset>
         ) : null}
-        <Button type="submit" loading={submitting}>
-          {t('notifications.broadcastModal.submit')}
-        </Button>
+        <ModalActions>
+          <Button type="submit" loading={submitting}>
+            {t('notifications.broadcastModal.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
