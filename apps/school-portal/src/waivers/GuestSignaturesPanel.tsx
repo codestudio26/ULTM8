@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Spinner } from '@ultm8/ui';
+import { Spinner } from '@ultm8/ui';
+import { Note, Pill } from './WaiversLook';
 import { useGuestSignature, useGuestSignatures } from './guestWaiverQueries';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -11,7 +12,7 @@ function SignedText({ schoolId, waiverId, signatureId }: { schoolId: string; wai
   if (detail.isLoading) return <Spinner />;
   if (!detail.data) return null;
   return (
-    <div style={{ whiteSpace: 'pre-line', fontSize: 13, lineHeight: 1.5, marginTop: 6, padding: 8, background: 'var(--surface-muted, #f6f6f6)', borderRadius: 6 }}>
+    <div className="u8w-guest__text">
       <strong>{detail.data.signedWaiverTitle}</strong>
       {'\n'}
       {detail.data.signedWaiverBody}
@@ -20,7 +21,9 @@ function SignedText({ schoolId, waiverId, signatureId }: { schoolId: string; wai
 }
 
 /** Guests who signed this waiver by their booking's link (Waivers Q9), with
- * the wording each signed. Owner/Manager only, like the Signatures panel. */
+ * the wording each signed. Owner/Manager only, like the Signatures panel.
+ * In the new look it sits in the right-hand panel under Signatures, one
+ * stacked row per guest (who, the class, when they signed, View). */
 export function GuestSignaturesPanel({ schoolId, waiverId }: { schoolId: string; waiverId: string }) {
   const t = useT();
   const query = useGuestSignatures(schoolId, waiverId);
@@ -28,60 +31,50 @@ export function GuestSignaturesPanel({ schoolId, waiverId }: { schoolId: string;
   const rows = query.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
-    <section aria-label={t('waivers.guestSignatures.title')} style={{ marginTop: 24 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 4px' }}>{t('waivers.guestSignatures.title')}</h3>
-      <p style={{ margin: '0 0 8px', fontSize: 13, color: 'var(--text-secondary)' }}>{t('waivers.guestSignatures.intro')}</p>
+    <section aria-label={t('waivers.guestSignatures.title')} className="u8w-guests">
+      <h3 className="u8n-inspector__label">{t('waivers.guestSignatures.title')}</h3>
+      <p className="u8w-guests__intro">{t('waivers.guestSignatures.intro')}</p>
       {query.isLoading ? <Spinner /> : null}
-      {query.error ? <ErrorBanner message={t('waivers.guestSignatures.loadFailed')} /> : null}
-      {!query.isLoading && !query.error && rows.length === 0 ? <p style={{ fontSize: 13 }}>{t('waivers.guestSignatures.empty')}</p> : null}
+      {query.error ? <Note kind="error" message={t('waivers.guestSignatures.loadFailed')} /> : null}
+      {!query.isLoading && !query.error && rows.length === 0 ? <p className="u8w-guests__empty">{t('waivers.guestSignatures.empty')}</p> : null}
       {rows.length ? (
-        <table className="ultm8-table" style={{ width: '100%' }}>
-          <thead>
-            <tr>
-              <th>{t('waivers.guestSignatures.columnGuest')}</th>
-              <th>{t('waivers.guestSignatures.columnClass')}</th>
-              <th>{t('waivers.guestSignatures.columnSigned')}</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <React.Fragment key={r.id}>
-                <tr>
-                  <td>
-                    {r.guestFullName}
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                      {t('waivers.guestSignatures.dob', { date: dateText(`${r.guestDateOfBirth}T00:00:00Z`) })}
-                      {r.signedByGuardian ? ` · ${t('waivers.guestSignatures.byGuardian', { name: r.signerFullName })}` : ''}
-                    </div>
-                  </td>
-                  <td>
+        <ul className="u8w-sigs">
+          {rows.map((r) => (
+            <li key={r.id} className="u8w-guest">
+              <div className="u8w-guest__who">
+                <span className="u8w-sig__name">{r.guestFullName}</span>
+                <span className="u8w-guest__line">
+                  {t('waivers.guestSignatures.dob', { date: dateText(`${r.guestDateOfBirth}T00:00:00Z`) })}
+                  {r.signedByGuardian ? ` · ${t('waivers.guestSignatures.byGuardian', { name: r.signerFullName })}` : ''}
+                </span>
+              </div>
+              <dl className="u8w-guest__facts">
+                <div>
+                  <dt>{t('waivers.guestSignatures.columnClass')}</dt>
+                  <dd>
                     {r.classTitle}, {dateText(r.classStartsAt)}
-                    {r.bookedByName ? <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{t('waivers.guestSignatures.bookedBy', { name: r.bookedByName })}</div> : null}
-                  </td>
-                  <td>{dateText(r.signedAt)}</td>
-                  <td>
-                    <Button variant="secondary" onClick={() => setOpen(open === r.id ? null : r.id)} aria-expanded={open === r.id}>
-                      {open === r.id ? t('waivers.guestSignatures.hide') : t('waivers.guestSignatures.view')}
-                    </Button>
-                  </td>
-                </tr>
-                {open === r.id ? (
-                  <tr>
-                    <td colSpan={4}>
-                      <SignedText schoolId={schoolId} waiverId={waiverId} signatureId={r.id} />
-                    </td>
-                  </tr>
-                ) : null}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+                    {r.bookedByName ? <span className="u8w-guest__line">{t('waivers.guestSignatures.bookedBy', { name: r.bookedByName })}</span> : null}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{t('waivers.guestSignatures.columnSigned')}</dt>
+                  <dd>{dateText(r.signedAt)}</dd>
+                </div>
+              </dl>
+              <Pill small onClick={() => setOpen(open === r.id ? null : r.id)} aria-expanded={open === r.id}>
+                {open === r.id ? t('waivers.guestSignatures.hide') : t('waivers.guestSignatures.view')}
+              </Pill>
+              {open === r.id ? <SignedText schoolId={schoolId} waiverId={waiverId} signatureId={r.id} /> : null}
+            </li>
+          ))}
+        </ul>
       ) : null}
       {query.hasNextPage ? (
-        <Button variant="secondary" onClick={() => void query.fetchNextPage()} loading={query.isFetchingNextPage}>
-          {t('waivers.guestSignatures.loadMore')}
-        </Button>
+        <div className="u8w-signatures__actions">
+          <Pill onClick={() => void query.fetchNextPage()} loading={query.isFetchingNextPage}>
+            {t('waivers.guestSignatures.loadMore')}
+          </Pill>
+        </div>
       ) : null}
     </section>
   );
