@@ -55,8 +55,9 @@ Post-v1.4.0 work on `master`.
   Both list pages use the new page header, white cards, class avatars (banner or
   initials on a soft circle), the new look's own drop-downs and pill buttons,
   and phone layouts; every view, filter and action stays as it was. A right-hand
-  panel shows the selected class with its row actions, Timetable rows name the
-  coach, and the Month dots use the soft colours (Decision 455).
+  panel names the selected class and holds its row actions, never repeating the
+  row; Timetable rows name the coach, and the Month dots use the soft colours
+  (Decision 455).
 - **New look: Dashboard** (Decision 453; visual only). The owner's Dashboard
   has the new page header (the Branch scope under the title, our own Branch
   drop-down), number cards, Today's classes (from this week's Bookings

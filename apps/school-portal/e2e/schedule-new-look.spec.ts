@@ -9,7 +9,10 @@ import { addBranch, addCoach, cleanup, db, seedGradingSchool, signIn, type Gradi
  * class name with its branch under it, the new look's own drop-downs (never a
  * browser <select>), and no sideways page scroll on a phone. Decision 455:
  * the right-hand panel shows the selected class with the row's own actions,
- * Timetable rows name the coach, and the Month dots use the soft colours.
+ * Timetable rows name the coach, and the Month dots use the soft colours. The
+ * panel never repeats the row (DESIGN.md "nothing shown twice"; the owner's
+ * answer "B" on #545): only the class's name, what the row doesn't show, and
+ * the row's actions as buttons.
  */
 let s: GradingSchool;
 
@@ -128,7 +131,7 @@ test('on a phone neither page scrolls sideways', async ({ page }) => {
   }
 });
 
-test('Classes: the panel shows the picked class and its row actions under it (Decision 455)', async ({ page }) => {
+test('Classes: the panel names the picked class, repeats nothing from its row, and has its actions under it', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/classes');
 
@@ -140,15 +143,22 @@ test('Classes: the panel shows the picked class and its row actions under it (De
   await expect(page.getByRole('button', { name: 'Advanced (Gi)', exact: true })).toHaveAttribute('aria-pressed', 'false');
 
   await expect(panel.getByText('Kids BJJ', { exact: true })).toBeVisible();
-  await expect(panel.getByText('Cody Coach', { exact: true })).toBeVisible();
-  await expect(panel.getByText('North', { exact: true })).toBeVisible();
-  await expect(panel.getByText('20', { exact: true })).toBeVisible();
+  // The row shows the coach and branch, Starts, Ends and Capacity, so the
+  // panel doesn't repeat them.
+  const row = page.getByRole('row', { name: /Kids BJJ/ });
+  await expect(row.getByText('Cody Coach · North')).toBeVisible();
+  await expect(row.locator('td[data-cell="capacity"]')).toHaveText('20');
+  for (const label of ['Starts', 'Ends', 'Capacity', 'Branch', 'Instructor']) {
+    await expect(panel.getByText(label, { exact: true })).toHaveCount(0);
+  }
+  for (const text of ['Cody Coach', 'North', '20']) {
+    await expect(panel.getByText(text, { exact: true })).toHaveCount(0);
+  }
+  await expect(panel.locator('dl')).toHaveCount(0);
   // The row's ⋮ actions, as buttons under the content.
   for (const name of ['View bookings', 'Show QR', 'Roll call', 'Edit', 'Archive']) {
     await expect(panel.getByRole('button', { name, exact: true })).toBeVisible();
   }
-  // The row names the coach too.
-  await expect(page.getByRole('row', { name: /Kids BJJ/ }).getByText('Cody Coach · North')).toBeVisible();
 
   await panel.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(page.getByRole('dialog', { name: 'Edit class' })).toBeVisible();
@@ -158,7 +168,7 @@ test('Classes: the panel shows the picked class and its row actions under it (De
   await expect(page).toHaveURL(/\/classes\/[^/]+\/roll-call$/);
 });
 
-test('Timetable: rows name the coach, the panel shows the picked class, and Month uses the soft dot colours (Decision 455)', async ({ page }) => {
+test('Timetable: rows name the coach, the panel repeats nothing from the row, and Month uses the soft dot colours', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/timetable');
   const key = dateKey(new Date());
@@ -169,8 +179,13 @@ test('Timetable: rows name the coach, the panel shows the picked class, and Mont
   await entry.getByRole('button', { name: 'Kids BJJ', exact: true }).click();
   const panel = page.getByRole('complementary', { name: 'Class' });
   await expect(panel.getByText('Kids BJJ', { exact: true })).toBeVisible();
-  await expect(panel.getByText('Cody Coach', { exact: true })).toBeVisible();
-  await expect(panel.getByText('0 of 20 booked')).toBeVisible();
+  // The row shows the coach and branch, the time and the seats booked, and
+  // its day heading the date, so the panel doesn't repeat them.
+  await expect(entry.getByText('0 of 20 booked')).toBeVisible();
+  await expect(panel.getByText(/Cody Coach|North/)).toHaveCount(0);
+  await expect(panel.getByText(/of 20 booked/)).toHaveCount(0);
+  await expect(panel.getByText(/\d{1,2}:\d{2}/)).toHaveCount(0);
+  await expect(panel.locator('dl')).toHaveCount(0);
   await expect(panel.getByRole('button', { name: 'Open class', exact: true })).toBeVisible();
   // A one-off class has no slot to edit.
   await expect(panel.getByRole('button', { name: 'Edit slot' })).toHaveCount(0);

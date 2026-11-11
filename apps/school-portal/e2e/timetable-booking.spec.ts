@@ -2,8 +2,8 @@ import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
-/** The calendar itself, without the right-hand panel, which repeats the
- * selected class (Decision 455). */
+/** The calendar itself, without the right-hand panel, which names the
+ * selected class and holds its actions as buttons (Decision 455). */
 const calendar = (page: import('@playwright/test').Page) => page.locator('.u8n-page__body');
 
 /**

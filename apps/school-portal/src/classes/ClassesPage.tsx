@@ -18,7 +18,7 @@ import { formatLocale } from '../i18n/format';
 import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
 import { ClassAvatar } from '../schedule/ClassAvatar';
 import { ClassPanel } from '../schedule/ClassPanel';
-import { ScheduleSelect } from '../schedule/ScheduleSelect';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import '../schedule/schedule.css';
 
 export function ClassesPage() {
@@ -192,8 +192,11 @@ export function ClassesPage() {
   const actionsMenu = (c: ClassResponse) => <RowActionsMenu label={t('classes.actionsAria', { title: c.title })} actions={actionsFor(c)} />;
   const showPager = !isLoading && !error && (classes.length > 0 || pageIndex > 0);
 
-  // The selected class: only what this page already loads, and the row's own
-  // ⋮ actions under it (Decision 455, Q2).
+  // The selected class. The row already shows everything this page loads
+  // about it (name, status, coach · branch, Starts, Ends, Capacity and the
+  // tags), so the panel names the class and holds the row's actions as
+  // buttons, nothing more (DESIGN.md "nothing shown twice"; the owner's
+  // answer "B" on #545, 11 Nov 2026).
   const inspector =
     !isLoading && !error && selected ? (
       <ClassPanel
@@ -201,15 +204,6 @@ export function ClassesPage() {
         bannerUrl={selected.bannerUrl}
         colourKey={selected.timetableSlotId ?? selected.id}
         cancelled={!!selected.cancelledAt}
-        status={selected.archivedAt || selected.cancelledAt ? statusTags(selected) : null}
-        facts={[
-          { label: t('classes.columns.starts'), value: zonedTime(selected.startDate, selected) },
-          { label: t('classes.columns.ends'), value: zonedTime(selected.endDate, selected) },
-          { label: t('classes.columns.branch'), value: branchName(selected) },
-          { label: t('classes.columns.instructor'), value: instructorName(selected) ?? '—' },
-          { label: t('classes.columns.capacity'), value: selected.capacity ?? t('classes.unlimited') },
-        ]}
-        tags={tags(selected)}
         actions={actionsFor(selected)}
       />
     ) : undefined;
@@ -250,7 +244,7 @@ export function ClassesPage() {
               </label>
               <div className="u8s-toolbar__group u8s-toolbar__group--center">
                 {/* Decision 226 — archived Classes are hidden by default. */}
-                <label className="u8s-check">
+                <label className="ultm8-checkbox u8s-check">
                   <input
                     type="checkbox"
                     checked={showArchived}
@@ -267,7 +261,7 @@ export function ClassesPage() {
               </div>
             </div>
             <div className="u8s-toolbar__group">
-              <ScheduleSelect
+              <NewLookSelect
                 id="classes-when-filter"
                 label={t('classes.whenLabel')}
                 value={when}
@@ -282,7 +276,7 @@ export function ClassesPage() {
                 ]}
               />
               {disciplines.length > 0 ? (
-                <ScheduleSelect
+                <NewLookSelect
                   id="classes-discipline-filter"
                   label={t('classes.disciplineFilterLabel')}
                   value={disciplineFilter}

@@ -8277,7 +8277,9 @@ User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #541
 
 **Built in #545**
 5. **A right-hand panel on both pages** shows the selected class. On Classes that is the picked row (the first until another is picked); on Timetable it is the picked slot or class date in the Day and Week views (Month books from its dots and has no panel). It uses the shell's right panel (`NewLookPage`), and on a phone it sits below the list.
-   - It shows only what the page already loads: the 64px avatar and name, any status tag, the time, branch, coach, capacity or seats booked, and the tags.
+   - **It never repeats the selected row** (DESIGN.md "nothing shown twice"). The owner was asked whether the panel should keep repeating the row (A) or follow that rule (B), and answered "B" (11 Nov 2026). The panel shows the 64px avatar and the class name, as the Students and Team panels do, and then only what the row doesn't show.
+   - On Classes the row already shows the status tags, "coach · branch", Starts, Ends, Capacity and the tags, so the panel has no facts of its own.
+   - On Timetable the row already shows "coach · branch", the time, the seats booked, the tags and the status, and its day heading shows the date. The panel adds only a timetable slot's capacity, which its row doesn't show (a slot with no class yet has no seats line).
    - The row's own ⋮ actions sit as buttons straight under the content.
    - Nothing new is fetched from the API.
 6. **Timetable rows name the coach** as "coach · branch", as on Classes. The calendar already carries each class's and slot's instructor, and the page already loads the Instructors list, so no API change was needed.
@@ -8285,7 +8287,7 @@ User (Code), 11 Nov 2026: "ok to all, carry on", answering the questions on #541
 
 ### Recorded by
 
-User (Code), 11 Nov 2026: "ok to all, carry on", answering the 7 questions on #545.
+User (Code), 11 Nov 2026: "ok to all, carry on", answering the 7 questions on #545; and "B", answering whether the class panel keeps repeating the row (item 5).
 
 ---
 

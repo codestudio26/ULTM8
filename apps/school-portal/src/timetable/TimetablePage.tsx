@@ -48,7 +48,7 @@ import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
 import { ClassAvatar, classColourIndex } from '../schedule/ClassAvatar';
 import { ClassPanel } from '../schedule/ClassPanel';
-import { ScheduleSelect } from '../schedule/ScheduleSelect';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import '../schedule/schedule.css';
 
 type RangeMode = 'day' | 'week' | 'month';
@@ -296,7 +296,7 @@ export function TimetablePage() {
               <div className="u8s-toolbar__group u8s-toolbar__group--center">
                 {/* Decision 226 — archived slots are hidden from the whole calendar by default. */}
                 {canEdit ? (
-                  <label className="u8s-check">
+                  <label className="ultm8-checkbox u8s-check">
                     <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
                     {archivedCount ? t('timetable.showArchivedCount', { count: archivedCount }) : t('timetable.showArchived')}
                   </label>
@@ -310,7 +310,7 @@ export function TimetablePage() {
             </div>
             <div className="u8s-toolbar__group">
               {branches.length > 1 ? (
-                <ScheduleSelect
+                <NewLookSelect
                   id="tt-filter-branch"
                   label={t('timetable.filters.branch')}
                   value={branchFilter}
@@ -318,7 +318,7 @@ export function TimetablePage() {
                   options={[{ value: '', label: t('timetable.filters.allBranches') }, ...branches.filter((b) => !b.archivedAt).map((b) => ({ value: b.id, label: b.name }))]}
                 />
               ) : null}
-              <ScheduleSelect
+              <NewLookSelect
                 id="tt-filter-style"
                 label={t('timetable.filters.style')}
                 value={styleFilter}
@@ -329,7 +329,7 @@ export function TimetablePage() {
                 options={[{ value: '', label: t('timetable.filters.allStyles') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
               />
               {chosenStyle && chosenStyle.classTypesOffered.length > 0 ? (
-                <ScheduleSelect
+                <NewLookSelect
                   id="tt-filter-type"
                   label={t('timetable.filters.classType')}
                   value={classTypeFilter}
@@ -559,27 +559,24 @@ function OccurrenceCard({ entry, date, ctx }: { entry: CalendarEntry; date: stri
   );
 }
 
-/** The right-hand panel for the selected entry (Decision 455, Q2). */
+/** The right-hand panel for the selected entry. The row already shows the
+ * name, coach · branch, the time, the seats booked, the tags and the status,
+ * and its day heading shows the date, so the panel names the class and adds
+ * only what the row doesn't: a timetable slot's capacity (its row has no
+ * seats line). Then the row's actions as buttons (DESIGN.md "nothing shown
+ * twice"; the owner's answer "B" on #545, 11 Nov 2026). */
 function SelectedEntry({ entry, day, ctx }: { entry: CalendarEntry; day: DayOccurrences; ctx: EntryContext }) {
   const t = useT();
   const navigate = useNavigate();
   const d = describeEntry(entry, day.date, ctx, t, navigate);
-  const capacity = d.cls ? d.cls.capacity : d.slot?.capacity;
+  const facts = d.seats === null ? [{ label: t('timetable.form.capacityLabel'), value: d.slot?.capacity ?? '—' }] : [];
   return (
     <ClassPanel
       title={d.title}
       bannerUrl={d.bannerUrl}
       colourKey={d.colourKey}
       cancelled={d.cancelled}
-      status={d.status}
-      facts={[
-        { label: t('timetable.booking.dateLabel'), value: dayHeading(day) },
-        { label: t('timetable.booking.timingsLabel'), value: d.time },
-        { label: t('timetable.form.branchLabel'), value: d.branch },
-        { label: t('timetable.form.instructorLabel'), value: d.coach ?? '—' },
-        { label: t('timetable.form.capacityLabel'), value: d.seats ?? (capacity ?? '—') },
-      ]}
-      tags={<span className="u8s-tags">{d.activities}</span>}
+      facts={facts}
       actions={d.actions}
     />
   );

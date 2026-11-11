@@ -15,8 +15,6 @@
   --u8s-primary: #def2e2;
   --u8s-primary-hover: #cfead6;
   --u8s-primary-text: #50575e;
-  --u8s-green-text: #3a7556;
-  --u8s-option-on: #def2e2;
   --u8s-tag-bg: #edf0f2;
   --u8s-tag-text: #50575e;
   --u8s-tag-line: #c2c7cb;
@@ -54,8 +52,6 @@
     --u8s-primary: var(--nav-active-bg);
     --u8s-primary-hover: var(--nav-active-bg);
     --u8s-primary-text: var(--nav-active-text);
-    --u8s-green-text: #b9e3c8;
-    --u8s-option-on: var(--nav-active-bg);
     --u8s-tag-bg: rgba(255, 255, 255, 0.08);
     --u8s-tag-text: var(--text-secondary);
     --u8s-tag-line: var(--border-strong);
@@ -93,8 +89,6 @@
   --u8s-primary: var(--nav-active-bg);
   --u8s-primary-hover: var(--nav-active-bg);
   --u8s-primary-text: var(--nav-active-text);
-  --u8s-green-text: #b9e3c8;
-  --u8s-option-on: var(--nav-active-bg);
   --u8s-tag-bg: rgba(255, 255, 255, 0.08);
   --u8s-tag-text: var(--text-secondary);
   --u8s-tag-line: var(--border-strong);
@@ -201,8 +195,7 @@
   flex-direction: column;
   gap: 6px;
 }
-[data-look='redesign'] .u8s-field__label,
-[data-look='redesign'] .u8s-select__label {
+[data-look='redesign'] .u8s-field__label {
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.06em;
@@ -232,90 +225,6 @@
   font-size: 12px;
   color: var(--u8n-quiet);
   max-width: 260px;
-}
-
-/* Drop-downs (ScheduleSelect.tsx). */
-[data-look='redesign'] .u8s-select {
-  position: relative;
-  display: inline-flex;
-  flex-direction: column;
-  gap: 6px;
-  max-width: 100%;
-}
-[data-look='redesign'] .u8s-select__field {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  max-width: 100%;
-  padding: 0 12px 0 14px;
-  border: 1px solid transparent;
-  border-radius: 10px;
-  background: var(--u8s-field-bg);
-  color: var(--u8s-field-text);
-  font: inherit;
-  font-size: 14px;
-  text-align: start;
-  cursor: pointer;
-}
-[data-look='redesign'] .u8s-select__field[aria-expanded='true'],
-[data-look='redesign'] .u8s-select__field:focus-visible {
-  outline: none;
-  border-color: var(--u8s-ring);
-}
-[data-look='redesign'] .u8s-select__values {
-  display: grid;
-  min-width: 0;
-}
-[data-look='redesign'] .u8s-select__value {
-  grid-area: 1 / 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-[data-look='redesign'] .u8s-select__value[data-shown='false'] {
-  visibility: hidden;
-}
-[data-look='redesign'] .u8s-select__chevron {
-  flex: none;
-  color: var(--u8n-quiet);
-}
-/* The list opens under the field and pushes the content down. */
-[data-look='redesign'] .u8s-select__list {
-  margin: 0;
-  padding: 6px;
-  list-style: none;
-  min-width: 100%;
-  max-height: 264px;
-  overflow-y: auto;
-  box-sizing: border-box;
-  background: var(--u8n-surface);
-  border: 1px solid var(--u8n-line);
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(21, 23, 25, 0.1);
-}
-[data-look='redesign'] .u8s-select__option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 40px;
-  padding: 0 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  color: var(--u8s-field-text);
-  cursor: pointer;
-  white-space: nowrap;
-}
-[data-look='redesign'] .u8s-select__option--active {
-  background: var(--u8n-hover);
-}
-[data-look='redesign'] .u8s-select__option[aria-selected='true'] {
-  background: var(--u8s-option-on);
-  color: var(--u8n-row-on-text);
-}
-[data-look='redesign'] .u8s-select__option[aria-selected='true'] svg {
-  color: var(--u8s-green-text);
 }
 
 /* Pills: white with a grey outline; the main action is mint. */
@@ -355,7 +264,6 @@
   background: var(--u8s-primary-hover);
 }
 [data-look='redesign'] .u8s-pill:focus-visible,
-[data-look='redesign'] .u8s-check input:focus-visible,
 [data-look='redesign'] .u8s-switch button:focus-visible,
 [data-look='redesign'] .u8s-dot:focus-visible {
   outline: 2px solid var(--fill-accent);
@@ -370,13 +278,6 @@
   min-height: 44px;
   font-size: 14px;
   color: var(--u8n-text);
-  cursor: pointer;
-}
-[data-look='redesign'] .u8s-check input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  accent-color: var(--u8s-green-text);
   cursor: pointer;
 }
 
@@ -924,9 +825,6 @@
   text-align: end;
   color: var(--u8n-text);
 }
-[data-look='redesign'] .u8s-panel__tags {
-  padding-top: 14px;
-}
 /* The row's actions, 16px under the content, two to a row, equal widths. */
 [data-look='redesign'] .u8s-panel__actions {
   display: grid;
@@ -1037,13 +935,8 @@
     width: auto;
     font-size: 16px;
   }
-  [data-look='redesign'] .u8s-field input,
-  [data-look='redesign'] .u8s-select__field,
-  [data-look='redesign'] .u8s-select__option {
+  [data-look='redesign'] .u8s-field input {
     font-size: 16px;
-  }
-  [data-look='redesign'] .u8s-select__option {
-    min-height: 48px;
   }
   [data-look='redesign'] .u8s-avatar {
     width: 44px;
