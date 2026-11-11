@@ -719,6 +719,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Другие действия",
     columnSurcharge: "Надбавка за карту",
     surchargeLine: "+ {amount} надбавка за оплату картой",
     title: "Транзакции",

@@ -710,6 +710,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "การดำเนินการเพิ่มเติม",
     columnSurcharge: "ค่าธรรมเนียมบัตร",
     surchargeLine: "+ ค่าธรรมเนียมบัตร {amount}",
     title: "ธุรกรรม",

@@ -1,5 +1,7 @@
 export const transactions = {
   title: 'Transactions',
+  // The ⋯ button on a phone that holds Export CSV and the like (new look, Decision 453).
+  moreActions: 'More actions',
   subtitle: "Every completed or attempted charge against your School's Membership Plans.",
   loadFailed: 'Could not load Transactions.',
   statTotal: 'Total transactions',

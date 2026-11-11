@@ -1,6 +1,15 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { randomUUID } from 'crypto';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+
+/** Picks an option in one of the new look's own drop-downs (DESIGN.md →
+ * "Drop-downs"): a combobox named by its label, then the option by its text. */
+async function choose(scope: Page | Locator, label: string, option: string) {
+  const field = scope.getByRole('combobox', { name: label, exact: true });
+  await field.click();
+  await scope.getByRole('option', { name: option, exact: true }).click();
+  await expect(field.locator('[data-shown="true"]')).toHaveText(option);
+}
 
 /**
  * Decision 448 on the School Portal: the card surcharge as its own line in
@@ -53,14 +62,17 @@ test('Transactions: the card surcharge is its own tile, and a no-show fee is a r
   await tile('Card surcharges', '1\\.50 GBP');
   await expect(page.locator('tbody tr').filter({ hasText: 'No-show fee: Tuesday Fundamentals' })).toContainText('8.00');
 
-  await page.getByLabel('Type').selectOption('NO_SHOW_FEE');
+  await choose(page, 'Type', 'No-show fee');
   await expect(page.locator('tbody tr')).toHaveCount(1);
   await tile('Total revenue', '8\\.00 GBP');
   // No surcharge on a no-show fee: no tile.
   await expect(page.getByText(/^Card surcharges/)).toHaveCount(0);
 
   // Pix is not a method a UK School's payments can be filtered by.
-  await expect(page.locator('#tx-filter-method option[value="PIX"]')).toHaveCount(0);
+  await page.getByRole('combobox', { name: 'Method', exact: true }).click();
+  const methods = page.getByRole('listbox', { name: 'Method' });
+  await expect(methods.getByRole('option', { name: 'Cash', exact: true })).toBeVisible();
+  await expect(methods.getByRole('option', { name: 'Pix', exact: true })).toHaveCount(0);
 });
 
 test('Billing reports: the card surcharge is its own line, in the total too, and agrees with the Transactions page', async ({ page }) => {
