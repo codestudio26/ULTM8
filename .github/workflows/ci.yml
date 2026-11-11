@@ -287,7 +287,18 @@ jobs:
 
       - name: Install Chromium for Playwright
         working-directory: apps/school-portal
-        run: npx playwright install --with-deps chromium
+        # The system packages come from Ubuntu's mirrors, which the runner
+        # sometimes cannot reach (11 Nov 2026: DNS failures for an hour
+        # stopped every PR's browser tests before a single test ran). The
+        # hosted runner already has Chromium's libraries, so if that step
+        # fails or hangs, install the browser alone and let the tests decide:
+        # a library that is really missing still fails them loudly.
+        shell: bash
+        run: |
+          if ! timeout 300 npx playwright install --with-deps chromium; then
+            echo "::warning::Chromium system packages could not be installed (Ubuntu mirrors unreachable?); installing the browser only."
+            npx playwright install chromium
+          fi
 
       - name: Run the portal browser tests
         working-directory: apps/school-portal
