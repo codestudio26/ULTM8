@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /** The calendar itself, without the right-hand panel, which names the
  * selected class and holds its actions as buttons (Decision 455). */
@@ -128,7 +129,7 @@ test('picking today\'s occurrence opens the booking dialog, gates Confirm on a S
   const confirmBtn = dialog.getByRole('button', { name: 'Confirm' });
   await expect(confirmBtn).toBeDisabled();
 
-  await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
+  await pickOption(dialog, 'Student', 'Sam Lee');
   await expect(confirmBtn).toBeEnabled();
   await confirmBtn.click();
 

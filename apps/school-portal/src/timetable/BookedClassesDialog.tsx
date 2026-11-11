@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Modal } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions } from '@ultm8/ui';
 import { useT } from '../i18n/I18nProvider';
 import type { UpcomingImpactResponse } from './timetableQueries';
+import '../classes/classForms.css';
 
 export type BookedClassesChoice = 'MOVE' | 'CANCEL' | 'KEEP';
 
@@ -62,38 +63,30 @@ export function BookedClassesDialog({
       ) : null}
       {capacityCut ? <p>{t('timetable.bookedClasses.capacityCut', { taken: impact.mostTaken })}</p> : null}
       {options.length > 0 ? (
-        <fieldset style={{ border: 0, padding: 0, margin: '0 0 16px' }}>
-          <legend className="ultm8-field__label" style={{ marginBottom: 8 }}>
-            {t('timetable.bookedClasses.legend')}
-          </legend>
+        // The choices as the new look's option cards: still radios for the
+        // keyboard and screen readers, the chosen card white with a mint ring.
+        <fieldset className="u8cf-choices">
+          <legend className="ultm8-field__label">{t('timetable.bookedClasses.legend')}</legend>
           {options.map((option) => (
-            <label key={option} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginBottom: 10, cursor: 'pointer' }}>
-              <input
-                type="radio"
-                name="bookedClasses"
-                value={option}
-                checked={choice === option}
-                onChange={() => setChoice(option)}
-                style={{ marginTop: 3 }}
-              />
-              <span>
+            <label key={option} className="u8cf-choice">
+              <input type="radio" name="bookedClasses" value={option} checked={choice === option} onChange={() => setChoice(option)} />
+              <span className="u8cf-choice__text">
                 <strong>{labels[option].name}</strong>
-                <br />
-                <span style={{ color: 'var(--text-secondary)' }}>{labels[option].description}</span>
+                <span className="u8cf-choice__desc">{labels[option].description}</span>
               </span>
             </label>
           ))}
         </fieldset>
       ) : null}
-      <p style={{ color: 'var(--text-secondary)' }}>{t('timetable.bookedClasses.unbookedNote')}</p>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+      <p className="ultm8-field__hint">{t('timetable.bookedClasses.unbookedNote')}</p>
+      <ModalActions>
         <Button type="button" variant="secondary" onClick={onClose}>
           {t('common.cancel')}
         </Button>
         <Button type="button" loading={submitting} onClick={() => onConfirm(choice)}>
           {t('timetable.bookedClasses.save')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

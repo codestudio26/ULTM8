@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, Spinner } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { StudentSummary } from '../students/studentQueries';
 import type { InstructorResponse } from '../instructors/instructorQueries';
@@ -11,6 +11,8 @@ import { formatLocale } from '../i18n/format';
 import { useClassZone } from '../classes/useClassZone';
 import { endsNextDayInZone, formatTimeInZone } from '../lib/datetime';
 import { whoCanBookLabel } from '../classes/WhoCanBookFields';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../classes/classForms.css';
 
 /**
  * The Timetable redesign's click-to-book confirmation dialog — backlog doc's own
@@ -88,11 +90,11 @@ export function TimetableBookingDialog({
           ) : (
             <p>{t(occurrence.data.archivedAt ? 'timetable.booking.cancelled' : 'timetable.booking.ended')}</p>
           )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
-            <Button variant="secondary" onClick={onClose}>
+          <ModalActions>
+            <Button type="button" variant="secondary" onClick={onClose}>
               {t('timetable.booking.close')}
             </Button>
-          </div>
+          </ModalActions>
         </>
       ) : occurrence.data ? (
         <BookingForm
@@ -192,55 +194,57 @@ function BookingForm({
     <>
       {bookError ? <ErrorBanner message={bookError} /> : null}
 
-      <Field label={t('timetable.booking.studentLabel')} htmlFor="booking-student" hint={t('timetable.booking.studentHint')}>
-        <SelectField
+      <div className="u8n-dd-field">
+        <NewLookSelect
           id="booking-student"
+          label={t('timetable.booking.studentLabel')}
           value={studentId}
-          onChange={(e) => setStudentId(e.target.value)}
+          onChange={setStudentId}
           options={[
             { value: '', label: t('timetable.booking.selectStudent') },
             ...students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() })),
           ]}
         />
-      </Field>
-
-      <div className="ultm8-field">
-        <span className="ultm8-field__label">{t('timetable.booking.classLabel')}</span>
-        <p style={{ margin: '4px 0 0' }}>{occurrence.title}</p>
+        <span className="ultm8-field__hint u8n-dd-field__hint">{t('timetable.booking.studentHint')}</span>
       </div>
 
-      <div className="ultm8-field">
-        <span className="ultm8-field__label">{t('timetable.booking.instructorLabel')}</span>
-        <p style={{ margin: '4px 0 0' }}>
-          {instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—'}
-        </p>
-      </div>
+      {/* The class's details, read-only, in the calm grey card. */}
+      <dl className="u8cf-facts">
+        <div className="u8cf-facts__row">
+          <dt>{t('timetable.booking.classLabel')}</dt>
+          <dd>{occurrence.title}</dd>
+        </div>
+        <div className="u8cf-facts__row">
+          <dt>{t('timetable.booking.instructorLabel')}</dt>
+          <dd>{instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—'}</dd>
+        </div>
+        <div className="u8cf-facts__row">
+          <dt>{t('timetable.booking.timingsLabel')}</dt>
+          <dd>
+            {timings}
+            {breakLine ? <span className="u8cf-facts__sub">{breakLine}</span> : null}
+          </dd>
+        </div>
+        <div className="u8cf-facts__row">
+          <dt>{t('timetable.booking.dateLabel')}</dt>
+          <dd>{dateLabel}</dd>
+        </div>
+      </dl>
 
-      <div className="ultm8-field">
-        <span className="ultm8-field__label">{t('timetable.booking.timingsLabel')}</span>
-        <p style={{ margin: '4px 0 0' }}>{timings}</p>
-        {breakLine ? <p style={{ margin: '2px 0 0', color: 'var(--text-secondary)' }}>{breakLine}</p> : null}
-      </div>
-
-      <div className="ultm8-field">
-        <span className="ultm8-field__label">{t('timetable.booking.dateLabel')}</span>
-        <p style={{ margin: '4px 0 0' }}>{dateLabel}</p>
-      </div>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-        <Button variant="secondary" onClick={onClose} disabled={submitting}>
+      <ModalActions>
+        <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
           {t('common.cancel')}
         </Button>
         {full ? (
-          <Button onClick={onJoinWaitlist} disabled={!studentId} loading={submitting}>
+          <Button type="button" onClick={onJoinWaitlist} disabled={!studentId} loading={submitting}>
             {t('timetable.booking.addToWaitlist')}
           </Button>
         ) : (
-          <Button onClick={onConfirm} disabled={!studentId} loading={submitting}>
+          <Button type="button" onClick={onConfirm} disabled={!studentId} loading={submitting}>
             {t('timetable.booking.confirm')}
           </Button>
         )}
-      </div>
+      </ModalActions>
     </>
   );
 }

@@ -1,5 +1,7 @@
 import React from 'react';
-import { Button, Field, SelectField } from '@ultm8/ui';
+import { Button } from '@ultm8/ui';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../classes/classForms.css';
 import type { DisciplineResponse } from './disciplineQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
 import { disciplines as englishDisciplines } from '../i18n/messages/en/disciplines';
@@ -55,18 +57,22 @@ export function StylePicker({
   const update = (i: number, patch: Partial<StyleSelection>) => onChange(value.map((s, j) => (j === i ? { ...s, ...patch } : s)));
 
   return (
-    <div className="ultm8-field">
+    <div className="ultm8-field u8cf-styles">
       {value.map((row, i) => {
         const discipline = disciplines.find((d) => d.id === row.disciplineId);
         const types = discipline?.classTypesOffered ?? [];
         return (
-          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <Field label={i === 0 ? t('disciplines.stylePicker.style') : t('disciplines.stylePicker.styleNumbered', { number: i + 1 })} htmlFor={`${idPrefix}-style-${i}`}>
-              <SelectField
-                required
+          <div key={i} className="u8cf-styles__row">
+            {/* The new look's own drop-downs (DESIGN.md → "Drop-downs"). An
+                empty row is caught on save by styleSelectionProblem, the
+                same check the API makes. */}
+            <div className="u8n-dd-field">
+              <NewLookSelect
+                id={`${idPrefix}-style-${i}`}
+                label={i === 0 ? t('disciplines.stylePicker.style') : t('disciplines.stylePicker.styleNumbered', { number: i + 1 })}
                 value={row.disciplineId}
                 // A new style starts with no class type: the old one belonged to the previous style's list.
-                onChange={(e) => update(i, { disciplineId: e.target.value, classType: null })}
+                onChange={(v) => update(i, { disciplineId: v, classType: null })}
                 // An archived style is offered only on the row that already has it, so an
                 // older class or slot still saves (Decision 310); new rows can't pick it.
                 options={[
@@ -76,16 +82,17 @@ export function StylePicker({
                     .map((d) => ({ value: d.id, label: d.archivedAt ? t('disciplines.stylePicker.archivedName', { name: d.name }) : d.name })),
                 ]}
               />
-            </Field>
+            </div>
             {types.length > 0 ? (
-              <Field label={t('disciplines.stylePicker.classType')} htmlFor={`${idPrefix}-type-${i}`}>
-                <SelectField
-                  required
+              <div className="u8n-dd-field">
+                <NewLookSelect
+                  id={`${idPrefix}-type-${i}`}
+                  label={t('disciplines.stylePicker.classType')}
                   value={row.classType ?? ''}
-                  onChange={(e) => update(i, { classType: e.target.value || null })}
+                  onChange={(v) => update(i, { classType: v || null })}
                   options={[{ value: '', label: t('disciplines.stylePicker.selectClassType') }, ...types.map((type) => ({ value: type, label: type }))]}
                 />
-              </Field>
+              </div>
             ) : null}
             {value.length > 1 ? (
               <Button type="button" variant="secondary" onClick={() => onChange(value.filter((_, j) => j !== i))}>
