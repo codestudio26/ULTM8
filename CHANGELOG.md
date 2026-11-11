@@ -24,6 +24,9 @@ Post-v1.4.0 work on `master`.
   classes, Remove from the team) and a Team member panel. Buttons, tick boxes,
   selects and switches across the portal take the new look (mint main button,
   white outlined secondary, green tick). Same data, API calls and permissions.
+- **Fix: the Students list no longer scrolls sideways on a phone** (layout
+  only). The whole page measured ~594px on a 390px phone in Rows view; now
+  only the table scrolls, inside its card, as DESIGN.md → "Phone layout" says.
 - **Fix: School tax rate filled in even when the standard rates load late.** Picking the tax country before ULTM8's standard rates had loaded left the rate at 0; it now fills in when they arrive, unless the owner has typed a rate since.
 - **New look: Organisation** (Decision 453; visual only). Branches, Franchises,
   a Franchise's page and its Overview, and the School page have the new page
