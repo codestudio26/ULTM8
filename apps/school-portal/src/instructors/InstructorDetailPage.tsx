@@ -370,7 +370,7 @@ export function InstructorDetailPage() {
                     </Link>
                   }
                 >
-                  <ClassList classes={upcoming.slice(0, 2)} showBooked />
+                  <ClassList classes={upcoming.slice(0, 2)} showBooked branchOf={branchOf} />
                 </TeamCard>
               ) : null}
 
@@ -418,7 +418,7 @@ export function InstructorDetailPage() {
                     <EmptyState title={t('instructors.detail.upcomingEmptyTitle')} description={t('instructors.detail.upcomingEmptyDescription')} />
                   </div>
                 ) : (
-                  <ClassList classes={upcoming} showBooked />
+                  <ClassList classes={upcoming} showBooked branchOf={branchOf} />
                 )}
               </TeamCard>
 
@@ -441,7 +441,7 @@ export function InstructorDetailPage() {
 
               {past.length > 0 ? (
                 <TeamCard title={t('instructors.detail.pastHeading')}>
-                  <ClassList classes={showAllPast ? past : past.slice(0, PAST_SHOWN)} showBooked={false} />
+                  <ClassList classes={showAllPast ? past : past.slice(0, PAST_SHOWN)} showBooked={false} branchOf={branchOf} />
                   {past.length > PAST_SHOWN ? (
                     <div className="u8t-state">
                       <button type="button" className="u8t-pill u8t-pill--sm" onClick={() => setShowAllPast((v) => !v)}>
@@ -528,7 +528,9 @@ export function InstructorDetailPage() {
   );
 }
 
-function ClassList({ classes, showBooked }: { classes: InstructorClassResponse[]; showBooked: boolean }) {
+/** Each class: its title, then the date and its branch, and for upcoming
+ * ones how many are booked. */
+function ClassList({ classes, showBooked, branchOf }: { classes: InstructorClassResponse[]; showBooked: boolean; branchOf: (id: string) => string }) {
   const t = useT();
   return (
     <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
@@ -537,7 +539,7 @@ function ClassList({ classes, showBooked }: { classes: InstructorClassResponse[]
           <span className="u8t-li__main">
             <span className="u8t-li__title">{c.title}</span>
             <span className="u8t-sub" style={{ display: 'block' }}>
-              {formatDate(c.startDate)}
+              {c.branchId ? `${formatDate(c.startDate)} · ${branchOf(c.branchId)}` : formatDate(c.startDate)}
             </span>
           </span>
           {/* The count is of upcoming bookings, so it means nothing once a class is over. */}
