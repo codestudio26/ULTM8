@@ -3668,6 +3668,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "{title} için video yükle",
     uploadAgain: "Yeniden yükle",
     uploadAgainAria: "{title} videosunu yeniden yükle",
+    actionsAria: "{title} için işlemler",
     videoUploadsOff: "Video yükleme henüz ayarlanmadı. O zamana kadar dersler videosuz oluşturulup izlenebilir.",
     unarchive: "Arşivden çıkar",
     unarchiveAria: "{title} arşivden çıkar",

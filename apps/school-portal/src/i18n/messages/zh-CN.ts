@@ -3624,6 +3624,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "为 {title} 上传视频",
     uploadAgain: "重新上传",
     uploadAgainAria: "重新上传 {title} 的视频",
+    actionsAria: "{title} 的操作",
     videoUploadsOff: "视频上传尚未设置。在此之前，可以创建和观看没有视频的课程。",
     unarchive: "取消归档",
     unarchiveAria: "取消归档 {title}",

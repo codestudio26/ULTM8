@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, PageHeader, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, EmptyState, ErrorBanner, Field, Modal, RowActionsMenu, Spinner, SuccessBanner, TextField, type RowAction } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useInstructors, type InstructorResponse } from '../instructors/instructorQueries';
@@ -29,6 +29,8 @@ import { VideoUploadModal } from './VideoUploadModal';
 import { LessonCommentsModal } from './LessonCommentsModal';
 import { formatDuration } from './formatDuration';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import './curriculum.css';
 
 /** PENDING gets no badge at all — it's the common case (Decision 101's
  * pipeline was unbuilt until now) and badging every single row would just be
@@ -101,11 +103,23 @@ export function CurriculumPage() {
   const t = useT();
 
   if (!schoolId) return null;
-  if (isLoading || skillGroupsLoading || categoriesQuery.isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('curriculum.loadFailed')} />;
-  if (categoriesQuery.error) return <ErrorBanner message={errorText(categoriesQuery.error, t('curriculum.categoriesLoadFailed'))} />;
+
+  // The page header in the new look. Add lesson (owner only) appears once
+  // the page has loaded, as before.
+  const header = (actions?: React.ReactNode) => (
+    <NewLookPageHeader title={t('curriculum.title')} subtitle={canEdit ? t('curriculum.subtitle') : t('curriculum.readOnlySubtitle')} actions={actions} />
+  );
+  const blocked = (body: React.ReactNode) => (
+    <div className="u8c">
+      {header()}
+      {body}
+    </div>
+  );
+  if (isLoading || skillGroupsLoading || categoriesQuery.isLoading) return blocked(<Spinner />);
+  if (error) return blocked(<ErrorBanner message={error instanceof ApiError ? error.message : t('curriculum.loadFailed')} />);
+  if (categoriesQuery.error) return blocked(<ErrorBanner message={errorText(categoriesQuery.error, t('curriculum.categoriesLoadFailed'))} />);
   if (skillGroupsError) {
-    return <ErrorBanner message={skillGroupsError instanceof ApiError ? skillGroupsError.message : t('curriculum.skillsLoadFailed')} />;
+    return blocked(<ErrorBanner message={skillGroupsError instanceof ApiError ? skillGroupsError.message : t('curriculum.skillsLoadFailed')} />);
   }
 
   const lessons = data?.items ?? [];
@@ -137,160 +151,183 @@ export function CurriculumPage() {
     }
   }
 
-  const lessonColumns = (category: LessonCategory | null, inCategory: LessonResponse[]) => [
-    {
-      key: 'title',
-      header: t('curriculum.columnTitle'),
-      render: (l: LessonResponse) => (
-        <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-          {l.title}
-          {l.free ? <Badge variant="success">{t('curriculum.free')}</Badge> : null}
-          {captionStatusBadge(t, l.captionStatus)}
-          {l.archivedAt ? <Badge variant="default">{t('curriculum.archived')}</Badge> : null}
-        </span>
-      ),
-    },
-    {
-      key: 'format',
-      header: t('curriculum.columnFormat'),
-      render: (l: LessonResponse) => <Badge variant={l.format === 'LIVE' ? 'accent' : 'default'}>{l.format === 'LIVE' ? t('curriculum.formatLive') : t('curriculum.formatPrerecorded')}</Badge>,
-    },
-    {
-      key: 'duration',
-      header: t('curriculum.columnDuration'),
-      render: (l: LessonResponse) => (l.durationSeconds ? formatDuration(l.durationSeconds) : t('common.none')),
-    },
-    {
-      key: 'instructor',
-      header: t('curriculum.columnInstructor'),
-      render: (l: LessonResponse) => {
-        if (!l.instructorId) return t('common.none');
-        const instructor = instructors.find((i) => i.userId === l.instructorId);
-        // The coach's name, as the lesson form's own picker shows it; an id only
-        // if they're no longer in this School's instructor list.
-        return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() || instructor.userId : l.instructorId;
-      },
-    },
-    { key: 'skills', header: t('curriculum.columnSkills'), render: (l: LessonResponse) => l.skillIds.length },
-    {
-      key: 'actions',
-      header: '',
-      render: (l: LessonResponse) => {
-        const i = inCategory.indexOf(l);
-        // Comments panel (Decision 326): an archived lesson's comments stay
-        // hidden until it's unarchived.
-        const comments = l.archivedAt ? null : (
-          <Button variant="secondary" onClick={() => setCommentsFor(l)} aria-label={t('curriculum.comments.openAria', { title: l.title, count: l.commentCount })}>
-            {t('curriculum.comments.button', { count: l.commentCount })}
-          </Button>
-        );
-        if (!canEdit) return comments;
-        return (
-          <div style={{ display: 'flex', gap: 6 }}>
-            {comments}
-            {category ? (
-              <>
-                <Button variant="secondary" onClick={() => moveLesson(category, inCategory, i, -1)} disabled={i === 0} aria-label={t('curriculum.moveUpAria', { name: l.title })}>
-                  ↑
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => moveLesson(category, inCategory, i, 1)}
-                  disabled={i === inCategory.length - 1}
-                  aria-label={t('curriculum.moveDownAria', { name: l.title })}
-                >
-                  ↓
-                </Button>
-              </>
-            ) : null}
-            <Button variant="secondary" onClick={() => setEditing(l)} aria-label={t('curriculum.editAria', { name: l.title })}>
-              {t('curriculum.edit')}
+  const instructorName = (l: LessonResponse) => {
+    if (!l.instructorId) return t('common.none');
+    const instructor = instructors.find((i) => i.userId === l.instructorId);
+    // The coach's name, as the lesson form's own picker shows it; an id only
+    // if they're no longer in this School's instructor list.
+    return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() || instructor.userId : l.instructorId;
+  };
+
+  /** The row's ⋮ menu: Upload video, Archive or Unarchive, and Delete. */
+  const menuActions = (l: LessonResponse): RowAction[] => {
+    const actions: RowAction[] = [];
+    // Offered while there's no video yet or the last one failed, and as
+    // "Upload again" while one is processing, in case its upload never
+    // arrived (C5). Replacing a ready video isn't built. Greyed out, with the
+    // reason under it, until video uploads are set up (C4).
+    if (l.captionStatus !== 'READY') {
+      actions.push({
+        label: t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgain' : 'curriculum.uploadVideo'),
+        disabled: !videoUploadsOn,
+        hint: videoUploadsOn ? undefined : t('curriculum.videoUploadsOff'),
+        onClick: () => setUploadingVideoFor(l),
+      });
+    }
+    // Decision 226 — reversible alternative to Delete below, same
+    // School-Owner gate; no dependents to block it today.
+    if (l.archivedAt) {
+      actions.push({
+        label: t('curriculum.unarchive'),
+        onClick: () => {
+          setActionError(null);
+          unarchiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.unarchiveFailed'))));
+        },
+      });
+    } else {
+      actions.push({
+        label: t('curriculum.archive'),
+        onClick: () => {
+          setActionError(null);
+          archiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.archiveFailed'))));
+        },
+      });
+    }
+    actions.push({ label: t('curriculum.delete'), variant: 'danger', onClick: () => setDeleting(l) });
+    return actions;
+  };
+
+  const lessonActions = (l: LessonResponse, category: LessonCategory | null, inCategory: LessonResponse[]) => {
+    const i = inCategory.indexOf(l);
+    // Comments panel (Decision 326): an archived lesson's comments stay
+    // hidden until it's unarchived.
+    const comments = l.archivedAt ? null : (
+      <Button variant="secondary" className="u8c-btn-sm" onClick={() => setCommentsFor(l)} aria-label={t('curriculum.comments.openAria', { title: l.title, count: l.commentCount })}>
+        {t('curriculum.comments.button', { count: l.commentCount })}
+      </Button>
+    );
+    if (!canEdit) return comments ? <div className="u8c-actions">{comments}</div> : null;
+    return (
+      <div className="u8c-actions">
+        {comments}
+        {category ? (
+          <>
+            <Button
+              variant="secondary"
+              className="u8c-btn-sm u8c-btn-icon"
+              onClick={() => moveLesson(category, inCategory, i, -1)}
+              disabled={i === 0}
+              aria-label={t('curriculum.moveUpAria', { name: l.title })}
+            >
+              ↑
             </Button>
-            {/* Offered while there's no video yet or the last one failed, and
-                as "Upload again" while one is processing, in case its upload
-                never arrived (C5). Replacing a ready video isn't built. Greyed
-                out until video uploads are set up (C4). */}
-            {l.captionStatus !== 'READY' ? (
-              <Button
-                variant="secondary"
-                disabled={!videoUploadsOn}
-                title={videoUploadsOn ? undefined : t('curriculum.videoUploadsOff')}
-                onClick={() => setUploadingVideoFor(l)}
-                aria-label={t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgainAria' : 'curriculum.uploadVideoAria', { title: l.title })}
-              >
-                {t(l.captionStatus === 'PROCESSING' ? 'curriculum.uploadAgain' : 'curriculum.uploadVideo')}
-              </Button>
-            ) : null}
-            {/* Decision 226 — reversible alternative to Delete below, same
-                School-Owner gate; no dependents to block it today. */}
-            {l.archivedAt ? (
-              <Button
-                variant="secondary"
-                onClick={() => { setActionError(null); unarchiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.unarchiveFailed')))); }}
-                aria-label={t('curriculum.unarchiveAria', { title: l.title })}
-              >
-                {t('curriculum.unarchive')}
-              </Button>
-            ) : (
-              <Button
-                variant="secondary"
-                onClick={() => { setActionError(null); archiveLesson.mutateAsync(l.id).catch((err) => setActionError(errorText(err, t('curriculum.archiveFailed')))); }}
-                aria-label={t('curriculum.archiveAria', { title: l.title })}
-              >
-                {t('curriculum.archive')}
-              </Button>
-            )}
-            <Button variant="secondary" onClick={() => setDeleting(l)} aria-label={t('curriculum.deleteAria', { title: l.title })}>
-              {t('curriculum.delete')}
+            <Button
+              variant="secondary"
+              className="u8c-btn-sm u8c-btn-icon"
+              onClick={() => moveLesson(category, inCategory, i, 1)}
+              disabled={i === inCategory.length - 1}
+              aria-label={t('curriculum.moveDownAria', { name: l.title })}
+            >
+              ↓
             </Button>
-          </div>
-        );
-      },
-    },
-  ];
+          </>
+        ) : null}
+        <Button variant="secondary" className="u8c-btn-sm" onClick={() => setEditing(l)} aria-label={t('curriculum.editAria', { name: l.title })}>
+          {t('curriculum.edit')}
+        </Button>
+        {/* The rest sit in the row's ⋮ menu (product owner, 11 Nov 2026),
+            each with the same gate and disabled state as before. */}
+        <RowActionsMenu label={t('curriculum.actionsAria', { title: l.title })} actions={menuActions(l)} />
+      </div>
+    );
+  };
+
+  /** One category's lessons: a tidy table on a computer, a card per lesson
+   * on a phone (curriculum.css). Same columns and buttons as before. */
+  const lessonTable = (category: LessonCategory | null, inCategory: LessonResponse[]) => {
+    const label = (text: string) => (
+      <span className="u8c-cell-label" aria-hidden="true">
+        {text}
+      </span>
+    );
+    return (
+      <div className="u8c-table-scroll">
+        <table className="u8c-table">
+          <thead>
+            <tr>
+              <th>{t('curriculum.columnTitle')}</th>
+              <th>{t('curriculum.columnFormat')}</th>
+              <th>{t('curriculum.columnDuration')}</th>
+              <th>{t('curriculum.columnInstructor')}</th>
+              <th>{t('curriculum.columnSkills')}</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {inCategory.map((l) => (
+              <tr key={l.id}>
+                <td>
+                  <span className="u8c-title">
+                    <span className="u8c-name">{l.title}</span>
+                    {l.free ? <Badge variant="success">{t('curriculum.free')}</Badge> : null}
+                    {captionStatusBadge(t, l.captionStatus)}
+                    {l.archivedAt ? <Badge variant="default">{t('curriculum.archived')}</Badge> : null}
+                  </span>
+                </td>
+                <td className="u8c-num">
+                  <Badge variant={l.format === 'LIVE' ? 'accent' : 'default'}>{l.format === 'LIVE' ? t('curriculum.formatLive') : t('curriculum.formatPrerecorded')}</Badge>
+                </td>
+                <td className="u8c-num">
+                  {label(t('curriculum.columnDuration'))}
+                  {l.durationSeconds ? formatDuration(l.durationSeconds) : t('common.none')}
+                </td>
+                <td>
+                  {label(t('curriculum.columnInstructor'))}
+                  {instructorName(l)}
+                </td>
+                <td className="u8c-num">
+                  {label(t('curriculum.columnSkills'))}
+                  {l.skillIds.length}
+                </td>
+                <td>{lessonActions(l, category, inCategory)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   return (
-    <>
-      <PageHeader
-        title={t('curriculum.title')}
-        subtitle={canEdit ? t('curriculum.subtitle') : t('curriculum.readOnlySubtitle')}
-        actions={canEdit ? <Button onClick={() => setCreating(true)}>{t('curriculum.addLesson')}</Button> : null}
-      />
+    <div className="u8c">
+      {header(canEdit ? <Button onClick={() => setCreating(true)}>{t('curriculum.addLesson')}</Button> : null)}
       {moveError ? <ErrorBanner message={moveError} /> : null}
       {actionError ? <ErrorBanner message={actionError} /> : null}
       {uploadMessage ? <SuccessBanner message={uploadMessage} /> : null}
-      {canEdit && !videoUploadsOn ? <p className="ultm8-field__hint">{t('curriculum.videoUploadsOff')}</p> : null}
+      {canEdit && !videoUploadsOn ? <p className="u8c-info">{t('curriculum.videoUploadsOff')}</p> : null}
       {canEdit ? <CategoriesCard schoolId={schoolId} categories={categories} onMove={moveCategory} onRename={setRenaming} onDelete={setDeletingCategory} /> : null}
 
       {lessons.length === 0 ? (
-        <Card>
+        <section className="u8c-card">
           <EmptyState title={t('curriculum.emptyTitle')} description={canEdit ? t('curriculum.emptyDescription') : t('curriculum.emptyReadOnly')} />
-        </Card>
+        </section>
       ) : (
         <>
           {categories.map((c) => {
             const inCategory = lessons.filter((l) => l.categoryId === c.id);
             return (
-              <Card key={c.id} className="ultm8-field">
-                <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-                  {c.name}
-                </h2>
-                {inCategory.length === 0 ? (
-                  <p className="ultm8-field__hint">{t('curriculum.noLessonsInCategory')}</p>
-                ) : (
-                  <Table<LessonResponse> rows={inCategory} columns={lessonColumns(c, inCategory)} />
-                )}
-              </Card>
+              <section key={c.id} className="u8c-card u8c-card--flush">
+                <h2 className="u8c-card__title">{c.name}</h2>
+                {inCategory.length === 0 ? <p className="u8c-hint">{t('curriculum.noLessonsInCategory')}</p> : lessonTable(c, inCategory)}
+              </section>
             );
           })}
           {uncategorised.length > 0 ? (
-            <Card className="ultm8-field">
-              <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-                {t('curriculum.noCategory')}
-              </h2>
-              {canEdit ? <p className="ultm8-field__hint">{t('curriculum.uncategorisedHint')}</p> : null}
-              <Table<LessonResponse> rows={uncategorised} columns={lessonColumns(null, uncategorised)} />
-            </Card>
+            <section className="u8c-card u8c-card--flush">
+              <h2 className="u8c-card__title">{t('curriculum.noCategory')}</h2>
+              {canEdit ? <p className="u8c-hint">{t('curriculum.uncategorisedHint')}</p> : null}
+              {lessonTable(null, uncategorised)}
+            </section>
           ) : null}
         </>
       )}
@@ -350,7 +387,7 @@ export function CurriculumPage() {
           }}
         />
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -391,29 +428,37 @@ function CategoriesCard({
   }
 
   return (
-    <Card className="ultm8-field">
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-        {t('curriculum.categories.title')}
-      </h2>
+    <section className="u8c-card">
+      <h2 className="u8c-card__title">{t('curriculum.categories.title')}</h2>
       {error ? <ErrorBanner message={error} /> : null}
       {categories.length === 0 ? (
-        <p className="ultm8-field__hint">{t('curriculum.categories.empty')}</p>
+        <p className="u8c-hint">{t('curriculum.categories.empty')}</p>
       ) : (
-        <ol aria-label={t('curriculum.categories.title')} style={{ paddingLeft: 20 }}>
+        <ol aria-label={t('curriculum.categories.title')} className="u8c-cats">
           {categories.map((c, i) => (
-            <li key={c.id} aria-label={c.name} style={{ marginBottom: 6 }}>
-              <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
-                <strong>{c.name}</strong>
-                <Button variant="secondary" onClick={() => onMove(i, -1)} disabled={i === 0} aria-label={t('curriculum.moveUpAria', { name: c.name })}>
+            <li key={c.id} aria-label={c.name} className="u8c-cat">
+              {/* The list's own number, as the old numbered list showed it. */}
+              <span className="u8c-cat__num" aria-hidden="true">
+                {i + 1}
+              </span>
+              <strong className="u8c-cat__name">{c.name}</strong>
+              <span className="u8c-actions">
+                <Button variant="secondary" className="u8c-btn-sm u8c-btn-icon" onClick={() => onMove(i, -1)} disabled={i === 0} aria-label={t('curriculum.moveUpAria', { name: c.name })}>
                   ↑
                 </Button>
-                <Button variant="secondary" onClick={() => onMove(i, 1)} disabled={i === categories.length - 1} aria-label={t('curriculum.moveDownAria', { name: c.name })}>
+                <Button
+                  variant="secondary"
+                  className="u8c-btn-sm u8c-btn-icon"
+                  onClick={() => onMove(i, 1)}
+                  disabled={i === categories.length - 1}
+                  aria-label={t('curriculum.moveDownAria', { name: c.name })}
+                >
                   ↓
                 </Button>
-                <Button variant="secondary" onClick={() => onRename(c)} aria-label={t('curriculum.categories.renameAria', { name: c.name })}>
+                <Button variant="secondary" className="u8c-btn-sm" onClick={() => onRename(c)} aria-label={t('curriculum.categories.renameAria', { name: c.name })}>
                   {t('curriculum.categories.rename')}
                 </Button>
-                <Button variant="secondary" onClick={() => onDelete(c)} aria-label={t('curriculum.categories.deleteAria', { name: c.name })}>
+                <Button variant="secondary" className="u8c-btn-sm" onClick={() => onDelete(c)} aria-label={t('curriculum.categories.deleteAria', { name: c.name })}>
                   {t('curriculum.delete')}
                 </Button>
               </span>
@@ -421,7 +466,7 @@ function CategoriesCard({
           ))}
         </ol>
       )}
-      <form onSubmit={add} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+      <form onSubmit={add} className="u8c-add">
         <Field label={t('curriculum.categories.newLabel')} htmlFor="new-lesson-category">
           <TextField id="new-lesson-category" value={name} placeholder={t('curriculum.categories.newPlaceholder')} onChange={(e) => setName(e.target.value)} />
         </Field>
@@ -429,7 +474,7 @@ function CategoriesCard({
           {t('curriculum.categories.add')}
         </Button>
       </form>
-    </Card>
+    </section>
   );
 }
 
@@ -457,7 +502,7 @@ function RenameCategoryModal({ schoolId, category, onClose }: { schoolId: string
         <Field label={t('curriculum.categories.nameLabel')} htmlFor="rename-lesson-category">
           <TextField id="rename-lesson-category" required value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="u8c-buttons">
           <Button type="submit" loading={rename.isPending}>
             {t('common.save')}
           </Button>

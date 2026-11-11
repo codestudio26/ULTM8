@@ -17,7 +17,9 @@ test.afterAll(cleanup);
 test('the owner deletes a lesson, then the skill it used, and an unused belt', async ({ page }) => {
   await signIn(page, s.ownerToken);
   await page.goto('/curriculum');
-  await page.getByRole('button', { name: 'Delete Armbar from guard' }).click();
+  // Delete sits in the lesson row's ⋮ menu.
+  await page.getByRole('button', { name: 'Actions for Armbar from guard' }).click();
+  await page.getByRole('menu', { name: 'Actions for Armbar from guard' }).getByRole('menuitem', { name: 'Delete', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'Delete Armbar from guard?' });
   await dialog.getByRole('button', { name: 'Delete' }).click();
   await expect(dialog).toBeHidden();

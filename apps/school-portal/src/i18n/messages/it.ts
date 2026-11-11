@@ -3668,6 +3668,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "Carica video per {title}",
     uploadAgain: "Carica di nuovo",
     uploadAgainAria: "Carica di nuovo il video di {title}",
+    actionsAria: "Azioni per {title}",
     videoUploadsOff: "Il caricamento dei video non è ancora configurato. Nel frattempo le lezioni si possono creare e guardare senza video.",
     unarchive: "Ripristina",
     unarchiveAria: "Ripristina {title}",

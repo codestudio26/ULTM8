@@ -3668,6 +3668,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "Enviar vídeo para {title}",
     uploadAgain: "Enviar novamente",
     uploadAgainAria: "Enviar novamente o vídeo de {title}",
+    actionsAria: "Ações para {title}",
     videoUploadsOff: "O envio de vídeos ainda não está configurado. Até lá, as aulas podem ser criadas e assistidas sem vídeo.",
     unarchive: "Desarquivar",
     unarchiveAria: "Desarquivar {title}",

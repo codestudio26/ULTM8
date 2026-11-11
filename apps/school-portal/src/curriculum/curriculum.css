@@ -1,0 +1,602 @@
+/* The Curriculum page in the new look (CurriculumPage.tsx and its dialogs:
+ * LessonFormModal, VideoUploadModal, LessonCommentsModal). The approved design
+ * doesn't draw a Curriculum screen, so the page keeps its layout and features
+ * and takes the new look's header, cards, lists, tags, notes and controls
+ * (DESIGN-BRIEF §8 "Template rules"; DESIGN.md → "Phone layout", "One accent:
+ * mint", "Never the same colour twice"). Buttons, tick boxes, text fields and
+ * dialogs are the portal-wide ones (packages/ui/src/redesign-fixes.css).
+ * Built on the shell's --u8n-* colours (layout/newLookShell.css), so dark mode
+ * follows. Scoped to [data-look='redesign'], which the portal always sets
+ * (Decision 453). */
+
+[data-look='redesign'] {
+  --u8c-head-bg: #f9fafa;
+  --u8c-note-bg: #edf0f2;
+  --u8c-note-text: #50575e;
+  --u8c-ok-bg: #e3f1ea;
+  --u8c-ok-text: #3a7556;
+  --u8c-ok-line: #b7dcc6;
+  --u8c-bad-bg: #fbe9e9;
+  --u8c-bad-text: #a12a2a;
+  --u8c-bad-line: #efc4c4;
+  --u8c-info-bg: #e5ecf6;
+  --u8c-info-text: #2b4f80;
+  --u8c-info-line: #c3d3ea;
+  --u8c-plain-bg: #edf0f2;
+  --u8c-plain-text: #50575e;
+  --u8c-plain-line: #c2c7cb;
+  --u8c-num-bg: #edf0f2;
+  --u8c-num-text: #50575e;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8c-head-bg: rgba(255, 255, 255, 0.03);
+    --u8c-note-bg: rgba(255, 255, 255, 0.06);
+    --u8c-note-text: var(--text-secondary);
+    --u8c-ok-bg: rgba(159, 211, 178, 0.16);
+    --u8c-ok-text: #b9e3c8;
+    --u8c-ok-line: rgba(159, 211, 178, 0.4);
+    --u8c-bad-bg: rgba(241, 153, 153, 0.14);
+    --u8c-bad-text: #f5b8b8;
+    --u8c-bad-line: rgba(241, 153, 153, 0.4);
+    --u8c-info-bg: rgba(168, 197, 234, 0.14);
+    --u8c-info-text: #c4d6ef;
+    --u8c-info-line: rgba(168, 197, 234, 0.4);
+    --u8c-plain-bg: rgba(255, 255, 255, 0.08);
+    --u8c-plain-text: var(--text-secondary);
+    --u8c-plain-line: var(--border-strong);
+    --u8c-num-bg: rgba(255, 255, 255, 0.08);
+    --u8c-num-text: var(--text-secondary);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8c-head-bg: rgba(255, 255, 255, 0.03);
+  --u8c-note-bg: rgba(255, 255, 255, 0.06);
+  --u8c-note-text: var(--text-secondary);
+  --u8c-ok-bg: rgba(159, 211, 178, 0.16);
+  --u8c-ok-text: #b9e3c8;
+  --u8c-ok-line: rgba(159, 211, 178, 0.4);
+  --u8c-bad-bg: rgba(241, 153, 153, 0.14);
+  --u8c-bad-text: #f5b8b8;
+  --u8c-bad-line: rgba(241, 153, 153, 0.4);
+  --u8c-info-bg: rgba(168, 197, 234, 0.14);
+  --u8c-info-text: #c4d6ef;
+  --u8c-info-line: rgba(168, 197, 234, 0.4);
+  --u8c-plain-bg: rgba(255, 255, 255, 0.08);
+  --u8c-plain-text: var(--text-secondary);
+  --u8c-plain-line: var(--border-strong);
+  --u8c-num-bg: rgba(255, 255, 255, 0.08);
+  --u8c-num-text: var(--text-secondary);
+}
+
+/* ------------------------------------------------------------------ Page */
+
+[data-look='redesign'] .u8c {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8c > .u8n-page-header {
+  margin-bottom: 8px;
+}
+[data-look='redesign'] .u8c strong {
+  font-weight: 500;
+}
+
+/* Notes in place of the old banners (same roles: an error is an alert, a
+ * success a status). */
+[data-look='redesign'] .u8c .ultm8-banner {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+[data-look='redesign'] .u8c .ultm8-banner--error {
+  background: var(--u8c-bad-bg);
+  color: var(--u8c-bad-text);
+  box-shadow: inset 0 0 0 1px var(--u8c-bad-line);
+}
+[data-look='redesign'] .u8c .ultm8-banner--success {
+  background: var(--u8c-ok-bg);
+  color: var(--u8c-ok-text);
+  box-shadow: inset 0 0 0 1px var(--u8c-ok-line);
+}
+/* A grey info note ("Video uploads aren't set up yet"). */
+[data-look='redesign'] .u8c-info {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--u8c-note-bg);
+  color: var(--u8c-note-text);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* ------------------------------------------------------------------ Cards */
+
+[data-look='redesign'] .u8c-card {
+  background: var(--u8n-surface);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  padding: 20px;
+  min-width: 0;
+  color: var(--u8n-text);
+}
+/* Not clipped: a row's ⋮ menu opens below the row and may reach past the
+ * card's edge. */
+[data-look='redesign'] .u8c-card--flush {
+  padding: 0;
+}
+[data-look='redesign'] .u8c-card__title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+[data-look='redesign'] .u8c-card--flush > .u8c-card__title {
+  margin: 0;
+  padding: 18px 20px 14px;
+}
+[data-look='redesign'] .u8c-hint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8c-card--flush > .u8c-hint {
+  padding: 0 20px 14px;
+}
+[data-look='redesign'] .u8c-card--flush > .u8c-hint:last-child {
+  padding-bottom: 20px;
+}
+[data-look='redesign'] .u8c-card .ultm8-state {
+  padding: 32px 12px;
+}
+[data-look='redesign'] .u8c-card .ultm8-state__title {
+  font-size: 16px;
+  font-weight: 500;
+}
+[data-look='redesign'] .u8c-card > .ultm8-banner {
+  margin-bottom: 12px;
+}
+
+/* Small pill buttons in a row: 36px tall, still a 44px target. */
+[data-look='redesign'] .ultm8-btn.u8c-btn-sm {
+  position: relative;
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+[data-look='redesign'] .ultm8-btn.u8c-btn-sm::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+/* ↑ and ↓: round icon buttons. */
+[data-look='redesign'] .ultm8-btn.u8c-btn-icon {
+  width: 36px;
+  padding: 0;
+  font-size: 15px;
+}
+[data-look='redesign'] .ultm8-btn.u8c-btn-icon::after {
+  inset: -4px;
+}
+
+/* The row's ⋮ menu (RowActionsMenu): a round, white, outlined button and a
+ * white card of items, as on the other new-look pages. */
+[data-look='redesign'] .u8c .ultm8-row-actions__trigger {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--u8n-surface);
+  border: 1px solid var(--u8n-field-line);
+  color: var(--u8n-tile-icon);
+  position: relative;
+}
+[data-look='redesign'] .u8c .ultm8-row-actions__trigger::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+}
+[data-look='redesign'] .u8c .ultm8-row-actions__trigger:hover,
+[data-look='redesign'] .u8c .ultm8-row-actions__trigger[aria-expanded='true'] {
+  background: var(--u8n-hover);
+  border-color: var(--u8n-text);
+}
+[data-look='redesign'] .u8c .ultm8-row-actions__menu {
+  min-width: 200px;
+  border-radius: 12px;
+  border-color: var(--u8n-line);
+  background: var(--u8n-surface);
+  box-shadow: 0 6px 20px rgba(21, 23, 25, 0.08);
+  text-align: start;
+}
+[data-look='redesign'] .u8c .ultm8-row-actions__item {
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--u8n-text);
+  text-align: start;
+}
+[data-look='redesign'] .u8c .ultm8-row-actions__item:not(:disabled):hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8c .ultm8-row-actions__item:disabled {
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8c .ultm8-row-actions__item--danger {
+  color: var(--u8c-bad-text);
+}
+[data-look='redesign'] .u8c .ultm8-row-actions__hint {
+  font-size: 12px;
+  color: var(--u8n-quiet);
+}
+
+[data-look='redesign'] .u8c-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* ---------------------------------------------------------- Categories */
+
+[data-look='redesign'] .u8c-cats {
+  list-style: none;
+  margin: 0 -20px;
+  padding: 0;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8c-cat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8c-cat__num {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--u8c-num-bg);
+  color: var(--u8c-num-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+[data-look='redesign'] .u8c-cat__name {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8c-cats + .u8c-add,
+[data-look='redesign'] .u8c-card > .u8c-hint + .u8c-add {
+  margin-top: 16px;
+}
+[data-look='redesign'] .u8c-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+[data-look='redesign'] .u8c-add .ultm8-field {
+  flex: 0 1 320px;
+  min-width: 0;
+  margin: 0;
+}
+[data-look='redesign'] .u8c-add .ultm8-btn {
+  min-height: var(--form-field-height, 44px);
+}
+
+/* --------------------------------------------------------- Lesson table */
+
+[data-look='redesign'] .u8c-table-scroll {
+  overflow: visible;
+}
+[data-look='redesign'] .u8c-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8c-table th {
+  padding: 12px;
+  background: var(--u8c-head-bg);
+  text-align: start;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-subtle);
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8c-table td {
+  padding: 12px;
+  border-top: 1px solid var(--u8n-line);
+  vertical-align: middle;
+}
+[data-look='redesign'] .u8c-table th:first-child,
+[data-look='redesign'] .u8c-table td:first-child {
+  padding-inline-start: 20px;
+}
+[data-look='redesign'] .u8c-table th:last-child,
+[data-look='redesign'] .u8c-table td:last-child {
+  padding-inline-end: 20px;
+}
+[data-look='redesign'] .u8c-table td.u8c-num {
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8c-table tbody tr:hover td {
+  background: var(--u8n-hover);
+}
+/* Names in a list row: 15px, 0.06em (DESIGN.md typography). */
+[data-look='redesign'] .u8c-title {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+[data-look='redesign'] .u8c-name {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--u8n-tile-icon);
+}
+/* The column name in front of a value, shown only on a phone card. */
+[data-look='redesign'] .u8c-cell-label {
+  display: none;
+}
+
+/* Status and type tags (DESIGN.md → "One accent: mint"): small, 4px corners,
+ * a thin line in a darker shade of their own colour. */
+[data-look='redesign'] .u8c .ultm8-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  background: var(--u8c-plain-bg);
+  color: var(--u8c-plain-text);
+  box-shadow: inset 0 0 0 1px var(--u8c-plain-line);
+}
+[data-look='redesign'] .u8c .ultm8-badge--success {
+  background: var(--u8c-ok-bg);
+  color: var(--u8c-ok-text);
+  box-shadow: inset 0 0 0 1px var(--u8c-ok-line);
+}
+[data-look='redesign'] .u8c .ultm8-badge--accent {
+  background: var(--u8c-info-bg);
+  color: var(--u8c-info-text);
+  box-shadow: inset 0 0 0 1px var(--u8c-info-line);
+}
+[data-look='redesign'] .u8c .ultm8-badge--danger {
+  background: var(--u8c-bad-bg);
+  color: var(--u8c-bad-text);
+  box-shadow: inset 0 0 0 1px var(--u8c-bad-line);
+}
+
+/* ------------------------------------------------------------- Dialogs */
+
+/* The new look's drop-downs in the lesson form, with the hint under them. */
+[data-look='redesign'] .u8c-dd {
+  margin-bottom: var(--space-4);
+}
+[data-look='redesign'] .u8c-dd .ultm8-field__hint {
+  margin: 6px 0 0;
+}
+[data-look='redesign'] .u8c-duration {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+[data-look='redesign'] .u8c-duration .ultm8-field {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8c-skills {
+  margin-top: 8px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--u8c-head-bg);
+  box-shadow: inset 0 0 0 1px var(--u8n-line);
+}
+[data-look='redesign'] .u8c-skills__group + .u8c-skills__group {
+  margin-top: 12px;
+}
+[data-look='redesign'] .u8c-skills__name {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8c-skills__name .ultm8-field__hint {
+  text-transform: none;
+  letter-spacing: 0;
+}
+[data-look='redesign'] .u8c-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* The video file picker: its button is a white pill like the others. */
+[data-look='redesign'] .u8c-file {
+  max-width: 100%;
+  font: inherit;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8c-file::file-selector-button {
+  min-height: 44px;
+  margin-inline-end: 12px;
+  padding: 0 20px;
+  border: 1px solid var(--u8-btn-line, #c2c7cb);
+  border-radius: 999px;
+  background: var(--u8-btn-bg, #ffffff);
+  color: var(--u8-btn-text, #383d42);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8c-file:not(:disabled)::file-selector-button:hover {
+  background: var(--u8-btn-hover, #f4f5f6);
+}
+[data-look='redesign'] .u8c-file:disabled::file-selector-button {
+  cursor: default;
+  opacity: 0.55;
+}
+[data-look='redesign'] .u8c-file:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+  border-radius: 999px;
+}
+
+/* Comments: a calm list of rows. */
+[data-look='redesign'] .u8c-comments {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8c-comment {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8c-comment__who {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+[data-look='redesign'] .u8c-comment__when {
+  margin-inline-start: 8px;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8c-comment__body {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* On a wide screen a lesson's buttons stay on one line. */
+@media (min-width: 1280px) {
+  [data-look='redesign'] .u8c-table .u8c-actions {
+    flex-wrap: nowrap;
+  }
+}
+
+/* ----------------------------------------------------- Phone: under 768px */
+
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8c-card {
+    padding: 16px;
+  }
+  [data-look='redesign'] .u8c-card--flush {
+    padding: 0;
+  }
+  [data-look='redesign'] .u8c-card--flush > .u8c-card__title {
+    padding: 16px 16px 12px;
+  }
+  [data-look='redesign'] .u8c-card--flush > .u8c-hint {
+    padding: 0 16px 12px;
+  }
+  [data-look='redesign'] .u8c-cats {
+    margin: 0 -16px;
+  }
+  [data-look='redesign'] .u8c-cat {
+    padding: 10px 16px;
+  }
+  [data-look='redesign'] .u8c-cat .u8c-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+  }
+  [data-look='redesign'] .u8c-add .ultm8-field {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8c-comment {
+    flex-wrap: wrap;
+  }
+}
+
+/* Each lesson becomes a card when the page is too narrow for the table
+ * (phones, tablets, and a computer with a narrow window; DESIGN.md → "Phone
+ * layout"): the title with its tags, then format, duration, coach and
+ * skills, then its buttons. Measured on the lesson card itself, so the side
+ * menu's width is allowed for. (Only the lesson cards are containers: a
+ * container would also hold the page's fixed dialogs.) */
+[data-look='redesign'] .u8c-card--flush {
+  container: u8c / inline-size;
+}
+@container u8c (max-width: 959px) {
+  [data-look='redesign'] .u8c-table,
+  [data-look='redesign'] .u8c-table tbody,
+  [data-look='redesign'] .u8c-table tr,
+  [data-look='redesign'] .u8c-table td {
+    display: block;
+  }
+  [data-look='redesign'] .u8c-table thead {
+    display: none;
+  }
+  [data-look='redesign'] .u8c-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--u8n-line);
+  }
+  [data-look='redesign'] .u8c-table tbody tr:hover td {
+    background: none;
+  }
+  [data-look='redesign'] .u8c-table td,
+  [data-look='redesign'] .u8c-table td:first-child,
+  [data-look='redesign'] .u8c-table td:last-child {
+    padding: 0;
+    border: 0;
+  }
+  [data-look='redesign'] .u8c-table td:first-child,
+  [data-look='redesign'] .u8c-table td:last-child {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8c-table td:last-child:not(:empty) {
+    padding-top: 6px;
+  }
+  [data-look='redesign'] .u8c-table .u8c-actions {
+    justify-content: flex-start;
+  }
+  [data-look='redesign'] .u8c-cell-label {
+    display: inline;
+    margin-inline-end: 6px;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--u8n-subtle);
+  }
+}
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8c-table tr {
+    padding: 14px 16px;
+  }
+}

@@ -17,7 +17,8 @@ test.afterAll(async () => {
   await cleanup(); // categories go with their School
 });
 
-const card = (page: Page, name: string) => page.locator('.ultm8-card', { has: page.getByRole('heading', { name, exact: true }) });
+// A card on the page in the new look (curriculum.css).
+const card = (page: Page, name: string) => page.locator('.u8c-card', { has: page.getByRole('heading', { name, exact: true }) });
 const lessonTitles = async (page: Page, category: string) =>
   (await card(page, category).locator('tr > :first-child').allTextContents()).filter((t) => t !== 'Title');
 
@@ -35,7 +36,10 @@ test('add categories, order them, and move lessons between and within them', asy
   // The seeded lesson has no category; put it in Submissions from its form.
   await card(page, 'No category').getByRole('button', { name: 'Edit Armbar from guard' }).click();
   const dialog = page.getByRole('dialog', { name: 'Edit lesson' });
-  await dialog.getByLabel('Category').selectOption({ label: 'Submissions' });
+  // The new look's own drop-down (DESIGN.md → "Drop-downs").
+  await dialog.getByRole('combobox', { name: 'Category' }).click();
+  await dialog.getByRole('option', { name: 'Submissions' }).click();
+  await expect(dialog.getByRole('combobox', { name: 'Category' }).locator('[data-shown="true"]')).toHaveText('Submissions');
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(dialog).toBeHidden();
   await expect(card(page, 'Submissions').getByText('Armbar from guard')).toBeVisible();

@@ -1,4 +1,4 @@
-import React, { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import React, { forwardRef, useEffect, useId, useMemo, useRef, useState, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   AsYouType,
@@ -1390,6 +1390,10 @@ export interface RowAction {
   /** Visually distinguishes a destructive action (e.g. "Delete") — same
    * red treatment `Button`'s `danger` variant uses elsewhere. */
   variant?: 'default' | 'danger';
+  /** Optional short line shown under the item, e.g. why a disabled action
+   * isn't available yet. Linked to the item with `aria-describedby`, so it
+   * doesn't change the item's name. */
+  hint?: string;
 }
 
 export interface RowActionsMenuProps {
@@ -1412,6 +1416,7 @@ export function RowActionsMenu({ label, actions }: RowActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const hintIdBase = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -1457,6 +1462,7 @@ export function RowActionsMenu({ label, actions }: RowActionsMenuProps) {
                 type="button"
                 role="menuitem"
                 disabled={action.disabled}
+                aria-describedby={action.hint ? `${hintIdBase}-hint-${i}` : undefined}
                 className={[
                   'ultm8-row-actions__item',
                   action.variant === 'danger' ? 'ultm8-row-actions__item--danger' : '',
@@ -1470,6 +1476,11 @@ export function RowActionsMenu({ label, actions }: RowActionsMenuProps) {
               >
                 {action.label}
               </button>
+              {action.hint ? (
+                <span id={`${hintIdBase}-hint-${i}`} className="ultm8-row-actions__hint">
+                  {action.hint}
+                </span>
+              ) : null}
             </li>
           ))}
         </ul>

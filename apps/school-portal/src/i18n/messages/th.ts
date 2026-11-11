@@ -3624,6 +3624,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     uploadVideoAria: "อัปโหลดวิดีโอสำหรับ {title}",
     uploadAgain: "อัปโหลดอีกครั้ง",
     uploadAgainAria: "อัปโหลดวิดีโอของ {title} อีกครั้ง",
+    actionsAria: "การดำเนินการสำหรับ {title}",
     videoUploadsOff: "ยังไม่ได้ตั้งค่าการอัปโหลดวิดีโอ ระหว่างนี้สร้างและดูบทเรียนได้โดยไม่มีวิดีโอ",
     unarchive: "เลิกเก็บถาวร",
     unarchiveAria: "เลิกเก็บถาวร {title}",
