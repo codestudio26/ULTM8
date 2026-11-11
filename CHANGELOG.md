@@ -10,14 +10,6 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
-- **New look: the Curriculum page** (Decision 453; visual only). The approved
-  design draws no Curriculum screen, so the page keeps its layout and every
-  feature, restyled: the new page header, white cards for Categories and for
-  each category's lessons, tags, notes, round ↑/↓ buttons, our own drop-downs
-  in the lesson form, a pill file button for video upload, and each lesson as
-  a card on a phone. A lesson row keeps Comments, ↑, ↓ and Edit in view; Upload
-  video, Archive/Unarchive and Delete move into its ⋮ menu (a greyed-out item
-  shows why under it). Same data, API calls and permissions.
 - **New look: the student's full page** (Decision 453; visual only). Two tabs,
   Profile and Ranks; white cards with light header bars; the summary panel on
   the right (status, Edit, check-in code, contact, personal details, home
