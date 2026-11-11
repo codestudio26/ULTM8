@@ -48,7 +48,8 @@ test('a belt a student holds, and a style a student has a rank in, are kept with
   await dialog.getByRole('button', { name: 'Delete' }).click();
   // The API's refusal, in the error banner (the description says it too).
   await expect(dialog.getByRole('alert')).toContainText("can't be deleted");
-  await dialog.getByRole('button', { name: 'Close' }).click();
+  // Exact: the dialog's header ✕ is "Close dialog" (Decision 460).
+  await dialog.getByRole('button', { name: 'Close', exact: true }).click();
 
   await page.goto('/disciplines');
   await page.getByRole('button', { name: 'Delete BJJ' }).click();

@@ -229,18 +229,6 @@
   letter-spacing: normal;
 }
 
-/* Button pairs: two buttons side by side share the row equally. */
-[data-look='redesign'] .u8o-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 16px;
-}
-[data-look='redesign'] .u8o-pair > * {
-  width: 100%;
-  white-space: normal;
-}
-
 /* A drop-down in a dialog: its own row, with room under the one before. */
 [data-look='redesign'] .u8o-modal-field {
   margin: 0 0 16px;

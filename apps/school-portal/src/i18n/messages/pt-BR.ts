@@ -4236,6 +4236,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   ui: {
     loading: "Carregando",
     dismiss: "Fechar",
+    closeDialog: "Fechar caixa de diálogo",
     showPasscode: "Mostrar código de acesso",
     hidePasscode: "Ocultar código de acesso",
     noMatchingTimezone: "Nenhum fuso horário encontrado",

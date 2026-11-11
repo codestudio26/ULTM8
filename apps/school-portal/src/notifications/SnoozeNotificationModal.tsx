@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Modal } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
@@ -66,9 +66,11 @@ export function SnoozeNotificationModal({
             options={SNOOZE_PRESETS.map((p) => ({ value: String(p.minutes), label: t(p.label) }))}
           />
         </div>
-        <Button type="submit" loading={submitting}>
-          {t('notifications.snoozeModal.submit')}
-        </Button>
+        <ModalActions>
+          <Button type="submit" loading={submitting}>
+            {t('notifications.snoozeModal.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );

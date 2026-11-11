@@ -4190,6 +4190,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   ui: {
     loading: "読み込み中",
     dismiss: "閉じる",
+    closeDialog: "ダイアログを閉じる",
     showPasscode: "パスコードを表示",
     hidePasscode: "パスコードを隠す",
     noMatchingTimezone: "一致するタイムゾーンがありません",

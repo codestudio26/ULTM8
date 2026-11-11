@@ -4420,6 +4420,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   ui: {
     loading: "جارٍ التحميل",
     dismiss: "إغلاق",
+    closeDialog: "إغلاق مربع الحوار",
     showPasscode: "إظهار رمز المرور",
     hidePasscode: "إخفاء رمز المرور",
     noMatchingTimezone: "لا توجد منطقة زمنية مطابقة",

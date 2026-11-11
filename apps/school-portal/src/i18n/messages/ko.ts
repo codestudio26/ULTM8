@@ -4190,6 +4190,7 @@ export const messages: PartialMessages<EnglishMessages> = {
   ui: {
     loading: "로딩 중",
     dismiss: "닫기",
+    closeDialog: "대화 상자 닫기",
     showPasscode: "패스코드 표시",
     hidePasscode: "패스코드 숨기기",
     noMatchingTimezone: "일치하는 시간대가 없습니다",

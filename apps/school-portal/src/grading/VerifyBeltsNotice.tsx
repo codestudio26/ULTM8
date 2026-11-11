@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Modal } from '@ultm8/ui';
+import { Button, Modal, ModalActions } from '@ultm8/ui';
 import { useGradingSchoolId } from '../auth/AuthContext';
 import { clearVerifyNoticeDue, isVerifyNoticeDue } from '../auth/verifyNoticeFlag';
 import { usePendingVerifications } from './gradingQueries';
@@ -43,9 +43,11 @@ export function VerifyBeltsNotice() {
           </li>
         ))}
       </ul>
-      <Button type="button" onClick={close}>
-        {t('grading.verifyNotice.later')}
-      </Button>
+      <ModalActions>
+        <Button type="button" onClick={close}>
+          {t('grading.verifyNotice.later')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }

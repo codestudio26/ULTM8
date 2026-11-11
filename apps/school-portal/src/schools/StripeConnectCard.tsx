@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Badge, Button, Card, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { NewLookSelect } from '../layout/NewLookSelect';
@@ -152,14 +152,14 @@ export function StripeConnectCard({
                 {t('schools.stripeConnect.countryHint')}
               </p>
             </div>
-            <div className="u8o-pair">
-              <Button type="submit" loading={connect.isPending} disabled={!country}>
-                {t('schools.stripeConnect.goToStripe')}
-              </Button>
+            <ModalActions>
               <Button type="button" variant="secondary" onClick={() => setAskingCountry(false)}>
                 {t('common.cancel')}
               </Button>
-            </div>
+              <Button type="submit" loading={connect.isPending} disabled={!country}>
+                {t('schools.stripeConnect.goToStripe')}
+              </Button>
+            </ModalActions>
           </form>
         </Modal>
       ) : null}
