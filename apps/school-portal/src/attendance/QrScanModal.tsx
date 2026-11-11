@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import QrScanner from 'qr-scanner';
-import { Modal } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal, ModalActions } from '@ultm8/ui';
 import { useT } from '../i18n/I18nProvider';
+import '../classes/classForms.css';
 
 /**
  * Camera-scan half of Instructor roll-call (Decision 107's `INSTRUCTOR_SCAN`
@@ -56,15 +57,20 @@ export function QrScanModal({ onScan, onClose }: { onScan: (token: string) => vo
   return (
     <Modal title={t('attendance.scanModal.title')} onClose={onClose}>
       {error ? (
-        <p style={{ color: 'var(--color-danger)' }}>{error}</p>
+        <ErrorBanner message={error} />
       ) : (
-        <div style={{ position: 'relative', width: 320, maxWidth: '100%' }}>
-          <video ref={videoRef} style={{ width: '100%', borderRadius: 8 }} muted playsInline />
+        <div className="u8cf-scan">
+          <video ref={videoRef} className="u8cf-scan__video" muted playsInline />
         </div>
       )}
-      <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 12 }}>
-        {t('attendance.scanModal.hint')}
-      </p>
+      <p className="ultm8-field__hint u8cf-scan__hint">{t('attendance.scanModal.hint')}</p>
+      {/* The dialog's button band (Decision 460): Cancel stops the camera and
+          closes, exactly as the ✕ does. */}
+      <ModalActions>
+        <Button type="button" variant="secondary" onClick={onClose}>
+          {t('common.cancel')}
+        </Button>
+      </ModalActions>
     </Modal>
   );
 }

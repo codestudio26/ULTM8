@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Decision 322 in the portal: the School's check-in and late-cancel settings,
@@ -185,7 +186,7 @@ test('a full class offers "Add to waitlist" and adds the Student', async ({ page
   await page.getByRole('button', { name: `Actions for ${slotTitle} on ${todayKey}` }).click();
   await page.getByRole('menuitem', { name: 'Book' }).click();
   const dialog = page.getByRole('dialog', { name: `Book — ${slotTitle}` });
-  await dialog.getByLabel('Student').selectOption({ label: s.student.name });
+  await pickOption(dialog, 'Student', s.student.name);
   await dialog.getByRole('button', { name: 'Confirm' }).click();
 
   await expect(dialog.getByText('This class is full. You can add the student to the waitlist instead.')).toBeVisible();
@@ -210,7 +211,7 @@ test("a coded booking error is shown in the portal's own words", async ({ page }
   await page.getByRole('button', { name: `Actions for ${slotTitle} on ${todayKey}` }).click();
   await page.getByRole('menuitem', { name: 'Book' }).click();
   const dialog = page.getByRole('dialog', { name: `Book — ${slotTitle}` });
-  await dialog.getByLabel('Student').selectOption({ label: s.student.name });
+  await pickOption(dialog, 'Student', s.student.name);
   await dialog.getByRole('button', { name: 'Confirm' }).click();
 
   await expect(dialog.getByText('Lots of people are booking this class right now. Please try again in a moment.')).toBeVisible();

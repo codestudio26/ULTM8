@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField, Spinner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, Field, Modal, ModalActions, Spinner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { BranchResponse } from '../branches/branchQueries';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../classes/classForms.css';
 import { useClosures, useCreateClosure, useDeleteClosure, useRecreateClass, useUpdateClosure, type RecreatableClass } from './timetableQueries';
 
 /**
@@ -89,7 +91,7 @@ export function ClosuresDialog({ schoolId, branches, onClose }: { schoolId: stri
 
   return (
     <Modal title={t('timetable.closures.title')} onClose={onClose} wide>
-      <p style={{ marginTop: 0, color: 'var(--text-secondary)' }}>{t('timetable.closures.intro')}</p>
+      <p className="ultm8-field__hint u8cf-intro">{t('timetable.closures.intro')}</p>
       {error ? <ErrorBanner message={error} /> : null}
       {message ? <p role="status">{message}</p> : null}
 
@@ -98,11 +100,11 @@ export function ClosuresDialog({ schoolId, branches, onClose }: { schoolId: stri
       ) : (closures.data?.items.length ?? 0) === 0 ? (
         <p>{t('timetable.closures.none')}</p>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 8 }}>
+        <ul className="u8cf-list">
           {closures.data!.items.map((c) =>
             editing?.id === c.id ? (
-              <li key={c.id} aria-label={c.reason} style={{ display: 'grid', gap: 8 }}>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <li key={c.id} aria-label={c.reason} className="u8cf-list__item">
+                <div className="u8cf-fields">
                   <Field label={t('timetable.closures.from')} htmlFor={`closure-edit-from-${c.id}`}>
                     <TextField
                       id={`closure-edit-from-${c.id}`}
@@ -129,7 +131,7 @@ export function ClosuresDialog({ schoolId, branches, onClose }: { schoolId: stri
                     />
                   </Field>
                 </div>
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <div className="u8cf-row-buttons">
                   <Button variant="secondary" onClick={() => setEditing(null)}>
                     {t('timetable.closures.back')}
                   </Button>
@@ -139,12 +141,15 @@ export function ClosuresDialog({ schoolId, branches, onClose }: { schoolId: stri
                 </div>
               </li>
             ) : (
-              <li key={c.id} aria-label={c.reason} style={{ display: 'grid', gap: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <span>
-                    <strong>{c.reason}</strong> · {span(c.startDate, c.endDate)} · {where(c.branchId)}
+              <li key={c.id} aria-label={c.reason} className="u8cf-list__item">
+                <div className="u8cf-list__line">
+                  <span className="u8cf-list__text">
+                    <strong>{c.reason}</strong>
+                    <span className="u8cf-list__sub">
+                      {span(c.startDate, c.endDate)} · {where(c.branchId)}
+                    </span>
                   </span>
-                  <span style={{ display: 'flex', gap: 8 }}>
+                  <span className="u8cf-row-buttons">
                     <Button
                       variant="secondary"
                       onClick={() => {
@@ -169,9 +174,9 @@ export function ClosuresDialog({ schoolId, branches, onClose }: { schoolId: stri
                   </span>
                 </div>
                 {removing === c.id ? (
-                  <div role="alert">
-                    <p style={{ margin: 0 }}>{t('timetable.closures.removeConfirm')}</p>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <div role="alert" className="u8cf-note">
+                    <p>{t('timetable.closures.removeConfirm')}</p>
+                    <div className="u8cf-row-buttons">
                       <Button variant="secondary" onClick={() => setRemoving(null)}>
                         {t('timetable.closures.back')}
                       </Button>
@@ -197,12 +202,15 @@ export function ClosuresDialog({ schoolId, branches, onClose }: { schoolId: stri
 
       {recreatable.length > 0 ? (
         <section aria-label={t('timetable.closures.recreateTitle')}>
-          <h3 style={{ fontSize: 15 }}>{t('timetable.closures.recreateTitle')}</h3>
-          <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 8 }}>
+          <h3 className="u8cf-subhead">{t('timetable.closures.recreateTitle')}</h3>
+          <ul className="u8cf-list">
             {recreatable.map((rc) => (
-              <li key={rc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                <span>
-                  <strong>{rc.title}</strong> · {day(rc.date)} · {where(rc.branchId)}
+              <li key={rc.id} className="u8cf-list__item u8cf-list__line">
+                <span className="u8cf-list__text">
+                  <strong>{rc.title}</strong>
+                  <span className="u8cf-list__sub">
+                    {day(rc.date)} · {where(rc.branchId)}
+                  </span>
                 </span>
                 <Button variant="secondary" disabled={recreateClass.isPending} onClick={() => void recreate(rc)}>
                   {t('timetable.closures.recreate')}
@@ -213,49 +221,56 @@ export function ClosuresDialog({ schoolId, branches, onClose }: { schoolId: stri
         </section>
       ) : null}
 
-      <h3 style={{ fontSize: 15 }}>{t('timetable.closures.addTitle')}</h3>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <h3 className="u8cf-subhead">{t('timetable.closures.addTitle')}</h3>
+      <div className="u8cf-fields">
         <Field label={t('timetable.closures.from')} htmlFor="closure-from">
           <TextField id="closure-from" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </Field>
         <Field label={t('timetable.closures.to')} htmlFor="closure-to" hint={t('timetable.closures.toHint')}>
           <TextField id="closure-to" type="date" value={endDate} min={startDate || undefined} onChange={(e) => setEndDate(e.target.value)} />
         </Field>
-        <Field label={t('timetable.closures.where')} htmlFor="closure-branch">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
             id="closure-branch"
+            label={t('timetable.closures.where')}
             value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
+            onChange={setBranchId}
             options={[{ value: '', label: t('timetable.closures.wholeSchool') }, ...branches.filter((b) => !b.archivedAt).map((b) => ({ value: b.id, label: b.name }))]}
           />
-        </Field>
+        </div>
       </div>
       <Field label={t('timetable.closures.reason')} htmlFor="closure-reason" hint={t('timetable.closures.reasonHint')}>
         <TextField id="closure-reason" value={reason} maxLength={120} onChange={(e) => setReason(e.target.value)} />
       </Field>
 
       {confirming ? (
-        <div role="alert" style={{ marginTop: 12 }}>
+        <div role="alert" className="u8cf-note">
           <p>{t('timetable.closures.confirm', { dates: span(startDate, endDate || startDate), where: where(branchId || null) })}</p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        </div>
+      ) : null}
+      {/* The dialog's own buttons in the band: Close and Add closure, or,
+          while the add is being confirmed, Back and Yes. */}
+      <ModalActions>
+        {confirming ? (
+          <>
             <Button variant="secondary" onClick={() => setConfirming(false)}>
               {t('timetable.closures.back')}
             </Button>
             <Button onClick={() => void add()} disabled={createClosure.isPending}>
               {t('timetable.closures.confirmButton')}
             </Button>
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12 }}>
-          <Button variant="secondary" onClick={onClose}>
-            {t('timetable.closures.close')}
-          </Button>
-          <Button disabled={!ready} onClick={() => setConfirming(true)}>
-            {t('timetable.closures.add')}
-          </Button>
-        </div>
-      )}
+          </>
+        ) : (
+          <>
+            <Button variant="secondary" onClick={onClose}>
+              {t('timetable.closures.close')}
+            </Button>
+            <Button disabled={!ready} onClick={() => setConfirming(true)}>
+              {t('timetable.closures.add')}
+            </Button>
+          </>
+        )}
+      </ModalActions>
     </Modal>
   );
 }

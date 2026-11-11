@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import { instructorSelectOptions, type InstructorResponse } from '../instructors/instructorQueries';
@@ -11,6 +11,8 @@ import { StylePicker, styleSelectionProblem, type StyleSelection } from '../disc
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 import { WhoCanBookFields, whoCanBookForm, whoCanBookProblem, whoCanBookValues, type Audience } from '../classes/WhoCanBookFields';
 import { slotTimesProblem, slotEndsNextDay } from './slotTimes';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../classes/classForms.css';
 
 const WEEKDAYS = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'] as const;
 
@@ -184,7 +186,7 @@ export function TimetableSlotFormModal({
 
   return (
     <Modal title={title} onClose={onClose}>
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="u8cf-form">
         {error ? <ErrorBanner message={error} /> : null}
         <Field label={t('timetable.form.titleLabel')} htmlFor="slot-title">
           <TextField required value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
@@ -200,13 +202,15 @@ export function TimetableSlotFormModal({
             />
           </Field>
         )}
-        <Field label={t('timetable.form.weekdayLabel')} htmlFor="slot-weekday">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="slot-weekday"
+            label={t('timetable.form.weekdayLabel')}
             value={form.weekday}
-            onChange={(e) => setForm((f) => ({ ...f, weekday: e.target.value as (typeof WEEKDAYS)[number] }))}
+            onChange={(v) => setForm((f) => ({ ...f, weekday: v as (typeof WEEKDAYS)[number] }))}
             options={WEEKDAYS.map((w) => ({ value: w, label: weekdayName(w, locale, 'long') }))}
           />
-        </Field>
+        </div>
         <Field label={t('timetable.form.startTimeLabel')} htmlFor="slot-startTime" hint={t('timetable.form.timeHint')}>
           <TextField
             required
@@ -240,36 +244,43 @@ export function TimetableSlotFormModal({
         >
           <TextField type="time" value={form.breakEnd} onChange={(e) => setForm((f) => ({ ...f, breakEnd: e.target.value }))} />
         </Field>
-        <Field label={t('timetable.form.statusLabel')} htmlFor="slot-status">
-          <SelectField
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="slot-status"
+            label={t('timetable.form.statusLabel')}
             value={form.status}
-            onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as 'ON' | 'OFF' }))}
+            onChange={(v) => setForm((f) => ({ ...f, status: v as 'ON' | 'OFF' }))}
             options={[
               { value: 'ON', label: t('timetable.form.statusOn') },
               { value: 'OFF', label: t('timetable.form.statusOff') },
             ]}
           />
-        </Field>
-        <Field label={t('timetable.form.branchLabel')} htmlFor="slot-branch" hint={t('timetable.form.branchHint')}>
-          <SelectField
+        </div>
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="slot-branch"
+            label={t('timetable.form.branchLabel')}
             value={form.branchId}
-            onChange={(e) => setForm((f) => ({ ...f, branchId: e.target.value }))}
+            onChange={(v) => setForm((f) => ({ ...f, branchId: v }))}
             options={[
               ...(wholeSchool ? [{ value: '', label: t('timetable.form.wholeSchool') }] : []),
               ...branchSelectOptions(branches, t('branches.archivedBadge'), initial?.branchId),
             ]}
           />
-        </Field>
-        <Field label={t('timetable.form.instructorLabel')} htmlFor="slot-instructor">
-          <SelectField
+          <span className="ultm8-field__hint u8n-dd-field__hint">{t('timetable.form.branchHint')}</span>
+        </div>
+        <div className="u8n-dd-field">
+          <NewLookSelect
+            id="slot-instructor"
+            label={t('timetable.form.instructorLabel')}
             value={form.instructorId}
-            onChange={(e) => setForm((f) => ({ ...f, instructorId: e.target.value }))}
+            onChange={(v) => setForm((f) => ({ ...f, instructorId: v }))}
             options={[
               { value: '', label: t('timetable.form.unassigned') },
               ...instructorSelectOptions(instructors, { archived: t('instructors.pickerArchived'), revoked: t('instructors.pickerRevoked') }, initial?.instructorId),
             ]}
           />
-        </Field>
+        </div>
         <Field label={t('timetable.form.capacityLabel')} htmlFor="slot-capacity" hint={t('timetable.form.capacityHint')}>
           <TextField type="number" min={1} value={form.capacity} onChange={(e) => setForm((f) => ({ ...f, capacity: e.target.value }))} />
         </Field>
@@ -319,14 +330,14 @@ export function TimetableSlotFormModal({
           checked={form.termsWaiverRequired}
           onChange={(e) => setForm((f) => ({ ...f, termsWaiverRequired: e.target.checked }))}
         />
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
