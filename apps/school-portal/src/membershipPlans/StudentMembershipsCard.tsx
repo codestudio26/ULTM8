@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, EmptyState, ErrorBanner, Field, Modal, ModalActions, Spinner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { StudentCard } from '../students/StudentPageLook';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
@@ -31,6 +31,7 @@ import {
 import { useSchool } from '../schools/schoolQueries';
 import { useDeskMethods } from '../lib/deskMethods';
 import { JoiningFeeNotice } from './JoiningFeeNotice';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 const TYPE_LABELS: Record<string, TranslationKey> = {
   SUBSCRIPTION: 'membershipPlans.types.subscription',
@@ -293,7 +294,7 @@ function FreezeModal({
     <Modal title={t('membershipPlans.studentCard.freeze.modalTitle', { plan: membership.planTitle, name: studentName })} onClose={onClose}>
       <form onSubmit={submit} data-testid="freeze-modal">
         {error ? <ErrorBanner message={error} /> : null}
-        <p style={{ marginTop: 0 }}>{t('membershipPlans.studentCard.freeze.intro')}</p>
+        <p>{t('membershipPlans.studentCard.freeze.intro')}</p>
         {/* Decision 409: approving cancels the bookings inside the freeze. */}
         <p className="ultm8-field__hint">{t('membershipPlans.studentCard.freeze.bookingsNote')}</p>
         <Field label={t('membershipPlans.studentCard.freeze.startLabel')} htmlFor="freeze-start">
@@ -306,14 +307,14 @@ function FreezeModal({
           <p className="ultm8-field__hint">{t('membershipPlans.studentCard.freeze.maxHint', { days: school.data.freezeMaxDaysPer12Months })}</p>
         ) : null}
         {fee ? <p className="ultm8-field__hint">{t('membershipPlans.studentCard.freeze.fee', { amount: formatMoney(fee, school.data?.defaultCurrency) })}</p> : null}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button type="submit" loading={freeze.isPending}>
-            {t('membershipPlans.studentCard.freeze.submit')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={freeze.isPending}>
+            {t('membershipPlans.studentCard.freeze.submit')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -366,57 +367,61 @@ function DeskModal({
     <Modal title={title} onClose={onClose}>
       {plans.length === 0 ? (
         <>
-          <p style={{ marginTop: 0 }}>{kind === 'sell' ? t('membershipPlans.studentCard.noSellablePlans') : t('membershipPlans.studentCard.noFriendPassPlans')}</p>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <p>{kind === 'sell' ? t('membershipPlans.studentCard.noSellablePlans') : t('membershipPlans.studentCard.noFriendPassPlans')}</p>
+          <p>
             <Link to="/membership-plans/new">{t('membershipPlans.list.addPlan')}</Link>
-          </div>
+          </p>
         </>
       ) : (
         <>
           {error ? <ErrorBanner message={error} /> : null}
-          <p style={{ marginTop: 0 }}>{kind === 'sell' ? t('membershipPlans.studentCard.sellIntro') : t('membershipPlans.studentCard.giftIntro')}</p>
-          <Field label={t('membershipPlans.studentCard.planLabel')} htmlFor="desk-plan">
-            <SelectField
+          <p>{kind === 'sell' ? t('membershipPlans.studentCard.sellIntro') : t('membershipPlans.studentCard.giftIntro')}</p>
+          <div className="u8n-dd-field">
+            <NewLookSelect
               id="desk-plan"
+              label={t('membershipPlans.studentCard.planLabel')}
               value={planId}
-              onChange={(e) => setPlanId(e.target.value)}
+              onChange={setPlanId}
               options={plans.map((p) => ({
                 value: p.id,
                 label: kind === 'sell' ? `${p.title} (${formatMoney(p.price, p.currency)})` : p.title,
               }))}
             />
-          </Field>
+          </div>
           {kind === 'gift' ? (
-            <Field label={t('membershipPlans.studentCard.giftQuantityLabel')} htmlFor="desk-gift-quantity" hint={t('membershipPlans.studentCard.giftQuantityHint')}>
-              <SelectField
+            <div className="u8n-dd-field">
+              <NewLookSelect
                 id="desk-gift-quantity"
+                label={t('membershipPlans.studentCard.giftQuantityLabel')}
                 value={String(quantity)}
-                onChange={(e) => setQuantity(Number(e.target.value))}
+                onChange={(v) => setQuantity(Number(v))}
                 options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: String(n) }))}
               />
-            </Field>
+              <span className="ultm8-field__hint u8n-dd-field__hint">{t('membershipPlans.studentCard.giftQuantityHint')}</span>
+            </div>
           ) : null}
           {kind === 'sell' && plan && plan.price > 0 ? (
             <JoiningFeeNotice planId={plan.id} studentId={studentId} price={plan.price} currency={plan.currency ?? null} />
           ) : null}
           {kind === 'sell' && plan && plan.price > 0 ? (
-            <Field label={t('membershipPlans.studentCard.paidByLabel')} htmlFor="desk-paid-by">
-              <SelectField
+            <div className="u8n-dd-field">
+              <NewLookSelect
                 id="desk-paid-by"
+                label={t('membershipPlans.studentCard.paidByLabel')}
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as DeskPaymentMethod)}
+                onChange={(v) => setPaymentMethod(v as DeskPaymentMethod)}
                 options={deskMethods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
               />
-            </Field>
+            </div>
           ) : null}
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Button onClick={submit} loading={busy} disabled={!planId}>
-              {kind === 'sell' ? t('membershipPlans.studentCard.sellConfirm') : t('membershipPlans.studentCard.giftConfirm')}
-            </Button>
+          <ModalActions>
             <Button variant="secondary" onClick={onClose}>
               {t('common.cancel')}
             </Button>
-          </div>
+            <Button onClick={submit} loading={busy} disabled={!planId}>
+              {kind === 'sell' ? t('membershipPlans.studentCard.sellConfirm') : t('membershipPlans.studentCard.giftConfirm')}
+            </Button>
+          </ModalActions>
         </>
       )}
     </Modal>

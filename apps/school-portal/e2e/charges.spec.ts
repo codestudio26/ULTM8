@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Staff-created charges and the member balance, step 1 of 6 (v1.3 backlog
@@ -96,7 +97,7 @@ test('a discounted charge, a part cash payment, and cancelling with a reason', a
   const create = page.getByTestId('create-charge-form');
   await create.getByLabel('Description').fill('Rash guard');
   await create.getByLabel('Price').fill('100');
-  await create.getByLabel('Discount', { exact: true }).selectOption('PERCENT');
+  await pickOption(create, 'Discount', 'Percentage (%)');
   await create.getByLabel('Discount amount').fill('10');
   const preview = page.getByTestId('charge-preview');
   await expect(preview).toContainText('90.00 GBP');
@@ -117,7 +118,7 @@ test('a discounted charge, a part cash payment, and cancelling with a reason', a
   const pay = page.getByTestId('record-charge-payment-form');
   await expect(pay.getByLabel('Amount received')).toHaveValue('108');
   await pay.getByLabel('Amount received').fill('50');
-  await expect(pay.getByLabel('Paid by')).toHaveValue('CASH');
+  await expect(pay.getByRole('combobox', { name: 'Paid by', exact: true }).locator('[data-shown="true"]')).toHaveText('Cash');
   await expect(pay.getByLabel('Send receipt')).toBeChecked();
   await pay.getByRole('button', { name: 'Record payment' }).click();
   await expect(pay).toHaveCount(0);

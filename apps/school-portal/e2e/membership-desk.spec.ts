@@ -1,6 +1,14 @@
 import { randomUUID } from 'crypto';
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
+
+/** Opens one of the dialog's drop-downs (the new look's own, DESIGN.md →
+ * "Drop-downs") and returns its options; a second click closes the list. */
+async function openOptions(page: Page, label: string) {
+  await page.getByRole('combobox', { name: label, exact: true }).click();
+  return page.getByRole('listbox', { name: label, exact: true }).getByRole('option');
+}
 
 /**
  * Decision 348 — the owner's Memberships card on a Student's page (sell a
@@ -44,10 +52,16 @@ test('the owner sells a Class Pack at the desk (cash, bank transfer or card term
   await expect(page.getByText('No memberships yet')).toBeVisible();
 
   await page.getByRole('button', { name: 'Sell a plan' }).click();
-  await expect(page.locator('#desk-plan option')).toHaveText(['Ten classes (60.00 GBP)']);
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('select')).toHaveCount(0);
+  await expect(await openOptions(page, 'Plan')).toHaveText(['Ten classes (60.00 GBP)']);
+  await page.getByRole('combobox', { name: 'Plan', exact: true }).click();
   // Decision 448 item 5: Pix is offered only to a School in Brazil. this one prices in pounds.
-  await expect(page.locator('#desk-paid-by option')).toHaveText(['Cash', 'Bank transfer', 'Card terminal']);
-  await page.getByLabel('Paid by').selectOption('BANK_TRANSFER');
+  await expect(await openOptions(page, 'Paid by')).toHaveText(['Cash', 'Bank transfer', 'Card terminal']);
+  await page.getByRole('combobox', { name: 'Paid by', exact: true }).click();
+  await pickOption(page, 'Paid by', 'Bank transfer');
+  // The new look's button band: Cancel first, the action last.
+  await expect(dialog.locator('.ultm8-modal__actions').getByRole('button')).toHaveText(['Cancel', 'Record sale']);
   await page.getByRole('button', { name: 'Record sale' }).click();
 
   const row = page.getByRole('row', { name: /Ten classes/ });
@@ -64,9 +78,10 @@ test('Decision 441: a School without card payments sells its monthly plan at the
 
   await page.goto(`/students/${s.student.id}`);
   await page.getByRole('button', { name: 'Sell a plan' }).click();
-  await expect.poll(async () => (await page.locator('#desk-plan option').allTextContents()).sort()).toEqual(['Monthly (50.00 GBP)', 'Ten classes (60.00 GBP)']);
-  await page.locator('#desk-plan').selectOption(monthly.id);
-  await page.getByLabel('Paid by').selectOption('CASH');
+  const plans = await openOptions(page, 'Plan');
+  await expect.poll(async () => (await plans.allTextContents()).sort()).toEqual(['Monthly (50.00 GBP)', 'Ten classes (60.00 GBP)']);
+  await plans.filter({ hasText: monthly.title }).click();
+  await pickOption(page, 'Paid by', 'Cash');
   await page.getByRole('button', { name: 'Record sale' }).click();
 
   const row = page.getByRole('row', { name: /Monthly/ });
@@ -84,7 +99,7 @@ test('a School that takes cards still sells no Subscription at the desk', async 
   await page.goto(`/students/${s.student.id}`);
   await page.getByRole('button', { name: 'Sell a plan' }).click();
   // A Subscription is paid by card in the app there, so it isn't offered.
-  await expect(page.locator('#desk-plan option')).toHaveText(['Ten classes (60.00 GBP)']);
+  await expect(await openOptions(page, 'Plan')).toHaveText(['Ten classes (60.00 GBP)']);
 });
 
 test('the owner gives a Friend Pass', async ({ page }) => {

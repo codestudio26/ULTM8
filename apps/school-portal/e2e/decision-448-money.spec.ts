@@ -106,7 +106,8 @@ test('Pix only in Brazil: the desk sale and Record a payment offer it to a Brazi
   await db.school.update({ where: { id: s.schoolId }, data: { addressCountry: 'BR' } });
   await page.goto(`/students/${s.student.id}`);
   await page.getByRole('button', { name: 'Sell a plan' }).click();
-  await expect(page.locator('#desk-paid-by option')).toHaveText(['Cash', 'Bank transfer', 'Pix', 'Card terminal']);
+  await page.getByRole('combobox', { name: 'Paid by', exact: true }).click();
+  await expect(page.getByRole('listbox', { name: 'Paid by', exact: true }).getByRole('option')).toHaveText(['Cash', 'Bank transfer', 'Pix', 'Card terminal']);
   await page.goto('/transactions');
   await page.getByRole('button', { name: 'Record a payment' }).first().click();
   await expect(page.getByRole('dialog')).toContainText('cash, bank transfer, Pix or your card terminal');
