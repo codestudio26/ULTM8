@@ -713,6 +713,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "Diğer işlemler",
     columnSurcharge: "Kart ek ücreti",
     surchargeLine: "+ {amount} kart ek ücreti",
     title: "İşlemler",

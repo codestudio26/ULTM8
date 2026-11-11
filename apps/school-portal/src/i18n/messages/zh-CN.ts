@@ -710,6 +710,7 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   transactions: {
+    moreActions: "更多操作",
     columnSurcharge: "刷卡附加费",
     surchargeLine: "+ {amount} 刷卡附加费",
     title: "交易",

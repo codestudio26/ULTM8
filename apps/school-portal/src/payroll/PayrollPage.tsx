@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, SuccessBanner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, Checkbox, EmptyState, ErrorBanner, Field, Spinner, SuccessBanner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
@@ -10,6 +10,8 @@ import { formatMoney } from '../lib/money';
 import { MoneyField } from '../lib/MoneyField';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 import { csvCell, downloadCsv } from '../transactions/transactionsCsv';
+import { BillingCard, BillingDate, BillingHead, BillingMore, BillingPage, BillingSelect } from '../billing/BillingLook';
+import { NewLookPageHeader } from '../layout/NewLookPage';
 import {
   PAYROLL_PRESETS,
   usePayRates,
@@ -57,19 +59,23 @@ export function PayrollPage() {
   const [tab, setTab] = useState<Tab>('report');
 
   return (
-    <>
-      <PageHeader title={t('payroll.title')} subtitle={t(isOwner || !schoolId ? 'payroll.subtitle' : 'payroll.subtitleStaff')} />
-      {isOwner ? (
-        <div role="tablist" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          {(['report', 'rates'] as const).map((id) => (
-            <Button key={id} role="tab" aria-selected={tab === id} variant={tab === id ? 'primary' : 'secondary'} onClick={() => setTab(id)}>
-              {id === 'report' ? t('payroll.tabReport') : t('payroll.tabRates')}
-            </Button>
-          ))}
-        </div>
-      ) : null}
+    <BillingPage>
+      <BillingHead
+        header={<NewLookPageHeader title={t('payroll.title')} subtitle={t(isOwner || !schoolId ? 'payroll.subtitle' : 'payroll.subtitleStaff')} />}
+        // The Rates tab is the owners' alone; staff get the report and no tabs.
+        tabs={
+          isOwner
+            ? [
+                { id: 'report', label: t('payroll.tabReport') },
+                { id: 'rates', label: t('payroll.tabRates') },
+              ]
+            : undefined
+        }
+        value={tab}
+        onChange={(id) => setTab(id as Tab)}
+      />
       {!schoolId ? <ErrorBanner message={t('payroll.noAccess')} /> : isOwner && tab === 'rates' ? <Rates schoolId={schoolId} /> : <Report schoolId={schoolId} />}
-    </>
+    </BillingPage>
   );
 }
 
@@ -91,51 +97,58 @@ function Report({ schoolId }: { schoolId: string }) {
   }
 
   return (
-    <div data-testid="payroll-report">
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-        <Field label={t('payroll.periodLabel')} htmlFor="payroll-preset">
-          <SelectField
-            id="payroll-preset"
-            value={preset}
-            onChange={(e) => pickPreset(e.target.value as PayrollPreset)}
-            options={PAYROLL_PRESETS.map((p) => ({ value: p, label: t(`payroll.preset.${p}`) }))}
-          />
-        </Field>
-        {preset === 'CUSTOM' ? (
+    <div data-testid="payroll-report" className="u8b">
+      <BillingCard
+        flush
+        toolbar={
           <>
-            <Field label={t('payroll.fromLabel')} htmlFor="payroll-from">
-              <TextField id="payroll-from" type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
-            </Field>
-            <Field label={t('payroll.toLabel')} htmlFor="payroll-to">
-              <TextField id="payroll-to" type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
-            </Field>
+            <div className="u8b-toolbar__group">
+              <BillingSelect
+                id="payroll-preset"
+                label={t('payroll.periodLabel')}
+                value={preset}
+                onChange={(v) => pickPreset(v as PayrollPreset)}
+                options={PAYROLL_PRESETS.map((p) => ({ value: p, label: t(`payroll.preset.${p}`) }))}
+              />
+              {preset === 'CUSTOM' ? (
+                <>
+                  <BillingDate id="payroll-from" label={t('payroll.fromLabel')} value={from} max={to || undefined} onChange={setFrom} />
+                  <BillingDate id="payroll-to" label={t('payroll.toLabel')} value={to} min={from || undefined} onChange={setTo} />
+                </>
+              ) : null}
+            </div>
+            {data && data.rows.length > 0 ? (
+              <BillingMore>
+                <Button variant="secondary" className="u8b-pill" onClick={() => exportCsv(data, t)}>
+                  {t('payroll.download')}
+                </Button>
+              </BillingMore>
+            ) : null}
           </>
-        ) : null}
-        {data && data.rows.length > 0 ? (
-          <div style={{ marginBottom: 16 }}>
-            <Button variant="secondary" onClick={() => exportCsv(data, t)}>
-              {t('payroll.download')}
-            </Button>
+        }
+      >
+        <p className="u8b-note">{t('payroll.howCounted')}</p>
+        {report.error ? (
+          <div className="u8b-pad" style={{ paddingBottom: 20 }}>
+            <ErrorBanner message={report.error instanceof ApiError && report.error.status === 403 ? t('payroll.noAccess') : errorText(report.error, t('payroll.loadFailed'))} />
           </div>
-        ) : null}
-      </div>
-      <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-        {t('payroll.howCounted')}
-      </p>
-      {report.error ? (
-        <ErrorBanner message={report.error instanceof ApiError && report.error.status === 403 ? t('payroll.noAccess') : errorText(report.error, t('payroll.loadFailed'))} />
-      ) : report.isLoading || !report.data ? (
-        preset === 'CUSTOM' && (!from || !to) ? null : <Spinner />
-      ) : (
-        <>
-          {!report.data.ratesShown ? (
-            <p className="ultm8-field__hint" data-testid="payroll-rates-hidden">
-              {t('payroll.ratesHidden')}
-            </p>
-          ) : null}
-          <ReportTable data={report.data} />
-        </>
-      )}
+        ) : report.isLoading || !report.data ? (
+          preset === 'CUSTOM' && (!from || !to) ? null : (
+            <div className="u8b-pad" style={{ paddingBottom: 20 }}>
+              <Spinner />
+            </div>
+          )
+        ) : (
+          <>
+            {!report.data.ratesShown ? (
+              <p className="u8b-note" data-testid="payroll-rates-hidden">
+                {t('payroll.ratesHidden')}
+              </p>
+            ) : null}
+            <ReportTable data={report.data} />
+          </>
+        )}
+      </BillingCard>
     </div>
   );
 }
@@ -150,8 +163,10 @@ function ReportTable({ data }: { data: PayrollReport }) {
     { id: 'total', isTotal: true, userId: '', name: t('payroll.total'), onStaff: true, hourlyRate: null, perClassRate: null, classesTaught: data.totalClasses, minutesTaught: data.totalMinutes, pay: data.totalPay },
   ];
   return (
-    <Card>
-      <h3 style={{ fontSize: 14, margin: '0 0 8px' }}>{t('payroll.rangeShown', { from: dateLabel(data.from), to: dateLabel(data.to) })}</h3>
+    <>
+      <h3 className="u8b-card__sub u8b-pad" style={{ margin: '4px 0 12px' }}>
+        {t('payroll.rangeShown', { from: dateLabel(data.from), to: dateLabel(data.to) })}
+      </h3>
       <Table<Row>
         rows={rows}
         columns={[
@@ -162,8 +177,8 @@ function ReportTable({ data }: { data: PayrollReport }) {
               r.isTotal ? (
                 <strong>{r.name}</strong>
               ) : (
-                <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  {r.name}
+                <span className="u8b-cell-line">
+                  <span className="u8b-name">{r.name}</span>
                   {!r.onStaff ? <Badge>{t('payroll.leftSchool')}</Badge> : null}
                 </span>
               ),
@@ -180,7 +195,7 @@ function ReportTable({ data }: { data: PayrollReport }) {
           { key: 'pay', header: t('payroll.columnPay'), render: (r) => <strong>{formatMoney(r.pay, data.currency)}</strong> },
         ]}
       />
-    </Card>
+    </>
   );
 }
 
@@ -220,17 +235,17 @@ function Rates({ schoolId }: { schoolId: string }) {
   if (rates.isLoading || !rates.data) return <Spinner />;
   const { currency, items } = rates.data;
   return (
-    <div data-testid="payroll-rates">
+    <div data-testid="payroll-rates" className="u8b">
       <StaffRatesSetting schoolId={schoolId} />
-      <p className="ultm8-field__hint" style={{ marginTop: 0 }}>
-        {t('payroll.ratesIntro')}
-      </p>
       {!currency ? <CurrencyFirstNotice /> : null}
       {saved ? <SuccessBanner message={t('payroll.saved', { name: saved })} /> : null}
-      {items.length === 0 ? (
-        <EmptyState title={t('payroll.emptyRates')} description={t('payroll.emptyRatesDescription')} />
-      ) : (
-        <Card>
+      <BillingCard flush>
+        <p className="u8b-note" style={{ paddingTop: 20 }}>
+          {t('payroll.ratesIntro')}
+        </p>
+        {items.length === 0 ? (
+          <EmptyState title={t('payroll.emptyRates')} description={t('payroll.emptyRatesDescription')} />
+        ) : (
           <Table<PayRateRow & { id: string }>
             rows={items.map((r) => ({ ...r, id: r.userId }))}
             columns={[
@@ -238,8 +253,8 @@ function Rates({ schoolId }: { schoolId: string }) {
                 key: 'name',
                 header: t('payroll.columnName'),
                 render: (r) => (
-                  <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {r.name}
+                  <span className="u8b-cell-line">
+                    <span className="u8b-name">{r.name}</span>
                     {r.roles.length === 0 ? <Badge>{t('payroll.leftSchool')}</Badge> : null}
                   </span>
                 ),
@@ -247,8 +262,8 @@ function Rates({ schoolId }: { schoolId: string }) {
               { key: 'rates', header: `${t('payroll.columnHourlyRate')} · ${t('payroll.columnPerClassRate')}`, render: (r) => <RateEditor schoolId={schoolId} row={r} currency={currency} onSaved={setSaved} /> },
             ]}
           />
-        </Card>
-      )}
+        )}
+      </BillingCard>
     </div>
   );
 }
@@ -268,9 +283,9 @@ function StaffRatesSetting({ schoolId }: { schoolId: string }) {
   const [picked, setPicked] = useState<boolean | null>(null);
   if (!school) return null;
   return (
-    <Card>
-      <div data-testid="payroll-staff-rates-setting" style={{ marginBottom: 16 }}>
-        <h2 style={{ fontSize: 16, margin: '0 0 8px' }}>{t('payroll.staffRates.title')}</h2>
+    <BillingCard>
+      <div data-testid="payroll-staff-rates-setting">
+        <h2 className="u8b-card__title">{t('payroll.staffRates.title')}</h2>
         {error ? <ErrorBanner message={error} /> : null}
         {saved ? <SuccessBanner message={t('schools.profile.saved')} /> : null}
         <Checkbox
@@ -294,11 +309,9 @@ function StaffRatesSetting({ schoolId }: { schoolId: string }) {
             );
           }}
         />
-        <p className="ultm8-field__hint" style={{ marginBottom: 0 }}>
-          {t('payroll.staffRates.hint')}
-        </p>
+        <p className="u8b-note">{t('payroll.staffRates.hint')}</p>
       </div>
-    </Card>
+    </BillingCard>
   );
 }
 
@@ -325,9 +338,10 @@ function RateEditor({ schoolId, row, currency, onSaved }: { schoolId: string; ro
       <Field label={t('payroll.perClassRateLabel', { name: row.name })} htmlFor={`per-class-${id}`} error={perClass.valid ? undefined : t('payroll.invalidAmount')}>
         <MoneyField id={`per-class-${id}`} value={perClass.value} currency={currency} disabled={noCurrency} onChange={(value, ok) => setPerClass({ value, valid: ok })} />
       </Field>
-      <div style={{ marginBottom: 16 }}>
+      <div>
         <Button
           variant="secondary"
+          className="u8b-pill u8b-pill--row"
           disabled={!changed || !valid}
           loading={setRate.isPending}
           onClick={() => setRate.mutate({ userId: row.userId, hourlyRate: hourly.value, perClassRate: perClass.value }, { onSuccess: () => onSaved(row.name) })}
