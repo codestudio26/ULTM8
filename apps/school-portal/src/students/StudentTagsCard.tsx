@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner, TextField } from '@ultm8/ui';
+import { Button, ErrorBanner, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { useAddStudentTag, useRemoveStudentTag, useSchoolTags, useStudentTags } from './studentTagsQueries';
@@ -14,6 +14,8 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
  * Staff pick a tag from the School's list or type a new one, which joins the
  * list. Members never see their tags. Shown to the staff who can edit the
  * student's details; for anyone else the API refuses and the card hides.
+ * In the new look it is the last section of the student page's summary
+ * panel (DESIGN-BRIEF §8: tags, with "+ tag").
  */
 export function StudentTagsCard({ schoolId, studentId }: { schoolId: string; studentId: string }) {
   const t = useT();
@@ -44,54 +46,50 @@ export function StudentTagsCard({ schoolId, studentId }: { schoolId: string; stu
   }
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
-          {t('students.tags.title')}
-        </h2>
-        {error ? <ErrorBanner message={errorText(error, t('students.tags.failed'))} /> : null}
-        <ul aria-label={t('students.tags.title')} style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          {mine.map((tag) => (
-            <li key={tag.id} className="ultm8-badge" style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-              {tag.name}
-              <button
-                type="button"
-                aria-label={t('students.tags.remove', { tag: tag.name })}
-                disabled={remove.isPending}
-                onClick={() => remove.mutate(tag.id)}
-                style={{ border: 0, background: 'transparent', cursor: 'pointer', padding: 0, lineHeight: 1, color: 'inherit' }}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-          {!adding ? (
-            <li>
-              <Button variant="secondary" onClick={() => setAdding(true)}>
-                {t('students.tags.add')}
-              </Button>
-            </li>
-          ) : null}
-        </ul>
-        {mine.length === 0 && !adding ? <p className="ultm8-field__hint" style={{ margin: '8px 0 0' }}>{t('students.tags.empty')}</p> : null}
-        {adding ? (
-          <form onSubmit={submit} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
-            <div style={{ flex: '1 1 200px', minWidth: 0 }}>
-              <TextField
-                aria-label={t('students.tags.inputLabel')}
-                placeholder={t('students.tags.placeholder')}
-                list={listId}
-                autoFocus
-                maxLength={TAG_NAME_MAX}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              <datalist id={listId}>
-                {choices.map((c) => (
-                  <option key={c.id} value={c.name} />
-                ))}
-              </datalist>
-            </div>
+    <section aria-label={t('students.tags.title')}>
+      <h3 className="u8n-student-panel__heading">{t('students.tags.title')}</h3>
+      {error ? <ErrorBanner message={errorText(error, t('students.tags.failed'))} /> : null}
+      <ul aria-label={t('students.tags.title')} className="u8sp-tags">
+        {mine.map((tag) => (
+          <li key={tag.id} className="u8sp-tag">
+            {tag.name}
+            <button
+              type="button"
+              className="u8sp-tag__remove"
+              aria-label={t('students.tags.remove', { tag: tag.name })}
+              disabled={remove.isPending}
+              onClick={() => remove.mutate(tag.id)}
+            >
+              ×
+            </button>
+          </li>
+        ))}
+        {!adding ? (
+          <li>
+            <Button variant="secondary" className="u8sp-tag-add" onClick={() => setAdding(true)}>
+              {t('students.tags.add')}
+            </Button>
+          </li>
+        ) : null}
+      </ul>
+      {mine.length === 0 && !adding ? <p className="u8sp-panel__note">{t('students.tags.empty')}</p> : null}
+      {adding ? (
+        <form onSubmit={submit} className="u8sp-panel__form">
+          <TextField
+            aria-label={t('students.tags.inputLabel')}
+            placeholder={t('students.tags.placeholder')}
+            list={listId}
+            autoFocus
+            maxLength={TAG_NAME_MAX}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <datalist id={listId}>
+            {choices.map((c) => (
+              <option key={c.id} value={c.name} />
+            ))}
+          </datalist>
+          <div className="u8sp-panel__buttons u8sp-panel__buttons--pair">
             <Button type="submit" disabled={!name.trim()} loading={add.isPending}>
               {t('students.tags.save')}
             </Button>
@@ -105,9 +103,9 @@ export function StudentTagsCard({ schoolId, studentId }: { schoolId: string; stu
             >
               {t('common.cancel')}
             </Button>
-          </form>
-        ) : null}
-      </Card>
-    </div>
+          </div>
+        </form>
+      ) : null}
+    </section>
   );
 }

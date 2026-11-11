@@ -15,6 +15,17 @@ export const students = {
     training: 'Training',
     homeBranch: 'Home branch',
   },
+  // The student's full page in the new look (Decision 453).
+  page: {
+    tabsAria: 'Student sections',
+    profile: 'Profile',
+    ranks: 'Ranks',
+    contact: 'Contact',
+    personal: 'Personal',
+    account: 'Account',
+    birthday: 'Birthday',
+    balance: 'Balance',
+  },
   merge: {
     button: "Merge a duplicate",
     title: "Merge a duplicate into {name}",

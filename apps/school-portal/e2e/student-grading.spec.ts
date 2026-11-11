@@ -28,7 +28,7 @@ test('the Students list opens a student\'s grading panel', async ({ page }) => {
 });
 
 test('shows the current rank, progress toward the next rank and the skills for it', async ({ page }) => {
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const card = bjj(page);
   await expect(card.getByText('White 1', { exact: true })).toBeVisible();
   // Decision 321 item 7: the average of classes 3/3 and skills 0/1.
@@ -40,7 +40,7 @@ test('shows the current rank, progress toward the next rank and the skills for i
 });
 
 test('signing off the last skill makes the student ready to grade', async ({ page }) => {
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const card = bjj(page);
   await card.getByRole('button', { name: 'Armbar: Not started. Change to Learning' }).click();
   await card.getByRole('button', { name: 'Armbar: Learning. Change to Signed off' }).click();
@@ -53,7 +53,7 @@ test('grading without the skill needs the acknowledgement, and is recorded', asy
   // Only active students are graded up (Decision 283): Sam has no membership, so switch him on.
   const { db } = await import('./fixtures');
   await db.studentRank.updateMany({ where: { studentId: s.student.id }, data: { boardActiveOverride: true } });
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const card = bjj(page);
   await card.getByRole('button', { name: 'Grade' }).click();
   const dialog = page.getByRole('dialog', { name: 'Grade — BJJ' });
@@ -74,7 +74,7 @@ test('grading without the skill needs the acknowledgement, and is recorded', asy
 });
 
 test('an inactive student can\'t be graded up, and the dialog says why (Decision 283)', async ({ page }) => {
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   await bjj(page).getByRole('button', { name: 'Grade' }).click();
   const dialog = page.getByRole('dialog', { name: 'Grade — BJJ' });
   await dialog.getByLabel(/Grade without all skills signed off/).check();
@@ -85,7 +85,7 @@ test('an inactive student can\'t be graded up, and the dialog says why (Decision
 test('a style that requires skills blocks grading until they are signed off', async ({ page }) => {
   const { db } = await import('./fixtures');
   await db.discipline.update({ where: { id: s.disciplineId }, data: { skillsRequiredToGrade: true } });
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   await bjj(page).getByRole('button', { name: 'Grade' }).click();
   const dialog = page.getByRole('dialog', { name: 'Grade — BJJ' });
   await expect(dialog.getByText(/requires every skill for the next rank to be signed off/)).toBeVisible();
@@ -93,7 +93,7 @@ test('a style that requires skills blocks grading until they are signed off', as
 });
 
 test('moving down needs a reason; a voided entry is hidden unless asked for', async ({ page }) => {
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const card = bjj(page);
   await card.getByRole('button', { name: 'Move down' }).click();
   const dialog = page.getByRole('dialog', { name: 'Move down — BJJ' });
@@ -118,7 +118,7 @@ test('moving down needs a reason; a voided entry is hidden unless asked for', as
 });
 
 test('a student with no rank gets a first rank', async ({ page }) => {
-  await page.goto(`/students/${s.newStudent.id}`);
+  await page.goto(`/students/${s.newStudent.id}?tab=ranks`);
   const card = bjj(page);
   await expect(card.getByText('No rank in this style yet.')).toBeVisible();
   await card.getByRole('button', { name: 'Give first rank' }).click();
@@ -131,7 +131,7 @@ test('a student with no rank gets a first rank', async ({ page }) => {
 });
 
 test('works with the keyboard only', async ({ page }) => {
-  await page.goto(`/students/${s.newStudent.id}`);
+  await page.goto(`/students/${s.newStudent.id}?tab=ranks`);
   const card = bjj(page);
   await expect(card.getByRole('button', { name: 'Give first rank' })).toBeVisible();
 
@@ -184,7 +184,7 @@ test('shows the student\'s upcoming Booking', async ({ page }) => {
 
   try {
     await page.goto(`/students/${s.student.id}`);
-    const panel = page.getByRole('heading', { name: 'Upcoming Booking' }).locator('..');
+    const panel = page.getByRole('region', { name: 'Upcoming Booking' });
     await expect(panel.getByText('Open Mat')).toBeVisible();
   } finally {
     await db.booking.delete({ where: { id: booking.id } });
@@ -196,7 +196,7 @@ test('shows the student\'s upcoming Booking', async ({ page }) => {
 
 test('shows "No upcoming Booking" when the student has none', async ({ page }) => {
   await page.goto(`/students/${s.newStudent.id}`);
-  const panel = page.getByRole('heading', { name: 'Upcoming Booking' }).locator('..');
+  const panel = page.getByRole('region', { name: 'Upcoming Booking' });
   await expect(panel.getByText('No upcoming Booking.')).toBeVisible();
 });
 
@@ -215,7 +215,7 @@ test('the owner revokes a student\'s enrollment', async ({ page }) => {
 // ---------------------------------------------------------------------------
 // v1.2 backend backlog — `StudentUpdate.dc.html`: a Staff member editing a
 // Student's own profile on their behalf, on its own dedicated page (reached
-// from this page's "Edit profile" button), not a Modal over this page.
+// from this page's Edit button, in its summary panel), not a Modal over this page.
 // ---------------------------------------------------------------------------
 
 test('the owner edits a student\'s profile on their behalf, on the dedicated Update page', async ({ page }) => {
@@ -223,7 +223,8 @@ test('the owner edits a student\'s profile on their behalf, on the dedicated Upd
   // signed in yet (one the School added, still on its temporary passcode).
   await db.user.update({ where: { id: s.newStudent.id }, data: { mustChangePasscode: true } });
   await page.goto(`/students/${s.newStudent.id}`);
-  await page.getByRole('button', { name: 'Edit profile' }).click();
+  // The Edit button is in the summary panel (DESIGN.md → "Student page").
+  await page.getByRole('complementary', { name: 'Student' }).getByRole('link', { name: `Edit ${s.newStudent.name}` }).click();
   await expect(page).toHaveURL(new RegExp(`/students/${s.newStudent.id}/edit$`));
   await expect(page.getByRole('heading', { level: 1, name: `Edit ${s.newStudent.name}'s profile` })).toBeVisible();
   // Pre-filled from the roster's own known fields.
@@ -262,5 +263,5 @@ test('a coach without "Manage students" can open a student but not edit their pr
   await signIn(page, coach.token);
   await page.goto(`/students/${s.student.id}`);
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Edit profile' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: `Edit ${s.student.name}` })).toHaveCount(0);
 });

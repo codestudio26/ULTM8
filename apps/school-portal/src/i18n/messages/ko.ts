@@ -2797,6 +2797,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       training: "훈련",
       homeBranch: "소속 지점",
     },
+    page: {
+      tabsAria: "학생 섹션",
+      profile: "프로필",
+      ranks: "등급",
+      contact: "연락처",
+      personal: "개인 정보",
+      account: "계정",
+      birthday: "생일",
+      balance: "잔액",
+    },
     growth: {
       subtitle: "현재 활동 중인 수련생, 방문자, 일시정지된 멤버십과 최근 12개월 동안 도장이 얼마나 성장했는지 보여 줍니다.",
       period: "최근 12개월, 도장 시간대({zone}) 기준 월별.",

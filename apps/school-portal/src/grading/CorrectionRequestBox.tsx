@@ -21,7 +21,7 @@ export function CorrectionRequestBox({ request, studentId, firstName }: { reques
   const send = (a: 'approve' | 'reject') => answer.mutate({ id: request.id, answer: a, note });
 
   return (
-    <div role="region" aria-label={t('grading.correction.title')} style={{ marginTop: 12, padding: 12, borderRadius: 8, border: '1px solid var(--border)' }}>
+    <div role="region" aria-label={t('grading.correction.title')} className="u8sp-box u8sp-box--info">
       <strong>{t('grading.correction.title')}</strong>
       <p style={{ margin: '4px 0' }}>
         {t('grading.correction.asked', { name: firstName, from: rungName(request.from), to: rungName(request.requested), date: asked })}
@@ -33,7 +33,7 @@ export function CorrectionRequestBox({ request, studentId, firstName }: { reques
         <TextArea id={`correction-note-${request.id}`} maxLength={500} rows={2} value={note} onChange={(e) => setNote(e.target.value)} />
       </Field>
       {answer.error ? <ErrorBanner message={answer.error instanceof ApiError ? answer.error.message : t('grading.correction.failed')} /> : null}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div className="u8sp-line u8sp-small">
         <Button type="button" loading={answer.isPending} onClick={() => send('approve')}>
           {t('grading.correction.approve', { rank: rungName(request.requested) })}
         </Button>

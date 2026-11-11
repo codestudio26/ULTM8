@@ -2837,6 +2837,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       training: "Antrenman",
       homeBranch: "Ana şube",
     },
+    page: {
+      tabsAria: "Öğrenci bölümleri",
+      profile: "Profil",
+      ranks: "Dereceler",
+      contact: "İletişim",
+      personal: "Kişisel bilgiler",
+      account: "Hesap",
+      birthday: "Doğum günü",
+      balance: "Bakiye",
+    },
     growth: {
       subtitle: "Şu anki aktif öğrenciler, ziyaretçiler ve dondurulmuş üyelikler ile okulunun son 12 ayda nasıl büyüdüğü.",
       period: "Son 12 ay, okulun saat diliminde aylara göre ({zone}).",

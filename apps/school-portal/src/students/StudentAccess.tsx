@@ -49,7 +49,8 @@ export function ChildInvitesCard({ schoolId }: { schoolId: string }) {
  * App access on a student's page (Decision 403): while the account the
  * School made (the student's, or a child's Guardian's) hasn't been signed in
  * to, the owner can make a new temporary passcode, shown once. Hidden
- * otherwise.
+ * otherwise. It sits in the student page's summary panel (the design's
+ * "Send access").
  */
 export function TemporaryPasscodeCard({ schoolId, studentId }: { schoolId: string; studentId: string }) {
   const t = useT();
@@ -60,41 +61,37 @@ export function TemporaryPasscodeCard({ schoolId, studentId }: { schoolId: strin
   if (!shown && (!s || !s.available)) return null;
   const name = s?.accountName ?? '';
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Card>
-        <section aria-label={t('students.passcode.title')}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
-            {t('students.passcode.title')}
-          </h2>
-          {shown ? (
-            <>
-              <p>{t('students.passcode.shown', { name: shown.name })}</p>
-              <p data-testid="temporary-passcode" style={{ fontSize: 24, fontWeight: 600, letterSpacing: 4 }}>
-                {shown.passcode}
-              </p>
-              <p className="ultm8-field__hint">{t('students.addManually.passcodeOnceDays')}</p>
-            </>
-          ) : (
-            <>
-              <p style={{ marginTop: 0 }}>
-                {s?.expired
-                  ? t('students.passcode.expired', { name })
-                  : s?.forGuardian
-                    ? t('students.passcode.waitingGuardian', { name })
-                    : t('students.passcode.waiting', { name })}
-              </p>
-              {renew.error ? <ErrorBanner message={renew.error instanceof ApiError ? renew.error.message : t('common.tryAgain')} /> : null}
-              <Button
-                variant="secondary"
-                loading={renew.isPending}
-                onClick={() => renew.mutate(undefined, { onSuccess: (res) => setShown({ passcode: res.temporaryPasscode, name: res.accountName }) })}
-              >
-                {t('students.passcode.button')}
-              </Button>
-            </>
-          )}
-        </section>
-      </Card>
-    </div>
+    <section aria-label={t('students.passcode.title')}>
+      <h3 className="u8n-student-panel__heading">{t('students.passcode.title')}</h3>
+      {shown ? (
+        <>
+          <p className="u8sp-panel__text">{t('students.passcode.shown', { name: shown.name })}</p>
+          <p className="u8sp-ticket__code" data-testid="temporary-passcode" style={{ margin: '8px 0 0' }}>
+            {shown.passcode}
+          </p>
+          <p className="u8sp-panel__note">{t('students.addManually.passcodeOnceDays')}</p>
+        </>
+      ) : (
+        <>
+          <p className="u8sp-panel__text">
+            {s?.expired
+              ? t('students.passcode.expired', { name })
+              : s?.forGuardian
+                ? t('students.passcode.waitingGuardian', { name })
+                : t('students.passcode.waiting', { name })}
+          </p>
+          {renew.error ? <ErrorBanner message={renew.error instanceof ApiError ? renew.error.message : t('common.tryAgain')} /> : null}
+          <div className="u8sp-panel__buttons">
+            <Button
+              variant="secondary"
+              loading={renew.isPending}
+              onClick={() => renew.mutate(undefined, { onSuccess: (res) => setShown({ passcode: res.temporaryPasscode, name: res.accountName }) })}
+            >
+              {t('students.passcode.button')}
+            </Button>
+          </div>
+        </>
+      )}
+    </section>
   );
 }

@@ -2917,6 +2917,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       training: "Тренировки",
       homeBranch: "Основной филиал",
     },
+    page: {
+      tabsAria: "Разделы ученика",
+      profile: "Профиль",
+      ranks: "Ранги",
+      contact: "Контакты",
+      personal: "Личные данные",
+      account: "Аккаунт",
+      birthday: "День рождения",
+      balance: "Баланс",
+    },
     growth: {
       subtitle: "Активные ученики, гости и замороженные абонементы сейчас, а также рост вашей школы за последние 12 месяцев.",
       period: "Последние 12 месяцев, по месяцам в часовом поясе школы ({zone}).",

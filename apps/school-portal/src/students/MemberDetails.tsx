@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner, Field, Spinner, TextField } from '@ultm8/ui';
-import { ApiError } from '@ultm8/api-client';
+import { Button, Field, TextField } from '@ultm8/ui';
 import { useT } from '../i18n/I18nProvider';
-import { formatCalendarDay } from '../membershipPlans/freezeQueries';
-import { useStudentProfile } from './studentQueries';
 
 /** Decision 315 item 5: the member's other contacts. Not logins. */
 export type MemberContacts = {
@@ -83,47 +80,5 @@ export function MemberContactFields({
       ) : null}
       {closed.length > 0 ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '0 0 12px' }}>{closed}</div> : null}
     </>
-  );
-}
-
-/**
- * The student page's member details (Decision 315 items 4, 5): when they
- * joined this School, and their other contacts. Read from the same profile
- * the Edit page uses, so the same staff see it (GET …/profile).
- */
-export function MemberDetailsCard({ schoolId, studentId }: { schoolId: string; studentId: string }) {
-  const t = useT();
-  const profile = useStudentProfile(schoolId, studentId);
-  const row = (label: string, value: React.ReactNode, testId: string) => (
-    <div style={{ display: 'flex', gap: 12, margin: '4px 0' }}>
-      <span style={{ minWidth: 160, color: 'var(--text-secondary)' }}>{label}</span>
-      <span data-testid={testId}>{value}</span>
-    </div>
-  );
-  const p = profile.data;
-  const notGiven = <span style={{ color: 'var(--text-secondary)' }}>{t('students.details.notGiven')}</span>;
-  const emergency = p
-    ? [p.emergencyContactName, p.emergencyContactRelationship ? `(${p.emergencyContactRelationship})` : null, p.emergencyContactPhone].filter(Boolean).join(' ')
-    : '';
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
-          {t('students.details.title')}
-        </h2>
-        {profile.isLoading ? (
-          <Spinner />
-        ) : profile.error ? (
-          <ErrorBanner message={profile.error instanceof ApiError ? profile.error.message : t('students.details.loadFailed')} />
-        ) : p ? (
-          <>
-            {row(t('students.columnJoined'), p.joinedOn ? formatCalendarDay(p.joinedOn) : notGiven, 'member-joined')}
-            {row(t('students.update.secondaryPhone'), p.secondaryPhone ? <a href={`tel:${p.secondaryPhone}`}>{p.secondaryPhone}</a> : notGiven, 'member-secondary-phone')}
-            {row(t('students.update.secondaryEmail'), p.secondaryEmail ? <a href={`mailto:${p.secondaryEmail}`}>{p.secondaryEmail}</a> : notGiven, 'member-secondary-email')}
-            {row(t('students.update.emergencyHeading'), emergency || notGiven, 'member-emergency')}
-          </>
-        ) : null}
-      </Card>
-    </div>
   );
 }

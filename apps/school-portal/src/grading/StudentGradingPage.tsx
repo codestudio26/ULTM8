@@ -1,22 +1,21 @@
-import React, { useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, PageHeader, SelectField, Spinner, SuccessBanner } from '@ultm8/ui';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Badge, Button, Checkbox, EmptyState, ErrorBanner, Spinner, SuccessBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useGradingSchoolId } from '../auth/AuthContext';
-import { StudentCheckInCodeCard } from '../frontdesk/StudentCheckInCode';
 import { StudentNotesCard } from '../students/StudentNotesCard';
-import { StudentTagsCard } from '../students/StudentTagsCard';
 import { StudentMedicalInfoCard } from '../students/StudentMedicalInfoCard';
 import { StudentCustomFieldsCard } from '../students/StudentCustomFieldsCard';
 import { MemberFilesCard } from '../students/MemberFilesCard';
 import { MemberDataExportCard } from '../students/MemberDataExportCard';
-import { TemporaryPasscodeCard } from '../students/StudentAccess';
 import { useStudentLeavingSummary, useStudents, type StudentLeavingSummary } from '../students/studentQueries';
-import { StudentGuardiansCard } from '../students/StudentGuardiansCard';
 import { ReEnrolModal } from '../students/ReEnrolModal';
 import { MergeDuplicateModal } from '../students/MergeDuplicateModal';
 import { VisitorCard } from '../students/VisitorCard';
-import { MemberDetailsCard } from '../students/MemberDetails';
+import { StudentSummaryPanel } from '../students/StudentSummaryPanel';
+import { StudentCard, StudentPageRoot } from '../students/StudentPageLook';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { useAttendanceAccess } from '../students/AttendancePage';
 import { LogAttendanceModal } from '../students/LogAttendanceModal';
 import { useDisciplines, type DisciplineResponse } from '../disciplines/disciplineQueries';
@@ -97,6 +96,21 @@ export function StudentGradingPage() {
   const navigate = useNavigate();
   const t = useT();
   const { claims } = useAuth();
+  const [searchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'ranks' ? 'ranks' : 'profile';
+  // A link to a card on the other tab ("See in Payments", "See in grading")
+  // switches tab; the card then scrolls into view once it has loaded.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!hash) return undefined;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      const target = document.getElementById(decodeURIComponent(hash.slice(1)));
+      if (target) target.scrollIntoView();
+      if (target || ++tries > 20) window.clearInterval(timer);
+    }, 100);
+    return () => window.clearInterval(timer);
+  }, [hash, tab]);
   // The board passes the name along, for a student a coach's list doesn't
   // include.
   const passedName = (useLocation() as { state?: { name?: string } }).state?.name;
@@ -179,42 +193,49 @@ export function StudentGradingPage() {
     (g) => g.schoolId === schoolId && g.role === 'STUDENT' && !g.revokedAt,
   );
 
+  // The page's two tabs (DESIGN-BRIEF §8: "the tabs stay in the main area"):
+  // Profile, and Ranks, which is the student's grading (DESIGN.md → "Grading
+  // screens": "A student's grading is the Ranks tab of their profile").
+  const onRanks = tab === 'ranks';
+  const here = `/students/${studentId}`;
+  // Who saw the member details card: the same staff who may open the Edit
+  // page (Branch Staff need the students switch), Decision 315 items 4, 5.
+  const maySeeDetails = !inactive && !!student && (my.isOwner || !isBranchStaff || !!staffAccess.data?.access.students);
+
+  const inspector = (
+    <StudentSummaryPanel
+      schoolId={schoolId}
+      studentId={studentId}
+      student={student}
+      studentName={studentName}
+      inactive={inactive}
+      isOwner={my.isOwner}
+      enrolled={enrolled}
+      mayEditProfile={mayEditProfile}
+      maySeeDetails={maySeeDetails}
+    />
+  );
+
   return (
-    <>
-      <p style={{ margin: '0 0 8px' }}>
-        {my.isOwner ? <Link to="/students">{t('grading.student.backToStudents')}</Link> : <Link to="/grading">{t('grading.student.backToBoard')}</Link>}
-      </p>
-      <PageHeader
+    <StudentPageRoot>
+      <NewLookPageHeader
+        parent={my.isOwner ? { to: '/students', label: t('layout.nav.students') } : { to: '/grading', label: t('layout.nav.gradingBoard') }}
         title={studentName}
-        subtitle={inactive ? t('grading.student.inactiveSubtitle') : t('grading.student.subtitle')}
+        subtitle={inactive ? t('grading.student.inactiveSubtitle') : undefined}
         actions={
           <>
-            {inactive ? <Badge>{t('students.statusInactive')}</Badge> : null}
-            {/* `StudentUpdate.dc.html` (v1.2 backend backlog) — the owner, and
-              * Branch Staff with "Manage students" (Decision 448 item 11; not
-              * coaches), matching the backend's gate — not Owner-only like Revoke
-              * enrollment below, which the backend separately restricts via
-              * assertSchoolOwner. A dedicated page (StudentUpdatePage.tsx at
-              * /students/:id/edit), not a Modal — see that page's own header
-              * comment for why. */}
+            {/* Decision 317 item 4: "+ Log attendance", for staff who may check people in. */}
             {student && !inactive && mayLogAttendance ? (
-              <Button variant="secondary" onClick={() => setLoggingAttendance(true)}>
-                {t('students.attendance.logButton')}
-              </Button>
-            ) : null}
-            {student && !inactive && mayEditProfile ? (
-              <Button variant="secondary" onClick={() => navigate(`/students/${studentId}/edit`)}>
-                {t('grading.student.editProfile')}
-              </Button>
+              <Button onClick={() => setLoggingAttendance(true)}>{t('students.attendance.logButton')}</Button>
             ) : null}
             {my.isOwner && student && !inactive ? (
               <Button variant="secondary" onClick={() => setMerging(true)}>
                 {t('students.merge.button')}
               </Button>
             ) : null}
-            {my.isOwner && inactive ? (
-              <Button onClick={() => setReEnrolling(true)}>{t('students.reEnrol.button')}</Button>
-            ) : null}
+            {my.isOwner && inactive ? <Button onClick={() => setReEnrolling(true)}>{t('students.reEnrol.button')}</Button> : null}
+            {/* Revoke Enrollment is School Owner-only (the backend's own
+              * assertSchoolOwner gate on DELETE /users/{userId}/role-grants/{id}). */}
             {my.isOwner && activeStudentGrant ? (
               <Button variant="danger" onClick={() => setConfirmingRevoke(true)}>
                 {t('grading.student.revokeEnrollment')}
@@ -222,10 +243,106 @@ export function StudentGradingPage() {
             ) : null}
           </>
         }
+        tabs={[
+          { to: here, label: t('students.page.profile'), current: !onRanks },
+          { to: `${here}?tab=ranks`, label: t('students.page.ranks'), current: onRanks },
+        ]}
+        tabsLabel={t('students.page.tabsAria')}
       />
 
-      {attendanceLogged ? <SuccessBanner message={attendanceLogged} /> : null}
-      {merged ? <SuccessBanner message={merged} /> : null}
+      <NewLookPage inspector={inspector} inspectorLabel={t('students.list.panelLabel')}>
+        <div className="u8sp-body">
+          {attendanceLogged ? <SuccessBanner message={attendanceLogged} /> : null}
+          {merged ? <SuccessBanner message={merged} /> : null}
+
+          {onRanks ? (
+            <>
+              <p className="u8sp-intro">{t('grading.student.subtitle')}</p>
+              {styles.length === 0 ? (
+                <StudentCard title={t('students.page.ranks')}>
+                  {my.isOwner ? (
+                    <EmptyState title={t('grading.noStylesTitle')} description={t('grading.student.noStylesDescription')} />
+                  ) : (
+                    <EmptyState title={t('grading.noStylesToGradeTitle')} description={t('grading.noStylesToGradeDescription')} />
+                  )}
+                </StudentCard>
+              ) : (
+                styles.map((discipline) => (
+                  <DisciplineGradingCard
+                    key={discipline.id}
+                    studentId={studentId}
+                    schoolId={schoolId}
+                    discipline={discipline}
+                    studentRank={ranks.find((r) => r.disciplineId === discipline.id) ?? null}
+                    lessons={(lessons.data?.items ?? []) as Lesson[]}
+                    history={history.data?.items ?? []}
+                    historyLoading={history.isLoading}
+                    performerName={performerName}
+                    can={(toggle) => !inactive && my.can(discipline.id, toggle)}
+                    isOwner={my.isOwner}
+                    mayCloseFees={mayCloseFees}
+                    archived={!!discipline.archivedAt}
+                    firstName={student?.firstName || studentName}
+                    studentName={studentName}
+                    feeRequests={(feeRequests.data?.items ?? []).filter((r) => feeStyleOf(r) === discipline.id)}
+                    feeCurrency={feeSettings.data?.currency ?? null}
+                    styles={disciplines.data?.items ?? []}
+                    corrections={(corrections.data?.items ?? []).filter((c) => c.disciplineId === discipline.id)}
+                  />
+                ))
+              )}
+              <div>
+                <Checkbox label={t('grading.student.showVoided')} checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
+              </div>
+            </>
+          ) : (
+            <>
+              <StudentCard title={t('grading.student.upcomingBooking')}>
+                {nextBooking.isLoading ? (
+                  <Spinner />
+                ) : nextBooking.error ? (
+                  <ErrorBanner message={nextBooking.error instanceof ApiError ? nextBooking.error.message : t('grading.student.bookingsLoadFailed')} />
+                ) : (
+                  <UpcomingBooking next={nextBooking.data?.next ?? null} moreUpcoming={nextBooking.data?.moreUpcoming ?? 0} />
+                )}
+              </StudentCard>
+
+              {/* Decision 348: memberships, selling at the desk, Friend Pass and
+                  cancelling a Subscription. Owner only, like the API. Decision 409:
+                  Branch Staff with "Can freeze memberships" see the ones that can
+                  be frozen, with the freeze actions only. */}
+              {my.isOwner ? (
+                <>
+                  <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} />
+                  {/* Decision 316 item 6: the plan contracts they signed. */}
+                  <StudentPlanContractsCard schoolId={schoolId} studentId={studentId} />
+                </>
+              ) : mayFreeze && !inactive ? (
+                <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} freezeOnly />
+              ) : null}
+
+              {/* Decision 400: staff notes, some shown to the member. */}
+              {!inactive ? <StudentNotesCard schoolId={schoolId} studentId={studentId} /> : null}
+
+              {/* Decisions 303, 338: charges, desk payments and the balance. Shown to
+                  the owner and to staff with a charges switch (the API says who). */}
+              <StudentChargesCard schoolId={schoolId} studentId={studentId} studentName={studentName} />
+
+              {/* Decision 391: Visitor status and visit passes. */}
+              {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}
+              {/* Decision 315 item 14: the School's own member fields and status. */}
+              {!inactive ? <StudentCustomFieldsCard schoolId={schoolId} studentId={studentId} /> : null}
+              {/* Decision 315 item 10: medical information given at sign-up. */}
+              {maySeeMedical ? <StudentMedicalInfoCard schoolId={schoolId} studentId={studentId} /> : null}
+              {/* Decision 315 item 9 (backlog 5.11): Documents, files on the member. */}
+              {mayFiles ? <MemberFilesCard schoolId={schoolId} studentId={studentId} canUpload={!inactive} /> : null}
+              {/* Decision 433 item 10: everything the School holds about them. Owner only. */}
+              {my.isOwner ? <MemberDataExportCard schoolId={schoolId} studentId={studentId} /> : null}
+            </>
+          )}
+        </div>
+      </NewLookPage>
+
       {merging && student ? (
         <MergeDuplicateModal schoolId={schoolId} keptId={studentId} keptName={studentName} onClose={() => setMerging(false)} onMerged={setMerged} />
       ) : null}
@@ -237,109 +354,6 @@ export function StudentGradingPage() {
           onDone={setAttendanceLogged}
         />
       ) : null}
-
-      {/* Decision 371 (Q4): who the student's Guardians are, read for a current
-          student only; Decision 430: consent status, Remove / Add another Guardian. */}
-      <StudentGuardiansCard schoolId={schoolId} studentId={studentId} studentName={studentName} enabled={enrolled} isOwner={my.isOwner} />
-
-      <div style={{ marginBottom: 24 }}>
-        <Card>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 8 }}>
-            {t('grading.student.upcomingBooking')}
-          </h2>
-          {nextBooking.isLoading ? (
-            <Spinner />
-          ) : nextBooking.error ? (
-            <ErrorBanner message={nextBooking.error instanceof ApiError ? nextBooking.error.message : t('grading.student.bookingsLoadFailed')} />
-          ) : (
-            <UpcomingBooking next={nextBooking.data?.next ?? null} moreUpcoming={nextBooking.data?.moreUpcoming ?? 0} />
-          )}
-        </Card>
-      </div>
-
-      {/* Decision 315 items 4, 5: join date and other contacts. The same staff
-          who may open the Edit page (Branch Staff need the students switch). */}
-      {!inactive && student && (my.isOwner || !isBranchStaff || staffAccess.data?.access.students) ? (
-        <MemberDetailsCard schoolId={schoolId} studentId={studentId} />
-      ) : null}
-
-      {/* Decision 384: the personal check-in code typed at the front desk. */}
-      {!inactive ? <StudentCheckInCodeCard schoolId={schoolId} studentId={studentId} /> : null}
-
-      {/* Decision 403: a new temporary passcode while the account is unused. Owner only. */}
-      {!inactive && my.isOwner ? <TemporaryPasscodeCard schoolId={schoolId} studentId={studentId} /> : null}
-
-      {/* Decision 400: staff notes, some shown to the member. */}
-      {!inactive ? <StudentNotesCard schoolId={schoolId} studentId={studentId} /> : null}
-
-      {/* Backlog 5.4: staff-only tags, plus "+ tag". */}
-      {!inactive ? <StudentTagsCard schoolId={schoolId} studentId={studentId} /> : null}
-      {/* Decision 315 item 10: medical information given at sign-up. */}
-      {maySeeMedical ? <StudentMedicalInfoCard schoolId={schoolId} studentId={studentId} /> : null}
-      {/* Decision 315 item 9 (backlog 5.11): Documents, files on the member. */}
-      {mayFiles ? <MemberFilesCard schoolId={schoolId} studentId={studentId} canUpload={!inactive} /> : null}
-      {/* Decision 433 item 10: everything the School holds about them. Owner only. */}
-      {my.isOwner ? <MemberDataExportCard schoolId={schoolId} studentId={studentId} /> : null}
-
-      {/* Decision 315 item 14: the School's own member fields and status. */}
-      {!inactive ? <StudentCustomFieldsCard schoolId={schoolId} studentId={studentId} /> : null}
-
-      {/* Decision 391: Visitor status and visit passes. */}
-      {!inactive && student ? <VisitorCard schoolId={schoolId} student={student} /> : null}
-
-      {/* Decision 348: memberships, selling at the desk, Friend Pass and
-          cancelling a Subscription. Owner only, like the API. Decision 409:
-          Branch Staff with "Can freeze memberships" see the ones that can
-          be frozen, with the freeze actions only. */}
-      {my.isOwner ? (
-        <>
-          <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} />
-          {/* Decision 316 item 6: the plan contracts they signed. */}
-          <StudentPlanContractsCard schoolId={schoolId} studentId={studentId} />
-        </>
-      ) : mayFreeze && !inactive ? (
-        <StudentMembershipsCard schoolId={schoolId} studentId={studentId} studentName={studentName} freezeOnly />
-      ) : null}
-
-      {/* Decisions 303, 338: charges, desk payments and the balance. Shown to
-          the owner and to staff with a charges switch (the API says who). */}
-      <StudentChargesCard schoolId={schoolId} studentId={studentId} studentName={studentName} />
-
-      {styles.length === 0 ? (
-        <Card>
-          {my.isOwner ? (
-            <EmptyState title={t('grading.noStylesTitle')} description={t('grading.student.noStylesDescription')} />
-          ) : (
-            <EmptyState title={t('grading.noStylesToGradeTitle')} description={t('grading.noStylesToGradeDescription')} />
-          )}
-        </Card>
-      ) : (
-        styles.map((discipline) => (
-          <DisciplineGradingCard
-            key={discipline.id}
-            studentId={studentId}
-            schoolId={schoolId}
-            discipline={discipline}
-            studentRank={ranks.find((r) => r.disciplineId === discipline.id) ?? null}
-            lessons={(lessons.data?.items ?? []) as Lesson[]}
-            history={history.data?.items ?? []}
-            historyLoading={history.isLoading}
-            performerName={performerName}
-            can={(toggle) => !inactive && my.can(discipline.id, toggle)}
-            isOwner={my.isOwner}
-            mayCloseFees={mayCloseFees}
-            archived={!!discipline.archivedAt}
-            firstName={student?.firstName || studentName}
-            studentName={studentName}
-            feeRequests={(feeRequests.data?.items ?? []).filter((r) => feeStyleOf(r) === discipline.id)}
-            feeCurrency={feeSettings.data?.currency ?? null}
-            styles={disciplines.data?.items ?? []}
-            corrections={(corrections.data?.items ?? []).filter((c) => c.disciplineId === discipline.id)}
-          />
-        ))
-      )}
-      <Checkbox label={t('grading.student.showVoided')} checked={showVoided} onChange={(e) => setShowVoided(e.target.checked)} />
-
       {reEnrolling ? <ReEnrolModal schoolId={schoolId} studentId={studentId} studentName={studentName} onClose={() => setReEnrolling(false)} /> : null}
 
       {confirmingRevoke && activeStudentGrant ? (
@@ -357,7 +371,7 @@ export function StudentGradingPage() {
           <RevokeLiveItems schoolId={schoolId} studentId={studentId} />
         </ConfirmDeleteModal>
       ) : null}
-    </>
+    </StudentPageRoot>
   );
 }
 
@@ -508,34 +522,16 @@ function DisciplineGradingCard({
   const waiting = fee?.status === 'waiting';
 
   return (
-    <section id={`grading-${discipline.id}`} aria-label={discipline.name} style={{ marginBottom: 24 }}>
-      <Card>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
-          <div>
-            <h2 className="ultm8-page-header__title" style={{ fontSize: 18, marginBottom: 8 }}>
-              {discipline.name} {archived ? <Badge>{t('disciplines.list.archived')}</Badge> : null}
-            </h2>
-            {archived ? <p className="ultm8-field__hint">{t('grading.student.archivedStyleNote')}</p> : null}
-            {ranks.isLoading ? (
-              <Spinner />
-            ) : !studentRank ? (
-              <p style={{ margin: 0 }}>{t('grading.student.noRankYet')}</p>
-            ) : !current ? (
-              <ErrorBanner message={t('grading.student.rankOffLadder')} />
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                <BeltChip rung={current} />
-                <strong>{current.name}</strong>
-                <span className="ultm8-field__hint">{t('grading.student.since', { date: formatDay(studentRank.dateOfCurrentRank) })}</span>
-                {fee ? <FeeBadge status={fee.status} /> : null}
-                {studentRank.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.student.selfDeclared')}</Badge> : null}
-                {studentReadyForAdult ? <Badge variant="info">{t('grading.board.card.readyForAdult')}</Badge> : null}
-                {!archived && eligibility?.hasNext && eligibility.eligible && !waiting ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
-              </div>
-            )}
-          </div>
-          {ladder.length > 0 ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <>
+      <StudentCard
+        id={`grading-${discipline.id}`}
+        label={discipline.name}
+        variant="style"
+        title={discipline.name}
+        titleExtra={archived ? <Badge>{t('disciplines.list.archived')}</Badge> : null}
+        actions={
+          ladder.length > 0 ? (
+            <>
               {studentRank?.verificationStatus === 'UNVERIFIED' && current && can('canVerifyRanks') ? (
                 <Button onClick={() => setDialog('verify')}>{t('grading.student.verifyRank')}</Button>
               ) : null}
@@ -554,54 +550,83 @@ function DisciplineGradingCard({
                   {t('grading.student.correctDate')}
                 </Button>
               ) : null}
+            </>
+          ) : null
+        }
+      >
+        <div className="u8sp-sec">
+          {archived ? <p className="ultm8-field__hint">{t('grading.student.archivedStyleNote')}</p> : null}
+          {ranks.isLoading ? (
+            <Spinner />
+          ) : !studentRank ? (
+            <p style={{ margin: 0 }}>{t('grading.student.noRankYet')}</p>
+          ) : !current ? (
+            <ErrorBanner message={t('grading.student.rankOffLadder')} />
+          ) : (
+            <div className="u8sp-line" style={{ gap: '12px 20px' }}>
+              <BeltChip rung={current} large />
+              <div style={{ minWidth: 0 }}>
+                <div className="u8sp-big">{current.name}</div>
+                <div className="u8sp-quiet">{t('grading.student.since', { date: formatDay(studentRank.dateOfCurrentRank) })}</div>
+              </div>
+              <div className="u8sp-line" style={{ gap: 6 }}>
+                {fee ? <FeeBadge status={fee.status} /> : null}
+                {studentRank.verificationStatus === 'UNVERIFIED' ? <Badge variant="danger">{t('grading.student.selfDeclared')}</Badge> : null}
+                {studentReadyForAdult ? <Badge variant="info">{t('grading.board.card.readyForAdult')}</Badge> : null}
+                {!archived && eligibility?.hasNext && eligibility.eligible && !waiting ? <Badge variant="success">{t('grading.student.readyToGrade')}</Badge> : null}
+              </div>
             </div>
+          )}
+
+          {!ranks.isLoading && ladder.length === 0 ? (
+            <p className="ultm8-field__hint">
+              <Trans
+                k="grading.student.noRanks"
+                nodes={{ link: <Link to={`/disciplines/${discipline.id}`}>{t('grading.student.setUpLadder')}</Link> }}
+              />
+            </p>
           ) : null}
+
+          {!archived && can('canVerifyRanks')
+            ? corrections.map((c) => <CorrectionRequestBox key={c.id} request={c} studentId={studentId} firstName={firstName} />)
+            : null}
+
+          {fee ? (
+            <FeeBox
+              fee={fee}
+              firstName={firstName}
+              currency={feeCurrency}
+              mayClose={mayCloseFees}
+              canPromote={can('canPromote')}
+              onDecide={() => setDialog('decide')}
+              onPromote={() => setDialog({ promoteTo: fee.request.toRungId })}
+            />
+          ) : null}
+
+          <FeeRequestList requests={feeRequests} currency={feeCurrency} />
         </div>
 
-        {!ranks.isLoading && ladder.length === 0 ? (
-          <p className="ultm8-field__hint">
-            <Trans
-              k="grading.student.noRanks"
-              nodes={{ link: <Link to={`/disciplines/${discipline.id}`}>{t('grading.student.setUpLadder')}</Link> }}
-            />
-          </p>
-        ) : null}
-
-        {!archived && can('canVerifyRanks')
-          ? corrections.map((c) => <CorrectionRequestBox key={c.id} request={c} studentId={studentId} firstName={firstName} />)
-          : null}
-
-        {fee ? (
-          <FeeBox
-            fee={fee}
-            firstName={firstName}
-            currency={feeCurrency}
-            mayClose={mayCloseFees}
-            canPromote={can('canPromote')}
-            onDecide={() => setDialog('decide')}
-            onPromote={() => setDialog({ promoteTo: fee.request.toRungId })}
-          />
-        ) : null}
-
-        <FeeRequestList requests={feeRequests} currency={feeCurrency} />
-
-        {current && eligibility && studentRank && !archived ? (
-          <Progress
-            eligibility={eligibility}
-            breakdown={studentRank.progressBreakdown ?? null}
-            hours={studentRank.hoursTrained}
-            nextName={eligibility.hasNext ? rungName(eligibility.nextRungId) : null}
-          />
-        ) : null}
-
-        {current && studentRank && can('canAdjustProgress') ? (
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 12 }}>
-            {eligibility?.hasNext && !eligibility.timeOnly ? (
-              <Button variant="secondary" onClick={() => setDialog('log-class')}>
-                {t('grading.student.logClass')}
-              </Button>
+        {(current && eligibility && studentRank && !archived) || (current && studentRank && can('canAdjustProgress')) ? (
+          <div className="u8sp-sec">
+            {current && eligibility && studentRank && !archived ? (
+              <Progress
+                eligibility={eligibility}
+                breakdown={studentRank.progressBreakdown ?? null}
+                hours={studentRank.hoursTrained}
+                nextName={eligibility.hasNext ? rungName(eligibility.nextRungId) : null}
+              />
             ) : null}
-            <AttendingSwitch studentId={studentId} disciplineId={discipline.id} disciplineName={discipline.name} value={studentRank.boardActiveOverride ?? null} />
+
+            {current && studentRank && can('canAdjustProgress') ? (
+              <div className="u8sp-adjust u8sp-small">
+                {eligibility?.hasNext && !eligibility.timeOnly ? (
+                  <Button variant="secondary" onClick={() => setDialog('log-class')}>
+                    {t('grading.student.logClass')}
+                  </Button>
+                ) : null}
+                <AttendingSwitch studentId={studentId} disciplineId={discipline.id} disciplineName={discipline.name} value={studentRank.boardActiveOverride ?? null} />
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -656,7 +681,7 @@ function DisciplineGradingCard({
             noteError={noteError}
           />
         ) : null}
-      </Card>
+      </StudentCard>
 
       {dialog === 'grade' ? (
         <GradeModal studentId={studentId} discipline={discipline} ladder={ladder} current={current} eligibility={eligibility} adult={adultProgram} onClose={() => setDialog(null)} />
@@ -706,7 +731,7 @@ function DisciplineGradingCard({
       {dialog && typeof dialog === 'object' && 'logEventId' in dialog ? (
         <NoteLogModal studentId={studentId} schoolId={schoolId} eventId={dialog.logEventId} summary={dialog.summary} onClose={() => setDialog(null)} />
       ) : null}
-    </section>
+    </>
   );
 }
 
@@ -718,18 +743,15 @@ function AttendingSwitch({ studentId, disciplineId, disciplineName, value }: { s
   const [error, setError] = useState<string | null>(null);
   const current = value === null ? 'AUTO' : value ? 'ACTIVE' : 'INACTIVE';
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-      <label htmlFor={`attending-${disciplineId}`} className="ultm8-field__label" style={{ margin: 0 }}>
-        {t('grading.student.attending.label')}
-      </label>
-      <SelectField
+    <div>
+      <NewLookSelect
         id={`attending-${disciplineId}`}
-        aria-label={t('grading.student.attending.aria', { style: disciplineName })}
+        label={t('grading.student.attending.label')}
+        ariaLabel={t('grading.student.attending.aria', { style: disciplineName })}
         value={current}
         disabled={setActive.isPending}
-        onChange={async (e) => {
+        onChange={async (v) => {
           setError(null);
-          const v = e.target.value;
           try {
             await setActive.mutateAsync({ studentId, active: v === 'AUTO' ? null : v === 'ACTIVE' });
           } catch (err) {
@@ -743,7 +765,7 @@ function AttendingSwitch({ studentId, disciplineId, disciplineName, value }: { s
         ]}
       />
       {error ? <span role="alert" className="ultm8-field__error">{error}</span> : null}
-    </span>
+    </div>
   );
 }
 
@@ -755,9 +777,9 @@ function ProgressBar({ percent, label }: { percent: number; label: string }) {
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={percent}
-      style={{ height: 8, borderRadius: 4, background: 'var(--color-neutral-200)', overflow: 'hidden', margin: '6px 0 12px' }}
+      className="u8sp-bar"
     >
-      <div style={{ width: `${percent}%`, height: '100%', background: percent >= 100 ? 'var(--color-success)' : 'var(--fill-accent)' }} />
+      <i style={{ width: `${percent}%` }} data-done={percent >= 100} />
     </div>
   );
 }
@@ -776,7 +798,7 @@ function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: El
   if (!eligibility.hasNext) {
     return (
       <>
-        <p style={{ marginTop: 16 }}>
+        <p style={{ marginTop: 0 }}>
           {eligibility.dataError ? t('grading.student.progress.dataError') : t('grading.student.progress.top')}
         </p>
         <HoursTrained hours={hours} />
@@ -785,10 +807,8 @@ function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: El
   }
   const percent = eligibility.progressPercent ?? 0;
   return (
-    <div style={{ marginTop: 16 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 4px' }}>
-        {t('grading.student.progress.toward', { name: nextName ?? '', percent })}
-      </h3>
+    <div>
+      <h3 style={{ marginBottom: 4 }}>{t('grading.student.progress.toward', { name: nextName ?? '', percent })}</h3>
       <ProgressBar percent={percent} label={t('grading.student.progress.towardAria', { name: nextName ?? '' })} />
       {eligibility.waitingForAge ? (
         <p role="status" style={{ margin: '4px 0 8px' }}>
@@ -797,8 +817,8 @@ function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: El
       ) : null}
       {breakdown ? (
         <section aria-label={t('grading.student.progress.breakdown')}>
-          <h4 style={{ fontSize: 14, margin: '0 0 6px' }}>{t('grading.student.progress.breakdown')}</h4>
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+          <h4 style={{ margin: '14px 0 6px' }}>{t('grading.student.progress.breakdown')}</h4>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 10 }}>
             {breakdown.classes ? (
               <BreakdownRow
                 ok={breakdown.classes.counted >= breakdown.classes.required}
@@ -863,9 +883,11 @@ function Progress({ eligibility, breakdown, hours, nextName }: { eligibility: El
             ) : null}
             {breakdown.minimumAge ? (
               <li aria-label={`${t('grading.student.progress.minimumAgeLabel')}: ${t('grading.student.progress.minimumAgeValue', { age: breakdown.minimumAge.age })}`}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                  <span aria-hidden="true">{breakdown.minimumAge.met ? '✓' : '○'}</span>
-                  <strong style={{ fontWeight: 600 }}>{t('grading.student.progress.minimumAgeLabel')}</strong>
+                <div className="u8sp-line" style={{ gap: 8 }}>
+                  <span className="u8sp-mark" data-ok={breakdown.minimumAge.met} aria-hidden="true">
+                    {breakdown.minimumAge.met ? '✓' : '○'}
+                  </span>
+                  <span style={{ flex: 1 }}>{t('grading.student.progress.minimumAgeLabel')}</span>
                   <span>{t('grading.student.progress.minimumAgeValue', { age: breakdown.minimumAge.age })}</span>
                 </div>
                 <span className="ultm8-field__hint">{t('grading.student.progress.notInPercent')}</span>
@@ -903,16 +925,18 @@ function BreakdownRow({
   const t = useT();
   return (
     <li aria-label={`${label}: ${value}`}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <span aria-hidden="true">{ok ? '✓' : '○'}</span>
-        <strong style={{ fontWeight: 600 }}>{label}</strong>
-        <span>{value}</span>
-        <span className="ultm8-field__hint" style={{ marginLeft: 'auto' }}>
+      <div className="u8sp-line" style={{ gap: 8 }}>
+        <span className="u8sp-mark" data-ok={ok} aria-hidden="true">
+          {ok ? '✓' : '○'}
+        </span>
+        <span style={{ flex: 1 }}>{label}</span>
+        <span style={{ fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+        <span className="u8sp-quiet" style={{ minWidth: 36, textAlign: 'end' }}>
           {percent}%
         </span>
       </div>
-      <div style={{ height: 4, borderRadius: 2, background: 'var(--color-neutral-200)', overflow: 'hidden', margin: '4px 0 2px' }}>
-        <div style={{ width: `${percent}%`, height: '100%', background: ok ? 'var(--color-success)' : 'var(--fill-accent)' }} />
+      <div className="u8sp-bar u8sp-bar--thin">
+        <i style={{ width: `${percent}%` }} data-done={ok} />
       </div>
       <span className="ultm8-field__hint">
         {inPercent ? t('grading.student.progress.inPercent') : noRequirement ? t('grading.student.progress.noMinimum') : t('grading.student.progress.notInPercent')}
@@ -927,8 +951,8 @@ function BreakdownRow({
 function HoursTrained({ hours, graded = false }: { hours: Hours; graded?: boolean }) {
   const t = useT();
   return (
-    <section aria-label={t('grading.student.hours.title')} style={{ borderTop: '1px solid var(--color-neutral-200)', marginTop: 12, paddingTop: 10 }}>
-      <h4 style={{ fontSize: 14, margin: '0 0 2px' }}>{t('grading.student.hours.title')}</h4>
+    <section aria-label={t('grading.student.hours.title')} style={{ borderTop: '1px solid var(--u8n-line)', marginTop: 12, paddingTop: 10 }}>
+      <h4 style={{ margin: '0 0 4px' }}>{t('grading.student.hours.title')}</h4>
       <p style={{ margin: 0 }}>{t('grading.student.hours.atThisRank', { hours: formatHours(hours.sinceCurrentRankMinutes) })}</p>
       <p className="ultm8-field__hint" style={{ margin: 0 }}>
         {t('grading.student.hours.total', { hours: formatHours(hours.totalMinutes) })} ·{' '}
@@ -989,15 +1013,10 @@ function FeeBox({
   return (
     <section
       aria-label={t('grading.student.fee.aria')}
-      style={{
-        marginTop: 16,
-        padding: 12,
-        borderRadius: 10,
-        background: status === 'declined' || status === 'blocked' ? 'var(--bg-danger)' : status === 'toDecide' ? '#e5ecf6' : 'var(--bg-warning)',
-      }}
+      className={'u8sp-box ' + (status === 'declined' || status === 'blocked' ? 'u8sp-box--bad' : status === 'toDecide' ? 'u8sp-box--info' : 'u8sp-box--warn')}
     >
       <FeeBadge status={status} />
-      <p style={{ margin: '8px 0 4px', fontWeight: 600 }}>
+      <p style={{ margin: '8px 0 4px', fontWeight: 500 }}>
         {status === 'toDecide' ? t('grading.board.fee.noFeeFor', { rank }) : t('grading.board.fee.amountFor', { amount, rank })}
       </p>
       <p className="ultm8-field__hint" style={{ margin: 0 }}>
@@ -1010,7 +1029,7 @@ function FeeBox({
             : t('grading.board.fee.toDecideText', { name: firstName })}
       </p>
       {actionError ? <ErrorBanner message={actionError instanceof ApiError ? actionError.message : t('common.tryAgain')} /> : null}
-      <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+      <div className="u8sp-line u8sp-small" style={{ marginTop: 10 }}>
         {status !== 'toDecide' && mayClose ? (
           <>
             {status !== 'blocked' ? (
@@ -1055,7 +1074,7 @@ function FeeRequestList({ requests, currency }: { requests: StudentFeeRequest[];
   if (requests.length === 0) return null;
   return (
     <section aria-label={t('grading.student.feeList.title')} style={{ marginTop: 16 }} data-testid="promotion-fee-list">
-      <h3 style={{ fontSize: 14, margin: '0 0 4px' }}>{t('grading.student.feeList.title')}</h3>
+      <h4>{t('grading.student.feeList.title')}</h4>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
         {requests.slice(0, 5).map((r) => (
           <li key={r.id} style={{ padding: '4px 0', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1066,7 +1085,7 @@ function FeeRequestList({ requests, currency }: { requests: StudentFeeRequest[];
                 {r.charge.owedAmount > 0
                   ? t('grading.student.feeList.owed', { invoice: r.charge.invoiceLabel, amount: formatMoney(r.charge.owedAmount, r.charge.currency) })
                   : t('grading.student.feeList.paidInvoice', { invoice: r.charge.invoiceLabel })}{' '}
-                · <a href="#student-payments">{t('grading.student.feeList.seePayments')}</a>
+                · <Link to={{ search: '', hash: '#student-payments' }}>{t('grading.student.feeList.seePayments')}</Link>
               </span>
             ) : null}
           </li>
@@ -1123,10 +1142,10 @@ function SkillsForNext({
   }
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('grading.student.skills.title')}</h3>
+    <div className="u8sp-sec">
+      <h3>{t('grading.student.skills.title')}</h3>
       {error ? <ErrorBanner message={error} /> : null}
-      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+      <ul className="u8sp-small" style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
         {ids.map((skillId) => {
           const skill = skills.find((s) => s.id === skillId);
           const status = statuses.find((s) => s.skillId === skillId)?.status ?? 'NOT_STARTED';
@@ -1206,15 +1225,15 @@ function History({
   const t = useT();
   const [confirmUndo, setConfirmUndo] = useState<string | null>(null);
   return (
-    <div style={{ marginTop: 16 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{t('grading.student.history.title')}</h3>
+    <div className="u8sp-sec">
+      <h3>{t('grading.student.history.title')}</h3>
       {noteError ? <ErrorBanner message={noteError} /> : null}
       {loading ? (
         <Spinner />
       ) : entries.length === 0 ? (
         <p className="ultm8-field__hint">{t('grading.student.history.empty')}</p>
       ) : (
-        <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 12 }}>
+        <ol className="u8sp-rows" style={{ marginBottom: -18 }}>
           {entries.map((e) => {
             const labelKey = historyTypeLabel(e.type, eventRankDisplay(ladder, e));
             const label = labelKey ? t(labelKey) : e.type;
@@ -1224,7 +1243,7 @@ function History({
                 : rungName(e.toStripeTierId);
             const summary = t('grading.student.history.summary', { label, change, date: formatDay(e.effectiveDate) });
             return (
-              <li key={e.id} style={{ borderTop: '1px solid var(--border)', paddingTop: 8, opacity: e.voidedAt ? 0.6 : 1 }}>
+              <li key={e.id} style={{ opacity: e.voidedAt ? 0.6 : 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                   <span>
                     <strong>{label}</strong>{' '}
@@ -1239,7 +1258,7 @@ function History({
                   </span>
                   {onUndoAutomatic && e.automatic && e.fromStripeTierId && !e.automaticUndoneAt && !e.voidedAt && e.toStripeTierId === currentStripeId ? (
                     confirmUndo === e.id ? (
-                      <span style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <span className="u8sp-line" style={{ gap: 8 }}>
                         <span>{t('grading.student.history.undoConfirm', { rank: rungName(e.fromStripeTierId) })}</span>
                         <Button
                           variant="secondary"
@@ -1261,7 +1280,7 @@ function History({
                     )
                   ) : null}
                   {e.voidedAt || !onVoid ? null : (
-                    <Button variant="secondary" onClick={() => onVoid(e, summary)} aria-label={t('grading.student.history.voidAria', { summary })}>
+                    <Button variant="secondary" className="u8sp-link u8sp-link--red" onClick={() => onVoid(e, summary)} aria-label={t('grading.student.history.voidAria', { summary })}>
                       {t('grading.student.history.void')}
                     </Button>
                   )}
@@ -1277,21 +1296,21 @@ function History({
                   </div>
                 ) : null}
                 {!e.voidedAt && (onEditNote || onNoteLog) ? (
-                  <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: 14, marginTop: 4, flexWrap: 'wrap' }}>
                     {onEditNote ? (
-                      <Button variant="secondary" onClick={() => onEditNote(e, summary)} aria-label={e.note ? t('grading.student.history.editNoteAria', { summary }) : t('grading.student.history.addNoteAria', { summary })}
+                      <Button variant="secondary" className="u8sp-link" onClick={() => onEditNote(e, summary)} aria-label={e.note ? t('grading.student.history.editNoteAria', { summary }) : t('grading.student.history.addNoteAria', { summary })}
                       >
                         {e.note ? t('grading.student.history.editNote') : t('grading.student.history.addNote')}
                       </Button>
                     ) : null}
                     {onToggleHidden && e.note ? (
-                      <Button variant="secondary" onClick={() => onToggleHidden(e)} aria-label={e.noteHiddenAt ? t('grading.student.history.showNoteAria', { summary }) : t('grading.student.history.hideNoteAria', { summary })}
+                      <Button variant="secondary" className="u8sp-link" onClick={() => onToggleHidden(e)} aria-label={e.noteHiddenAt ? t('grading.student.history.showNoteAria', { summary }) : t('grading.student.history.hideNoteAria', { summary })}
                       >
                         {e.noteHiddenAt ? t('grading.student.history.showNote') : t('grading.student.history.hideNote')}
                       </Button>
                     ) : null}
                     {onNoteLog && (e.note || e.noteEditedAt) ? (
-                      <Button variant="secondary" onClick={() => onNoteLog(e, summary)} aria-label={t('grading.student.history.noteChangesAria', { summary })}>
+                      <Button variant="secondary" className="u8sp-link" onClick={() => onNoteLog(e, summary)} aria-label={t('grading.student.history.noteChangesAria', { summary })}>
                         {t('grading.student.history.noteChanges')}
                       </Button>
                     ) : null}

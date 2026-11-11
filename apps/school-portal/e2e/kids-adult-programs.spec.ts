@@ -74,7 +74,7 @@ const bjj = (page: Page) => page.getByRole('region', { name: 'BJJ', exact: true 
 
 test('Grade on the Ranks tab moves a student into the Adult program', async ({ page }) => {
   await link();
-  await page.goto(`/students/${ben.id}`);
+  await page.goto(`/students/${ben.id}?tab=ranks`);
   const card = bjj(page);
   await expect(card.getByText('Ready for Adult program')).toBeVisible();
   await card.getByRole('button', { name: 'Grade', exact: true }).click();

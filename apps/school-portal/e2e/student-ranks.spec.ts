@@ -38,7 +38,7 @@ async function logMinutes(minutes: number, trainedAt: Date) {
 test('the Breakdown shows each requirement, what is in the %, and hours trained as a record only', async ({ page }) => {
   await logMinutes(90, hoursAgo(24));
   await logMinutes(30, new Date(Date.now() - 90 * 86_400_000)); // before the current rank
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const breakdown = bjj(page).getByRole('region', { name: 'Breakdown' });
   const classes = breakdown.getByRole('listitem', { name: 'Classes: 3 of 3' });
   await expect(classes.getByText('Counts toward the %')).toBeVisible();
@@ -66,7 +66,7 @@ test('Log a class: picking a class logs one class and its length', async ({ page
       endDate: hoursAgo(24.5),
     },
   });
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   await bjj(page).getByRole('button', { name: 'Log a class' }).click();
   const dialog = page.getByRole('dialog', { name: 'Log a class — BJJ' });
   await expect(dialog.getByRole('radio', { name: 'Class', exact: true })).toBeChecked();
@@ -83,7 +83,7 @@ test('Log a class: picking a class logs one class and its length', async ({ page
 });
 
 test('Log a class: "No class" logs the minutes typed, 60 by default', async ({ page }) => {
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   await bjj(page).getByRole('button', { name: 'Log a class' }).click();
   const dialog = page.getByRole('dialog', { name: 'Log a class — BJJ' });
   // No BJJ class in the last week: only "No class" is offered.
@@ -120,7 +120,7 @@ test('a waiting fee: tag first, no Grade or Ready; cancelling it leaves the prom
       promotionWaits: true,
     },
   });
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const card = bjj(page);
   await expect(card.getByText('Waiting for fee').first()).toBeVisible();
   await expect(card.getByRole('button', { name: 'Grade', exact: true })).toHaveCount(0);

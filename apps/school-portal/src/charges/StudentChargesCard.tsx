@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Badge, Button, Card, Checkbox, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, SuccessBanner, Table, TextArea, TextField } from '@ultm8/ui';
+import { Link } from 'react-router-dom';
+import { Badge, Button, Checkbox, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, SuccessBanner, Table, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -37,6 +38,7 @@ import { paymentStatusBadge } from '../lib/paymentStatusBadge';
 import { CreateRecurringChargeModal, RecurringChargesList } from './RecurringCharges';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
 import { useDeskMethods, useOffersPix } from '../lib/deskMethods';
+import { StudentCard } from '../students/StudentPageLook';
 
 const STATUS_BADGE: Record<Charge['status'], 'default' | 'success' | 'warning' | 'info'> = {
   OPEN: 'warning',
@@ -95,9 +97,10 @@ function PromotionFeeLines({ charge: c }: { charge: Charge }) {
     <>
       <div className="ultm8-field__hint">
         {t('charges.promotionFee.forRank', { style: f.disciplineName, rank: f.toRungName })} ·{' '}
-        <a href={`#grading-${f.disciplineId}`} data-testid="promotion-fee-grading-link">
+        {/* Grading is the page's Ranks tab. */}
+        <Link to={{ search: '?tab=ranks', hash: `#grading-${f.disciplineId}` }} data-testid="promotion-fee-grading-link">
           {t('charges.promotionFee.seeGrading')}
-        </a>
+        </Link>
       </div>
       {c.status === 'CANCELLED' && c.cancelledAt && (f.status === 'WAIVED' || f.status === 'CANCELLED') ? (
         <div className="ultm8-field__hint">
@@ -179,18 +182,14 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
   if (charges.error instanceof ApiError && charges.error.status === 403) return null;
 
   return (
-    <div id="student-payments" style={{ marginBottom: 24 }}>
-      <Card>
-        <div data-testid="student-charges" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-          <div>
-            <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 4 }}>
-              {t('charges.card.title')}
-            </h2>
-            <p style={{ margin: 0, color: 'var(--text-muted)' }}>{t('charges.card.subtitle')}</p>
-            {charges.data ? <BalanceLine balances={charges.data.balances} /> : null}
-          </div>
-          {charges.data ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <>
+      <StudentCard
+        id="student-payments"
+        testId="student-charges"
+        title={t('charges.card.title')}
+        actions={
+          charges.data ? (
+            <>
               {charges.data.can.create ? <Button onClick={() => setDialog('create')}>{t('charges.card.create')}</Button> : null}
               {recurring.data?.can.create ? (
                 <Button variant="secondary" onClick={() => setDialog('recurring')}>
@@ -207,9 +206,12 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
                   {t('charges.card.addCredit')}
                 </Button>
               ) : null}
-            </div>
-          ) : null}
-        </div>
+            </>
+          ) : null
+        }
+      >
+        {/* The balance is in the summary panel (DESIGN.md → "Student page: nothing shown twice"). */}
+        <p className="u8sp-card__sub">{t('charges.card.subtitle')}</p>
         {charges.isLoading ? (
           <Spinner />
         ) : charges.error ? (
@@ -239,7 +241,7 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
             {recurring.data ? <RecurringChargesList schoolId={schoolId} studentId={studentId} data={recurring.data} /> : null}
           </>
         ) : null}
-      </Card>
+      </StudentCard>
       {dialog === 'create' && charges.data ? (
         <CreateChargeModal schoolId={schoolId} studentId={studentId} studentName={studentName} data={charges.data} onClose={() => setDialog(null)} />
       ) : null}
@@ -302,7 +304,7 @@ export function StudentChargesCard({ schoolId, studentId, studentName }: { schoo
           onClose={() => setConfirmingPayment(null)}
         />
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -446,29 +448,28 @@ function DeskMembershipPayments({
   );
 }
 
-/** "Owes R$ 70,00 · R$ 70,00 overdue", "R$ 30,00 in credit" or "Nothing owed". */
-function BalanceLine({ balances }: { balances: ChargeBalance[] }) {
+/** "Owes R$ 70,00 · R$ 70,00 overdue", "R$ 30,00 in credit" or "Nothing owed". Shown in the
+ * student page's summary panel, under Account. */
+export function BalanceLine({ balances }: { balances: ChargeBalance[] }) {
   const t = useT();
   const shown = balances.filter((b) => b.net !== 0);
   if (shown.length === 0) {
     return (
-      <p data-testid="charge-balance" style={{ margin: '8px 0 0', fontWeight: 600 }}>
-        {t('charges.card.nothingOwed')}
-      </p>
+      <span data-testid="charge-balance">{t('charges.card.nothingOwed')}</span>
     );
   }
   return (
-    <p data-testid="charge-balance" style={{ margin: '8px 0 0', fontWeight: 600 }}>
+    <span data-testid="charge-balance">
       {shown.map((b, i) => (
         <span key={b.currency}>
           {i > 0 ? ' · ' : null}
           {b.net > 0 ? t('charges.card.owes', { amount: formatMoney(b.net, b.currency) }) : t('charges.card.inCredit', { amount: formatMoney(-b.net, b.currency) })}
           {b.overdue > 0 ? (
-            <span style={{ color: 'var(--danger, #C5221F)' }}> · {t('charges.card.overdue', { amount: formatMoney(b.overdue, b.currency) })}</span>
+            <span className="u8sp-overdue"> · {t('charges.card.overdue', { amount: formatMoney(b.overdue, b.currency) })}</span>
           ) : null}
         </span>
       ))}
-    </p>
+    </span>
   );
 }
 
@@ -568,7 +569,7 @@ function ChargesBody({
               {
                 key: 'due',
                 header: t('charges.card.columnDue'),
-                render: (c) => <span style={c.overdue ? { color: 'var(--danger, #C5221F)', fontWeight: 600 } : undefined}>{formatDay(c.dueDate)}</span>,
+                render: (c) => <span className={c.overdue ? 'u8sp-overdue' : undefined}>{formatDay(c.dueDate)}</span>,
               },
               { key: 'net', header: t('charges.card.columnExTax'), render: (c) => formatMoney(c.netAmount, c.currency) },
               {
@@ -844,8 +845,8 @@ function CreateChargeModal({
             <dt>{t('charges.create.previewExTax')}</dt>
             <dd style={{ margin: 0 }}>{formatMoney(preview.net, currency)}</dd>
             <PreviewTaxRow taxExempt={taxExempt} rate={rate} tax={preview.tax} currency={currency} />
-            <dt style={{ fontWeight: 600 }}>{t('charges.create.previewIncTax')}</dt>
-            <dd style={{ margin: 0, fontWeight: 600 }}>{formatMoney(preview.gross, currency)}</dd>
+            <dt style={{ fontWeight: 500 }}>{t('charges.create.previewIncTax')}</dt>
+            <dd style={{ margin: 0, fontWeight: 500 }}>{formatMoney(preview.gross, currency)}</dd>
           </dl>
         ) : null}
         <div style={{ display: 'flex', gap: 8 }}>
