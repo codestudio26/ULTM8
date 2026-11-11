@@ -8294,7 +8294,7 @@ User (Code), 11 Nov 2026, answering the questions on #547:
 ### Decision
 
 **Schedule (#545)**
-1. **The class panel shows nothing the row already shows (option B).** On Classes and Timetable, the panel for a selected class keeps only what its row doesn't show: the Branch, the Coach, any status not already on the row, then the action buttons under them. Starts, Ends, Capacity and Activities appear only in the row (DESIGN.md "nothing shown twice").
+1. **The class panel shows nothing the row already shows (option B, DESIGN.md "nothing shown twice").** The Classes row already shows the name, "coach · branch", Starts, Ends, Capacity, the status tags and the activity tags, so the Classes panel is the class's avatar and name as its heading, then the row's actions as buttons (View bookings, Show QR, Roll call, Edit, Archive/Unarchive). On Timetable the panel adds only Capacity, and only for a slot with no class yet (that row has no seats line), then the row's actions. (When the owner was asked, the example wrongly listed Branch and Coach as staying in the panel; they don't, because the row already shows them. The owner's answer was the rule, "B".)
 
 **Curriculum (#554)**
 2. **Restyle only.** Curriculum keeps its current layout and features in the new look. No new Curriculum screen is designed.
