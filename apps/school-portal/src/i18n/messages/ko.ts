@@ -36,6 +36,20 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "결과 {count}개",
       },
     },
+    newLook: {
+      tryIt: "새 디자인 사용해 보기",
+      on: "켜짐",
+      off: "꺼짐",
+      menuLabel: "기본 메뉴",
+      sectionPages: "{section} 페이지",
+      groups: {
+        team: "팀",
+        schedule: "일정",
+        billing: "결제",
+        organisation: "조직",
+        settings: "설정",
+      },
+    },
     notificationsAria: "알림",
     languageAria: "언어",
     accountMenu: {

@@ -10,6 +10,19 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look, part 1: the app shell, behind a "Try the new look" switch**
+  (School Portal, visual only). The profile menu has a new "Try the new look"
+  on/off item, remembered per browser and off by default; `?look=redesign` /
+  `?look=classic` in the address sets it too. With it on, the portal uses the
+  new shell (DESIGN-BRIEF §8, design D): a 248px labelled side menu grouped as
+  Dashboard, Students, Team, Schedule, Grading, Billing, Waivers,
+  Organisation and Notifications, with Settings and the signed-in person at
+  the foot; a group's other pages as tabs at the top; a sticky sideways top bar
+  on phones; light (white) and dark (Pine) menus. The menu lists exactly the
+  pages the classic sidebar lists for each person, so nobody sees more or less.
+  Pages render as they are; later PRs redesign them one at a time. **With the
+  switch off (the default) the live look is unchanged.**
+
 - **Refunding a fee, or losing a dispute on one, no longer ends the member's
   plan** (Decision 451 item 1, stress round 7 D-1). A freeze fee's payment
   carries its plan's id, so refunding it in full in the Stripe dashboard (or a

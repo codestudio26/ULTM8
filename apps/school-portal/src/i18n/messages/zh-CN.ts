@@ -36,6 +36,20 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "{count} 个结果",
       },
     },
+    newLook: {
+      tryIt: "试用新外观",
+      on: "开",
+      off: "关",
+      menuLabel: "主菜单",
+      sectionPages: "{section}页面",
+      groups: {
+        team: "团队",
+        schedule: "课表",
+        billing: "账单",
+        organisation: "机构",
+        settings: "设置",
+      },
+    },
     notificationsAria: "通知",
     languageAria: "语言",
     accountMenu: {

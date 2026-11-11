@@ -19,6 +19,21 @@ export const layout = {
       other: '{count} results',
     },
   },
+  /** New look rollout PR 1: the "Try the new look" switch and the new side menu. */
+  newLook: {
+    tryIt: "Try the new look",
+    on: "On",
+    off: "Off",
+    menuLabel: "Main menu",
+    sectionPages: "{section} pages",
+    groups: {
+      team: "Team",
+      schedule: "Schedule",
+      billing: "Billing",
+      organisation: "Organisation",
+      settings: "Settings",
+    },
+  },
   notificationsAria: 'Notifications',
   languageAria: 'Language',
   accountMenu: {

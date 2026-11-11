@@ -8,6 +8,8 @@ import { SchoolFooter } from './SchoolFooter';
 import { VerifyBeltsNotice } from '../grading/VerifyBeltsNotice';
 import { TrialBanner } from './TrialBanner';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
+import { useNewLook } from './useNewLook';
+import { NewLookShell } from './NewLookShell';
 
 /** Nav labels are translation keys, resolved at render time. */
 type NavItem = { label: TranslationKey; to: string };
@@ -76,8 +78,15 @@ const OWNER_NAV: NavItem[] = [
   { label: 'layout.nav.notifications', to: '/notifications' },
 ];
 
-export function Shell({ children }: { children: React.ReactNode }) {
-  const { logout, claims } = useAuth();
+/**
+ * The pages this person's menu lists, labels translated: owners get
+ * OWNER_NAV; a coach or Branch Staff member who doesn't own the School gets
+ * their own list, shaped by what the owner lets them do. Both the classic
+ * sidebar and the new look's menu (NewLookShell.tsx) use this one list, so the
+ * new look never changes who sees what.
+ */
+export function useShellNavItems(): { label: string; to: string }[] {
+  const { claims } = useAuth();
   const t = useT();
   const coachSchoolId = useCoachSchoolId();
   const isCoachOnly = useIsCoachOnly();
@@ -97,26 +106,38 @@ export function Shell({ children }: { children: React.ReactNode }) {
         ...(access?.connectStripe ? [STRIPE_NAV] : []),
       ]
     : [];
+  return (isCoachOnly
+    ? [
+        ...COACH_NAV.slice(0, 2),
+        DISCIPLINES_NAV,
+        CURRICULUM_NAV,
+        CLASSES_NAV,
+        ...(access?.bookings ?? true ? [CHECK_IN_NAV] : []),
+        // Decision 425 (Q2): coaches see the student list, read only.
+        ...(isInstructor && !isBranchStaff ? [STUDENTS_NAV] : []),
+        ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []),
+        ...branchStaffNav,
+        ...(mayRecordPayments ? [RECORD_PAYMENT_NAV, BILLING_REPORTS_NAV] : []),
+        COACH_NAV[2],
+      ]
+    : OWNER_NAV
+  ).map((item) => ({ ...item, label: t(item.label) }));
+}
+
+export function Shell({ children }: { children: React.ReactNode }) {
+  const { logout } = useAuth();
+  const t = useT();
+  const isCoachOnly = useIsCoachOnly();
+  const navItems = useShellNavItems();
+  // "Try the new look" (profile menu): the new shell, chosen here so the
+  // classic shell below stays exactly as it was.
+  const newLook = useNewLook();
+  if (newLook) return <NewLookShell navItems={navItems}>{children}</NewLookShell>;
   return (
     <AppShell
       brand={t('layout.brand')}
       header={<TopBar />}
-      navItems={(isCoachOnly
-        ? [
-            ...COACH_NAV.slice(0, 2),
-            DISCIPLINES_NAV,
-            CURRICULUM_NAV,
-            CLASSES_NAV,
-            ...(access?.bookings ?? true ? [CHECK_IN_NAV] : []),
-            // Decision 425 (Q2): coaches see the student list, read only.
-            ...(isInstructor && !isBranchStaff ? [STUDENTS_NAV] : []),
-            ...(isInstructor ? [MY_BELTS_NAV, COMPLETE_PROFILE_NAV] : []),
-            ...branchStaffNav,
-            ...(mayRecordPayments ? [RECORD_PAYMENT_NAV, BILLING_REPORTS_NAV] : []),
-            COACH_NAV[2],
-          ]
-        : OWNER_NAV
-      ).map((item) => ({ ...item, label: t(item.label) }))}
+      navItems={navItems}
       footer={
         <Button variant="secondary" fullWidth onClick={logout}>
           {t('layout.logOut')}

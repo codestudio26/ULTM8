@@ -36,6 +36,20 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "{count} ผลลัพธ์",
       },
     },
+    newLook: {
+      tryIt: "ลองโฉมใหม่",
+      on: "เปิด",
+      off: "ปิด",
+      menuLabel: "เมนูหลัก",
+      sectionPages: "หน้าของ {section}",
+      groups: {
+        team: "ทีม",
+        schedule: "ตารางเวลา",
+        billing: "การเรียกเก็บเงิน",
+        organisation: "องค์กร",
+        settings: "การตั้งค่า",
+      },
+    },
     notificationsAria: "การแจ้งเตือน",
     languageAria: "ภาษา",
     accountMenu: {

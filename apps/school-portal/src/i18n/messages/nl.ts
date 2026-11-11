@@ -37,6 +37,20 @@ export const messages: PartialMessages<EnglishMessages> = {
         other: "{count} resultaten",
       },
     },
+    newLook: {
+      tryIt: "Probeer het nieuwe uiterlijk",
+      on: "Aan",
+      off: "Uit",
+      menuLabel: "Hoofdmenu",
+      sectionPages: "Pagina's van {section}",
+      groups: {
+        team: "Team",
+        schedule: "Rooster",
+        billing: "Facturering",
+        organisation: "Organisatie",
+        settings: "Instellingen",
+      },
+    },
     notificationsAria: "Meldingen",
     languageAria: "Taal",
     accountMenu: {
