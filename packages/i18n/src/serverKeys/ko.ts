@@ -263,6 +263,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "{amount} 카드 결제 분쟁이 회원님에게 유리하게 결정되었습니다. 돈은 카드로 돌아갑니다.",
     chargeDisputeWonBody: "{amount} 카드 결제 분쟁이 도장에 유리하게 결정되었습니다. 결제는 그대로 유지됩니다.",
     chargePaymentLabel: "요금 결제",
+    feePaymentLabel: "수수료 결제",
     chargeDueReminderTitle: "곧 결제 기한",
     chargeDueReminderBody: "{description}의 청구서 {invoice}: {amount}, 기한 {due}.",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.

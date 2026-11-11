@@ -268,6 +268,7 @@ export const server = {
     chargeDisputeLostBody: "The dispute on your card payment of {amount} was decided in your favour. The money goes back to your card.",
     chargeDisputeWonBody: "The dispute on your card payment of {amount} was decided in the School's favour. The payment stands.",
     chargePaymentLabel: "charge payment",
+    feePaymentLabel: "fee payment",
     chargeDueReminderTitle: "Payment due soon",
     chargeDueReminderBody: "Invoice {invoice} for {description}: {amount} is due on {due}.",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.

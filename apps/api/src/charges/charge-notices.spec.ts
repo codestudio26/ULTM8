@@ -63,6 +63,10 @@ describe('charge notices are translated (Decisions 303, 338)', () => {
     // The owner's own dispute notice on a payment toward charges.
     const ownerNotice = pt.notification({ title: 'Payment dispute lost', body: 'A disputed charge payment of 60.00 BRL was lost — the charge is no longer considered paid.', type: 'PAYMENT_DISPUTE' });
     expect(ownerNotice.body).toContain('pagamento de cobrança');
+    // Decision 452 item 7: a dispute on a fee (freeze, late-cancel, no-show) is a "fee payment".
+    const feeNotice = pt.notification({ title: 'Payment dispute lost', body: 'A disputed fee payment of 7.00 BRL was lost — the charge is no longer considered paid.', type: 'PAYMENT_DISPUTE' });
+    expect(feeNotice.body).toContain('pagamento de taxa');
+    expect(feeNotice.body).toContain('7,00');
     expect(autoFailed.title).toBe('Pagamento automático falhou');
     expect(autoFailed.body).toMatch(/^Não conseguimos cobrar no seu cartão salvo a fatura #0000012 \(Rash guard, .*120,00\)\. Pague no app ou na recepção\.$/);
     expect(created.title).toBe('Nova fatura');

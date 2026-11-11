@@ -263,6 +263,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "ข้อโต้แย้งการชำระด้วยบัตรจำนวน {amount} ตัดสินให้คุณชนะ เงินจะคืนเข้าบัตรของคุณ",
     chargeDisputeWonBody: "ข้อโต้แย้งการชำระด้วยบัตรจำนวน {amount} ตัดสินให้โรงเรียนชนะ การชำระเงินยังคงมีผล",
     chargePaymentLabel: "การชำระค่าบริการ",
+    feePaymentLabel: "การชำระค่าธรรมเนียม",
     chargeDueReminderTitle: "ใกล้ครบกำหนดชำระ",
     chargeDueReminderBody: "ใบแจ้งหนี้ {invoice} สำหรับ {description}: {amount} ครบกำหนดวันที่ {due}",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
