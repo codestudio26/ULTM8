@@ -1,0 +1,572 @@
+/* The Students list in the new look (StudentsPage.tsx). DESIGN.md →
+ * "Students list: open full page from each row, panel never repeats the
+ * row", "Phone layout" (toolbar, lists with a details panel), "Avatars",
+ * "One accent: mint", "Never the same colour twice". Scoped to
+ * [data-look='redesign'], which the portal always sets (Decision 453). */
+
+[data-look='redesign'] {
+  --u8n-avatar-bg: #d3d9df;
+  --u8n-avatar-text: #2f3941;
+  --u8n-pill-primary: #def2e2;
+  --u8n-pill-primary-text: #50575e;
+  --u8n-row-sel: #edf0f2;
+  --u8n-row-mark: #5d7081;
+  --u8n-head-bg: #f9fafa;
+  --u8n-tag-active-bg: #e3f1ea;
+  --u8n-tag-active-text: #3a7556;
+  --u8n-tag-active-line: #b7dcc6;
+  --u8n-tag-frozen-bg: #e5ecf6;
+  --u8n-tag-frozen-text: #2b4f80;
+  --u8n-tag-frozen-line: #bccbe2;
+  --u8n-tag-visitor-bg: #f6ecdc;
+  --u8n-tag-visitor-text: #7a4f12;
+  --u8n-tag-visitor-line: #e6cfa5;
+  --u8n-tag-inactive-bg: #edf0f2;
+  --u8n-tag-inactive-text: #50575e;
+  --u8n-tag-inactive-line: #c2c7cb;
+  --u8n-chip-ring: #3a7556;
+  --u8n-ticket-line: #afbbc5;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8n-avatar-bg: #3a434b;
+    --u8n-avatar-text: #e1e3e5;
+    --u8n-pill-primary: var(--nav-active-bg);
+    --u8n-pill-primary-text: var(--nav-active-text);
+    --u8n-row-sel: rgba(255, 255, 255, 0.06);
+    --u8n-row-mark: #9fd3b2;
+    --u8n-head-bg: rgba(255, 255, 255, 0.03);
+    --u8n-tag-active-bg: rgba(159, 211, 178, 0.16);
+    --u8n-tag-active-text: #b9e3c8;
+    --u8n-tag-active-line: rgba(159, 211, 178, 0.4);
+    --u8n-tag-frozen-bg: rgba(168, 197, 234, 0.16);
+    --u8n-tag-frozen-text: #c4d6ef;
+    --u8n-tag-frozen-line: rgba(168, 197, 234, 0.4);
+    --u8n-tag-visitor-bg: rgba(244, 199, 161, 0.16);
+    --u8n-tag-visitor-text: #f1cfae;
+    --u8n-tag-visitor-line: rgba(244, 199, 161, 0.4);
+    --u8n-tag-inactive-bg: rgba(255, 255, 255, 0.08);
+    --u8n-tag-inactive-text: var(--text-secondary);
+    --u8n-tag-inactive-line: var(--border-strong);
+    --u8n-chip-ring: #9fd3b2;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8n-avatar-bg: #3a434b;
+  --u8n-avatar-text: #e1e3e5;
+  --u8n-pill-primary: var(--nav-active-bg);
+  --u8n-pill-primary-text: var(--nav-active-text);
+  --u8n-row-sel: rgba(255, 255, 255, 0.06);
+  --u8n-row-mark: #9fd3b2;
+  --u8n-head-bg: rgba(255, 255, 255, 0.03);
+  --u8n-tag-active-bg: rgba(159, 211, 178, 0.16);
+  --u8n-tag-active-text: #b9e3c8;
+  --u8n-tag-active-line: rgba(159, 211, 178, 0.4);
+  --u8n-tag-frozen-bg: rgba(168, 197, 234, 0.16);
+  --u8n-tag-frozen-text: #c4d6ef;
+  --u8n-tag-frozen-line: rgba(168, 197, 234, 0.4);
+  --u8n-tag-visitor-bg: rgba(244, 199, 161, 0.16);
+  --u8n-tag-visitor-text: #f1cfae;
+  --u8n-tag-visitor-line: rgba(244, 199, 161, 0.4);
+  --u8n-tag-inactive-bg: rgba(255, 255, 255, 0.08);
+  --u8n-tag-inactive-text: var(--text-secondary);
+  --u8n-tag-inactive-line: var(--border-strong);
+  --u8n-chip-ring: #9fd3b2;
+}
+
+[data-look='redesign'] .u8n-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* The list card */
+[data-look='redesign'] .u8n-list {
+  background: var(--u8n-surface);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  overflow: hidden;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-list__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+}
+[data-look='redesign'] .u8n-list__tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+[data-look='redesign'] .u8n-list__extra {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+[data-look='redesign'] .u8n-pill.u8n-list__more {
+  display: none;
+}
+[data-look='redesign'] .u8n-list__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  color: var(--u8n-subtle);
+  box-sizing: border-box;
+}
+[data-look='redesign'] .u8n-list__search:focus-within {
+  border-color: var(--u8n-select-ring);
+}
+[data-look='redesign'] .u8n-list__search input {
+  width: 200px;
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-list__hint {
+  margin: -8px 20px 12px;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+
+/* Pills: white with a grey outline; the main action is mint. */
+[data-look='redesign'] .u8n-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-pill:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8n-pill:active {
+  transform: translateY(1px);
+}
+[data-look='redesign'] .u8n-pill:disabled {
+  cursor: default;
+  color: var(--u8n-subtle);
+  background: var(--u8n-surface);
+  transform: none;
+}
+[data-look='redesign'] .u8n-pill[aria-expanded='true'] {
+  border-color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-pill--primary {
+  background: var(--u8n-pill-primary);
+  color: var(--u8n-pill-primary-text);
+  border-color: transparent;
+}
+[data-look='redesign'] .u8n-pill--primary:hover {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .u8n-pill:focus-visible,
+[data-look='redesign'] .u8n-chip:focus-visible,
+[data-look='redesign'] .u8n-row__name:focus-visible,
+[data-look='redesign'] .u8n-row__open:focus-visible,
+[data-look='redesign'] .u8n-row__show:focus-visible,
+[data-look='redesign'] .u8n-list__show-all:focus-visible,
+[data-look='redesign'] .u8n-action-tile:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* Filters, behind the Filter pill */
+[data-look='redesign'] .u8n-list__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 20px;
+  align-items: flex-start;
+  margin: 0 20px 16px;
+  padding: 16px;
+  border: 1px solid var(--u8n-line);
+  border-radius: 12px;
+}
+[data-look='redesign'] .u8n-list__filter-with-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+[data-look='redesign'] .u8n-list__filter-with-link > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--u8n-tile-icon);
+}
+
+/* Status chips: a chosen chip is white with a thin green ring. */
+[data-look='redesign'] .u8n-list__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 20px 14px;
+}
+[data-look='redesign'] .u8n-list__chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+[data-look='redesign'] .u8n-chip {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+}
+/* 44px touch target around a 36px chip */
+[data-look='redesign'] .u8n-chip::after {
+  content: '';
+  position: absolute;
+  inset: -4px 0;
+}
+[data-look='redesign'] .u8n-chip:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8n-chip[aria-pressed='true'] {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-chip-ring);
+  box-shadow: 0 0 0 1px var(--u8n-chip-ring);
+  color: var(--u8n-text);
+}
+
+[data-look='redesign'] .u8n-list__state {
+  padding: 8px 20px 20px;
+}
+
+/* The table */
+[data-look='redesign'] .u8n-list__scroll {
+  overflow-x: auto;
+}
+[data-look='redesign'] .u8n-table {
+  min-width: 640px;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+[data-look='redesign'] .u8n-table th {
+  padding: 12px;
+  background: var(--u8n-head-bg);
+  text-align: start;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-subtle);
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-table td {
+  padding: 14px 12px;
+  border-top: 1px solid var(--u8n-line);
+  vertical-align: middle;
+}
+[data-look='redesign'] .u8n-table th:first-child,
+[data-look='redesign'] .u8n-table td:first-child {
+  padding-inline-start: 20px;
+}
+[data-look='redesign'] .u8n-table th:last-child,
+[data-look='redesign'] .u8n-table td:last-child {
+  padding-inline-end: 20px;
+}
+[data-look='redesign'] .u8n-table tbody tr {
+  cursor: pointer;
+}
+[data-look='redesign'] .u8n-table tbody tr:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8n-table tbody tr[data-sel='true'] {
+  background: var(--u8n-row-sel);
+  box-shadow: inset 4px 0 0 var(--u8n-row-mark);
+}
+[data-look='redesign'] .u8n-row__who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+[data-look='redesign'] .u8n-row__avatar {
+  display: inline-flex;
+  flex: none;
+}
+[data-look='redesign'] .u8n-row__name {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--u8n-tile-icon);
+  text-align: start;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8n-row__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 3px;
+}
+[data-look='redesign'] .u8n-tag {
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+[data-look='redesign'] .u8n-tag--active {
+  background: var(--u8n-tag-active-bg);
+  color: var(--u8n-tag-active-text);
+  box-shadow: inset 0 0 0 1px var(--u8n-tag-active-line);
+}
+[data-look='redesign'] .u8n-tag--inactive {
+  background: var(--u8n-tag-inactive-bg);
+  color: var(--u8n-tag-inactive-text);
+  box-shadow: inset 0 0 0 1px var(--u8n-tag-inactive-line);
+}
+[data-look='redesign'] .u8n-tag--frozen {
+  background: var(--u8n-tag-frozen-bg);
+  color: var(--u8n-tag-frozen-text);
+  box-shadow: inset 0 0 0 1px var(--u8n-tag-frozen-line);
+}
+[data-look='redesign'] .u8n-tag--visitor {
+  background: var(--u8n-tag-visitor-bg);
+  color: var(--u8n-tag-visitor-text);
+  box-shadow: inset 0 0 0 1px var(--u8n-tag-visitor-line);
+}
+[data-look='redesign'] .u8n-row__open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding-top: 2px;
+  font-size: 13px;
+  color: var(--u8n-tile-icon);
+  text-decoration: none;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8n-row__open:hover {
+  text-decoration: underline;
+}
+[data-look='redesign'] .u8n-row__end {
+  text-align: end;
+}
+/* The round "show" button: grey, but white with an outline on the selected
+ * row, whose highlight is the same grey (DESIGN.md → "Never the same colour twice"). */
+[data-look='redesign'] .u8n-row__show {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--u8n-tile);
+  color: var(--u8n-tile-icon);
+  cursor: pointer;
+}
+[data-look='redesign'] .u8n-row__show[aria-pressed='true'] {
+  background: var(--u8n-surface);
+  box-shadow: 0 0 0 1px var(--u8n-field-line), 0 1px 3px rgba(21, 23, 25, 0.12);
+}
+[data-look='redesign'] .u8n-list__show-all {
+  display: none;
+}
+[data-look='redesign'] .u8n-list__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-list__pager {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The selected student panel: only what the row doesn't show. */
+[data-look='redesign'] .u8n-student-panel {
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-student-panel__who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+[data-look='redesign'] .u8n-student-panel__name {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+[data-look='redesign'] .u8n-student-panel__since {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-student-panel__actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 16px;
+}
+[data-look='redesign'] .u8n-action-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--u8n-quiet);
+  text-decoration: none;
+}
+[data-look='redesign'] .u8n-action-tile__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--u8n-pill-primary);
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8n-action-tile:hover .u8n-action-tile__icon {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .u8n-student-panel__heading {
+  margin: 18px 0 2px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-student-panel__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--u8n-line);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8n-student-panel__row > span:first-child {
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8n-student-panel__row > span:last-child {
+  text-align: end;
+}
+
+/* Phone (under 768px): search gets its own row, then Filter · Add · Invite ·
+ * ⋯ More, with Export under More; tapping a student shrinks the list to that
+ * row, and "Show all students (N)" brings it back. */
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8n-list__toolbar {
+    padding: 16px;
+    gap: 10px;
+  }
+  [data-look='redesign'] .u8n-list__tools {
+    width: 100%;
+    gap: 6px;
+  }
+  [data-look='redesign'] .u8n-list__search {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8n-list__search input {
+    font-size: 16px;
+  }
+  [data-look='redesign'] .u8n-list__tools .u8n-pill {
+    padding: 0 12px;
+    font-size: 13px;
+    gap: 6px;
+  }
+  [data-look='redesign'] .u8n-pill.u8n-list__more {
+    display: inline-flex;
+    margin-inline-start: auto;
+    width: 44px;
+    padding: 0 !important;
+    font-size: 18px !important;
+  }
+  [data-look='redesign'] .u8n-list__extra {
+    display: none;
+  }
+  [data-look='redesign'] .u8n-list__extra[data-open='true'] {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--u8n-head-bg);
+    border: 1px solid var(--u8n-line);
+  }
+  [data-look='redesign'] .u8n-list__filters,
+  [data-look='redesign'] .u8n-list__hint {
+    margin-inline: 16px;
+  }
+  [data-look='redesign'] .u8n-list__chips {
+    padding: 0 16px 14px;
+  }
+  [data-look='redesign'] .u8n-row__avatar img,
+  [data-look='redesign'] .u8n-row__avatar > span {
+    width: 44px !important;
+    height: 44px !important;
+  }
+  [data-look='redesign'] .u8n-list[data-collapsed='true'] tbody tr[data-sel='false'],
+  [data-look='redesign'] .u8n-list[data-collapsed='true'] thead,
+  [data-look='redesign'] .u8n-list[data-collapsed='true'] .u8n-list__foot {
+    display: none;
+  }
+  [data-look='redesign'] .u8n-list[data-collapsed='true'] .u8n-list__show-all {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    border: 0;
+    border-top: 1px solid var(--u8n-line);
+    background: var(--u8n-head-bg);
+    color: var(--u8n-tile-icon);
+    font: inherit;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+}

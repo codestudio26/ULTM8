@@ -2887,6 +2887,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "Фильтр",
+      moreActions: "Другие действия",
+      openFullPage: "Открыть всю страницу",
+      openFullPageAria: "Открыть всю страницу: {name}",
+      show: "Показать: {name}",
+      showAll: "Показать всех учеников ({count})",
+      showing: "Показано {shown} из {total}",
+      panelLabel: "Ученик",
+      since: "Ученик с {date}",
+      edit: "Изменить",
+      editAria: "Изменить: {name}",
+      training: "Тренировки",
+      homeBranch: "Основной филиал",
+    },
     growth: {
       subtitle: "Активные ученики, гости и замороженные абонементы сейчас, а также рост вашей школы за последние 12 месяцев.",
       period: "Последние 12 месяцев, по месяцам в часовом поясе школы ({zone}).",

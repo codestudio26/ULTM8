@@ -2770,6 +2770,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "絞り込み",
+      moreActions: "その他の操作",
+      openFullPage: "ページ全体を開く",
+      openFullPageAria: "ページ全体を開く: {name}",
+      show: "{name}を表示",
+      showAll: "すべての生徒を表示 ({count})",
+      showing: "{total}人中{shown}人を表示",
+      panelLabel: "生徒",
+      since: "{date}から生徒",
+      edit: "編集",
+      editAria: "{name}を編集",
+      training: "トレーニング",
+      homeBranch: "所属拠点",
+    },
     growth: {
       subtitle: "現在のアクティブな生徒、ビジター、休会中の会員資格と、過去12か月のスクールの成長。",
       period: "過去12か月、スクールのタイムゾーン（{zone}）での月ごと。",

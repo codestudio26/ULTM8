@@ -2770,6 +2770,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "필터",
+      moreActions: "더 보기",
+      openFullPage: "전체 페이지 열기",
+      openFullPageAria: "전체 페이지 열기: {name}",
+      show: "{name} 보기",
+      showAll: "모든 학생 보기 ({count})",
+      showing: "{total}명 중 {shown}명 표시",
+      panelLabel: "학생",
+      since: "{date}부터 학생",
+      edit: "편집",
+      editAria: "{name} 편집",
+      training: "훈련",
+      homeBranch: "소속 지점",
+    },
     growth: {
       subtitle: "현재 활동 중인 수련생, 방문자, 일시정지된 멤버십과 최근 12개월 동안 도장이 얼마나 성장했는지 보여 줍니다.",
       period: "최근 12개월, 도장 시간대({zone}) 기준 월별.",

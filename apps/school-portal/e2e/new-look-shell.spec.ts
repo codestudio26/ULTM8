@@ -45,7 +45,8 @@ async function newLookPages(page: Page): Promise<{ rows: string[]; pages: string
     await expect(row).toHaveAttribute('aria-current', 'page');
     await page.waitForLoadState('networkidle');
     pages.add(to);
-    for (const tab of await hrefs(page.locator('.u8n-tabs a'))) pages.add(tab);
+    // The menu's own tabs, in the top bar (not a page header's section tabs).
+    for (const tab of await hrefs(page.locator('.u8n-bar .u8n-tabs a'))) pages.add(tab);
   }
   return { rows, pages: [...pages].sort() };
 }

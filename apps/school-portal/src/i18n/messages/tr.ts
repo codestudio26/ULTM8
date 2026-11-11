@@ -2809,6 +2809,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "Filtrele",
+      moreActions: "Diğer işlemler",
+      openFullPage: "Tam sayfayı aç",
+      openFullPageAria: "Tam sayfayı aç: {name}",
+      show: "{name} göster",
+      showAll: "Tüm öğrencileri göster ({count})",
+      showing: "{total} öğrenciden {shown} gösteriliyor",
+      panelLabel: "Öğrenci",
+      since: "{date} tarihinden beri öğrenci",
+      edit: "Düzenle",
+      editAria: "{name} düzenle",
+      training: "Antrenman",
+      homeBranch: "Ana şube",
+    },
     growth: {
       subtitle: "Şu anki aktif öğrenciler, ziyaretçiler ve dondurulmuş üyelikler ile okulunun son 12 ayda nasıl büyüdüğü.",
       period: "Son 12 ay, okulun saat diliminde aylara göre ({zone}).",

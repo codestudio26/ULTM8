@@ -2809,6 +2809,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "Filter",
+      moreActions: "Meer acties",
+      openFullPage: "Volledige pagina openen",
+      openFullPageAria: "Volledige pagina openen: {name}",
+      show: "{name} tonen",
+      showAll: "Alle leerlingen tonen ({count})",
+      showing: "{shown} van {total} getoond",
+      panelLabel: "Leerling",
+      since: "Leerling sinds {date}",
+      edit: "Bewerken",
+      editAria: "{name} bewerken",
+      training: "Training",
+      homeBranch: "Thuisvestiging",
+    },
     growth: {
       subtitle: "Actieve leerlingen, bezoekers en bevroren lidmaatschappen nu, en hoe je school de afgelopen 12 maanden is gegroeid.",
       period: "Afgelopen 12 maanden, per maand in de tijdzone van de school ({zone}).",

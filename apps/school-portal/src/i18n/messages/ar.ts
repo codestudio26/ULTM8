@@ -2965,6 +2965,21 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   students: {
+    list: {
+      filter: "تصفية",
+      moreActions: "إجراءات أخرى",
+      openFullPage: "فتح الصفحة الكاملة",
+      openFullPageAria: "فتح الصفحة الكاملة: {name}",
+      show: "عرض {name}",
+      showAll: "عرض كل الطلاب ({count})",
+      showing: "عرض {shown} من {total}",
+      panelLabel: "طالب",
+      since: "طالب منذ {date}",
+      edit: "تعديل",
+      editAria: "تعديل {name}",
+      training: "التدريب",
+      homeBranch: "الفرع الرئيسي",
+    },
     growth: {
       subtitle: "الطلاب النشطون والزوار والعضويات المجمّدة الآن، ومدى نمو مدرستك خلال آخر 12 شهرًا.",
       period: "آخر 12 شهرًا، حسب الشهر بتوقيت المدرسة ({zone}).",
