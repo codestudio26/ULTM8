@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
-import { expect, test } from '@playwright/test';
+import { mkdirSync } from 'fs';
+import { expect, test, type Browser } from '@playwright/test';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
 
 /**
@@ -77,8 +78,10 @@ test('the Dashboard shows a real Bookings-this-week/Upcoming count, and "See mor
   await signIn(page, s.ownerToken);
   await page.goto('/dashboard');
 
-  const thisWeekCard = page.locator('.ultm8-card', { hasText: 'Bookings this week' });
-  const upcomingCard = page.locator('.ultm8-card', { hasText: 'Upcoming' });
+  const thisWeekCard = page.getByTestId('stat-bookings');
+  const upcomingCard = page.getByTestId('stat-upcoming');
+  await expect(thisWeekCard).toContainText('Bookings this week');
+  await expect(upcomingCard).toContainText('Upcoming');
   // UPCOMING + NO_SHOW = 2 (the cancelled one is shown apart).
   await expect(thisWeekCard).toContainText('2');
   await expect(thisWeekCard).toContainText('1 cancelled');
@@ -89,6 +92,57 @@ test('the Dashboard shows a real Bookings-this-week/Upcoming count, and "See mor
   await page.getByRole('link', { name: /See more/ }).click();
   await expect(page).toHaveURL(/\/bookings-drilldown/);
   await expect(page.locator('.ultm8-badge', { hasText: /^Judo$/ })).toBeVisible();
+});
+
+test('the new look: the scope under the title, today\'s classes, and "Needs attention" with the owner\'s notifications', async ({ page }) => {
+  const notes = await Promise.all([
+    db.notification.create({ data: { id: randomUUID(), userId: s.ownerId, title: 'Waiver signed', body: 'Sam signed the waiver.', targetType: 'WAIVER' } }),
+    db.notification.create({ data: { id: randomUUID(), userId: s.ownerId, title: 'Old news', body: 'Already seen.', read: true, readAt: new Date() } }),
+  ]);
+  try {
+    await signIn(page, s.ownerToken);
+    await page.goto('/dashboard');
+
+    // DESIGN.md → "Dashboard: nothing shown twice": the line under the title is
+    // the Branch scope only; the School's name is on the switcher.
+    await expect(page.getByRole('heading', { level: 1, name: 'Dashboard' })).toBeVisible();
+    await expect(page.locator('.u8n-page-header__subtitle')).toHaveText('All Branches');
+
+    // Today's classes come from this week's summary (the fixture Class starts
+    // in a few minutes, unless that is already tomorrow in UTC).
+    const today = page.getByRole('region', { name: "Today's classes" });
+    await expect(today.getByRole('link', { name: 'Open check-in →' })).toHaveAttribute('href', '/check-in');
+    if (new Date(classStartMs).toISOString().slice(0, 10) === new Date().toISOString().slice(0, 10)) {
+      const row = today.getByTestId('today-class').filter({ hasText: 'Dashboard Spec Judo' });
+      await expect(row).toContainText('2 booked');
+    }
+
+    // The right panel: the owner's own inbox, one unread, each opening what it is about.
+    const panel = page.getByRole('complementary', { name: 'Needs attention' });
+    await expect(panel.getByRole('heading', { name: 'Notifications' })).toBeVisible();
+    await expect(panel).toContainText('1 unread');
+    await expect(panel.getByRole('link', { name: 'Waiver signed' })).toHaveAttribute('href', '/waivers');
+    await expect(panel).toContainText('Sam signed the waiver.');
+    await expect(panel).toContainText('Old news');
+    await panel.getByRole('link', { name: 'See all notifications ›' }).click();
+    await expect(page).toHaveURL(/\/notifications$/);
+  } finally {
+    await db.notification.deleteMany({ where: { id: { in: notes.map((n) => n.id) } } });
+  }
+});
+
+test('on a phone the number cards and lists come first, "Needs attention" below them', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, s.ownerToken);
+  await page.goto('/dashboard');
+  const stats = page.getByRole('region', { name: 'Bookings this week' });
+  const panel = page.getByRole('complementary', { name: 'Needs attention' });
+  await expect(stats).toBeVisible();
+  await expect(panel).toBeVisible();
+  const [a, b] = await Promise.all([stats.boundingBox(), panel.boundingBox()]);
+  expect(b!.y).toBeGreaterThan(a!.y + a!.height);
+  // No sideways scrolling at phone width.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });
 
 test('the drill-down page groups the Booking under its Class\'s activity tag, on the right day, with the right counts', async ({ page }) => {
@@ -167,10 +221,17 @@ test('Decision 367 (Q5): with two Branches the Owner can narrow the Dashboard to
   try {
     await signIn(page, s.ownerToken);
     await page.goto('/dashboard');
-    const thisWeekCard = page.locator('.ultm8-card', { hasText: 'Bookings this week' });
+    const thisWeekCard = page.getByTestId('stat-bookings');
     await expect(thisWeekCard).toContainText('2');
+    // The picker shows the scope, so the line under the title doesn't repeat it.
+    await expect(page.locator('.u8n-page-header__subtitle')).toHaveCount(0);
 
-    await page.getByLabel('Branch').selectOption({ label: 'Dashboard North' });
+    // Our own drop-down (DESIGN.md → "Drop-downs"), not the browser's.
+    const picker = page.getByRole('combobox', { name: 'Branch' });
+    await expect(picker).toHaveText(/All Branches/);
+    await picker.click();
+    await page.getByRole('option', { name: 'Dashboard North' }).click();
+    await expect(picker).toHaveText(/Dashboard North/);
     await expect(page).toHaveURL(new RegExp(`branch=${branches[0].id}`));
     // The fixture Class has no Branch, so one Branch's figures are empty.
     await expect(thisWeekCard).toContainText('0');
@@ -190,7 +251,8 @@ test('Decision 374: Active students, the setup checklist (hide and show again) a
   await page.goto('/dashboard');
 
   // The fixture student holds a live Subscription.
-  await expect(page.locator('.ultm8-card', { hasText: 'Active students' })).toContainText('1');
+  await expect(page.getByTestId('stat-active')).toContainText('Active students');
+  await expect(page.getByTestId('stat-active')).toContainText('1');
 
   // The fixture School has a style with belts, a class and a plan: 3 of 7.
   const checklist = page.getByRole('region', { name: 'Get your School ready' });
@@ -222,4 +284,38 @@ test('Decision 374: a coach sees this week\'s birthdays on the coach dashboard',
   const birthdays = page.getByRole('region', { name: 'Birthdays this week' });
   await expect(birthdays).toContainText(s.student.name);
   await expect(birthdays.getByRole('link')).toHaveCount(0);
+});
+
+/** Screenshots for the PR, only when NEW_LOOK_SHOTS names a folder. */
+test.describe('screenshots', () => {
+  test.skip(!process.env.NEW_LOOK_SHOTS, 'set NEW_LOOK_SHOTS to a folder to take them');
+
+  async function shot(browser: Browser, name: string, opts: { width: number; height: number; dark?: boolean }) {
+    const context = await browser.newContext({ viewport: { width: opts.width, height: opts.height }, deviceScaleFactor: 2, colorScheme: opts.dark ? 'dark' : 'light' });
+    const page = await context.newPage();
+    await signIn(page, s.ownerToken);
+    await page.goto('/dashboard');
+    await expect(page.getByRole('complementary', { name: 'Needs attention' })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    await page.screenshot({ path: `${process.env.NEW_LOOK_SHOTS}/${name}.png`, fullPage: true });
+    await context.close();
+  }
+
+  test('owner: light, dark and phone', async ({ browser }) => {
+    test.setTimeout(120_000);
+    mkdirSync(process.env.NEW_LOOK_SHOTS!, { recursive: true });
+    const notes = await Promise.all([
+      db.notification.create({ data: { id: randomUUID(), userId: s.ownerId, title: 'Waiver signed', body: 'Sam signed the waiver.', targetType: 'WAIVER' } }),
+      db.notification.create({ data: { id: randomUUID(), userId: s.ownerId, title: 'Class cancelled', body: 'Dashboard Spec Judo was cancelled.', read: true, readAt: new Date() } }),
+    ]);
+    try {
+      await shot(browser, 'owner-light', { width: 1440, height: 900 });
+      await shot(browser, 'owner-dark', { width: 1440, height: 900, dark: true });
+      await shot(browser, 'owner-tablet', { width: 820, height: 1180 });
+      await shot(browser, 'owner-phone', { width: 390, height: 844 });
+      await shot(browser, 'owner-phone-dark', { width: 390, height: 844, dark: true });
+    } finally {
+      await db.notification.deleteMany({ where: { id: { in: notes.map((n) => n.id) } } });
+    }
+  });
 });
