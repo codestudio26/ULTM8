@@ -10,6 +10,11 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Notifications** (Decision 453; visual only). The page header
+  with Mark all read, Clear all read and Send a message to students as pills,
+  Total / Unread / Read within 24h as number cards, the inbox as a card of rows
+  (unread dot, status tag, time, ⋯ menu) and the sent messages as a card; the
+  Snooze and Broadcast forms use our own drop-downs. Same data and actions.
 - **New look: Dashboard** (Decision 453; visual only). The owner's Dashboard
   has the new page header (the Branch scope under the title, our own Branch
   drop-down), number cards, Today's classes (from this week's Bookings
