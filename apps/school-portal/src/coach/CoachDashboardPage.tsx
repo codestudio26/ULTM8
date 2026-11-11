@@ -12,7 +12,7 @@ import { useClasses, type ClassResponse } from '../classes/classQueries';
 import { useTimetableSlots, type TimetableSlotResponse } from '../timetable/timetableQueries';
 import { useBranches } from '../branches/branchQueries';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
-import { classZone, formatInZone, formatTimeInZone } from '../lib/datetime';
+import { classZone, formatInZone, formatTimeInZone, isTodayInZone } from '../lib/datetime';
 import { notificationLink, useNotificationCounts, useNotifications } from '../notifications/notificationQueries';
 import { gradingBoardQuery, useGradingBoard, useMyGrading, useStudentEligibility, type GradingBoard, type StudentEligibility } from '../grading/gradingQueries';
 import { flattenLadder } from '../grading/ladder';
@@ -122,6 +122,12 @@ function CoachBody({ schoolId, me, teaches, isBranchStaff, isStudentHere }: { sc
   const upcoming = useMyUpcomingClasses(schoolId, me);
   const next = teaches ? (upcoming.data?.items ?? [])[0] : undefined;
   const showPanel = readyInPanel || !!next;
+  // Decision 460 item 6: the next class is headed "Today" when it starts
+  // today on the School's clock, the same "today" the Birthdays card uses
+  // (the School's time zone, UTC if it has none); otherwise "Next class".
+  const school = useSchool(schoolId);
+  const nextLabel =
+    next && school.data && isTodayInZone(next.startDate, school.data.timezone || 'UTC') ? t('dashboard.birthdays.today') : t('coach.dashboard.nextClass');
   const body = (
     <div className="u8n-dash u8n-coach">
       <div className="u8n-dash__lists">
@@ -137,7 +143,7 @@ function CoachBody({ schoolId, me, teaches, isBranchStaff, isStudentHere }: { sc
   );
   if (!showPanel) return <NewLookPage>{body}</NewLookPage>;
   return (
-    <NewLookPage inspectorLabel={next ? t('coach.dashboard.nextClass') : t('coach.dashboard.readyToGrade')} inspector={<CoachPanel schoolId={schoolId} next={next} styles={readyInPanel ? graded.styles : null} />}>
+    <NewLookPage inspectorLabel={next ? nextLabel : t('coach.dashboard.readyToGrade')} inspector={<CoachPanel schoolId={schoolId} next={next} nextLabel={nextLabel} styles={readyInPanel ? graded.styles : null} />}>
       {body}
     </NewLookPage>
   );
@@ -452,11 +458,11 @@ function MyRank({ item, styleName }: { item: StudentEligibility; styleName: stri
  * place for ready students. Each student opens their page's Ranks tab at
  * that style (Decision 457: links from grading surfaces open Ranks).
  */
-function CoachPanel({ schoolId, next, styles }: { schoolId: string; next: ClassResponse | undefined; styles: DisciplineResponse[] | null }) {
+function CoachPanel({ schoolId, next, nextLabel, styles }: { schoolId: string; next: ClassResponse | undefined; nextLabel: string; styles: DisciplineResponse[] | null }) {
   const t = useT();
   return (
     <div className="u8n-coach-panel">
-      {next ? <NextClass schoolId={schoolId} c={next} /> : null}
+      {next ? <NextClass schoolId={schoolId} c={next} label={nextLabel} /> : null}
       {styles ? (
         <>
           {next ? (
@@ -471,11 +477,11 @@ function CoachPanel({ schoolId, next, styles }: { schoolId: string; next: ClassR
   );
 }
 
-function NextClass({ schoolId, c }: { schoolId: string; c: ClassResponse }) {
+function NextClass({ schoolId, c, label }: { schoolId: string; c: ClassResponse; label: string }) {
   const t = useT();
   const { where, zone } = useClassPlace(schoolId)(c);
   return (
-    <section className="u8n-coach-panel__next" aria-label={t('coach.dashboard.nextClass')}>
+    <section className="u8n-coach-panel__next" aria-label={label}>
       <div className="u8n-coach-panel__head">
         {c.bannerUrl ? <img src={c.bannerUrl} alt="" className="u8n-coach-panel__banner" /> : <ClassAvatar id={c.id} title={c.title} large />}
         <div style={{ minWidth: 0 }}>
