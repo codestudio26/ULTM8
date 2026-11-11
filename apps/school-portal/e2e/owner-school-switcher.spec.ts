@@ -47,12 +47,13 @@ test('an Owner at two Schools can switch which one they act as, and it sticks ac
   await expect(switcher).toBeVisible();
   await expect(switcher).toHaveValue(firstSchool.id);
   await expect(page.getByRole('heading', { name: 'School profile' })).toBeVisible();
-  // PageHeader's own subtitle class, not `getByText`/`getByRole('paragraph')` —
+  // The page header's own subtitle class (the new look's NewLookPageHeader),
+  // not `getByText`/`getByRole('paragraph')` —
   // the switcher's own <option> carries the same School name text, and an
   // unaffiliated School's own "This School is independent" copy is also a
   // plain <p>, so either of those generic queries hits a strict-mode
   // ambiguity this scoped selector avoids.
-  const subtitle = page.locator('.ultm8-page-header__subtitle');
+  const subtitle = page.locator('.u8n-page-header__subtitle');
   await expect(subtitle).toHaveText(firstSchool.name);
 
   await switcher.selectOption(secondSchool.id);

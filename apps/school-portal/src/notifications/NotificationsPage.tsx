@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, PageHeader, RowActionsMenu, Spinner, Table } from '@ultm8/ui';
+import { ErrorBanner, RowActionsMenu, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches } from '../branches/branchQueries';
@@ -23,32 +23,17 @@ import { SnoozeNotificationModal } from './SnoozeNotificationModal';
 import { SentBroadcastsSection } from './SentBroadcastsSection';
 import { useI18n } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import './notificationsPage.css';
 
-/** Small, page-local summary tile — same shape/style as TransactionsPage's and
- * MembershipPlansPage's own `StatTile` (not promoted to @ultm8/ui yet, per
- * TransactionsPage's own header comment on why three occurrences still isn't
- * worth it). No `proposed` placeholder variant here: Total/Unread are both
- * real, backed by the dedicated `GET /notifications/me/counts` endpoint —
- * see useNotificationCounts's own header comment. */
-function StatTile({ label, value }: { label: string; value: React.ReactNode }) {
+/** One number card in the stats row (DESIGN.md → "Stat rows"): the label in a
+ * two-line slot, then its number, so a label that wraps never pushes the
+ * number down. The label comes first and the number straight after it. */
+function StatCard({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div
-      style={{
-        flex: 1,
-        minWidth: 140,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 4,
-        padding: '14px 18px',
-        background: 'var(--surface-0)',
-        border: '1px solid var(--border-strong)',
-        borderRadius: 'var(--radius-md)',
-      }}
-    >
-      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-        {label}
-      </span>
-      <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)' }}>{value}</span>
+    <div className="u8n-notes__stat">
+      <span className="u8n-notes__stat-label">{label}</span>
+      <span className="u8n-notes__stat-value">{value}</span>
     </div>
   );
 }
@@ -70,12 +55,18 @@ function isSnoozed(n: NotificationResponse): boolean {
  * Mark-read and Snooze (v1.2 backend backlog, approved by the product owner)
  * and Delete (Decision 277) live in each row's action menu, with a "Clear all
  * read" header action beside them; Broadcast/compose (same backlog entry) is
- * a School-Owner-only PageHeader action, since the backend endpoint it calls
+ * a School-Owner-only header action, since the backend endpoint it calls
  * is School-Owner-gated — a Branch Staff/Instructor using this same page
  * never sees it (useOwnedSchoolId is null for them, same gate
  * WaiversPage/MembershipPlansPage's own "Add" actions already use). No
  * device-token registration here (see notificationQueries.ts's own header
- * comment on why). */
+ * comment on why).
+ *
+ * The new look (Decision 453; DESIGN-BRIEF §8, DESIGN.md → "Stat rows", "One
+ * accent: mint", "Phone layout"): the white page header, the three number
+ * cards, then the inbox as one white card of rows like the Dashboard's
+ * "Needs attention" list. The page has no selected-item view, so it has no
+ * right-hand panel. Layout only: the same data, actions and API calls. */
 export function NotificationsPage() {
   const schoolId = useOwnedSchoolId();
   const { t, serverText } = useI18n();
@@ -110,8 +101,22 @@ export function NotificationsPage() {
   const classes = useUpcomingClassesForBroadcast(schoolId);
   const broadcast = useBroadcastNotification(schoolId ?? '');
 
-  if (isLoading) return <Spinner />;
-  if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('notifications.loadFailed')} />;
+  const header = (actions?: React.ReactNode) => <NewLookPageHeader title={t('notifications.title')} subtitle={t('notifications.subtitle')} actions={actions} />;
+
+  if (isLoading)
+    return (
+      <>
+        {header()}
+        <Spinner />
+      </>
+    );
+  if (error)
+    return (
+      <>
+        {header()}
+        <ErrorBanner message={error instanceof ApiError ? error.message : t('notifications.loadFailed')} />
+      </>
+    );
 
   // Titles/bodies the API's jobs wrote in English, shown in the picked language.
   const notifications = (data?.pages ?? []).flatMap((p) => p.items).map((n) => ({ ...n, ...serverText.notification(n) }));
@@ -146,156 +151,110 @@ export function NotificationsPage() {
     setSnoozing(null);
   }
 
+  // A failed counts fetch degrades to an em dash rather than blocking the
+  // whole page — the list is still perfectly usable without it.
+  const countValue = (pick: (c: NonNullable<typeof counts.data>) => React.ReactNode) =>
+    counts.isLoading ? <Spinner /> : counts.error || !counts.data ? '—' : pick(counts.data);
+
   return (
     <>
-      <PageHeader
-        title={t('notifications.title')}
-        subtitle={t('notifications.subtitle')}
-        actions={
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            {/* Decision 355 — every unread notification, on every page. */}
-            <Button
-              variant="secondary"
-              onClick={handleMarkAllRead}
-              loading={markAllRead.isPending}
-              disabled={!counts.data || counts.data.unread === 0}
-            >
-              {t('notifications.markAllRead')}
-            </Button>
-            {/* Decision 277 — every User can clear their own read
-                notifications. Disabled when Total equals Unread, from the
-                counts endpoint rather than the loaded page (a snoozed unread
-                row also counts towards the gap, so this can occasionally
-                stay enabled with nothing to clear; that clears 0, harmlessly). */}
-            <Button
-              variant="secondary"
-              onClick={() => setClearingRead(true)}
-              disabled={!counts.data || counts.data.total - counts.data.unread === 0}
-            >
-              {t('notifications.clearAllRead')}
-            </Button>
-            {/* v1.2 backend backlog — Broadcast/compose, approved by the
-                product owner. School-Owner-only: schoolId is null for a
-                Branch Staff/Instructor viewing their own inbox on this same
-                page. */}
-            {schoolId ? <Button onClick={() => setBroadcasting(true)}>{t('notifications.broadcastButton')}</Button> : null}
+      {header(
+        <>
+          {/* Decision 355 — every unread notification, on every page. */}
+          <button
+            type="button"
+            className="u8n-notes__btn"
+            onClick={handleMarkAllRead}
+            disabled={markAllRead.isPending || !counts.data || counts.data.unread === 0}
+            aria-busy={markAllRead.isPending || undefined}
+          >
+            {markAllRead.isPending ? <span className="u8n-notes__spin" aria-hidden="true" /> : null}
+            {t('notifications.markAllRead')}
+          </button>
+          {/* Decision 277 — every User can clear their own read
+              notifications. Disabled when Total equals Unread, from the
+              counts endpoint rather than the loaded page (a snoozed unread
+              row also counts towards the gap, so this can occasionally
+              stay enabled with nothing to clear; that clears 0, harmlessly). */}
+          <button
+            type="button"
+            className="u8n-notes__btn"
+            onClick={() => setClearingRead(true)}
+            disabled={!counts.data || counts.data.total - counts.data.unread === 0}
+          >
+            {t('notifications.clearAllRead')}
+          </button>
+          {/* v1.2 backend backlog — Broadcast/compose, approved by the
+              product owner. School-Owner-only: schoolId is null for a
+              Branch Staff/Instructor viewing their own inbox on this same
+              page. */}
+          {schoolId ? (
+            <button type="button" className="u8n-notes__btn u8n-notes__btn--primary" onClick={() => setBroadcasting(true)}>
+              {t('notifications.broadcastButton')}
+            </button>
+          ) : null}
+        </>,
+      )}
+
+      <NewLookPage>
+        <div className="u8n-notes">
+          {/* Stats row (v1.2 backend backlog, Decision 204's Concept 5
+              finding) — all three are real, backed by the
+              GET /notifications/me/counts endpoint, not the loaded rows below. */}
+          <div className="u8n-notes__stats">
+            <StatCard label={t('notifications.statTotal')} value={countValue((c) => c.total)} />
+            <StatCard label={t('notifications.statUnread')} value={countValue((c) => c.unread)} />
+            {/* v1.2 backend backlog — Read within 24h, approved by the
+                product owner. `null` (nothing read yet) is an em dash: a
+                genuinely empty metric, not an error. */}
+            <StatCard
+              label={t('notifications.statReadWithin24h')}
+              value={countValue((c) => (c.readWithin24hPercent === null ? '—' : `${c.readWithin24hPercent}%`))}
+            />
           </div>
-        }
-      />
 
-      {/* Stats ribbon (v1.2 backend backlog, Decision 204's Concept 5 finding:
-          "Total/Unread are real but page-scoped (no count endpoint exists to
-          total across every page)") — all three tiles are real, backed by the
-          GET /notifications/me/counts endpoint, not the page-local `notifications`
-          list below. A failed counts fetch degrades to an em dash rather than
-          blocking the whole page — the list is still perfectly usable without it. */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 24 }}>
-        <StatTile label={t('notifications.statTotal')} value={counts.isLoading ? <Spinner /> : counts.error ? '—' : counts.data!.total} />
-        <StatTile label={t('notifications.statUnread')} value={counts.isLoading ? <Spinner /> : counts.error ? '—' : counts.data!.unread} />
-        {/* v1.2 backend backlog — Read within 24h metric, approved by the
-            product owner. `null` (nothing read yet) renders as an em dash,
-            same convention the other two tiles already use for a failed fetch —
-            here it's a genuinely empty metric, not an error. */}
-        <StatTile
-          label={t('notifications.statReadWithin24h')}
-          value={
-            counts.isLoading ? (
-              <Spinner />
-            ) : counts.error || counts.data!.readWithin24hPercent === null ? (
-              '—'
+          {actionError ? <ErrorBanner message={actionError} /> : null}
+
+          <section className="u8n-notes__card" aria-label={t('notifications.title')}>
+            {notifications.length === 0 ? (
+              <div className="u8n-notes__empty">
+                <p className="u8n-notes__empty-title">{t('notifications.emptyTitle')}</p>
+                <p className="u8n-notes__empty-text">{t('notifications.emptyDescription')}</p>
+              </div>
             ) : (
-              `${counts.data!.readWithin24hPercent}%`
-            )
-          }
-        />
-      </div>
-
-      {actionError ? <ErrorBanner message={actionError} /> : null}
-      <Card>
-        {notifications.length === 0 ? (
-          <EmptyState title={t('notifications.emptyTitle')} description={t('notifications.emptyDescription')} />
-        ) : (
-          <Table<NotificationResponse>
-            rows={notifications}
-            columns={[
-              {
-                key: 'status',
-                header: '',
-                render: (n) =>
-                  isSnoozed(n) ? (
-                    <Badge>{t('notifications.statusSnoozed')}</Badge>
-                  ) : n.read ? (
-                    <Badge>{t('notifications.statusRead')}</Badge>
-                  ) : (
-                    <Badge variant="accent">{t('notifications.statusNew')}</Badge>
-                  ),
-              },
-              {
-                key: 'title',
-                header: t('notifications.columnTitle'),
-                // Decision 355: the title opens what the notification is about,
-                // and the School it came from sits under it.
-                render: (n) => {
-                  const to = notificationLink(n);
-                  return (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                      {to ? (
-                        <a
-                          href={to}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleOpen(n, to);
-                          }}
-                        >
-                          {n.title}
-                        </a>
-                      ) : (
-                        n.title
-                      )}
-                      {n.schoolName ? <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{n.schoolName}</span> : null}
-                    </div>
-                  );
-                },
-              },
-              { key: 'body', header: t('notifications.columnMessage'), render: (n) => n.body },
-              { key: 'createdAt', header: t('notifications.columnReceived'), render: (n) => new Date(n.createdAt).toLocaleString(formatLocale()) },
-              {
-                key: 'actions',
-                header: '',
-                // v1.2 backend backlog — Snooze, previously shown
-                // disabled-styled in this menu with no endpoint behind it; now
-                // real (PATCH /notifications/:id/snooze). "Mark read" stays
-                // disabled once already read, same as the plain Button it
-                // replaces did by simply not rendering at all — a menu item
-                // reads clearer disabled than it would hidden, since the menu
-                // itself should always offer a consistent set of items per row.
-                render: (n) => (
-                  <RowActionsMenu
-                    label={t('notifications.rowActionsAria', { title: n.title })}
-                    actions={[
-                      { label: t('notifications.markRead'), onClick: () => handleMarkRead(n.id), disabled: n.read },
-                      // A read notification is already out of the Unread count,
-                      // so snoozing it would change nothing but its badge.
-                      { label: t('notifications.snooze'), onClick: () => setSnoozing(n), disabled: n.read },
-                      { label: t('notifications.delete'), onClick: () => setDeleting(n), variant: 'danger' },
-                    ]}
+              <ul className="u8n-notes__list">
+                {notifications.map((n) => (
+                  <InboxRow
+                    key={n.id}
+                    n={n}
+                    onOpen={handleOpen}
+                    onMarkRead={() => handleMarkRead(n.id)}
+                    onSnooze={() => setSnoozing(n)}
+                    onDelete={() => setDeleting(n)}
                   />
-                ),
-              },
-            ]}
-          />
-        )}
-      </Card>
-      {hasNextPage ? (
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
-          <Button variant="secondary" loading={isFetchingNextPage} onClick={() => fetchNextPage()}>
-            {t('notifications.loadMore')}
-          </Button>
-        </div>
-      ) : null}
+                ))}
+              </ul>
+            )}
+            {hasNextPage ? (
+              <div className="u8n-notes__more">
+                <button
+                  type="button"
+                  className="u8n-notes__btn"
+                  disabled={isFetchingNextPage}
+                  aria-busy={isFetchingNextPage || undefined}
+                  onClick={() => fetchNextPage()}
+                >
+                  {isFetchingNextPage ? <span className="u8n-notes__spin" aria-hidden="true" /> : null}
+                  {t('notifications.loadMore')}
+                </button>
+              </div>
+            ) : null}
+          </section>
 
-      {/* Decision 363 — the School's sent broadcasts, Owner only like sending. */}
-      {schoolId ? <SentBroadcastsSection schoolId={schoolId} /> : null}
+          {/* Decision 363 — the School's sent broadcasts, Owner only like sending. */}
+          {schoolId ? <SentBroadcastsSection schoolId={schoolId} /> : null}
+        </div>
+      </NewLookPage>
 
       {snoozing ? (
         <SnoozeNotificationModal
@@ -337,5 +296,72 @@ export function NotificationsPage() {
         />
       ) : null}
     </>
+  );
+}
+
+/** One notification: an unread dot, the title (Decision 355: it opens what
+ * the notification is about) with the School it came from, the message, then
+ * its status and when it arrived, and the row's ⋯ menu. */
+function InboxRow({
+  n,
+  onOpen,
+  onMarkRead,
+  onSnooze,
+  onDelete,
+}: {
+  n: NotificationResponse;
+  onOpen: (n: NotificationResponse, to: string) => void;
+  onMarkRead: () => void;
+  onSnooze: () => void;
+  onDelete: () => void;
+}) {
+  const { t } = useI18n();
+  const to = notificationLink(n);
+  const snoozed = isSnoozed(n);
+  const state = snoozed ? 'snoozed' : n.read ? 'read' : 'new';
+  return (
+    <li className="u8n-notes__item" data-state={state}>
+      <span className="u8n-notes__dot" aria-hidden="true" />
+      <div className="u8n-notes__main">
+        <div className="u8n-notes__title">
+          {to ? (
+            <a
+              href={to}
+              onClick={(e) => {
+                e.preventDefault();
+                onOpen(n, to);
+              }}
+            >
+              {n.title}
+            </a>
+          ) : (
+            n.title
+          )}
+        </div>
+        {n.schoolName ? <div className="u8n-notes__school">{n.schoolName}</div> : null}
+        <div className="u8n-notes__body">{n.body}</div>
+      </div>
+      <div className="u8n-notes__end">
+        <span className={`u8n-notes__tag u8n-notes__tag--${state}`}>
+          {snoozed ? t('notifications.statusSnoozed') : n.read ? t('notifications.statusRead') : t('notifications.statusNew')}
+        </span>
+        <span className="u8n-notes__when">{new Date(n.createdAt).toLocaleString(formatLocale(), { dateStyle: 'medium', timeStyle: 'short' })}</span>
+      </div>
+      <div className="u8n-notes__menu">
+        {/* v1.2 backend backlog — Snooze is real (PATCH
+            /notifications/:id/snooze). "Mark read" stays in the menu, disabled
+            once already read, so every row offers the same set of items. */}
+        <RowActionsMenu
+          label={t('notifications.rowActionsAria', { title: n.title })}
+          actions={[
+            { label: t('notifications.markRead'), onClick: onMarkRead, disabled: n.read },
+            // A read notification is already out of the Unread count,
+            // so snoozing it would change nothing but its badge.
+            { label: t('notifications.snooze'), onClick: onSnooze, disabled: n.read },
+            { label: t('notifications.delete'), onClick: onDelete, variant: 'danger' },
+          ]}
+        />
+      </div>
+    </li>
   );
 }
