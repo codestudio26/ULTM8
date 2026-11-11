@@ -10,6 +10,10 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Organisation** (Decision 453; visual only). Branches, Franchises,
+  a Franchise's page and its Overview, and the School page have the new page
+  header, white cards, the list card (our own drop-downs, round pills, a "Show
+  closed" chip) and red-outlined cards for closing; same data, figures and actions.
 - **New look: Notifications** (Decision 453; visual only). The page header
   with Mark all read, Clear all read and Send a message to students as pills,
   Total / Unread / Read within 24h as number cards, the inbox as a card of rows

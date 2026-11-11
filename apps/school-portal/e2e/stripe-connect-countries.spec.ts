@@ -82,14 +82,17 @@ test('a UK Franchise keeps the button, and the country picker offers only where 
   const card = page.getByTestId('stripe-connect');
   await expect(card.getByTestId('stripe-connect-hint')).toHaveText('Connect a Stripe account so member Schools can pay their franchise fees by card.');
   await card.getByRole('button', { name: 'Connect Stripe' }).click();
-  const picker = page.getByLabel("Country of the business's bank account");
-  await expect(picker).toHaveValue('GB');
-  await expect(picker.locator('option[value="GB"]')).toHaveCount(1);
-  await expect(picker.locator('option[value="IE"]')).toHaveCount(1);
-  await expect(picker.locator('option[value="BR"]')).toHaveCount(0);
-  await expect(picker.locator('option[value="US"]')).toHaveCount(0);
+  // Our own drop-down (DESIGN.md → "Drop-downs"), not the browser's.
+  const picker = page.getByRole('combobox', { name: "Country of the business's bank account" });
+  await expect(picker.locator('[data-shown="true"]')).toHaveText('United Kingdom');
+  await picker.click();
+  const countries = page.getByRole('listbox', { name: "Country of the business's bank account" });
+  await expect(countries.getByRole('option', { name: 'United Kingdom' })).toHaveCount(1);
+  await expect(countries.getByRole('option', { name: 'Ireland' })).toHaveCount(1);
+  await expect(countries.getByRole('option', { name: 'Brazil' })).toHaveCount(0);
+  await expect(countries.getByRole('option', { name: 'United States' })).toHaveCount(0);
   // "Select a country" plus the 32 countries.
-  await expect(picker.locator('option')).toHaveCount(33);
+  await expect(countries.getByRole('option')).toHaveCount(33);
 });
 
 test("a Brazilian School's setup checklist leaves out Connect Stripe and says how members pay; a UK School's keeps it", async ({ page, context }) => {

@@ -92,14 +92,19 @@ test('closing a Branch with a weekly slot moves the slot to the chosen Branch an
   await page.getByRole('menu', { name: 'Actions for Hillside' }).getByRole('menuitem', { name: 'Close branch' }).click();
   const dialog = page.getByRole('dialog', { name: 'Close Hillside?' });
 
-  const where = dialog.getByLabel('Upcoming classes: 0 · Weekly timetable slots: 1');
+  // Our own drop-down (DESIGN.md → "Drop-downs"), not the browser's.
+  const where = dialog.getByRole('combobox', { name: 'Upcoming classes: 0 · Weekly timetable slots: 1' });
   await expect(where).toBeVisible();
-  await expect(where.locator('option', { hasText: 'Hillside' })).toHaveCount(0);
+  await where.click();
+  await expect(dialog.getByRole('option', { name: 'Hillside' })).toHaveCount(0);
+  await expect(dialog.getByRole('option', { name: 'Lakeside' })).toHaveCount(1);
+  await where.press('Escape');
   await expect(dialog.getByText(/has history, so it will be kept for good/)).toBeVisible();
   const confirm = dialog.getByRole('button', { name: 'Close branch' });
   await expect(confirm).toBeDisabled();
 
-  await where.selectOption({ label: 'Lakeside' });
+  await where.click();
+  await dialog.getByRole('option', { name: 'Lakeside' }).click();
   await confirm.click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('cell', { name: 'Hillside', exact: true })).toHaveCount(0);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PageHeader, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, Table, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
+import { AddressFields, Badge, Button, Card, Checkbox, CurrencyField, ErrorBanner, Field, Modal, PhoneField, PhotoUploadField, SelectField, Spinner, SuccessBanner, Switch, Table, TextArea, TextField, TimezoneField, hasLegacyAddressOnly, postalAddressFromRecord, preparePostalAddress, type PostalAddress, type PostalAddressErrors } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { formatMoney } from '../lib/money';
@@ -41,6 +41,9 @@ import { LateFeesCard } from '../charges/LateFeesCard';
 import { IncomeCategoriesCard } from '../charges/IncomeCategoriesCard';
 import { ScheduleSharingCard } from './ScheduleSharingCard';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import '../students/studentsList.css';
+import '../organisation/organisationLook.css';
 import { formatLocale, languageName } from '../i18n/format';
 import { Trans } from '../i18n/Trans';
 import { CancellationSettingsFields, cancellationSettingsForm, cancellationSettingsPayload, isCancellationSettingsValid } from '../cancellations/CancellationSettingsFields';
@@ -59,8 +62,8 @@ function StaffStripeConnectPage({ schoolId }: { schoolId: string }) {
   if (error) return <ErrorBanner message={error instanceof ApiError ? error.message : t('schools.profile.loadFailed')} />;
   if (isLoading || !school) return <Spinner />;
   return (
-    <>
-      <PageHeader title={t('schools.stripeConnect.title')} subtitle={school.name} />
+    <div className="u8o">
+      <NewLookPageHeader title={t('schools.stripeConnect.title')} subtitle={school.name} />
       {school.archivedAt ? null : (
         <StripeConnectCard
           key={`stripe-connect-${schoolId}`}
@@ -70,7 +73,7 @@ function StaffStripeConnectPage({ schoolId }: { schoolId: string }) {
           canCreate={false}
         />
       )}
-    </>
+    </div>
   );
 }
 
@@ -105,12 +108,16 @@ export function SchoolPage() {
   if (!schoolId && staffStripeSchoolId) return <StaffStripeConnectPage schoolId={staffStripeSchoolId} />;
   if (!schoolId) {
     return (
-      <>
-        <PageHeader title={t('schools.profile.title')} />
-        <Card>
-          <p data-testid="school-owners-only">{t('schools.profile.ownersOnly')}</p>
-        </Card>
-      </>
+      <div className="u8o">
+        <NewLookPageHeader title={t('schools.profile.title')} />
+        <section className="u8o-card">
+          <div className="u8o-card__body">
+            <p data-testid="school-owners-only" style={{ margin: 0 }}>
+              {t('schools.profile.ownersOnly')}
+            </p>
+          </div>
+        </section>
+      </div>
     );
   }
   // The error first: with no School loaded there is nothing for the spinner to wait for.
@@ -119,10 +126,10 @@ export function SchoolPage() {
 
   const closed = !!school.archivedAt;
   return (
-    <>
-      <PageHeader title={t('schools.profile.title')} subtitle={school.name} />
+    <div className="u8o">
+      <NewLookPageHeader title={t('schools.profile.title')} subtitle={school.name} />
       {closed ? <ClosedSchoolNotice school={school} /> : null}
-      <fieldset disabled={closed} data-testid="school-settings" style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+      <fieldset disabled={closed} data-testid="school-settings" className="u8o-settings">
         <SchoolDetailsCard key={schoolId} schoolId={schoolId} school={school} />
         {closed ? null : <JoinCodeCard key={`join-${schoolId}`} schoolId={schoolId} joinCode={school.joinCode} />}
         <CancellationSettingsCard key={`cancel-${schoolId}`} schoolId={schoolId} school={school} />
@@ -159,7 +166,7 @@ export function SchoolPage() {
         <FranchiseAffiliationCard key={`franchise-${schoolId}`} schoolId={schoolId} franchiseId={school.franchiseId ?? null} closed={closed} />
       </fieldset>
       {closed ? null : <CloseSchoolCard key={`close-${schoolId}`} schoolId={schoolId} school={school} />}
-    </>
+    </div>
   );
 }
 
@@ -460,7 +467,7 @@ function SchoolDetailsCard({ schoolId, school }: { schoolId: string; school: Sch
       {currencyConfirm ? (
         <Modal title={t('schools.form.currencyConfirmTitle')} onClose={() => setCurrencyConfirm(null)}>
           <p data-testid="currency-confirm-body">{currencyConfirm}</p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <div className="u8o-pair">
             <Button
               loading={updateSchool.isPending}
               onClick={async () => {
@@ -561,7 +568,7 @@ function JoinCodeCard({ schoolId, joinCode }: { schoolId: string; joinCode: stri
       <p style={{ color: 'var(--ultm8-color-text-muted, #666)', fontSize: 13 }}>{t('schools.joinCode.explanation')}</p>
       {error ? <ErrorBanner message={error} /> : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <code data-testid="school-join-code" style={{ fontSize: 22, letterSpacing: 3, fontWeight: 600 }}>
+        <code data-testid="school-join-code" className="u8o-code" style={{ fontSize: 22, letterSpacing: 3, fontWeight: 500 }}>
           {joinCode}
         </code>
         <Button variant="secondary" onClick={handleCopy}>
@@ -574,7 +581,7 @@ function JoinCodeCard({ schoolId, joinCode }: { schoolId: string; joinCode: stri
       {confirming ? (
         <Modal title={t('schools.joinCode.regenerateConfirmTitle')} onClose={() => setConfirming(false)}>
           <p>{t('schools.joinCode.regenerateConfirmBody')}</p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <div className="u8o-pair">
             <Button onClick={handleRegenerate} loading={regenerate.isPending}>
               {t('schools.joinCode.regenerate')}
             </Button>
@@ -611,7 +618,7 @@ function CloseSchoolCard({ schoolId, school }: { schoolId: string; school: Schoo
   }
 
   return (
-    <Card>
+    <Card className="u8o-card--danger">
       <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
         {t('schools.close.title')}
       </h2>
@@ -641,7 +648,7 @@ function CloseSchoolCard({ schoolId, school }: { schoolId: string; school: Schoo
                 autoComplete="current-password"
               />
             </Field>
-            <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+            <div className="u8o-pair">
               <Button type="submit" variant="danger" loading={close.isPending} disabled={confirmName !== school.name}>
                 {t('schools.close.button')}
               </Button>
@@ -1075,7 +1082,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId, closed }: { schoolId:
           {confirmingLeave ? (
             <Modal title={t('schools.franchise.leaveConfirmTitle')} onClose={() => setConfirmingLeave(false)}>
               <p>{t('schools.franchise.leaveConfirmBody')}</p>
-              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+              <div className="u8o-pair">
                 <Button variant="danger" onClick={handleLeave}>
                   {t('schools.franchise.leave')}
                 </Button>
@@ -1119,7 +1126,7 @@ function FranchiseAffiliationCard({ schoolId, franchiseId, closed }: { schoolId:
               {confirmingJoin ? (
                 <Modal title={t('schools.franchise.confirmTitle')} onClose={() => setConfirmingJoin(null)}>
                   <p data-testid="franchise-join-confirm">{t('schools.franchise.confirmBody', { name: confirmingJoin.name })}</p>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                  <div className="u8o-pair">
                     <Button onClick={handleJoin} loading={joinFranchise.isPending}>
                       {t('schools.franchise.sendRequest')}
                     </Button>

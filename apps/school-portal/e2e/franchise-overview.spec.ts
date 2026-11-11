@@ -122,7 +122,9 @@ test('the Franchise owner opens the overview: totals, revenue per currency, and 
   // No member's name anywhere on the page.
   await expect(page.getByText(/MemberOverview/)).toHaveCount(0);
 
-  await page.getByLabel('Show').selectOption({ label: 'Overview North' });
+  // Our own drop-down (DESIGN.md → "Drop-downs"), not the browser's.
+  await page.getByRole('combobox', { name: 'Show' }).click();
+  await page.getByRole('listbox', { name: 'Show' }).getByRole('option', { name: 'Overview North' }).click();
   await expect(page.getByTestId('overview-active')).toHaveText('1');
   await expect(page.getByTestId('overview-revenue').getByRole('row', { name: /BRL/ })).toHaveCount(0);
   await expect(page.getByTestId('overview-schools')).toHaveCount(0);
