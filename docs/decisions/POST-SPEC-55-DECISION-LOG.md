@@ -8190,3 +8190,27 @@ User (Code), 10 Nov 2026, in chat: Franchise owner "a" (read-only overview of to
 ### Recorded by
 
 User (Code), 10 Nov 2026: R-1 "ok"; R-2, R-3 and the harness problem "fix it"; then "ok to all" to the round 7 list (bugs D-1, S-1, S-3, S-6, S-4, S-2, S-5 and questions 1–6 with the suggested answers).
+
+---
+
+## Decision 452 — Round 7 fixes: the points to confirm of #538 and #539
+
+**Date:** 11 Nov 2026 · **Status:** Product-owner decision · **Builds on:** Decisions 449, 451
+
+### Decision
+
+All confirmed as built in #538 and #539, except item 7, which is built with this entry.
+
+1. **Who counts as "paused" on every School page** (Decision 451 item 2): only someone whose sole link to the School is a paused coach or Branch Staff role. A paused coach who is also a member there, or a Guardian of a student there, keeps the member side of the app. Their staff pages still answer "access paused".
+2. **Joining a School with its join code** still works for paused staff. It is not a School page.
+3. **A member's birth date is owner-only for Branch Staff too**, not only for coaches (Decision 451 item 14). Sending back the same date is allowed.
+4. **Branch Staff confirming a desk order for a student outside their branches** (with the "record payments" switch on) get "no permission".
+5. **The native member app** uses the same per-person saved data as the web app, so its offline copy is emptied once, at the first launch after the update.
+6. **The bookings-list cursor** accepts only dates in the years 1970–9999; anything else is a 400.
+7. **The owner's dispute notice** calls a disputed freeze, late-cancel or no-show fee a **"fee payment"**, not a "Membership payment", in every language.
+8. **Only a plan's own purchase or renewal ends the plan** when it is refunded in full or a dispute on it is lost (Decision 451 item 1, as built in #538). Fees and every other payment only change their own row.
+
+### Recorded by
+
+User (Code), 11 Nov 2026: "ok to all", answering the choices to confirm on #539 (items 1–6) and the two points on #538 (items 7–8).
+

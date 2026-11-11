@@ -263,6 +263,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "{amount} のカード払いの異議申し立ては、あなたに有利に決まりました。お金はカードに戻ります。",
     chargeDisputeWonBody: "{amount} のカード払いの異議申し立ては、スクールに有利に決まりました。支払いはそのまま有効です。",
     chargePaymentLabel: "請求の支払い",
+    feePaymentLabel: "手数料の支払い",
     chargeDueReminderTitle: "まもなく支払い期限",
     chargeDueReminderBody: "{description} の請求書 {invoice}: {amount} の期限は {due} です。",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.

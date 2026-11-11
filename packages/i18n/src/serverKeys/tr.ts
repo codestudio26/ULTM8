@@ -277,6 +277,7 @@ export const server: PartialMessages<ServerKeys> = {
     chargeDisputeLostBody: "{amount} tutarındaki kart ödemenize yapılan itiraz sizin lehinize sonuçlandı. Para kartınıza geri dönüyor.",
     chargeDisputeWonBody: "{amount} tutarındaki kart ödemenize yapılan itiraz Okul lehine sonuçlandı. Ödeme geçerli.",
     chargePaymentLabel: "ücret ödemesi",
+    feePaymentLabel: "ek ücret ödemesi",
     chargeDueReminderTitle: "Ödemenin vadesi yaklaşıyor",
     chargeDueReminderBody: "{description} için {invoice} faturası: {amount}, vadesi {due}.",
     // Decision 317 item 7 — membership-expiry-reminder and student-absence-alert jobs.
