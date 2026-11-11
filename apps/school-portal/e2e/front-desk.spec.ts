@@ -608,7 +608,9 @@ test('a used-up Class Pack can be sold at the desk, and the card then checks the
   await expect(note).toContainText('Five classes');
   await expect(note).toContainText('Take the payment, then record it here.');
   // Decision 448 item 5: Pix is offered only to a School in Brazil.
-  await note.getByLabel('Paid by').selectOption('CARD_TERMINAL');
+  // The new look's drop-down (NewLookSelect): open it, pick the method.
+  await note.getByRole('combobox', { name: 'Paid by' }).click();
+  await note.getByRole('option', { name: 'Card terminal' }).click();
   await note.getByRole('button', { name: 'Record payment' }).click();
 
   await expect(page.getByText('Checked in ✓')).toBeVisible({ timeout: 15_000 });
