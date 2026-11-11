@@ -174,8 +174,25 @@ export function BillingSelect({
   options: BillingSelectOption[];
   onChange: (value: string) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [active, setActive] = useState(-1);
+  const [open, setOpenState] = useState(false);
+  const [active, setActiveState] = useState(-1);
+  // The key handler reads these refs, not the rendered state, so keys
+  // pressed faster than React re-renders (ArrowDown, Home, Enter) act on the
+  // latest open/active option rather than a stale one.
+  const openRef = useRef(false);
+  const activeRef = useRef(-1);
+  const setOpen = (next: boolean) => {
+    openRef.current = next;
+    setOpenState(next);
+  };
+  const setActive = (next: number) => {
+    activeRef.current = next;
+    setActiveState(next);
+  };
+  // Where the pointer last really moved. When the list opens under a pointer
+  // that hasn't moved, the browser still sends it a mouse event; ignoring
+  // that keeps the arrow keys' choice instead of the option under the pointer.
+  const pointerRef = useRef<{ x: number; y: number } | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const labelId = `${id}-label`;
   const listId = `${id}-listbox`;
@@ -203,19 +220,20 @@ export function BillingSelect({
     if (options[i] && options[i].value !== value) onChange(options[i].value);
   };
   const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
-    if (!open) {
+    if (!openRef.current) {
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         show();
       }
       return;
     }
+    const current = activeRef.current;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActive((i) => Math.min(options.length - 1, i + 1));
+      setActive(Math.min(options.length - 1, current + 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setActive((i) => Math.max(0, i - 1));
+      setActive(Math.max(0, current - 1));
     } else if (e.key === 'Home') {
       e.preventDefault();
       setActive(0);
@@ -224,7 +242,7 @@ export function BillingSelect({
       setActive(options.length - 1);
     } else if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      pick(active);
+      pick(current);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       setOpen(false);
@@ -248,7 +266,7 @@ export function BillingSelect({
         aria-controls={open ? listId : undefined}
         aria-labelledby={labelId}
         aria-activedescendant={open && active >= 0 ? optionId(active) : undefined}
-        onClick={() => (open ? setOpen(false) : show())}
+        onClick={() => (openRef.current ? setOpen(false) : show())}
         onKeyDown={onKeyDown}
       >
         {/* Every option sits in the same grid cell, only the chosen one
@@ -274,7 +292,12 @@ export function BillingSelect({
               aria-selected={i === selectedIndex}
               className={'u8b-select__option' + (i === active ? ' u8b-select__option--active' : '')}
               onMouseDown={(e) => e.preventDefault()}
-              onMouseEnter={() => setActive(i)}
+              onMouseMove={(e) => {
+                const last = pointerRef.current;
+                if (last && last.x === e.clientX && last.y === e.clientY) return;
+                pointerRef.current = { x: e.clientX, y: e.clientY };
+                if (activeRef.current !== i) setActive(i);
+              }}
               onClick={() => pick(i)}
             >
               <span>{o.label}</span>

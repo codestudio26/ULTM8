@@ -338,7 +338,7 @@ function RateEditor({ schoolId, row, currency, onSaved }: { schoolId: string; ro
       <Field label={t('payroll.perClassRateLabel', { name: row.name })} htmlFor={`per-class-${id}`} error={perClass.valid ? undefined : t('payroll.invalidAmount')}>
         <MoneyField id={`per-class-${id}`} value={perClass.value} currency={currency} disabled={noCurrency} onChange={(value, ok) => setPerClass({ value, valid: ok })} />
       </Field>
-      <div style={{ marginBottom: 16 }}>
+      <div>
         <Button
           variant="secondary"
           className="u8b-pill u8b-pill--row"

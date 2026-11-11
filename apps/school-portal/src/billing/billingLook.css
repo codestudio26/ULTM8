@@ -508,6 +508,268 @@
   color: var(--u8b-tick);
 }
 
+/* ------------------------------------- Every control on the Billing pages */
+
+/* Product owner, 11 Nov 2026: "everything should look like the new design
+ * and nothing from the old should be kept". Every button, tick box, field
+ * and <select> on these pages (their dialogs included) takes the new look:
+ * pills (mint for the main action, white with a grey outline otherwise, red
+ * text for danger), a white tick box with a green tick, soft fields with
+ * our chevron, and status tags. Restyle only, scoped to the Billing pages;
+ * the components and their behaviour are unchanged. */
+[data-look='redesign'] {
+  --u8b-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%233a7556' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --u8b-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236c767f' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --u8b-red-line: #e8b4b4;
+  --u8b-tag-bg: #edf0f2;
+  --u8b-tag-text: #50575e;
+  --u8b-tag-line: #c2c7cb;
+  --u8b-tag-green-bg: #e3f1ea;
+  --u8b-tag-green-text: #3a7556;
+  --u8b-tag-green-line: #b7dcc6;
+  --u8b-tag-blue-bg: #e5ecf6;
+  --u8b-tag-blue-text: #2b4f80;
+  --u8b-tag-blue-line: #bccbe2;
+  --u8b-tag-amber-bg: #f6ecdc;
+  --u8b-tag-amber-text: #7a4f12;
+  --u8b-tag-amber-line: #e6cfa5;
+  --u8b-tag-red-bg: #f8e4e4;
+  --u8b-tag-red-text: #9b1c1c;
+  --u8b-tag-red-line: #e8b4b4;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8b-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239fd3b2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+    --u8b-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b4bcc3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --u8b-red-line: #7a3434;
+    --u8b-tag-bg: rgba(255, 255, 255, 0.08);
+    --u8b-tag-text: var(--text-secondary);
+    --u8b-tag-line: var(--border-strong);
+    --u8b-tag-green-bg: rgba(159, 211, 178, 0.16);
+    --u8b-tag-green-text: #b9e3c8;
+    --u8b-tag-green-line: rgba(159, 211, 178, 0.4);
+    --u8b-tag-blue-bg: rgba(168, 197, 234, 0.16);
+    --u8b-tag-blue-text: #c4d6ef;
+    --u8b-tag-blue-line: rgba(168, 197, 234, 0.4);
+    --u8b-tag-amber-bg: rgba(244, 199, 161, 0.16);
+    --u8b-tag-amber-text: #f1cfae;
+    --u8b-tag-amber-line: rgba(244, 199, 161, 0.4);
+    --u8b-tag-red-bg: rgba(241, 153, 153, 0.14);
+    --u8b-tag-red-text: #f3a5a5;
+    --u8b-tag-red-line: rgba(241, 153, 153, 0.4);
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8b-tick-mark: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239fd3b2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+  --u8b-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b4bcc3' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --u8b-red-line: #7a3434;
+  --u8b-tag-bg: rgba(255, 255, 255, 0.08);
+  --u8b-tag-text: var(--text-secondary);
+  --u8b-tag-line: var(--border-strong);
+  --u8b-tag-green-bg: rgba(159, 211, 178, 0.16);
+  --u8b-tag-green-text: #b9e3c8;
+  --u8b-tag-green-line: rgba(159, 211, 178, 0.4);
+  --u8b-tag-blue-bg: rgba(168, 197, 234, 0.16);
+  --u8b-tag-blue-text: #c4d6ef;
+  --u8b-tag-blue-line: rgba(168, 197, 234, 0.4);
+  --u8b-tag-amber-bg: rgba(244, 199, 161, 0.16);
+  --u8b-tag-amber-text: #f1cfae;
+  --u8b-tag-amber-line: rgba(244, 199, 161, 0.4);
+  --u8b-tag-red-bg: rgba(241, 153, 153, 0.14);
+  --u8b-tag-red-text: #f3a5a5;
+  --u8b-tag-red-line: rgba(241, 153, 153, 0.4);
+}
+
+/* Buttons: pills. */
+[data-look='redesign'] .u8b .ultm8-btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 1;
+}
+[data-look='redesign'] .u8b .ultm8-btn--primary,
+[data-look='redesign'] .u8b .ultm8-btn--success {
+  background: var(--u8b-pill-primary);
+  border-color: transparent;
+  color: var(--u8b-pill-primary-text);
+}
+[data-look='redesign'] .u8b .ultm8-btn--primary:not(:disabled):hover,
+[data-look='redesign'] .u8b .ultm8-btn--success:not(:disabled):hover {
+  background: var(--u8n-tile-on);
+  color: var(--u8n-tile-on-icon);
+}
+[data-look='redesign'] .u8b .ultm8-btn--secondary {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-field-line);
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8b .ultm8-btn--secondary:not(:disabled):hover {
+  background: var(--u8n-hover);
+  border-color: var(--u8n-field-line);
+}
+[data-look='redesign'] .u8b .ultm8-btn--danger {
+  background: var(--u8n-surface);
+  border-color: var(--u8b-red-line);
+  color: var(--u8b-danger);
+}
+[data-look='redesign'] .u8b .ultm8-btn--danger:not(:disabled):hover {
+  opacity: 1;
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8b .ultm8-btn:disabled {
+  opacity: 1;
+  background: var(--u8n-tile);
+  border-color: transparent;
+  color: var(--u8n-subtle);
+}
+[data-look='redesign'] .u8b .ultm8-btn--secondary:disabled {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-line);
+}
+[data-look='redesign'] .u8b .ultm8-btn:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* A smaller pill inside a table row, still a 40px target. */
+[data-look='redesign'] .u8b .ultm8-btn.u8b-pill--row {
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+
+/* The row's ⋮ menu button: a round, white, outlined button. */
+[data-look='redesign'] .u8b .ultm8-row-actions__trigger {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--u8n-surface);
+  border: 1px solid var(--u8n-field-line);
+  color: var(--u8n-tile-icon);
+}
+[data-look='redesign'] .u8b .ultm8-row-actions__trigger:hover,
+[data-look='redesign'] .u8b .ultm8-row-actions__trigger[aria-expanded='true'] {
+  background: var(--u8n-hover);
+  border-color: var(--u8n-text);
+}
+[data-look='redesign'] .u8b .ultm8-row-actions__menu {
+  border-radius: 12px;
+  border-color: var(--u8n-line);
+  background: var(--u8n-surface);
+  box-shadow: 0 6px 20px rgba(21, 23, 25, 0.08);
+}
+[data-look='redesign'] .u8b .ultm8-row-actions__item {
+  min-height: 40px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8b .ultm8-row-actions__item:not(:disabled):hover {
+  background: var(--u8n-hover);
+}
+
+/* Tick boxes: white, a green tick and border when ticked. */
+[data-look='redesign'] .u8b .ultm8-checkbox {
+  gap: 10px;
+  font-size: 14px;
+  color: var(--u8n-text);
+  cursor: pointer;
+}
+[data-look='redesign'] .u8b .ultm8-checkbox input {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  border-radius: 5px;
+  border: 1.5px solid var(--u8n-field-line);
+  background: var(--u8n-surface) center / 14px 14px no-repeat;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8b .ultm8-checkbox input:checked {
+  border-color: var(--u8b-tick);
+  background-image: var(--u8b-tick-mark);
+}
+[data-look='redesign'] .u8b .ultm8-checkbox input:disabled {
+  cursor: not-allowed;
+  background-color: var(--u8n-tile);
+  border-color: var(--u8n-line);
+}
+[data-look='redesign'] .u8b .ultm8-checkbox:has(input:disabled) {
+  color: var(--u8n-subtle);
+  cursor: not-allowed;
+}
+[data-look='redesign'] .u8b .ultm8-checkbox input:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* Fields: the labels are the soft form's (form pattern F); the fields are
+ * already the soft grey ones (redesign-fixes.css). A browser <select> (the
+ * dialogs) gets our chevron instead of the system one. */
+[data-look='redesign'] .u8b .ultm8-field__label {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8b select.ultm8-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 42px;
+  background-image: var(--u8b-chevron);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 18px 18px;
+  cursor: pointer;
+}
+[dir='rtl'] [data-look='redesign'] .u8b select.ultm8-select,
+[data-look='redesign'][dir='rtl'] .u8b select.ultm8-select {
+  background-position: left 12px center;
+}
+/* Rates: the two money fields and Save on one tidy line. */
+[data-look='redesign'] .u8b .ultm8-table .ultm8-field {
+  margin-bottom: 0;
+}
+[data-look='redesign'] .u8b .ultm8-table .ultm8-input {
+  min-width: 110px;
+}
+
+/* Status and type tags (DESIGN.md → "One accent: mint"): small, 4px
+ * corners, a thin line in a darker shade of their own colour. */
+[data-look='redesign'] .u8b .ultm8-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--u8b-tag-bg);
+  color: var(--u8b-tag-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-line);
+}
+[data-look='redesign'] .u8b .ultm8-badge--success {
+  background: var(--u8b-tag-green-bg);
+  color: var(--u8b-tag-green-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-green-line);
+}
+[data-look='redesign'] .u8b .ultm8-badge--accent,
+[data-look='redesign'] .u8b .ultm8-badge--info {
+  background: var(--u8b-tag-blue-bg);
+  color: var(--u8b-tag-blue-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-blue-line);
+}
+[data-look='redesign'] .u8b .ultm8-badge--warning {
+  background: var(--u8b-tag-amber-bg);
+  color: var(--u8b-tag-amber-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-amber-line);
+}
+[data-look='redesign'] .u8b .ultm8-badge--danger {
+  background: var(--u8b-tag-red-bg);
+  color: var(--u8b-tag-red-text);
+  box-shadow: inset 0 0 0 1px var(--u8b-tag-red-line);
+}
+
 /* ----------------------------------------------------- Phone: under 768px */
 
 @media (max-width: 767px) {
