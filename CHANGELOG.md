@@ -11,6 +11,11 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 Post-v1.4.0 work on `master`.
 
 - **Fix: School tax rate filled in even when the standard rates load late.** Picking the tax country before ULTM8's standard rates had loaded left the rate at 0; it now fills in when they arrive, unless the owner has typed a rate since.
+- **New look: Notifications** (Decision 453; visual only). The page header
+  with Mark all read, Clear all read and Send a message to students as pills,
+  Total / Unread / Read within 24h as number cards, the inbox as a card of rows
+  (unread dot, status tag, time, ⋯ menu) and the sent messages as a card; the
+  Snooze and Broadcast forms use our own drop-downs. Same data and actions.
 - **New look: Waivers** (Decision 453; visual only). The waivers list beside
   the reader, with the selected waiver's Signatures and Guest signatures in
   the right-hand panel; new-look buttons, chip, search and tags; on a phone

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, ErrorBanner, Field, Modal, SelectField } from '@ultm8/ui';
+import { Button, ErrorBanner, Modal } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { Trans } from '../i18n/Trans';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /** Preset durations (minutes) — a common inbox-Snooze shape (Gmail/Outlook
  * both offer a short list of presets rather than a free-form date/time
@@ -55,14 +56,16 @@ export function SnoozeNotificationModal({
         <p className="ultm8-field">
           <Trans k="notifications.snoozeModal.explanation" nodes={{ title: <strong>{title}</strong> }} />
         </p>
-        <Field label={t('notifications.snoozeModal.durationLabel')} htmlFor="snooze-minutes">
-          <SelectField
+        {/* The new look's own drop-down (DESIGN.md → "Drop-downs"). */}
+        <div className="ultm8-field">
+          <NewLookSelect
             id="snooze-minutes"
+            label={t('notifications.snoozeModal.durationLabel')}
             value={String(minutes)}
-            onChange={(e) => setMinutes(Number(e.target.value))}
+            onChange={(v) => setMinutes(Number(v))}
             options={SNOOZE_PRESETS.map((p) => ({ value: String(p.minutes), label: t(p.label) }))}
           />
-        </Field>
+        </div>
         <Button type="submit" loading={submitting}>
           {t('notifications.snoozeModal.submit')}
         </Button>
