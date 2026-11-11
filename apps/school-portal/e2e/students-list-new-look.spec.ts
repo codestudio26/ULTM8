@@ -88,6 +88,31 @@ test('the filter drop-downs are our own, and work by keyboard', async ({ page })
   await expect(page.getByText('Showing 1 of 1')).toBeVisible();
 });
 
+test('the Rows / Grid switch is kept: Grid shows the same students as cards, Rows brings the table back', async ({ page }) => {
+  const north = await addBranch(s, 'North');
+  await db.studentHomeBranch.create({ data: { id: randomUUID(), schoolId: s.schoolId, studentId: s.student.id, branchId: north.id } });
+  await signIn(page, s.ownerToken);
+  await page.goto('/students');
+  const view = page.getByRole('group', { name: 'Students view' });
+  await expect(view.getByRole('button', { name: 'Rows' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(panel(page)).toBeVisible();
+
+  await view.getByRole('button', { name: 'Grid' }).click();
+  await expect(view.getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('table')).toHaveCount(0);
+  const card = page.getByRole('listitem').filter({ hasText: 'Sam Lee' });
+  await expect(card.getByText('North', { exact: true })).toBeVisible();
+  await expect(card.getByText('Active', { exact: true })).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Nia Park' })).toBeVisible();
+  // The panel goes with Rows; a card opens the full page, as before.
+  await expect(panel(page)).toHaveCount(0);
+  await expect(card.getByRole('link', { name: 'Sam Lee' })).toHaveAttribute('href', `/students/${s.student.id}`);
+
+  await view.getByRole('button', { name: 'Rows' }).click();
+  await expect(page.getByRole('row', { name: /Sam Lee/ })).toBeVisible();
+  await expect(panel(page)).toBeVisible();
+});
+
 test.describe('on a phone', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 

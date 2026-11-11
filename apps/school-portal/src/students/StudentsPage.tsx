@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
+import { EmptyState, ErrorBanner, Spinner, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
@@ -71,6 +71,10 @@ export function StudentsPage() {
   // ACTIVE, the exact pre-existing behavior for this page (v1.2 backend backlog,
   // "Students page" Active/Inactive gap).
   const [statusFilter, setStatusFilter] = useState<StudentRosterStatus>('ACTIVE');
+  // Rows/Grid is a pure presentation choice over the same fetched data — kept as
+  // local, in-memory state (defaulting to "Rows") rather than persisted anywhere:
+  // no other school-portal page persists a view/UI preference today.
+  const [viewMode, setViewMode] = useState<ViewMode>('rows');
   const { data, isLoading, error } = useStudents(schoolId, statusFilter);
   const { data: branchData } = useBranches(schoolId);
   const [search, setSearch] = useState('');
@@ -160,6 +164,38 @@ export function StudentsPage() {
     setCollapsed(true);
   };
 
+  const statusTags = (s: StudentSummary) => (
+    <>
+      <span className={'u8n-tag ' + (s.status === 'ACTIVE' ? 'u8n-tag--active' : 'u8n-tag--inactive')}>
+        {s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}
+      </span>
+      {/* Decision 391 */}
+      {s.visitor ? <span className="u8n-tag u8n-tag--visitor">{t('students.visitor.badge')}</span> : null}
+      {/* Decision 404: Frozen, with the day they are back. */}
+      {s.frozen ? (
+        <span className="u8n-tag u8n-tag--frozen" title={s.frozenUntil ? t('students.frozen.until', { date: formatCalendarDay(s.frozenUntil) }) : undefined}>
+          {t('students.frozen.badge')}
+        </span>
+      ) : null}
+    </>
+  );
+  const footer = (
+    <div className="u8n-list__foot">
+      <span>{t('students.list.showing', { shown: students.length, total: filtered.length })}</span>
+      {filtered.length > STUDENTS_PAGE_SIZE ? (
+        <span className="u8n-list__pager">
+          <button type="button" className="u8n-pill" disabled={page === 0} onClick={() => setPageIndex(page - 1)}>
+            {t('students.prev')}
+          </button>
+          <span>{t('students.pageOf', { page: page + 1, pages: pageCount })}</span>
+          <button type="button" className="u8n-pill" disabled={page >= pageCount - 1} onClick={() => setPageIndex(page + 1)}>
+            {t('students.next')}
+          </button>
+        </span>
+      ) : null}
+    </div>
+  );
+
   const statusChips: Array<{ value: StudentRosterStatus; label: string }> = [
     { value: 'ACTIVE', label: t('students.statusActive') },
     { value: 'INACTIVE', label: t('students.statusInactive') },
@@ -172,7 +208,9 @@ export function StudentsPage() {
     </button>
   ) : null;
 
-  const inspector = selected && !loading && !error ? <SelectedStudent student={selected} hasBranches={hasBranches} mayEdit={mayEdit} joined={joinedOf(selected)} /> : undefined;
+  // The panel goes with the Rows view, where a row is picked; the Grid view's
+  // cards open the full page, as they always have.
+  const inspector = viewMode === 'rows' && selected && !loading && !error ? <SelectedStudent student={selected} hasBranches={hasBranches} mayEdit={mayEdit} joined={joinedOf(selected)} /> : undefined;
 
   return (
     <>
@@ -190,7 +228,7 @@ export function StudentsPage() {
         {ownedSchoolId || myAccess.data?.access.freezeMemberships ? <FreezeRequestsCard schoolId={schoolId} /> : null}
         {/* Decision 403: children waiting for their Guardian to accept. */}
         {ownedSchoolId ? <ChildInvitesCard schoolId={ownedSchoolId} /> : null}
-        <section className="u8n-list" data-collapsed={collapsed && !!selected ? 'true' : 'false'} aria-label={t('students.title')}>
+        <section className="u8n-list" data-collapsed={viewMode === 'rows' && collapsed && !!selected ? 'true' : 'false'} aria-label={t('students.title')}>
           <div className="u8n-list__toolbar">
             <div className="u8n-list__tools">
               <label className="u8n-list__search" htmlFor="students-search">
@@ -230,6 +268,7 @@ export function StudentsPage() {
                 </button>
               ) : null}
             </div>
+            <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('students.viewAria')} />
             {exportButton ? (
               <div id="students-more" className="u8n-list__extra" data-open={moreOpen ? 'true' : 'false'}>
                 {exportButton}
@@ -318,6 +357,30 @@ export function StudentsPage() {
                 description={filtering ? t('students.emptyFilteredDescription') : t('students.emptyDescription')}
               />
             </div>
+          ) : viewMode === 'grid' ? (
+            <>
+              <ul className="u8n-grid">
+                {students.map((s) => (
+                  <li key={s.id} className="u8n-grid__card">
+                    <div className="u8n-row__who">
+                      <span className="u8n-row__avatar">
+                        <Avatar firstName={s.firstName} surname={s.surname} photoUrl={s.profilePhotoUrl} size={40} color="var(--u8n-avatar-bg)" textColor="var(--u8n-avatar-text)" />
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <Link to={`/students/${s.id}`} className="u8n-grid__name">
+                          {nameOf(s)}
+                        </Link>
+                        <div className="u8n-row__tags">{statusTags(s)}</div>
+                      </div>
+                    </div>
+                    <p>{emailOf(s)}</p>
+                    {hasBranches ? <p>{s.homeBranchName ?? t('students.branchNone')}</p> : null}
+                    <p>{t('students.joinedOn', { date: joinedOf(s) })}</p>
+                  </li>
+                ))}
+              </ul>
+              {footer}
+            </>
           ) : (
             <>
               <div className="u8n-list__scroll">
@@ -348,19 +411,7 @@ export function StudentsPage() {
                                 <button type="button" className="u8n-row__name" aria-pressed={on} onClick={(e) => (e.stopPropagation(), pick(s))}>
                                   {name}
                                 </button>
-                                <div className="u8n-row__tags">
-                                  <span className={'u8n-tag ' + (s.status === 'ACTIVE' ? 'u8n-tag--active' : 'u8n-tag--inactive')}>
-                                    {s.status === 'ACTIVE' ? t('students.statusActive') : t('students.statusInactive')}
-                                  </span>
-                                  {/* Decision 391 */}
-                                  {s.visitor ? <span className="u8n-tag u8n-tag--visitor">{t('students.visitor.badge')}</span> : null}
-                                  {/* Decision 404: Frozen, with the day they are back. */}
-                                  {s.frozen ? (
-                                    <span className="u8n-tag u8n-tag--frozen" title={s.frozenUntil ? t('students.frozen.until', { date: formatCalendarDay(s.frozenUntil) }) : undefined}>
-                                      {t('students.frozen.badge')}
-                                    </span>
-                                  ) : null}
-                                </div>
+                                <div className="u8n-row__tags">{statusTags(s)}</div>
                                 <Link to={`/students/${s.id}`} className="u8n-row__open" aria-label={t('students.list.openFullPageAria', { name })} onClick={(e) => e.stopPropagation()}>
                                   {t('students.list.openFullPage')}
                                   <span aria-hidden="true"> ›</span>
@@ -387,20 +438,7 @@ export function StudentsPage() {
               <button type="button" className="u8n-list__show-all" onClick={() => setCollapsed(false)}>
                 {t('students.list.showAll', { count: filtered.length })}
               </button>
-              <div className="u8n-list__foot">
-                <span>{t('students.list.showing', { shown: students.length, total: filtered.length })}</span>
-                {filtered.length > STUDENTS_PAGE_SIZE ? (
-                  <span className="u8n-list__pager">
-                    <button type="button" className="u8n-pill" disabled={page === 0} onClick={() => setPageIndex(page - 1)}>
-                      {t('students.prev')}
-                    </button>
-                    <span>{t('students.pageOf', { page: page + 1, pages: pageCount })}</span>
-                    <button type="button" className="u8n-pill" disabled={page >= pageCount - 1} onClick={() => setPageIndex(page + 1)}>
-                      {t('students.next')}
-                    </button>
-                  </span>
-                ) : null}
-              </div>
+              {footer}
             </>
           )}
         </section>
