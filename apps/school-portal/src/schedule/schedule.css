@@ -1,0 +1,1012 @@
+/* The Schedule pages in the new look: Classes (ClassesPage.tsx) and the
+ * Timetable (TimetablePage.tsx). DESIGN-BRIEF §8 "Template rules"; DESIGN.md →
+ * "Phone layout" (toolbars, wide tables, short lists as cards), "Avatars"
+ * (class avatars, the order in every class row), "Drop-downs", "One accent:
+ * mint", "Never the same colour twice". Scoped to [data-look='redesign'],
+ * which the portal always sets (Decision 453). Uses the shell's --u8n-*
+ * colours (layout/newLookShell.css). */
+
+[data-look='redesign'] {
+  --u8s-head-bg: #f9fafa;
+  --u8s-field-bg: #edf0f2;
+  --u8s-field-text: #383d42;
+  --u8s-placeholder: #50575e;
+  --u8s-ring: #5d7081;
+  --u8s-primary: #def2e2;
+  --u8s-primary-hover: #cfead6;
+  --u8s-primary-text: #50575e;
+  --u8s-tag-bg: #edf0f2;
+  --u8s-tag-text: #50575e;
+  --u8s-tag-line: #c2c7cb;
+  --u8s-tag-mint-bg: #e3f1ea;
+  --u8s-tag-mint-text: #3a7556;
+  --u8s-tag-mint-line: #b7dcc6;
+  --u8s-tag-danger-bg: #fbeaea;
+  --u8s-tag-danger-text: #a12a2a;
+  --u8s-tag-danger-line: #efc4c4;
+  --u8s-danger-text: #a12a2a;
+  --u8s-today-ring: #9fd3b2;
+  --u8s-row-sel: #edf0f2;
+  --u8s-row-mark: #5d7081;
+  /* Soft class-avatar colours (with their initials' colour). */
+  --u8s-av0-bg: #d8e6f5;
+  --u8s-av0-text: #2b4f80;
+  --u8s-av1-bg: #d7eedf;
+  --u8s-av1-text: #2f5f45;
+  --u8s-av2-bg: #f6e2cf;
+  --u8s-av2-text: #7a4f12;
+  --u8s-av3-bg: #e8ddf3;
+  --u8s-av3-text: #5a3c7c;
+  --u8s-av4-bg: #f3dbe2;
+  --u8s-av4-text: #7c3550;
+  --u8s-av5-bg: #d9e9ea;
+  --u8s-av5-text: #2f5a5e;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8s-head-bg: rgba(255, 255, 255, 0.03);
+    --u8s-field-bg: var(--surface-2);
+    --u8s-field-text: var(--text-primary);
+    --u8s-placeholder: var(--text-secondary);
+    --u8s-ring: #9fd3b2;
+    --u8s-primary: var(--nav-active-bg);
+    --u8s-primary-hover: var(--nav-active-bg);
+    --u8s-primary-text: var(--nav-active-text);
+    --u8s-tag-bg: rgba(255, 255, 255, 0.08);
+    --u8s-tag-text: var(--text-secondary);
+    --u8s-tag-line: var(--border-strong);
+    --u8s-tag-mint-bg: rgba(159, 211, 178, 0.16);
+    --u8s-tag-mint-text: #b9e3c8;
+    --u8s-tag-mint-line: rgba(159, 211, 178, 0.4);
+    --u8s-tag-danger-bg: rgba(239, 140, 140, 0.16);
+    --u8s-tag-danger-text: #f3b9b9;
+    --u8s-tag-danger-line: rgba(239, 140, 140, 0.4);
+    --u8s-danger-text: #f3b9b9;
+  --u8s-row-sel: rgba(255, 255, 255, 0.06);
+  --u8s-row-mark: #9fd3b2;
+    --u8s-row-sel: rgba(255, 255, 255, 0.06);
+    --u8s-row-mark: #9fd3b2;
+    --u8s-av0-bg: #2e3f55;
+    --u8s-av0-text: #c4d6ef;
+    --u8s-av1-bg: #2c4a3a;
+    --u8s-av1-text: #b9e3c8;
+    --u8s-av2-bg: #4d3c2a;
+    --u8s-av2-text: #f1cfae;
+    --u8s-av3-bg: #40355a;
+    --u8s-av3-text: #dccbf0;
+    --u8s-av4-bg: #4d2f3b;
+    --u8s-av4-text: #f0c4d3;
+    --u8s-av5-bg: #2d4547;
+    --u8s-av5-text: #bfdfe1;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8s-head-bg: rgba(255, 255, 255, 0.03);
+  --u8s-field-bg: var(--surface-2);
+  --u8s-field-text: var(--text-primary);
+  --u8s-placeholder: var(--text-secondary);
+  --u8s-ring: #9fd3b2;
+  --u8s-primary: var(--nav-active-bg);
+  --u8s-primary-hover: var(--nav-active-bg);
+  --u8s-primary-text: var(--nav-active-text);
+  --u8s-tag-bg: rgba(255, 255, 255, 0.08);
+  --u8s-tag-text: var(--text-secondary);
+  --u8s-tag-line: var(--border-strong);
+  --u8s-tag-mint-bg: rgba(159, 211, 178, 0.16);
+  --u8s-tag-mint-text: #b9e3c8;
+  --u8s-tag-mint-line: rgba(159, 211, 178, 0.4);
+  --u8s-tag-danger-bg: rgba(239, 140, 140, 0.16);
+  --u8s-tag-danger-text: #f3b9b9;
+  --u8s-tag-danger-line: rgba(239, 140, 140, 0.4);
+  --u8s-danger-text: #f3b9b9;
+  --u8s-av0-bg: #2e3f55;
+  --u8s-av0-text: #c4d6ef;
+  --u8s-av1-bg: #2c4a3a;
+  --u8s-av1-text: #b9e3c8;
+  --u8s-av2-bg: #4d3c2a;
+  --u8s-av2-text: #f1cfae;
+  --u8s-av3-bg: #40355a;
+  --u8s-av3-text: #dccbf0;
+  --u8s-av4-bg: #4d2f3b;
+  --u8s-av4-text: #f0c4d3;
+  --u8s-av5-bg: #2d4547;
+  --u8s-av5-text: #bfdfe1;
+}
+
+[data-look='redesign'] .u8s-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------- The card */
+
+[data-look='redesign'] .u8s-card {
+  background: var(--u8n-surface);
+  border-radius: 10px;
+  box-shadow: var(--u8n-shadow);
+  color: var(--u8n-text);
+  margin-bottom: 16px;
+}
+[data-look='redesign'] .u8s-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+}
+[data-look='redesign'] .u8s-toolbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+[data-look='redesign'] .u8s-toolbar__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+[data-look='redesign'] .u8s-toolbar__group--center {
+  align-items: center;
+}
+[data-look='redesign'] .u8s-range-label {
+  font-size: 15px;
+  font-weight: 500;
+  padding: 0 4px;
+}
+
+/* Search: a rounded field with a magnifier. */
+[data-look='redesign'] .u8s-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  color: var(--u8n-subtle);
+  box-sizing: border-box;
+}
+[data-look='redesign'] .u8s-search:focus-within {
+  border-color: var(--u8s-ring);
+}
+[data-look='redesign'] .u8s-search input {
+  width: 220px;
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-search input::placeholder {
+  color: var(--u8s-placeholder);
+}
+
+/* A soft text field with a small label above (the free-text Discipline box). */
+[data-look='redesign'] .u8s-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+[data-look='redesign'] .u8s-field__label {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-field input {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: var(--u8s-field-bg);
+  color: var(--u8s-field-text);
+  font: inherit;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+[data-look='redesign'] .u8s-field input::placeholder {
+  color: var(--u8s-placeholder);
+}
+[data-look='redesign'] .u8s-field input:focus {
+  outline: none;
+  border-color: var(--u8s-ring);
+}
+[data-look='redesign'] .u8s-field__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--u8n-quiet);
+  max-width: 260px;
+}
+
+/* Pills: white with a grey outline; the main action is mint. */
+[data-look='redesign'] .u8s-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid var(--u8n-field-line);
+  border-radius: 999px;
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8s-pill:hover:not(:disabled) {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8s-pill:active:not(:disabled) {
+  background: var(--u8n-tile);
+}
+[data-look='redesign'] .u8s-pill:disabled {
+  color: var(--u8n-subtle);
+  cursor: not-allowed;
+}
+[data-look='redesign'] .u8s-pill--primary {
+  border-color: transparent;
+  background: var(--u8s-primary);
+  color: var(--u8s-primary-text);
+}
+[data-look='redesign'] .u8s-pill--primary:hover:not(:disabled) {
+  background: var(--u8s-primary-hover);
+}
+[data-look='redesign'] .u8s-pill:focus-visible,
+[data-look='redesign'] .u8s-switch button:focus-visible,
+[data-look='redesign'] .u8s-dot:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+}
+
+/* "Show archived": a white box with a green tick. */
+[data-look='redesign'] .u8s-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+  color: var(--u8n-text);
+  cursor: pointer;
+}
+
+/* Switches (Day/Week/Month, Rows/Grid): a grey track, the chosen one white
+ * with a soft shadow (DESIGN.md → "Style switch: one look everywhere"). */
+[data-look='redesign'] .u8s-switch .ultm8-view-toggle {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--u8n-tile);
+  overflow: visible;
+}
+[data-look='redesign'] .u8s-switch .ultm8-view-toggle__btn,
+[data-look='redesign'] .u8s-switch .ultm8-view-toggle__btn + .ultm8-view-toggle__btn {
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--u8n-quiet);
+  font-size: 14px;
+  font-weight: 500;
+}
+[data-look='redesign'] .u8s-switch .ultm8-view-toggle__btn:hover {
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-switch .ultm8-view-toggle__btn--active,
+[data-look='redesign'] .u8s-switch .ultm8-view-toggle__btn--active:hover {
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+  box-shadow: 0 1px 3px rgba(21, 23, 25, 0.14);
+}
+
+/* ------------------------------------------------------------ Avatars */
+
+[data-look='redesign'] .u8s-avatar {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+/* 64px in the panel, on a phone as well (DESIGN.md → avatar sizes). */
+[data-look='redesign'] .u8s-panel .u8s-avatar--lg {
+  width: 64px;
+  height: 64px;
+  font-size: 20px;
+}
+[data-look='redesign'] .u8s-avatar--c0 { background: var(--u8s-av0-bg); color: var(--u8s-av0-text); }
+[data-look='redesign'] .u8s-avatar--c1 { background: var(--u8s-av1-bg); color: var(--u8s-av1-text); }
+[data-look='redesign'] .u8s-avatar--c2 { background: var(--u8s-av2-bg); color: var(--u8s-av2-text); }
+[data-look='redesign'] .u8s-avatar--c3 { background: var(--u8s-av3-bg); color: var(--u8s-av3-text); }
+[data-look='redesign'] .u8s-avatar--c4 { background: var(--u8s-av4-bg); color: var(--u8s-av4-text); }
+[data-look='redesign'] .u8s-avatar--c5 { background: var(--u8s-av5-bg); color: var(--u8s-av5-text); }
+
+/* ---------------------------------------------------------------- Tags */
+
+[data-look='redesign'] .u8s-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+[data-look='redesign'] .u8s-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--u8s-tag-line);
+  border-radius: 6px;
+  background: var(--u8s-tag-bg);
+  color: var(--u8s-tag-text);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8s-tag--mint {
+  background: var(--u8s-tag-mint-bg);
+  color: var(--u8s-tag-mint-text);
+  border-color: var(--u8s-tag-mint-line);
+}
+[data-look='redesign'] .u8s-tag--danger {
+  background: var(--u8s-tag-danger-bg);
+  color: var(--u8s-tag-danger-text);
+  border-color: var(--u8s-tag-danger-line);
+}
+
+/* The row's ⋮ menu: a round button, white with an outline on a grey row. */
+[data-look='redesign'] .u8s-card .ultm8-row-actions__trigger {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: var(--u8n-tile);
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-card .ultm8-row-actions__trigger:hover,
+[data-look='redesign'] .u8s-card .ultm8-row-actions__trigger[aria-expanded='true'] {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-field-line);
+}
+[data-look='redesign'] .u8s-card .ultm8-row-actions__menu {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-line);
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgba(21, 23, 25, 0.1);
+}
+[data-look='redesign'] .u8s-card .ultm8-row-actions__item {
+  font-size: 14px;
+  border-radius: 8px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-card .ultm8-row-actions__item:hover:not(:disabled) {
+  background: var(--u8n-hover);
+}
+
+/* ------------------------------------------------------- Classes: table */
+
+/* No overflow box around the table: a row's ⋮ menu must never be cut off.
+ * Under 1024px the table turns into one card per class instead (below). */
+[data-look='redesign'] .u8s-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+[data-look='redesign'] .u8s-table th {
+  padding: 12px 14px;
+  background: var(--u8s-head-bg);
+  border-top: 1px solid var(--u8n-line);
+  border-bottom: 1px solid var(--u8n-line);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: start;
+  color: var(--u8n-quiet);
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8s-table td {
+  padding: 14px 14px;
+  border-bottom: 1px solid var(--u8n-line);
+  vertical-align: middle;
+}
+[data-look='redesign'] .u8s-table tbody tr:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8s-table th:first-child,
+[data-look='redesign'] .u8s-table td:first-child {
+  padding-inline-start: 20px;
+}
+[data-look='redesign'] .u8s-table th:last-child,
+[data-look='redesign'] .u8s-table td:last-child {
+  padding-inline-end: 20px;
+}
+[data-look='redesign'] .u8s-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+/* Capped columns, so spare width goes to the end of the row (Avatars →
+ * "Order in every class row"). */
+[data-look='redesign'] .u8s-table .u8s-col-class {
+  width: 30%;
+  min-width: 200px;
+}
+/* Times may wrap after the date, so the table still fits beside the panel. */
+[data-look='redesign'] .u8s-table .u8s-col-time {
+  min-width: 110px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-table .u8s-col-actions {
+  width: 52px;
+  text-align: end;
+}
+
+[data-look='redesign'] .u8s-class {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+[data-look='redesign'] .u8s-class__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+[data-look='redesign'] .u8s-class__name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-class__name--cancelled .u8s-class__title {
+  text-decoration: line-through;
+}
+[data-look='redesign'] .u8s-class__sub {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+
+/* Grid view: one card per class. */
+[data-look='redesign'] .u8s-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  padding: 0 20px 20px;
+}
+[data-look='redesign'] .u8s-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--u8n-line);
+  border-radius: 10px;
+}
+[data-look='redesign'] .u8s-tile__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+[data-look='redesign'] .u8s-tile__facts {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-tile__facts p {
+  margin: 0;
+}
+
+/* The card's foot: the pager. */
+[data-look='redesign'] .u8s-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--u8n-line);
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-empty {
+  padding: 8px 20px 20px;
+  border-top: 1px solid var(--u8n-line);
+}
+
+/* --------------------------------------------- Timetable: day agenda */
+
+[data-look='redesign'] .u8s-day {
+  border-top: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8s-day:first-child {
+  border-top: 0;
+}
+[data-look='redesign'] .u8s-day:first-child .u8s-day__head {
+  border-radius: 10px 10px 0 0;
+}
+[data-look='redesign'] .u8s-day__head {
+  margin: 0;
+  padding: 12px 20px;
+  background: var(--u8s-head-bg);
+  border-bottom: 1px solid var(--u8n-line);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-day__empty {
+  margin: 0;
+  padding: 14px 20px;
+  font-size: 14px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-closed {
+  margin: 0;
+  padding: 10px 20px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--u8s-danger-text);
+}
+[data-look='redesign'] .u8s-closed + .u8s-day__empty,
+[data-look='redesign'] .u8s-closed + .u8s-entries {
+  padding-top: 4px;
+}
+
+/* One class row: avatar → class name (branch under it) → time → seats →
+ * tags → ⋮. The columns have capped widths; spare width sits at the end. */
+[data-look='redesign'] .u8s-entry {
+  display: grid;
+  grid-template-columns: 40px minmax(140px, 260px) 110px 130px minmax(96px, 1fr) 44px;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--u8n-line);
+}
+[data-look='redesign'] .u8s-entry:last-child {
+  border-bottom: 0;
+}
+[data-look='redesign'] .u8s-entry:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8s-entry--dim > :not(.u8s-entry__actions) {
+  opacity: 0.6;
+}
+[data-look='redesign'] .u8s-entry__time {
+  font-size: 14px;
+  white-space: nowrap;
+}
+[data-look='redesign'] .u8s-entry__seats {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-entry__actions {
+  justify-self: end;
+}
+
+/* Grid (week columns): narrow cards, numbers under the time. */
+[data-look='redesign'] .u8s-week {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+[data-look='redesign'] .u8s-week__col {
+  flex: 1 0 220px;
+  min-width: 220px;
+  margin-bottom: 0;
+  align-self: flex-start;
+}
+[data-look='redesign'] .u8s-week__col .u8s-day__head {
+  border-radius: 10px 10px 0 0;
+}
+[data-look='redesign'] .u8s-week__col .u8s-entry {
+  grid-template-columns: 40px minmax(0, 1fr) 44px;
+  grid-template-areas:
+    'avatar name actions'
+    'avatar time actions'
+    'tags tags tags';
+  gap: 2px 10px;
+  padding: 12px 12px;
+}
+[data-look='redesign'] .u8s-week__col .u8s-entry > .u8s-avatar {
+  grid-area: avatar;
+  align-self: start;
+}
+[data-look='redesign'] .u8s-week__col .u8s-entry__class {
+  grid-area: name;
+}
+[data-look='redesign'] .u8s-week__col .u8s-entry__when {
+  grid-area: time;
+}
+[data-look='redesign'] .u8s-week__col .u8s-entry__tags {
+  grid-area: tags;
+  padding-top: 8px;
+}
+[data-look='redesign'] .u8s-week__col .u8s-entry__actions {
+  grid-area: actions;
+  align-self: start;
+}
+[data-look='redesign'] .u8s-week__col .u8s-day__empty {
+  padding: 12px;
+}
+
+/* On a wide row the time and the seats are columns of their own; in a narrow
+ * card they sit together under the class name. */
+[data-look='redesign'] .u8s-entry__when {
+  display: contents;
+}
+[data-look='redesign'] .u8s-week__col .u8s-entry__when {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* ------------------------------------------------- Timetable: month */
+
+[data-look='redesign'] .u8s-month {
+  padding: 16px 20px 20px;
+}
+[data-look='redesign'] .u8s-month__head,
+[data-look='redesign'] .u8s-month__days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+[data-look='redesign'] .u8s-month__head {
+  margin-bottom: 8px;
+}
+[data-look='redesign'] .u8s-month__head > div {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-month__day {
+  min-height: 84px;
+  padding: 6px 8px;
+  border: 1px solid var(--u8n-line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+}
+[data-look='redesign'] .u8s-month__day--today {
+  border-color: var(--u8s-today-ring);
+  box-shadow: inset 0 0 0 1px var(--u8s-today-ring);
+}
+[data-look='redesign'] .u8s-month__date {
+  font-size: 13px;
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-month__closed {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--u8s-danger-text);
+}
+[data-look='redesign'] .u8s-month__dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+/* A 10px dot inside a 24px button, so it is easier to hit. */
+[data-look='redesign'] .u8s-dot {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+/* The soft avatar colour of the slot, ringed in its own darker shade so the
+ * dot stays clearly visible on white and in dark mode (Decision 455, Q6). */
+[data-look='redesign'] .u8s-dot::after {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--u8s-dot-bg);
+  box-shadow: inset 0 0 0 2px var(--u8s-dot-ring);
+}
+[data-look='redesign'] .u8s-dot--c0 { --u8s-dot-bg: var(--u8s-av0-bg); --u8s-dot-ring: var(--u8s-av0-text); }
+[data-look='redesign'] .u8s-dot--c1 { --u8s-dot-bg: var(--u8s-av1-bg); --u8s-dot-ring: var(--u8s-av1-text); }
+[data-look='redesign'] .u8s-dot--c2 { --u8s-dot-bg: var(--u8s-av2-bg); --u8s-dot-ring: var(--u8s-av2-text); }
+[data-look='redesign'] .u8s-dot--c3 { --u8s-dot-bg: var(--u8s-av3-bg); --u8s-dot-ring: var(--u8s-av3-text); }
+[data-look='redesign'] .u8s-dot--c4 { --u8s-dot-bg: var(--u8s-av4-bg); --u8s-dot-ring: var(--u8s-av4-text); }
+[data-look='redesign'] .u8s-dot--c5 { --u8s-dot-bg: var(--u8s-av5-bg); --u8s-dot-ring: var(--u8s-av5-text); }
+[data-look='redesign'] .u8s-dot:hover {
+  background: var(--u8n-hover);
+}
+
+/* ------------------------------------------- The selected class (panel) */
+
+/* The class name is the button that picks a row; the whole row is clickable
+ * too. The selected row is grey with a slate mark on its left edge. */
+[data-look='redesign'] .u8s-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8s-pick:hover .u8s-class__title {
+  text-decoration: underline;
+}
+[data-look='redesign'] .u8s-pick:focus-visible {
+  outline: 2px solid var(--fill-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+[data-look='redesign'] .u8s-table tbody tr,
+[data-look='redesign'] .u8s-entry,
+[data-look='redesign'] .u8s-tile {
+  cursor: pointer;
+}
+[data-look='redesign'] .u8s-table tbody tr[data-sel='true'],
+[data-look='redesign'] .u8s-entry[data-sel='true'],
+[data-look='redesign'] .u8s-tile[data-sel='true'] {
+  background: var(--u8s-row-sel);
+  box-shadow: inset 4px 0 0 var(--u8s-row-mark);
+}
+/* Never the same colour twice: the ⋮ button turns white on a grey row. */
+[data-look='redesign'] .u8s-card [data-sel='true'] .ultm8-row-actions__trigger {
+  background: var(--u8n-surface);
+  border-color: var(--u8n-field-line);
+}
+
+[data-look='redesign'] .u8s-panel__who {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+[data-look='redesign'] .u8s-panel__name-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+[data-look='redesign'] .u8s-panel__name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 400;
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .u8s-panel__name--cancelled {
+  text-decoration: line-through;
+}
+[data-look='redesign'] .u8s-panel__facts {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+[data-look='redesign'] .u8s-panel__fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--u8n-line);
+  font-size: 14px;
+}
+[data-look='redesign'] .u8s-panel__fact dt {
+  color: var(--u8n-quiet);
+}
+[data-look='redesign'] .u8s-panel__fact dd {
+  margin: 0;
+  text-align: end;
+  color: var(--u8n-text);
+}
+/* The row's actions, 16px under the content, two to a row, equal widths. */
+[data-look='redesign'] .u8s-panel__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+[data-look='redesign'] .u8s-panel__actions .u8s-pill {
+  padding: 0 12px;
+}
+
+/* ------------- A narrow Classes card: the table as one card per class */
+
+/* When the card is too narrow for six columns (a tablet, or a computer with
+ * the class panel beside the list), each row becomes a card: the class
+ * (avatar, name, coach · branch) with its ⋮ on the right, then Starts, Ends
+ * and Capacity, each with its column name, then the tags. The same data and
+ * actions, nothing clipped. A container query, so it follows the card's own
+ * width rather than the screen's. */
+[data-look='redesign'] .u8s-card--table {
+  container-type: inline-size;
+}
+@container (max-width: 719px) {
+  [data-look='redesign'] .u8s-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  [data-look='redesign'] .u8s-table,
+  [data-look='redesign'] .u8s-table tbody {
+    display: block;
+  }
+  [data-look='redesign'] .u8s-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, max-content)) minmax(0, 1fr) 44px;
+    grid-template-areas:
+      'class class class class actions'
+      'starts ends cap . .'
+      'tags tags tags tags tags';
+    gap: 10px 20px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--u8n-line);
+  }
+  [data-look='redesign'] .u8s-table td,
+  [data-look='redesign'] .u8s-table td:first-child,
+  [data-look='redesign'] .u8s-table td:last-child {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  [data-look='redesign'] .u8s-table .u8s-col-class {
+    grid-area: class;
+    width: auto;
+    min-width: 0;
+  }
+  [data-look='redesign'] .u8s-table .u8s-col-actions {
+    grid-area: actions;
+    width: auto;
+  }
+  [data-look='redesign'] .u8s-table td[data-cell='starts'] { grid-area: starts; }
+  [data-look='redesign'] .u8s-table td[data-cell='ends'] { grid-area: ends; }
+  [data-look='redesign'] .u8s-table td[data-cell='capacity'] { grid-area: cap; }
+  [data-look='redesign'] .u8s-table td[data-cell='tags'] { grid-area: tags; }
+  [data-look='redesign'] .u8s-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 2px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--u8n-quiet);
+  }
+  [data-look='redesign'] .u8s-table td[data-cell='tags']::before {
+    display: none;
+  }
+}
+
+/* A phone-narrow card: Starts and Ends side by side, Capacity under them. */
+@container (max-width: 559px) {
+  [data-look='redesign'] .u8s-table tbody tr {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px;
+    grid-template-areas:
+      'class class actions'
+      'starts ends ends'
+      'cap cap cap'
+      'tags tags tags';
+    padding: 14px 16px;
+  }
+  [data-look='redesign'] .u8s-table .u8s-col-time {
+    white-space: normal;
+  }
+}
+
+/* ----------------------------------------------- Phone: under 768px */
+
+@media (max-width: 767px) {
+  [data-look='redesign'] .u8s-toolbar {
+    padding: 16px;
+  }
+  /* Search takes its own full-width row. */
+  [data-look='redesign'] .u8s-search {
+    flex: 1 1 100%;
+  }
+  [data-look='redesign'] .u8s-search input {
+    width: auto;
+    font-size: 16px;
+  }
+  [data-look='redesign'] .u8s-field input {
+    font-size: 16px;
+  }
+  [data-look='redesign'] .u8s-avatar {
+    width: 44px;
+    height: 44px;
+  }
+  [data-look='redesign'] .u8s-toolbar__row,
+  [data-look='redesign'] .u8s-toolbar__group {
+    width: 100%;
+  }
+  [data-look='redesign'] .u8s-grid {
+    grid-template-columns: 1fr;
+    padding: 0 16px 16px;
+  }
+  /* Day agenda rows become two-line cards: class on the left, time on the
+   * right; seats and tags under them. */
+  [data-look='redesign'] .u8s-entry,
+  [data-look='redesign'] .u8s-week__col .u8s-entry {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    grid-template-areas:
+      'avatar name actions'
+      'avatar time actions'
+      'tags tags tags';
+    gap: 2px 12px;
+    padding: 12px 16px;
+  }
+  [data-look='redesign'] .u8s-entry > .u8s-avatar {
+    grid-area: avatar;
+    align-self: start;
+  }
+  [data-look='redesign'] .u8s-entry__class {
+    grid-area: name;
+  }
+  [data-look='redesign'] .u8s-entry__when {
+    grid-area: time;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    align-items: baseline;
+  }
+  [data-look='redesign'] .u8s-entry__tags {
+    grid-area: tags;
+    padding-top: 8px;
+  }
+  [data-look='redesign'] .u8s-entry__tags:empty {
+    display: none;
+  }
+  [data-look='redesign'] .u8s-entry__actions {
+    grid-area: actions;
+    align-self: start;
+  }
+  [data-look='redesign'] .u8s-day__head,
+  [data-look='redesign'] .u8s-day__empty,
+  [data-look='redesign'] .u8s-closed {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  [data-look='redesign'] .u8s-month {
+    padding: 12px;
+  }
+  [data-look='redesign'] .u8s-month__head,
+  [data-look='redesign'] .u8s-month__days {
+    gap: 3px;
+  }
+  [data-look='redesign'] .u8s-month__day {
+    min-height: 64px;
+    padding: 4px;
+    border-radius: 8px;
+  }
+  [data-look='redesign'] .u8s-month__head > div {
+    letter-spacing: 0;
+    font-size: 11px;
+  }
+}

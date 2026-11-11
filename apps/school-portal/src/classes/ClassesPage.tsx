@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, Checkbox, EmptyState, ErrorBanner, Field, PageHeader, RowActionsMenu, SelectField, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { EmptyState, ErrorBanner, RowActionsMenu, Spinner, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useMyStaffAccess } from '../roleGrants/roleGrantQueries';
@@ -15,6 +15,11 @@ import { useArchiveClass, useClasses, useCreateClass, useUnarchiveClass, useUpda
 import { ClassFormModal } from './ClassFormModal';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { ClassAvatar } from '../schedule/ClassAvatar';
+import { ClassPanel } from '../schedule/ClassPanel';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../schedule/schedule.css';
 
 export function ClassesPage() {
   const t = useT();
@@ -96,6 +101,9 @@ export function ClassesPage() {
   const [editing, setEditing] = useState<ClassResponse | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [archiving, setArchiving] = useState<ClassResponse | null>(null);
+  // The class in the right-hand panel (Decision 455, Q2): the first row until
+  // another is picked.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   if (!schoolId) return null;
 
@@ -125,78 +133,105 @@ export function ClassesPage() {
     ];
   }
 
-  function badges(c: ClassResponse) {
+  function tags(c: ClassResponse) {
+    return (
+      <span className="u8s-tags">
+        {c.activities.map((a, i) => (
+          // Index-qualified key: activities are free text and may repeat.
+          <span key={`${a}-${i}`} className="u8s-tag">
+            {a}
+          </span>
+        ))}
+        {c.timetableSlotId ? <span className="u8s-tag">{t('classes.fromTimetable')}</span> : null}
+        {c.membershipInclusion ? <span className="u8s-tag u8s-tag--mint">{t('classes.includedInMembership')}</span> : null}
+        {c.termsWaiverRequired ? <span className="u8s-tag">{t('classes.waiverRequired')}</span> : null}
+      </span>
+    );
+  }
+
+  // Class.instructorId is a direct FK into User (schema.prisma's own comment:
+  // "NOT a separate Instructor table"), so the match is on instructor.userId.
+  function instructorName(c: ClassResponse) {
+    const instructor = instructors.find((i) => i.userId === c.instructorId);
+    return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : null;
+  }
+  const branchName = (c: ClassResponse) => branches.find((b) => b.id === c.branchId)?.name ?? (c.branchId ? c.branchId : t('classes.wholeSchool'));
+
+  function statusTags(c: ClassResponse) {
     return (
       <>
-        {c.activities.map((a, i) => (
-          <Badge key={`${a}-${i}`}>{a}</Badge>
-        ))}
-        {c.timetableSlotId ? <Badge variant="default">{t('classes.fromTimetable')}</Badge> : null}
-        {c.membershipInclusion ? <Badge variant="accent">{t('classes.includedInMembership')}</Badge> : null}
-        {c.termsWaiverRequired ? <Badge>{t('classes.waiverRequired')}</Badge> : null}
+        {c.archivedAt ? <span className="u8s-tag">{t('classes.archived')}</span> : null}
+        {c.cancelledAt ? <span className="u8s-tag u8s-tag--danger">{t('classes.cancelled')}</span> : null}
       </>
     );
   }
 
+  const selected = classes.find((c) => c.id === selectedId) ?? classes[0] ?? null;
+
+  /** Avatar → class name (coach · branch under it), DESIGN.md → "Avatars".
+   * The name is the button that shows the class in the panel. */
+  function classCell(c: ClassResponse) {
+    return (
+      <span className="u8s-class">
+        <ClassAvatar title={c.title} bannerUrl={c.bannerUrl} colourKey={c.timetableSlotId ?? c.id} />
+        <span className="u8s-class__text">
+          <span className={'u8s-class__name' + (c.cancelledAt ? ' u8s-class__name--cancelled' : '')}>
+            <button type="button" className="u8s-pick" aria-pressed={selected?.id === c.id} onClick={(e) => (e.stopPropagation(), setSelectedId(c.id))}>
+              <span className="u8s-class__title">{c.title}</span>
+            </button>
+            {statusTags(c)}
+          </span>
+          <span className="u8s-class__sub">
+            {[instructorName(c), branchName(c)].filter(Boolean).join(' · ')}
+          </span>
+        </span>
+      </span>
+    );
+  }
+
+  const actionsMenu = (c: ClassResponse) => <RowActionsMenu label={t('classes.actionsAria', { title: c.title })} actions={actionsFor(c)} />;
+  const showPager = !isLoading && !error && (classes.length > 0 || pageIndex > 0);
+
+  // The selected class. The row already shows everything this page loads
+  // about it (name, status, coach · branch, Starts, Ends, Capacity and the
+  // tags), so the panel names the class and holds the row's actions as
+  // buttons, nothing more (DESIGN.md "nothing shown twice"; the owner's
+  // answer "B" on #545, 11 Nov 2026).
+  const inspector =
+    !isLoading && !error && selected ? (
+      <ClassPanel
+        title={selected.title}
+        bannerUrl={selected.bannerUrl}
+        colourKey={selected.timetableSlotId ?? selected.id}
+        cancelled={!!selected.cancelledAt}
+        actions={actionsFor(selected)}
+      />
+    ) : undefined;
+
   return (
     <>
-      <PageHeader
+      <NewLookPageHeader
         title={t('classes.title')}
         subtitle={readOnly ? t('classes.subtitleReadOnly') : t('classes.subtitle')}
-        actions={readOnly ? undefined : <Button onClick={() => setCreating(true)}>{t('classes.addClass')}</Button>}
+        actions={
+          readOnly ? undefined : (
+            <button type="button" className="u8s-pill u8s-pill--primary" onClick={() => setCreating(true)}>
+              {t('classes.addClass')}
+            </button>
+          )
+        }
       />
-      <Card>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 160 }}>
-              <Field label={t('classes.whenLabel')} htmlFor="classes-when-filter">
-                <SelectField
-                  id="classes-when-filter"
-                  value={when}
-                  onChange={(e) => {
-                    setWhen(e.target.value as ClassesWhen);
-                    resetPaging();
-                  }}
-                  options={[
-                    { value: 'upcoming', label: t('classes.whenUpcoming') },
-                    { value: 'past', label: t('classes.whenPast') },
-                    { value: 'all', label: t('classes.whenAll') },
-                  ]}
-                />
-              </Field>
-            </div>
-            {disciplines.length > 0 ? (
-            <div style={{ minWidth: 200 }}>
-              <Field label={t('classes.disciplineFilterLabel')} htmlFor="classes-discipline-filter">
-                <SelectField
-                  id="classes-discipline-filter"
-                  value={disciplineFilter}
-                  onChange={(e) => {
-                    setDisciplineFilter(e.target.value);
-                    resetPaging();
-                  }}
-                  options={[{ value: '', label: t('classes.disciplineAll') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
-                />
-              </Field>
-            </div>
-            ) : (
-            <div style={{ minWidth: 200 }}>
-              <Field label={t('classes.disciplineFilterLabel')} htmlFor="classes-activity-filter" hint={t('classes.disciplineFilterHint')}>
-                <TextField
-                  id="classes-activity-filter"
-                  placeholder={t('classes.disciplineFilterPlaceholder')}
-                  value={activitiesFilter}
-                  onChange={(e) => {
-                    setActivitiesFilter(e.target.value);
-                    resetPaging();
-                  }}
-                />
-              </Field>
-            </div>
-            )}
-            <div style={{ minWidth: 200 }}>
-              <Field label={t('classes.searchLabel')} htmlFor="classes-search-filter">
-                <TextField
+      <NewLookPage inspector={inspector} inspectorLabel={t('classes.panelLabel')}>
+        <section className="u8s-card u8s-card--table">
+          <div className="u8s-toolbar">
+            <div className="u8s-toolbar__row">
+              <label className="u8s-search">
+                <span className="u8s-visually-hidden">{t('classes.searchLabel')}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+                <input
                   id="classes-search-filter"
                   type="search"
                   placeholder={t('classes.searchPlaceholder')}
@@ -206,122 +241,161 @@ export function ClassesPage() {
                     resetPaging();
                   }}
                 />
-              </Field>
+              </label>
+              <div className="u8s-toolbar__group u8s-toolbar__group--center">
+                {/* Decision 226 — archived Classes are hidden by default. */}
+                <label className="ultm8-checkbox u8s-check">
+                  <input
+                    type="checkbox"
+                    checked={showArchived}
+                    onChange={(e) => {
+                      setShowArchived(e.target.checked);
+                      resetPaging();
+                    }}
+                  />
+                  {t('classes.showArchived')}
+                </label>
+                <span className="u8s-switch">
+                  <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('classes.viewAria')} />
+                </span>
+              </div>
+            </div>
+            <div className="u8s-toolbar__group">
+              <NewLookSelect
+                id="classes-when-filter"
+                label={t('classes.whenLabel')}
+                value={when}
+                onChange={(v) => {
+                  setWhen(v as ClassesWhen);
+                  resetPaging();
+                }}
+                options={[
+                  { value: 'upcoming', label: t('classes.whenUpcoming') },
+                  { value: 'past', label: t('classes.whenPast') },
+                  { value: 'all', label: t('classes.whenAll') },
+                ]}
+              />
+              {disciplines.length > 0 ? (
+                <NewLookSelect
+                  id="classes-discipline-filter"
+                  label={t('classes.disciplineFilterLabel')}
+                  value={disciplineFilter}
+                  onChange={(v) => {
+                    setDisciplineFilter(v);
+                    resetPaging();
+                  }}
+                  options={[{ value: '', label: t('classes.disciplineAll') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
+                />
+              ) : (
+                <div className="u8s-field">
+                  <label className="u8s-field__label" htmlFor="classes-activity-filter">
+                    {t('classes.disciplineFilterLabel')}
+                  </label>
+                  <input
+                    id="classes-activity-filter"
+                    aria-describedby="classes-activity-filter-hint"
+                    placeholder={t('classes.disciplineFilterPlaceholder')}
+                    value={activitiesFilter}
+                    onChange={(e) => {
+                      setActivitiesFilter(e.target.value);
+                      resetPaging();
+                    }}
+                  />
+                  <p className="u8s-field__hint" id="classes-activity-filter-hint">
+                    {t('classes.disciplineFilterHint')}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            {/* Decision 226 — archived Classes are hidden by default. */}
-            <Checkbox label={t('classes.showArchived')} checked={showArchived} onChange={(e) => { setShowArchived(e.target.checked); resetPaging(); }} />
-            <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('classes.viewAria')} />
-          </div>
-        </div>
-      </Card>
-      {actionError ? <ErrorBanner message={actionError} /> : null}
-      {isLoading ? <Spinner /> : null}
-      {error ? <ErrorBanner message={error instanceof ApiError ? error.message : t('classes.loadFailed')} /> : null}
-      {!isLoading && !error ? (
-      <Card>
-        {classes.length === 0 ? (
-          <EmptyState
-            title={hasFilter ? t('classes.emptyFilteredTitle') : t('classes.emptyTitle')}
-            description={hasFilter ? t('classes.emptyFilteredDescription') : t('classes.emptyDescription')}
-          />
-        ) : viewMode === 'grid' ? (
-          <CardGrid>
-            {classes.map((c) => {
-              // Class.instructorId is a direct FK into User (schema.prisma's own
-              // comment: "NOT a separate Instructor table"), so the match is on
-              // instructor.userId, not instructor.id — same lookup the Rows
-              // table's own "Instructor" column uses.
-              const instructor = instructors.find((i) => i.userId === c.instructorId);
-              const branchName = branches.find((b) => b.id === c.branchId)?.name ?? (c.branchId ? c.branchId : t('classes.wholeSchool'));
-              return (
-                <Card key={c.id}>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                    <ClassThumbnail bannerUrl={c.bannerUrl} title={c.title} size={40} />
-                    <strong>{c.title}</strong>
-                    {c.archivedAt ? <Badge variant="default">{t('classes.archived')}</Badge> : null}
-                    {c.cancelledAt ? <Badge variant="danger">{t('classes.cancelled')}</Badge> : null}
-                  </div>
-                  <div style={{ margin: '8px 0' }}>{badges(c)}</div>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
-                    {instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—'}
-                  </p>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>
-                    {zonedTime(c.startDate, c)} – {zonedTime(c.endDate, c)}
-                  </p>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{t('classes.capacityLine', { capacity: c.capacity ?? t('classes.unlimited') })}</p>
-                  <p style={{ color: 'var(--text-secondary)', margin: '4px 0 0' }}>{branchName}</p>
-                  <div style={{ marginTop: 12 }}>
-                    <RowActionsMenu
-                      label={t('classes.actionsAria', { title: c.title })}
-                      actions={actionsFor(c)}
-                    />
-                  </div>
-                </Card>
-              );
-            })}
-          </CardGrid>
-        ) : (
-          <Table<ClassResponse>
-            rows={classes}
-            columns={[
-              { key: 'banner', header: '', render: (c) => <ClassThumbnail bannerUrl={c.bannerUrl} title={c.title} size={32} /> },
-              { key: 'title', header: t('classes.columns.title'), render: (c) => (<div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{c.title}{c.archivedAt ? <Badge variant="default">{t('classes.archived')}</Badge> : null}{c.cancelledAt ? <Badge variant="danger">{t('classes.cancelled')}</Badge> : null}</div>) },
-              {
-                key: 'activities',
-                header: t('classes.columns.activities'),
-                // Index-qualified key — activities is unconstrained free text
-                // (no dedup enforced), so two identical entries would
-                // otherwise collide on the same key.
-                render: (c) => badges(c),
-              },
-              {
-                key: 'instructor',
-                header: t('classes.columns.instructor'),
-                render: (c) => {
-                  // Class.instructorId is a direct FK into User (schema.prisma's own
-                  // comment: "NOT a separate Instructor table"), so the match is on
-                  // instructor.userId, not instructor.id.
-                  const instructor = instructors.find((i) => i.userId === c.instructorId);
-                  return instructor ? `${instructor.firstName} ${instructor.surname}`.trim() : '—';
-                },
-              },
-              { key: 'start', header: t('classes.columns.starts'), render: (c) => zonedTime(c.startDate, c) },
-              { key: 'end', header: t('classes.columns.ends'), render: (c) => zonedTime(c.endDate, c) },
-              { key: 'capacity', header: t('classes.columns.capacity'), render: (c) => c.capacity ?? t('classes.unlimited') },
-              {
-                key: 'branch',
-                header: t('classes.columns.branch'),
-                render: (c) => branches.find((b) => b.id === c.branchId)?.name ?? (c.branchId ? c.branchId : t('classes.wholeSchool')),
-              },
-              {
-                key: 'actions',
-                header: '',
-                render: (c) => (
-                  <RowActionsMenu
-                    label={t('classes.actionsAria', { title: c.title })}
-                    actions={actionsFor(c)}
-                  />
-                ),
-              },
-            ]}
-          />
-        )}
-      </Card>
-      ) : null}
 
-      {!isLoading && !error && (classes.length > 0 || pageIndex > 0) ? (
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
-          <Button variant="secondary" disabled={pageIndex === 0} onClick={() => setPageIndex((i) => Math.max(0, i - 1))}>
-            {t('classes.prev')}
-          </Button>
-          <Button variant="secondary" disabled={!data?.nextCursor} onClick={() => goToNextPage(data!.nextCursor ?? null)}>
-            {t('classes.next')}
-          </Button>
-          <span className="ultm8-field__hint">{t('classes.page', { page: pageIndex + 1 })}</span>
-        </div>
-      ) : null}
+          {actionError ? (
+            <div style={{ padding: '0 20px' }}>
+              <ErrorBanner message={actionError} />
+            </div>
+          ) : null}
+          {isLoading ? <Spinner /> : null}
+          {error ? (
+            <div style={{ padding: '0 20px 20px' }}>
+              <ErrorBanner message={error instanceof ApiError ? error.message : t('classes.loadFailed')} />
+            </div>
+          ) : null}
+
+          {!isLoading && !error ? (
+            classes.length === 0 ? (
+              <div className="u8s-empty">
+                <EmptyState
+                  title={hasFilter ? t('classes.emptyFilteredTitle') : t('classes.emptyTitle')}
+                  description={hasFilter ? t('classes.emptyFilteredDescription') : t('classes.emptyDescription')}
+                />
+              </div>
+            ) : viewMode === 'grid' ? (
+              <div className="u8s-grid">
+                {classes.map((c) => (
+                  <article key={c.id} className="u8s-tile" data-sel={selected?.id === c.id ? 'true' : 'false'} onClick={() => setSelectedId(c.id)}>
+                    <div className="u8s-tile__head">
+                      {classCell(c)}
+                      {actionsMenu(c)}
+                    </div>
+                    <div className="u8s-tile__facts">
+                      <p>
+                        {zonedTime(c.startDate, c)} – {zonedTime(c.endDate, c)}
+                      </p>
+                      <p>{t('classes.capacityLine', { capacity: c.capacity ?? t('classes.unlimited') })}</p>
+                    </div>
+                    {tags(c)}
+                  </article>
+                ))}
+              </div>
+            ) : (
+                <table className="u8s-table">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="u8s-col-class">
+                        {t('classes.columns.title')}
+                      </th>
+                      <th scope="col">{t('classes.columns.starts')}</th>
+                      <th scope="col">{t('classes.columns.ends')}</th>
+                      <th scope="col">{t('classes.columns.capacity')}</th>
+                      <th scope="col">{t('classes.columns.activities')}</th>
+                      <th scope="col" className="u8s-col-actions" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {classes.map((c) => (
+                      <tr key={c.id} data-sel={selected?.id === c.id ? 'true' : 'false'} onClick={() => setSelectedId(c.id)}>
+                        <td className="u8s-col-class">{classCell(c)}</td>
+                        <td className="u8s-col-time" data-cell="starts" data-label={t('classes.columns.starts')}>
+                          {zonedTime(c.startDate, c)}
+                        </td>
+                        <td className="u8s-col-time" data-cell="ends" data-label={t('classes.columns.ends')}>
+                          {zonedTime(c.endDate, c)}
+                        </td>
+                        <td data-cell="capacity" data-label={t('classes.columns.capacity')}>
+                          {c.capacity ?? t('classes.unlimited')}
+                        </td>
+                        <td data-cell="tags">{tags(c)}</td>
+                        <td className="u8s-col-actions">{actionsMenu(c)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+            )
+          ) : null}
+
+          {showPager ? (
+            <div className="u8s-foot">
+              <button type="button" className="u8s-pill" disabled={pageIndex === 0} onClick={() => setPageIndex((i) => Math.max(0, i - 1))}>
+                {t('classes.prev')}
+              </button>
+              <button type="button" className="u8s-pill" disabled={!data?.nextCursor} onClick={() => goToNextPage(data!.nextCursor ?? null)}>
+                {t('classes.next')}
+              </button>
+              <span>{t('classes.page', { page: pageIndex + 1 })}</span>
+            </div>
+          ) : null}
+        </section>
+      </NewLookPage>
 
       {archiving ? (
         <ConfirmDeleteModal
@@ -371,51 +445,6 @@ export function ClassesPage() {
         />
       ) : null}
     </>
-  );
-}
-
-/**
- * Minimal one-off thumbnail for `Class.bannerUrl` — a read-only roster-row
- * display, not a form field (the form's own Banner field is a
- * `PhotoUploadField` as of the real-photo-uploads phase — see
- * `ClassFormModal.tsx`), so a plain `<img>` is all this needs regardless of
- * whether `bannerUrl` came from an upload or (for a Class banner saved before
- * this phase) a pasted URL — both are just a URL by the time this renders.
- * Doesn't reuse the shared `Avatar` component (`../lib/Avatar.tsx`): Avatar's
- * placeholder is a firstName/surname initials monogram, and a Class has
- * neither — a plain "no banner" placeholder square (the title's first
- * letter) fits better than forcing a two-letter-initials shape onto a Class
- * title.
- */
-function ClassThumbnail({ bannerUrl, title, size }: { bannerUrl: string | null | undefined; title: string; size: number }) {
-  if (bannerUrl) {
-    return (
-      <img
-        src={bannerUrl}
-        alt=""
-        style={{ width: size, height: size, borderRadius: 6, objectFit: 'cover', flex: 'none' }}
-      />
-    );
-  }
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: size,
-        height: size,
-        borderRadius: 6,
-        background: 'var(--fill-accent)',
-        color: '#ffffff',
-        fontSize: Math.round(size * 0.4),
-        fontWeight: 500,
-        flex: 'none',
-      }}
-    >
-      {title[0]?.toUpperCase() ?? '?'}
-    </span>
   );
 }
 

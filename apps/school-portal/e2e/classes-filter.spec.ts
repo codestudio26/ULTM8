@@ -48,23 +48,25 @@ test('Discipline and Search filters narrow the Classes list server-side', async 
   await signIn(page, s.ownerToken);
   await page.goto('/classes');
 
-  // `exact: true` — the row's kebab trigger now carries an `aria-label` of
-  // "Actions for <title>", which (per the accessible-name-from-content
-  // algorithm) makes the whole Actions `<td>`'s own accessible name contain
-  // the title too, so a plain substring match on the title would also hit
-  // that cell.
-  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toBeVisible();
+  // New look: the class cell also carries "coach · branch" under the title,
+  // so each class is found by its table row.
+  const judoRow = page.getByRole('row', { name: /Adult Judo Fundamentals/ });
+  const kidsRow = page.getByRole('row', { name: /Kids BJJ/ });
+  await expect(judoRow).toBeVisible();
+  await expect(kidsRow).toBeVisible();
 
-  // The School has styles, so Discipline is a dropdown of them (C9).
-  await page.getByLabel('Discipline').selectOption({ label: 'Judo' });
-  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toHaveCount(0);
+  // The School has styles, so Discipline is a drop-down of them (C9), the new
+  // look's own (DESIGN.md → "Drop-downs").
+  await page.getByRole('combobox', { name: 'Discipline' }).click();
+  await page.getByRole('option', { name: 'Judo' }).click();
+  await expect(judoRow).toBeVisible();
+  await expect(kidsRow).toHaveCount(0);
 
-  await page.getByLabel('Discipline').selectOption({ label: 'All disciplines' });
+  await page.getByRole('combobox', { name: 'Discipline' }).click();
+  await page.getByRole('option', { name: 'All disciplines' }).click();
   await page.getByLabel('Search classes').fill('kids');
-  await expect(page.getByRole('cell', { name: 'Kids BJJ', exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Adult Judo Fundamentals', exact: true })).toHaveCount(0);
+  await expect(kidsRow).toBeVisible();
+  await expect(judoRow).toHaveCount(0);
 });
 
 test('Prev/Next pages through Classes, and Prev returns to the first page', async ({ page }) => {
