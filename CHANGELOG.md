@@ -10,6 +10,10 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Schedule → Classes and Timetable** (Decision 453; visual only).
+  Both list pages use the new page header, white cards, class avatars (banner or
+  initials on a soft circle), the new look's own drop-downs and pill buttons,
+  and phone layouts; every view, filter and action stays as it was.
 - **The new look is the School Portal's look, starting with the app shell**
   (Decision 453; visual only). There is no switch and no classic look: the
   portal always sets `data-look="redesign"`, so the new shell and the held-back

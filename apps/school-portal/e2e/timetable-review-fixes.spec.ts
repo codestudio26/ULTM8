@@ -457,13 +457,18 @@ test('the School sets its week start and layout, and the calendar filters by bra
   }
 
   for (const title of ['BJJ Open', 'Judo Kids', 'Judo Adults North']) await expect(page.getByText(title)).toBeVisible();
-  await page.getByLabel('Style').selectOption({ label: 'Judo' });
+  // The new look's own drop-downs (DESIGN.md → "Drop-downs").
+  const pick = async (label: string, option: string) => {
+    await page.getByRole('combobox', { name: label }).click();
+    await page.getByRole('option', { name: option, exact: true }).click();
+  };
+  await pick('Style', 'Judo');
   await expect(page.getByText('BJJ Open')).toHaveCount(0);
-  await page.getByLabel('Class type').selectOption('Kids');
+  await pick('Class type', 'Kids');
   await expect(page.getByText('Judo Kids')).toBeVisible();
   await expect(page.getByText('Judo Adults North')).toHaveCount(0);
-  await page.getByLabel('Class type').selectOption('');
-  await page.getByLabel('Branch').selectOption({ label: 'South' });
+  await pick('Class type', 'All class types');
+  await pick('Branch', 'South');
   // School-wide classes show on every Branch's timetable.
   await expect(page.getByText('Judo Kids')).toBeVisible();
   await expect(page.getByText('Judo Adults North')).toHaveCount(0);

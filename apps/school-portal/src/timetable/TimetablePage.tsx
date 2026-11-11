@@ -1,22 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useQueryClient, type UseMutationResult } from '@tanstack/react-query';
-import {
-  Badge,
-  Button,
-  Card,
-  Checkbox,
-  EmptyState,
-  ErrorBanner,
-  Field,
-  PageHeader,
-  RowActionsMenu,
-  SelectField,
-  Spinner,
-  SuccessBanner,
-  ViewToggle,
-  type ViewMode,
-} from '@ultm8/ui';
+import { EmptyState, ErrorBanner, RowActionsMenu, Spinner, SuccessBanner, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { useBranches, type BranchResponse } from '../branches/branchQueries';
@@ -61,6 +46,10 @@ import {
 } from './timetableOccurrences';
 import { formatLocale } from '../i18n/format';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
+import { NewLookPage, NewLookPageHeader } from '../layout/NewLookPage';
+import { ClassAvatar } from '../schedule/ClassAvatar';
+import { ScheduleSelect } from '../schedule/ScheduleSelect';
+import '../schedule/schedule.css';
 
 type RangeMode = 'day' | 'week' | 'month';
 
@@ -98,10 +87,10 @@ interface BookingTarget {
  *  - Day/Week/Month — the TIME RANGE being viewed (`rangeMode` below), a new,
  *    page-specific 3-way control; not an existing shared component, since no
  *    other page in this app has a 3-way range switch to reuse.
- *  - Rows/Grid — the already-established `ViewToggle`/`CardGrid` LAYOUT toggle
+ *  - Rows/Grid — the already-established `ViewToggle` LAYOUT toggle
  *    (Branches/Franchises/Classes/Students' own convention). Rows is the
- *    day-grouped agenda list; Grid reuses a Weekly-view look (day columns,
- *    left-border-colored cards).
+ *    day-grouped agenda list; Grid is a Weekly-view look (day columns of
+ *    narrow class cards). New look (Decision 453): class avatars, schedule.css.
  * DISCLOSED JUDGMENT CALL: Month always renders as a single calendar grid with
  * per-occurrence dots (the backlog doc's own explicit treatment for Monthly,
  * independent of Rows/Grid) — the Rows/Grid toggle is hidden while Month is
@@ -243,118 +232,129 @@ export function TimetablePage() {
 
   return (
     <>
-      <PageHeader
+      <NewLookPageHeader
         title={t('timetable.title')}
         subtitle={canEdit ? t('timetable.subtitle') : t('timetable.staffSubtitle')}
         actions={
           canEdit ? (
-            <div style={{ display: 'flex', gap: 8 }}>
+            <>
               {isOwner ? (
-                <Button variant="secondary" onClick={() => setClosuresOpen(true)}>
+                <button type="button" className="u8s-pill" onClick={() => setClosuresOpen(true)}>
                   {t('timetable.closures.button')}
-                </Button>
+                </button>
               ) : null}
-              <Button onClick={() => setCreating(true)}>{t('timetable.addSlot')}</Button>
-            </div>
+              <button type="button" className="u8s-pill u8s-pill--primary" onClick={() => setCreating(true)}>
+                {t('timetable.addSlot')}
+              </button>
+            </>
           ) : undefined
         }
       />
+      <NewLookPage>
+        {bookedMessage ? <SuccessBanner message={bookedMessage} /> : null}
 
-      {bookedMessage ? <SuccessBanner message={bookedMessage} /> : null}
-
-      <Card>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className="ultm8-view-toggle" role="group" aria-label={t('timetable.rangeAria')}>
-              {(['day', 'week', 'month'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  className={['ultm8-view-toggle__btn', rangeMode === mode ? 'ultm8-view-toggle__btn--active' : ''].join(' ').trim()}
-                  aria-pressed={rangeMode === mode}
-                  onClick={() => setRangeMode(mode)}
-                >
-                  {t(RANGE_MODE_LABELS[mode])}
+        <section className="u8s-card">
+          <div className="u8s-toolbar">
+            <div className="u8s-toolbar__row">
+              <div className="u8s-toolbar__group u8s-toolbar__group--center">
+                <span className="u8s-switch">
+                  <span className="ultm8-view-toggle" role="group" aria-label={t('timetable.rangeAria')}>
+                    {(['day', 'week', 'month'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        type="button"
+                        className={['ultm8-view-toggle__btn', rangeMode === mode ? 'ultm8-view-toggle__btn--active' : ''].join(' ').trim()}
+                        aria-pressed={rangeMode === mode}
+                        onClick={() => setRangeMode(mode)}
+                      >
+                        {t(RANGE_MODE_LABELS[mode])}
+                      </button>
+                    ))}
+                  </span>
+                </span>
+                <button type="button" className="u8s-pill" onClick={() => shiftAnchor(-1)}>
+                  {t('timetable.prev')}
                 </button>
-              ))}
+                <button type="button" className="u8s-pill" onClick={() => setAnchor(new Date())}>
+                  {t('timetable.today')}
+                </button>
+                <button type="button" className="u8s-pill" onClick={() => shiftAnchor(1)}>
+                  {t('timetable.next')}
+                </button>
+                <span className="u8s-range-label">{rangeLabel}</span>
+              </div>
+              <div className="u8s-toolbar__group u8s-toolbar__group--center">
+                {/* Decision 226 — archived slots are hidden from the whole calendar by default. */}
+                {canEdit ? (
+                  <label className="u8s-check">
+                    <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
+                    {archivedCount ? t('timetable.showArchivedCount', { count: archivedCount }) : t('timetable.showArchived')}
+                  </label>
+                ) : null}
+                {rangeMode !== 'month' ? (
+                  <span className="u8s-switch">
+                    <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('timetable.viewAria')} />
+                  </span>
+                ) : null}
+              </div>
             </div>
-            <Button variant="secondary" onClick={() => shiftAnchor(-1)}>
-              {t('timetable.prev')}
-            </Button>
-            <Button variant="secondary" onClick={() => setAnchor(new Date())}>
-              {t('timetable.today')}
-            </Button>
-            <Button variant="secondary" onClick={() => shiftAnchor(1)}>
-              {t('timetable.next')}
-            </Button>
-            <span style={{ fontWeight: 500 }}>{rangeLabel}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            {/* Decision 226 — archived slots are hidden from the whole calendar by default. */}
-            {canEdit ? <Checkbox label={archivedCount ? t('timetable.showArchivedCount', { count: archivedCount }) : t('timetable.showArchived')} checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} /> : null}
-            {rangeMode !== 'month' ? <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('timetable.viewAria')} /> : null}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
-          {branches.length > 1 ? (
-            <Field label={t('timetable.filters.branch')} htmlFor="tt-filter-branch">
-              <SelectField
-                id="tt-filter-branch"
-                value={branchFilter}
-                onChange={(e) => setBranchFilter(e.target.value)}
-                options={[{ value: '', label: t('timetable.filters.allBranches') }, ...branches.filter((b) => !b.archivedAt).map((b) => ({ value: b.id, label: b.name }))]}
+            <div className="u8s-toolbar__group">
+              {branches.length > 1 ? (
+                <ScheduleSelect
+                  id="tt-filter-branch"
+                  label={t('timetable.filters.branch')}
+                  value={branchFilter}
+                  onChange={setBranchFilter}
+                  options={[{ value: '', label: t('timetable.filters.allBranches') }, ...branches.filter((b) => !b.archivedAt).map((b) => ({ value: b.id, label: b.name }))]}
+                />
+              ) : null}
+              <ScheduleSelect
+                id="tt-filter-style"
+                label={t('timetable.filters.style')}
+                value={styleFilter}
+                onChange={(v) => {
+                  setStyleFilter(v);
+                  setClassTypeFilter('');
+                }}
+                options={[{ value: '', label: t('timetable.filters.allStyles') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
               />
-            </Field>
-          ) : null}
-          <Field label={t('timetable.filters.style')} htmlFor="tt-filter-style">
-            <SelectField
-              id="tt-filter-style"
-              value={styleFilter}
-              onChange={(e) => {
-                setStyleFilter(e.target.value);
-                setClassTypeFilter('');
-              }}
-              options={[{ value: '', label: t('timetable.filters.allStyles') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
-            />
-          </Field>
-          {chosenStyle && chosenStyle.classTypesOffered.length > 0 ? (
-            <Field label={t('timetable.filters.classType')} htmlFor="tt-filter-type">
-              <SelectField
-                id="tt-filter-type"
-                value={classTypeFilter}
-                onChange={(e) => setClassTypeFilter(e.target.value)}
-                options={[{ value: '', label: t('timetable.filters.allClassTypes') }, ...chosenStyle.classTypesOffered.map((c) => ({ value: c, label: c }))]}
-              />
-            </Field>
-          ) : null}
-        </div>
-      </Card>
+              {chosenStyle && chosenStyle.classTypesOffered.length > 0 ? (
+                <ScheduleSelect
+                  id="tt-filter-type"
+                  label={t('timetable.filters.classType')}
+                  value={classTypeFilter}
+                  onChange={setClassTypeFilter}
+                  options={[{ value: '', label: t('timetable.filters.allClassTypes') }, ...chosenStyle.classTypesOffered.map((c) => ({ value: c, label: c }))]}
+                />
+              ) : null}
+            </div>
+          </div>
+        </section>
 
-      {actionError ? <ErrorBanner message={actionError} /> : null}
+        {actionError ? <ErrorBanner message={actionError} /> : null}
 
-      {!hasAnything ? (
-        <Card>
-          <EmptyState title={t('timetable.emptyTitle')} description={canEdit ? t('timetable.emptyDescription') : t('timetable.staffEmptyDescription')} />
-        </Card>
-      ) : rangeMode === 'month' ? (
-        <MonthGrid
-          days={days}
-          weekStartsOn={weekStartsOn}
-          onBook={(target) => setBooking(target)}
-        />
-      ) : viewMode === 'grid' ? (
-        <div style={{ display: 'flex', gap: 12, overflowX: 'auto' }}>
-          {days.map((day) => (
-            <DayColumn key={day.date} day={day} branches={branches} onBook={setBooking} slotActions={slotActions} />
-          ))}
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gap: 16 }}>
-          {days.map((day) => (
-            <DayAgendaCard key={day.date} day={day} branches={branches} onBook={setBooking} slotActions={slotActions} />
-          ))}
-        </div>
-      )}
+        {!hasAnything ? (
+          <section className="u8s-card">
+            <EmptyState title={t('timetable.emptyTitle')} description={canEdit ? t('timetable.emptyDescription') : t('timetable.staffEmptyDescription')} />
+          </section>
+        ) : rangeMode === 'month' ? (
+          <MonthGrid days={days} weekStartsOn={weekStartsOn} onBook={(target) => setBooking(target)} />
+        ) : viewMode === 'grid' ? (
+          <div className="u8s-week">
+            {days.map((day) => (
+              <section key={day.date} className="u8s-card u8s-week__col">
+                <DaySection day={day} branches={branches} onBook={setBooking} slotActions={slotActions} compact />
+              </section>
+            ))}
+          </div>
+        ) : (
+          <section className="u8s-card">
+            {days.map((day) => (
+              <DaySection key={day.date} day={day} branches={branches} onBook={setBooking} slotActions={slotActions} />
+            ))}
+          </section>
+        )}
+      </NewLookPage>
 
       {archiving ? (
         <ConfirmDeleteModal
@@ -467,33 +467,44 @@ function OccurrenceCard({
   const full = !!cls && cls.capacity !== null && cls.seatsTaken >= cls.capacity;
   const isArchived = !!slot?.archivedAt;
   const dimmed = !bookable;
+  const startTime = cls ? cls.startTime : slot!.startTime;
+  const endTime = cls ? cls.endTime : slot!.endTime;
   return (
-    <div
-      style={{
-        borderLeft: `4px solid ${colorForSlot({ id: slot?.id ?? cls!.id })}`,
-        borderRadius: 6,
-        background: 'var(--fill-muted, #f5f5f5)',
-        padding: '8px 12px',
-        opacity: dimmed ? 0.6 : 1,
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-        <div>
-          <strong style={cancelled ? { textDecoration: 'line-through' } : undefined}>{title}</strong>
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {cls ? cls.startTime : slot!.startTime} – {cls ? cls.endTime : slot!.endTime}
-            {/* Decision 432 item 3: a class past midnight says so. */}
-            {slotEndsNextDay(cls ? cls.startTime : slot!.startTime, cls ? cls.endTime : slot!.endTime) ? ` (${t('timetable.endsNextDayShort')})` : ''} · {branchLabel(branches, cls ? cls.branchId : slot!.branchId, t)}
-          </div>
-          {cls ? (
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-              {cls.capacity !== null
-                ? t('timetable.occurrence.seatsOf', { taken: cls.seatsTaken, capacity: cls.capacity })
-                : t('timetable.occurrence.seats', { taken: cls.seatsTaken })}
-              {cls.waiting > 0 ? ` · ${t('timetable.occurrence.waiting', { count: cls.waiting })}` : ''}
-            </div>
-          ) : null}
-        </div>
+    <div className={'u8s-entry' + (dimmed ? ' u8s-entry--dim' : '')}>
+      <ClassAvatar title={title} bannerUrl={slot?.bannerUrl} colourKey={slot?.id ?? cls!.id} />
+      <div className="u8s-entry__class u8s-class__text">
+        <span className={'u8s-class__name' + (cancelled ? ' u8s-class__name--cancelled' : '')}>
+          <span className="u8s-class__title">{title}</span>
+        </span>
+        <span className="u8s-class__sub">{branchLabel(branches, cls ? cls.branchId : slot!.branchId, t)}</span>
+      </div>
+      <div className="u8s-entry__when">
+        <span className="u8s-entry__time">
+          {startTime} – {endTime}
+          {/* Decision 432 item 3: a class past midnight says so. */}
+          {slotEndsNextDay(startTime, endTime) ? ` (${t('timetable.endsNextDayShort')})` : ''}
+        </span>
+        <span className="u8s-entry__seats">
+          {cls
+            ? (cls.capacity !== null ? t('timetable.occurrence.seatsOf', { taken: cls.seatsTaken, capacity: cls.capacity }) : t('timetable.occurrence.seats', { taken: cls.seatsTaken })) +
+              (cls.waiting > 0 ? ` · ${t('timetable.occurrence.waiting', { count: cls.waiting })}` : '')
+            : null}
+        </span>
+      </div>
+      <div className="u8s-entry__tags u8s-tags">
+        {(cls?.activities ?? slot!.activities).map((a, i) => (
+          <span key={`${a}-${i}`} className="u8s-tag">
+            {a}
+          </span>
+        ))}
+        {cancelled ? <span className="u8s-tag u8s-tag--danger">{t('timetable.occurrence.cancelled')}</span> : null}
+        {!cancelled && ended ? <span className="u8s-tag">{t('timetable.occurrence.ended')}</span> : null}
+        {bookable && full ? <span className="u8s-tag">{t('timetable.occurrence.full')}</span> : null}
+        {entry.kind === 'later' ? <span className="u8s-tag">{t('timetable.occurrence.later')}</span> : null}
+        {entry.kind === 'template' && slot!.status !== 'ON' ? <span className="u8s-tag">{t('timetable.occurrence.off')}</span> : null}
+        {entry.kind === 'template' && isArchived ? <span className="u8s-tag">{t('timetable.occurrence.archived')}</span> : null}
+      </div>
+      <div className="u8s-entry__actions">
         <RowActionsMenu
           label={t('timetable.occurrence.actionsAria', { title, date })}
           actions={[
@@ -512,17 +523,6 @@ function OccurrenceCard({
           ]}
         />
       </div>
-      <div style={{ marginTop: 6 }}>
-        {(cls?.activities ?? slot!.activities).map((a, i) => (
-          <Badge key={`${a}-${i}`}>{a}</Badge>
-        ))}
-        {cancelled ? <Badge>{t('timetable.occurrence.cancelled')}</Badge> : null}
-        {!cancelled && ended ? <Badge>{t('timetable.occurrence.ended')}</Badge> : null}
-        {bookable && full ? <Badge>{t('timetable.occurrence.full')}</Badge> : null}
-        {entry.kind === 'later' ? <Badge>{t('timetable.occurrence.later')}</Badge> : null}
-        {entry.kind === 'template' && slot!.status !== 'ON' ? <Badge>{t('timetable.occurrence.off')}</Badge> : null}
-        {entry.kind === 'template' && isArchived ? <Badge variant="default">{t('timetable.occurrence.archived')}</Badge> : null}
-      </div>
     </div>
   );
 }
@@ -535,7 +535,7 @@ function ClosedBanner({ day, branches }: { day: DayOccurrences; branches: Branch
   return (
     <>
       {day.closures.map((c) => (
-        <p key={c.id} role="note" style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600, color: 'var(--text-danger, #b42318)' }}>
+        <p key={c.id} role="note" className="u8s-closed">
           {c.branchId
             ? t('timetable.closures.closedBranch', { reason: c.reason, branch: branches.find((b) => b.id === c.branchId)?.name ?? '' })
             : t('timetable.closures.closed', { reason: c.reason })}
@@ -554,65 +554,35 @@ function dayHeading(day: DayOccurrences): string {
   return label;
 }
 
-function DayAgendaCard({
+/** One day: its heading, any closure, then a row per class. On Rows the
+ * days stack in one card; on Grid each day is a narrow column (`compact`). */
+function DaySection({
   day,
   branches,
   onBook,
   slotActions,
+  compact = false,
 }: {
   day: DayOccurrences;
   branches: BranchResponse[];
   onBook: (target: BookingTarget) => void;
   slotActions: SlotActions | null;
+  compact?: boolean;
 }) {
   const t = useT();
   return (
-    <Card>
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 8 }}>
-        {dayHeading(day)}
-      </h2>
+    <div className="u8s-day">
+      <h2 className="u8s-day__head">{dayHeading(day)}</h2>
       <ClosedBanner day={day} branches={branches} />
       {day.entries.length === 0 ? (
-        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>{t('timetable.nothingScheduled')}</p>
+        <p className="u8s-day__empty">{compact ? '—' : t('timetable.nothingScheduled')}</p>
       ) : (
-        <div style={{ display: 'grid', gap: 8 }}>
+        <div className="u8s-entries">
           {day.entries.map((entry) => (
             <OccurrenceCard key={entryKey(entry)} entry={entry} date={day.date} branches={branches} onBook={onBook} slotActions={slotActions} />
           ))}
         </div>
       )}
-    </Card>
-  );
-}
-
-function DayColumn({
-  day,
-  branches,
-  onBook,
-  slotActions,
-}: {
-  day: DayOccurrences;
-  branches: BranchResponse[];
-  onBook: (target: BookingTarget) => void;
-  slotActions: SlotActions | null;
-}) {
-  return (
-    <div style={{ minWidth: 220, flex: '1 0 220px' }}>
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 14, marginBottom: 8 }}>
-          {dayHeading(day)}
-        </h2>
-        <ClosedBanner day={day} branches={branches} />
-        {day.entries.length === 0 ? (
-          <p style={{ color: 'var(--text-secondary)', margin: 0, fontSize: 13 }}>—</p>
-        ) : (
-          <div style={{ display: 'grid', gap: 8 }}>
-            {day.entries.map((entry) => (
-              <OccurrenceCard key={entryKey(entry)} entry={entry} date={day.date} branches={branches} onBook={onBook} slotActions={slotActions} />
-            ))}
-          </div>
-        )}
-      </Card>
     </div>
   );
 }
@@ -626,65 +596,48 @@ function MonthGrid({ days, weekStartsOn, onBook }: { days: DayOccurrences[]; wee
   const order = weekdaysFrom(weekStartsOn);
   const leadingBlanks = order.indexOf(days[0]?.weekday ?? order[0]);
   const now = new Date();
+  const todayKey = toDateKey(now);
   return (
-    <Card>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4, marginBottom: 8 }}>
-        {order.map((wd) => (
-          <div key={wd} style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'center' }}>
-            {weekdayName(wd, locale, 'short')}
-          </div>
-        ))}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-        {Array.from({ length: leadingBlanks }).map((_, i) => <div key={`blank-${i}`} />)}
-        {days.map((day) => {
-          const bookable = day.entries.flatMap((e) =>
-            e.kind === 'class' && !e.cls.cancelledAt && !e.cls.archivedAt && new Date(e.cls.endDate) > now ? [e.cls] : [],
-          );
-          return (
-            <div
-              key={day.date}
-              style={{
-                minHeight: 72,
-                border: '1px solid var(--border-subtle, #e2e2e2)',
-                borderRadius: 6,
-                padding: 4,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 4,
-              }}
-            >
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{new Date(`${day.date}T00:00:00`).getDate()}</span>
-              {day.closures.length > 0 ? (
-                <span role="note" title={day.closures.map((c) => c.reason).join(', ')} style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-danger, #b42318)' }}>
-                  {t('timetable.closures.closedShort')}
-                </span>
-              ) : null}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
-                {bookable.map((cls) => (
-                  <button
-                    key={cls.id}
-                    type="button"
-                    title={t('timetable.month.bookDotTitle', { title: cls.title, date: day.date })}
-                    aria-label={t('timetable.month.bookDotAria', { title: cls.title, date: day.date })}
-                    onClick={() => onBook({ classId: cls.id, title: cls.title, date: day.date })}
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      background: colorForSlot({ id: cls.timetableSlotId ?? cls.id }),
-                    }}
-                  />
-                ))}
+    <section className="u8s-card">
+      <div className="u8s-month">
+        <div className="u8s-month__head">
+          {order.map((wd) => (
+            <div key={wd}>{weekdayName(wd, locale, 'short')}</div>
+          ))}
+        </div>
+        <div className="u8s-month__days">
+          {Array.from({ length: leadingBlanks }).map((_, i) => <div key={`blank-${i}`} />)}
+          {days.map((day) => {
+            const bookable = day.entries.flatMap((e) =>
+              e.kind === 'class' && !e.cls.cancelledAt && !e.cls.archivedAt && new Date(e.cls.endDate) > now ? [e.cls] : [],
+            );
+            return (
+              <div key={day.date} className={'u8s-month__day' + (day.date === todayKey ? ' u8s-month__day--today' : '')}>
+                <span className="u8s-month__date">{new Date(`${day.date}T00:00:00`).getDate()}</span>
+                {day.closures.length > 0 ? (
+                  <span role="note" title={day.closures.map((c) => c.reason).join(', ')} className="u8s-month__closed">
+                    {t('timetable.closures.closedShort')}
+                  </span>
+                ) : null}
+                <div className="u8s-month__dots">
+                  {bookable.map((cls) => (
+                    <button
+                      key={cls.id}
+                      type="button"
+                      className="u8s-dot"
+                      title={t('timetable.month.bookDotTitle', { title: cls.title, date: day.date })}
+                      aria-label={t('timetable.month.bookDotAria', { title: cls.title, date: day.date })}
+                      onClick={() => onBook({ classId: cls.id, title: cls.title, date: day.date })}
+                      style={{ '--u8s-dot': colorForSlot({ id: cls.timetableSlotId ?? cls.id }) } as React.CSSProperties}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </Card>
+    </section>
   );
 }
 
