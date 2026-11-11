@@ -96,16 +96,18 @@ test("a job-written notification is shown in the picked language; a School's bro
 
   const expectedTitle = ptBRServerKeys.notifications!.spotOpenedTitle!;
   const expectedBody = ptBRServerKeys.notifications!.spotOpenedBody!.replace('{class}', 'Kids Judo');
+  // The inbox's rows (the new look's list, Decision 453).
+  const inbox = page.getByRole('region', { name: 'Notificações', exact: true });
   // Two rows carry this title: the job's own, and the child's copy below.
-  await expect(page.getByRole('cell', { name: expectedTitle, exact: true })).toHaveCount(2);
-  await expect(page.getByRole('cell', { name: expectedBody, exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'A spot opened up', exact: true })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Gym closed Friday.', exact: true })).toBeVisible();
+  await expect(inbox.getByText(expectedTitle, { exact: true })).toHaveCount(2);
+  await expect(inbox.getByText(expectedBody, { exact: true })).toBeVisible();
+  await expect(inbox.getByText('A spot opened up', { exact: true })).toBeVisible();
+  await expect(inbox.getByText('Gym closed Friday.', { exact: true })).toBeVisible();
   const childBody = ptBRServerKeys.notifications!.forChild!.replace('{name}', 'Mia').replace(
     '{body}',
     ptBRServerKeys.notifications!.spotOpenedBody!.replace('{class}', 'Teen Judo'),
   );
-  await expect(page.getByRole('cell', { name: childBody, exact: true })).toBeVisible();
+  await expect(inbox.getByText(childBody, { exact: true })).toBeVisible();
 });
 
 test("the API's error messages are shown in the picked language, and an untranslated one is never shown in English", async ({ page }) => {
