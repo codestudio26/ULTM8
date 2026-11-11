@@ -819,3 +819,9 @@
 [data-look='redesign'] .u8n-inspector:has(> .u8t-panel-empty) {
   display: none;
 }
+
+/* A person's photo in the Edit instructor form is a circle, like every
+ * avatar (DESIGN.md → "Avatars"); logos and banners elsewhere keep theirs. */
+[data-look='redesign'] .u8t-person-photo .ultm8-photo-upload__preview {
+  border-radius: 50%;
+}
