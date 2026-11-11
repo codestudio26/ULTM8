@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ErrorBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
@@ -135,10 +135,11 @@ export function pickRow(selected: boolean, pick: () => void) {
 }
 
 /** An on/off switch (DESIGN.md → "One accent: mint": pale-green track when
- * on), named by `label`. */
-function TeamSwitch({ label, checked, disabled, onChange }: { label: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
+ * on), named by its row's text (`labelledBy`). The Staff page's tables name
+ * their tick boxes "{name} can …", so the two never share a name. */
+function TeamSwitch({ labelledBy, checked, disabled, onChange }: { labelledBy: string; checked: boolean; disabled?: boolean; onChange: (on: boolean) => void }) {
   return (
-    <button type="button" role="switch" className="u8t-switch" aria-checked={checked} aria-label={label} disabled={disabled} onClick={() => onChange(!checked)}>
+    <button type="button" role="switch" className="u8t-switch" aria-checked={checked} aria-labelledby={labelledBy} disabled={disabled} onClick={() => onChange(!checked)}>
       <span aria-hidden="true" />
     </button>
   );
@@ -150,12 +151,12 @@ type ChargePending = { canCreateCharges: boolean; canCancelCharges: boolean };
  * "Front desk and money" for one person (DESIGN.md → "Team member full
  * page"): Can create charges and Can cancel charges (Decisions 303, 338) and
  * Can start open mat sessions (Decision 386), the same switches and saves as
- * the Staff page's former per-person tables. Only Branch Staff and coaches
+ * the Staff page's everyone-at-once tables. Only Branch Staff and coaches
  * have them (the owner always can), so it shows nothing for anyone else.
  * Only the main owner changes them (Decision 448 item 6); a co-owner sees
  * them locked.
  */
-export function FrontDeskSwitches({ schoolId, userId, name, variant = 'panel' }: { schoolId: string; userId: string; name: string; variant?: 'panel' | 'card' }) {
+export function FrontDeskSwitches({ schoolId, userId, variant = 'panel' }: { schoolId: string; userId: string; variant?: 'panel' | 'card' }) {
   const t = useT();
   const isMainOwner = useIsMainOwner(schoolId);
   const locked = isMainOwner !== true;
@@ -167,6 +168,9 @@ export function FrontDeskSwitches({ schoolId, userId, name, variant = 'panel' }:
   // Shows the new state at once; it goes back if saving fails.
   const [chargeSaving, setChargeSaving] = useState<ChargePending | null>(null);
   const [openMatSaving, setOpenMatSaving] = useState<boolean | null>(null);
+  // The panel shows twice in the page (right-hand, and under the list on a
+  // phone), so each copy's ids are its own.
+  const idBase = `u8t-fd-${useId().replace(/:/g, '')}`;
 
   const charge = charges.data?.items.find((p) => p.userId === userId);
   const mat = openMat.data?.items.find((p) => p.userId === userId);
@@ -208,18 +212,18 @@ export function FrontDeskSwitches({ schoolId, userId, name, variant = 'panel' }:
       {chargeNow ? (
         <>
           <div className="u8t-switch-row">
-            <span>{t('charges.permissions.columnCreate')}</span>
+            <span id={`${idBase}-create`}>{t('charges.permissions.columnCreate')}</span>
             <TeamSwitch
-              label={t('charges.permissions.createLabel', { name })}
+              labelledBy={`${idBase}-create`}
               checked={chargeNow.canCreateCharges}
               disabled={locked || chargeSaving !== null}
               onChange={(on) => void toggleCharge({ ...chargeNow, canCreateCharges: on })}
             />
           </div>
           <div className="u8t-switch-row">
-            <span>{t('charges.permissions.columnCancel')}</span>
+            <span id={`${idBase}-cancel`}>{t('charges.permissions.columnCancel')}</span>
             <TeamSwitch
-              label={t('charges.permissions.cancelLabel', { name })}
+              labelledBy={`${idBase}-cancel`}
               checked={chargeNow.canCancelCharges}
               disabled={locked || chargeSaving !== null}
               onChange={(on) => void toggleCharge({ ...chargeNow, canCancelCharges: on })}
@@ -229,9 +233,9 @@ export function FrontDeskSwitches({ schoolId, userId, name, variant = 'panel' }:
       ) : null}
       {mat ? (
         <div className="u8t-switch-row">
-          <span>{t('frontDesk.openMatPermissions.columnAllowed')}</span>
+          <span id={`${idBase}-openmat`}>{t('frontDesk.openMatPermissions.columnAllowed')}</span>
           <TeamSwitch
-            label={t('frontDesk.openMatPermissions.checkboxLabel', { name })}
+            labelledBy={`${idBase}-openmat`}
             checked={openMatSaving ?? mat.canStartOpenMat}
             disabled={locked || openMatSaving !== null}
             onChange={(on) => void toggleOpenMat(on)}

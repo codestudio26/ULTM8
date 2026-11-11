@@ -324,7 +324,7 @@ export function InstructorDetailPage() {
                 </TeamCard>
               ) : null}
 
-              {schoolId ? <FrontDeskSwitches schoolId={schoolId} userId={instructor.userId} name={name} variant="card" /> : null}
+              {schoolId ? <FrontDeskSwitches schoolId={schoolId} userId={instructor.userId} variant="card" /> : null}
 
               <TeamCard title={t('instructors.team.roles')}>
                 {myRoles.length > 0 ? (

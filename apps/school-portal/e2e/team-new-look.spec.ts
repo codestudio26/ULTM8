@@ -59,12 +59,14 @@ test('Staff: the panel shows the picked person\'s belts and switches, never thei
   await list.getByRole('button', { name: 'Joana Reis', exact: true }).click();
   await expect(panel.getByText('Joana Reis')).toBeVisible();
   await expect(panel.getByText('Blue 0')).toHaveCount(0);
-  const create = panel.getByRole('switch', { name: 'Joana Reis can create charges' });
+  const create = panel.getByRole('switch', { name: 'Can create charges' });
   await expect(create).toHaveAttribute('aria-checked', 'true');
-  const openMat = panel.getByRole('switch', { name: 'Joana Reis can start open mat sessions' });
+  const openMat = panel.getByRole('switch', { name: 'Can start open mat sessions' });
   await openMat.click();
   await expect(openMat).toHaveAttribute('aria-checked', 'true');
   await expect.poll(async () => (await db.staffPermission.findFirst({ where: { schoolId: s.schoolId, userId: joana.id } }))?.canStartOpenMat).toBe(true);
+  // The everyone-at-once table further down shows the same switch, now on.
+  await expect(page.getByLabel('Joana Reis can start open mat sessions')).toBeChecked();
 
   await list.getByRole('link', { name: 'Open full page: Ana Pereira' }).click();
   await expect(page).toHaveURL(new RegExp(`/instructors/${profile.id}$`));
@@ -79,7 +81,7 @@ test('a co-owner sees the switches locked', async ({ page }) => {
   await list.getByRole('button', { name: 'Joana Reis', exact: true }).click();
   const panel = page.getByRole('complementary', { name: 'Team member' });
   await expect(panel.getByText("Only the account's main owner can change these switches.")).toBeVisible();
-  await expect(panel.getByRole('switch', { name: 'Joana Reis can create charges' })).toBeDisabled();
+  await expect(panel.getByRole('switch', { name: 'Can create charges' })).toBeDisabled();
 });
 
 test('Instructors: the panel has Front desk and money and Grading permissions; a belt row picks the person', async ({ page }) => {
@@ -92,7 +94,7 @@ test('Instructors: the panel has Front desk and money and Grading permissions; a
   const panel = page.getByRole('complementary', { name: 'Team member' });
   await page.getByRole('button', { name: 'Rafael Souza', exact: true }).click();
   await expect(panel.getByText('Rafael Souza')).toBeVisible();
-  await expect(panel.getByRole('switch', { name: 'Rafael Souza can create charges' })).toBeVisible();
+  await expect(panel.getByRole('switch', { name: 'Can create charges' })).toBeVisible();
   await expect(panel.getByRole('link', { name: 'Grading permissions ›' })).toBeVisible();
 
   const belts = page.locator('.u8t-card', { has: page.getByRole('heading', { name: "Instructors' belts" }) });
@@ -153,7 +155,7 @@ test.describe('phone', () => {
     const list = page.locator('.u8t-card', { has: page.getByRole('heading', { name: 'Your staff' }) });
     await list.getByRole('button', { name: 'Joana Reis', exact: true }).click();
     const panel = page.getByRole('complementary', { name: 'Team member' });
-    await expect(panel.getByRole('switch', { name: 'Joana Reis can create charges' })).toBeVisible();
+    await expect(panel.getByRole('switch', { name: 'Can create charges' })).toBeVisible();
     // Measured in one go, so the scroll that brings the panel into view can't skew it.
     const tops = await page.evaluate(() => {
       const top = (el: Element | null | undefined) => (el ? el.getBoundingClientRect().top : NaN);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
 import { TeamCard } from '../team/TeamParts';
-import { TeamSelect } from '../team/TeamSelect';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
@@ -101,7 +101,7 @@ export function StaffActivitySection({ schoolId }: { schoolId: string }) {
   return (
     <TeamCard title={t('roleGrants.activity.heading')} intro={t('roleGrants.activity.intro')}>
       <div className="u8t-toolbar">
-        <TeamSelect
+        <NewLookSelect
           id="staff-activity-person"
           label={t('roleGrants.activity.personLabel')}
           value={userId}

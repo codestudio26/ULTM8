@@ -27,7 +27,7 @@ import { useIsMainOwner } from '../roleGrants/roleGrantQueries';
 import { InstructorBeltsSection } from './InstructorBeltsSection';
 import { useT } from '../i18n/I18nProvider';
 import { NewLookPage } from '../layout/NewLookPage';
-import { TeamSelect } from '../team/TeamSelect';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { FrontDeskSwitches, OpenFullPageLink, TeamAvatar, TeamCard, TeamHeader, TeamPanelWho, TeamSearch, pickRow, showPanel, teamPanel } from '../team/TeamParts';
 
 /** Up to 3 specialization badges, then a "+N" overflow badge — keeps a long
@@ -139,7 +139,7 @@ export function InstructorsPage() {
   const panel = teamPanel(selected ? (
     <>
       <TeamPanelWho firstName={selected.firstName} surname={selected.surname} photoUrl={selected.photoUrl} name={nameOf(selected)} />
-      <FrontDeskSwitches schoolId={schoolId} userId={selected.userId} name={nameOf(selected)} />
+      <FrontDeskSwitches schoolId={schoolId} userId={selected.userId} />
       <Link className="u8t-pill u8t-panel-button" to="/grading/permissions">
         {t('grading.settings.who.link')}
       </Link>
@@ -179,7 +179,7 @@ export function InstructorsPage() {
         <div className="u8t-toolbar">
           <TeamSearch id="instructors-search" label={t('instructors.filters.search')} placeholder={t('instructors.filters.searchPlaceholder')} value={search} onChange={setSearch} />
           {branches.length > 0 ? (
-            <TeamSelect
+            <NewLookSelect
               id="instructors-branch-filter"
               label={t('instructors.filters.branch')}
               value={branchFilter}
@@ -188,7 +188,7 @@ export function InstructorsPage() {
             />
           ) : null}
           {disciplines.length > 0 ? (
-            <TeamSelect
+            <NewLookSelect
               id="instructors-style-filter"
               label={t('instructors.filters.style')}
               value={styleFilter}
@@ -196,7 +196,7 @@ export function InstructorsPage() {
               options={[{ value: '', label: t('instructors.filters.any') }, ...disciplines.map((d) => ({ value: d.id, label: d.name }))]}
             />
           ) : null}
-          <TeamSelect
+          <NewLookSelect
             id="instructors-status-filter"
             label={t('instructors.filters.status')}
             value={statusFilter}

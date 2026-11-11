@@ -20,6 +20,8 @@ import {
 } from './roleGrantQueries';
 import { StaffListSection } from './StaffListSection';
 import { CoachInvitesSection } from './CoachInvitesSection';
+import { OpenMatPermissions } from '../frontdesk/OpenMatPermissions';
+import { ChargePermissions } from '../charges/ChargePermissions';
 import { StaffActivitySection } from './StaffActivitySection';
 import { AddStaffManuallyModal } from './AddStaffManuallyModal';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
@@ -210,7 +212,7 @@ export function StaffPage() {
       <>
         <TeamPanelWho firstName={selected.firstName} surname={selected.surname} photoUrl={selected.profilePhotoUrl ?? null} name={selected.displayName ?? `${selected.firstName} ${selected.surname}`.trim()} />
         <PersonBelts schoolId={schoolId} userId={selected.userId} />
-        <FrontDeskSwitches schoolId={schoolId} userId={selected.userId} name={`${selected.firstName} ${selected.surname}`.trim()} />
+        <FrontDeskSwitches schoolId={schoolId} userId={selected.userId} />
       </>
     ) : null,
     t('instructors.team.panelLabel'),
@@ -337,6 +339,10 @@ export function StaffPage() {
           </TeamCard>
 
           <CoachInvitesSection schoolId={schoolId} canManage={isMainOwner} />
+          {/* Decision 386: who may start an open mat from the Check-in page. */}
+          <OpenMatPermissions schoolId={schoolId} />
+          {/* Decisions 303, 338: who may create and cancel charges. */}
+          <ChargePermissions schoolId={schoolId} />
           {/* Decision 408: who changed what on this page. */}
           <StaffActivitySection schoolId={schoolId} />
         </div>

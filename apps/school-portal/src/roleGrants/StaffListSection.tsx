@@ -9,7 +9,7 @@ import { formatLocale } from '../i18n/format';
 import { guessDefaultCountry } from '../lib/phoneCountry';
 import { useT } from '../i18n/I18nProvider';
 import { RemoveFromSchoolModal } from './RemoveFromSchoolModal';
-import { TeamSelect } from '../team/TeamSelect';
+import { NewLookSelect } from '../layout/NewLookSelect';
 import { OpenFullPageLink, TeamAvatar, TeamCard, TeamSearch, pickRow, showPanel } from '../team/TeamParts';
 import { StaffAccessModal, presetOf } from './StaffAccessModal';
 import { useHandOverMainOwner, usePauseStaff, useStaffList, useUnpauseStaff, useUpdateStaffDetails, type StaffListFilters, type StaffMember, type StaffRoleEntry } from './roleGrantQueries';
@@ -201,7 +201,7 @@ export function StaffListSection({
     >
       <div className="u8t-toolbar">
         <TeamSearch id="staff-search" label={t('roleGrants.list.search')} placeholder={t('roleGrants.list.searchPlaceholder')} value={search} onChange={setSearch} />
-        <TeamSelect
+        <NewLookSelect
           id="staff-role-filter"
           label={t('roleGrants.list.role')}
           value={role}
@@ -214,7 +214,7 @@ export function StaffListSection({
           ]}
         />
         {branches.length > 0 ? (
-          <TeamSelect
+          <NewLookSelect
             id="staff-branch-filter"
             label={t('roleGrants.list.branch')}
             value={branchId}
@@ -223,7 +223,7 @@ export function StaffListSection({
           />
         ) : null}
         {readOnly ? null : (
-          <TeamSelect
+          <NewLookSelect
             id="staff-status-filter"
             label={t('roleGrants.list.status')}
             value={status}

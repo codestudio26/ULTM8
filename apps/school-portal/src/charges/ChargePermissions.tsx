@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Card, Checkbox, EmptyState, ErrorBanner, Spinner, Table } from '@ultm8/ui';
+import { Checkbox, EmptyState, ErrorBanner, Spinner } from '@ultm8/ui';
+import { TeamCard } from '../team/TeamParts';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { useChargePermissions, useSetChargePermission, type ChargePermission } from './chargeQueries';
@@ -11,7 +12,9 @@ type Pending = { canCreateCharges: boolean; canCancelCharges: boolean };
  * "Can create charges" (Decision 303 item 3: on by default for Branch Staff,
  * off for coaches) and "Can cancel charges" (Decision 338 item 1: off for
  * everyone), per Branch Staff member or coach, as "Can start open mat
- * sessions" is (Decision 386). The owner always can do both.
+ * sessions" is (Decision 386). The owner always can do both. A new-look card
+ * on the Staff page (Decision 453); each person's own switches are also in
+ * the page's Team member panel.
  */
 export function ChargePermissions({ schoolId }: { schoolId: string }) {
   const t = useT();
@@ -38,52 +41,61 @@ export function ChargePermissions({ schoolId }: { schoolId: string }) {
 
   const current = (p: ChargePermission): Pending => saving[p.userId] ?? { canCreateCharges: p.canCreateCharges, canCancelCharges: p.canCancelCharges };
 
+  const rows = staff.data?.items ?? [];
   return (
-    <Card className="ultm8-field">
-      <h2 className="ultm8-page-header__title" style={{ fontSize: 18 }}>
-        {t('charges.permissions.heading')}
-      </h2>
-      <p style={{ marginTop: 0 }}>{t('charges.permissions.intro')}</p>
-      {isMainOwner === false ? <p className="ultm8-field__hint">{t('roleGrants.staff.switchesMainOwnerOnly')}</p> : null}
-      {error ? <ErrorBanner message={error} /> : null}
+    <TeamCard title={t('charges.permissions.heading')} intro={t('charges.permissions.intro')}>
+      {isMainOwner === false || error ? (
+        <div className="u8t-banners">
+          {isMainOwner === false ? <p className="u8t-hint" style={{ marginTop: 0 }}>{t('roleGrants.staff.switchesMainOwnerOnly')}</p> : null}
+          {error ? <ErrorBanner message={error} /> : null}
+        </div>
+      ) : null}
       {staff.isLoading ? (
-        <Spinner />
+        <div className="u8t-state">
+          <Spinner />
+        </div>
       ) : staff.error ? (
-        <ErrorBanner message={staff.error instanceof ApiError ? staff.error.message : t('charges.permissions.loadFailed')} />
-      ) : (staff.data?.items ?? []).length === 0 ? (
-        <EmptyState title={t('charges.permissions.emptyTitle')} description={t('charges.permissions.emptyDescription')} />
+        <div className="u8t-state">
+          <ErrorBanner message={staff.error instanceof ApiError ? staff.error.message : t('charges.permissions.loadFailed')} />
+        </div>
+      ) : rows.length === 0 ? (
+        <div className="u8t-state">
+          <EmptyState title={t('charges.permissions.emptyTitle')} description={t('charges.permissions.emptyDescription')} />
+        </div>
       ) : (
-        <Table<ChargePermission & { id: string }>
-          rows={staff.data!.items.map((p) => ({ ...p, id: p.userId }))}
-          columns={[
-            { key: 'name', header: t('charges.permissions.columnName'), render: (p) => `${p.firstName} ${p.surname}` },
-            {
-              key: 'create',
-              header: t('charges.permissions.columnCreate'),
-              render: (p) => (
-                <Checkbox
-                  label={t('charges.permissions.createLabel', { name: `${p.firstName} ${p.surname}` })}
-                  checked={current(p).canCreateCharges}
-                  disabled={locked || p.userId in saving}
-                  onChange={(e) => toggle(p, { ...current(p), canCreateCharges: e.target.checked })}
-                />
-              ),
-            },
-            {
-              key: 'cancel',
-              header: t('charges.permissions.columnCancel'),
-              render: (p) => (
-                <Checkbox
-                  label={t('charges.permissions.cancelLabel', { name: `${p.firstName} ${p.surname}` })}
-                  checked={current(p).canCancelCharges}
-                  disabled={locked || p.userId in saving}
-                  onChange={(e) => toggle(p, { ...current(p), canCancelCharges: e.target.checked })}
-                />
-              ),
-            },
-          ]}
-        />
+        <table className="u8t-table">
+          <thead>
+            <tr>
+              <th scope="col">{t('charges.permissions.columnName')}</th>
+              <th scope="col">{t('charges.permissions.columnCreate')}</th>
+              <th scope="col">{t('charges.permissions.columnCancel')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((p) => (
+              <tr key={p.userId}>
+                <td className="u8t-c-main">{`${p.firstName} ${p.surname}`}</td>
+                <td>
+                  <Checkbox
+                    label={t('charges.permissions.createLabel', { name: `${p.firstName} ${p.surname}` })}
+                    checked={current(p).canCreateCharges}
+                    disabled={locked || p.userId in saving}
+                    onChange={(e) => toggle(p, { ...current(p), canCreateCharges: e.target.checked })}
+                  />
+                </td>
+                <td>
+                  <Checkbox
+                    label={t('charges.permissions.cancelLabel', { name: `${p.firstName} ${p.surname}` })}
+                    checked={current(p).canCancelCharges}
+                    disabled={locked || p.userId in saving}
+                    onChange={(e) => toggle(p, { ...current(p), canCancelCharges: e.target.checked })}
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       )}
-    </Card>
+    </TeamCard>
   );
 }
