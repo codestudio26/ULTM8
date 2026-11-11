@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextArea, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, TextArea, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT, type TranslationKey } from '../i18n/I18nProvider';
 import { formatLocale } from '../i18n/format';
 import { branchSelectOptions, type BranchResponse } from '../branches/branchQueries';
 import type { ClassResponse } from '../classes/classQueries';
 import type { BroadcastNotificationInput, BroadcastResponse } from './notificationQueries';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 type AudienceScope = BroadcastNotificationInput['audience'];
 type ClassGroup = NonNullable<BroadcastNotificationInput['classAudience']>[number];
@@ -114,39 +115,44 @@ export function BroadcastNotificationModal({
         <Field label={t('notifications.broadcastModal.messageLabel')} htmlFor="broadcast-body">
           <TextArea id="broadcast-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={2000} rows={5} />
         </Field>
-        <Field label={t('notifications.broadcastModal.audienceLabel')} htmlFor="broadcast-audience" hint={t('notifications.broadcastModal.audienceHint')}>
-          <SelectField
+        {/* The new look's own drop-downs (DESIGN.md → "Drop-downs"), never a
+            browser <select>. An empty Branch/Class is refused above, before
+            sending, with its own message. */}
+        <div className="ultm8-field">
+          <NewLookSelect
             id="broadcast-audience"
+            label={t('notifications.broadcastModal.audienceLabel')}
             value={audience}
-            onChange={(e) => setAudience(e.target.value as AudienceScope)}
+            onChange={(v) => setAudience(v as AudienceScope)}
             options={[
               { value: 'ALL', label: t('notifications.broadcastModal.audienceAll') },
               { value: 'BRANCH', label: t('notifications.broadcastModal.audienceBranch') },
               { value: 'CLASS', label: t('notifications.broadcastModal.audienceClass') },
             ]}
           />
-        </Field>
+          <span className="ultm8-field__hint">{t('notifications.broadcastModal.audienceHint')}</span>
+        </div>
         {audience === 'BRANCH' ? (
-          <Field label={t('notifications.broadcastModal.branchLabel')} htmlFor="broadcast-branch">
-            <SelectField
+          <div className="ultm8-field">
+            <NewLookSelect
               id="broadcast-branch"
-              required
+              label={t('notifications.broadcastModal.branchLabel')}
               value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
+              onChange={setBranchId}
               options={[{ value: '', label: t('notifications.broadcastModal.branchPlaceholder') }, ...branchSelectOptions(branches, t('branches.archivedBadge'))]}
             />
-          </Field>
+          </div>
         ) : null}
         {audience === 'CLASS' ? (
-          <Field label={t('notifications.broadcastModal.classLabel')} htmlFor="broadcast-class">
-            <SelectField
+          <div className="ultm8-field">
+            <NewLookSelect
               id="broadcast-class"
-              required
+              label={t('notifications.broadcastModal.classLabel')}
               value={classId}
-              onChange={(e) => setClassId(e.target.value)}
+              onChange={setClassId}
               options={[{ value: '', label: t('notifications.broadcastModal.classPlaceholder') }, ...classes.map((c) => ({ value: c.id, label: classLabel(c) }))]}
             />
-          </Field>
+          </div>
         ) : null}
         {audience === 'CLASS' ? (
           <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
