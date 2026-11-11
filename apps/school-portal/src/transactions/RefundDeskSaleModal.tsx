@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Checkbox, ErrorBanner, Field, Modal, TextArea } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, TextArea } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
 import { formatMoney } from '../lib/money';
@@ -57,11 +57,11 @@ export function RefundDeskSaleModal({
     <Modal title={t('transactions.refund.title')} onClose={onClose}>
       <form onSubmit={confirm} data-testid="refund-desk-sale-form">
         {error ? <ErrorBanner message={error} /> : null}
-        <p style={{ margin: '0 0 16px' }}>
+        <p>
           {t('transactions.refund.body', { student: studentName, plan: payment.planTitle, amount: formatMoney(left, payment.currency) })}
         </p>
         {kept > 0 ? (
-          <p style={{ margin: '0 0 16px' }} data-testid="refund-joining-fee-kept">
+          <p data-testid="refund-joining-fee-kept">
             {t('transactions.refund.joiningFeeKept', { fee: formatMoney(kept, payment.currency) })}
           </p>
         ) : null}
@@ -83,14 +83,14 @@ export function RefundDeskSaleModal({
         <p className="ultm8-field__hint" style={{ margin: '4px 0 0' }}>
           {t('transactions.refund.endMembershipHint')}
         </p>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('transactions.back')}
           </Button>
           <Button type="submit" variant="danger" loading={refund.isPending}>
             {t('transactions.refund.confirm')}
           </Button>
-        </div>
+        </ModalActions>
       </form>
     </Modal>
   );

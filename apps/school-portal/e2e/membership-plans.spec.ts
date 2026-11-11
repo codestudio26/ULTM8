@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { expect, test } from '@playwright/test';
 import { addPerson, cleanup, db, seedGradingSchool, signIn, type GradingSchool } from './fixtures';
+import { pickOption } from './team-helpers';
 
 /**
  * Create/Update Membership Plan, rebuilt as a dedicated full page (first of
@@ -149,7 +150,7 @@ test('the new-member billing control is hidden for non-SUBSCRIPTION plan types',
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.getByRole('button', { name: '1. Basics' }).click();
-  await page.getByLabel('Type').selectOption('CLASS_PACK');
+  await pickOption(page, 'Type', 'Class Pack');
   await page.getByRole('button', { name: '2. Pricing & Access' }).click();
   await expect(page.getByText('New member billing')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Fresh cycle from signup day' })).toHaveCount(0);
@@ -158,7 +159,7 @@ test('the new-member billing control is hidden for non-SUBSCRIPTION plan types',
 test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) => {
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
-  await page.getByLabel('Type').selectOption('CLASS_PACK');
+  await pickOption(page, 'Type', 'Class Pack');
   await page.getByLabel('Title').fill('Open Mat Pack');
   await page.getByRole('button', { name: 'Next' }).click();
 
@@ -167,7 +168,7 @@ test('add a Class Pack scoped to a Class, then duplicate it', async ({ page }) =
   // one occurrence; the server rejects anything higher) — asserted here too,
   // since this is exactly the bug the stress test found and fixed.
   await page.getByLabel('Price').fill('20');
-  await page.getByLabel('Scoped to Class').selectOption({ label: 'Open Mat' });
+  await pickOption(page, 'Scoped to Class', 'Open Mat');
   await expect(page.getByLabel(/Classes included/)).toHaveValue('1');
 
   await page.getByRole('button', { name: '5. Visibility' }).click();
@@ -360,7 +361,7 @@ test('editing a SUBSCRIPTION plan price with an active subscriber shows the requ
 test('a Trial needs a length, checked on Save from any step (M3); the School picks any length (Decision 410)', async ({ page }) => {
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
-  await page.getByLabel('Type').selectOption('TRIAL_MEMBERSHIP');
+  await pickOption(page, 'Type', 'Trial Membership');
   await page.getByLabel('Title').fill('Free trial');
   // Straight to Save without ever opening the Pricing step.
   await page.getByRole('button', { name: '5. Visibility' }).click();
@@ -379,14 +380,14 @@ test('a Trial needs a length, checked on Save from any step (M3); the School pic
 test('a Class Pack needs its class count and a Weekly Pass its expiry (M4)', async ({ page }) => {
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
-  await page.getByLabel('Type').selectOption('CLASS_PACK');
+  await pickOption(page, 'Type', 'Class Pack');
   await page.getByLabel('Title').fill('Pack without count');
   await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('A Class Pack needs the number of classes it includes.')).toBeVisible();
 
   await page.getByRole('button', { name: '1. Basics' }).click();
-  await page.getByLabel('Type').selectOption('WEEKLY_PASS');
+  await pickOption(page, 'Type', 'Weekly Pass');
   await page.getByRole('button', { name: '5. Visibility' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText(/A Weekly Pass needs an expiry/)).toBeVisible();
@@ -395,7 +396,7 @@ test('a Class Pack needs its class count and a Weekly Pass its expiry (M4)', asy
 test('prices are typed in pounds and pence; text that is not an amount is refused (Q1)', async ({ page }) => {
   await page.goto('/membership-plans');
   await page.getByRole('button', { name: 'Add plan' }).click();
-  await page.getByLabel('Type').selectOption('CLASS_PACK');
+  await pickOption(page, 'Type', 'Class Pack');
   await page.getByLabel('Title').fill('Pounds pack');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByLabel(/Classes included/).fill('5');

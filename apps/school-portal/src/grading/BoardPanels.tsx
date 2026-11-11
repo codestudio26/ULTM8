@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, ErrorBanner, Modal, Spinner } from '@ultm8/ui';
+import { Badge, Button, Card, ErrorBanner, Modal, ModalActions, Spinner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { BeltChip } from './BeltChip';
 import type { Rung } from './ladder';
@@ -12,6 +12,7 @@ import { useT } from '../i18n/I18nProvider';
 import { feeRankName } from './feeRank';
 import { eventRankDisplay, historyTypeLabel } from './historyLabels';
 import { formatHours } from './hours';
+import './gradingDialogs.css';
 
 export const fullName = (i: { firstName: string; surname: string }) => `${i.firstName} ${i.surname}`.trim();
 
@@ -418,21 +419,25 @@ export function DecideDialog({
   const toName = to?.name ?? rank;
   return (
     <Modal title={t('grading.board.decide.title', { name })} onClose={onClose}>
-      <p style={{ color: '#2b4f80', marginTop: 0 }}>{t('grading.board.decide.cancelled', { rank: toName })}</p>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-        {from ? <BeltChip rung={from} /> : null}
-        <span>{from?.name}</span>
+      <p className="u8gd-decide__cancelled">{t('grading.board.decide.cancelled', { rank: toName })}</p>
+      <div className="u8gd-decide__ranks">
+        <span className="u8gd-decide__rank">
+          {from ? <BeltChip rung={from} /> : null}
+          <span>{from?.name}</span>
+        </span>
         <span aria-hidden="true">→</span>
-        {to ? <BeltChip rung={to} /> : null}
-        <span>{toName}</span>
+        <span className="u8gd-decide__rank">
+          {to ? <BeltChip rung={to} /> : null}
+          <span>{toName}</span>
+        </span>
       </div>
       <p className="ultm8-field__hint">{t('grading.board.decide.explanation', { name: firstName, rank: toName })}</p>
-      <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('grading.board.decide.notNow')}
         </Button>
         {canPromote ? <Button onClick={onPromote}>{t('grading.board.fee.promoteTo', { rank: toName })}</Button> : null}
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, SuccessBanner, Table } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Modal, ModalActions, Spinner, SuccessBanner, Table } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useAuth, useCoachSchoolId, useOwnedSchoolId } from '../auth/AuthContext';
 import { formatMoney } from '../lib/money';
@@ -29,6 +29,7 @@ import { offersPix, useDeskMethods } from '../lib/deskMethods';
 import { JoiningFeeNotice, useDeskTotal } from '../membershipPlans/JoiningFeeNotice';
 import { BillingCard, BillingDate, BillingMore, BillingPage, BillingSelect, BillingStat, BillingStats } from '../billing/BillingLook';
 import { NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
 
 /** How a desk payment was taken (Decision 348's desk methods). */
 type DeskMethod = 'CASH' | 'BANK_TRANSFER' | 'PIX' | 'CARD_TERMINAL';
@@ -92,15 +93,15 @@ function MarkPaidDialog({ row, schoolId, onClose }: { row: TransactionResponse; 
   return (
     <Modal title={t('transactions.markPaidTitle')} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ margin: '0 0 16px' }}>{t('transactions.markPaidBody', vars)}</p>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+      <p>{t('transactions.markPaidBody', vars)}</p>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('transactions.back')}
         </Button>
         <Button variant="primary" loading={settle.isPending} onClick={handleConfirm}>
           {t('transactions.markPaid')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }
@@ -195,45 +196,47 @@ function RecordPaymentDialog({ schoolId, onClose, onRecorded }: { schoolId: stri
   return (
     <Modal title={t('transactions.recordTitle')} onClose={onClose}>
       {error ? <ErrorBanner message={error} /> : null}
-      <p style={{ margin: '0 0 16px' }}>{t(methods.includes('PIX') ? 'transactions.recordBodyPix' : 'transactions.recordBody')}</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <Field label={t('transactions.recordStudent')} htmlFor="record-student">
-          <SelectField
-            id="record-student"
-            value={studentId}
-            onChange={(e) => setStudentId(e.target.value)}
-            options={[{ value: '', label: t('transactions.recordPick') }, ...students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() }))]}
-          />
-        </Field>
-        <Field label={t('transactions.recordPlan')} htmlFor="record-plan" hint={plans.length === 0 ? t('transactions.recordNoPlans') : undefined}>
-          <SelectField
-            id="record-plan"
-            value={planId}
-            onChange={(e) => setPlanId(e.target.value)}
-            options={[
-              { value: '', label: t('transactions.recordPick') },
-              ...plans.map((p) => ({ value: p.id, label: `${p.title} (${formatMoney(p.price, p.currency ?? null)})` })),
-            ]}
-          />
-        </Field>
-        {plan ? <JoiningFeeNotice planId={plan.id} studentId={studentId || null} price={plan.price} currency={plan.currency ?? null} /> : null}
-        <Field label={t('transactions.columnMethod')} htmlFor="record-method">
-          <SelectField
-            id="record-method"
-            value={method}
-            onChange={(e) => setMethod(e.target.value as DeskMethod)}
-            options={methods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
-          />
-        </Field>
+      <p>{t(methods.includes('PIX') ? 'transactions.recordBodyPix' : 'transactions.recordBody')}</p>
+      <div className="u8n-dd-field">
+        <NewLookSelect
+          id="record-student"
+          label={t('transactions.recordStudent')}
+          value={studentId}
+          onChange={setStudentId}
+          options={[{ value: '', label: t('transactions.recordPick') }, ...students.map((s) => ({ value: s.id, label: `${s.firstName} ${s.surname}`.trim() }))]}
+        />
       </div>
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+      <div className="u8n-dd-field">
+        <NewLookSelect
+          id="record-plan"
+          label={t('transactions.recordPlan')}
+          value={planId}
+          onChange={setPlanId}
+          options={[
+            { value: '', label: t('transactions.recordPick') },
+            ...plans.map((p) => ({ value: p.id, label: `${p.title} (${formatMoney(p.price, p.currency ?? null)})` })),
+          ]}
+        />
+        {plans.length === 0 ? <span className="ultm8-field__hint u8n-dd-field__hint">{t('transactions.recordNoPlans')}</span> : null}
+      </div>
+      {plan ? <JoiningFeeNotice planId={plan.id} studentId={studentId || null} price={plan.price} currency={plan.currency ?? null} /> : null}
+      <div className="u8n-dd-field">
+        <NewLookSelect
+          id="record-method"
+          label={t('transactions.columnMethod')}
+          value={method}
+          onChange={(v) => setMethod(v as DeskMethod)}
+          options={methods.map((m) => ({ value: m, label: t(PAYMENT_METHOD_LABELS[m]) }))}
+        />
+      </div>
+      <ModalActions>
         <Button variant="secondary" onClick={onClose}>
           {t('transactions.back')}
         </Button>
         <Button disabled={!studentId || !plan} loading={record.isPending} onClick={handleSave}>
           {plan ? t('transactions.recordSave', { amount: formatMoney(deskTotal, plan.currency ?? null) }) : t('transactions.recordSaveNoAmount')}
         </Button>
-      </div>
+      </ModalActions>
     </Modal>
   );
 }

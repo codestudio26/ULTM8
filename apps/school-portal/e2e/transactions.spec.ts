@@ -319,9 +319,11 @@ test('Record a payment starts the membership and shows the row as taken at the d
   await page.getByRole('button', { name: 'Record a payment' }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByRole('button', { name: 'Record payment' })).toBeDisabled();
-  await dialog.getByLabel('Student').selectOption({ label: 'Sam Lee' });
-  await dialog.getByLabel('Plan').selectOption(planId);
-  await dialog.getByLabel('Method').selectOption('BANK_TRANSFER');
+  // The new look's own drop-downs, no browser <select>.
+  await expect(dialog.locator('select')).toHaveCount(0);
+  await choose(dialog, 'Student', 'Sam Lee');
+  await choose(dialog, 'Plan', '10-Class Pack (150.00 GBP)');
+  await choose(dialog, 'Method', 'Bank transfer');
   await dialog.getByRole('button', { name: /^Record .*150\.00/ }).click();
   await expect(dialog).toHaveCount(0);
 
@@ -361,11 +363,12 @@ test('Branch Staff with the switch on record a payment for a student of their br
   await expect(page.locator('table')).toHaveCount(0);
   await page.getByRole('button', { name: 'Record a payment' }).click();
   const dialog = page.getByRole('dialog');
-  const studentPicker = dialog.getByLabel('Student');
+  await dialog.getByRole('combobox', { name: 'Student', exact: true }).click();
   // Nia Park has no home branch, so she isn't this branch's to record for.
-  await expect(studentPicker.locator('option')).toHaveText(['Choose…', 'Sam Lee']);
-  await studentPicker.selectOption({ label: 'Sam Lee' });
-  await dialog.getByLabel('Plan').selectOption(planId);
+  await expect(dialog.getByRole('listbox', { name: 'Student', exact: true }).getByRole('option')).toHaveText(['Choose…', 'Sam Lee']);
+  await dialog.getByRole('combobox', { name: 'Student', exact: true }).click();
+  await choose(dialog, 'Student', 'Sam Lee');
+  await choose(dialog, 'Plan', '10-Class Pack (150.00 GBP)');
   await dialog.getByRole('button', { name: /^Record .*150\.00/ }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByText('Payment recorded. The membership has started.')).toBeVisible();
