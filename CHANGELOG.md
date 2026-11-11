@@ -10,6 +10,10 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Waivers** (Decision 453; visual only). The waivers list beside
+  the reader, with the selected waiver's Signatures and Guest signatures in
+  the right-hand panel; new-look buttons, chip, search and tags; on a phone
+  the list shrinks to the waiver you tap and Export sits under ⋯ More.
 - **New look: Dashboard** (Decision 453; visual only). The owner's Dashboard
   has the new page header (the Branch scope under the title, our own Branch
   drop-down), number cards, Today's classes (from this week's Bookings

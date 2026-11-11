@@ -3888,6 +3888,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "更多操作",
+      showAll: "显示全部免责声明 ({count})",
+    },
     exportAll: {
       button: "导出已签署文件",
       title: "导出所有已签署文件",

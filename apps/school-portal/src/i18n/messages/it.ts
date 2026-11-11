@@ -3932,6 +3932,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "Altre azioni",
+      showAll: "Mostra tutte le liberatorie ({count})",
+    },
     exportAll: {
       button: "Esporta documenti firmati",
       title: "Esporta tutti i documenti firmati",

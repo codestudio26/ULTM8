@@ -3888,6 +3888,11 @@ export const messages: PartialMessages<EnglishMessages> = {
     },
   },
   waivers: {
+    // The Waivers page in the new look (Decision 453).
+    list: {
+      moreActions: "その他の操作",
+      showAll: "すべての同意書を表示 ({count})",
+    },
     exportAll: {
       button: "署名済み書類をエクスポート",
       title: "署名済みの書類をすべてエクスポート",

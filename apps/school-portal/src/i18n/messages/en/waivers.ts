@@ -1,4 +1,9 @@
 export const waivers = {
+  // The Waivers page in the new look (Decision 453).
+  list: {
+    moreActions: 'More actions',
+    showAll: 'Show all waivers ({count})',
+  },
   exportAll: {
     button: "Export signed documents",
     title: "Export all signed documents",
