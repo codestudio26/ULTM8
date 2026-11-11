@@ -10,6 +10,7 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **Fix: School tax rate filled in even when the standard rates load late.** Picking the tax country before ULTM8's standard rates had loaded left the rate at 0; it now fills in when they arrive, unless the owner has typed a rate since.
 - **New look: Organisation** (Decision 453; visual only). Branches, Franchises,
   a Franchise's page and its Overview, and the School page have the new page
   header, white cards, the list card (our own drop-downs, round pills, a "Show
