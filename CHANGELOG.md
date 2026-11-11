@@ -10,6 +10,11 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: Organisation** (Decision 453; visual only). Branches, Franchises,
+  a Franchise's page and its Overview, and the School page have the new page
+  header, white cards, the list card (our own drop-downs, round pills, a "Show
+  closed" chip) and red-outlined cards for closing; same data, figures and actions.
+
 - **New look: Dashboard** (Decision 453; visual only). The owner's Dashboard
   has the new page header (the Branch scope under the title, our own Branch
   drop-down), number cards, Today's classes (from this week's Bookings

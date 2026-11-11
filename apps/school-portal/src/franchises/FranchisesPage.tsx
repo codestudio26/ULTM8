@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge, Button, Card, CardGrid, EmptyState, ErrorBanner, Field, PageHeader, SelectField, Spinner, Table, TextField, ViewToggle, type ViewMode } from '@ultm8/ui';
+import { EmptyState, ErrorBanner, Spinner, ViewToggle, type ViewMode } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { nullsToUndefined } from '../lib/nullableFields';
 import { useCreateFranchise, useFranchiseBillingStatus, useFranchises, useUpdateFranchise, type FeeModel, type FranchiseResponse } from './franchiseQueries';
 import { FranchiseFormModal } from './FranchiseFormModal';
 import { useT } from '../i18n/I18nProvider';
+import { NewLookPageHeader } from '../layout/NewLookPage';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../students/studentsList.css';
+import '../organisation/organisationLook.css';
 
 /** Top-level, always-visible nav entry (same convention as every other
  * screen in this Shell — nav items aren't role-gated client-side; the
@@ -37,143 +41,148 @@ export function FranchisesPage() {
   const franchises = data?.items ?? [];
   const hasFilter = feeModelFilter !== '' || activityFilter.trim() !== '';
 
-  return (
+  const feeModelTag = (f: FranchiseResponse) => (
+    <span className="u8n-tag u8n-tag--inactive">{f.feeModel === 'FLAT' ? t('franchises.feeModels.flat') : t('franchises.feeModels.perHeadcount')}</span>
+  );
+  const activityTags = (f: FranchiseResponse) =>
+    f.activities.length ? (
+      <span className="u8o-tags">
+        {f.activities.map((a, i) => (
+          <span key={`${a}-${i}`} className="u8n-tag u8n-tag--frozen">
+            {a}
+          </span>
+        ))}
+      </span>
+    ) : null;
+  const rowButtons = (f: FranchiseResponse) => (
     <>
-      <PageHeader
-        title={t('franchises.list.title')}
-        subtitle={t('franchises.list.subtitle')}
-        actions={<Button onClick={() => setCreating(true)}>{t('franchises.list.addButton')}</Button>}
-      />
-      <Card>
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ minWidth: 180 }}>
-              <Field label={t('franchises.list.feeModelLabel')} htmlFor="franchises-fee-model-filter">
-                <SelectField
-                  id="franchises-fee-model-filter"
-                  value={feeModelFilter}
-                  onChange={(e) => setFeeModelFilter(e.target.value as FeeModel | '')}
-                  options={[
-                    { value: '', label: t('franchises.list.feeModelAll') },
-                    { value: 'FLAT', label: t('franchises.feeModels.flat') },
-                    { value: 'PER_HEADCOUNT', label: t('franchises.feeModels.perHeadcount') },
-                  ]}
-                />
-              </Field>
-            </div>
-            <div style={{ minWidth: 200 }}>
-              <Field label={t('franchises.list.activityLabel')} htmlFor="franchises-activity-filter" hint={t('franchises.list.activityHint')}>
-                <TextField
+      <button type="button" className="u8n-pill u8o-pill--sm" onClick={() => navigate(`/franchises/${f.id}`)}>
+        {t('franchises.list.viewDetails')}
+      </button>
+      {/* Decision 337 (F8) — a closed Franchise can't be edited. */}
+      {f.archivedAt ? null : (
+        <button type="button" className="u8n-pill u8o-pill--sm" onClick={() => setEditing(f)}>
+          {t('franchises.list.edit')}
+        </button>
+      )}
+    </>
+  );
+
+  return (
+    <div className="u8o">
+      <NewLookPageHeader title={t('franchises.list.title')} subtitle={t('franchises.list.subtitle')} />
+      <section className="u8n-list" aria-label={t('franchises.list.title')}>
+        <div className="u8n-list__toolbar u8o-toolbar">
+          <div className="u8n-list__tools">
+            <NewLookSelect
+              id="franchises-fee-model-filter"
+              label={t('franchises.list.feeModelLabel')}
+              value={feeModelFilter}
+              onChange={(v) => setFeeModelFilter(v as FeeModel | '')}
+              options={[
+                { value: '', label: t('franchises.list.feeModelAll') },
+                { value: 'FLAT', label: t('franchises.feeModels.flat') },
+                { value: 'PER_HEADCOUNT', label: t('franchises.feeModels.perHeadcount') },
+              ]}
+            />
+            <div className="u8o-filter">
+              <label className="u8o-filter__label" htmlFor="franchises-activity-filter">
+                {t('franchises.list.activityLabel')}
+              </label>
+              <span className="u8n-list__search">
+                <input
                   id="franchises-activity-filter"
+                  aria-describedby="franchises-activity-hint"
                   placeholder={t('franchises.list.activityPlaceholder')}
                   value={activityFilter}
                   onChange={(e) => setActivityFilter(e.target.value)}
                 />
-              </Field>
+              </span>
             </div>
           </div>
-          <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('franchises.list.viewAria')} />
+          <div className="u8n-list__tools">
+            <ViewToggle value={viewMode} onChange={setViewMode} aria-label={t('franchises.list.viewAria')} />
+            <button type="button" className="u8n-pill u8n-pill--primary" onClick={() => setCreating(true)}>
+              {t('franchises.list.addButton')}
+            </button>
+          </div>
         </div>
-      </Card>
-      {isLoading ? (
-        <Spinner />
-      ) : error ? (
-        <ErrorBanner message={error instanceof ApiError ? error.message : t('franchises.list.loadFailed')} />
-      ) : (
-        <Card>
-          {franchises.length === 0 ? (
+        <p className="u8n-list__hint" id="franchises-activity-hint">
+          {t('franchises.list.activityHint')}
+        </p>
+        {isLoading ? (
+          <div className="u8n-list__state">
+            <Spinner />
+          </div>
+        ) : error ? (
+          <div className="u8n-list__state">
+            <ErrorBanner message={error instanceof ApiError ? error.message : t('franchises.list.loadFailed')} />
+          </div>
+        ) : franchises.length === 0 ? (
+          <div className="u8n-list__state">
             <EmptyState
               title={hasFilter ? t('franchises.list.emptyFilteredTitle') : t('franchises.list.emptyTitle')}
               description={hasFilter ? t('franchises.list.emptyFilteredDescription') : t('franchises.list.emptyDescription')}
             />
-          ) : viewMode === 'grid' ? (
-            <CardGrid>
-              {franchises.map((f) => (
-                <Card key={f.id}>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/franchises/${f.id}`)}
-                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-accent)', cursor: 'pointer', font: 'inherit', textAlign: 'left', fontWeight: 600 }}
-                  >
+          </div>
+        ) : viewMode === 'grid' ? (
+          <ul className="u8n-grid">
+            {franchises.map((f) => (
+              <li key={f.id} className="u8n-grid__card">
+                <div className="u8o-row" style={{ gap: 8 }}>
+                  <button type="button" className="u8o-name" onClick={() => navigate(`/franchises/${f.id}`)}>
                     {f.name}
                   </button>
-                  {f.archivedAt ? (
-                    <span style={{ marginLeft: 8 }}>
-                      <Badge variant="danger">{t('franchises.list.closed')}</Badge>
-                    </span>
-                  ) : null}
-                  <div style={{ margin: '8px 0' }}>
-                    {f.activities.map((a, i) => (
-                      <Badge key={`${a}-${i}`}>{a}</Badge>
-                    ))}
-                  </div>
-                  <Badge>{f.feeModel === 'FLAT' ? t('franchises.feeModels.flat') : t('franchises.feeModels.perHeadcount')}</Badge>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                    <Button variant="secondary" onClick={() => navigate(`/franchises/${f.id}`)}>
-                      {t('franchises.list.viewDetails')}
-                    </Button>
-                    {/* Decision 337 (F8) — a closed Franchise can't be edited. */}
-                    {f.archivedAt ? null : (
-                      <Button variant="secondary" onClick={() => setEditing(f)}>
-                        {t('franchises.list.edit')}
-                      </Button>
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </CardGrid>
-          ) : (
-            <Table<FranchiseResponse>
-              rows={franchises}
-              columns={[
-                {
-                  key: 'name',
-                  header: t('franchises.list.columnName'),
-                  // The Name/logo cell itself now navigates too — previously only the
-                  // row action menu's "View details" button did (v1.2 backend
-                  // backlog, "Franchises page", "Rows-table identity column is
-                  // non-clickable").
-                  render: (f) => (
-                    <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/franchises/${f.id}`)}
-                        style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-accent)', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}
-                      >
-                        {f.name}
-                      </button>
-                      {/* Decision 337 (F8) */}
-                      {f.archivedAt ? <Badge variant="danger">{t('franchises.list.closed')}</Badge> : null}
-                    </span>
-                  ),
-                },
-                {
-                  key: 'activities',
-                  header: t('franchises.list.columnActivities'),
-                  render: (f) => f.activities.map((a, i) => <Badge key={`${a}-${i}`}>{a}</Badge>),
-                },
-                { key: 'feeModel', header: t('franchises.list.columnFeeModel'), render: (f) => <Badge>{f.feeModel === 'FLAT' ? t('franchises.feeModels.flat') : t('franchises.feeModels.perHeadcount')}</Badge> },
-                {
-                  key: 'actions',
-                  header: '',
-                  render: (f) => (
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <Button variant="secondary" onClick={() => navigate(`/franchises/${f.id}`)}>
-                        {t('franchises.list.viewDetails')}
-                      </Button>
-                      {f.archivedAt ? null : (
-                        <Button variant="secondary" onClick={() => setEditing(f)}>
-                          {t('franchises.list.edit')}
-                        </Button>
-                      )}
-                    </div>
-                  ),
-                },
-              ]}
-            />
-          )}
-        </Card>
-      )}
+                  {f.archivedAt ? <span className="u8n-tag u8o-tag--closed">{t('franchises.list.closed')}</span> : null}
+                </div>
+                <div className="u8o-tags" style={{ margin: '10px 0 0' }}>
+                  {activityTags(f)}
+                  {feeModelTag(f)}
+                </div>
+                <div className="u8o-grid-actions">{rowButtons(f)}</div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="u8n-list__scroll">
+            <table className="u8n-table">
+              <thead>
+                <tr>
+                  <th scope="col">{t('franchises.list.columnName')}</th>
+                  <th scope="col">{t('franchises.list.columnActivities')}</th>
+                  <th scope="col">{t('franchises.list.columnFeeModel')}</th>
+                  <th scope="col">
+                    <span className="u8n-visually-hidden">{t('franchises.list.viewDetails')}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {franchises.map((f) => (
+                  <tr key={f.id}>
+                    {/* The name opens the Franchise too (v1.2 backend backlog,
+                        "Franchises page", "Rows-table identity column is
+                        non-clickable"). */}
+                    <td>
+                      <span className="u8o-row" style={{ gap: 8 }}>
+                        <button type="button" className="u8o-name" onClick={() => navigate(`/franchises/${f.id}`)}>
+                          {f.name}
+                        </button>
+                        {/* Decision 337 (F8) */}
+                        {f.archivedAt ? <span className="u8n-tag u8o-tag--closed">{t('franchises.list.closed')}</span> : null}
+                      </span>
+                    </td>
+                    <td>{activityTags(f)}</td>
+                    <td>{feeModelTag(f)}</td>
+                    <td>
+                      <div className="u8o-actions">{rowButtons(f)}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {creating ? (
         <FranchiseFormModal
@@ -190,7 +199,7 @@ export function FranchisesPage() {
       ) : null}
 
       {editing ? <EditFranchiseModal franchise={editing} onClose={() => setEditing(null)} /> : null}
-    </>
+    </div>
   );
 }
 

@@ -85,11 +85,15 @@ test('Fee model and Activity filters narrow the Franchises list server-side', as
   await expect(page.getByRole('cell', { name: 'Flat Jiu Jitsu Co' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Headcount Karate Co' })).toBeVisible();
 
-  await page.getByLabel('Fee model').selectOption('PER_HEADCOUNT');
+  // Our own drop-down (DESIGN.md → "Drop-downs"), not the browser's.
+  const feeModel = page.getByRole('combobox', { name: 'Fee model' });
+  await feeModel.click();
+  await page.getByRole('listbox', { name: 'Fee model' }).getByRole('option', { name: 'Per-headcount' }).click();
   await expect(page.getByRole('cell', { name: 'Headcount Karate Co' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Flat Jiu Jitsu Co' })).toHaveCount(0);
 
-  await page.getByLabel('Fee model').selectOption('');
+  await feeModel.click();
+  await page.getByRole('listbox', { name: 'Fee model' }).getByRole('option', { name: 'All', exact: true }).click();
   await page.getByLabel('Activity').fill('Jiu Jitsu');
   await expect(page.getByRole('cell', { name: 'Flat Jiu Jitsu Co' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Headcount Karate Co' })).toHaveCount(0);

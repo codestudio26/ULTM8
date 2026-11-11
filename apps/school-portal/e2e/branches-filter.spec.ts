@@ -54,9 +54,12 @@ test('the City dropdown matches the city only, not a street with the same name',
   await signIn(page, s.ownerToken);
   await page.goto('/branches');
 
-  const city = page.getByLabel('City');
-  await expect(city.locator('option')).toHaveText(['All cities', 'London (1)', 'Manchester (1)']);
-  await city.selectOption('London');
+  // Our own drop-down (DESIGN.md → "Drop-downs"), not the browser's.
+  const city = page.getByRole('combobox', { name: 'City' });
+  await city.click();
+  const cities = page.getByRole('listbox', { name: 'City' });
+  await expect(cities.getByRole('option')).toHaveText(['All cities', 'London (1)', 'Manchester (1)']);
+  await cities.getByRole('option', { name: 'London (1)' }).click();
 
   // exact: true — the per-row "Actions for <name>" button sits in its own
   // cell alongside "Settings", whose accessible name contains the Branch name.
@@ -64,7 +67,8 @@ test('the City dropdown matches the city only, not a street with the same name',
   await expect(page.getByRole('cell', { name: 'Manchester North', exact: true })).toHaveCount(0);
   await expect(page.getByRole('cell', { name: 'Downtown Toronto', exact: true })).toHaveCount(0);
 
-  await city.selectOption('');
+  await city.click();
+  await cities.getByRole('option', { name: 'All cities' }).click();
   await expect(page.getByRole('cell', { name: 'Manchester North', exact: true })).toBeVisible();
 });
 
@@ -100,13 +104,15 @@ test('the Country dropdown appears once Branches are in two countries, and filte
   await signIn(page, s.ownerToken);
   await page.goto('/branches');
   await expect(page.getByRole('cell', { name: 'London Central', exact: true })).toBeVisible();
-  await expect(page.getByLabel('Country')).toHaveCount(0);
+  await expect(page.getByRole('combobox', { name: 'Country' })).toHaveCount(0);
 
   await mkStructured('Centro', { line1: 'Av. Paulista 1000', city: 'São Paulo', postalCode: '01310-100', country: 'BR', address: 'Av. Paulista 1000, São Paulo, 01310-100, Brazil' });
   await page.reload();
-  const country = page.getByLabel('Country');
-  await expect(country.locator('option')).toHaveText(['All countries', 'Brazil', 'United Kingdom']);
-  await country.selectOption('BR');
+  const country = page.getByRole('combobox', { name: 'Country' });
+  await country.click();
+  const countries = page.getByRole('listbox', { name: 'Country' });
+  await expect(countries.getByRole('option')).toHaveText(['All countries', 'Brazil', 'United Kingdom']);
+  await countries.getByRole('option', { name: 'Brazil' }).click();
   await expect(page.getByRole('cell', { name: 'Centro', exact: true })).toBeVisible();
   await expect(page.locator('tbody tr')).toHaveCount(1);
 });
