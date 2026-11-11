@@ -576,7 +576,7 @@ export class CancellationService {
       ];
       const classes = await tx.class.findMany({
         where: { id: { in: [...new Set(rows.map((r) => r.classId))] } },
-        select: { id: true, title: true, startDate: true, cancelledAt: true },
+        select: { id: true, title: true, startDate: true, cancelledAt: true, bannerUrl: true, timetableSlotId: true },
       });
       const classById = new Map(classes.map((c) => [c.id, c]));
       const memberships = isOwner
@@ -603,6 +603,8 @@ export class CancellationService {
             classTitle: cls?.title ?? null,
             classStartDate: cls?.startDate ?? null,
             classCancelledBySchool: Boolean(cls?.cancelledAt),
+            classBannerUrl: cls?.bannerUrl ?? null,
+            classTimetableSlotId: cls?.timetableSlotId ?? null,
             resolution: r.resolution,
             refundAmount: r.refundAmount,
             currency: m?.membershipPlan.currency ?? null,

@@ -74,6 +74,8 @@ test('Cancellations to resolve: the owner gives a class credit back', async ({ p
   const row = page.getByRole('row').filter({ hasText: 'Sam Lee' });
   await expect(row).toContainText('Evening Open Mat');
   await expect(row).toContainText('Needs a decision');
+  // Decision 458 item 2: the row leads with the class's avatar (no banner, so its initials).
+  await expect(row.locator('.u8s-avatar')).toHaveText('EO');
   await row.getByRole('button', { name: 'Give credit back' }).click();
 
   await expect(page.getByText('Nothing to resolve')).toBeVisible();
