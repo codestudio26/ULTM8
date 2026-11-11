@@ -1,0 +1,553 @@
+/* Styles & Belts, a style's Skills and Ladder, Grading → Skills, and their
+ * dialogs (add / edit style, start from template, duplicate, the belt editor
+ * and the reorder confirmations) in the new look (Decision 453, Decision 460;
+ * DESIGN.md → "Grading screens", "Form pattern F", "Drop-downs", "One accent:
+ * mint", "Phone layout"). The pages take the Billing pages' header, cards and
+ * table (billing/BillingLook, students/StudentsSectionLook's FitTable); the
+ * dialogs take the shared frame and button band (packages/ui Modal /
+ * ModalActions) and NewLookSelect in `.u8n-dd-field`. This file adds the
+ * pieces those don't have: tags, the ladder's rows, the class type list, the
+ * template choices, round selectors and the belt editor's chapters and
+ * preview. Look only: the same fields, checks and actions. */
+[data-look='redesign'] {
+  --u8gs-tag-bg: #edf0f2;
+  --u8gs-tag-text: #50575e;
+  --u8gs-info-bg: #e5ecf6;
+  --u8gs-info-text: #2b4f80;
+  --u8gs-row-bg: #f6f7f8;
+  --u8gs-on: #def2e2;
+  --u8gs-tick: #3a7556;
+  --u8gs-warn: #7a4f12;
+  --u8gs-bad: #9b1c1c;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-look='redesign']:not([data-theme='light']) {
+    --u8gs-tag-bg: rgba(255, 255, 255, 0.08);
+    --u8gs-tag-text: var(--text-secondary);
+    --u8gs-info-bg: rgba(188, 203, 226, 0.12);
+    --u8gs-info-text: #bccbe2;
+    --u8gs-row-bg: var(--surface-2);
+    --u8gs-on: var(--nav-active-bg);
+    --u8gs-tick: #9fd3b2;
+    --u8gs-warn: #e6cfa5;
+    --u8gs-bad: #f3b4b4;
+  }
+}
+:root[data-look='redesign'][data-theme='dark'] {
+  --u8gs-tag-bg: rgba(255, 255, 255, 0.08);
+  --u8gs-tag-text: var(--text-secondary);
+  --u8gs-info-bg: rgba(188, 203, 226, 0.12);
+  --u8gs-info-text: #bccbe2;
+  --u8gs-row-bg: var(--surface-2);
+  --u8gs-on: var(--nav-active-bg);
+  --u8gs-tick: #9fd3b2;
+  --u8gs-warn: #e6cfa5;
+  --u8gs-bad: #f3b4b4;
+}
+
+/* ------------------------------------------------------------------ Tags */
+.u8gs-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--u8gs-tag-bg, #edf0f2);
+  color: var(--u8gs-tag-text, #50575e);
+}
+.u8gs-tag--info {
+  background: var(--u8gs-info-bg, #e5ecf6);
+  color: var(--u8gs-info-text, #2b4f80);
+}
+
+/* A name with its tag, in a table cell or a row. */
+.u8gs-name {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Notes: grey for a read-only page, blue for a hint about a copy. */
+.u8gs-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--u8n-quiet, var(--text-secondary));
+}
+.u8gs-note--info {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--u8gs-info-bg, #e5ecf6);
+  color: var(--u8gs-info-text, #2b4f80);
+}
+.u8gs-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ------------------------------------------------- Card heads and actions */
+.u8gs-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.u8gs-card-head > div:first-child {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+[data-look='redesign'] .u8gs-card-head .u8b-card__title {
+  margin-bottom: 4px;
+}
+.u8gs-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.u8gs-actions[hidden] {
+  display: none;
+}
+.u8gs-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+[data-look='redesign'] .u8gs-toolbar > .u8n-dd-field {
+  margin-bottom: 0;
+}
+/* "Show archived" above the table. */
+.u8gs-filter {
+  margin-bottom: 12px;
+}
+
+/* ----------------------------------------------------------- The ladder */
+.u8gs-ladder {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.u8gs-rung {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+[data-look='redesign'] .u8gs-rung {
+  border-color: var(--u8n-line);
+  background: var(--u8n-surface);
+}
+.u8gs-rung__main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+.u8gs-rung__place {
+  width: 20px;
+  color: var(--u8n-quiet, var(--text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+.u8gs-rung__name {
+  flex: 1 1 120px;
+  min-width: 0;
+  font-weight: 500;
+}
+.u8gs-rung__count {
+  font-size: 13px;
+  color: var(--u8n-quiet, var(--text-secondary));
+}
+.u8gs-rung__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.u8gs-rung__grades {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 0;
+  padding: 8px 0 0 30px;
+  list-style: none;
+  font-size: 13px;
+  color: var(--u8n-quiet, var(--text-secondary));
+}
+/* On a phone the six row buttons sit three per row (DESIGN.md → "Duplicate
+ * a rank"), each the same width. */
+@media (max-width: 767px) {
+  .u8gs-rung__actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+  .u8gs-rung__actions > .ultm8-btn {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 8px;
+  }
+  .u8gs-rung__grades {
+    padding-left: 0;
+  }
+}
+
+/* --------------------------------------------- Lists of skills (Grading) */
+.u8gs-items {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.u8gs-item {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+[data-look='redesign'] .u8gs-item {
+  border-color: var(--u8n-line);
+  background: var(--u8n-surface);
+}
+[data-look='redesign'] .u8gs-item:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .u8gs-item--open {
+  box-shadow: inset 0 0 0 2px var(--u8n-select-ring, #5d7081);
+}
+.u8gs-item__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.u8gs-item__text {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+.u8gs-item__text > strong {
+  font-weight: 500;
+}
+/* The picked skill's card beside the list. */
+.u8gs-panel-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.u8gs-panel-head > h2 {
+  flex: 1;
+  margin: 0;
+}
+.u8gs-panel h3 {
+  margin: 16px 0 6px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.u8gs-panel ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+/* ------------------------------------------- Add / edit style: class types */
+.u8gs-fieldset {
+  min-width: 0;
+  margin: 0 0 var(--space-4, 16px);
+  padding: 0;
+  border: 0;
+}
+.u8gs-fieldset > legend {
+  margin-bottom: 4px;
+  padding: 0;
+}
+.u8gs-fieldset > .ultm8-field__hint {
+  display: block;
+  margin: 0 0 8px;
+}
+.u8gs-type {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.u8gs-type > .ultm8-input,
+.u8gs-type > input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+@media (max-width: 479px) {
+  .u8gs-type {
+    flex-wrap: wrap;
+  }
+  .u8gs-type > .ultm8-input,
+  .u8gs-type > input {
+    flex-basis: 100%;
+  }
+}
+
+/* -------------------------------------------- Template choices (cards) */
+.u8gs-options {
+  display: grid;
+  gap: 8px;
+}
+.u8gs-option {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid var(--form-option-border, var(--border));
+  border-radius: 12px;
+  cursor: pointer;
+}
+.u8gs-option:has(input:checked) {
+  border-color: var(--u8gs-tick, #3a7556);
+  background: var(--u8gs-on, #def2e2);
+}
+.u8gs-option:has(input:focus-visible) {
+  outline: 2px solid var(--form-field-focus-ring);
+  outline-offset: 1px;
+}
+.u8gs-option__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.u8gs-option__text > strong {
+  font-weight: 500;
+}
+.u8gs-option__text > span {
+  font-size: 13px;
+  color: var(--u8n-quiet, var(--text-secondary));
+}
+
+/* A round selector in the new look (template choices, stripe colour groups):
+ * a white circle with a grey ring, and a green dot when chosen. Still a
+ * radio for the keyboard and screen readers. */
+input[type='radio'].u8gs-radio {
+  appearance: none;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  border: 1.5px solid var(--u8n-field-line, var(--border-strong, #9aa3ab));
+  border-radius: 50%;
+  background: var(--u8n-surface, #fff);
+  cursor: pointer;
+}
+input[type='radio'].u8gs-radio:checked {
+  border-color: var(--u8gs-tick, #3a7556);
+  background: radial-gradient(circle, var(--u8gs-tick, #3a7556) 0 4.5px, var(--u8n-surface, #fff) 5px);
+}
+input[type='radio'].u8gs-radio:focus-visible {
+  outline: 2px solid var(--form-field-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ----------------------------------------------------------- Belt editor */
+.u8gs-grades {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.u8gs-grades > li {
+  display: flex;
+  align-items: center;
+}
+.u8gs-heading {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 500;
+}
+.u8gs-grade-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+.u8gs-grade-bar > .ultm8-field__hint {
+  flex: 1 1 160px;
+  margin: 0;
+}
+.u8gs-chapter {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+[data-look='redesign'] .u8gs-chapter {
+  border-top-color: var(--u8n-line);
+}
+.u8gs-chapter > h3 {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 500;
+}
+.u8gs-chapter__number {
+  font-size: 22px;
+  font-weight: 300;
+  color: var(--form-chapter-number-color, var(--text-secondary));
+  font-variant-numeric: tabular-nums;
+}
+/* Number fields of "What it takes", side by side while they fit. */
+.u8gs-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+}
+.u8gs-fields > .ultm8-field {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.u8gs-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+.u8gs-groups {
+  display: grid;
+  gap: 8px;
+}
+.u8gs-group-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.u8gs-group__name {
+  min-width: 110px;
+  margin: 0;
+}
+.u8gs-preview__label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--form-preview-muted, var(--text-secondary));
+}
+.u8gs-ready {
+  width: 100%;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.u8gs-ready > strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+.u8gs-ready > ul {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.u8gs-ready__line {
+  display: flex;
+  gap: 6px;
+}
+.u8gs-ready__line--missing {
+  color: var(--u8gs-bad, var(--text-danger));
+}
+.u8gs-ready__tick {
+  color: var(--u8gs-tick, #3a7556);
+}
+.u8gs-ready__warn {
+  color: var(--u8gs-warn, var(--text-warning));
+}
+
+/* The editor's own pieces from packages/ui, in the new look's colours:
+ * the calm grey preview, the grade pills (chosen: white on the grey track's
+ * pale green, as every selection) and the stripe colour groups. */
+[data-look='redesign'] .ultm8-editor-preview {
+  border-radius: 12px;
+  background: var(--form-preview-bg);
+  color: var(--form-preview-text);
+}
+[data-look='redesign'] .ultm8-editor-preview .u8gs-ready {
+  border-top-color: var(--u8n-line);
+}
+[data-look='redesign'] .ultm8-grade-pill {
+  min-height: 40px;
+  padding: 4px 12px;
+  border-color: var(--u8n-field-line);
+  background: var(--u8n-surface);
+  color: var(--u8n-text);
+}
+[data-look='redesign'] .ultm8-grade-pill:hover {
+  background: var(--u8n-hover);
+}
+[data-look='redesign'] .ultm8-grade-pill--on,
+[data-look='redesign'] .ultm8-grade-pill--on:hover {
+  border-color: var(--u8gs-tick);
+  background: var(--u8gs-on);
+}
+[data-look='redesign'] .ultm8-grade-pill__count {
+  background: var(--u8gs-tag-bg);
+  color: var(--u8gs-tag-text);
+}
+[data-look='redesign'] .ultm8-colour-group {
+  align-items: center;
+  border-color: var(--u8n-line);
+  border-radius: 12px;
+  background: var(--u8n-surface);
+}
+[data-look='redesign'] .ultm8-colour-group--on {
+  border-color: var(--u8gs-tick);
+  box-shadow: inset 0 0 0 1px var(--u8gs-tick);
+}
+[data-look='redesign'] .ultm8-colour-group > .ultm8-field {
+  margin-bottom: 0;
+}
+
+/* The line a dialog opens with. */
+.u8gs-intro {
+  margin-top: 0;
+}
+
+/* "The new order isn't saved yet", under the ladder. */
+.u8gs-unsaved {
+  margin-top: 12px;
+}
+/* The students a reorder moves. */
+.u8gs-affected {
+  margin: 0 0 12px;
+  padding-inline-start: 20px;
+}
+.u8gs-panel__text {
+  margin: 8px 0 0;
+}
+.u8gs-panel h3 + .u8gs-panel__text,
+.u8gs-panel h3 + .u8b-note {
+  margin-top: 0;
+}
+[data-look='redesign'] .u8gs-panel-head .u8b-card__title {
+  margin: 0;
+}
+
+/* A row's buttons in the card layout of a table (a phone, a tablet): side
+ * by side in equal columns, wrapping, rather than one per line. */
+[data-look='redesign'] .u8st-fit[data-layout='cards'] .u8gs-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  width: 100%;
+}
+[data-look='redesign'] .u8st-fit[data-layout='cards'] .u8gs-actions > .ultm8-btn {
+  min-width: 0;
+  padding-inline: 8px;
+}

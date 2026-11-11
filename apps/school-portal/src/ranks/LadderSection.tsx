@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Modal } from '@ultm8/ui';
+import { Button, EmptyState, ErrorBanner, Modal, ModalActions } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import type { SkillResponse } from '../skills/skillQueries';
@@ -10,6 +10,8 @@ import { type RankResponse, useArchiveRank, useCreateRank, useDeleteRank, useReo
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { usePromotionFeeSettings } from '../grading/gradingQueries';
 import { useT, type TranslateFn } from '../i18n/I18nProvider';
+import { BillingCard } from '../billing/BillingLook';
+import '../disciplines/stylesLook.css';
 
 const stripesLabel = (t: TranslateFn, n: number) => (n === 0 ? t('ranks.ladder.noStripes') : t('ranks.ladder.stripes', { count: n }));
 
@@ -26,6 +28,10 @@ type Holder = { studentId: string; firstName: string; surname: string };
  * the ladder without any edit controls. `showHolders`: the student counts,
  * which only the owner may read. `canSetPrices`: grade prices, which only the
  * owner sets (Branch Staff who manage disciplines don't, Decision 383).
+ *
+ * New look (Decision 460): a white card, the belts as soft rows with tags,
+ * the row buttons three per row on a phone, and "Reorder belts?" in the
+ * shared dialog band (Back first). Dragging, ↑ ↓ and what saves are as before.
  */
 export function LadderSection({
   discipline,
@@ -113,15 +119,13 @@ export function LadderSection({
   }
 
   return (
-    <Card>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 12, flexWrap: 'wrap' }}>
+    <BillingCard>
+      <div className="u8gs-card-head">
         <div>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 16, marginBottom: 4 }}>
-            {t('ranks.ladder.title')}
-          </h2>
-          <p style={{ margin: 0 }}>{t('ranks.ladder.description')}</p>
+          <h2 className="u8b-card__title">{t('ranks.ladder.title')}</h2>
+          <p className="u8b-note">{t('ranks.ladder.description')}</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }} hidden={readOnly}>
+        <div className="u8gs-actions" hidden={readOnly}>
           {changed ? (
             <>
               <Button onClick={askToSave} loading={reorder.isPending}>
@@ -140,7 +144,7 @@ export function LadderSection({
       {shown.length === 0 ? (
         <EmptyState title={t('ranks.ladder.emptyTitle')} description={t('ranks.ladder.emptyDescription')} />
       ) : (
-        <ol aria-label={t('ranks.ladder.title')} style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: 8 }}>
+        <ol aria-label={t('ranks.ladder.title')} className="u8gs-ladder">
           {shown.map((rank, i) => {
             const tiers = [...rank.stripeTiers].sort((a, b) => a.order - b.order);
             const onBelt = holdersOfBelt(rank).length;
@@ -149,30 +153,31 @@ export function LadderSection({
                 key={rank.id}
                 aria-label={`${i + 1}. ${rank.name}`}
                 {...(readOnly ? {} : drag.targetProps(i))}
-                style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 10, ...drag.rowStyle(i) }}
+                className="u8gs-rung"
+                style={drag.rowStyle(i)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <div className="u8gs-rung__main">
                   {readOnly ? null : <span {...drag.handleProps(i, rank.name)}>⠿</span>}
-                  <span style={{ width: 20, color: 'var(--text-secondary)' }}>{i + 1}</span>
+                  <span className="u8gs-rung__place">{i + 1}</span>
                   {tiers[0] ? <BeltChip rung={{ id: tiers[0].id, rankId: rank.id, rank, tier: tiers[0], index: 0, name: tiers[0].name }} /> : null}
-                  <strong style={{ flex: 1, minWidth: 120 }}>{rank.name}</strong>
-                  {rank.archivedAt ? <Badge variant="default">{t('ranks.ladder.archived')}</Badge> : null}
-                  <span className="ultm8-field__hint">
+                  <strong className="u8gs-rung__name">{rank.name}</strong>
+                  {rank.archivedAt ? <span className="u8gs-tag">{t('ranks.ladder.archived')}</span> : null}
+                  <span className="u8gs-rung__count">
                     {rank.rankDisplay === 'LEVELS' ? t('ranks.ladder.steps', { count: tiers.length }) : stripesLabel(t, Math.max(0, ...tiers.map((tier) => tier.count)))}
                   </span>
-                  {onBelt > 0 ? <Badge>{t('ranks.ladder.students', { count: onBelt })}</Badge> : null}
+                  {onBelt > 0 ? <span className="u8gs-tag">{t('ranks.ladder.students', { count: onBelt })}</span> : null}
                   {readOnly ? null : (
-                    <>
-                  <Button variant="secondary" onClick={() => setEditing(rank)} aria-label={t('ranks.editAria', { name: rank.name })}>
+                    <div className="u8gs-rung__actions">
+                  <Button variant="secondary" className="u8b-pill--row" onClick={() => setEditing(rank)} aria-label={t('ranks.editAria', { name: rank.name })}>
                     {t('ranks.edit')}
                   </Button>
-                  <Button variant="secondary" onClick={() => setDuplicating(rank)} disabled={changed} aria-label={t('ranks.ladder.duplicateAria', { name: rank.name })}>
+                  <Button variant="secondary" className="u8b-pill--row" onClick={() => setDuplicating(rank)} disabled={changed} aria-label={t('ranks.ladder.duplicateAria', { name: rank.name })}>
                     {t('ranks.ladder.duplicate')}
                   </Button>
-                  <Button variant="secondary" onClick={() => move(i, -1)} disabled={i === 0} aria-label={t('ranks.moveUpAria', { name: rank.name })}>
+                  <Button variant="secondary" className="u8b-pill--row" onClick={() => move(i, -1)} disabled={i === 0} aria-label={t('ranks.moveUpAria', { name: rank.name })}>
                     ↑
                   </Button>
-                  <Button variant="secondary" onClick={() => move(i, 1)} disabled={i === shown.length - 1} aria-label={t('ranks.moveDownAria', { name: rank.name })}>
+                  <Button variant="secondary" className="u8b-pill--row" onClick={() => move(i, 1)} disabled={i === shown.length - 1} aria-label={t('ranks.moveDownAria', { name: rank.name })}>
                     ↓
                   </Button>
                   {/* Decision 226 — reversible alternative to Delete below,
@@ -180,7 +185,7 @@ export function LadderSection({
                       (holders/history/declared), idempotent. */}
                   {rank.archivedAt ? (
                     <Button
-                      variant="secondary"
+                      variant="secondary" className="u8b-pill--row"
                       onClick={() => { setError(null); unarchiveRank.mutateAsync(rank.id).catch((err) => setError(err instanceof ApiError ? err.message : t('ranks.ladder.unarchiveFailed'))); }}
                       aria-label={t('ranks.ladder.unarchiveAria', { name: rank.name })}
                     >
@@ -188,7 +193,7 @@ export function LadderSection({
                     </Button>
                   ) : (
                     <Button
-                      variant="secondary"
+                      variant="secondary" className="u8b-pill--row"
                       onClick={() => { setError(null); archiveRank.mutateAsync(rank.id).catch((err) => setError(err instanceof ApiError ? err.message : t('ranks.ladder.archiveFailed'))); }}
                       disabled={changed}
                       aria-label={t('ranks.ladder.archiveAria', { name: rank.name })}
@@ -196,15 +201,15 @@ export function LadderSection({
                       {t('ranks.ladder.archive')}
                     </Button>
                   )}
-                  <Button variant="secondary" onClick={() => setDeleting(rank)} disabled={changed} aria-label={t('ranks.ladder.deleteAria', { name: rank.name })}>
+                  <Button variant="secondary" className="u8b-pill--row" onClick={() => setDeleting(rank)} disabled={changed} aria-label={t('ranks.ladder.deleteAria', { name: rank.name })}>
                     {t('ranks.ladder.delete')}
                   </Button>
-                    </>
+                    </div>
                   )}
                 </div>
-                <ul style={{ listStyle: 'none', padding: '6px 0 0 30px', margin: 0, display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
+                <ul className="u8gs-rung__grades">
                   {tiers.map((tier) => (
-                    <li key={tier.id} className="ultm8-field__hint">
+                    <li key={tier.id}>
                       {tier.name}
                       {tier.timeOnly
                         ? ` · ${t('ranks.ladder.tierYears', { years: Math.round(((tier.minimumDaysInRank ?? 0) / 365) * 10) / 10 })}`
@@ -222,7 +227,7 @@ export function LadderSection({
           })}
         </ol>
       )}
-      {changed ? <p className="ultm8-field__hint">{t('ranks.ladder.unsavedOrder')}</p> : null}
+      {changed ? <p className="u8b-note u8gs-unsaved">{t('ranks.ladder.unsavedOrder')}</p> : null}
 
       {deleting ? (
         <ConfirmDeleteModal
@@ -239,20 +244,20 @@ export function LadderSection({
 
       {confirming ? (
         <Modal title={t('ranks.ladder.reorderTitle')} onClose={() => setConfirming(null)}>
-          <p>{t('ranks.reorderAffected', { count: confirming.length })}</p>
-          <ul>
+          <p className="u8gs-intro">{t('ranks.reorderAffected', { count: confirming.length })}</p>
+          <ul className="u8gs-affected">
             {confirming.map((h) => (
               <li key={h.studentId}>{`${h.firstName} ${h.surname}`.trim() || t('ranks.formerStudent')}</li>
             ))}
           </ul>
-          <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-            <Button onClick={saveOrder} loading={reorder.isPending}>
-              {t('ranks.ladder.saveOrder')}
-            </Button>
-            <Button variant="secondary" onClick={() => setConfirming(null)}>
+          <ModalActions>
+            <Button type="button" variant="secondary" onClick={() => setConfirming(null)}>
               {t('ranks.back')}
             </Button>
-          </div>
+            <Button type="button" onClick={saveOrder} loading={reorder.isPending}>
+              {t('ranks.ladder.saveOrder')}
+            </Button>
+          </ModalActions>
         </Modal>
       ) : null}
 
@@ -301,7 +306,7 @@ export function LadderSection({
           onClose={() => setEditing(null)}
         />
       ) : null}
-    </Card>
+    </BillingCard>
   );
 }
 

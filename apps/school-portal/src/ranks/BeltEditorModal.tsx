@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Badge, Button, Checkbox, ErrorBanner, Field, Modal, SelectField, TextField } from '@ultm8/ui';
+import { Button, Checkbox, ErrorBanner, Field, Modal, ModalActions, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import type { DisciplineResponse } from '../disciplines/disciplineQueries';
 import type { SkillResponse } from '../skills/skillQueries';
@@ -10,6 +10,8 @@ import type { RankResponse, RankStripeTierInput } from './rankQueries';
 import { formatMoney } from '../lib/money';
 import { useT } from '../i18n/I18nProvider';
 import { CurrencyFirstNotice } from '../lib/CurrencyFirstNotice';
+import { NewLookSelect } from '../layout/NewLookSelect';
+import '../disciplines/stylesLook.css';
 
 type Holder = { studentId: string; firstName: string; surname: string };
 
@@ -175,14 +177,12 @@ function saysWhatItTakes(r: RungDraft): boolean {
 /** A small checkbox list of names (class types, skills). */
 function Picker({ legend, options, value, onChange, empty }: { legend: string; options: Array<{ value: string; label: string }>; value: string[]; onChange: (v: string[]) => void; empty: string }) {
   return (
-    <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
+    <fieldset className="u8gs-fieldset">
       <legend className="ultm8-field__label">{legend}</legend>
       {options.length === 0 ? (
-        <p className="ultm8-field__hint" style={{ margin: 0 }}>
-          {empty}
-        </p>
+        <p className="ultm8-field__hint">{empty}</p>
       ) : (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
+        <div className="u8gs-picks">
           {options.map((o) => (
             <Checkbox
               key={o.value}
@@ -199,9 +199,9 @@ function Picker({ legend, options, value, onChange, empty }: { legend: string; o
 
 function Chapter({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
   return (
-    <section aria-label={title} style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginTop: 12 }}>
-      <h3 style={{ fontSize: 15, margin: '0 0 10px', display: 'flex', gap: 10, alignItems: 'baseline' }}>
-        <span style={{ color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums' }}>{number}</span>
+    <section aria-label={title} className="u8gs-chapter">
+      <h3>
+        <span className="u8gs-chapter__number">{number}</span>
         {title}
       </h3>
       {children}
@@ -223,6 +223,12 @@ function Chapter({ number, title, children }: { number: string; title: string; c
  * is still missing; an empty grade is a warning, not a block. Grades reorder
  * within the belt and keep their students; a grade someone holds can't be
  * deleted.
+ *
+ * New look (Decision 460): the shared dialog frame and button band (Cancel
+ * first; Back first when it asks about a reorder), the new look's drop-downs
+ * for "Where it goes in the ladder" and "Which classes count" (a pick counts
+ * as an edit, as the old `<select>` did), round selectors for the stripe
+ * colour groups, and the calm grey preview. Same fields, checks and saves.
  */
 export function BeltEditorModal({
   title,
@@ -363,20 +369,20 @@ export function BeltEditorModal({
   if (confirming) {
     return (
       <Modal title={t('ranks.editor.reorderTitle')} onClose={() => setConfirming(null)}>
-        <p>{t('ranks.reorderAffected', { count: confirming.length })}</p>
-        <ul>
+        <p className="u8gs-intro">{t('ranks.reorderAffected', { count: confirming.length })}</p>
+        <ul className="u8gs-affected">
           {confirming.map((h) => (
             <li key={h.studentId}>{`${h.firstName} ${h.surname}`.trim() || t('ranks.formerStudent')}</li>
           ))}
         </ul>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="button" loading={submitting} onClick={save}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={() => setConfirming(null)}>
             {t('ranks.back')}
           </Button>
-        </div>
+          <Button type="button" loading={submitting} onClick={save}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </Modal>
     );
   }
@@ -403,16 +409,16 @@ export function BeltEditorModal({
     <Modal title={title} onClose={onClose} wide>
       <form onSubmit={handleSubmit}>
         {error ? <ErrorBanner message={error} /> : null}
-        {copying ? <p style={{ color: '#2b4f80', marginTop: 0 }}>{t('ranks.editor.duplicateNote')}</p> : null}
+        {copying ? <p className="u8gs-note--info">{t('ranks.editor.duplicateNote')}</p> : null}
         <div className="ultm8-editor-layout">
           <div style={{ minWidth: 0 }}>
-            <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{levels ? t('ranks.editor.stepsOf', { name: beltLabel }) : t('ranks.editor.gradesOf', { name: beltLabel })}</h3>
-            <ol aria-label={levels ? t('ranks.editor.stepsOf', { name: beltLabel }) : t('ranks.editor.gradesOf', { name: beltLabel })} style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <h3 className="u8gs-heading">{levels ? t('ranks.editor.stepsOf', { name: beltLabel }) : t('ranks.editor.gradesOf', { name: beltLabel })}</h3>
+            <ol aria-label={levels ? t('ranks.editor.stepsOf', { name: beltLabel }) : t('ranks.editor.gradesOf', { name: beltLabel })} className="u8gs-grades">
               {rungs.map((r, i) => {
                 const label = labelOf(r);
                 const count = r.id ? holders.get(r.id)?.length ?? 0 : 0;
                 return (
-                  <li key={r.key} aria-label={t('ranks.editor.lineAria', { number: i + 1, label })} {...drag.targetProps(i)} style={{ display: 'flex', alignItems: 'center', ...drag.rowStyle(i) }}>
+                  <li key={r.key} aria-label={t('ranks.editor.lineAria', { number: i + 1, label })} {...drag.targetProps(i)} style={drag.rowStyle(i)}>
                     <span {...drag.handleProps(i, label)}>⠿</span>
                     <button
                       type="button"
@@ -435,8 +441,8 @@ export function BeltEditorModal({
                 );
               })}
             </ol>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
-              <span className="ultm8-field__hint" style={{ flex: 1, minWidth: 160 }}>
+            <div className="u8gs-grade-bar">
+              <span className="ultm8-field__hint">
                 {levels ? t('ranks.editor.stepOf', { number: index + 1, total: rungs.length }) : t('ranks.editor.gradeOf', { number: index + 1, total: rungs.length })} ·{' '}
                 {t('ranks.editor.onStripe', { count: held.length })}
               </span>
@@ -506,9 +512,9 @@ export function BeltEditorModal({
                 </>
               )}
               {mode !== 'edit' ? (
-                <Field label={t('ranks.editor.whereItGoes')} htmlFor="belt-position">
-                  <SelectField value={String(position)} onChange={(e) => setPosition(Number(e.target.value))} options={positionOptions} />
-                </Field>
+                <div className="u8n-dd-field">
+                  <NewLookSelect id="belt-position" label={t('ranks.editor.whereItGoes')} value={String(position)} onChange={(v) => setPosition(Number(v))} options={positionOptions} />
+                </div>
               ) : null}
               <Field
                 label={t('ranks.editor.gradeName')}
@@ -531,7 +537,7 @@ export function BeltEditorModal({
                 <Field label={fee.currency ? `${t('ranks.editor.priceLabel')} (${fee.currency})` : t('ranks.editor.priceLabel')} htmlFor={`grade-price-${current.key}`} hint={t('ranks.editor.priceHint')}>
                   <TextField id={`grade-price-${current.key}`} type="number" min={0} step="0.01" disabled={!fee.currency} value={current.price} placeholder={t('ranks.editor.free')} onChange={(e) => update(current.key, { price: e.target.value })} />
                 </Field>
-                <p className="ultm8-field__hint" style={{ margin: 0 }}>
+                <p className="ultm8-field__hint">
                   {pricedSummary.length === 0
                     ? t('ranks.editor.pricedNone')
                     : t('ranks.editor.pricedGrades', {
@@ -543,41 +549,39 @@ export function BeltEditorModal({
           </div>
 
           <aside className="ultm8-editor-preview">
-            <div className="ultm8-field__hint" style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontSize: 11 }}>
-              {t('ranks.editor.preview')}
-            </div>
+            <div className="u8gs-preview__label">{t('ranks.editor.preview')}</div>
             <BeltChip large rung={{ id: current.key, rankId: previewRank.id, rank: previewRank, tier: previewTier, index, name: labelOf(current) }} step={{ n: index + 1, of: rungs.length }} />
             <strong>{labelOf(current)}</strong>
             <span className="ultm8-field__hint">
               {levels ? t('ranks.editor.levelOf', { number: ladderPlace + 1, total: ladderSize }) : t('ranks.editor.beltOf', { number: ladderPlace + 1, total: ladderSize })}
             </span>
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 6 }}>
-              <strong style={{ fontSize: 14 }}>{t('ranks.editor.readyTitle')}</strong>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '6px 0 0', display: 'grid', gap: 4, fontSize: 13 }}>
+            <div className="u8gs-ready">
+              <strong>{t('ranks.editor.readyTitle')}</strong>
+              <ul>
                 <ReadyLine ok={!!name.trim()}>{t('ranks.editor.readyName')}</ReadyLine>
                 <ReadyLine ok={!!primaryColour.trim()}>{t('ranks.editor.readyColour')}</ReadyLine>
                 <ReadyLine ok={rungs.every((r) => r.segments.every((s) => Number(s.count) >= 1 && !!s.colour.trim()))}>{t('ranks.editor.readyStripes')}</ReadyLine>
                 {empties.length === 0 ? (
                   <ReadyLine ok>{t('ranks.editor.readyWhatItTakes')}</ReadyLine>
                 ) : (
-                  <li style={{ color: 'var(--text-warning)' }}>
+                  <li className="u8gs-ready__warn">
                     ⚠ {t('ranks.editor.checkWhatItTakes', { list: empties.map(shortLabel).join(', ') })}
                   </li>
                 )}
               </ul>
             </div>
-            {current.timeOnly ? <Badge variant="accent">{t('ranks.editor.timeOnlyBadge')}</Badge> : null}
+            {current.timeOnly ? <span className="u8gs-tag u8gs-tag--info">{t('ranks.editor.timeOnlyBadge')}</span> : null}
           </aside>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <Button type="submit" loading={submitting}>
-            {t('common.save')}
-          </Button>
+        <ModalActions>
           <Button type="button" variant="secondary" onClick={onClose}>
             {t('common.cancel')}
           </Button>
-        </div>
+          <Button type="submit" loading={submitting}>
+            {t('common.save')}
+          </Button>
+        </ModalActions>
       </form>
     </Modal>
   );
@@ -585,8 +589,8 @@ export function BeltEditorModal({
 
 function ReadyLine({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   return (
-    <li style={{ display: 'flex', gap: 6, color: ok ? undefined : 'var(--text-danger)' }}>
-      <span aria-hidden="true" style={{ color: ok ? '#3a7556' : undefined }}>
+    <li className={'u8gs-ready__line' + (ok ? '' : ' u8gs-ready__line--missing')}>
+      <span aria-hidden="true" className={ok ? 'u8gs-ready__tick' : undefined}>
         {ok ? '✓' : '○'}
       </span>
       <span>{children}</span>
@@ -614,19 +618,20 @@ function StripeGroups({
   const setSegment = (i: number, patch: Partial<Segment>) => onChange({ segments: r.segments.map((s, j) => (j === i ? { ...s, ...patch } : s)) });
   const picked = Math.min(group, r.segments.length - 1);
   return (
-    <fieldset style={{ border: 'none', padding: 0, margin: '0 0 12px' }}>
+    <fieldset className="u8gs-fieldset">
       <legend className="ultm8-field__label">{t('ranks.editor.stripesCount', { count: total(r.segments) })}</legend>
-      <div style={{ display: 'grid', gap: 8 }}>
+      <div className="u8gs-groups">
         {r.segments.map((s, i) => (
           <div key={i} className={`ultm8-colour-group${i === picked ? ' ultm8-colour-group--on' : ''}`} onClick={() => setGroup(i)}>
             <input
               type="radio"
+              className="u8gs-radio"
               name={`group-${r.key}`}
               checked={i === picked}
               onChange={() => setGroup(i)}
               aria-label={t('ranks.editor.colourGroup', { number: i + 1, count: Number(s.count) || 0 })}
             />
-            <span className="ultm8-field__hint" style={{ minWidth: 110 }}>
+            <span className="ultm8-field__hint u8gs-group__name">
               {t('ranks.editor.colourGroup', { number: i + 1, count: Number(s.count) || 0 })}
             </span>
             <Field label={t('ranks.editor.number')} htmlFor={`${r.key}-seg-${i}-count`}>
@@ -636,7 +641,7 @@ function StripeGroups({
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+      <div className="u8gs-group-actions">
         <Button
           type="button"
           variant="secondary"
@@ -702,16 +707,18 @@ function RequirementFields({
         <>
           {ticks.requireClasses ? (
             <>
-              <Field label={t('ranks.editor.whichClasses')} htmlFor={id('mode')}>
-                <SelectField
+              <div className="u8n-dd-field">
+                <NewLookSelect
+                  id={id('mode')}
+                  label={t('ranks.editor.whichClasses')}
                   value={r.mode}
-                  onChange={(e) => onChange({ mode: e.target.value as RungDraft['mode'] })}
+                  onChange={(v) => onChange({ mode: v as RungDraft['mode'] })}
                   options={[
                     { value: 'ANY_TYPE', label: t('ranks.editor.modeAnyType') },
                     { value: 'EACH_TYPE', label: t('ranks.editor.modeEachType') },
                   ]}
                 />
-              </Field>
+              </div>
               <Picker
                 legend={t('ranks.editor.typesLegend')}
                 options={types.map((type) => ({ value: type, label: type }))}
@@ -721,7 +728,7 @@ function RequirementFields({
               />
             </>
           ) : null}
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div className="u8gs-fields">
             {!ticks.requireClasses ? null : r.mode === 'EACH_TYPE' ? (
               r.types.map((type) => (
                 <Field key={type} label={t('ranks.editor.typeClasses', { type })} htmlFor={id(`type-${type}`)}>
