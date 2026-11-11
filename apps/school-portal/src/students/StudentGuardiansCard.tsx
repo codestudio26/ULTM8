@@ -12,7 +12,8 @@ const errorText = (err: unknown, fallback: string) => (err instanceof ApiError ?
  * A child's parents and guardians on their page (Decision 371), with their
  * consent status for staff (Decision 430 item 9) and, for the owner,
  * "Remove Guardian" (item 8, never the last one) and "Add another Guardian"
- * (item 6). Shown for a current student with at least one parent.
+ * (item 6). Shown for a current student with at least one parent. In the
+ * new look it sits under Contact in the student page's summary panel.
  */
 export function StudentGuardiansCard({ schoolId, studentId, studentName, enabled, isOwner }: { schoolId: string; studentId: string; studentName: string; enabled: boolean; isOwner: boolean }) {
   const t = useT();
@@ -50,19 +51,19 @@ export function StudentGuardiansCard({ schoolId, studentId, studentName, enabled
   }
 
   return (
-    <div data-testid="student-guardians" style={{ margin: '0 0 16px' }}>
-      <p style={{ margin: '0 0 8px' }}>
+    <div data-testid="student-guardians">
+      <p className="u8sp-panel__text">
         {t('students.guardians', { count: items.length, names: names.join(', ') })}{' '}
         {consent === 'PENDING' || consent === 'WITHDRAWN' ? (
           <Badge variant="warning">{t(consent === 'PENDING' ? 'students.guardiansCard.consentPendingBadge' : 'students.guardiansCard.consentWithdrawnBadge')}</Badge>
         ) : null}
       </p>
-      {consent === 'PENDING' ? <p className="ultm8-field__hint">{t('students.guardiansCard.consentPending')}</p> : null}
-      {consent === 'WITHDRAWN' ? <p className="ultm8-field__hint">{t('students.guardiansCard.consentWithdrawn')}</p> : null}
-      {done ? <SuccessBanner message={done} /> : null}
+      {consent === 'PENDING' ? <p className="u8sp-panel__note">{t('students.guardiansCard.consentPending')}</p> : null}
+      {consent === 'WITHDRAWN' ? <p className="u8sp-panel__note">{t('students.guardiansCard.consentWithdrawn')}</p> : null}
+      {done ? <div style={{ marginTop: 12 }}><SuccessBanner message={done} /></div> : null}
       {isOwner ? (
         <>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="u8sp-panel__buttons">
             {items.length > 1
               ? items.map((g, i) => (
                   <Button key={g.id} variant="secondary" onClick={() => { setDone(null); setRemoving({ id: g.id, name: names[i] }); }}>
@@ -77,8 +78,8 @@ export function StudentGuardiansCard({ schoolId, studentId, studentName, enabled
             ) : null}
           </div>
           {adding ? (
-            <form onSubmit={submit} style={{ marginTop: 12, maxWidth: 480 }}>
-              <p className="ultm8-field__hint">{t('students.guardiansCard.addHint')}</p>
+            <form onSubmit={submit} className="u8sp-panel__form">
+              <p className="u8sp-panel__note" style={{ margin: '0 0 12px' }}>{t('students.guardiansCard.addHint')}</p>
               {add.error ? <ErrorBanner message={errorText(add.error, t('common.tryAgain'))} /> : null}
               <Field label={t('students.guardiansCard.firstName')} htmlFor="add-guardian-first-name">
                 <TextField id="add-guardian-first-name" maxLength={100} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />
@@ -89,7 +90,7 @@ export function StudentGuardiansCard({ schoolId, studentId, studentName, enabled
               <Field label={t('students.guardiansCard.email')} htmlFor="add-guardian-email">
                 <TextField id="add-guardian-email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </Field>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div className="u8sp-panel__buttons u8sp-panel__buttons--pair">
                 <Button type="submit" disabled={!filled} loading={add.isPending}>
                   {t('students.guardiansCard.submit')}
                 </Button>

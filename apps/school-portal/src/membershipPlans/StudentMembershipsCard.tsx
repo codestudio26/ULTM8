@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Button, Card, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
+import { Badge, Button, EmptyState, ErrorBanner, Field, Modal, SelectField, Spinner, Table, TextField } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
+import { StudentCard } from '../students/StudentPageLook';
 import { ConfirmDeleteModal } from '../lib/ConfirmDeleteModal';
 import { PAYMENT_METHOD_LABELS } from '../lib/enumLabels';
 import { formatMoney } from '../lib/money';
@@ -149,23 +150,20 @@ export function StudentMembershipsCard({
   }
 
   return (
-    <div style={{ marginBottom: 24 }}>
-      <Card>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-          <h2 className="ultm8-page-header__title" style={{ fontSize: 15, margin: 0 }}>
-            {t('membershipPlans.studentCard.title')}
-          </h2>
-          {freezeOnly ? null : (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Button variant="secondary" onClick={() => setDialog('sell')}>
-                {t('membershipPlans.studentCard.sell')}
-              </Button>
+    <>
+      <StudentCard
+        title={t('membershipPlans.studentCard.title')}
+        actions={
+          freezeOnly ? null : (
+            <>
+              <Button onClick={() => setDialog('sell')}>{t('membershipPlans.studentCard.sell')}</Button>
               <Button variant="secondary" onClick={() => setDialog('gift')}>
                 {t('membershipPlans.studentCard.gift')}
               </Button>
-            </div>
-          )}
-        </div>
+            </>
+          )
+        }
+      >
         {memberships.isLoading ? (
           <Spinner />
         ) : memberships.error ? (
@@ -222,7 +220,7 @@ export function StudentMembershipsCard({
             ]}
           />
         )}
-      </Card>
+      </StudentCard>
 
       {dialog === 'sell' ? (
         <DeskModal kind="sell" schoolId={schoolId} studentId={studentId} studentName={studentName} plans={sellable} onClose={() => setDialog(null)} />
@@ -251,7 +249,7 @@ export function StudentMembershipsCard({
           onClose={() => setCancelling(null)}
         />
       ) : null}
-    </div>
+    </>
   );
 }
 

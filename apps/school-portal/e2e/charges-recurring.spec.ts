@@ -59,7 +59,7 @@ test('set up a monthly recurring charge for 3 payments, then stop and restart it
   const charge = page.getByRole('row', { name: /#0000001/ });
   await expect(charge).toContainText('Private lesson');
   await expect(charge).toContainText('Open');
-  await expect(card.getByText('Owes 60.00 GBP')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Owes 60.00 GBP');
 
   const list = page.getByTestId('recurring-charges');
   const series = list.getByRole('row', { name: /Private lesson/ });

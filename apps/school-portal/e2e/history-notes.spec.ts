@@ -28,7 +28,7 @@ test.afterAll(async () => {
 
 test('edit a note, hide it from the student, and read the changes', async ({ page }) => {
   await signIn(page, s.ownerToken);
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   await expect(page.getByText('Note: Good base')).toBeVisible();
 
   await page.getByRole('button', { name: /^Edit note: / }).click();

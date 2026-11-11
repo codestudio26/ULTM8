@@ -16,7 +16,7 @@ test.afterAll(async () => {
   await cleanup();
 });
 
-const notes = (page: import('@playwright/test').Page) => page.locator('.ultm8-card').filter({ has: page.getByRole('heading', { name: 'Notes', exact: true }) });
+const notes = (page: import('@playwright/test').Page) => page.getByRole('region', { name: 'Notes', exact: true });
 
 test('the owner adds a staff-only note and a shown one, edits one and deletes the other', async ({ page }) => {
   await signIn(page, s.ownerToken);

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Card, ErrorBanner } from '@ultm8/ui';
+import { Button, ErrorBanner } from '@ultm8/ui';
 import { ApiError, unwrap } from '@ultm8/api-client';
 import { apiClient } from '../api';
 import { useT } from '../i18n/I18nProvider';
+import { StudentCard } from './StudentPageLook';
 
 /**
  * Decision 433 item 10: "Download this member's data", for the School's
@@ -37,15 +38,12 @@ export function MemberDataExportCard({ schoolId, studentId }: { schoolId: string
   }
 
   return (
-    <Card>
-      <section aria-label={t('students.export.memberDataTitle')}>
-        <h2 style={{ fontSize: 18, margin: '0 0 4px' }}>{t('students.export.memberDataTitle')}</h2>
-        <p style={{ color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('students.export.memberDataIntro')}</p>
-        {error ? <ErrorBanner message={error} /> : null}
-        <Button variant="secondary" loading={busy} onClick={download}>
-          {t('students.export.memberDataDownload')}
-        </Button>
-      </section>
-    </Card>
+    <StudentCard title={t('students.export.memberDataTitle')} label={t('students.export.memberDataTitle')}>
+      <p className="u8sp-card__sub">{t('students.export.memberDataIntro')}</p>
+      {error ? <ErrorBanner message={error} /> : null}
+      <Button variant="secondary" loading={busy} onClick={download}>
+        {t('students.export.memberDataDownload')}
+      </Button>
+    </StudentCard>
   );
 }

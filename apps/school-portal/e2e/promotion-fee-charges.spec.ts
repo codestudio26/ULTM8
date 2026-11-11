@@ -92,7 +92,7 @@ test.afterAll(async () => {
 test('the Payments card labels the charge a promotion fee, links it to grading, and offers Waive fee / Cancel fee instead of Cancel', async ({ page }) => {
   await page.goto(`/students/${s.student.id}`);
   const card = page.getByTestId('student-charges');
-  await expect(card.getByText('Owes 18.00 GBP')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Owes 18.00 GBP');
   const row = page.getByRole('row', { name: /^#0000001 Promotion fee/ });
   await expect(row).toContainText('Promotion fee');
   await expect(row).toContainText('BJJ · White 2');
@@ -103,7 +103,9 @@ test('the Payments card labels the charge a promotion fee, links it to grading, 
   await expect(row.getByRole('button', { name: 'Waive fee', exact: true })).toBeVisible();
   await expect(row.getByRole('button', { name: 'Cancel fee', exact: true })).toBeVisible();
   await expect(row).not.toContainText('Waive or cancel it in grading');
-  await expect(row.getByTestId('promotion-fee-grading-link')).toHaveAttribute('href', `#grading-${s.disciplineId}`);
+  // Grading is the Ranks tab: the link opens it at this style's card.
+  await expect(row.getByTestId('promotion-fee-grading-link')).toHaveAttribute('href', `/students/${s.student.id}?tab=ranks#grading-${s.disciplineId}`);
+  await row.getByTestId('promotion-fee-grading-link').click();
 
   const fees = page.getByTestId('promotion-fee-list');
   await expect(fees).toContainText('White 2');
@@ -120,6 +122,7 @@ test('a desk payment in full shows the fee Paid in grading', async ({ page }) =>
   await pay.getByRole('button', { name: 'Record payment' }).click();
   await expect(pay).toHaveCount(0);
   await expect(row).toContainText('Paid');
+  await page.getByRole('navigation', { name: 'Student sections' }).getByRole('link', { name: 'Ranks' }).click();
   const fees = page.getByTestId('promotion-fee-list');
   await expect(fees).toContainText('Paid');
   await expect(fees).toContainText('Invoice #0000001 paid');
@@ -145,7 +148,7 @@ test("paid after the student's rank changed: shown as Paid — promotion can't a
   expect(request.status).toBe('ACCEPTED');
   expect(request.promotionBlockedAt).not.toBeNull();
 
-  await page.reload();
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const box = page.getByRole('region', { name: 'Promotion fee', exact: true });
   await expect(box).toContainText("Paid — promotion can't apply");
   await expect(box).toContainText('the promotion can\'t apply: their rank or the belt ladder changed since the grade');
@@ -158,6 +161,7 @@ test("paid after the student's rank changed: shown as Paid — promotion can't a
   await expect(page.getByRole('region', { name: 'Promotion fee', exact: true })).toHaveCount(0);
   // Nothing is left "to decide": no Promote window opens.
   await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('navigation', { name: 'Student sections' }).getByRole('link', { name: 'Profile' }).click();
   await expect(row).toContainText('Cancelled');
   const charge = await db.charge.findUniqueOrThrow({ where: { id: chargeId } });
   expect(charge.cancelledAt).not.toBeNull();
@@ -167,13 +171,15 @@ test("paid after the student's rank changed: shown as Paid — promotion can't a
 });
 
 test('waiving the fee in grading cancels its charge', async ({ page }) => {
-  await page.goto(`/students/${s.student.id}`);
+  await page.goto(`/students/${s.student.id}?tab=ranks`);
   const box = page.getByRole('region', { name: 'Promotion fee', exact: true });
   await box.getByRole('button', { name: 'Waive fee' }).click();
+  await expect(box).toHaveCount(0);
+  await page.getByRole('navigation', { name: 'Student sections' }).getByRole('link', { name: 'Profile' }).click();
   const row = page.getByRole('row', { name: /^#0000001 Promotion fee/ });
   await expect(row).toContainText('Cancelled');
   await expect(row).toContainText('Fee waived in grading on');
-  await expect(page.getByTestId('student-charges').getByText('Nothing owed')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Nothing owed');
   const charge = await db.charge.findUniqueOrThrow({ where: { id: chargeId } });
   expect(charge.cancelledAt).not.toBeNull();
   expect((await db.promotionFeeRequest.findUniqueOrThrow({ where: { id: requestId } })).status).toBe('WAIVED');

@@ -89,7 +89,7 @@ test('a discounted charge, a part cash payment, and cancelling with a reason', a
   await page.goto(`/students/${s.student.id}`);
   const card = page.getByTestId('student-charges');
   await expect(card.getByRole('heading', { name: 'Payments' })).toBeVisible();
-  await expect(card.getByText('Nothing owed')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Nothing owed');
 
   // 100.00 less 10% = 90.00, plus 20% tax = 108.00.
   await card.getByRole('button', { name: '+ Create charge' }).click();
@@ -108,7 +108,7 @@ test('a discounted charge, a part cash payment, and cancelling with a reason', a
   const row = page.getByRole('row', { name: /Rash guard/ });
   await expect(row).toContainText('#0000001');
   await expect(row).toContainText('Open');
-  await expect(card.getByText('Owes 108.00 GBP')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Owes 108.00 GBP');
   const charge = await db.charge.findFirstOrThrow({ where: { schoolId: s.schoolId, studentId: s.student.id } });
   expect(charge).toMatchObject({ unitAmount: 10000, discountAmount: 1000, netAmount: 9000, taxAmount: 1800, grossAmount: 10800, taxRateBasisPoints: 2000 });
 
@@ -122,7 +122,7 @@ test('a discounted charge, a part cash payment, and cancelling with a reason', a
   await pay.getByRole('button', { name: 'Record payment' }).click();
   await expect(pay).toHaveCount(0);
   await expect(row).toContainText('Part paid');
-  await expect(card.getByText('Owes 58.00 GBP')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Owes 58.00 GBP');
   await expect(page.getByRole('row', { name: /50\.00 GBP/ })).toContainText('#0000001');
 
   // Cancelling asks for a reason; what was paid becomes credit.
@@ -136,7 +136,7 @@ test('a discounted charge, a part cash payment, and cancelling with a reason', a
   await expect(cancel).toHaveCount(0);
   await expect(row).toContainText('Cancelled');
   await expect(row).toContainText('Out of stock');
-  await expect(card.getByText('50.00 GBP in credit')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('50.00 GBP in credit');
   const cancelled = await db.charge.findUniqueOrThrow({ where: { id: charge.id } });
   expect(cancelled).toMatchObject({ cancelReason: 'Out of stock' });
   expect(cancelled.cancelledAt).not.toBeNull();
@@ -165,7 +165,7 @@ test('"No tax on this item": the preview and the charge show no tax (Decision 41
 
   const row = page.getByRole('row', { name: /Kids rash guard/ });
   await expect(row).toContainText('No tax');
-  await expect(card.getByText('Owes 25.00 GBP')).toBeVisible();
+  await expect(page.getByTestId('charge-balance')).toContainText('Owes 25.00 GBP');
   const charge = await db.charge.findFirstOrThrow({ where: { schoolId: s.schoolId, studentId: s.student.id } });
   expect(charge).toMatchObject({ taxExempt: true, taxRateBasisPoints: 0, netAmount: 2500, taxAmount: 0, grossAmount: 2500 });
 });

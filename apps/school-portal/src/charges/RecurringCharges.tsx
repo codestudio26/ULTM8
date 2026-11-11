@@ -337,8 +337,8 @@ export function CreateRecurringChargeModal({
             <dt>{t('charges.create.previewExTax')}</dt>
             <dd style={{ margin: 0 }}>{formatMoney(preview.net, currency)}</dd>
             <PreviewTaxRow taxExempt={taxExempt} rate={rate} tax={preview.tax} currency={currency} />
-            <dt style={{ fontWeight: 600 }}>{t('charges.recurring.create.previewEach')}</dt>
-            <dd style={{ margin: 0, fontWeight: 600 }}>{formatMoney(preview.gross, currency)}</dd>
+            <dt style={{ fontWeight: 500 }}>{t('charges.recurring.create.previewEach')}</dt>
+            <dd style={{ margin: 0, fontWeight: 500 }}>{formatMoney(preview.gross, currency)}</dd>
           </dl>
         ) : null}
         <p className="ultm8-field__hint" style={{ marginTop: 0 }}>

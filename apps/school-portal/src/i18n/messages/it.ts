@@ -2853,6 +2853,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       training: "Allenamento",
       homeBranch: "Sede principale",
     },
+    page: {
+      tabsAria: "Sezioni dell’allievo",
+      profile: "Profilo",
+      ranks: "Gradi",
+      contact: "Contatti",
+      personal: "Dati personali",
+      account: "Account",
+      birthday: "Compleanno",
+      balance: "Saldo",
+    },
     growth: {
       subtitle: "Allievi attivi, visitatori e abbonamenti sospesi oggi, e quanto è cresciuta la tua scuola negli ultimi 12 mesi.",
       period: "Ultimi 12 mesi, per mese nel fuso orario della scuola ({zone}).",

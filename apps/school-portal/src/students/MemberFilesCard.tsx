@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react';
-import { Button, Card, ErrorBanner } from '@ultm8/ui';
+import { Button, ErrorBanner } from '@ultm8/ui';
 import { ApiError } from '@ultm8/api-client';
 import { useT } from '../i18n/I18nProvider';
+import { StudentCard } from './StudentPageLook';
 import { formatLocale } from '../i18n/format';
 import {
   MEMBER_FILE_ACCEPT,
@@ -51,17 +52,12 @@ export function MemberFilesCard({ schoolId, studentId, canUpload }: { schoolId: 
   const items = files.data?.items ?? [];
 
   return (
-    <div style={{ marginBottom: 24 }} data-testid="member-files">
-      <Card>
-        <h2 className="ultm8-page-header__title" style={{ fontSize: 15, marginBottom: 4 }}>
-          {t('students.files.title')}
-        </h2>
-        <p className="ultm8-field__hint" style={{ margin: '0 0 12px' }}>
-          {t('students.files.intro')}
-        </p>
-        {uploadError ? <ErrorBanner message={uploadError} /> : null}
-        {canUpload ? (
-          <div style={{ marginBottom: 16 }}>
+    <StudentCard
+      title={t('students.files.title')}
+      testId="member-files"
+      actions={
+        canUpload ? (
+          <>
             <input
               ref={input}
               type="file"
@@ -74,13 +70,17 @@ export function MemberFilesCard({ schoolId, studentId, canUpload }: { schoolId: 
             <Button onClick={() => input.current?.click()} loading={upload.isPending}>
               {t('students.files.upload')}
             </Button>
-          </div>
-        ) : null}
+          </>
+        ) : null
+      }
+    >
+        <p className="u8sp-card__sub">{t('students.files.intro')}</p>
+        {uploadError ? <ErrorBanner message={uploadError} /> : null}
         {files.isLoading ? null : items.length === 0 ? (
           <p className="ultm8-field__hint">{t('students.files.empty')}</p>
         ) : (
           <div className="ultm8-table-scroll">
-          <table className="ultm8-table" style={{ width: '100%' }}>
+          <table className="ultm8-table">
             <thead>
               <tr>
                 <th scope="col">{t('students.files.name')}</th>
@@ -98,8 +98,7 @@ export function MemberFilesCard({ schoolId, studentId, canUpload }: { schoolId: 
           </table>
           </div>
         )}
-      </Card>
-    </div>
+    </StudentCard>
   );
 }
 
@@ -140,7 +139,7 @@ function FileRow({ file, schoolId, studentId }: { file: MemberFile; schoolId: st
       <td>{file.uploadedByName ?? t('students.files.formerStaff')}</td>
       <td>
         {confirming ? (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <div className="u8sp-line" style={{ justifyContent: 'flex-end' }}>
             <span>{t('students.files.confirmDelete', { name: file.fileName })}</span>
             <Button variant="danger" loading={remove.isPending} onClick={() => remove.mutate(file.id)}>
               {t('students.files.delete')}
@@ -150,7 +149,7 @@ function FileRow({ file, schoolId, studentId }: { file: MemberFile; schoolId: st
             </Button>
           </div>
         ) : (
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <div className="u8sp-line" style={{ justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
             <Button variant="secondary" loading={download.isPending} onClick={onDownload}>
               {t('students.files.download')}
             </Button>

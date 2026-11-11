@@ -2933,6 +2933,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       training: "Trening",
       homeBranch: "Oddział macierzysty",
     },
+    page: {
+      tabsAria: "Sekcje ucznia",
+      profile: "Profil",
+      ranks: "Stopnie",
+      contact: "Kontakt",
+      personal: "Dane osobowe",
+      account: "Konto",
+      birthday: "Urodziny",
+      balance: "Saldo",
+    },
     growth: {
       subtitle: "Aktywni uczniowie, goście i zamrożone członkostwa dziś oraz jak rosła twoja szkoła w ostatnich 12 miesiącach.",
       period: "Ostatnie 12 miesięcy, miesiącami w strefie czasowej szkoły ({zone}).",

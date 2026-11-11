@@ -10,6 +10,10 @@ Compare any two versions with `git diff <old> <new>`, e.g. `git diff v1.0.0 mast
 
 Post-v1.4.0 work on `master`.
 
+- **New look: the student's full page** (Decision 453; visual only). Two tabs,
+  Profile and Ranks; white cards with light header bars; the summary panel on
+  the right (status, Edit, check-in code, contact, personal details, home
+  branch, balance and tags), below the cards on a phone. Nothing is shown twice.
 - **New look: the Team pages** (Decisions 453, 456; visual only). Team is one
   page with three tabs: Staff (`/staff`), Coaches Info (`/instructors`, renamed
   from "Instructors' belts") and Invite coaches (`/team/invite-coaches`, the

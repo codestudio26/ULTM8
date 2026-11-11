@@ -2813,6 +2813,16 @@ export const messages: PartialMessages<EnglishMessages> = {
       training: "训练",
       homeBranch: "所属分馆",
     },
+    page: {
+      tabsAria: "学员栏目",
+      profile: "资料",
+      ranks: "级别",
+      contact: "联系方式",
+      personal: "个人信息",
+      account: "账户",
+      birthday: "生日",
+      balance: "余额",
+    },
     growth: {
       subtitle: "当前的活跃学员、访客和已冻结会籍，以及你的学校过去 12 个月的增长。",
       period: "过去 12 个月，按学校时区（{zone}）逐月统计。",
